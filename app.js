@@ -17616,369 +17616,29 @@ const hideLoadingScreen = () => {
             )), 
             
             // ==================== ABA GARANTIDO ====================
-            "garantido" === Et && React.createElement("div", {className: "space-y-4"},
-                // Header
-                React.createElement("div", {className: "bg-gradient-to-r from-green-600 to-emerald-800 rounded-xl p-6 text-white"},
-                    React.createElement("div", {className: "flex justify-between items-center"},
-                        React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💰 Análise Mínimo Garantido"),
-                            React.createElement("p", {className: "opacity-80"}, "Comparativo entre valor negociado e produção real dos profissionais")
-                        ),
-                        React.createElement("button", {
-                            onClick: carregarGarantido,
-                            disabled: garantidoLoading,
-                            className: "px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50"
-                        }, garantidoLoading ? "🔄 Carregando..." : "🔄 Atualizar")
-                    )
-                ),
-                
-                // Filtros
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Data Início"),
-                            React.createElement("input", {
-                                type: "date",
-                                value: garantidoFiltros.data_inicio,
-                                onChange: (e) => setGarantidoFiltros(f => ({...f, data_inicio: e.target.value})),
-                                className: "w-full px-3 py-2 border rounded-lg text-sm"
-                            })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Data Fim"),
-                            React.createElement("input", {
-                                type: "date",
-                                value: garantidoFiltros.data_fim,
-                                onChange: (e) => setGarantidoFiltros(f => ({...f, data_fim: e.target.value})),
-                                className: "w-full px-3 py-2 border rounded-lg text-sm"
-                            })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Cód. Cliente"),
-                            React.createElement("input", {
-                                type: "text",
-                                placeholder: "Ex: 767",
-                                value: garantidoFiltros.cod_cliente,
-                                onChange: (e) => setGarantidoFiltros(f => ({...f, cod_cliente: e.target.value})),
-                                className: "w-full px-3 py-2 border rounded-lg text-sm"
-                            })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "Cód. Profissional"),
-                            React.createElement("input", {
-                                type: "text",
-                                placeholder: "Ex: 12345",
-                                value: garantidoFiltros.cod_prof,
-                                onChange: (e) => setGarantidoFiltros(f => ({...f, cod_prof: e.target.value})),
-                                className: "w-full px-3 py-2 border rounded-lg text-sm"
-                            })
-                        ),
-                        React.createElement("div", {className: "flex items-end"},
-                            React.createElement("button", {
-                                onClick: carregarGarantido,
-                                className: "w-full px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-                            }, "🔍 Filtrar")
-                        )
-                    ),
-                    // Filtros de status
-                    React.createElement("div", {className: "flex flex-wrap gap-2 mt-4"},
-                        React.createElement("button", {
-                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'todos'})); setTimeout(carregarGarantido, 100); },
-                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
-                                (garantidoFiltros.filtro_status === 'todos' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-                        }, "📋 Todos"),
-                        React.createElement("button", {
-                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'abaixo'})); setTimeout(carregarGarantido, 100); },
-                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
-                                (garantidoFiltros.filtro_status === 'abaixo' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600 hover:bg-red-200')
-                        }, "🔴 Abaixo Garantido"),
-                        React.createElement("button", {
-                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'acima'})); setTimeout(carregarGarantido, 100); },
-                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
-                                (garantidoFiltros.filtro_status === 'acima' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-600 hover:bg-green-200')
-                        }, "🟢 Acima Garantido"),
-                        React.createElement("button", {
-                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'nao_rodou'})); setTimeout(carregarGarantido, 100); },
-                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
-                                (garantidoFiltros.filtro_status === 'nao_rodou' ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300')
-                        }, "⚫ Não Rodou"),
-                        React.createElement("button", {
-                            onClick: () => { setGarantidoFiltros(f => ({...f, filtro_status: 'rodou'})); setTimeout(carregarGarantido, 100); },
-                            className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
-                                (garantidoFiltros.filtro_status === 'rodou' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 hover:bg-blue-200')
-                        }, "🔵 Rodou")
-                    )
-                ),
-                
-                // Cards de totais
-                garantidoStats && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, "R$", (garantidoStats.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Negociado")
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, "R$", (garantidoStats.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Produção")
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-red-600"}, "R$", (garantidoStats.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total Complemento")
-                    ),
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-4 text-center"},
-                        React.createElement("p", {className: "text-2xl font-bold text-gray-600"}, "R$", (garantidoStats.valor_nao_rodou || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})),
-                        React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Prof. Não Rodou")
-                    )
-                ),
-                
-                // Sub-abas
-                React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
-                    React.createElement("div", {className: "flex border-b"},
-                        React.createElement("button", {
-                            onClick: () => setGarantidoSubTab('analise'),
-                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
-                                (garantidoSubTab === 'analise' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
-                        }, "📋 Análise Mínimo Garantido"),
-                        React.createElement("button", {
-                            onClick: () => setGarantidoSubTab('semanal'),
-                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
-                                (garantidoSubTab === 'semanal' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
-                        }, "📅 Análise Semanal"),
-                        React.createElement("button", {
-                            onClick: () => setGarantidoSubTab('cliente'),
-                            className: "flex-1 px-4 py-3 text-sm font-semibold " + 
-                                (garantidoSubTab === 'cliente' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-600 hover:bg-gray-50')
-                        }, "🏢 Por Cliente")
-                    )
-                ),
-                
-                // Loading
-                garantidoLoading && React.createElement("div", {className: "bg-white rounded-xl shadow p-12 text-center"},
-                    React.createElement("div", {className: "inline-block w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"}),
-                    React.createElement("p", {className: "text-gray-500"}, "Carregando dados do garantido...")
-                ),
-                
-                // Conteúdo Sub-aba: Análise Principal
-                !garantidoLoading && garantidoSubTab === 'analise' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
-                    React.createElement("div", {className: "overflow-x-auto"},
-                        React.createElement("table", {className: "w-full"},
-                            React.createElement("thead", {className: "bg-gradient-to-r from-purple-100 to-purple-200 sticky top-0"},
-                                React.createElement("tr", null,
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Data"),
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cód. Prof."),
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Profissional"),
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Cliente"),
-                                    React.createElement("th", {className: "px-3 py-3 text-left text-xs font-bold text-purple-800"}, "Onde Rodou?"),
-                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Entregas"),
-                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Negociado"),
-                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Produção"),
-                                    React.createElement("th", {className: "px-3 py-3 text-right text-xs font-bold text-purple-800"}, "Complemento"),
-                                    React.createElement("th", {className: "px-3 py-3 text-center text-xs font-bold text-purple-800"}, "Status Pagamento")
-                                )
-                            ),
-                            React.createElement("tbody", null,
-                                garantidoData.length === 0 && React.createElement("tr", null,
-                                    React.createElement("td", {colSpan: 10, className: "px-4 py-12 text-center text-gray-500"},
-                                        "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha de garantido."
-                                    )
-                                ),
-                                // Agrupar por cliente e renderizar com separadores
-                                (function() {
-                                    // Ordenar por cod_cliente_garantido, depois por profissional
-                                    var sorted = [...garantidoData].sort(function(a, b) {
-                                        var ca = String(a.cod_cliente_garantido || '');
-                                        var cb = String(b.cod_cliente_garantido || '');
-                                        if (ca !== cb) return ca.localeCompare(cb, 'pt-BR', {numeric: true});
-                                        return (a.profissional || '').localeCompare(b.profissional || '', 'pt-BR');
-                                    });
-                                    var rows = [];
-                                    var lastCliente = null;
-                                    sorted.forEach(function(row, idx) {
-                                        var clienteKey = String(row.cod_cliente_garantido || 'Sem cliente');
-                                        // Separador de grupo por cliente
-                                        if (clienteKey !== lastCliente) {
-                                            lastCliente = clienteKey;
-                                            var clienteNome = il(row.cod_cliente_garantido) || row.nome_cliente_garantido || '';
-                                            var qtdCliente = sorted.filter(function(r) { return String(r.cod_cliente_garantido || '') === clienteKey; }).length;
-                                            rows.push(React.createElement("tr", {key: 'group-' + clienteKey + '-' + idx},
-                                                React.createElement("td", {colSpan: 10, className: "px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm"},
-                                                    "🏢 Cliente ", clienteKey, clienteNome ? " — " + clienteNome : "", " (", qtdCliente, " registro", qtdCliente > 1 ? "s" : "", ")"
-                                                )
-                                            ));
-                                        }
-                                        // Determinar status automático e cor da linha
-                                        var statusKey = row.cod_prof + '_' + row.data + '_' + row.cod_cliente_garantido;
-                                        var statusInfo = garantidoStatusMap[statusKey];
-                                        var statusSalvo = statusInfo?.status || null;
-                                        var autoStatus = null;
-                                        var rowBg = '';
-                                        
-                                        if (row.status === 'nao_rodou' || (row.entregas === 0 && (!row.valor_produzido || row.valor_produzido === 0))) {
-                                            autoStatus = 'nao_rodou';
-                                        } else if (row.valor_produzido > row.valor_negociado) {
-                                            autoStatus = 'ultrapassou';
-                                        }
-                                        
-                                        // Status efetivo: salvo pelo admin tem prioridade, senão auto
-                                        var statusEfetivo = statusSalvo || autoStatus || 'analise';
-                                        
-                                        // Cores da linha
-                                        if (statusEfetivo === 'lancado') rowBg = 'bg-green-100';
-                                        else if (statusEfetivo === 'reprovado') rowBg = 'bg-red-100';
-                                        else if (statusEfetivo === 'nao_rodou') rowBg = 'bg-purple-100';
-                                        else if (statusEfetivo === 'ultrapassou') rowBg = 'bg-blue-100';
-                                        else if (row.status === 'abaixo') rowBg = 'bg-yellow-50';
-                                        else rowBg = 'bg-white';
-
-                                        rows.push(React.createElement("tr", {
-                                            key: idx,
-                                            className: rowBg + " border-b hover:brightness-95 transition-colors"
-                                        },
-                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, 
-                                                new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR')
-                                            ),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm font-mono"}, row.cod_prof),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm font-semibold"}, row.profissional),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm text-purple-700 font-medium"}, row.cod_cliente_garantido),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm"}, row.onde_rodou),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, row.entregas),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                                "R$", row.valor_negociado?.toFixed(2)
-                                            ),
-                                            React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold"}, 
-                                                "R$", row.valor_produzido?.toFixed(2)
-                                            ),
-                                            React.createElement("td", {className: "px-3 py-2 text-right"},
-                                                React.createElement("span", {
-                                                    className: "inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold " +
-                                                        (row.complemento > 0 ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800')
-                                                },
-                                                    row.complemento > 0 ? '🔴' : '🟢',
-                                                    " R$", row.complemento?.toFixed(2)
-                                                )
-                                            ),
-                                            // Coluna de Status com dropdown
-                                            React.createElement("td", {className: "px-3 py-2 text-center"},
-                                                React.createElement("div", {className: "flex flex-col items-center gap-1"},
-                                                    React.createElement("select", {
-                                                        value: statusEfetivo,
-                                                        onChange: function(e) {
-                                                            var novoStatus = e.target.value;
-                                                            if (novoStatus === 'reprovado') {
-                                                                setGarantidoModalStatus(row);
-                                                                setGarantidoMotivoReprovado('');
-                                                            } else {
-                                                                salvarStatusGarantido(row, novoStatus);
-                                                            }
-                                                        },
-                                                        className: "px-2 py-1 text-xs font-semibold rounded border " +
-                                                            (statusEfetivo === 'lancado' ? 'bg-green-200 text-green-800 border-green-400' :
-                                                             statusEfetivo === 'reprovado' ? 'bg-red-200 text-red-800 border-red-400' :
-                                                             statusEfetivo === 'nao_rodou' ? 'bg-orange-200 text-purple-800 border-orange-400' :
-                                                             statusEfetivo === 'ultrapassou' ? 'bg-blue-200 text-blue-800 border-blue-400' :
-                                                             'bg-yellow-100 text-yellow-800 border-yellow-300')
-                                                    },
-                                                        React.createElement("option", {value: "analise"}, "🔍 Análise"),
-                                                        React.createElement("option", {value: "nao_rodou"}, "🟠 Não Rodou"),
-                                                        React.createElement("option", {value: "ultrapassou"}, "🔵 Ultrapassou Negociado"),
-                                                        React.createElement("option", {value: "lancado"}, "✅ Lançado"),
-                                                        React.createElement("option", {value: "reprovado"}, "❌ Reprovado")
-                                                    ),
-                                                    // Indicador de auto-status
-                                                    !statusSalvo && autoStatus && React.createElement("span", {
-                                                        className: "text-[10px] italic " + (autoStatus === 'nao_rodou' ? 'text-purple-600' : 'text-blue-600')
-                                                    }, "auto"),
-                                                    // Mostrar info de quem alterou
-                                                    statusInfo?.alterado_por && React.createElement("div", {className: "text-xs text-gray-500"},
-                                                        statusInfo.alterado_por
-                                                    ),
-                                                    statusInfo?.alterado_em && React.createElement("div", {className: "text-xs text-gray-400"},
-                                                        new Date(statusInfo.alterado_em).toLocaleString('pt-BR', {
-                                                            day: '2-digit', month: '2-digit', year: '2-digit',
-                                                            hour: '2-digit', minute: '2-digit'
-                                                        })
-                                                    ),
-                                                    // Mostrar motivo se reprovado
-                                                    statusEfetivo === 'reprovado' && statusInfo?.motivo_reprovado && 
-                                                        React.createElement("div", {
-                                                            className: "text-xs text-red-600 italic max-w-32 truncate",
-                                                            title: statusInfo.motivo_reprovado
-                                                        }, "📝 ", statusInfo.motivo_reprovado)
-                                                )
-                                            )
-                                        ));
-                                    });
-                                    return rows;
-                                })(),
-                                // Linha de totais
-                                garantidoData.length > 0 && React.createElement("tr", {className: "bg-purple-200 font-bold"},
-                                    React.createElement("td", {colSpan: 5, className: "px-3 py-3 text-right text-purple-800"}, "Total"),
-                                    React.createElement("td", {className: "px-3 py-3 text-center text-purple-800"}, 
-                                        garantidoStats?.total_entregas || garantidoData.reduce((s, r) => s + r.entregas, 0)
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
-                                        "R$", (garantidoStats?.total_negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3 text-right text-purple-800"}, 
-                                        "R$", (garantidoStats?.total_produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3 text-right text-red-800"}, 
-                                        "R$", (garantidoStats?.total_complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                    ),
-                                    React.createElement("td", {className: "px-3 py-3"})
-                                )
-                            )
-                        )
-                    ),
-                    // Modal para informar motivo de reprovação
-                    garantidoModalStatus && React.createElement("div", {
-                        className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-                    },
-                        React.createElement("div", {className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"},
-                            React.createElement("h3", {className: "text-lg font-bold text-red-700 mb-4"}, 
-                                "❌ Reprovar Complemento"
-                            ),
-                            React.createElement("p", {className: "text-sm text-gray-600 mb-2"},
-                                "Profissional: ", React.createElement("strong", null, garantidoModalStatus.profissional)
-                            ),
-                            React.createElement("p", {className: "text-sm text-gray-600 mb-4"},
-                                "Data: ", React.createElement("strong", null, new Date(garantidoModalStatus.data + 'T12:00:00').toLocaleDateString('pt-BR'))
-                            ),
-                            React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-2"}, 
-                                "Motivo da Reprovação *"
-                            ),
-                            React.createElement("textarea", {
-                                value: garantidoMotivoReprovado,
-                                onChange: (e) => setGarantidoMotivoReprovado(e.target.value),
-                                placeholder: "Informe o motivo da reprovação...",
-                                className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500",
-                                rows: 3
-                            }),
-                            React.createElement("div", {className: "flex gap-3 mt-4"},
-                                React.createElement("button", {
-                                    onClick: () => {
-                                        setGarantidoModalStatus(null);
-                                        setGarantidoMotivoReprovado('');
-                                    },
-                                    className: "flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                                }, "Cancelar"),
-                                React.createElement("button", {
-                                    onClick: () => salvarStatusGarantido(garantidoModalStatus, 'reprovado', garantidoMotivoReprovado),
-                                    disabled: !garantidoMotivoReprovado.trim(),
-                                    className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                }, "Confirmar Reprovação")
-                            )
-                        )
-                    )
-                ),
-                
-                // Conteúdo Sub-aba: Análise Semanal
-                !garantidoLoading && garantidoSubTab === 'semanal' && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+            // 🆕 V2 BI GARANTIDO (2026-04-30 - refator visual completo)
+            // Backup do código antigo: BIGarantido.OLD.js
+            "garantido" === Et && (window.BIGarantidoV2 ? React.createElement(window.BIGarantidoV2, {
+                garantidoData: garantidoData,
+                garantidoStats: garantidoStats,
+                garantidoStatusMap: garantidoStatusMap,
+                garantidoLoading: garantidoLoading,
+                garantidoFiltros: garantidoFiltros,
+                setGarantidoFiltros: setGarantidoFiltros,
+                garantidoSubTab: garantidoSubTab,
+                setGarantidoSubTab: setGarantidoSubTab,
+                carregarGarantido: carregarGarantido,
+                salvarStatusGarantido: salvarStatusGarantido,
+                setGarantidoModalStatus: setGarantidoModalStatus,
+                setGarantidoMotivoReprovado: setGarantidoMotivoReprovado,
+                il: typeof il === "function" ? il : (cod) => null,
+                // Sub-abas Semanal e Por Cliente preservadas via callbacks (renderizam o JSX antigo)
+                renderSemanal: () => React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
                     React.createElement("div", {className: "overflow-x-auto"},
                         React.createElement("table", {className: "w-full"},
                             React.createElement("thead", {className: "bg-gradient-to-r from-blue-100 to-blue-200"},
                                 React.createElement("tr", null,
                                     React.createElement("th", {rowSpan: 2, className: "px-4 py-3 text-left text-xs font-bold text-blue-800 border-r"}, "Onde Rodou?"),
-                                    // Colunas dinâmicas por semana
                                     garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((sem, i) => 
                                         React.createElement("th", {key: i, colSpan: 3, className: "px-2 py-2 text-center text-xs font-bold text-blue-800 border-l bg-blue-200"},
                                             sem.semana
@@ -17986,7 +17646,6 @@ const hideLoadingScreen = () => {
                                     )
                                 ),
                                 React.createElement("tr", {className: "bg-blue-50"},
-                                    // Sub-headers para cada semana
                                     garantidoSemanal.length > 0 && garantidoSemanal[0]?.semanas?.map((_, i) =>
                                         React.createElement(React.Fragment, {key: i},
                                             React.createElement("th", {className: "px-2 py-2 text-xs text-blue-600 border-l text-right"}, "Negociado"),
@@ -18006,76 +17665,67 @@ const hideLoadingScreen = () => {
                                     React.createElement("tr", {key: idx, className: "border-b hover:bg-gray-50"},
                                         React.createElement("td", {className: "px-4 py-2 text-sm font-semibold border-r whitespace-nowrap"}, local.onde_rodou),
                                         local.semanas?.map((sem, i) => {
-                                            // Calcular variação em relação à semana anterior
                                             const semanaAnterior = i > 0 ? local.semanas[i-1] : null;
                                             const complementoAnterior = semanaAnterior?.complemento || 0;
                                             const complementoAtual = sem.complemento || 0;
-                                            
-                                            // Só mostra seta se houver negociado nas duas semanas
-                                            let seta = '';
-                                            let setaClass = '';
+                                            let seta = "";
+                                            let setaClass = "";
                                             if (i > 0 && semanaAnterior?.negociado > 0 && sem.negociado > 0) {
                                                 if (complementoAtual > complementoAnterior) {
-                                                    seta = '▲'; // Subiu = ruim = vermelho
-                                                    setaClass = 'text-red-500 text-lg animate-pulse';
+                                                    seta = "▲";
+                                                    setaClass = "text-red-500 text-lg animate-pulse";
                                                 } else if (complementoAtual < complementoAnterior) {
-                                                    seta = '▼'; // Diminuiu = bom = verde
-                                                    setaClass = 'text-green-500 text-lg';
+                                                    seta = "▼";
+                                                    setaClass = "text-green-500 text-lg";
                                                 }
                                             }
-                                            
                                             return React.createElement(React.Fragment, {key: i},
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right border-l"}, 
-                                                    sem.negociado > 0 ? `R$${sem.negociado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
+                                                    sem.negociado > 0 ? `R$${sem.negociado.toLocaleString("pt-BR", {minimumFractionDigits: 2})}` : ""
                                                 ),
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right"}, 
-                                                    sem.produzido > 0 ? `R$${sem.produzido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
+                                                    sem.produzido > 0 ? `R$${sem.produzido.toLocaleString("pt-BR", {minimumFractionDigits: 2})}` : ""
                                                 ),
                                                 React.createElement("td", {className: "px-2 py-2 text-sm text-right font-semibold " + 
-                                                    (sem.complemento > 0 ? 'text-red-600' : sem.negociado > 0 ? 'text-green-600' : '')
+                                                    (sem.complemento > 0 ? "text-red-600" : sem.negociado > 0 ? "text-green-600" : "")
                                                 }, 
                                                     sem.negociado > 0 ? React.createElement("div", {className: "flex items-center justify-end gap-1"},
-                                                        React.createElement("span", null, `R$${sem.complemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`),
-                                                        seta && React.createElement("span", {className: setaClass + " font-bold", title: seta === '▲' ? 'Aumentou em relação à semana anterior' : 'Diminuiu em relação à semana anterior'}, seta)
-                                                    ) : ''
+                                                        React.createElement("span", null, `R$${sem.complemento.toLocaleString("pt-BR", {minimumFractionDigits: 2})}`),
+                                                        seta && React.createElement("span", {className: setaClass + " font-bold", title: seta === "▲" ? "Aumentou em relação à semana anterior" : "Diminuiu em relação à semana anterior"}, seta)
+                                                    ) : ""
                                                 )
                                             );
                                         })
                                     )
                                 ),
-                                // Rodapé com totais
                                 garantidoSemanal.length > 0 && React.createElement("tr", {className: "bg-gradient-to-r from-blue-100 to-blue-200 font-bold border-t-2 border-blue-400"},
                                     React.createElement("td", {className: "px-4 py-3 text-sm font-bold border-r text-blue-800"}, "TOTAL"),
                                     garantidoSemanal[0]?.semanas?.map((_, semIdx) => {
-                                        // Calcular totais da coluna
                                         const totalNegociado = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.negociado || 0), 0);
                                         const totalProduzido = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.produzido || 0), 0);
                                         const totalComplemento = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx]?.complemento || 0), 0);
-                                        
-                                        // Calcular variação do total em relação à semana anterior
-                                        let setaTotal = '';
-                                        let setaTotalClass = '';
+                                        let setaTotal = "";
+                                        let setaTotalClass = "";
                                         if (semIdx > 0) {
                                             const totalCompAnterior = garantidoSemanal.reduce((sum, local) => sum + (local.semanas[semIdx-1]?.complemento || 0), 0);
                                             if (totalComplemento > totalCompAnterior) {
-                                                setaTotal = '▲';
-                                                setaTotalClass = 'text-red-600 text-xl animate-pulse';
+                                                setaTotal = "▲";
+                                                setaTotalClass = "text-red-600 text-xl animate-pulse";
                                             } else if (totalComplemento < totalCompAnterior) {
-                                                setaTotal = '▼';
-                                                setaTotalClass = 'text-green-600 text-xl';
+                                                setaTotal = "▼";
+                                                setaTotalClass = "text-green-600 text-xl";
                                             }
                                         }
-                                        
                                         return React.createElement(React.Fragment, {key: semIdx},
                                             React.createElement("td", {className: "px-2 py-3 text-sm text-right border-l text-blue-800"}, 
-                                                `R$${totalNegociado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+                                                `R$${totalNegociado.toLocaleString("pt-BR", {minimumFractionDigits: 2})}`
                                             ),
                                             React.createElement("td", {className: "px-2 py-3 text-sm text-right text-purple-700"}, 
-                                                `R$${totalProduzido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+                                                `R$${totalProduzido.toLocaleString("pt-BR", {minimumFractionDigits: 2})}`
                                             ),
                                             React.createElement("td", {className: "px-2 py-3 text-sm text-right text-red-700"}, 
                                                 React.createElement("div", {className: "flex items-center justify-end gap-1"},
-                                                    React.createElement("span", null, `R$${totalComplemento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`),
+                                                    React.createElement("span", null, `R$${totalComplemento.toLocaleString("pt-BR", {minimumFractionDigits: 2})}`),
                                                     setaTotal && React.createElement("span", {className: setaTotalClass + " font-bold"}, setaTotal)
                                                 )
                                             )
@@ -18086,92 +17736,40 @@ const hideLoadingScreen = () => {
                         )
                     )
                 ),
-                
-                // Conteúdo Sub-aba: Por Cliente
-                !garantidoLoading && garantidoSubTab === 'cliente' && React.createElement("div", {className: "grid md:grid-cols-2 gap-6"},
-                    // Tabela por cliente
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                renderCliente: () => garantidoPorCliente && garantidoPorCliente.length > 0 ? React.createElement("div", {className: "space-y-4"},
+                    garantidoPorCliente.map((c, idx) => React.createElement("div", {key: idx, className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                        React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3"},
+                            React.createElement("h3", {className: "text-lg font-bold"}, "🏢 Cliente ", c.cod_cliente_garantido, c.nome_cliente_garantido ? " — " + c.nome_cliente_garantido : "")
+                        ),
                         React.createElement("div", {className: "overflow-x-auto"},
                             React.createElement("table", {className: "w-full"},
-                                React.createElement("thead", {className: "bg-gradient-to-r from-emerald-100 to-emerald-200"},
+                                React.createElement("thead", {className: "bg-purple-50"},
                                     React.createElement("tr", null,
-                                        React.createElement("th", {className: "px-4 py-3 text-left text-xs font-bold text-emerald-800"}, "Onde Rodou?"),
-                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Negociado"),
-                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Produzido"),
-                                        React.createElement("th", {className: "px-4 py-3 text-right text-xs font-bold text-emerald-800"}, "Complemento")
+                                        React.createElement("th", {className: "px-3 py-2 text-left text-xs font-bold text-purple-800"}, "Profissional"),
+                                        React.createElement("th", {className: "px-3 py-2 text-center text-xs font-bold text-purple-800"}, "Entregas"),
+                                        React.createElement("th", {className: "px-3 py-2 text-right text-xs font-bold text-purple-800"}, "Negociado"),
+                                        React.createElement("th", {className: "px-3 py-2 text-right text-xs font-bold text-purple-800"}, "Produção"),
+                                        React.createElement("th", {className: "px-3 py-2 text-right text-xs font-bold text-purple-800"}, "Complemento")
                                     )
                                 ),
                                 React.createElement("tbody", null,
-                                    garantidoPorCliente.length === 0 && React.createElement("tr", null,
-                                        React.createElement("td", {colSpan: 4, className: "px-4 py-12 text-center text-gray-500"},
-                                            "Nenhum dado por cliente encontrado."
+                                    c.profissionais?.map((p, j) => React.createElement("tr", {key: j, className: "border-b"},
+                                        React.createElement("td", {className: "px-3 py-2 text-sm"}, p.profissional, " (", p.cod_prof, ")"),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-center"}, p.entregas),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right"}, "R$", (p.valor_negociado || 0).toFixed(2)),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right"}, "R$", (p.valor_produzido || 0).toFixed(2)),
+                                        React.createElement("td", {className: "px-3 py-2 text-sm text-right font-semibold " + ((p.complemento || 0) > 0 ? "text-red-600" : "text-green-600")},
+                                            "R$", (p.complemento || 0).toFixed(2)
                                         )
-                                    ),
-                                    garantidoPorCliente.map((cli, idx) =>
-                                        React.createElement("tr", {key: idx, className: "border-b hover:bg-gray-50"},
-                                            React.createElement("td", {className: "px-4 py-3 text-sm font-semibold"}, cli.onde_rodou),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right"}, 
-                                                "R$", (cli.negociado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right"}, 
-                                                "R$", (cli.produzido || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                            ),
-                                            React.createElement("td", {className: "px-4 py-3 text-sm text-right font-bold " + 
-                                                (cli.complemento > 0 ? 'text-red-600' : 'text-green-600')
-                                            }, 
-                                                "R$", (cli.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                            )
-                                        )
-                                    ),
-                                    // Linha de total
-                                    garantidoPorCliente.length > 0 && React.createElement("tr", {className: "bg-emerald-200 font-bold"},
-                                        React.createElement("td", {className: "px-4 py-3 text-emerald-800"}, "Total"),
-                                        React.createElement("td", {className: "px-4 py-3 text-right text-emerald-800"}, 
-                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.negociado || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                        ),
-                                        React.createElement("td", {className: "px-4 py-3 text-right text-emerald-800"}, 
-                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.produzido || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                        ),
-                                        React.createElement("td", {className: "px-4 py-3 text-right text-red-700"}, 
-                                            "R$", garantidoPorCliente.reduce((s, c) => s + (c.complemento || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})
-                                        )
-                                    )
+                                    ))
                                 )
                             )
                         )
-                    ),
-                    
-                    // Gráfico de pizza
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "Complemento por Cliente"),
-                        garantidoPorCliente.length > 0 ? React.createElement("div", {className: "relative max-h-[500px] overflow-y-auto"},
-                            // Gráfico com barras horizontais - todos os clientes
-                            React.createElement("div", {className: "space-y-3"},
-                                garantidoPorCliente.map((cli, idx) => {
-                                    const total = garantidoPorCliente.reduce((s, c) => s + (c.complemento || 0), 0);
-                                    const percent = total > 0 ? ((cli.complemento || 0) / total * 100) : 0;
-                                    const colors = ['bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
-                                    return React.createElement("div", {key: idx},
-                                        React.createElement("div", {className: "flex justify-between text-sm mb-1 gap-2"},
-                                            React.createElement("span", {className: "text-xs font-medium text-gray-700", title: cli.onde_rodou}, cli.onde_rodou),
-                                            React.createElement("span", {className: "font-semibold whitespace-nowrap"}, 
-                                                "R$", (cli.complemento || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2}),
-                                                " (", percent.toFixed(1), "%)"
-                                            )
-                                        ),
-                                        React.createElement("div", {className: "w-full h-4 bg-gray-200 rounded-full overflow-hidden"},
-                                            React.createElement("div", {
-                                                className: `h-full ${colors[idx % colors.length]} rounded-full transition-all`,
-                                                style: {width: `${percent}%`}
-                                            })
-                                        )
-                                    );
-                                })
-                            )
-                        ) : React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Sem dados para exibir")
-                    )
-                )
-            ),
+                    ))
+                ) : React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Sem dados para exibir"),
+            }) : React.createElement("div", {
+                style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
+            }, "⚠️ Componente BIGarantidoV2 não foi carregado. Verifique se BIGarantidoV2.js está no index.html antes do app.js.")),
             
             "os" === Et && React.createElement("div", {
                 className: "space-y-4"
