@@ -2326,7 +2326,10 @@ const hideLoadingScreen = () => {
         }), [qe, Ue] = useState({
             avisos: [],
             loading: !0
-        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        }), [ze, Be] = useState(null), [Ve, Je] = useState(0), [Qe, He] = useState([]), [Ge, We] = useState(!1), [Ze, Ye] = useState([]), [Ke, Xe] = useState([]), [et, tt] = useState([]), [at, lt] = useState([]), [rt, ot] = useState(!0), [ct, st] = useState(0), [nt, mt] = useState("produtos"), [it, dt] = useState([]), [pt, xt] = useState("lista"), [ut, gt] = useState([]), [bt, Rt] = useState([]),
+        // 🆕 2026-04: status global de saques (kill switch via /financial/config).
+        // Default { habilitados: true } pra não bloquear motoboy se request falhar.
+        [saquesStatus, setSaquesStatus] = useState({ habilitados: true, mensagem: '' }), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -4654,15 +4657,39 @@ const hideLoadingScreen = () => {
                 }
             })()
         }, [l, p.finTab]), useEffect(() => {
+            // 🆕 2026-04: busca status de saques na inicialização do user.
+            // Permite o card do menu mostrar lock quando saques estão desabilitados,
+            // ANTES do user clicar nele. Roda 1x no login + sempre que userTab muda
+            // pra "home" (refresh ao voltar pra home).
+            if (!l || "user" !== l.role) return;
+            (async () => {
+                try {
+                    const r = await fetchAuth(`${API_URL}/financial/saques-status`);
+                    if (r.ok) {
+                        const data = await r.json();
+                        setSaquesStatus(data || { habilitados: true, mensagem: '' });
+                    }
+                } catch (e) {
+                    // Falha-aberta: se request falhar, presume habilitados
+                    console.warn('Não conseguiu buscar saques-status, presumindo habilitados:', e.message);
+                }
+            })()
+        }, [l, p.userTab === 'home']), useEffect(() => {
             if (!l || "user" !== l.role) return;
             if ("saque" !== p.userTab) return;
             We(!1), Je(0), Be(null); buscarSaldoPlificUsuario();
             (async () => {
                 try {
-                    const [e, t] = await Promise.all([fetchAuth(`${API_URL}/horarios/verificar`).then(e => e.json()), fetchAuth(`${API_URL}/avisos?ativos=true`).then(e => e.json())]);
+                    // 🆕 2026-04: busca status de saques junto com horários e avisos
+                    const [e, t, statusSaques] = await Promise.all([
+                        fetchAuth(`${API_URL}/horarios/verificar`).then(e => e.json()),
+                        fetchAuth(`${API_URL}/avisos?ativos=true`).then(e => e.json()),
+                        fetchAuth(`${API_URL}/financial/saques-status`).then(r => r.json()).catch(() => ({ habilitados: true, mensagem: '' })),
+                    ]);
                     Be(e);
                     const a = t.filter(t => !t.exibir_fora_horario || t.exibir_fora_horario && !e.dentroHorario);
-                    He(a)
+                    He(a);
+                    setSaquesStatus(statusSaques || { habilitados: true, mensagem: '' });
                 } catch (e) {
                     console.error("Erro ao verificar horário:", e), Be({
                         dentroHorario: !0
@@ -10231,19 +10258,26 @@ const hideLoadingScreen = () => {
             className: "text-sm text-gray-500"
         }, "Liberar Ponto 1 do app via RPA")), React.createElement("span", {
             className: "text-blue-400 text-2xl"
-        }, "›")), React.createElement("button", {
+        }, "›")),
+        // 🆕 2026-04: card "Saque Emergencial" com lock visual quando saques desabilitados
+        React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "saque"
             }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-green-600"
+            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 " + (saquesStatus.habilitados ? "border-green-600" : "border-gray-400 opacity-75")
         }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "💰"), React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 " + (saquesStatus.habilitados ? "bg-green-100" : "bg-gray-200")
+        }, saquesStatus.habilitados ? "💰" : "🔒"), React.createElement("div", {
             className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Saque Emergencial"), React.createElement("p", {
+        }, React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
+            React.createElement("h3", {
+                className: "text-lg font-bold " + (saquesStatus.habilitados ? "text-gray-800" : "text-gray-500")
+            }, "Saque Emergencial"),
+            !saquesStatus.habilitados && React.createElement("span", {
+                className: "text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full"
+            }, "Indisponível")
+        ), React.createElement("p", {
             className: "text-sm text-gray-500"
         }, "Solicitar adiantamento")), React.createElement("span", {
             className: "text-green-400 text-2xl"
@@ -10702,7 +10736,70 @@ const hideLoadingScreen = () => {
             onClick: () => g(e)
         }))), React.createElement("p", {
             className: "text-xs text-gray-400 mt-2"
-        }, e.timestamp)))))), "saque" === p.userTab && React.createElement(React.Fragment, null, null === ze ? React.createElement("div", {
+        }, e.timestamp)))))), "saque" === p.userTab && React.createElement(React.Fragment, null,
+            // 🆕 2026-04: Tela completa de saques desabilitados (kill switch via /financial/config)
+            // Substitui todo o conteúdo da aba quando admin desabilitou saques globalmente.
+            !saquesStatus.habilitados ? React.createElement("div", {
+                className: "max-w-md mx-auto mt-8 mb-8"
+            },
+                React.createElement("div", {
+                    className: "bg-white rounded-2xl shadow-xl overflow-hidden"
+                },
+                    React.createElement("div", {
+                        className: "bg-gradient-to-br from-orange-500 to-red-500 p-6 text-center"
+                    },
+                        React.createElement("div", {
+                            className: "w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 text-5xl"
+                        }, "🔒"),
+                        React.createElement("h2", {
+                            className: "text-2xl font-bold text-white mb-1"
+                        }, "Saques Indisponíveis"),
+                        React.createElement("p", {
+                            className: "text-orange-100 text-sm"
+                        }, "Pausa temporária no sistema")
+                    ),
+                    React.createElement("div", { className: "p-6 space-y-4" },
+                        React.createElement("p", {
+                            className: "text-gray-700 text-center leading-relaxed"
+                        }, saquesStatus.mensagem || "Saques temporariamente indisponíveis. Tente novamente mais tarde."),
+                        React.createElement("div", {
+                            className: "bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg"
+                        },
+                            React.createElement("p", {
+                                className: "text-xs text-blue-800 leading-relaxed"
+                            },
+                                React.createElement("strong", null, "ℹ️ O que isso significa? "),
+                                "O administrador pausou momentaneamente as solicitações de saque. Seu saldo continua seguro e disponível assim que o sistema voltar."
+                            )
+                        ),
+                        React.createElement("div", {
+                            className: "flex flex-col gap-2 pt-2"
+                        },
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    try {
+                                        const r = await fetchAuth(`${API_URL}/financial/saques-status`);
+                                        if (r.ok) {
+                                            const data = await r.json();
+                                            setSaquesStatus(data);
+                                            if (data.habilitados) {
+                                                ja && ja('✅ Saques disponíveis novamente!', 'success');
+                                            } else {
+                                                ja && ja('Saques ainda indisponíveis. Tente mais tarde.', 'info');
+                                            }
+                                        }
+                                    } catch (e) { ja && ja('Erro ao verificar', 'error'); }
+                                },
+                                className: "w-full bg-orange-500 text-white font-semibold py-3 rounded-xl hover:bg-orange-600 transition"
+                            }, "🔄 Verificar novamente"),
+                            React.createElement("button", {
+                                onClick: () => x({ ...p, userTab: "home" }),
+                                className: "w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition"
+                            }, "← Voltar pra Home")
+                        )
+                    )
+                )
+            ) : null === ze ? React.createElement("div", {
             className: "flex items-center justify-center py-12"
         }, React.createElement("div", {
             className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"
