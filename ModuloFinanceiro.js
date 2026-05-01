@@ -196,6 +196,9 @@
         // Se ISSO não funcionar, o problema não é no componente, é em algum CSS global
         // do app que tá interceptando todos os cliques nessa região da tela.
         // Estrutura: 1 elemento HTML, 1 onClick, sem overlays, sem children clicáveis.
+        // 🆘 z-index 999999 + position relative força o botão a ficar ACIMA de qualquer
+        // overlay invisível que esteja capturando o click (modal travado, loading não
+        // desmontado, etc). Workaround pro caso de overlay externo bloqueando.
         function Toggle(opts) {
             const { ativo, onChange, disabled, label = 'toggle' } = opts;
             const texto  = ativo ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)';
@@ -218,6 +221,11 @@
                     } catch (err) {
                         console.error('[FinConfigToggle] erro:', err);
                     }
+                },
+                style: {
+                    position: 'relative',
+                    zIndex: 999999,
+                    pointerEvents: 'auto',
                 },
                 className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors ' + corClass + (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
             }, disabled ? 'Salvando...' : texto);
