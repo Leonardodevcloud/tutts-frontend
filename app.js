@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.3.0"; // Auth + Performance — grace window real, cache seletivo, contadores agregados
+const APP_VERSION = "2.4.0"; // Performance Full — gzip, limits defaults, agregação SQL, matviews, rate limit BI
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -7549,12 +7549,19 @@ const hideLoadingScreen = () => {
                 const e = Xa();
                 console.log("📊 Carregando dashboard com filtros:", e.toString() || "(sem filtros)");
                 setLoadingMessage("Buscando métricas de desempenho...");
-                const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}`),
+                const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}&compact=1`),
                     a = await t.json();
                 setLoadingMessage("Processando dados...");
                 console.log("📊 Dados recebidos:", a), Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
-                const l = a.dadosGraficos || [],
-                    r = [{
+                // 🚀 PERFORMANCE FIX (2026-05): se backend mandou histogramas pré-agregados,
+                // usa direto. Se for backend antigo, calcula em JS (fallback).
+                let r, o;
+                if (Array.isArray(a.histogramaTempo) && Array.isArray(a.histogramaKm)) {
+                    r = a.histogramaTempo;
+                    o = a.histogramaKm;
+                } else {
+                const l = a.dadosGraficos || [];
+                r = [{
                         label: "0 a 45 min",
                         min: 0,
                         max: 45
@@ -7584,8 +7591,8 @@ const hideLoadingScreen = () => {
                             const a = parseFloat(t.tempo);
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
-                    })),
-                    o = [{
+                    }));
+                o = [{
                         label: "0-10",
                         min: 0,
                         max: 10
@@ -7648,6 +7655,7 @@ const hideLoadingScreen = () => {
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
                     }));
+                } // fim do else (fallback dadosGraficos)
                 Ht({
                     porTempo: r,
                     porKm: o,
@@ -7877,11 +7885,17 @@ const hideLoadingScreen = () => {
                 const _catsLB = e.categorias || [];
                 _catsLB.length > 0 && t.append("categoria", _catsLB.join(","));
                 e.cod_prof && t.append("cod_prof", e.cod_prof), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
-                const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}`),
+                const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}&compact=1`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
-                const r = l.dadosGraficos || [],
-                    o = [{
+                // 🚀 PERFORMANCE FIX (2026-05): histogramas pré-agregados quando vierem
+                let o, c;
+                if (Array.isArray(l.histogramaTempo) && Array.isArray(l.histogramaKm)) {
+                    o = l.histogramaTempo;
+                    c = l.histogramaKm;
+                } else {
+                const r = l.dadosGraficos || [];
+                o = [{
                         label: "0 a 45 min",
                         min: 0,
                         max: 45
@@ -7911,8 +7925,8 @@ const hideLoadingScreen = () => {
                             const a = parseFloat(t.tempo);
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
-                    })),
-                    c = [{
+                    }));
+                c = [{
                         label: "0-10",
                         min: 0,
                         max: 10
@@ -7975,6 +7989,7 @@ const hideLoadingScreen = () => {
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
                     }));
+                } // fim do else fallback
                 Ht({
                     porTempo: o,
                     porKm: c,
