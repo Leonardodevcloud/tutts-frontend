@@ -352,7 +352,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       }
     },
       // Status icon
-      e("td", { style: { padding: "10px 12px", verticalAlign: "middle" } },
+      e("td", { style: tdBordered({ textAlign: "center" }) },
         e("span", {
           style: {
             display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -365,7 +365,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       ),
 
       // Profissional + data
-      e("td", { style: { padding: "10px 12px" } },
+      e("td", { style: tdBordered() },
         e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
           e("div", {
             style: {
@@ -385,10 +385,10 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       ),
 
       // Entregas
-      e("td", { style: { padding: "10px 12px", textAlign: "center", color: "#374151", fontVariantNumeric: "tabular-nums", fontSize: 13 } }, row.entregas || 0),
+      e("td", { style: tdBordered({ textAlign: "center", color: "#374151", fontVariantNumeric: "tabular-nums", fontSize: 13 }) }, row.entregas || 0),
 
       // Negociado vs Produção (barra)
-      e("td", { style: { padding: "10px 12px" } },
+      e("td", { style: tdBordered() },
         e("div", { style: { display: "flex", flexDirection: "column", gap: 4, width: 160 } },
           e("div", { style: { height: 5, background: "#F3F4F6", borderRadius: 3, overflow: "hidden" } },
             e("div", { style: { height: "100%", width: pct + "%", background: barColor, transition: "width 0.3s" } })
@@ -403,7 +403,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       ),
 
       // Complemento
-      e("td", { style: { padding: "10px 12px", textAlign: "right" } },
+      e("td", { style: tdBordered({ textAlign: "right" }) },
         e("span", {
           style: {
             display: "inline-flex", alignItems: "center", gap: 3,
@@ -417,7 +417,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       ),
 
       // Status pagamento (select compacto + meta inline)
-      e("td", { style: { padding: "10px 12px", width: 180 } },
+      e("td", { style: tdBordered({ width: 180, borderRight: "none" }) },
         e("div", { style: { display: "flex", flexDirection: "column", gap: 2 } },
           e("select", {
             value: statusEfetivo,
@@ -486,7 +486,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
             e("th", { style: { ...thStyle(), textAlign: "center" } }, "Entregas"),
             e("th", { style: thStyle() }, "Negociado vs Produção"),
             e("th", { style: { ...thStyle(), textAlign: "right" } }, "Complemento"),
-            e("th", { style: thStyle() }, "Pagamento"),
+            e("th", { style: { ...thStyle(), borderRight: "none" } }, "Pagamento"),
           )
         ),
         e("tbody", null,
@@ -578,15 +578,15 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
           }).flat(),
 
           // Linha de totais
-          garantidoStats && e("tr", { style: { background: "#F9FAFB", borderTop: "2px solid #E5E7EB", fontWeight: 600 } },
-            e("td", { style: { padding: "10px", color: "#6b7280", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.5px" }, colSpan: 2 }, "Total geral"),
-            e("td", { style: { padding: "10px", textAlign: "center", color: "#111827", fontVariantNumeric: "tabular-nums" } },
+          garantidoStats && e("tr", { style: { background: "#F9FAFB", borderTop: "2px solid #D1D5DB", fontWeight: 600 } },
+            e("td", { style: { padding: "12px", color: "#4B5563", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #E5E7EB" }, colSpan: 2 }, "Total geral"),
+            e("td", { style: { padding: "12px", textAlign: "center", color: "#111827", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #E5E7EB" } },
               garantidoStats.total_entregas || garantidoData.reduce((s, r) => s + (r.entregas || 0), 0)),
-            e("td", { style: { padding: "10px", color: "#111827", fontSize: 11 } },
+            e("td", { style: { padding: "12px", color: "#111827", fontSize: 12, borderRight: "1px solid #E5E7EB" } },
               fmtBRL(garantidoStats.total_produzido || 0) + " / " + fmtBRL(garantidoStats.total_negociado || 0)),
-            e("td", { style: { padding: "10px", textAlign: "right", color: "#991B1B", fontVariantNumeric: "tabular-nums" } },
+            e("td", { style: { padding: "12px", textAlign: "right", color: "#991B1B", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #E5E7EB" } },
               fmtBRL(garantidoStats.total_complemento || 0)),
-            e("td", { style: { padding: "10px" } }, ""),
+            e("td", { style: { padding: "12px" } }, ""),
           )
         )
       )
@@ -654,8 +654,19 @@ function thStyle() {
     textTransform: "uppercase", letterSpacing: "0.4px",
     padding: "10px 12px",
     background: "#F9FAFB",
-    borderBottom: "1px solid #E5E7EB",
+    borderBottom: "1px solid #D1D5DB",
+    borderRight: "1px solid #E5E7EB",
   };
+}
+
+// Helper: célula com bordas (estilo "table-bordered" pra eliminar sensação de vazio)
+function tdBordered(extra) {
+  return Object.assign({
+    padding: "10px 12px",
+    verticalAlign: "middle",
+    borderRight: "1px solid #E5E7EB",
+    borderBottom: "1px solid #E5E7EB",
+  }, extra || {});
 }
 
 // Animação spin (precisa estar em CSS — vai pro index.html)
