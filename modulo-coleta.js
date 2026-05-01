@@ -705,16 +705,18 @@
 
     // ==================== VIEW ADMIN ====================
     function ViewAdmin({ fetchApi, showToast }) {
-        const [tab, setTab] = useState('fila');
+        const [tab, setTab] = useState('cadastrados');
 
         return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
             h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
                 h('div', { className: 'flex gap-1 p-1' },
                     [
-                        { id: 'fila', label: '⏳ Fila de Validação' },
+                        // 🔧 2026-05: Abas "Fila de Validação" e "Estatísticas" removidas.
+                        // Função do motoboy ganhar R$1 por cadastro foi desativada — não há
+                        // mais coleta colaborativa, então fila/stats viraram irrelevantes.
+                        // Endpoints do backend continuam ativos (caso futuramente reabilite).
                         { id: 'cadastrados', label: '📚 Cadastrados' },
-                        { id: 'regioes', label: '🌎 Regiões' },
-                        { id: 'stats', label: '📊 Estatísticas' }
+                        { id: 'regioes', label: '🌎 Regiões' }
                     ].map(t => h('button', {
                         key: t.id,
                         onClick: () => setTab(t.id),
@@ -723,10 +725,8 @@
                     }, t.label))
                 )
             ),
-            tab === 'fila' && h(AdminFila, { fetchApi, showToast }),
             tab === 'cadastrados' && h(AdminCadastrados, { fetchApi, showToast }),
-            tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast }),
-            tab === 'stats' && h(AdminStats, { fetchApi, showToast })
+            tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast })
         );
     }
 
