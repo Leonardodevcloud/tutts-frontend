@@ -309,15 +309,23 @@
                         className: 'text-[11px] text-gray-400 mt-1.5'
                     }, ultimaAlteracao('saques_habilitados'))
                 ),
-                // 🐛 Botão inline com ref + listener nativo (ver useEffect acima)
+                // 🆕 Toggle visual estilo iOS — mantém callback ref que finalmente funcionou
                 React.createElement('button', {
                     ref: refHab,
                     type: 'button',
                     disabled: salvando === 'saques_habilitados',
-                    className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
-                        (habOn ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800') +
-                        (salvando === 'saques_habilitados' ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
-                }, salvando === 'saques_habilitados' ? 'Salvando...' : (habOn ? '✅ HABILITADO (clique pra desligar)' : '⭕ DESLIGADO (clique pra ligar)'))
+                    'aria-pressed': habOn ? 'true' : 'false',
+                    title: habOn ? 'Clique pra desabilitar' : 'Clique pra habilitar',
+                    className: 'relative inline-flex shrink-0 h-7 w-12 items-center rounded-full transition-colors duration-200 ' +
+                        (habOn ? 'bg-emerald-500' : 'bg-gray-300') +
+                        (salvando === 'saques_habilitados' ? ' opacity-50 cursor-wait' : ' cursor-pointer'),
+                },
+                    React.createElement('span', {
+                        style: { pointerEvents: 'none' },
+                        className: 'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ' +
+                            (habOn ? 'translate-x-6' : 'translate-x-1')
+                    })
+                )
             ),
 
             // ── Toggle: saques_automaticos ──
@@ -347,10 +355,18 @@
                     ref: refAuto,
                     type: 'button',
                     disabled: salvando === 'saques_automaticos',
-                    className: 'px-4 py-2 rounded-lg font-semibold text-sm transition-colors whitespace-nowrap ' +
-                        (autoOn ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800') +
-                        (salvando === 'saques_automaticos' ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'),
-                }, salvando === 'saques_automaticos' ? 'Salvando...' : (autoOn ? '⚡ AUTO ATIVO (clique pra desligar)' : '⭕ MANUAL (clique pra ligar AUTO)'))
+                    'aria-pressed': autoOn ? 'true' : 'false',
+                    title: autoOn ? 'Clique pra voltar a manual' : 'Clique pra ligar AUTO',
+                    className: 'relative inline-flex shrink-0 h-7 w-12 items-center rounded-full transition-colors duration-200 ' +
+                        (autoOn ? 'bg-amber-500' : 'bg-gray-300') +
+                        (salvando === 'saques_automaticos' ? ' opacity-50 cursor-wait' : ' cursor-pointer'),
+                },
+                    React.createElement('span', {
+                        style: { pointerEvents: 'none' },
+                        className: 'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ' +
+                            (autoOn ? 'translate-x-6' : 'translate-x-1')
+                    })
+                )
             ),
 
             // ── Aviso de fallback ──
@@ -832,23 +848,34 @@
                     // rejeitava (saques em processamento têm exclusão bloqueada por segurança).
                     // Resultado: motoboy via "excluída", mas no F5 voltava porque nunca deletou.
                     // Agora: aguarda response, valida response.ok, mostra erro real do backend.
+                    console.log('[DELETE] iniciando exclusão saque #' + e);
                     try {
                         const resp = await fetchAuth(`${API_URL}/withdrawals/${e}`, {
                             method: "DELETE"
                         });
+                        const respBody = await resp.json().catch(() => ({}));
+                        console.log('[DELETE] response status=' + resp.status + ', body=', respBody);
                         if (!resp.ok) {
-                            const errData = await resp.json().catch(() => ({}));
-                            const msg = errData.motivo || errData.error || `Erro ao excluir (HTTP ${resp.status})`;
+                            const msg = respBody.motivo || respBody.error || `Erro ao excluir (HTTP ${resp.status})`;
                             ja("❌ " + msg, "error");
                             x({ ...p, deleteConfirm: null });
                             return;
                         }
-                        // Sucesso: agora sim remove da UI e mostra toast
+                        // Sucesso confirmado pelo backend (status 200, body { success: true })
+                        if (!respBody.success) {
+                            console.warn('[DELETE] backend retornou 200 mas success=false:', respBody);
+                            ja("⚠️ Resposta inesperada do servidor — recarregando", "error");
+                            x({ ...p, deleteConfirm: null });
+                            Ua();
+                            return;
+                        }
                         const idRemover = e;
                         U(prev => prev.filter(w => w.id !== idRemover));
                         x({ ...p, deleteConfirm: null });
-                        ja("🗑️ Solicitação excluída!", "success");
+                        ja(respBody.forcado ? "🗑️ Excluída (forçada)!" : "🗑️ Solicitação excluída!", "success");
+                        console.log('[DELETE] sucesso saque #' + e + (respBody.forcado ? ' (FORÇADO)' : ''));
                     } catch (err) {
+                        console.error('[DELETE] exception:', err);
                         ja("❌ Erro ao excluir: " + (err.message || "rede indisponível"), "error");
                         x({ ...p, deleteConfirm: null });
                         Ua(); // recarrega lista pra estado consistente
@@ -1748,23 +1775,14 @@
                 ) : (e.status === "aprovado" || e.status === "aprovado_gratuidade") ? React.createElement("span", {className: "text-orange-500"}, "Pendente") : e.status === "aguardando_pagamento_stark" ? React.createElement("span", {className: "text-green-600 font-medium"}, "✅ OK") : React.createElement("span", {className: "text-gray-400"}, "-")),
                 React.createElement("td", {
                     className: "px-2 py-3 text-center"
-                },
-                    // 🐛 FIX 2026-04-30: status protegidos mostram lixeira AMARELA (alerta)
-                    // pra admin_master ter ciência de que tá forçando exclusão.
-                    // Backend valida role e bloqueia se não for admin_master.
-                    (() => {
-                        const protegido = e.status === "pago_stark" || e.status === "processando" || e.status === "aguardando_pagamento_stark" || e.stark_status === "processando" || e.stark_status === "pago";
-                        const corBg = protegido ? "bg-amber-500 hover:bg-amber-600" : "bg-red-600 hover:bg-red-700";
-                        const titulo = protegido ? "⚠️ FORÇAR exclusão — saque em processamento ou pago (apenas admin_master)" : "Excluir";
-                        return React.createElement("button", {
-                            onClick: () => x({
-                                ...p,
-                                deleteConfirm: e
-                            }),
-                            className: "px-2 py-1 " + corBg + " text-white rounded text-xs",
-                            title: titulo
-                        }, protegido ? "⚠️" : "🗑️");
-                    })()))
+                }, React.createElement("button", {
+                    onClick: () => x({
+                        ...p,
+                        deleteConfirm: e
+                    }),
+                    className: "px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700",
+                    title: "Excluir"
+                }, "🗑️")))
             }))), 
             // Controles de paginação
             (() => {
