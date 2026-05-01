@@ -352,12 +352,12 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       }
     },
       // Status icon
-      e("td", { style: { padding: "8px 10px", verticalAlign: "middle" } },
+      e("td", { style: { padding: "10px 12px", verticalAlign: "middle" } },
         e("span", {
           style: {
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 22, height: 22, borderRadius: "50%",
-            fontSize: 11, fontWeight: 700,
+            width: 24, height: 24, borderRadius: "50%",
+            fontSize: 12, fontWeight: 700,
             background: statusIconBg, color: statusIconColor,
           },
           title: autoStatus === "nao_rodou" ? "Não rodou" : row.valor_produzido > row.valor_negociado ? "Acima" : row.valor_produzido < row.valor_negociado ? "Abaixo" : "Igual"
@@ -365,59 +365,50 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       ),
 
       // Profissional + data
-      e("td", { style: { padding: "8px 10px" } },
-        e("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+      e("td", { style: { padding: "10px 12px" } },
+        e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
           e("div", {
             style: {
-              width: 24, height: 24, borderRadius: "50%",
+              width: 28, height: 28, borderRadius: "50%",
               background: corAvatar(row.cod_prof), color: "white",
-              fontSize: 9, fontWeight: 600,
+              fontSize: 10, fontWeight: 600,
               display: "inline-flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }
           }, iniciaisDe(row.profissional)),
           e("div", null,
-            e("div", { style: { fontWeight: 500, color: "#111827", fontSize: 12, lineHeight: 1.2 } }, row.profissional || "—"),
-            e("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 10, color: "#9CA3AF" } },
-              row.cod_prof + " · " + fmtData(row.data)),
-            // 2026-05-01: trazer de volta "onde rodou" (centro de custo)
-            row.onde_rodou && e("div", {
-              style: {
-                fontSize: 10, color: "#6B7280", marginTop: 2,
-                display: "inline-flex", alignItems: "center", gap: 3,
-                maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              },
-              title: row.onde_rodou
-            }, "📍 ", row.onde_rodou)
+            e("div", { style: { fontWeight: 500, color: "#111827", fontSize: 13, lineHeight: 1.3 } }, row.profissional || "—"),
+            e("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#6B7280", marginTop: 1 } },
+              row.cod_prof + " · " + fmtData(row.data))
           )
         )
       ),
 
       // Entregas
-      e("td", { style: { padding: "8px 10px", textAlign: "center", color: "#6b7280", fontVariantNumeric: "tabular-nums" } }, row.entregas || 0),
+      e("td", { style: { padding: "10px 12px", textAlign: "center", color: "#374151", fontVariantNumeric: "tabular-nums", fontSize: 13 } }, row.entregas || 0),
 
       // Negociado vs Produção (barra)
-      e("td", { style: { padding: "8px 10px" } },
-        e("div", { style: { display: "flex", flexDirection: "column", gap: 2, width: 130 } },
-          e("div", { style: { height: 4, background: "#F3F4F6", borderRadius: 2, overflow: "hidden" } },
+      e("td", { style: { padding: "10px 12px" } },
+        e("div", { style: { display: "flex", flexDirection: "column", gap: 4, width: 160 } },
+          e("div", { style: { height: 5, background: "#F3F4F6", borderRadius: 3, overflow: "hidden" } },
             e("div", { style: { height: "100%", width: pct + "%", background: barColor, transition: "width 0.3s" } })
           ),
-          e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 9.5 } },
+          e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12 } },
             e("span", { style: { color: row.valor_produzido >= row.valor_negociado ? "#0F6E56" : "#991B1B", fontWeight: 600, fontVariantNumeric: "tabular-nums" } },
               fmtBRL(row.valor_produzido || 0)),
-            e("span", { style: { color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
+            e("span", { style: { color: "#6B7280", fontVariantNumeric: "tabular-nums" } },
               "/ " + fmtBRL(row.valor_negociado || 0))
           )
         )
       ),
 
       // Complemento
-      e("td", { style: { padding: "8px 10px", textAlign: "right" } },
+      e("td", { style: { padding: "10px 12px", textAlign: "right" } },
         e("span", {
           style: {
             display: "inline-flex", alignItems: "center", gap: 3,
-            padding: "2px 8px", borderRadius: 999,
-            fontSize: 10.5, fontWeight: 600,
+            padding: "3px 10px", borderRadius: 999,
+            fontSize: 12, fontWeight: 600,
             fontVariantNumeric: "tabular-nums",
             background: row.complemento > 0 ? "#FEE2E2" : "#D1FAE5",
             color: row.complemento > 0 ? "#991B1B" : "#065F46",
@@ -425,8 +416,8 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
         }, row.complemento > 0 ? "+" : "", fmtBRL(row.complemento || 0))
       ),
 
-      // Status pagamento (select + meta)
-      e("td", { style: { padding: "8px 10px" } },
+      // Status pagamento (select compacto + meta inline)
+      e("td", { style: { padding: "10px 12px", width: 180 } },
         e("div", { style: { display: "flex", flexDirection: "column", gap: 2 } },
           e("select", {
             value: statusEfetivo,
@@ -440,10 +431,11 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
               }
             },
             style: {
-              padding: "3px 8px",
+              padding: "3px 6px",
               fontSize: 11, fontWeight: 500,
-              borderRadius: 6,
+              borderRadius: 4,
               border: "1px solid",
+              maxWidth: 150,
               borderColor: statusEfetivo === "lancado" ? "#86EFAC" :
                            statusEfetivo === "reprovado" ? "#FCA5A5" :
                            statusEfetivo === "nao_rodou" ? "#D1D5DB" :
@@ -454,7 +446,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
                           statusEfetivo === "ultrapassou" ? "#DBEAFE" : "#FEF3C7",
               color: statusEfetivo === "lancado" ? "#065F46" :
                      statusEfetivo === "reprovado" ? "#991B1B" :
-                     statusEfetivo === "nao_rodou" ? "#6b7280" :
+                     statusEfetivo === "nao_rodou" ? "#374151" :
                      statusEfetivo === "ultrapassou" ? "#1E40AF" : "#92400E",
               cursor: "pointer",
             }
@@ -465,16 +457,16 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
             e("option", { value: "lancado" }, "✅ Lançado"),
             e("option", { value: "reprovado" }, "❌ Reprovado")
           ),
-          // Meta (auto / por quem)
+          // Meta compacta + escura
           !statusSalvo && autoStatus && e("span", {
-            style: { fontSize: 9.5, color: "#9CA3AF", fontStyle: "italic" }
+            style: { fontSize: 10, color: "#6B7280", fontStyle: "italic" }
           }, "auto"),
           statusInfo?.alterado_por && e("span", {
-            style: { fontSize: 9.5, color: "#9CA3AF" }
+            style: { fontSize: 10, color: "#6B7280" }
           }, statusInfo.alterado_por +
             (statusInfo.alterado_em ? " · " + new Date(statusInfo.alterado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "")),
           statusEfetivo === "reprovado" && statusInfo?.motivo_reprovado && e("span", {
-            style: { fontSize: 9.5, color: "#991B1B", fontStyle: "italic", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+            style: { fontSize: 10, color: "#991B1B", fontStyle: "italic", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
             title: statusInfo.motivo_reprovado
           }, "📝 " + statusInfo.motivo_reprovado)
         )
@@ -486,7 +478,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
     style: { background: "white", border: "1px solid #E5E7EB", borderRadius: "0 0 10px 10px", overflow: "hidden" }
   },
     e("div", { style: { overflowX: "auto" } },
-      e("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 11.5 } },
+      e("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 13 } },
         e("thead", null,
           e("tr", null,
             e("th", { style: { ...thStyle(), width: 32 } }, ""),
@@ -512,25 +504,37 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
             const totalProd = linhas.reduce((s, r) => s + (r.valor_produzido || 0), 0);
             const diff = totalProd - totalNeg;
 
+            // 2026-05-01: subgrupos por centro de custo (onde_rodou)
+            // Ordena linhas por onde_rodou pra ficar agrupado
+            const linhasPorCentro = {};
+            linhas.forEach(r => {
+              const k = r.onde_rodou || "(sem centro)";
+              if (!linhasPorCentro[k]) linhasPorCentro[k] = [];
+              linhasPorCentro[k].push(r);
+            });
+            // Se só tem 1 centro de custo, não vale a pena mostrar sub-cabeçalho
+            const centrosCusto = Object.keys(linhasPorCentro);
+            const temMultiplosCentros = centrosCusto.length > 1;
+
             return [
               // Cabeçalho do cliente (mais sutil)
               e("tr", { key: "head-" + clienteKey, style: { background: "#FAF7FF", borderTop: "1px solid #E5E7EB" } },
-                e("td", { colSpan: 6, style: { padding: "8px 10px" } },
-                  e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, flexWrap: "wrap", gap: 8 } },
+                e("td", { colSpan: 6, style: { padding: "10px 12px" } },
+                  e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, flexWrap: "wrap", gap: 8 } },
                     e("span", {
-                      style: { fontWeight: 600, color: "#534AB7", display: "inline-flex", alignItems: "center", gap: 6 }
+                      style: { fontWeight: 600, color: "#534AB7", display: "inline-flex", alignItems: "center", gap: 8 }
                     },
                       e("span", {
                         style: {
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          minWidth: 22, padding: "0 5px", height: 18,
+                          minWidth: 26, padding: "0 7px", height: 22,
                           background: "#534AB7", color: "white",
-                          borderRadius: 4, fontSize: 9, fontWeight: 700,
+                          borderRadius: 5, fontSize: 11, fontWeight: 700,
                         }
                       }, clienteKey),
                       nomeFinal || ""
                     ),
-                    e("span", { style: { display: "flex", gap: 14, fontSize: 10, color: "#6b7280", flexWrap: "wrap" } },
+                    e("span", { style: { display: "flex", gap: 16, fontSize: 12, color: "#4B5563", flexWrap: "wrap" } },
                       e("span", null, linhas.length + " prof" + (linhas.length > 1 ? "s" : "")),
                       e("span", null, "Negociado: ", e("strong", { style: { color: "#111827", fontWeight: 600 } }, fmtBRL(totalNeg))),
                       e("span", null, "Produção: ", e("strong", { style: { color: "#111827", fontWeight: 600 } }, fmtBRL(totalProd))),
@@ -539,7 +543,37 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
                   )
                 )
               ),
-              ...linhas.map((row, i) => renderRow(row, clienteKey + "-" + i))
+              // 2026-05-01: iterar por centro de custo
+              ...centrosCusto.flatMap(centro => {
+                const linhasCentro = linhasPorCentro[centro];
+                const subRows = [];
+                // Sub-cabeçalho de centro de custo (só se cliente tem MAIS DE UM centro)
+                if (temMultiplosCentros) {
+                  subRows.push(
+                    e("tr", { key: "centro-" + clienteKey + "-" + centro, style: { background: "#F9FAFB" } },
+                      e("td", {
+                        colSpan: 6,
+                        style: {
+                          padding: "6px 12px 6px 24px",
+                          fontSize: 11,
+                          color: "#6B7280",
+                          fontWeight: 500,
+                          borderTop: "1px solid #F3F4F6",
+                        }
+                      },
+                        "📍 ", centro,
+                        e("span", { style: { color: "#9CA3AF", marginLeft: 8, fontWeight: 400 } },
+                          "· " + linhasCentro.length + " " + (linhasCentro.length > 1 ? "profs" : "prof"))
+                      )
+                    )
+                  );
+                }
+                // Linhas de motoboys desse centro
+                linhasCentro.forEach((row, i) => {
+                  subRows.push(renderRow(row, clienteKey + "-" + centro + "-" + i));
+                });
+                return subRows;
+              })
             ];
           }).flat(),
 
@@ -615,10 +649,10 @@ function chipFiltro(e, opt, ativoAtual, onClick) {
 function thStyle() {
   return {
     textAlign: "left",
-    fontSize: 10, fontWeight: 600,
-    color: "#6b7280",
+    fontSize: 11, fontWeight: 600,
+    color: "#4B5563",
     textTransform: "uppercase", letterSpacing: "0.4px",
-    padding: "8px 10px",
+    padding: "10px 12px",
     background: "#F9FAFB",
     borderBottom: "1px solid #E5E7EB",
   };
