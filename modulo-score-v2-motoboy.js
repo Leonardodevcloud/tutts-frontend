@@ -66,7 +66,17 @@
             );
         }
 
-        const { nivel, stats, progresso, bonus, mudou, subiu } = dados;
+        const { nivel, stats, progresso, bonus, mudou, subiu, thresholds, debug } = dados;
+        // Valores de bônus podem vir tanto no debug quanto direto na response.
+        // Como o backend só retorna ao motoboy regiao_configurada=true, dá pra usar o
+        // bonus.valor pra inferir se é semanal/mensal mas o teto/sorteio precisa vir do payload.
+        // Por hora pegamos do bonus se existe; se não, usa fallback nos defaults do componente.
+        const bonusValores = {
+            sorteio_n2: dados.sorteio_valor_n2,
+            sorteio_n3: dados.sorteio_valor_n3,
+            saque_n2: dados.saque_teto_n2,
+            saque_n3: dados.saque_teto_n3,
+        };
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
             // Card de nível atual
@@ -99,8 +109,8 @@
             // Progresso pro próximo nível
             progresso && h(BarrasProgresso, { progresso }),
 
-            // 🎁 Roadmap de bonificações (mostra o que ganha em cada nível)
-            h(RoadmapBonificacoes, { nivelAtual: nivel }),
+            // 🎁 Roadmap de bonificações (usa thresholds reais da região)
+            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores }),
 
             // 📋 Lista das entregas dos últimos 28 dias (lazy load)
             h(MinhasEntregas, { apiUrl, fetchAuth, token }),
@@ -173,38 +183,46 @@
     // ============================================================
     // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: N1, N2, N3)
     // ============================================================
-    function RoadmapBonificacoes({ nivelAtual }) {
+    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores }) {
+        // Defaults caso a response não traga (compat)
+        const t = thresholds || {
+            n2: { entregas_min: 80, dias_16h_min: 8, pct_prazo_min: 80 },
+            n3: { entregas_min: 150, dias_16h_min: 12, pct_prazo_min: 88 },
+        };
+        const b = bonusValores || {
+            sorteio_n2: 50, sorteio_n3: 150,
+            saque_n2: 500, saque_n3: 500,
+        };
+        const fmt = (v) => 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+
         const niveis = [
             {
                 num: 1, nome: 'Bronze', emoji: '⚪',
-                cor: 'from-gray-300 to-gray-500',
                 criterios: ['Disponível para todos'],
                 bonus: ['Sem bônus extra'],
             },
             {
                 num: 2, nome: 'Prata', emoji: '🥈',
-                cor: 'from-amber-400 to-amber-600',
                 criterios: [
-                    '≥ 150 entregas em 28 dias',
-                    '≥ 15 dias com entregas após 16h',
-                    '85%–90% no prazo',
+                    '≥ ' + t.n2.entregas_min + ' entregas em 28 dias',
+                    '≥ ' + t.n2.dias_16h_min + ' dias com entregas após 16h',
+                    '≥ ' + t.n2.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [
-                    '💰 1 saque grátis/mês de até R$ 500',
-                    '🎲 Concorre a sorteio mensal na sua região',
+                    '💰 1 saque grátis/mês de até ' + fmt(b.saque_n2),
+                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
                 ],
             },
             {
                 num: 3, nome: 'Ouro', emoji: '🥇',
-                cor: 'from-yellow-400 to-yellow-600',
                 criterios: [
-                    '≥ 200 entregas em 28 dias',
-                    '≥ 20 dias com entregas após 16h',
-                    '≥ 90% no prazo',
+                    '≥ ' + t.n3.entregas_min + ' entregas em 28 dias',
+                    '≥ ' + t.n3.dias_16h_min + ' dias com entregas após 16h',
+                    '≥ ' + t.n3.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [
-                    '💰 1 saque grátis/SEMANA de até R$ 500',
-                    '🎲 Concorre a sorteio mensal premium',
+                    '💰 1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
+                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
                 ],
             },
         ];

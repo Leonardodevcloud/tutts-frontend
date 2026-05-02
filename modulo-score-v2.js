@@ -236,10 +236,17 @@
             regiao: cfg.regiao,
             ativo: cfg.ativo !== false,
             niveis_ativos: Array.isArray(cfg.niveis_ativos) ? cfg.niveis_ativos : (typeof cfg.niveis_ativos === 'string' ? JSON.parse(cfg.niveis_ativos) : [2, 3]),
-            sorteio_valor_n2: cfg.sorteio_valor_n2 || 50,
-            sorteio_valor_n3: cfg.sorteio_valor_n3 || 150,
-            saque_teto_n2: cfg.saque_teto_n2 || 500,
-            saque_teto_n3: cfg.saque_teto_n3 || 500,
+            sorteio_valor_n2: cfg.sorteio_valor_n2 != null ? Number(cfg.sorteio_valor_n2) : 50,
+            sorteio_valor_n3: cfg.sorteio_valor_n3 != null ? Number(cfg.sorteio_valor_n3) : 150,
+            saque_teto_n2: cfg.saque_teto_n2 != null ? Number(cfg.saque_teto_n2) : 500,
+            saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
+            // 🚀 Thresholds (defaults)
+            n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
+            n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 8,
+            n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
+            n3_min_entregas: cfg.n3_min_entregas != null ? Number(cfg.n3_min_entregas) : 150,
+            n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 12,
+            n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
         });
 
         const toggleNivel = (n) => {
@@ -247,9 +254,17 @@
             setForm({ ...form, niveis_ativos: tem ? form.niveis_ativos.filter(x => x !== n) : [...form.niveis_ativos, n].sort() });
         };
 
+        // Helper de input numérico inline
+        const numInput = (key, step, min, max) => h('input', {
+            type: 'number', step: step || 1, min: min != null ? min : 0, max: max,
+            value: form[key], 
+            onChange: e => setForm({ ...form, [key]: parseFloat(e.target.value) || 0 }),
+            className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1'
+        });
+
         return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4' },
             h('div', { className: 'bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto' },
-                h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between' },
+                h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10' },
                     h('h2', { className: 'text-lg font-bold text-gray-900' }, '⚙️ ' + (cfg.id ? 'Editar' : 'Configurar') + ' — ' + form.regiao),
                     h('button', { onClick: onCancelar, className: 'text-gray-400 hover:text-gray-600 text-2xl' }, '×')
                 ),
@@ -273,43 +288,77 @@
                             ))
                         )
                     ),
-                    // Valores N2
-                    form.niveis_ativos.includes(2) && h('div', { className: 'border border-amber-200 bg-amber-50 rounded-lg p-3' },
-                        h('h4', { className: 'text-sm font-bold text-amber-900 mb-2' }, '🥈 Nível 2'),
-                        h('div', { className: 'grid grid-cols-2 gap-3' },
+
+                    // 🥈 Bloco completo Nível 2: critérios + valores
+                    form.niveis_ativos.includes(2) && h('div', { className: 'border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-3' },
+                        h('h4', { className: 'text-sm font-bold text-amber-900' }, '🥈 Nível 2 — Prata'),
+                        h('p', { className: 'text-[11px] text-amber-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
                             h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Valor do sorteio mensal'),
-                                h('input', { type: 'number', step: '0.01', min: 0, value: form.sorteio_valor_n2, onChange: e => setForm({ ...form, sorteio_valor_n2: parseFloat(e.target.value) || 0 }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas (28d)'),
+                                numInput('n2_min_entregas', 1, 0)
                             ),
                             h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Teto do saque (mensal)'),
-                                h('input', { type: 'number', step: '0.01', min: 0, value: form.saque_teto_n2, onChange: e => setForm({ ...form, saque_teto_n2: parseFloat(e.target.value) || 0 }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. dias após 16h'),
+                                numInput('n2_min_dias_16h', 1, 0, 28)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, '% prazo mín.'),
+                                numInput('n2_min_pct_prazo', 0.1, 0, 100)
+                            )
+                        ),
+                        h('p', { className: 'text-[11px] text-amber-700 mt-2' }, 'Bonificações:'),
+                        h('div', { className: 'grid grid-cols-2 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Sorteio mensal (R$)'),
+                                numInput('sorteio_valor_n2', 0.01, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Teto saque/mês (R$)'),
+                                numInput('saque_teto_n2', 0.01, 0)
                             )
                         )
                     ),
-                    // Valores N3
-                    form.niveis_ativos.includes(3) && h('div', { className: 'border border-yellow-300 bg-yellow-50 rounded-lg p-3' },
-                        h('h4', { className: 'text-sm font-bold text-yellow-900 mb-2' }, '🥇 Nível 3'),
-                        h('div', { className: 'grid grid-cols-2 gap-3' },
+
+                    // 🥇 Bloco completo Nível 3: critérios + valores
+                    form.niveis_ativos.includes(3) && h('div', { className: 'border border-yellow-300 bg-yellow-50 rounded-lg p-3 space-y-3' },
+                        h('h4', { className: 'text-sm font-bold text-yellow-900' }, '🥇 Nível 3 — Ouro'),
+                        h('p', { className: 'text-[11px] text-yellow-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
                             h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Valor do sorteio mensal'),
-                                h('input', { type: 'number', step: '0.01', min: 0, value: form.sorteio_valor_n3, onChange: e => setForm({ ...form, sorteio_valor_n3: parseFloat(e.target.value) || 0 }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas (28d)'),
+                                numInput('n3_min_entregas', 1, 0)
                             ),
                             h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Teto do saque (semanal)'),
-                                h('input', { type: 'number', step: '0.01', min: 0, value: form.saque_teto_n3, onChange: e => setForm({ ...form, saque_teto_n3: parseFloat(e.target.value) || 0 }), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. dias após 16h'),
+                                numInput('n3_min_dias_16h', 1, 0, 28)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, '% prazo mín.'),
+                                numInput('n3_min_pct_prazo', 0.1, 0, 100)
+                            )
+                        ),
+                        h('p', { className: 'text-[11px] text-yellow-700 mt-2' }, 'Bonificações:'),
+                        h('div', { className: 'grid grid-cols-2 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Sorteio mensal (R$)'),
+                                numInput('sorteio_valor_n3', 0.01, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Teto saque/sem (R$)'),
+                                numInput('saque_teto_n3', 0.01, 0)
                             )
                         )
                     ),
-                    h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900' },
-                        h('p', null, 'ℹ️ Critérios FIXOS por nível (não configuráveis):'),
-                        h('ul', { className: 'list-disc ml-4 mt-1 space-y-0.5' },
-                            h('li', null, 'N2: ≥150 entregas (28d) E ≥15 dias com 1+ entrega após 16h E 85-90% no prazo'),
-                            h('li', null, 'N3: ≥200 entregas (28d) E ≥20 dias com 1+ entrega após 16h E ≥90% no prazo')
-                        )
+
+                    h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900' },
+                        h('p', { className: 'font-medium mb-1' }, '💡 Dica de calibragem'),
+                        h('p', null, 'Pra ver quantos motoboys vão se enquadrar antes de salvar definitivo, ' +
+                            'salva com valores baixos primeiro, clica "Reavaliar" no card e veja os totais por nível na aba "Motoboys por Nível". Depois ajusta.'),
+                        h('p', { className: 'mt-2' }, '⚠️ Mudar critérios reavalia automaticamente todos os motoboys da região em background ao salvar.')
                     )
                 ),
-                h('div', { className: 'p-4 border-t border-gray-200 flex gap-2' },
+                h('div', { className: 'p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white' },
                     h('button', { onClick: onCancelar, className: 'flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50' }, 'Cancelar'),
                     h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, '💾 Salvar')
                 )
