@@ -3539,6 +3539,7 @@ const hideLoadingScreen = () => {
                     window.ModuloScoreV2WelcomeModal.show({
                         apiUrl: API_URL,
                         token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+                        fetchAuth: fetchAuth,
                     }).catch(err => console.warn('[ScoreV2] Welcome modal:', err));
                 }, 3000);
                 return () => clearTimeout(t);
@@ -12675,6 +12676,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && (typeof window.ModuloScoreV2Motoboy !== 'undefined' ? React.createElement(window.ModuloScoreV2Motoboy, {
             apiUrl: API_URL,
             token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+            fetchAuth: fetchAuth,
             showToast: ja
         }) : React.createElement(ScoreEntregador, {
             user: l,

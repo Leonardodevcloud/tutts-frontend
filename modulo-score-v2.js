@@ -11,7 +11,7 @@
 (function() {
     'use strict';
 
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
     const h = React.createElement;
 
     function fmtBRL(v) {
@@ -57,21 +57,29 @@
         const [loading, setLoading] = useState(true);
         const [editando, setEditando] = useState(null); // null | objeto com { regiao, ... }
 
+        // 🔧 FIX loop infinito: refs estáveis pra fetchApi/showToast.
+        // O componente pai (operacional) recria fetchApi a cada render → useCallback
+        // invalida → useEffect dispara → render → loop infinito de toast 401.
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
         const carregar = useCallback(async () => {
             setLoading(true);
             try {
                 const [cfgs, regs] = await Promise.all([
-                    fetchApi('/score-v2/admin/configuracoes'),
-                    fetchApi('/score-v2/admin/regioes-disponiveis'),
+                    fetchApiRef.current('/score-v2/admin/configuracoes'),
+                    fetchApiRef.current('/score-v2/admin/regioes-disponiveis'),
                 ]);
                 setConfigs(cfgs || []);
                 setRegioesDisp(regs || []);
             } catch (err) {
-                showToast('❌ ' + err.message, 'error');
+                showToastRef.current('❌ ' + err.message, 'error');
             } finally {
                 setLoading(false);
             }
-        }, [fetchApi, showToast]);
+        }, []); // sem dependências — refs são estáveis
 
         useEffect(() => { carregar(); }, [carregar]);
 
@@ -296,17 +304,23 @@
         const [motoboys, setMotoboys] = useState([]);
         const [loading, setLoading] = useState(false);
 
+        // 🔧 FIX loop: refs estáveis
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
         const carregar = useCallback(async () => {
             setLoading(true);
             try {
                 const params = [];
                 if (filtroRegiao) params.push('regiao=' + encodeURIComponent(filtroRegiao));
                 if (filtroNivel) params.push('nivel=' + filtroNivel);
-                const data = await fetchApi('/score-v2/admin/motoboys-por-nivel?' + params.join('&'));
+                const data = await fetchApiRef.current('/score-v2/admin/motoboys-por-nivel?' + params.join('&'));
                 setMotoboys(data || []);
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
             finally { setLoading(false); }
-        }, [filtroRegiao, filtroNivel, fetchApi, showToast]);
+        }, [filtroRegiao, filtroNivel]);
 
         useEffect(() => { carregar(); }, [carregar]);
 
@@ -361,27 +375,33 @@
         const [loading, setLoading] = useState(true);
         const [mesManual, setMesManual] = useState('');
 
+        // 🔧 FIX loop: refs estáveis
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
         const carregar = useCallback(async () => {
             setLoading(true);
             try {
-                const data = await fetchApi('/score-v2/admin/sorteios');
+                const data = await fetchApiRef.current('/score-v2/admin/sorteios');
                 setSorteios(data || []);
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
             finally { setLoading(false); }
-        }, [fetchApi, showToast]);
+        }, []);
 
         useEffect(() => { carregar(); }, [carregar]);
 
         const sortearAgora = async () => {
             if (!mesManual.match(/^\d{4}-\d{2}$/)) {
-                showToast('⚠️ Informe mês no formato YYYY-MM', 'warning'); return;
+                showToastRef.current('⚠️ Informe mês no formato YYYY-MM', 'warning'); return;
             }
             if (!confirm(`Disparar sorteio manual para ${mesManual}?\n\nVai sortear 1 vencedor por (região × nível) ativo. Operação idempotente — não duplica se já foi sorteado.`)) return;
             try {
-                const r = await fetchApi('/score-v2/admin/sortear-agora', { method: 'POST', body: JSON.stringify({ mes_referencia: mesManual }) });
-                showToast(`✅ ${r.sorteios.length} sorteios realizados`, 'success');
+                const r = await fetchApiRef.current('/score-v2/admin/sortear-agora', { method: 'POST', body: JSON.stringify({ mes_referencia: mesManual }) });
+                showToastRef.current(`✅ ${r.sorteios.length} sorteios realizados`, 'success');
                 carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
         };
 
         return h('div', null,

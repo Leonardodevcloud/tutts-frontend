@@ -25,7 +25,7 @@
     // TELA COMPLETA DE SCORE (motoboy)
     // ============================================================
     window.ModuloScoreV2Motoboy = function(props) {
-        const { apiUrl, token, showToast } = props;
+        const { apiUrl, token, fetchAuth, showToast } = props;
         const [dados, setDados] = useState(null);
         const [loading, setLoading] = useState(true);
         const [erro, setErro] = useState(null);
@@ -33,15 +33,23 @@
         useEffect(() => {
             (async () => {
                 try {
-                    const r = await fetch(apiUrl + '/score-v2/meu-nivel', {
-                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-                    });
-                    if (!r.ok) throw new Error('Falha ao carregar score');
+                    let r;
+                    // 🔧 FIX: prefere fetchAuth (padrão Tutts: usa cookie httpOnly)
+                    // sobre fetch manual com Bearer (que falhava com 401).
+                    if (typeof fetchAuth === 'function') {
+                        r = await fetchAuth(apiUrl + '/score-v2/meu-nivel');
+                    } else {
+                        r = await fetch(apiUrl + '/score-v2/meu-nivel', {
+                            headers: { 'Authorization': 'Bearer ' + (token || ''), 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        });
+                    }
+                    if (!r.ok) throw new Error('Falha ao carregar score (' + r.status + ')');
                     setDados(await r.json());
                 } catch (err) { setErro(err.message); }
                 finally { setLoading(false); }
             })();
-        }, [apiUrl, token]);
+        }, [apiUrl]); // só roda 1x por mount
 
         if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
         if (erro) return h('div', { className: 'text-center py-12 text-red-500 text-sm' }, '❌ ' + erro);
@@ -164,16 +172,22 @@
     //   - É nível 2 ou 3
     //   - Não viu hoje (cookie/localStorage com data)
     window.ModuloScoreV2WelcomeModal = {
-        show: async function({ apiUrl, token, onMount }) {
+        show: async function({ apiUrl, token, fetchAuth, onMount }) {
             try {
                 // Já mostrou hoje?
                 const hoje = new Date().toISOString().slice(0, 10);
                 const ultimaVez = (typeof localStorage !== 'undefined') ? localStorage.getItem('score_v2_modal_visto') : null;
                 if (ultimaVez === hoje) return;
 
-                const r = await fetch(apiUrl + '/score-v2/meu-nivel', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                let r;
+                if (typeof fetchAuth === 'function') {
+                    r = await fetchAuth(apiUrl + '/score-v2/meu-nivel');
+                } else {
+                    r = await fetch(apiUrl + '/score-v2/meu-nivel', {
+                        headers: { 'Authorization': 'Bearer ' + (token || '') },
+                        credentials: 'include'
+                    });
+                }
                 if (!r.ok) return;
                 const dados = await r.json();
 

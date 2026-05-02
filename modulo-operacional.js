@@ -1888,18 +1888,14 @@
             ),
             // ==================== CONTEÚDO SCORE PROF ====================
             // 🚀 2026-05: usa Score v2 quando disponível, fallback pra ScoreAdmin (v1)
+            // 🔧 FIX: usa fetchAuth (padrão Tutts) em vez de localStorage direto.
+            // O Tutts usa httpOnly cookies + Bearer via getToken() — montar fetch
+            // na mão sem isso resultava em 401 + loop infinito de toast.
             p.opTab === "score-prof" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 typeof window.ModuloScoreV2Component !== 'undefined'
                     ? React.createElement(window.ModuloScoreV2Component, {
                         fetchApi: async (url, opts) => {
-                            const r = await fetch(API_URL + url, {
-                                ...opts,
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'Bearer ' + (localStorage.getItem('token') || ''),
-                                    ...(opts && opts.headers ? opts.headers : {})
-                                }
-                            });
+                            const r = await fetchAuth(API_URL + url, opts || {});
                             if (!r.ok) {
                                 const err = await r.json().catch(() => ({ error: 'Erro ' + r.status }));
                                 throw new Error(err.error || err.details || 'Erro ' + r.status);
