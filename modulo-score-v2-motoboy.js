@@ -99,6 +99,12 @@
             // Progresso pro próximo nível
             progresso && h(BarrasProgresso, { progresso }),
 
+            // 🎁 Roadmap de bonificações (mostra o que ganha em cada nível)
+            h(RoadmapBonificacoes, { nivelAtual: nivel }),
+
+            // 📋 Lista das entregas dos últimos 28 dias (lazy load)
+            h(MinhasEntregas, { apiUrl, fetchAuth, token }),
+
             // Info nivel atual
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs text-purple-900' },
                 h('p', { className: 'font-medium mb-1' }, '📊 Sobre o Score'),
@@ -160,6 +166,216 @@
             ),
             req.faixa && req.atual >= req.meta && req.atual >= 90 && h('p', { className: 'text-[10px] text-amber-600 mt-1' },
                 '⚠️ Acima de 90% → você pula pro Nível 3!'
+            )
+        );
+    }
+
+    // ============================================================
+    // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: N1, N2, N3)
+    // ============================================================
+    function RoadmapBonificacoes({ nivelAtual }) {
+        const niveis = [
+            {
+                num: 1, nome: 'Bronze', emoji: '⚪',
+                cor: 'from-gray-300 to-gray-500',
+                criterios: ['Disponível para todos'],
+                bonus: ['Sem bônus extra'],
+            },
+            {
+                num: 2, nome: 'Prata', emoji: '🥈',
+                cor: 'from-amber-400 to-amber-600',
+                criterios: [
+                    '≥ 150 entregas em 28 dias',
+                    '≥ 15 dias com entregas após 16h',
+                    '85%–90% no prazo',
+                ],
+                bonus: [
+                    '💰 1 saque grátis/mês de até R$ 500',
+                    '🎲 Concorre a sorteio mensal na sua região',
+                ],
+            },
+            {
+                num: 3, nome: 'Ouro', emoji: '🥇',
+                cor: 'from-yellow-400 to-yellow-600',
+                criterios: [
+                    '≥ 200 entregas em 28 dias',
+                    '≥ 20 dias com entregas após 16h',
+                    '≥ 90% no prazo',
+                ],
+                bonus: [
+                    '💰 1 saque grátis/SEMANA de até R$ 500',
+                    '🎲 Concorre a sorteio mensal premium',
+                ],
+            },
+        ];
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
+            h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
+                '🎁 O que você ganha em cada nível'
+            ),
+            h('div', { className: 'space-y-3' },
+                niveis.map(n => h(CardRoadmap, {
+                    key: n.num,
+                    nivel: n,
+                    isAtual: n.num === nivelAtual,
+                    isAlcancado: n.num <= nivelAtual,
+                }))
+            )
+        );
+    }
+
+    function CardRoadmap({ nivel, isAtual, isAlcancado }) {
+        return h('div', {
+            className: 'border-2 rounded-lg p-3 ' + (
+                isAtual ? 'border-purple-500 bg-purple-50 shadow' :
+                isAlcancado ? 'border-green-300 bg-green-50' :
+                'border-gray-200 bg-gray-50'
+            )
+        },
+            h('div', { className: 'flex items-center justify-between mb-2' },
+                h('div', { className: 'flex items-center gap-2' },
+                    h('span', { className: 'text-2xl' }, nivel.emoji),
+                    h('div', null,
+                        h('div', { className: 'font-bold text-sm text-gray-900' },
+                            'Nível ' + nivel.num + ' — ' + nivel.nome
+                        ),
+                        isAtual && h('div', { className: 'text-[10px] font-bold text-purple-700 uppercase' }, '⭐ Você está aqui')
+                    )
+                ),
+                isAlcancado && !isAtual && h('span', { className: 'text-xs text-green-700 font-bold' }, '✓')
+            ),
+            h('div', { className: 'text-xs space-y-1 mt-2' },
+                h('div', { className: 'font-semibold text-gray-700' }, 'Critérios:'),
+                nivel.criterios.map((c, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, '• ' + c)),
+                h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus:'),
+                nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b))
+            )
+        );
+    }
+
+    // ============================================================
+    // 📋 MINHAS ENTREGAS (lazy load — só busca quando expande)
+    // ============================================================
+    function MinhasEntregas({ apiUrl, fetchAuth, token }) {
+        const [aberto, setAberto] = useState(false);
+        const [dados, setDados] = useState(null);
+        const [loading, setLoading] = useState(false);
+        const [erro, setErro] = useState(null);
+        const [filtroPrazo, setFiltroPrazo] = useState('todos');
+
+        const carregar = async () => {
+            if (dados || loading) return;
+            setLoading(true);
+            try {
+                let r;
+                if (typeof fetchAuth === 'function') {
+                    r = await fetchAuth(apiUrl + '/score-v2/minhas-entregas');
+                } else {
+                    r = await fetch(apiUrl + '/score-v2/minhas-entregas', {
+                        headers: { 'Authorization': 'Bearer ' + (token || '') },
+                        credentials: 'include'
+                    });
+                }
+                if (!r.ok) throw new Error('Falha ao carregar entregas');
+                setDados(await r.json());
+            } catch (err) { setErro(err.message); }
+            finally { setLoading(false); }
+        };
+
+        const toggle = () => {
+            const novoEstado = !aberto;
+            setAberto(novoEstado);
+            if (novoEstado) carregar();
+        };
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+            h('button', {
+                onClick: toggle,
+                className: 'w-full p-4 flex items-center justify-between hover:bg-gray-50'
+            },
+                h('span', { className: 'font-bold text-sm text-gray-900' }, '📋 Minhas Entregas (28 dias)'),
+                h('span', { className: 'text-gray-400 text-sm' }, aberto ? '▲' : '▼')
+            ),
+            aberto && h('div', { className: 'p-4 border-t border-gray-200' },
+                loading && h('div', { className: 'text-center text-gray-500 text-sm py-4' }, '⏳ Carregando...'),
+                erro && h('div', { className: 'text-center text-red-500 text-sm py-4' }, '❌ ' + erro),
+                dados && dados.entregas.length === 0 && h('div', { className: 'text-center text-gray-400 text-sm py-4' },
+                    'Nenhuma entrega nos últimos 28 dias.'
+                ),
+                dados && dados.entregas.length > 0 && h(EntregasLista, {
+                    entregas: dados.entregas,
+                    resumoDia: dados.resumo_dia,
+                    filtro: filtroPrazo,
+                    setFiltro: setFiltroPrazo,
+                })
+            )
+        );
+    }
+
+    function EntregasLista({ entregas, resumoDia, filtro, setFiltro }) {
+        // Aplica filtro
+        const filtradas = entregas.filter(e => {
+            if (filtro === 'no_prazo') return e.dentro_prazo === true;
+            if (filtro === 'fora_prazo') return e.dentro_prazo === false;
+            return true;
+        });
+
+        const totais = {
+            geral: entregas.length,
+            no_prazo: entregas.filter(e => e.dentro_prazo === true).length,
+            fora_prazo: entregas.filter(e => e.dentro_prazo === false).length,
+        };
+
+        return h('div', null,
+            // Filtros
+            h('div', { className: 'flex gap-1 mb-3 text-xs' },
+                [
+                    { id: 'todos', label: 'Todas (' + totais.geral + ')', cor: 'bg-gray-200 text-gray-700' },
+                    { id: 'no_prazo', label: '✓ No prazo (' + totais.no_prazo + ')', cor: 'bg-green-100 text-green-800' },
+                    { id: 'fora_prazo', label: '✗ Fora (' + totais.fora_prazo + ')', cor: 'bg-red-100 text-red-800' },
+                ].map(f => h('button', {
+                    key: f.id,
+                    onClick: () => setFiltro(f.id),
+                    className: 'px-2 py-1 rounded font-medium ' + (
+                        filtro === f.id ? 'bg-purple-600 text-white' : f.cor + ' hover:opacity-80'
+                    )
+                }, f.label))
+            ),
+
+            // Lista (limitada a 50 pra performance)
+            h('div', { className: 'space-y-1 max-h-96 overflow-y-auto' },
+                filtradas.slice(0, 50).map((e, i) => h(EntregaItem, { key: e.os + '-' + i, entrega: e }))
+            ),
+            filtradas.length > 50 && h('p', { className: 'text-[10px] text-gray-400 text-center mt-2' },
+                '+ ' + (filtradas.length - 50) + ' entregas não exibidas'
+            )
+        );
+    }
+
+    function EntregaItem({ entrega }) {
+        const noPrazo = entrega.dentro_prazo === true;
+        const foraPrazo = entrega.dentro_prazo === false;
+        const dia = entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString('pt-BR') : '-';
+        const hora = entrega.hora_solicitado ? String(entrega.hora_solicitado).slice(0, 5) : '';
+        const tempo = entrega.tempo_execucao_minutos != null ? Math.round(entrega.tempo_execucao_minutos) + ' min' : '-';
+
+        return h('div', {
+            className: 'flex items-center gap-2 p-2 rounded text-xs border-l-4 ' + (
+                noPrazo ? 'border-green-400 bg-green-50' :
+                foraPrazo ? 'border-red-400 bg-red-50' :
+                'border-gray-300 bg-gray-50'
+            )
+        },
+            h('span', { className: 'text-base' },
+                noPrazo ? '✅' : foraPrazo ? '❌' : '⏳'
+            ),
+            h('div', { className: 'flex-1 min-w-0' },
+                h('div', { className: 'font-medium text-gray-900 truncate' },
+                    'OS ' + entrega.os + (entrega.nome_fantasia ? ' • ' + entrega.nome_fantasia : '')
+                ),
+                h('div', { className: 'text-gray-500 truncate' },
+                    dia + ' ' + hora + ' • ' + tempo + (entrega.bairro ? ' • ' + entrega.bairro : '')
+                )
             )
         );
     }
