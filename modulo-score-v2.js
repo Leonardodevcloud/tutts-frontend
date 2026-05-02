@@ -130,7 +130,7 @@
                             saque_teto_n2: 500, saque_teto_n3: 500,
                         }),
                         className: 'px-3 py-1.5 bg-white border border-purple-400 text-purple-700 rounded-md text-xs font-medium hover:bg-purple-100'
-                    }, '➕ ' + r.regiao + ' (' + r.total_motoboys + ')'))
+                    }, '➕ ' + r.regiao + (r.total_motoboys != null ? ' (' + r.total_motoboys + ')' : '')))
                 )
             ),
 
