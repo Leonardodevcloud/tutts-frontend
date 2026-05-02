@@ -10391,7 +10391,23 @@ const hideLoadingScreen = () => {
             className: "text-sm text-gray-500"
         }, "Solicitar adiantamento")), React.createElement("span", {
             className: "text-green-400 text-2xl"
-        }, "›")), React.createElement("button", {
+        }, "›")),
+        // 🚀 Score v2 (2026-05): card Meu Score (só aparece se módulo carregado)
+        typeof window.ModuloScoreV2Motoboy !== 'undefined' && React.createElement("button", {
+            onClick: () => x({ ...p, userTab: "score" }),
+            className: "w-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+        }, React.createElement("div", {
+            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/25 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+        }, "🏆"), React.createElement("div", {
+            className: "text-left flex-1"
+        }, React.createElement("h3", {
+            className: "text-lg font-bold text-white"
+        }, "Meu Score"), React.createElement("p", {
+            className: "text-sm text-white/90"
+        }, "Veja seu nível e bônus do mês")), React.createElement("span", {
+            className: "text-white text-2xl"
+        }, "›")),
+        React.createElement("button", {
             onClick: () => x({
                 ...p,
                 userTab: "indicacoes"
@@ -10475,7 +10491,7 @@ const hideLoadingScreen = () => {
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
             className: "text-base sm:text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "score" === p.userTab && "🏆 Meu Score", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
         // MODAL DE REJEIÇÃO
         (function() {
             var rejNaoLidas = (j || []).filter(function(s) { var hoje = new Date(); hoje.setHours(0,0,0,0); return s.status === 'rejeitado' && s.contestacao_lida === false && s.contestacao_status !== 'encerrada_rejeitada' && s.contestacao_status !== 'aberta' && new Date(s.updated_at || s.created_at) >= hoje; });
