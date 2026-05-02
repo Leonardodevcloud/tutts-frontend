@@ -141,7 +141,7 @@
                     h('div', { className: 'text-lg font-bold' }, stats.entregas)
                 ),
                 h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, 'Dias 16h+'),
+                    h('div', { className: 'text-xs opacity-80' }, 'Após 16h'),
                     h('div', { className: 'text-lg font-bold' }, stats.dias_16h)
                 ),
                 h('div', null,
@@ -186,8 +186,8 @@
     function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores }) {
         // Defaults caso a response não traga (compat)
         const t = thresholds || {
-            n2: { entregas_min: 80, dias_16h_min: 8, pct_prazo_min: 80 },
-            n3: { entregas_min: 150, dias_16h_min: 12, pct_prazo_min: 88 },
+            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
+            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
         };
         const b = bonusValores || {
             sorteio_n2: 50, sorteio_n3: 150,
@@ -205,7 +205,7 @@
                 num: 2, nome: 'Prata', emoji: '🥈',
                 criterios: [
                     '≥ ' + t.n2.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n2.dias_16h_min + ' dias com entregas após 16h',
+                    '≥ ' + t.n2.dias_16h_min + ' entregas após 16h',
                     '≥ ' + t.n2.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [
@@ -217,7 +217,7 @@
                 num: 3, nome: 'Ouro', emoji: '🥇',
                 criterios: [
                     '≥ ' + t.n3.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n3.dias_16h_min + ' dias com entregas após 16h',
+                    '≥ ' + t.n3.dias_16h_min + ' entregas após 16h',
                     '≥ ' + t.n3.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [

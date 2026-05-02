@@ -242,10 +242,10 @@
             saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
             // 🚀 Thresholds (defaults)
             n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
-            n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 8,
+            n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 15,
             n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
             n3_min_entregas: cfg.n3_min_entregas != null ? Number(cfg.n3_min_entregas) : 150,
-            n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 12,
+            n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 20,
             n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
         });
 
@@ -299,8 +299,8 @@
                                 numInput('n2_min_entregas', 1, 0)
                             ),
                             h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. dias após 16h'),
-                                numInput('n2_min_dias_16h', 1, 0, 28)
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas após 16h'),
+                                numInput('n2_min_dias_16h', 1, 0)
                             ),
                             h('div', null,
                                 h('label', { className: 'text-xs text-amber-700 font-medium' }, '% prazo mín.'),
@@ -330,8 +330,8 @@
                                 numInput('n3_min_entregas', 1, 0)
                             ),
                             h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. dias após 16h'),
-                                numInput('n3_min_dias_16h', 1, 0, 28)
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas após 16h'),
+                                numInput('n3_min_dias_16h', 1, 0)
                             ),
                             h('div', null,
                                 h('label', { className: 'text-xs text-yellow-700 font-medium' }, '% prazo mín.'),
@@ -443,7 +443,7 @@
                 h('table', { className: 'w-full text-sm' },
                     h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
                         h('tr', null,
-                            ['Motoboy', 'Região', 'Nível', 'Entregas (28d)', 'Dias 16h+', '% Prazo', 'Avaliado em'].map((h2, i) =>
+                            ['Motoboy', 'Região', 'Nível', 'Entregas (28d)', 'Após 16h', '% Prazo', 'Avaliado em'].map((h2, i) =>
                                 h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
                             )
                         )
