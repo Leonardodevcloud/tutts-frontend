@@ -108,6 +108,22 @@
             }
         };
 
+        // 🚀 Reavalia em massa todos os motoboys da região (CRM + Planilha)
+        const reavaliar = async (regiao) => {
+            if (!confirm(`Re-avaliar TODOS os motoboys de "${regiao}"?\n\nIsso vai recalcular o nível de cada motoboy da região (CRM + Planilha) e popular as contagens. Pode demorar alguns segundos.`)) return;
+            try {
+                showToast('🔄 Re-avaliando... aguarde', 'info');
+                const r = await fetchApi('/score-v2/admin/reavaliar-regiao', {
+                    method: 'POST',
+                    body: JSON.stringify({ regiao }),
+                });
+                showToast(`✅ ${r.processados} avaliados — N1:${r.niveis[1]} N2:${r.niveis[2]} N3:${r.niveis[3]}`, 'success');
+                carregar();
+            } catch (err) {
+                showToast('❌ ' + err.message, 'error');
+            }
+        };
+
         // Regiões que ainda não foram configuradas
         const regioesNaoConfig = regioesDisp.filter(r =>
             !configs.some(c => c.regiao.toUpperCase() === r.regiao.toUpperCase())
@@ -143,6 +159,7 @@
                     onEditar: () => setEditando(cfg),
                     onDesativar: () => desativar(cfg.id, cfg.regiao),
                     onAtivar: async () => salvar({ ...cfg, ativo: true }),
+                    onReavaliar: () => reavaliar(cfg.regiao),
                 }))
             ),
 
@@ -155,7 +172,7 @@
         );
     }
 
-    function CardConfig({ cfg, onEditar, onDesativar, onAtivar }) {
+    function CardConfig({ cfg, onEditar, onDesativar, onAtivar, onReavaliar }) {
         const niveis = Array.isArray(cfg.niveis_ativos) ? cfg.niveis_ativos : (typeof cfg.niveis_ativos === 'string' ? JSON.parse(cfg.niveis_ativos) : []);
         const ativo = cfg.ativo !== false;
         const counts = cfg.motoboys_por_nivel || { 1: 0, 2: 0, 3: 0 };
@@ -176,7 +193,12 @@
                         ' • Atualizado em ' + fmtData(cfg.atualizado_em)
                     )
                 ),
-                h('div', { className: 'flex gap-2' },
+                h('div', { className: 'flex gap-2 flex-wrap' },
+                    ativo && h('button', {
+                        onClick: onReavaliar,
+                        className: 'px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-xs font-medium hover:bg-blue-100',
+                        title: 'Re-avaliar todos os motoboys da região agora'
+                    }, '🔄 Reavaliar'),
                     ativo
                         ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-medium hover:bg-red-100' }, '⏸ Desativar')
                         : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-xs font-medium hover:bg-green-100' }, '▶ Reativar'),
