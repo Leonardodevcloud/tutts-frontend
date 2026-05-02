@@ -324,6 +324,8 @@
         const [filtroRegiao, setFiltroRegiao] = useState('');
         const [filtroNivel, setFiltroNivel] = useState('');
         const [motoboys, setMotoboys] = useState([]);
+        const [total, setTotal] = useState(0);
+        const [limit, setLimit] = useState(1000);
         const [loading, setLoading] = useState(false);
 
         // 🔧 FIX loop: refs estáveis
@@ -335,20 +337,30 @@
         const carregar = useCallback(async () => {
             setLoading(true);
             try {
-                const params = [];
+                const params = ['limit=' + limit];
                 if (filtroRegiao) params.push('regiao=' + encodeURIComponent(filtroRegiao));
                 if (filtroNivel) params.push('nivel=' + filtroNivel);
                 const data = await fetchApiRef.current('/score-v2/admin/motoboys-por-nivel?' + params.join('&'));
-                setMotoboys(data || []);
+                // Compat: aceita { total, rows } (novo) ou array direto (legado)
+                if (data && Array.isArray(data.rows)) {
+                    setMotoboys(data.rows);
+                    setTotal(data.total || data.rows.length);
+                } else if (Array.isArray(data)) {
+                    setMotoboys(data);
+                    setTotal(data.length);
+                } else {
+                    setMotoboys([]);
+                    setTotal(0);
+                }
             } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
             finally { setLoading(false); }
-        }, [filtroRegiao, filtroNivel]);
+        }, [filtroRegiao, filtroNivel, limit]);
 
         useEffect(() => { carregar(); }, [carregar]);
 
         return h('div', null,
-            h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 mb-3 flex gap-3 items-end' },
-                h('div', { className: 'flex-1' },
+            h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 mb-3 flex gap-3 items-end flex-wrap' },
+                h('div', { className: 'flex-1 min-w-[150px]' },
                     h('label', { className: 'text-xs font-medium text-gray-600' }, 'Região'),
                     h('input', { type: 'text', value: filtroRegiao, placeholder: 'Ex: Salvador', onChange: e => setFiltroRegiao(e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
                 ),
@@ -360,7 +372,21 @@
                         h('option', { value: '2' }, 'Nível 2'),
                         h('option', { value: '3' }, 'Nível 3')
                     )
+                ),
+                h('div', null,
+                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Mostrar'),
+                    h('select', { value: limit, onChange: e => setLimit(parseInt(e.target.value)), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' },
+                        h('option', { value: 100 }, '100'),
+                        h('option', { value: 500 }, '500'),
+                        h('option', { value: 1000 }, '1000'),
+                        h('option', { value: 5000 }, '5000')
+                    )
                 )
+            ),
+            // Resumo de contagem
+            !loading && total > 0 && h('div', { className: 'text-xs text-gray-600 mb-2' },
+                'Mostrando ' + motoboys.length + ' de ' + total + ' motoboys' +
+                (motoboys.length < total ? ' (aumente o limite pra ver mais)' : '')
             ),
             loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
             motoboys.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Nenhum motoboy avaliado ainda.') :
