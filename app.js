@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.4.0"; // Performance Full — gzip, limits defaults, agregação SQL, matviews, rate limit BI
+const APP_VERSION = "2.5.0"; // Score v2 — niveis por regiao + 28d rolling + sorteio mensal
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3527,6 +3527,21 @@ const hideLoadingScreen = () => {
                         setTutorialAtivo(true);
                     }, 1500);
                 }
+            }
+        }, [l?.codProfissional]);
+
+        // 🚀 Score v2 (2026-05): mostra modal de boas-vindas pro motoboy nivel 2+
+        // que ainda não viu hoje. Se a região não tem score ou é nivel 1, não mostra.
+        // Aguarda 3s pra não competir com tutorial e dar tempo dos scripts carregarem.
+        React.useEffect(() => {
+            if (l && l.role === "user" && l.codProfissional && typeof window.ModuloScoreV2WelcomeModal !== 'undefined') {
+                const t = setTimeout(() => {
+                    window.ModuloScoreV2WelcomeModal.show({
+                        apiUrl: API_URL,
+                        token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+                    }).catch(err => console.warn('[ScoreV2] Welcome modal:', err));
+                }, 3000);
+                return () => clearTimeout(t);
             }
         }, [l?.codProfissional]);
         
@@ -12657,11 +12672,15 @@ const hideLoadingScreen = () => {
             className: "font-bold text-gray-800 mb-2"
         }, "Outras Informações"), React.createElement("ul", {
             className: "list-disc pl-5 space-y-1"
-        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && React.createElement(ScoreEntregador, {
+        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && (typeof window.ModuloScoreV2Motoboy !== 'undefined' ? React.createElement(window.ModuloScoreV2Motoboy, {
+            apiUrl: API_URL,
+            token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+            showToast: ja
+        }) : React.createElement(ScoreEntregador, {
             user: l,
             apiUrl: API_URL,
             showToast: ja
-        }), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
+        })), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
             className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
         }, React.createElement("div", {
             className: "bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"

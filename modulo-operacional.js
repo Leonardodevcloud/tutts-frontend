@@ -1887,11 +1887,31 @@
                 )
             ),
             // ==================== CONTEÚDO SCORE PROF ====================
+            // 🚀 2026-05: usa Score v2 quando disponível, fallback pra ScoreAdmin (v1)
             p.opTab === "score-prof" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
-                React.createElement(ScoreAdmin, {
-                    apiUrl: API_URL,
-                    showToast: ja
-                })
+                typeof window.ModuloScoreV2Component !== 'undefined'
+                    ? React.createElement(window.ModuloScoreV2Component, {
+                        fetchApi: async (url, opts) => {
+                            const r = await fetch(API_URL + url, {
+                                ...opts,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + (localStorage.getItem('token') || ''),
+                                    ...(opts && opts.headers ? opts.headers : {})
+                                }
+                            });
+                            if (!r.ok) {
+                                const err = await r.json().catch(() => ({ error: 'Erro ' + r.status }));
+                                throw new Error(err.error || err.details || 'Erro ' + r.status);
+                            }
+                            return r.json();
+                        },
+                        showToast: ja
+                    })
+                    : React.createElement(ScoreAdmin, {
+                        apiUrl: API_URL,
+                        showToast: ja
+                    })
             ),
             // ==================== CONTEÚDO INCENTIVOS ====================
             p.opTab === "incentivos" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
