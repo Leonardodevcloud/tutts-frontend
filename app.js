@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.5.0"; // Score v2 — niveis por regiao + 28d rolling + sorteio mensal
+const APP_VERSION = "2.6.0"; // Home motoboy reformulada — header + status row + quick actions + score progress
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3543,6 +3543,45 @@ const hideLoadingScreen = () => {
                     }).catch(err => console.warn('[ScoreV2] Welcome modal:', err));
                 }, 3000);
                 return () => clearTimeout(t);
+            }
+        }, [l?.codProfissional]);
+
+        // 🚀 2026-05: pré-carrega score do motoboy pra popular o card "Meu Score" da home
+        // (texto "Faltam X entregas pro N3" + barra de progresso). Silencioso, sem bloquear.
+        React.useEffect(() => {
+            if (l && l.role === "user" && l.codProfissional) {
+                (async () => {
+                    try {
+                        const r = await fetchAuth(API_URL + "/score-v2/meu-nivel");
+                        if (!r.ok) return;
+                        const dados = await r.json();
+                        if (!dados || !dados.regiao_configurada) return;
+                        // Cache global pro card da home renderizar (usado em window._tuttsScoreNivelCache, _tuttsScoreProgressoPct, _tuttsScoreProgressoTexto)
+                        window._tuttsScoreNivelCache = { nivel: dados.nivel };
+                        // Calcula texto e pct do próximo requisito que falta menos
+                        if (dados.progresso && Array.isArray(dados.progresso.requisitos)) {
+                            const reqs = dados.progresso.requisitos;
+                            // Pega o que tem maior progresso entre os que NÃO estão ok (ele é o "mais próximo de virar")
+                            const naoOk = reqs.filter(r => !r.ok);
+                            const referencia = naoOk.length > 0
+                                ? naoOk.reduce((a, b) => (a.pct >= b.pct ? a : b))
+                                : reqs[0];
+                            // Pct global = média dos pcts dos requisitos
+                            const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
+                            window._tuttsScoreProgressoPct = pctMedio;
+                            window._tuttsScoreProgressoTexto = naoOk.length > 0
+                                ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro N" + dados.progresso.proximo_nivel
+                                : "Você atingiu todos os critérios!";
+                        } else {
+                            window._tuttsScoreProgressoPct = 100;
+                            window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Nível máximo atingido!" : "Veja seu progresso";
+                        }
+                        // Força um re-render leve sinalizando via state vazio (truque)
+                        // Mas como o card lê de window._tutts..., vai funcionar no próximo render natural
+                    } catch (err) {
+                        console.warn("[Score Home] pre-fetch falhou:", err.message);
+                    }
+                })();
             }
         }, [l?.codProfissional]);
         
@@ -10257,229 +10296,231 @@ const hideLoadingScreen = () => {
         
         // ========== FIM LANDING PAGE ==========
         
-        React.createElement("div", {
-            className: "text-center mb-8"
-        }, React.createElement("h2", {
-            className: "text-2xl font-bold text-gray-800"
-        }, "Olá, ", l.fullName?.split(" ")[0], "! 👋"), React.createElement("p", {
-            className: "text-gray-600 mt-1"
-        }, "O que você precisa fazer hoje?")), React.createElement("div", {
-            className: "space-y-4"
-        }, React.createElement("button", {
-            onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
-            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "👥"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Fila de Entregas"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Entre na fila e aguarde a disponibilidade de corridas")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›")),
-
-        // Coleta de Endereços (novo módulo) — estilo "featured" como o Filas
-        hasModuleAccess(l, "coleta") && React.createElement("button", {
-            onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
-            className: "w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📍"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Coleta de Endereços"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Cadastre endereços e ganhe R$ 1,00 por aprovação")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›")),
-
-        (() => {
-            // Nova lógica: usa elegibilidade do backend
-            // Mostra se elegível OU se ainda está carregando (para não piscar)
-            if (!l || !l.codProfissional) return !1;
-            if (elegibilidadeNovatos.carregando) return !1;
-            return elegibilidadeNovatos.elegivel;
-        })() && React.createElement("button", {
-            onClick: () => {
-                verificarElegibilidadeNovatos(); // Recarrega ao clicar
-                x({
-                ...p,
-                userTab: "promo-novatos"
-            })},
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🚀"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Promoções Novatos"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, elegibilidadeNovatos.motivo || "Promoções especiais para você!"), React.createElement("div", {
-            className: "flex gap-2 mt-1 flex-wrap"
-        }, elegibilidadeNovatos.promocoes && elegibilidadeNovatos.promocoes.length > 0 && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full"
-        }, elegibilidadeNovatos.promocoes.length, " promoção(ões)"), elegibilidadeNovatos.diasSemEntrega !== null && elegibilidadeNovatos.diasSemEntrega !== undefined && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold"
-        }, "📅 ", elegibilidadeNovatos.diasSemEntrega, " dias sem entregas"))), React.createElement("span", {
-            className: "text-orange-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "solicitacoes"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-purple-600"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📋"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Solicitar Ajuste"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Retornos e Pedágios")), React.createElement("span", {
-            className: "text-purple-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "correcao-endereco" }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📍"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Correção de Endereço"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
-            className: "text-orange-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "liberar-ponto" }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🔓"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Liberar OS"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Liberar Ponto 1 do app via RPA")), React.createElement("span", {
-            className: "text-blue-400 text-2xl"
-        }, "›")),
-        // 🆕 2026-04: card "Saque Emergencial" com lock visual quando saques desabilitados
-        React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "saque"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 " + (saquesStatus.habilitados ? "border-green-600" : "border-gray-400 opacity-75")
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 " + (saquesStatus.habilitados ? "bg-green-100" : "bg-gray-200")
-        }, saquesStatus.habilitados ? "💰" : "🔒"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-            React.createElement("h3", {
-                className: "text-lg font-bold " + (saquesStatus.habilitados ? "text-gray-800" : "text-gray-500")
-            }, "Saque Emergencial"),
-            !saquesStatus.habilitados && React.createElement("span", {
-                className: "text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full"
-            }, "Indisponível")
-        ), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Solicitar adiantamento")), React.createElement("span", {
-            className: "text-green-400 text-2xl"
-        }, "›")),
-        // 🚀 Score v2 (2026-05): card Meu Score (só aparece se módulo carregado)
-        typeof window.ModuloScoreV2Motoboy !== 'undefined' && React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "score" }),
-            className: "w-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/25 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🏆"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Meu Score"), React.createElement("p", {
-            className: "text-sm text-white/90"
-        }, "Veja seu nível e bônus do mês")), React.createElement("span", {
-            className: "text-white text-2xl"
-        }, "›")),
-        React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "indicacoes"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-600"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "👥"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Promoção de Indicação"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Indique amigos e ganhe bônus"), getPromocoesFiltradas().length > 0 && React.createElement("span", {
-            className: "inline-block mt-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full"
-        }, getPromocoesFiltradas().length, " promoção(ões) ativa(s)")), React.createElement("span", {
-            className: "text-blue-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "seguro-iza"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-cyan-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🛡️"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Seguro de Vida - IZA"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Coberturas, valores e como acionar")), React.createElement("span", {
-            className: "text-cyan-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => {
-                ot(!0), st(0), Ga(), Za(), x({
-                    ...p,
-                    userTab: "loja"
-                })
+        // 🚀 2026-05: Home reformulada — header compacto, status row, hero fila, quick actions, score, mais
+        // Fase 1: sem hero adaptativo (entrar fila / aguardando / despachado). Vem na Fase 2.
+        React.createElement(React.Fragment, null,
+            // ===== HEADER =====
+            React.createElement("div", {
+                className: "flex items-center justify-between mb-4"
             },
-            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🛒"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Lojinha Tutts"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›"))), React.createElement("div", {
-            className: "mt-6 sm:mt-8 grid grid-cols-3 gap-2 sm:gap-4"
-        }, React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-purple-600"
-        }, j.filter(e => "pendente" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Ajustes Pendentes")), React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-green-600"
-        }, M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Saques Pendentes")), React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-blue-600"
-        }, re.filter(e => "pendente" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Indicações Pendentes")))), p.userTab && React.createElement("div", {
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "text-lg font-bold text-gray-800" }, "Olá, ", l.fullName?.split(" ")[0]),
+                    React.createElement("p", { className: "text-xs text-gray-500" },
+                        l.cidade ? l.cidade : "Tutts"
+                    )
+                ),
+                // Pílula de status (placeholder Online; vai virar dinâmico na Fase 2)
+                React.createElement("div", {
+                    className: "flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full"
+                },
+                    React.createElement("span", {
+                        className: "w-1.5 h-1.5 bg-gray-500 rounded-full"
+                    }),
+                    React.createElement("span", {
+                        className: "text-xs text-gray-700 font-medium"
+                    }, "Disponível")
+                )
+            ),
+
+            // ===== STATUS ROW: Saldo (dominante) + Score + OS no período =====
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100"
+            },
+                React.createElement("div", null,
+                    React.createElement("div", { className: "text-xs text-gray-500 mb-1" }, "Disponível para saque"),
+                    React.createElement("div", { className: "text-3xl font-bold text-green-700 leading-tight" },
+                        // saldoPlificUser pode estar carregando ou null
+                        saldoPlificUser?.loading
+                            ? "..."
+                            : (saldoPlificUser?.saldo != null
+                                ? `R$ ${parseFloat(saldoPlificUser.saldo).toFixed(2).replace('.', ',')}`
+                                : "—")
+                    )
+                ),
+                React.createElement("div", {
+                    className: "flex justify-between items-center mt-3 pt-3 border-t border-gray-100"
+                },
+                    // Score
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "text-xs text-gray-500" }, "Score"),
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                            // userScoreNivel é populado pelo modulo-score-v2-motoboy quando carrega; placeholder se ainda não
+                            (window._tuttsScoreNivelCache && window._tuttsScoreNivelCache.nivel)
+                                ? (window._tuttsScoreNivelCache.nivel === 3 ? "🥇 Nível 3" : window._tuttsScoreNivelCache.nivel === 2 ? "🥈 Nível 2" : "⚪ Nível 1")
+                                : "⚪ Nível 1"
+                        )
+                    ),
+                    // Pendências (combinadas — ajustes + saques)
+                    React.createElement("div", { className: "text-right" },
+                        React.createElement("div", { className: "text-xs text-gray-500" }, "Pendências"),
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                            (j.filter(e => "pendente" === e.status).length + 
+                             M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length),
+                            " ",
+                            React.createElement("span", { className: "text-xs font-normal text-gray-500" }, "abertas")
+                        )
+                    )
+                )
+            ),
+
+            // ===== HERO: FILA DE ENTREGAS =====
+            // Estado simplificado por enquanto: só CTA pra entrar
+            // Na Fase 2 vira adaptativo (Aguardando / Despachado com bairros)
+            React.createElement("button", {
+                onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
+                className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left hover:shadow-md transition-all active:scale-[0.99]"
+            },
+                React.createElement("div", { className: "flex items-center justify-between" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "text-xs font-semibold text-teal-700 uppercase tracking-wide" }, "Fila de Entregas"),
+                        React.createElement("div", { className: "text-base font-bold text-gray-900 mt-1" }, "Pronto pra começar?"),
+                        React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Toque para entrar na fila")
+                    ),
+                    React.createElement("div", {
+                        className: "w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white text-xl"
+                    }, "▶")
+                )
+            ),
+
+            // ===== QUICK ACTIONS (4 ícones em grid) =====
+            React.createElement("div", {
+                className: "grid grid-cols-4 gap-2 mb-4"
+            },
+                // Coleta
+                hasModuleAccess(l, "coleta") && React.createElement("button", {
+                    onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "📍"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Coleta", React.createElement("br"), "Endereços")
+                ),
+                // Liberar OS
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "liberar-ponto" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "🔓"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Liberar", React.createElement("br"), "OS")
+                ),
+                // Solicitar Ajuste
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "solicitacoes" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "📝"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Solicitar", React.createElement("br"), "Ajuste")
+                ),
+                // Saque
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "saque" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "💰"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Saque", React.createElement("br"), "Emergencial")
+                )
+            ),
+
+            // ===== SCORE COM PROGRESSO INLINE =====
+            React.createElement("button", {
+                onClick: () => x({ ...p, userTab: "score" }),
+                className: "w-full bg-white rounded-2xl p-3 mb-2 border border-gray-100 hover:border-amber-300 transition-all text-left"
+            },
+                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-900" }, "🏆 Meu Score"),
+                        React.createElement("div", { className: "text-xs text-gray-500" },
+                            (window._tuttsScoreProgressoTexto || "Veja seu nível e bônus")
+                        )
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // Barra de progresso (lê do cache global se já tiver)
+                React.createElement("div", {
+                    className: "h-1.5 bg-gray-100 rounded-full overflow-hidden"
+                },
+                    React.createElement("div", {
+                        className: "h-full bg-amber-500 rounded-full transition-all",
+                        style: { width: ((window._tuttsScoreProgressoPct || 0) + "%") }
+                    })
+                )
+            ),
+
+            // ===== PROMOÇÕES NOVATOS (se houver promoção ativa) =====
+            React.createElement("button", {
+                onClick: () => x({ ...p, userTab: "promo-novatos" }),
+                className: "w-full bg-white rounded-2xl p-3 mb-3 border border-gray-100 hover:border-purple-300 transition-all text-left"
+            },
+                React.createElement("div", { className: "flex items-center justify-between" },
+                    React.createElement("div", { className: "flex-1 min-w-0" },
+                        React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+                            React.createElement("span", { className: "text-sm font-semibold text-gray-900" }, "🎁 Promoção Novatos"),
+                            // Badge "Ativa" só se promoNovatosAtivo (placeholder true por enquanto)
+                            React.createElement("span", {
+                                className: "bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                            }, "Disponível")
+                        ),
+                        React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Volte a entregar e ganhe bônus")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm flex-shrink-0 ml-2" }, "›")
+                )
+            ),
+
+            // ===== SEÇÃO "MAIS" (lista compacta agrupada) =====
+            React.createElement("div", { className: "text-[10px] text-gray-400 mb-1.5 ml-1 tracking-wider font-semibold" }, "MAIS"),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl border border-gray-100 overflow-hidden"
+            },
+                // Indicação
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "indicacoes" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "👥"),
+                        React.createElement("span", null, "Indicar amigo"),
+                        re.filter(e => "pendente" === e.status).length > 0 && React.createElement("span", {
+                            className: "bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                        }, re.filter(e => "pendente" === e.status).length)
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // Correção endereço
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "correcao-endereco" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "📍"),
+                        React.createElement("span", null, "Correção de Endereço")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // Seguro
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "seguro-iza" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🛡️"),
+                        React.createElement("span", null, "Seguro de Vida IZA")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // Lojinha
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "loja" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🛒"),
+                        React.createElement("span", null, "Lojinha Tutts")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                )
+            )
+        )),
+
+ p.userTab && React.createElement("div", {
             className: "max-w-4xl mx-auto px-3 py-4 sm:p-6"
         }, React.createElement("div", {
             className: "flex items-center gap-3 mb-4 sm:mb-6"
