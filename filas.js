@@ -485,10 +485,10 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                             React.createElement('div', { className: 'flex items-center gap-3 mb-3' }, React.createElement('span', { className: 'text-3xl' }, '🚨'), React.createElement('div', null, React.createElement('p', { className: 'text-red-800 font-bold text-lg' }, `ATENÇÃO: ${filaAtual.alertas.length} profissional(is) não retornou!`), React.createElement('p', { className: 'text-red-600 text-sm' }, 'Tempo em rota > 1h30min'))),
                             React.createElement('div', { className: 'grid md:grid-cols-2 gap-2' }, filaAtual.alertas.map(p => React.createElement('div', { key: p.cod_profissional, className: 'bg-white border border-red-300 rounded-lg p-3 flex justify-between items-center' }, React.createElement('div', null, React.createElement('p', { className: 'font-bold' }, p.nome_profissional), React.createElement('p', { className: 'text-sm text-red-600' }, `⏱️ ${formatarTempo(p.minutos_em_rota)} em rota`)), React.createElement('button', { onClick: () => removerDaFila(p.cod_profissional), className: 'px-3 py-1 bg-red-600 text-white rounded-lg text-sm' }, '❌'))))
                         ),
-                        // 🚀 2026-05: Layout repaginado — fila como card branco neutro, em rota colapsando vazio
-                        React.createElement('div', null,
-                            // FILA DE ESPERA (sempre expandida, é a coluna principal)
-                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3 mb-3' },
+                        // 🚀 2026-05: Layout 2 colunas (fila + em rota) com cards brancos neutros
+                        React.createElement('div', { className: 'grid md:grid-cols-2 gap-4' },
+                            // FILA DE ESPERA
+                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3 px-1' },
                                     React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' },
                                         'Fila de Espera · ',
@@ -501,19 +501,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                                     ? React.createElement('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '📭 Nenhum motoboy aguardando')
                                     : React.createElement('div', { className: 'space-y-2' }, filaAtual.aguardando.map((p, i) => renderCardAguardando(p, i)))
                             ),
-                            // EM ROTA (colapsa quando vazio)
-                            (filaAtual.em_rota?.length || 0) === 0
-                                ? React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl px-3 py-2.5 flex items-center justify-between' },
-                                    React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Em Rota · 0 motoboys'),
-                                    React.createElement('div', { className: 'text-xs text-gray-400' }, '🏠 Nenhum despachado')
-                                )
-                                : React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-                                    React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1' },
-                                        'Em Rota · ',
-                                        React.createElement('span', { className: 'text-gray-700' }, filaAtual.em_rota.length),
-                                        ' motoboys'
-                                    ),
-                                    React.createElement('div', { className: 'space-y-2' }, filaAtual.em_rota.map(p => React.createElement('div', { key: p.cod_profissional, className: `border rounded-lg p-3 ${p.minutos_em_rota > 90 ? 'border-red-300 bg-red-50' : p.corrida_unica ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'} flex flex-col gap-2` },
+                            // EM ROTA
+                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+                                React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1' },
+                                    'Em Rota · ',
+                                    React.createElement('span', { className: 'text-gray-700' }, (filaAtual.em_rota?.length || 0)),
+                                    ' motoboys'
+                                ),
+                                (filaAtual.em_rota?.length || 0) === 0
+                                    ? React.createElement('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '🏠 Nenhum despachado')
+                                    : React.createElement('div', { className: 'space-y-2' }, filaAtual.em_rota.map(p => React.createElement('div', { key: p.cod_profissional, className: `border rounded-lg p-3 ${p.minutos_em_rota > 90 ? 'border-red-300 bg-red-50' : p.corrida_unica ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'} flex flex-col gap-2` },
                                         React.createElement('div', { className: 'flex items-center justify-between' },
                                             React.createElement('div', { className: 'flex items-center gap-3' },
                                                 React.createElement('span', { className: 'text-2xl' }, p.corrida_unica ? '👑' : '🏍️'),
@@ -528,7 +525,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                                             p.bairros.map((b, bi) => React.createElement('span', { key: bi, style: { fontSize: '10px' }, className: 'font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full' }, `📍${b}`))
                                         )
                                     )))
-                                )
+                            )
                         )
                     ),
                     // PENALIDADES
