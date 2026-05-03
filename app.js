@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.6.0"; // Home motoboy reformulada — header + status row + quick actions + score progress
+const APP_VERSION = "2.7.0"; // Home motoboy Fase 2 — hero adaptativo da fila + bairros + pilula de status dinamica
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3583,6 +3583,29 @@ const hideLoadingScreen = () => {
                     }
                 })();
             }
+        }, [l?.codProfissional]);
+
+        // 🚀 2026-05 Fase 2: polling do estado da fila pra alimentar o hero adaptativo da home
+        // Lê /filas/minha-posicao a cada 30s, popula window._tuttsFilaState, força re-render via tick.
+        const [_filaTick, _setFilaTick] = React.useState(0);
+        React.useEffect(() => {
+            if (!l || l.role !== "user" || !l.codProfissional) return;
+            let parado = false;
+            const buscar = async () => {
+                try {
+                    const r = await fetchAuth(API_URL + "/filas/minha-posicao");
+                    if (!r.ok) return;
+                    const d = await r.json();
+                    if (parado) return;
+                    window._tuttsFilaState = d || null;
+                    _setFilaTick(t => (t + 1) % 1000000);
+                } catch (e) {
+                    // silencioso — falha de rede não vai poluir o console do motoboy
+                }
+            };
+            buscar();
+            const id = setInterval(buscar, 30000);
+            return () => { parado = true; clearInterval(id); };
         }, [l?.codProfissional]);
         
         // Componente do Tutorial
@@ -10309,17 +10332,27 @@ const hideLoadingScreen = () => {
                         l.cidade ? l.cidade : "Tutts"
                     )
                 ),
-                // Pílula de status (placeholder Online; vai virar dinâmico na Fase 2)
-                React.createElement("div", {
-                    className: "flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full"
-                },
-                    React.createElement("span", {
-                        className: "w-1.5 h-1.5 bg-gray-500 rounded-full"
-                    }),
-                    React.createElement("span", {
-                        className: "text-xs text-gray-700 font-medium"
-                    }, "Disponível")
-                )
+                // 🚀 Fase 2: Pílula de status reflete estado da fila em tempo real
+                (() => {
+                    const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
+                    let cor = "bg-gray-500"; // default offline
+                    let bg = "bg-gray-100";
+                    let texto = "text-gray-700";
+                    let label = "Disponível";
+                    if (fila && fila.na_fila) {
+                        if (fila.status === "em_rota") {
+                            cor = "bg-blue-500"; bg = "bg-blue-50"; texto = "text-blue-800"; label = "Em rota";
+                        } else if (fila.status === "aguardando") {
+                            cor = "bg-green-500"; bg = "bg-green-50"; texto = "text-green-800"; label = "Online";
+                        }
+                    }
+                    return React.createElement("div", {
+                        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full " + bg
+                    },
+                        React.createElement("span", { className: "w-1.5 h-1.5 rounded-full " + cor }),
+                        React.createElement("span", { className: "text-xs font-medium " + texto }, label)
+                    );
+                })()
             ),
 
             // ===== STATUS ROW: Saldo (dominante) + Score + OS no período =====
@@ -10363,24 +10396,152 @@ const hideLoadingScreen = () => {
                 )
             ),
 
-            // ===== HERO: FILA DE ENTREGAS =====
-            // Estado simplificado por enquanto: só CTA pra entrar
-            // Na Fase 2 vira adaptativo (Aguardando / Despachado com bairros)
-            React.createElement("button", {
-                onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
-                className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left hover:shadow-md transition-all active:scale-[0.99]"
-            },
-                React.createElement("div", { className: "flex items-center justify-between" },
-                    React.createElement("div", null,
-                        React.createElement("div", { className: "text-xs font-semibold text-teal-700 uppercase tracking-wide" }, "Fila de Entregas"),
-                        React.createElement("div", { className: "text-base font-bold text-gray-900 mt-1" }, "Pronto pra começar?"),
-                        React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Toque para entrar na fila")
-                    ),
-                    React.createElement("div", {
-                        className: "w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white text-xl"
-                    }, "▶")
-                )
-            ),
+            // ===== HERO: FILA DE ENTREGAS (adaptativo) =====
+            // Lê window._tuttsFilaState (populado a cada 30s pelo useEffect de polling)
+            // 3 estados: sem dados / fora da fila / aguardando / em rota (com bairros)
+            (() => {
+                const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
+                // Função pra abrir a fila
+                const abrirFila = () => { if (typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); };
+
+                // CASO A: ainda não carregou OU fora da fila
+                if (!fila || fila.na_fila === false) {
+                    return React.createElement("button", {
+                        onClick: abrirFila,
+                        className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left hover:shadow-md transition-all active:scale-[0.99]"
+                    },
+                        React.createElement("div", { className: "flex items-center justify-between" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-xs font-semibold text-teal-700 uppercase tracking-wide" }, "Fila de Entregas"),
+                                React.createElement("div", { className: "text-base font-bold text-gray-900 mt-1" }, "Pronto pra começar?"),
+                                React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Toque para entrar na fila")
+                            ),
+                            React.createElement("div", {
+                                className: "w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white text-xl"
+                            }, "▶")
+                        )
+                    );
+                }
+
+                // CASO B: aguardando despacho
+                if (fila.status === "aguardando") {
+                    const pos = fila.minha_posicao;
+                    const total = fila.total_na_fila;
+                    const min = fila.minutos_esperando;
+                    return React.createElement("div", {
+                        className: "w-full rounded-2xl p-4 mb-4 text-white",
+                        style: { backgroundColor: "#1d9e75" }
+                    },
+                        React.createElement("div", { className: "flex justify-between items-start mb-2" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-80 font-semibold" }, "Fila de Entregas"),
+                                React.createElement("div", { className: "text-base font-bold mt-1" }, "Aguardando despacho"),
+                                React.createElement("div", { className: "text-xs opacity-90 mt-0.5" },
+                                    "Posição ", React.createElement("span", { className: "font-bold" }, pos),
+                                    " de ", total,
+                                    " · ", min, " min na fila"
+                                )
+                            ),
+                            React.createElement("span", {
+                                className: "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                            }, "⏱ Ao vivo")
+                        ),
+                        React.createElement("div", { className: "flex gap-2 mt-3" },
+                            React.createElement("button", {
+                                onClick: abrirFila,
+                                className: "flex-1 bg-white text-sm font-semibold py-2 rounded-lg",
+                                style: { color: "#0F6E56" }
+                            }, "Ver fila"),
+                            React.createElement("button", {
+                                onClick: abrirFila, // sair também leva pra fila (lá tem o botão "Sair")
+                                className: "px-3 py-2 rounded-lg text-sm border text-white",
+                                style: { backgroundColor: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.3)" }
+                            }, "Sair")
+                        )
+                    );
+                }
+
+                // CASO C: em rota (despachado)
+                if (fila.status === "em_rota") {
+                    const qtd = parseInt(fila.notas_liberadas) || 0;
+                    const bairrosRaw = Array.isArray(fila.bairros) ? fila.bairros : [];
+                    // Agrupa por bairro (case-insensitive, trim)
+                    const contagem = {};
+                    bairrosRaw.forEach(b => {
+                        if (!b) return;
+                        const nome = String(b).trim().toUpperCase();
+                        if (!nome) return;
+                        contagem[nome] = (contagem[nome] || 0) + 1;
+                    });
+                    const tagueadas = Object.values(contagem).reduce((s, n) => s + n, 0);
+                    const semBairro = Math.max(0, qtd - tagueadas);
+                    const listaBairros = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+
+                    return React.createElement("div", {
+                        className: "w-full rounded-2xl p-4 mb-4 text-white",
+                        style: { backgroundColor: "#185FA5" }
+                    },
+                        React.createElement("div", { className: "flex justify-between items-start" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-80 font-semibold" }, "Corridas Despachadas"),
+                                React.createElement("div", { className: "text-2xl font-bold mt-1" }, qtd, " ", qtd === 1 ? "entrega" : "entregas")
+                            ),
+                            React.createElement("span", {
+                                className: "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                            }, "⏱ Ao vivo")
+                        ),
+                        // Seção de bairros (só se tem alguma tag)
+                        listaBairros.length > 0 && React.createElement("div", {
+                            className: "mt-3 rounded-lg p-3",
+                            style: { backgroundColor: "rgba(255,255,255,0.12)" }
+                        },
+                            React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-75 font-semibold mb-2" },
+                                semBairro > 0 ? "Bairros tagueados" : "Distribuição por bairro"
+                            ),
+                            React.createElement("div", { className: "flex flex-col gap-1.5" },
+                                listaBairros.map(([nome, count]) =>
+                                    React.createElement("div", {
+                                        key: nome,
+                                        className: "flex justify-between items-center text-sm"
+                                    },
+                                        React.createElement("span", null, "📍 ", nome),
+                                        React.createElement("span", {
+                                            className: "text-xs font-semibold px-2 rounded-full",
+                                            style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                                        }, count)
+                                    )
+                                ),
+                                // Linha "Outras" agregando OS sem tag
+                                semBairro > 0 && React.createElement("div", {
+                                    className: "flex justify-between items-center text-sm",
+                                    style: { opacity: 0.75 }
+                                },
+                                    React.createElement("span", null, "· Outras"),
+                                    React.createElement("span", {
+                                        className: "text-xs font-semibold px-2 rounded-full",
+                                        style: { backgroundColor: "rgba(255,255,255,0.16)" }
+                                    }, semBairro)
+                                )
+                            )
+                        ),
+                        React.createElement("button", {
+                            onClick: abrirFila,
+                            className: "w-full bg-white text-sm font-semibold py-2 rounded-lg mt-3",
+                            style: { color: "#0C447C" }
+                        }, "Ver fila completa")
+                    );
+                }
+
+                // Fallback (status desconhecido) — usa o card neutro
+                return React.createElement("button", {
+                    onClick: abrirFila,
+                    className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left"
+                },
+                    React.createElement("div", { className: "text-base font-bold text-gray-900" }, "Ver fila de entregas")
+                );
+            })(),
 
             // ===== QUICK ACTIONS (4 ícones em grid) =====
             React.createElement("div", {
