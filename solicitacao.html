@@ -502,21 +502,12 @@
                 }));
             };
             
-            // 🚀 2026-05: Shadow state local de cliente (o prop `cliente` é congelado pela props).
-            // Usado pra atualizar UI quando salvamos categoria_padrao sem precisar relogar.
-            const [clienteLocal, setClienteLocal] = useState(cliente);
-            const setCliente = (updater) => setClienteLocal(prev => typeof updater === 'function' ? updater(prev) : updater);
-            // Alias pra leitura (componentes lêem cliente.algo — mantém compat)
-            // NOTA: o prop `cliente` original ainda existe e é usado nas inicializações de useState.
-            // Pra leitura dinâmica de campos que mudam (ex: categoria_padrao), use clienteLocal.
-
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', agendar: false, forma_pagamento: cliente.forma_pagamento_padrao || 'F',
                 ponto_receber: '', retorno: false, obs_retorno: '', ordenar: false, 
                 codigo_profissional: '',
-                sem_profissional: false,
-                categoria: cliente.categoria_padrao || '' // 🚀 2026-05: categoria/modalidade vinda do padrão do cliente
+                sem_profissional: false
             });
             
             useEffect(() => { if (abaAtiva === 'nova' || abaAtiva === 'acompanhar') setMapaKey(prev => prev + 1); }, [abaAtiva, corridaSelecionada]);
@@ -1508,29 +1499,6 @@
             const salvarEdicaoPonto = () => { const n = [...pontos]; n[pontoEditando] = { ...n[pontoEditando], ...dadosPonto }; setPontos(n); setPontoEditando(null); showToast('✅ Salvo', 'success'); };
             const salvarPartidaPadrao = async () => { if (pontos.length === 0) return; try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: pontos[0] }) }); setCliente(prev => ({...prev, endereco_partida_padrao: pontos[0]})); showToast('✅ Salvo como padrão!', 'success'); } catch {} };
             const removerPartidaPadrao = async () => { try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: null, limpar_endereco_padrao: true }) }); setCliente(prev => ({...prev, endereco_partida_padrao: null})); showToast('Padrão removido', 'success'); } catch {} };
-            // 🚀 2026-05: salva/remove categoria padrão (chamado pelo botão "definir como padrão" do seletor)
-            const salvarCategoriaPadrao = async (cat) => {
-                try {
-                    const r = await fetch(`${API_URL}/api/solicitacao/configuracoes`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ categoria_padrao: cat || '' })
-                    });
-                    if (r.ok) {
-                        setCliente(prev => ({ ...prev, categoria_padrao: cat || null }));
-                        // Atualiza também o localStorage
-                        try {
-                            const c = JSON.parse(localStorage.getItem('solicitacao_cliente') || '{}');
-                            c.categoria_padrao = cat || null;
-                            localStorage.setItem('solicitacao_cliente', JSON.stringify(c));
-                        } catch {}
-                        showToast(cat ? `✅ "${cat}" definida como categoria padrão` : 'Categoria padrão removida', 'success');
-                    } else {
-                        const d = await r.json().catch(() => ({}));
-                        showToast(d.error || 'Erro ao salvar', 'error');
-                    }
-                } catch (e) { showToast('Erro de rede', 'error'); }
-            };
             const limpar = () => { if (cliente.endereco_partida_padrao) setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); else setPontos([]); setSugestoes([]); setTermoBusca(''); setPontoRecemAdicionado(null); setNotaRapida(''); setPromptAjuste({ aberto: false, pontoId: null }); };
             
             const enviarSolicitacao = async () => {
@@ -1572,7 +1540,6 @@
                         profissional_telefone: profSelecionado?.telefone || null,
                         profissional_placa: profSelecionado?.placa || null,
                         sem_profissional: config.sem_profissional, 
-                        categoria: config.categoria || null, // 🚀 2026-05: sigla da modalidade (M, U, D, MC, UC, DC)
                         pontos: pontos.map(p => ({ 
                             rua: p.rua || '', 
                             numero: p.numero || '', 
@@ -2147,60 +2114,6 @@
                                                     ? <div className="text-xs text-green-600 mt-1">✅ Corrida para: {profissionais.find(p => p.codigo === config.codigo_profissional)?.nome}</div>
                                                     : <div className="text-xs text-blue-600 mt-1">{profissionais.length === 0 ? '💡 Nenhum motoboy vinculado — a corrida será disparada para toda a plataforma' : '💡 A corrida será disparada para toda a plataforma'}</div>
                                                 }
-                                            </div>
-                                            {/* 🚀 2026-05: Categoria/Modalidade — chips clicáveis (escolha única). 
-                                                Padrão por cliente (clienteLocal.categoria_padrao) vem pré-selecionado.
-                                                Botão "definir como padrão" ao lado salva no banco. */}
-                                            <div className="mt-3">
-                                                <label className="text-xs text-gray-600 flex items-center justify-between mb-1.5">
-                                                    <span>🏷️ Modalidade</span>
-                                                    {config.categoria && config.categoria !== (clienteLocal?.categoria_padrao || '') && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => salvarCategoriaPadrao(config.categoria)}
-                                                            className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
-                                                            title="Salva essa modalidade como padrão pras próximas solicitações"
-                                                        >
-                                                            ⭐ definir como padrão
-                                                        </button>
-                                                    )}
-                                                    {config.categoria && config.categoria === (clienteLocal?.categoria_padrao || '') && (
-                                                        <span className="text-xs text-gray-400 italic">⭐ padrão atual</span>
-                                                    )}
-                                                </label>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {[
-                                                        { sigla: 'M', nome: 'Motofrete', tipo: 'avulso' },
-                                                        { sigla: 'U', nome: 'Carro Utilitário', tipo: 'avulso' },
-                                                        { sigla: 'D', nome: 'Tutts Fast', tipo: 'avulso' },
-                                                        { sigla: 'MC', nome: 'Motofrete (Expresso)', tipo: 'contrato' },
-                                                        { sigla: 'UC', nome: 'Carro Util. (Expresso)', tipo: 'contrato' },
-                                                        { sigla: 'DC', nome: 'Motofrete-C', tipo: 'contrato' }
-                                                    ].map(cat => {
-                                                        const ativo = config.categoria === cat.sigla;
-                                                        return (
-                                                            <button
-                                                                key={cat.sigla}
-                                                                type="button"
-                                                                onClick={() => setConfig({ ...config, categoria: ativo ? '' : cat.sigla })}
-                                                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                                                                    ativo
-                                                                        ? 'bg-blue-600 text-white border-blue-600'
-                                                                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                                                }`}
-                                                                title={`${cat.nome} (sigla ${cat.sigla})`}
-                                                            >
-                                                                {cat.nome}
-                                                                <span className="opacity-60 ml-1">({cat.sigla})</span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {!config.categoria && (
-                                                    <div className="text-xs text-gray-400 mt-1.5 italic">
-                                                        Nenhuma selecionada — vai usar a configuração padrão da Tutts
-                                                    </div>
-                                                )}
                                             </div>
                                             <div className="flex flex-wrap gap-4 mt-3">
                                                 <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retorno</label>
