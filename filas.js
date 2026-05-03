@@ -92,9 +92,73 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const atualizarBairroRegiao = async (bairroId, regiaoId) => { try{ await fetchAuth(`${apiUrl}/filas/bairros-config/${bairroId}`,{method:'PUT',body:JSON.stringify({regiao_id:regiaoId||null})}); carregarBairrosConfig(centralSelecionada?.id); }catch(e){} };
     const salvarBairrosProfissional = async (cod, bairros) => { if(!centralSelecionada)return; try{ await fetchAuth(`${apiUrl}/filas/atribuir-bairros`,{method:'POST',body:JSON.stringify({cod_profissional:cod,central_id:centralSelecionada.id,bairros})}); carregarFila(centralSelecionada.id); }catch(e){ showToast('Erro','error'); } };
     const limparBairrosProfissional = async (cod) => { if(!centralSelecionada)return; try{ await fetchAuth(`${apiUrl}/filas/limpar-bairros`,{method:'POST',body:JSON.stringify({cod_profissional:cod,central_id:centralSelecionada.id})}); showToast('Bairros limpos!','success'); carregarFila(centralSelecionada.id); }catch(e){ showToast('Erro','error'); } };
+    // 🚀 2026-05: remove SÓ 1 bairro pelo índice (mantém os outros)
+    const removerUmBairroProfissional = async (cod, bairros, idx) => {
+        if (!centralSelecionada) return;
+        const novos = (bairros || []).filter((_, i) => i !== idx);
+        try {
+            await fetchAuth(`${apiUrl}/filas/atribuir-bairros`, {
+                method: 'POST',
+                body: JSON.stringify({ cod_profissional: cod, central_id: centralSelecionada.id, bairros: novos })
+            });
+            carregarFila(centralSelecionada.id);
+        } catch (e) { showToast('Erro', 'error'); }
+    };
+    // 🚀 2026-05: abre modal de edição de bairros (sem liberar nova nota)
+    const abrirEdicaoBairros = (p) => {
+        setModalBairros({
+            cod_profissional: p.cod_profissional,
+            nome: p.nome_profissional,
+            bairros: p.bairros || [],
+            modoEdicao: true, // 👈 sinaliza pro modal não chamar liberar-nota
+        });
+    };
+    // 🚀 2026-05: salva edição (só atribui bairros, não libera nota)
+    const salvarEdicaoBairros = async () => {
+        if (!modalBairros || !centralSelecionada) return;
+        const cod = modalBairros.cod_profissional;
+        const bairros = modalBairros.bairros || [];
+        try {
+            await salvarBairrosProfissional(cod, bairros);
+            showToast('✅ Bairros atualizados (' + bairros.length + ')', 'success');
+            setModalBairros(null);
+        } catch (e) { showToast('Erro', 'error'); }
+    };
     const adicionarBairroModal = (bairro) => { if(!modalBairros)return; const nome = bairro.toUpperCase(); if((modalBairros.bairros||[]).includes(nome)) return; setModalBairros({...modalBairros, bairros:[...(modalBairros.bairros||[]), nome]}); };
     const removerBairroByIndex = (idx) => { if(!modalBairros)return; var novo=(modalBairros.bairros||[]).filter(function(_,i){return i!==idx;}); setModalBairros({...modalBairros, bairros:novo}); };
     const liberarNotaComBairros = async () => { if(!modalBairros||!centralSelecionada)return; var cod=modalBairros.cod_profissional; var bairros=modalBairros.bairros||[]; await salvarBairrosProfissional(cod, bairros); try{ var r=await fetchAuth(apiUrl+'/filas/liberar-nota',{method:'POST',body:JSON.stringify({cod_profissional:cod,central_id:centralSelecionada.id})}); var d=await r.json(); if(d.success){ showToast('📦 '+d.notas_liberadas+'ª nota liberada com '+bairros.length+' bairro(s)!','success'); carregarFila(centralSelecionada.id); setModalBairros(null); }else{ showToast(d.error||'Erro','error'); } }catch(e){ showToast('Erro','error'); } };
+
+    // 🚀 2026-05: COLOCAR NA FILA (admin coloca vinculado direto)
+    const [modalColocarFila, setModalColocarFila] = useState(null); // null | { vinculados: [], filtro: '' }
+    const abrirModalColocarFila = async () => {
+        if (!centralSelecionada) return;
+        try {
+            const r = await fetchAuth(`${apiUrl}/filas/vinculados-disponiveis/${centralSelecionada.id}`);
+            const d = await r.json();
+            if (d.success) {
+                setModalColocarFila({ vinculados: d.vinculados || [], filtro: '' });
+            } else {
+                showToast(d.error || 'Erro ao carregar vinculados', 'error');
+            }
+        } catch (e) { showToast('Erro', 'error'); }
+    };
+    const colocarMotoboyNaFila = async (cod) => {
+        if (!centralSelecionada) return;
+        try {
+            const r = await fetchAuth(`${apiUrl}/filas/colocar-na-fila`, {
+                method: 'POST',
+                body: JSON.stringify({ cod_profissional: cod, central_id: centralSelecionada.id })
+            });
+            const d = await r.json();
+            if (d.success) {
+                showToast(`✅ ${d.nome} entrou na fila (posição ${d.posicao})`, 'success');
+                setModalColocarFila(null);
+                carregarFila(centralSelecionada.id);
+            } else {
+                showToast(d.error || 'Erro', 'error');
+            }
+        } catch (e) { showToast('Erro', 'error'); }
+    };
 
     // REGIÕES
     const carregarRegioes = async (centralId) => { if(!centralId)return; try{ const r=await fetchAuth(`${apiUrl}/filas/regioes/${centralId}`); const d=await r.json(); if(d.success) setRegioes(d.regioes||[]); }catch(e){} };
@@ -229,9 +293,29 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         React.createElement('span', { className: 'text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full' }, `📦 ${p.notas_liberadas} nota(s)`),
                         p.primeira_nota_at && React.createElement('span', { className: 'text-xs font-mono text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full' }, `⏱${formatarCronometro(p.primeira_nota_at)}`)
                     ),
-                    p.bairros && p.bairros.length > 0 && React.createElement('div', { className: 'flex flex-wrap gap-1 justify-end', style: { maxWidth: '180px' } },
-                        p.bairros.map((b, bi) => React.createElement('span', { key: bi, style: { fontSize: '10px' }, className: 'font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full' }, `📍${b}`)),
-                        React.createElement('button', { onClick: () => limparBairrosProfissional(p.cod_profissional), style: { fontSize: '10px' }, className: 'text-red-500 font-bold px-1', title: 'Limpar bairros' }, '✕')
+                    p.bairros && p.bairros.length > 0 && React.createElement('div', { className: 'flex flex-wrap gap-1 justify-end items-center', style: { maxWidth: '200px' } },
+                        // 🚀 2026-05: cada chip agora é clicável — clica nele e remove SÓ aquele bairro
+                        p.bairros.map((b, bi) => React.createElement('button', {
+                            key: bi,
+                            onClick: () => removerUmBairroProfissional(p.cod_profissional, p.bairros, bi),
+                            style: { fontSize: '10px' },
+                            className: 'inline-flex items-center gap-0.5 font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full hover:bg-red-100 hover:text-red-700 transition-colors',
+                            title: 'Clique pra remover este bairro'
+                        }, `📍${b}`, React.createElement('span', { className: 'opacity-60', style: { fontSize: '9px' } }, '✕'))),
+                        // Botão editar (abre modal com lista atual + adicionar mais)
+                        React.createElement('button', {
+                            onClick: () => abrirEdicaoBairros(p),
+                            style: { fontSize: '10px' },
+                            className: 'text-blue-600 hover:text-blue-800 font-bold px-1',
+                            title: 'Editar lista de bairros'
+                        }, '✏️'),
+                        // Botão limpar todos (mantém o ✕ que tava antes mas com aviso visual)
+                        React.createElement('button', {
+                            onClick: () => { if (window.confirm('Limpar TODOS os bairros deste motoboy?')) limparBairrosProfissional(p.cod_profissional); },
+                            style: { fontSize: '10px' },
+                            className: 'text-red-500 hover:text-red-700 font-bold px-1',
+                            title: 'Limpar todos os bairros'
+                        }, '🗑️')
                     ),
                     React.createElement('div', { className: 'flex gap-1' },
                         React.createElement('button', { onClick: () => { setModalBairros({ cod_profissional: p.cod_profissional, nome: p.nome_profissional, bairros: p.bairros || [], notaNum: (parseInt(p.notas_liberadas)||0)+1 }); }, className: 'px-2 py-1 bg-purple-600 text-white rounded-lg text-xs', title: `Liberar ${(parseInt(p.notas_liberadas)||0)+1}ª Nota + Bairros` }, `📦 ${(parseInt(p.notas_liberadas)||0)+1}ª`),
@@ -329,7 +413,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         ),
                         React.createElement('div', { className: 'grid md:grid-cols-2 gap-6' },
                             React.createElement('div', { className: 'bg-blue-50 rounded-xl p-4 border border-blue-200' },
-                                React.createElement('h3', { className: 'font-bold text-blue-800 mb-4' }, '⏳ Fila de Espera (arraste para reordenar)'),
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('h3', { className: 'font-bold text-blue-800' }, '⏳ Fila de Espera (arraste para reordenar)'),
+                                    React.createElement('button', {
+                                        onClick: abrirModalColocarFila,
+                                        className: 'px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1',
+                                        title: 'Colocar um motoboy vinculado direto na fila'
+                                    }, '➕ Colocar na fila')
+                                ),
                                 filaAtual.aguardando?.length === 0 ? React.createElement('div', { className: 'text-center py-8 text-gray-500' }, '📭 Nenhum na fila') :
                                 React.createElement('div', { className: 'space-y-2' }, filaAtual.aguardando.map((p, i) => renderCardAguardando(p, i)))
                             ),
@@ -458,7 +549,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
             // MODAL BAIRROS → LIBERAR NOTA
             modalBairros && centralSelecionada && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2' },
                 React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col' },
-                    React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex-shrink-0' }, React.createElement('h2', { className: 'text-lg font-bold' }, '📦 Liberar ' + (modalBairros.notaNum || '') + 'ª Nota'), React.createElement('p', { className: 'text-purple-200 text-sm' }, modalBairros.nome)),
+                    React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex-shrink-0' },
+                        React.createElement('h2', { className: 'text-lg font-bold' },
+                            modalBairros.modoEdicao
+                                ? '✏️ Editar Bairros'
+                                : '📦 Liberar ' + (modalBairros.notaNum || '') + 'ª Nota'
+                        ),
+                        React.createElement('p', { className: 'text-purple-200 text-sm' }, modalBairros.nome)
+                    ),
                     React.createElement('div', { className: 'p-4 space-y-4 overflow-y-auto flex-1' },
                         // BAIRROS SELECIONADOS
                         React.createElement('div', null, React.createElement('p', { className: 'text-xs font-semibold text-gray-500 mb-2' }, 'BAIRROS DA NOTA ', (modalBairros.bairros||[]).length > 0 && React.createElement('span', { className: 'text-purple-600' }, '(' + (modalBairros.bairros||[]).length + ')')),
@@ -503,7 +601,76 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                     ),
                     React.createElement('div', { className: 'p-4 border-t flex gap-3 flex-shrink-0' },
                         React.createElement('button', { onClick: function() { setModalBairros(null); }, className: 'flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium' }, 'Cancelar'),
-                        React.createElement('button', { onClick: function() { liberarNotaComBairros(); }, className: 'flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold text-lg' }, '📦 Liberar ' + (modalBairros.notaNum || '') + 'ª Nota')
+                        modalBairros.modoEdicao
+                            ? React.createElement('button', { onClick: function() { salvarEdicaoBairros(); }, className: 'flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold text-lg' }, '💾 Salvar Bairros')
+                            : React.createElement('button', { onClick: function() { liberarNotaComBairros(); }, className: 'flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold text-lg' }, '📦 Liberar ' + (modalBairros.notaNum || '') + 'ª Nota')
+                    )
+                )
+            ),
+
+            // 🚀 2026-05: MODAL Colocar Vinculado na Fila
+            modalColocarFila && centralSelecionada && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
+                React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col' },
+                    // Header
+                    React.createElement('div', { className: 'bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between' },
+                        React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-lg font-bold' }, '➕ Colocar na Fila'),
+                            React.createElement('p', { className: 'text-blue-200 text-sm' }, centralSelecionada.nome)
+                        ),
+                        React.createElement('button', {
+                            onClick: () => setModalColocarFila(null),
+                            className: 'text-white/80 hover:text-white text-2xl leading-none'
+                        }, '×')
+                    ),
+                    // Filtro
+                    React.createElement('div', { className: 'p-3 border-b' },
+                        React.createElement('input', {
+                            type: 'text',
+                            value: modalColocarFila.filtro,
+                            onChange: (e) => setModalColocarFila({ ...modalColocarFila, filtro: e.target.value }),
+                            placeholder: '🔍 Buscar por nome ou código...',
+                            className: 'w-full px-3 py-2 border rounded-lg text-sm'
+                        })
+                    ),
+                    // Lista
+                    React.createElement('div', { className: 'flex-1 overflow-y-auto p-2' },
+                        (() => {
+                            const filtro = (modalColocarFila.filtro || '').toLowerCase().trim();
+                            const lista = filtro
+                                ? modalColocarFila.vinculados.filter(v =>
+                                    (v.nome_profissional || '').toLowerCase().includes(filtro) ||
+                                    String(v.cod_profissional || '').includes(filtro))
+                                : modalColocarFila.vinculados;
+                            if (modalColocarFila.vinculados.length === 0) {
+                                return React.createElement('div', { className: 'text-center py-8 text-gray-400' },
+                                    React.createElement('div', { className: 'text-4xl mb-2' }, '✅'),
+                                    React.createElement('div', { className: 'text-sm' }, 'Todos os vinculados já estão na fila ou em rota')
+                                );
+                            }
+                            if (lista.length === 0) {
+                                return React.createElement('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Nenhum resultado');
+                            }
+                            return React.createElement('div', { className: 'space-y-1' },
+                                lista.map(v => React.createElement('button', {
+                                    key: v.cod_profissional,
+                                    onClick: () => colocarMotoboyNaFila(v.cod_profissional),
+                                    className: 'w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors text-left border border-transparent hover:border-blue-200'
+                                },
+                                    React.createElement('div', null,
+                                        React.createElement('div', { className: 'text-sm font-medium text-gray-800' }, v.nome_profissional || '(sem nome)'),
+                                        React.createElement('div', { className: 'text-xs text-gray-500' }, '#' + v.cod_profissional)
+                                    ),
+                                    React.createElement('span', { className: 'text-blue-600 text-lg' }, '➕')
+                                ))
+                            );
+                        })()
+                    ),
+                    // Footer
+                    React.createElement('div', { className: 'p-3 border-t flex gap-2' },
+                        React.createElement('button', {
+                            onClick: () => setModalColocarFila(null),
+                            className: 'flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm'
+                        }, 'Fechar')
                     )
                 )
             )
