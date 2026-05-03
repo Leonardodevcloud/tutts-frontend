@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.7.1"; // Home motoboy ajustes — saldo prefetch + reordenacao actions/mais + rename Coleta
+const APP_VERSION = "2.7.2"; // Home motoboy — hero da fila so aparece pra vinculados
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3587,11 +3587,33 @@ const hideLoadingScreen = () => {
 
         // 🚀 2026-05 Fase 2: polling do estado da fila pra alimentar o hero adaptativo da home
         // Lê /filas/minha-posicao a cada 30s, popula window._tuttsFilaState, força re-render via tick.
+        // Antes disso, faz 1 fetch em /minha-central pra saber se o motoboy tem vínculo —
+        // se não tem, o hero é ESCONDIDO da home (regra Tutts: card só aparece pra vinculados).
         const [_filaTick, _setFilaTick] = React.useState(0);
         React.useEffect(() => {
             if (!l || l.role !== "user" || !l.codProfissional) return;
             let parado = false;
-            const buscar = async () => {
+
+            // 1) Checa vínculo (one-shot)
+            const checarVinculo = async () => {
+                try {
+                    const r = await fetchAuth(API_URL + "/filas/minha-central");
+                    if (!r.ok) {
+                        window._tuttsFilaVinculado = false;
+                        _setFilaTick(t => (t + 1) % 1000000);
+                        return;
+                    }
+                    const d = await r.json();
+                    window._tuttsFilaVinculado = !!(d && d.success && d.vinculado);
+                    _setFilaTick(t => (t + 1) % 1000000);
+                } catch (e) {
+                    window._tuttsFilaVinculado = false;
+                }
+            };
+
+            // 2) Polling do estado da fila (só faz sentido se vinculado)
+            const buscarPosicao = async () => {
+                if (!window._tuttsFilaVinculado) return;
                 try {
                     const r = await fetchAuth(API_URL + "/filas/minha-posicao");
                     if (!r.ok) return;
@@ -3600,11 +3622,16 @@ const hideLoadingScreen = () => {
                     window._tuttsFilaState = d || null;
                     _setFilaTick(t => (t + 1) % 1000000);
                 } catch (e) {
-                    // silencioso — falha de rede não vai poluir o console do motoboy
+                    // silencioso
                 }
             };
-            buscar();
-            const id = setInterval(buscar, 30000);
+
+            (async () => {
+                await checarVinculo();
+                if (parado) return;
+                await buscarPosicao();
+            })();
+            const id = setInterval(buscarPosicao, 30000);
             return () => { parado = true; clearInterval(id); };
         }, [l?.codProfissional]);
 
@@ -10344,13 +10371,15 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 // 🚀 Fase 2: Pílula de status reflete estado da fila em tempo real
+                // Só faz lookup do estado se motoboy é vinculado a alguma central
                 (() => {
+                    const vinculado = window._tuttsFilaVinculado === true;
                     const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
                     let cor = "bg-gray-500"; // default offline
                     let bg = "bg-gray-100";
                     let texto = "text-gray-700";
                     let label = "Disponível";
-                    if (fila && fila.na_fila) {
+                    if (vinculado && fila && fila.na_fila) {
                         if (fila.status === "em_rota") {
                             cor = "bg-blue-500"; bg = "bg-blue-50"; texto = "text-blue-800"; label = "Em rota";
                         } else if (fila.status === "aguardando") {
@@ -10410,7 +10439,12 @@ const hideLoadingScreen = () => {
             // ===== HERO: FILA DE ENTREGAS (adaptativo) =====
             // Lê window._tuttsFilaState (populado a cada 30s pelo useEffect de polling)
             // 3 estados: sem dados / fora da fila / aguardando / em rota (com bairros)
+            // 🚀 2026-05: só aparece pra motoboys VINCULADOS a alguma central
             (() => {
+                // Se ainda não respondeu o /minha-central, _tuttsFilaVinculado é undefined.
+                // Pra evitar piscar o card e depois sumir, só renderiza quando temos resposta E é true.
+                if (window._tuttsFilaVinculado !== true) return null;
+
                 const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
                 // Função pra abrir a fila
                 const abrirFila = () => { if (typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); };
