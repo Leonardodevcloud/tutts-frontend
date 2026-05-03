@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.7.2"; // Home motoboy — hero da fila so aparece pra vinculados
+const APP_VERSION = "2.7.3"; // Home motoboy — polling adaptativo + visibilitychange + delay no F5
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3546,55 +3546,76 @@ const hideLoadingScreen = () => {
             }
         }, [l?.codProfissional]);
 
-        // 🚀 2026-05: pré-carrega score do motoboy pra popular o card "Meu Score" da home
-        // (texto "Faltam X entregas pro N3" + barra de progresso). Silencioso, sem bloquear.
+        // 🚀 2026-05: agrupado — pré-carrega dados da home (score + saldo + fila vínculo+estado).
+        // Roda em sequência com pequeno delay pra garantir que o auth bootstrap finalizou.
+        // Isso evita rajada de 3 requests simultâneas no F5 que podem confundir o token refresh.
         React.useEffect(() => {
-            if (l && l.role === "user" && l.codProfissional) {
-                (async () => {
-                    try {
-                        const r = await fetchAuth(API_URL + "/score-v2/meu-nivel");
-                        if (!r.ok) return;
+            if (!l || l.role !== "user" || !l.codProfissional) return;
+            let cancelado = false;
+
+            const carregarTudo = async () => {
+                // 800ms de delay inicial pra dar tempo do auth bootstrap finalizar no F5.
+                // (O bootstrap promise já é awaited dentro do fetchAuth, mas esse delay
+                // ajuda a não disparar 3 requests no exato instante da inicialização.)
+                await new Promise(r => setTimeout(r, 800));
+                if (cancelado) return;
+
+                // 1) Score (silencioso — não desloga em erro)
+                try {
+                    const r = await fetchAuth(API_URL + "/score-v2/meu-nivel");
+                    if (r.ok) {
                         const dados = await r.json();
-                        if (!dados || !dados.regiao_configurada) return;
-                        // Cache global pro card da home renderizar (usado em window._tuttsScoreNivelCache, _tuttsScoreProgressoPct, _tuttsScoreProgressoTexto)
-                        window._tuttsScoreNivelCache = { nivel: dados.nivel };
-                        // Calcula texto e pct do próximo requisito que falta menos
-                        if (dados.progresso && Array.isArray(dados.progresso.requisitos)) {
-                            const reqs = dados.progresso.requisitos;
-                            // Pega o que tem maior progresso entre os que NÃO estão ok (ele é o "mais próximo de virar")
-                            const naoOk = reqs.filter(r => !r.ok);
-                            const referencia = naoOk.length > 0
-                                ? naoOk.reduce((a, b) => (a.pct >= b.pct ? a : b))
-                                : reqs[0];
-                            // Pct global = média dos pcts dos requisitos
-                            const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
-                            window._tuttsScoreProgressoPct = pctMedio;
-                            window._tuttsScoreProgressoTexto = naoOk.length > 0
-                                ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro N" + dados.progresso.proximo_nivel
-                                : "Você atingiu todos os critérios!";
-                        } else {
-                            window._tuttsScoreProgressoPct = 100;
-                            window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Nível máximo atingido!" : "Veja seu progresso";
+                        if (dados && dados.regiao_configurada) {
+                            window._tuttsScoreNivelCache = { nivel: dados.nivel };
+                            if (dados.progresso && Array.isArray(dados.progresso.requisitos)) {
+                                const reqs = dados.progresso.requisitos;
+                                const naoOk = reqs.filter(r => !r.ok);
+                                const referencia = naoOk.length > 0
+                                    ? naoOk.reduce((a, b) => (a.pct >= b.pct ? a : b))
+                                    : reqs[0];
+                                const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
+                                window._tuttsScoreProgressoPct = pctMedio;
+                                window._tuttsScoreProgressoTexto = naoOk.length > 0
+                                    ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro N" + dados.progresso.proximo_nivel
+                                    : "Você atingiu todos os critérios!";
+                            } else {
+                                window._tuttsScoreProgressoPct = 100;
+                                window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Nível máximo atingido!" : "Veja seu progresso";
+                            }
                         }
-                        // Força um re-render leve sinalizando via state vazio (truque)
-                        // Mas como o card lê de window._tutts..., vai funcionar no próximo render natural
-                    } catch (err) {
-                        console.warn("[Score Home] pre-fetch falhou:", err.message);
                     }
-                })();
-            }
+                } catch (err) {
+                    console.warn("[Score Home] pre-fetch falhou:", err.message);
+                }
+                if (cancelado) return;
+
+                // 2) Saldo Plific
+                try {
+                    if (saldoPlificUser.saldo === null && !saldoPlificUser.loading) {
+                        buscarSaldoPlificUsuario();
+                    }
+                } catch (err) {
+                    console.warn("[Saldo Home] pre-fetch falhou:", err.message);
+                }
+            };
+
+            carregarTudo();
+            return () => { cancelado = true; };
         }, [l?.codProfissional]);
 
-        // 🚀 2026-05 Fase 2: polling do estado da fila pra alimentar o hero adaptativo da home
-        // Lê /filas/minha-posicao a cada 30s, popula window._tuttsFilaState, força re-render via tick.
-        // Antes disso, faz 1 fetch em /minha-central pra saber se o motoboy tem vínculo —
-        // se não tem, o hero é ESCONDIDO da home (regra Tutts: card só aparece pra vinculados).
+
+
+        // 🚀 2026-05 Fase 2: polling adaptativo do estado da fila pra hero da home se sentir "ao vivo"
+        // - Faz 1 check em /minha-central (vínculo)
+        // - Polling de /minha-posicao: 8s normal, 4s quando aguardando/em_rota
+        // - Refresh imediato quando aba volta a ter foco (visibilitychange)
+        // - Detecta mudança via JSON.stringify pra log e re-render correto
         const [_filaTick, _setFilaTick] = React.useState(0);
         React.useEffect(() => {
             if (!l || l.role !== "user" || !l.codProfissional) return;
             let parado = false;
+            let timeoutId = null;
 
-            // 1) Checa vínculo (one-shot)
             const checarVinculo = async () => {
                 try {
                     const r = await fetchAuth(API_URL + "/filas/minha-central");
@@ -3611,39 +3632,61 @@ const hideLoadingScreen = () => {
                 }
             };
 
-            // 2) Polling do estado da fila (só faz sentido se vinculado)
             const buscarPosicao = async () => {
+                if (parado) return;
                 if (!window._tuttsFilaVinculado) return;
                 try {
                     const r = await fetchAuth(API_URL + "/filas/minha-posicao");
                     if (!r.ok) return;
                     const d = await r.json();
                     if (parado) return;
+                    // Detecta mudança real comparando JSON antes/depois
+                    const antes = JSON.stringify(window._tuttsFilaState || null);
+                    const depois = JSON.stringify(d || null);
                     window._tuttsFilaState = d || null;
-                    _setFilaTick(t => (t + 1) % 1000000);
+                    if (antes !== depois) {
+                        console.log("[Fila Home] estado mudou:", d?.status || "fora", "qtd=" + (d?.notas_liberadas || 0));
+                        _setFilaTick(t => (t + 1) % 1000000);
+                    }
                 } catch (e) {
                     // silencioso
                 }
             };
 
+            // Polling adaptativo: 4s quando ativo (aguardando/em_rota), 8s caso contrário
+            const agendarProximo = () => {
+                if (parado) return;
+                const fila = window._tuttsFilaState;
+                const ativo = fila && fila.na_fila && (fila.status === "aguardando" || fila.status === "em_rota");
+                const delay = ativo ? 4000 : 8000;
+                timeoutId = setTimeout(async () => {
+                    await buscarPosicao();
+                    agendarProximo();
+                }, delay);
+            };
+
+            // Refresh imediato quando aba volta a ter foco
+            const onVisibility = () => {
+                if (document.visibilityState === "visible" && !parado) {
+                    buscarPosicao();
+                }
+            };
+            document.addEventListener("visibilitychange", onVisibility);
+
             (async () => {
                 await checarVinculo();
                 if (parado) return;
                 await buscarPosicao();
+                agendarProximo();
             })();
-            const id = setInterval(buscarPosicao, 30000);
-            return () => { parado = true; clearInterval(id); };
+
+            return () => {
+                parado = true;
+                if (timeoutId) clearTimeout(timeoutId);
+                document.removeEventListener("visibilitychange", onVisibility);
+            };
         }, [l?.codProfissional]);
 
-        // 🚀 2026-05: pre-fetch automático do saldo Plific assim que o motoboy loga
-        // Antes só era buscado quando ele clicava em "Saque Emergencial". Agora a home mostra direto.
-        React.useEffect(() => {
-            const codProf = l && (l.cod_profissional || l.codProfissional);
-            if (l && l.role === "user" && codProf && saldoPlificUser.saldo === null && !saldoPlificUser.loading) {
-                buscarSaldoPlificUsuario();
-            }
-        }, [l?.codProfissional]);
-        
         // Componente do Tutorial
         const TutorialOverlay = () => {
             if (!tutorialAtivo) return null;
