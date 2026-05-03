@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.7.0"; // Home motoboy Fase 2 — hero adaptativo da fila + bairros + pilula de status dinamica
+const APP_VERSION = "2.7.1"; // Home motoboy ajustes — saldo prefetch + reordenacao actions/mais + rename Coleta
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -3607,6 +3607,15 @@ const hideLoadingScreen = () => {
             const id = setInterval(buscar, 30000);
             return () => { parado = true; clearInterval(id); };
         }, [l?.codProfissional]);
+
+        // 🚀 2026-05: pre-fetch automático do saldo Plific assim que o motoboy loga
+        // Antes só era buscado quando ele clicava em "Saque Emergencial". Agora a home mostra direto.
+        React.useEffect(() => {
+            const codProf = l && (l.cod_profissional || l.codProfissional);
+            if (l && l.role === "user" && codProf && saldoPlificUser.saldo === null && !saldoPlificUser.loading) {
+                buscarSaldoPlificUsuario();
+            }
+        }, [l?.codProfissional]);
         
         // Componente do Tutorial
         const TutorialOverlay = () => {
@@ -5124,14 +5133,16 @@ const hideLoadingScreen = () => {
 
 
         // Buscar saldo Plific do usuário logado (para tela de saque)
+        // 🔧 FIX 2026-05: aceita tanto camelCase quanto snake_case (objeto user usa camelCase no login)
         const buscarSaldoPlificUsuario = async (forceRefresh = false) => {
-            if (!l || !l.cod_profissional) return;
+            const codProf = l && (l.cod_profissional || l.codProfissional);
+            if (!l || !codProf) return;
             
             setSaldoPlificUser(prev => ({ ...prev, loading: true, erro: null }));
             try {
                 const url = forceRefresh 
-                    ? `${API_URL}/plific/saldo/${l.cod_profissional}?refresh=true`
-                    : `${API_URL}/plific/saldo/${l.cod_profissional}`;
+                    ? `${API_URL}/plific/saldo/${codProf}?refresh=true`
+                    : `${API_URL}/plific/saldo/${codProf}`;
                 const response = await fetchAuth(url);
                 const data = await response.json();
                 
@@ -10544,18 +10555,27 @@ const hideLoadingScreen = () => {
             })(),
 
             // ===== QUICK ACTIONS (4 ícones em grid) =====
+            // Ordem: Saque · Correção · Liberar OS · Ajuste
             React.createElement("div", {
                 className: "grid grid-cols-4 gap-2 mb-4"
             },
-                // Coleta
-                hasModuleAccess(l, "coleta") && React.createElement("button", {
-                    onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
-                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                // 1 — Saque Emergencial
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "saque" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "💰"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Saque", React.createElement("br"), "Emergencial")
+                ),
+                // 2 — Correção de Endereço
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "correcao-endereco" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-pink-300 hover:bg-pink-50 transition-all active:scale-95 flex flex-col items-center gap-1"
                 },
                     React.createElement("div", { className: "text-xl" }, "📍"),
-                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Coleta", React.createElement("br"), "Endereços")
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Correção", React.createElement("br"), "Endereço")
                 ),
-                // Liberar OS
+                // 3 — Liberar OS
                 React.createElement("button", {
                     onClick: () => x({ ...p, userTab: "liberar-ponto" }),
                     className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all active:scale-95 flex flex-col items-center gap-1"
@@ -10563,21 +10583,13 @@ const hideLoadingScreen = () => {
                     React.createElement("div", { className: "text-xl" }, "🔓"),
                     React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Liberar", React.createElement("br"), "OS")
                 ),
-                // Solicitar Ajuste
+                // 4 — Solicitar Ajuste
                 React.createElement("button", {
                     onClick: () => x({ ...p, userTab: "solicitacoes" }),
                     className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-all active:scale-95 flex flex-col items-center gap-1"
                 },
                     React.createElement("div", { className: "text-xl" }, "📝"),
                     React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Solicitar", React.createElement("br"), "Ajuste")
-                ),
-                // Saque
-                React.createElement("button", {
-                    onClick: () => x({ ...p, userTab: "saque" }),
-                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all active:scale-95 flex flex-col items-center gap-1"
-                },
-                    React.createElement("div", { className: "text-xl" }, "💰"),
-                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Saque", React.createElement("br"), "Emergencial")
                 )
             ),
 
@@ -10627,11 +10639,23 @@ const hideLoadingScreen = () => {
             ),
 
             // ===== SEÇÃO "MAIS" (lista compacta agrupada) =====
+            // Ordem: Consultar Endereços (renomeado de "Coleta de Endereços") · Indicar · Seguro · Lojinha
             React.createElement("div", { className: "text-[10px] text-gray-400 mb-1.5 ml-1 tracking-wider font-semibold" }, "MAIS"),
             React.createElement("div", {
                 className: "bg-white rounded-2xl border border-gray-100 overflow-hidden"
             },
-                // Indicação
+                // 1 — Consultar Endereços (antiga "Coleta de Endereços")
+                hasModuleAccess(l, "coleta") && React.createElement("button", {
+                    onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🗺️"),
+                        React.createElement("span", null, "Consultar Endereços")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // 2 — Indicar amigo
                 React.createElement("button", {
                     onClick: () => x({ ...p, userTab: "indicacoes" }),
                     className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
@@ -10645,18 +10669,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
                 ),
-                // Correção endereço
-                React.createElement("button", {
-                    onClick: () => x({ ...p, userTab: "correcao-endereco" }),
-                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
-                },
-                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
-                        React.createElement("span", null, "📍"),
-                        React.createElement("span", null, "Correção de Endereço")
-                    ),
-                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
-                ),
-                // Seguro
+                // 3 — Seguro IZA
                 React.createElement("button", {
                     onClick: () => x({ ...p, userTab: "seguro-iza" }),
                     className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
@@ -10667,7 +10680,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
                 ),
-                // Lojinha
+                // 4 — Lojinha
                 React.createElement("button", {
                     onClick: () => x({ ...p, userTab: "loja" }),
                     className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
