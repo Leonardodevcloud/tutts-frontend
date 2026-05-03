@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.7.3"; // Home motoboy — polling adaptativo + visibilitychange + delay no F5
+const APP_VERSION = "2.7.4"; // Coleta -> Consultar Enderecos + paginacao
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -550,7 +550,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}, {id: "emails-automacao", label: "Automação E-mail"}]
     },
-    { id: "coleta", label: "Coleta de Endereços", icon: "📍", abas: [] },
+    { id: "coleta", label: "Consultar Endereços", icon: "🗺️", abas: [] },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
@@ -9669,7 +9669,7 @@ const hideLoadingScreen = () => {
                             onClick: () => he("home"),
                             className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
                         }, "← Voltar"),
-                        React.createElement("h1", { className: "text-xl font-bold" }, "📍 Coleta de Endereços")
+                        React.createElement("h1", { className: "text-xl font-bold" }, "🗺️ Consultar Endereços")
                     ),
                     // Conteúdo
                     typeof window.ModuloColetaComponent !== 'undefined'
@@ -20385,9 +20385,9 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📍")
+                                React.createElement("span", {className: "text-3xl"}, "🗺️")
                             ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Consultar Endereços"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Base colaborativa")
                         )
                     ),

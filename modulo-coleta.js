@@ -497,24 +497,56 @@
 
     // ==================== TAB CONSULTAR ====================
     function TabConsultar({ fetchApi, showToast }) {
-        const [dados, setDados] = useState({ aprovados: [], meus_pendentes: [] });
+        // 🚀 2026-05: paginação inteligente — começa com 50, botão "Carregar mais" acumula
+        const PAGE_SIZE = 50;
+        const [aprovados, setAprovados] = useState([]);
+        const [meusPendentes, setMeusPendentes] = useState([]);
+        const [total, setTotal] = useState(0);
+        const [page, setPage] = useState(1);
+        const [hasMore, setHasMore] = useState(false);
         const [loading, setLoading] = useState(true);
+        const [loadingMore, setLoadingMore] = useState(false);
         const [filtro, setFiltro] = useState('');
         const [modalFoto, setModalFoto] = useState(null);
 
-        const carregar = useCallback(() => {
+        // Carga inicial / após mudança de filtro: reseta tudo e busca página 1
+        const carregarInicial = useCallback(() => {
             setLoading(true);
-            const q = filtro.trim() ? '?q=' + encodeURIComponent(filtro) : '';
-            fetchApi('/motoboy/coleta/enderecos' + q)
-                .then(setDados)
+            const params = ['page=1', 'limit=' + PAGE_SIZE];
+            if (filtro.trim()) params.push('q=' + encodeURIComponent(filtro));
+            fetchApi('/motoboy/coleta/enderecos?' + params.join('&'))
+                .then(d => {
+                    setAprovados(d.aprovados || []);
+                    setMeusPendentes(d.meus_pendentes || []);
+                    setTotal(d.total || 0);
+                    setHasMore(!!d.hasMore);
+                    setPage(1);
+                })
                 .catch(err => showToast('❌ ' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, [filtro]);
 
+        // Carrega próxima página e acumula
+        const carregarMais = () => {
+            if (loadingMore || !hasMore) return;
+            setLoadingMore(true);
+            const proxima = page + 1;
+            const params = ['page=' + proxima, 'limit=' + PAGE_SIZE];
+            if (filtro.trim()) params.push('q=' + encodeURIComponent(filtro));
+            fetchApi('/motoboy/coleta/enderecos?' + params.join('&'))
+                .then(d => {
+                    setAprovados(prev => [...prev, ...(d.aprovados || [])]);
+                    setHasMore(!!d.hasMore);
+                    setPage(proxima);
+                })
+                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .finally(() => setLoadingMore(false));
+        };
+
         useEffect(() => {
-            const t = setTimeout(carregar, 300);
+            const t = setTimeout(carregarInicial, 300);
             return () => clearTimeout(t);
-        }, [carregar]);
+        }, [carregarInicial]);
 
         const abrirFoto = async (pendenteId) => {
             try {
@@ -545,11 +577,11 @@
 
             // 2026-04: Seção "meus_pendentes" REMOVIDA — motoboy não cadastra mais.
 
-            !loading && dados.aprovados.length > 0 && h('div', null,
+            !loading && aprovados.length > 0 && h('div', null,
                 h('h3', { className: 'text-xs font-bold text-gray-500 uppercase mb-2 mt-4' },
-                    'Endereços das suas regiões (' + dados.aprovados.length + ')'),
+                    'Endereços das suas regiões (' + aprovados.length + (total > aprovados.length ? ' de ' + total : '') + ')'),
                 h('div', { className: 'space-y-2' },
-                    dados.aprovados.map(e => {
+                    aprovados.map(e => {
                         // Nome principal: prioriza nome_fantasia → razao_social → apelido → procurar_por
                         const nomePrincipal = e.nome_fantasia || e.razao_social || e.apelido || e.procurar_por_padrao || '(sem nome)';
                         // Razão social entre parênteses só se diferente do nome principal
@@ -611,10 +643,20 @@
                             )
                         );
                     })
-                )
+                ),
+                // Botão "Carregar mais" — só aparece quando ainda há páginas
+                hasMore && h('button', {
+                    onClick: carregarMais,
+                    disabled: loadingMore,
+                    className: 'w-full mt-3 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm disabled:bg-gray-400 disabled:cursor-not-allowed'
+                }, loadingMore ? '⏳ Carregando...' : 'Carregar mais (' + Math.min(PAGE_SIZE, total - aprovados.length) + ')'),
+                // Mensagem quando chegou no fim
+                !hasMore && total > PAGE_SIZE && h('div', {
+                    className: 'text-center text-xs text-gray-400 mt-3 pb-2'
+                }, '✓ Todos os ' + total + ' endereços carregados')
             ),
 
-            !loading && dados.aprovados.length === 0 && dados.meus_pendentes.length === 0 && h('div', {
+            !loading && aprovados.length === 0 && meusPendentes.length === 0 && h('div', {
                 className: 'text-center py-8 text-gray-400'
             },
                 h('div', { className: 'text-4xl mb-2' }, '📭'),
@@ -705,18 +747,16 @@
 
     // ==================== VIEW ADMIN ====================
     function ViewAdmin({ fetchApi, showToast }) {
-        const [tab, setTab] = useState('cadastrados');
+        const [tab, setTab] = useState('fila');
 
         return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
             h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
                 h('div', { className: 'flex gap-1 p-1' },
                     [
-                        // 🔧 2026-05: Abas "Fila de Validação" e "Estatísticas" removidas.
-                        // Função do motoboy ganhar R$1 por cadastro foi desativada — não há
-                        // mais coleta colaborativa, então fila/stats viraram irrelevantes.
-                        // Endpoints do backend continuam ativos (caso futuramente reabilite).
+                        { id: 'fila', label: '⏳ Fila de Validação' },
                         { id: 'cadastrados', label: '📚 Cadastrados' },
-                        { id: 'regioes', label: '🌎 Regiões' }
+                        { id: 'regioes', label: '🌎 Regiões' },
+                        { id: 'stats', label: '📊 Estatísticas' }
                     ].map(t => h('button', {
                         key: t.id,
                         onClick: () => setTab(t.id),
@@ -725,8 +765,10 @@
                     }, t.label))
                 )
             ),
+            tab === 'fila' && h(AdminFila, { fetchApi, showToast }),
             tab === 'cadastrados' && h(AdminCadastrados, { fetchApi, showToast }),
-            tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast })
+            tab === 'regioes' && h(AdminRegioes, { fetchApi, showToast }),
+            tab === 'stats' && h(AdminStats, { fetchApi, showToast })
         );
     }
 
@@ -1445,49 +1487,22 @@
         const salvarEdicao = async () => {
             try {
                 const isNovo = !editando.id;
-                // 🔧 2026-05: se faltar rua mas tiver endereco_completo, dispara busca
-                // automaticamente antes de salvar (caso o user não tenha clicado em "Buscar").
-                // Sem isso, o backend grava só com endereco_completo (vai ter o fix server-side
-                // que parseia, mas é melhor já mandar tudo certo).
-                let dadosFinais = editando;
-                if (isNovo && !editando.rua && editando.endereco_completo && editando.endereco_completo.length > 5) {
-                    try {
-                        const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(editando.endereco_completo));
-                        if (data.results && data.results.length > 0) {
-                            const r = data.results[0];
-                            const comp = r.componentes || [];
-                            const get = (t) => (comp.find(c => c.types && c.types.includes(t)) || {}).long_name || '';
-                            dadosFinais = {
-                                ...editando,
-                                rua: get('route') || editando.rua,
-                                numero: get('street_number') || editando.numero,
-                                bairro: get('sublocality_level_1') || get('sublocality') || editando.bairro,
-                                cidade: get('administrative_area_level_2') || get('locality') || editando.cidade,
-                                uf: (comp.find(c => c.types && c.types.includes('administrative_area_level_1')) || {}).short_name || editando.uf,
-                                cep: get('postal_code') || editando.cep,
-                                latitude: r.latitude || editando.latitude,
-                                longitude: r.longitude || editando.longitude,
-                                endereco_completo: r.endereco || editando.endereco_completo
-                            };
-                        }
-                    } catch (geoErr) { /* segue mesmo sem geocode — backend tem fallback */ }
-                }
                 const url = isNovo ? '/admin/coleta/enderecos-cadastrados' : '/admin/coleta/enderecos-cadastrados/' + editando.id;
                 const method = isNovo ? 'POST' : 'PATCH';
                 await fetchApi(url, {
                     method: method,
                     body: JSON.stringify({
-                        apelido: dadosFinais.apelido,
-                        endereco_completo: dadosFinais.endereco_completo,
-                        rua: dadosFinais.rua,
-                        numero: dadosFinais.numero,
-                        bairro: dadosFinais.bairro,
-                        cidade: dadosFinais.cidade,
-                        uf: dadosFinais.uf,
-                        cep: dadosFinais.cep,
-                        latitude: dadosFinais.latitude || null,
-                        longitude: dadosFinais.longitude || null,
-                        grupo_enderecos_id: dadosFinais.grupo_enderecos_id ? parseInt(dadosFinais.grupo_enderecos_id) : null
+                        apelido: editando.apelido,
+                        endereco_completo: editando.endereco_completo,
+                        rua: editando.rua,
+                        numero: editando.numero,
+                        bairro: editando.bairro,
+                        cidade: editando.cidade,
+                        uf: editando.uf,
+                        cep: editando.cep,
+                        latitude: editando.latitude || null,
+                        longitude: editando.longitude || null,
+                        grupo_enderecos_id: editando.grupo_enderecos_id ? parseInt(editando.grupo_enderecos_id) : null
                     })
                 });
                 showToast(isNovo ? '✅ Endereço criado' : '✅ Salvo', 'success');
