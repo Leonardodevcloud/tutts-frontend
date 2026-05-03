@@ -268,7 +268,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     // ==================== RENDERIZAÇÃO ADMIN ====================
     if (isAdmin) {
         // Card de profissional na fila de espera (com drag-drop)
+        // 🚀 2026-05: Card reformulado — avatar + hierarquia de ações (primária verde, secundárias outline)
         const renderCardAguardando = (p, i) => {
+            // Iniciais do nome pra avatar
+            const partes = (p.nome_profissional || '').trim().split(/\s+/);
+            const iniciais = partes.length >= 2
+                ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+                : (partes[0] || '?').substring(0, 2).toUpperCase();
+            const notaNum = (parseInt(p.notas_liberadas) || 0) + 1;
+            const proxNotaTexto = notaNum === 1 ? '🚀 Despachar com 1ª nota' : `📦 Liberar ${notaNum}ª nota`;
+
             return React.createElement('div', {
                 key: p.cod_profissional,
                 draggable: true,
@@ -276,54 +285,90 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                 onDragEnd: () => setDragData(null),
                 onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
                 onDrop: (e) => { e.preventDefault(); const cod = e.dataTransfer.getData('text/plain'); if(cod && cod !== p.cod_profissional) reordenarFila(cod, p.posicao); setDragData(null); },
-                className: `bg-white rounded-lg p-3 border flex items-center justify-between cursor-grab active:cursor-grabbing transition-all ${dragData === p.cod_profissional ? 'opacity-50 scale-95' : ''} ${p.motivo_posicao === 'retorno_prioritario' ? 'border-yellow-400 bg-yellow-50' : p.motivo_posicao === 'movido_ultimo' ? 'border-red-400 bg-red-50' : ''}`
+                className: `border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all ${dragData === p.cod_profissional ? 'opacity-50 scale-95' : ''} ${p.motivo_posicao === 'retorno_prioritario' ? 'border-yellow-300 bg-yellow-50' : p.motivo_posicao === 'movido_ultimo' ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`
             },
-                React.createElement('div', { className: 'flex items-center gap-3 flex-1 min-w-0' },
-                    React.createElement('span', { className: 'text-gray-400 cursor-grab', style: { fontSize: '18px' } }, '⠿'),
-                    React.createElement('span', { className: `w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${i === 0 ? 'bg-green-100 text-green-700' : p.motivo_posicao === 'movido_ultimo' ? 'bg-red-100 text-red-700' : p.motivo_posicao === 'retorno_prioritario' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}` }, p.posicao),
-                    React.createElement('div', { className: 'min-w-0' },
-                        React.createElement('p', { className: 'font-medium truncate' }, p.nome_profissional),
-                        React.createElement('p', { className: 'text-xs text-gray-500' }, `#${p.cod_profissional} • ⏱️ ${formatarTempo(p.minutos_esperando)}`),
-                        p.motivo_posicao === 'retorno_prioritario' && React.createElement('p', { className: 'text-xs text-yellow-700 font-medium' }, '👑 Retorno prioritário'),
-                        p.motivo_posicao === 'movido_ultimo' && React.createElement('p', { className: 'text-xs text-red-700 font-medium' }, '⬇️ Movido para o final')
+                // LINHA 1: handle + posição + avatar + nome + tempo
+                React.createElement('div', { className: 'flex items-center gap-2.5 mb-2' },
+                    React.createElement('span', { className: 'text-gray-300', style: { fontSize: '14px' } }, '⠿'),
+                    // Badge posição
+                    React.createElement('div', {
+                        className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${i === 0 ? 'bg-green-100 text-green-700' : p.motivo_posicao === 'movido_ultimo' ? 'bg-red-100 text-red-700' : p.motivo_posicao === 'retorno_prioritario' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`
+                    }, p.posicao),
+                    // Avatar iniciais
+                    React.createElement('div', {
+                        className: 'w-7 h-7 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0'
+                    }, iniciais),
+                    // Nome + meta
+                    React.createElement('div', { className: 'flex-1 min-w-0' },
+                        React.createElement('p', { className: 'font-medium text-sm text-gray-900 truncate' }, p.nome_profissional),
+                        React.createElement('div', { className: 'flex items-center gap-2 text-xs text-gray-500' },
+                            React.createElement('span', null, '#', p.cod_profissional),
+                            React.createElement('span', null, '·'),
+                            React.createElement('span', null, formatarTempo(p.minutos_esperando), ' na fila'),
+                            p.motivo_posicao === 'retorno_prioritario' && React.createElement('span', { className: 'text-yellow-700 font-medium' }, '· 👑 Retorno prioritário'),
+                            p.motivo_posicao === 'movido_ultimo' && React.createElement('span', { className: 'text-red-700 font-medium' }, '· ⬇ Movido para o final')
+                        )
+                    ),
+                    // Indicador de notas liberadas (só se > 0)
+                    p.notas_liberadas > 0 && React.createElement('div', { className: 'flex items-center gap-1 flex-shrink-0' },
+                        React.createElement('span', { className: 'text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full' }, `📦 ${p.notas_liberadas}`),
+                        p.primeira_nota_at && React.createElement('span', { className: 'text-xs font-mono text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full' }, `⏱${formatarCronometro(p.primeira_nota_at)}`)
                     )
                 ),
-                React.createElement('div', { className: 'flex flex-col items-end gap-1 flex-shrink-0' },
-                    p.notas_liberadas > 0 && React.createElement('div', { className: 'flex items-center gap-1' },
-                        React.createElement('span', { className: 'text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full' }, `📦 ${p.notas_liberadas} nota(s)`),
-                        p.primeira_nota_at && React.createElement('span', { className: 'text-xs font-mono text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full' }, `⏱${formatarCronometro(p.primeira_nota_at)}`)
-                    ),
-                    p.bairros && p.bairros.length > 0 && React.createElement('div', { className: 'flex flex-wrap gap-1 justify-end items-center', style: { maxWidth: '200px' } },
-                        // 🚀 2026-05: cada chip agora é clicável — clica nele e remove SÓ aquele bairro
-                        p.bairros.map((b, bi) => React.createElement('button', {
-                            key: bi,
-                            onClick: () => removerUmBairroProfissional(p.cod_profissional, p.bairros, bi),
-                            style: { fontSize: '10px' },
-                            className: 'inline-flex items-center gap-0.5 font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full hover:bg-red-100 hover:text-red-700 transition-colors',
-                            title: 'Clique pra remover este bairro'
-                        }, `📍${b}`, React.createElement('span', { className: 'opacity-60', style: { fontSize: '9px' } }, '✕'))),
-                        // Botão editar (abre modal com lista atual + adicionar mais)
-                        React.createElement('button', {
-                            onClick: () => abrirEdicaoBairros(p),
-                            style: { fontSize: '10px' },
-                            className: 'text-blue-600 hover:text-blue-800 font-bold px-1',
-                            title: 'Editar lista de bairros'
-                        }, '✏️'),
-                        // Botão limpar todos (mantém o ✕ que tava antes mas com aviso visual)
-                        React.createElement('button', {
-                            onClick: () => { if (window.confirm('Limpar TODOS os bairros deste motoboy?')) limparBairrosProfissional(p.cod_profissional); },
-                            style: { fontSize: '10px' },
-                            className: 'text-red-500 hover:text-red-700 font-bold px-1',
-                            title: 'Limpar todos os bairros'
-                        }, '🗑️')
-                    ),
-                    React.createElement('div', { className: 'flex gap-1' },
-                        React.createElement('button', { onClick: () => { setModalBairros({ cod_profissional: p.cod_profissional, nome: p.nome_profissional, bairros: p.bairros || [], notaNum: (parseInt(p.notas_liberadas)||0)+1 }); }, className: 'px-2 py-1 bg-purple-600 text-white rounded-lg text-xs', title: `Liberar ${(parseInt(p.notas_liberadas)||0)+1}ª Nota + Bairros` }, `📦 ${(parseInt(p.notas_liberadas)||0)+1}ª`),
-                        React.createElement('button', { onClick: () => enviarParaRota(p.cod_profissional), className: 'px-2 py-1 bg-green-600 text-white rounded-lg text-xs', title: 'Despachar Roteiro' }, '🚀'),
-                        React.createElement('button', { onClick: () => enviarParaRotaUnica(p.cod_profissional), className: 'px-2 py-1 bg-yellow-500 text-white rounded-lg text-xs', title: 'Corrida Única' }, '👑'),
-                        React.createElement('button', { onClick: () => moverParaUltimo(p.cod_profissional), className: 'px-2 py-1 bg-orange-500 text-white rounded-lg text-xs', title: 'Mover para Último' }, '⬇️'),
-                        React.createElement('button', { onClick: () => removerDaFila(p.cod_profissional), className: 'px-2 py-1 bg-red-100 text-red-600 rounded-lg text-xs', title: 'Remover' }, '❌')
-                    )
+                // LINHA 2 (opcional): bairros tagueados — chips removíveis individual + add + editar + limpar
+                p.bairros && p.bairros.length > 0 && React.createElement('div', {
+                    className: 'flex flex-wrap gap-1.5 items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 mb-2'
+                },
+                    React.createElement('span', { className: 'text-[10px] font-semibold text-gray-500 mr-1' }, 'BAIRROS:'),
+                    p.bairros.map((b, bi) => React.createElement('button', {
+                        key: bi,
+                        onClick: () => removerUmBairroProfissional(p.cod_profissional, p.bairros, bi),
+                        className: 'inline-flex items-center gap-0.5 font-medium bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full text-xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors',
+                        title: 'Clique pra remover este bairro'
+                    }, '📍 ', b, React.createElement('span', { className: 'opacity-60 ml-0.5' }, '✕'))),
+                    React.createElement('button', {
+                        onClick: () => abrirEdicaoBairros(p),
+                        className: 'inline-flex items-center px-2 py-0.5 rounded-full text-xs text-blue-600 hover:text-blue-800 border border-dashed border-gray-300 hover:border-blue-300 hover:bg-blue-50 transition-colors',
+                        title: 'Editar lista'
+                    }, '✏️ Editar'),
+                    React.createElement('button', {
+                        onClick: () => { if (window.confirm('Limpar TODOS os bairros deste motoboy?')) limparBairrosProfissional(p.cod_profissional); },
+                        className: 'inline-flex items-center text-red-500 hover:text-red-700 px-1 text-xs',
+                        title: 'Limpar todos'
+                    }, '🗑️')
+                ),
+                // LINHA 3: ações com hierarquia
+                React.createElement('div', { className: 'flex gap-1.5' },
+                    // PRIMÁRIA: liberar nota + bairros (preenchida — ação que move a fila)
+                    React.createElement('button', {
+                        onClick: () => { setModalBairros({ cod_profissional: p.cod_profissional, nome: p.nome_profissional, bairros: p.bairros || [], notaNum }); },
+                        className: 'flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                        title: `Liberar ${notaNum}ª Nota + atribuir bairros`
+                    }, proxNotaTexto),
+                    // SECUNDÁRIA: despachar roteiro (verde, só ícone — ação técnica)
+                    React.createElement('button', {
+                        onClick: () => enviarParaRota(p.cod_profissional),
+                        className: 'bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs transition-colors',
+                        title: 'Despachar Roteiro'
+                    }, '🚀'),
+                    // SECUNDÁRIA: corrida única
+                    React.createElement('button', {
+                        onClick: () => enviarParaRotaUnica(p.cod_profissional),
+                        className: 'bg-white border border-gray-300 hover:bg-yellow-50 hover:border-yellow-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition-colors',
+                        title: 'Corrida Única'
+                    }, '👑'),
+                    // TERCIÁRIA: mover pro final
+                    React.createElement('button', {
+                        onClick: () => moverParaUltimo(p.cod_profissional),
+                        className: 'bg-white border border-gray-300 hover:bg-orange-50 hover:border-orange-300 text-gray-600 px-3 py-1.5 rounded-lg text-xs transition-colors',
+                        title: 'Mover pro final (limpa bairros)'
+                    }, '⬇'),
+                    // DESTRUTIVA: remover
+                    React.createElement('button', {
+                        onClick: () => removerDaFila(p.cod_profissional),
+                        className: 'bg-white border border-gray-300 hover:bg-red-50 hover:border-red-300 text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs transition-colors',
+                        title: 'Remover da fila'
+                    }, '✕')
                 )
             );
         };
@@ -383,64 +428,111 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         }
 
         // DETALHE DA CENTRAL SELECIONADA
-        return React.createElement('div', { className: 'space-y-6' },
-            React.createElement('div', { className: 'bg-white rounded-xl shadow p-4' },
-                React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-4' },
-                    React.createElement('div', { className: 'flex items-center gap-3' },
-                        React.createElement('button', { onClick: () => { setCentralSelecionada(null); carregarCentrais(); }, className: 'w-10 h-10 flex items-center justify-center bg-purple-100 text-purple-700 rounded-xl hover:bg-purple-200 transition-colors font-bold text-lg' }, '←'),
-                        React.createElement('div', null, React.createElement('h1', { className: 'text-xl font-bold text-gray-800' }, centralSelecionada.nome), React.createElement('p', { className: 'text-sm text-gray-500' }, centralSelecionada.endereco))
-                    ),
-                    React.createElement('button', { onClick: () => setModalCentral({}), className: 'px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700' }, '➕ Nova Fila')
+        return React.createElement('div', { className: 'space-y-4' },
+            // 🚀 2026-05: Header compactado — voltar + nome/endereço + ações primárias
+            React.createElement('div', { className: 'flex items-center justify-between gap-3' },
+                React.createElement('div', { className: 'flex items-center gap-2 min-w-0 flex-1' },
+                    React.createElement('button', {
+                        onClick: () => { setCentralSelecionada(null); carregarCentrais(); },
+                        className: 'w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-lg flex-shrink-0',
+                        title: 'Voltar pra lista de centrais'
+                    }, '←'),
+                    React.createElement('div', { className: 'min-w-0' },
+                        React.createElement('h1', { className: 'text-base font-semibold text-gray-900 truncate' }, centralSelecionada.nome),
+                        React.createElement('p', { className: 'text-xs text-gray-500 truncate' }, centralSelecionada.endereco || '—')
+                    )
+                ),
+                React.createElement('div', { className: 'flex gap-2 flex-shrink-0' },
+                    React.createElement('button', {
+                        onClick: abrirModalColocarFila,
+                        className: 'px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1'
+                    }, '➕ ', React.createElement('span', { className: 'hidden sm:inline' }, 'Colocar na fila'))
                 )
             ),
-            React.createElement('div', { className: 'bg-white rounded-xl shadow' },
-                React.createElement('div', { className: 'border-b flex gap-1 p-2 flex-wrap' },
-                    ['monitoramento', 'vinculos', 'penalidades', 'relatorios', 'config'].map(aba => React.createElement('button', { key: aba, onClick: () => onChangeTab(aba), className: `px-4 py-2 rounded-lg font-medium transition-all ${abaAtiva === aba ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:bg-gray-100'}` },
-                        aba === 'monitoramento' ? '📊 Monitor' : aba === 'vinculos' ? '👥 Vínculos' : aba === 'penalidades' ? '🚫 Penalidades' : aba === 'relatorios' ? '📈 Relatórios' : '⚙️ Config'))
-                ),
-                React.createElement('div', { className: 'p-6' },
+
+            // 🚀 2026-05: Tabs como pílulas dentro de container branco
+            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
+                ['monitoramento', 'vinculos', 'penalidades', 'relatorios', 'config'].map(aba => React.createElement('button', {
+                    key: aba,
+                    onClick: () => onChangeTab(aba),
+                    className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
+                }, aba === 'monitoramento' ? 'Monitor' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? 'Penalidades' : aba === 'relatorios' ? 'Relatórios' : 'Config'))
+            ),
+
+            // Container das abas (sem card duplo — abas são autocontidas agora)
+            React.createElement('div', null,
                     // MONITORAMENTO
-                    abaAtiva === 'monitoramento' && centralSelecionada && React.createElement('div', { className: 'space-y-6' },
-                        React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
-                            React.createElement('div', { className: 'bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white' }, React.createElement('div', { className: 'text-3xl mb-1' }, '⏳'), React.createElement('div', { className: 'text-2xl font-bold' }, filaAtual.total_aguardando || 0), React.createElement('div', { className: 'text-sm opacity-80' }, 'Aguardando')),
-                            React.createElement('div', { className: 'bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white' }, React.createElement('div', { className: 'text-3xl mb-1' }, '🏍️'), React.createElement('div', { className: 'text-2xl font-bold' }, filaAtual.total_em_rota || 0), React.createElement('div', { className: 'text-sm opacity-80' }, 'Em Rota')),
-                            React.createElement('div', { className: `bg-gradient-to-br ${filaAtual.alertas?.length > 0 ? 'from-red-500 to-red-600 animate-pulse' : 'from-gray-400 to-gray-500'} rounded-xl p-4 text-white` }, React.createElement('div', { className: 'text-3xl mb-1' }, '🚨'), React.createElement('div', { className: 'text-2xl font-bold' }, filaAtual.alertas?.length || 0), React.createElement('div', { className: 'text-sm opacity-80' }, 'Alertas (+90min)')),
-                            React.createElement('div', { className: 'bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white' }, React.createElement('div', { className: 'text-3xl mb-1' }, '📍'), React.createElement('div', { className: 'text-2xl font-bold' }, centralSelecionada.total_vinculados || 0), React.createElement('div', { className: 'text-sm opacity-80' }, 'Vinculados'))
+                    abaAtiva === 'monitoramento' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
+                        // 🚀 Status row: 3 cards principais + linha de contexto Vinculados
+                        React.createElement('div', { className: 'grid grid-cols-3 gap-2' },
+                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mb-1' }, 'Aguardando'),
+                                React.createElement('div', { className: 'text-2xl font-semibold text-blue-700' }, filaAtual.total_aguardando || 0)
+                            ),
+                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mb-1' }, 'Em Rota'),
+                                React.createElement('div', { className: 'text-2xl font-semibold text-green-700' }, filaAtual.total_em_rota || 0)
+                            ),
+                            React.createElement('div', { className: `bg-white border rounded-xl p-3 ${filaAtual.alertas?.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}` },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mb-1' }, 'Alertas +90min'),
+                                React.createElement('div', { className: `text-2xl font-semibold ${filaAtual.alertas?.length > 0 ? 'text-red-700' : 'text-gray-400'}` }, filaAtual.alertas?.length || 0)
+                            )
+                        ),
+                        React.createElement('div', { className: 'text-xs text-gray-400 text-right -mt-2' },
+                            '📍 ', centralSelecionada.total_vinculados || 0, ' motoboys vinculados a esta central'
                         ),
                         filaAtual.alertas?.length > 0 && React.createElement('div', { className: 'bg-red-50 border-2 border-red-400 rounded-xl p-4 animate-pulse' },
                             React.createElement('div', { className: 'flex items-center gap-3 mb-3' }, React.createElement('span', { className: 'text-3xl' }, '🚨'), React.createElement('div', null, React.createElement('p', { className: 'text-red-800 font-bold text-lg' }, `ATENÇÃO: ${filaAtual.alertas.length} profissional(is) não retornou!`), React.createElement('p', { className: 'text-red-600 text-sm' }, 'Tempo em rota > 1h30min'))),
                             React.createElement('div', { className: 'grid md:grid-cols-2 gap-2' }, filaAtual.alertas.map(p => React.createElement('div', { key: p.cod_profissional, className: 'bg-white border border-red-300 rounded-lg p-3 flex justify-between items-center' }, React.createElement('div', null, React.createElement('p', { className: 'font-bold' }, p.nome_profissional), React.createElement('p', { className: 'text-sm text-red-600' }, `⏱️ ${formatarTempo(p.minutos_em_rota)} em rota`)), React.createElement('button', { onClick: () => removerDaFila(p.cod_profissional), className: 'px-3 py-1 bg-red-600 text-white rounded-lg text-sm' }, '❌'))))
                         ),
-                        React.createElement('div', { className: 'grid md:grid-cols-2 gap-6' },
-                            React.createElement('div', { className: 'bg-blue-50 rounded-xl p-4 border border-blue-200' },
-                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
-                                    React.createElement('h3', { className: 'font-bold text-blue-800' }, '⏳ Fila de Espera (arraste para reordenar)'),
-                                    React.createElement('button', {
-                                        onClick: abrirModalColocarFila,
-                                        className: 'px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1',
-                                        title: 'Colocar um motoboy vinculado direto na fila'
-                                    }, '➕ Colocar na fila')
-                                ),
-                                filaAtual.aguardando?.length === 0 ? React.createElement('div', { className: 'text-center py-8 text-gray-500' }, '📭 Nenhum na fila') :
-                                React.createElement('div', { className: 'space-y-2' }, filaAtual.aguardando.map((p, i) => renderCardAguardando(p, i)))
-                            ),
-                            React.createElement('div', { className: 'bg-green-50 rounded-xl p-4 border border-green-200' },
-                                React.createElement('h3', { className: 'font-bold text-green-800 mb-4' }, '🏍️ Em Rota'),
-                                filaAtual.em_rota?.length === 0 ? React.createElement('div', { className: 'text-center py-8 text-gray-500' }, '🏠 Nenhum em rota') :
-                                React.createElement('div', { className: 'space-y-2' }, filaAtual.em_rota.map(p => React.createElement('div', { key: p.cod_profissional, className: `bg-white rounded-lg p-3 border ${p.minutos_em_rota > 90 ? 'border-red-300 bg-red-50' : p.corrida_unica ? 'border-yellow-300 bg-yellow-50' : ''} flex flex-col gap-2` },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
-                                        React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('span', { className: 'text-2xl' }, p.corrida_unica ? '👑' : '🏍️'), React.createElement('div', null, React.createElement('p', { className: 'font-medium' }, p.nome_profissional), React.createElement('p', { className: `text-xs ${p.minutos_em_rota > 90 ? 'text-red-600 font-bold' : 'text-gray-500'}` }, `⏱️ ${formatarTempo(p.minutos_em_rota)} em rota`, p.corrida_unica && ' • Corrida Única'))),
-                                        React.createElement('button', { onClick: () => removerDaFila(p.cod_profissional), className: 'px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm' }, '❌')
+                        // 🚀 2026-05: Layout repaginado — fila como card branco neutro, em rota colapsando vazio
+                        React.createElement('div', null,
+                            // FILA DE ESPERA (sempre expandida, é a coluna principal)
+                            React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3 mb-3' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-3 px-1' },
+                                    React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' },
+                                        'Fila de Espera · ',
+                                        React.createElement('span', { className: 'text-gray-700' }, (filaAtual.aguardando?.length || 0)),
+                                        ' motoboys'
                                     ),
-                                    p.bairros && p.bairros.length > 0 && React.createElement('div', { className: 'flex flex-wrap gap-1 ml-11' },
-                                        p.bairros.map((b, bi) => React.createElement('span', { key: bi, style: { fontSize: '10px' }, className: 'font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full' }, `📍${b}`))
-                                    )
-                                )))
-                            )
+                                    React.createElement('span', { className: 'text-[10px] text-gray-400' }, 'arraste pra reordenar')
+                                ),
+                                filaAtual.aguardando?.length === 0
+                                    ? React.createElement('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '📭 Nenhum motoboy aguardando')
+                                    : React.createElement('div', { className: 'space-y-2' }, filaAtual.aguardando.map((p, i) => renderCardAguardando(p, i)))
+                            ),
+                            // EM ROTA (colapsa quando vazio)
+                            (filaAtual.em_rota?.length || 0) === 0
+                                ? React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl px-3 py-2.5 flex items-center justify-between' },
+                                    React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Em Rota · 0 motoboys'),
+                                    React.createElement('div', { className: 'text-xs text-gray-400' }, '🏠 Nenhum despachado')
+                                )
+                                : React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+                                    React.createElement('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1' },
+                                        'Em Rota · ',
+                                        React.createElement('span', { className: 'text-gray-700' }, filaAtual.em_rota.length),
+                                        ' motoboys'
+                                    ),
+                                    React.createElement('div', { className: 'space-y-2' }, filaAtual.em_rota.map(p => React.createElement('div', { key: p.cod_profissional, className: `border rounded-lg p-3 ${p.minutos_em_rota > 90 ? 'border-red-300 bg-red-50' : p.corrida_unica ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'} flex flex-col gap-2` },
+                                        React.createElement('div', { className: 'flex items-center justify-between' },
+                                            React.createElement('div', { className: 'flex items-center gap-3' },
+                                                React.createElement('span', { className: 'text-2xl' }, p.corrida_unica ? '👑' : '🏍️'),
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: 'font-medium text-sm' }, p.nome_profissional),
+                                                    React.createElement('p', { className: `text-xs ${p.minutos_em_rota > 90 ? 'text-red-600 font-bold' : 'text-gray-500'}` }, `⏱️ ${formatarTempo(p.minutos_em_rota)} em rota`, p.corrida_unica && ' • Corrida Única')
+                                                )
+                                            ),
+                                            React.createElement('button', { onClick: () => removerDaFila(p.cod_profissional), className: 'px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200' }, '❌')
+                                        ),
+                                        p.bairros && p.bairros.length > 0 && React.createElement('div', { className: 'flex flex-wrap gap-1 ml-11' },
+                                            p.bairros.map((b, bi) => React.createElement('span', { key: bi, style: { fontSize: '10px' }, className: 'font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full' }, `📍${b}`))
+                                        )
+                                    )))
+                                )
                         )
                     ),
                     // PENALIDADES
-                    abaAtiva === 'penalidades' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
+                    abaAtiva === 'penalidades' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
                         React.createElement('h3', { className: 'font-bold text-lg' }, '🚫 Penalidades Ativas'),
                         penalidades.length === 0 ? React.createElement('p', { className: 'text-gray-500 text-center py-8' }, 'Nenhuma penalidade ativa') :
                         React.createElement('div', { className: 'space-y-2' }, penalidades.map(p => React.createElement('div', { key: p.id, className: 'bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between' },
@@ -452,7 +544,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         )))
                     ),
                     // VINCULOS
-                    abaAtiva === 'vinculos' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
+                    abaAtiva === 'vinculos' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
                         React.createElement('div', { className: 'flex justify-between items-center' }, React.createElement('h3', { className: 'font-bold text-lg' }, `Profissionais vinculados à ${centralSelecionada.nome}`), React.createElement('button', { onClick: () => setModalVinculo(true), className: 'px-4 py-2 bg-purple-600 text-white rounded-lg' }, '➕ Vincular')),
                         React.createElement('div', { className: 'bg-white rounded-lg border overflow-hidden' },
                             React.createElement('table', { className: 'w-full' },
@@ -462,14 +554,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         )
                     ),
                     // RELATORIOS
-                    abaAtiva === 'relatorios' && centralSelecionada && React.createElement('div', { className: 'space-y-6' },
+                    abaAtiva === 'relatorios' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
                         React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('label', { className: 'font-medium' }, 'Data:'), React.createElement('input', { type: 'date', value: filtroData, onChange: (e) => setFiltroData(e.target.value), className: 'px-3 py-2 border rounded-lg' }), React.createElement('button', { onClick: () => { carregarEstatisticas(centralSelecionada.id); carregarHistorico(centralSelecionada.id); }, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg' }, '🔍 Filtrar')),
                         estatisticas && React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' }, React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('p', { className: 'text-sm text-gray-600' }, 'Total de Saídas'), React.createElement('p', { className: 'text-3xl font-bold text-purple-600' }, estatisticas.total_saidas)), React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('p', { className: 'text-sm text-gray-600' }, 'Tempo Médio Espera'), React.createElement('p', { className: 'text-3xl font-bold text-blue-600' }, `${estatisticas.tempo_medio_espera} min`))),
                         estatisticas?.ranking?.length > 0 && React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🏆 Ranking'), React.createElement('div', { className: 'space-y-2' }, estatisticas.ranking.map((p, i) => React.createElement('div', { key: p.cod_profissional, className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg' }, React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('span', { className: 'text-xl' }, i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`), React.createElement('span', { className: 'font-medium' }, p.nome_profissional)), React.createElement('span', { className: 'font-bold text-purple-600' }, `${p.total_saidas} saídas`))))),
                         React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '📋 Histórico'), React.createElement('div', { className: 'overflow-x-auto' }, React.createElement('table', { className: 'w-full' }, React.createElement('thead', { className: 'bg-gray-50' }, React.createElement('tr', null, React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Hora'), React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Profissional'), React.createElement('th', { className: 'px-3 py-2 text-center text-xs font-medium text-gray-500' }, 'Ação'), React.createElement('th', { className: 'px-3 py-2 text-right text-xs font-medium text-gray-500' }, 'Tempo'))), React.createElement('tbody', { className: 'divide-y' }, historico.map((h, i) => React.createElement('tr', { key: i, className: 'hover:bg-gray-50' }, React.createElement('td', { className: 'px-3 py-2 text-sm' }, formatarHora(h.created_at)), React.createElement('td', { className: 'px-3 py-2 text-sm font-medium' }, h.nome_profissional), React.createElement('td', { className: 'px-3 py-2 text-center' }, React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${h.acao === 'entrada' ? 'bg-blue-100 text-blue-700' : h.acao === 'enviado_rota' ? 'bg-green-100 text-green-700' : h.acao === 'penalidade_anulada' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}` }, h.acao === 'entrada' ? '📥 Entrada' : h.acao === 'enviado_rota' ? '🚀 Enviado' : h.acao === 'retorno' || h.acao === 'retorno_prioridade' ? '🔄 Retorno' : h.acao === 'removido' ? '❌ Removido' : h.acao === 'reordenado' ? '↕️ Reordenado' : h.acao === 'penalidade_anulada' ? '✅ Penalidade anulada' : '👋 Saiu')), React.createElement('td', { className: 'px-3 py-2 text-right text-sm text-gray-500' }, h.tempo_espera_minutos ? `${h.tempo_espera_minutos} min espera` : h.tempo_rota_minutos ? `${h.tempo_rota_minutos} min rota` : '-')))))))
                     ),
                     // CONFIG (com Regiões)
-                    abaAtiva === 'config' && React.createElement('div', { className: 'space-y-6' },
+                    abaAtiva === 'config' && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
                         React.createElement('h3', { className: 'font-bold text-lg' }, 'Centrais Cadastradas'),
                         React.createElement('div', { className: 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' }, centrais.map(c => React.createElement('div', { key: c.id, className: `bg-white rounded-xl p-4 shadow border ${c.ativa ? 'border-green-200' : 'border-red-200 opacity-60'}` },
                             React.createElement('div', { className: 'flex justify-between items-start mb-3' }, React.createElement('div', null, React.createElement('h4', { className: 'font-bold text-gray-800' }, c.nome), React.createElement('p', { className: 'text-sm text-gray-500' }, c.endereco)), React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${c.ativa ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` }, c.ativa ? 'Ativa' : 'Inativa')),
@@ -522,7 +614,6 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         ),
                         !centralSelecionada && null
                     )
-                )
             ),
             // MODAL CRIAR/EDITAR CENTRAL
             modalCentral && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
