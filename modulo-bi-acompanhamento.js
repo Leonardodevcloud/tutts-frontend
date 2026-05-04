@@ -37,9 +37,23 @@
     function fmtMoney(v) {
         return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    // 🚀 2026-05 v6: parser de data ISO que IGNORA timezone (PostgreSQL retorna '2026-04-05',
+    // JS interpreta como UTC e em UTC-3 vira sábado 21:00 → bug crítico nos S/D do gráfico).
+    // Aqui montamos a Date manualmente com componentes Y/M/D pra ela ficar em local time.
+    function parseDataLocal(iso) {
+        if (!iso) return null;
+        const s = String(iso);
+        // Aceita '2026-04-05' ou '2026-04-05T00:00:00.000Z' — pega só YYYY-MM-DD
+        const match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return new Date(iso); // fallback
+        const [_, y, m, d] = match;
+        return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    }
+
     function fmtData(iso, granu) {
         if (!iso) return '';
-        const d = new Date(iso);
+        const d = parseDataLocal(iso);
+        if (!d) return '';
         if (granu === 'mes') return d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
         if (granu === 'semana') return 'sem ' + d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -466,10 +480,12 @@
 
         const [hover, setHover] = useState(null);
 
-        // Helper: identifica sábado/domingo (0=domingo, 6=sábado)
+        // Helper: identifica sábado/domingo (0=domingo, 6=sábado).
+        // Usa parseDataLocal pra evitar shift de timezone (UTC → local).
         const isFimDeSemana = (iso) => {
             if (!iso || granu !== 'dia') return false;
-            const d = new Date(iso);
+            const d = parseDataLocal(iso);
+            if (!d) return false;
             const dow = d.getDay();
             return dow === 0 || dow === 6;
         };
