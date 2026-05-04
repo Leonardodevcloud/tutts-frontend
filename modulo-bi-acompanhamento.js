@@ -304,88 +304,130 @@
                 })
             ),
 
-            // TABELA
-            h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-                h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-200 gap-2 flex-wrap' },
-                    h('div', { className: 'text-sm font-medium' },
-                        eixo === 'cliente' ? 'Por Cliente · ' + (linhas.length || 0) + ' resultado(s)'
-                                            : 'Por Período · ' + (linhas.length || 0) + ' resultado(s)'
-                    ),
-                    h('div', { className: 'flex gap-2 items-center' },
-                        h('input', {
-                            type: 'text', value: busca,
-                            placeholder: eixo === 'cliente' ? '🔍 Buscar cliente...' : '🔍 Buscar período...',
-                            onChange: e => setBusca(e.target.value),
-                            className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
-                        }),
-                        h('select', {
-                            value: ordem, onChange: e => setOrdem(e.target.value),
-                            className: 'text-xs px-2 py-1 border border-gray-200 rounded-md bg-white'
-                        },
-                            h('option', { value: 'total_entregas' }, 'Ordenar: Entregas ↓'),
-                            h('option', { value: 'pct_prazo' }, '% Prazo ↓'),
-                            h('option', { value: eixo === 'cliente' ? 'faturamento' : 'valor_total' }, 'Faturamento ↓')
-                        )
-                    )
-                ),
-                loading ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, '⏳ Carregando...') :
-                linhas.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
-                h('div', { className: 'overflow-x-auto' },
-                    h('table', { className: 'w-full text-sm' },
-                        h('thead', { className: 'bg-gray-50' },
-                            h('tr', null,
-                                h('th', { className: 'text-left text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2' },
-                                    eixo === 'cliente' ? 'Cliente' : 'Período'),
-                                h('th', { className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2' }, 'Entregas'),
-                                h('th', { className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2' }, '% Prazo'),
-                                h('th', { className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2' }, 'Faturamento'),
-                                h('th', { className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2' }, 'Tempo médio'),
-                                eixo === 'cliente' && h('th', { className: 'text-center text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 w-8' }, '')
-                            )
+            // 🚀 2026-05 v4: TABELA com colunas dinâmicas (segue métricas selecionadas)
+            // + pivot Cliente × Período quando granu=semana/mes e eixo=cliente
+            (() => {
+                const metricasAtivas = METRICAS_CATALOGO.filter(m => metricasSelecionadas.includes(m.id));
+                const podePivotar = eixo === 'cliente' && granu !== 'dia' && dados?.porClientePeriodo?.length > 0;
+
+                if (podePivotar) {
+                    // PIVOT: linha = cliente, colunas = períodos (1 métrica principal mostrada)
+                    return h(TabelaPivotada, {
+                        rows: dados.porClientePeriodo,
+                        granu,
+                        metricaPrincipal: metricasAtivas[0],
+                        busca, setBusca, ordem, setOrdem,
+                        onDrilldown: (cli) => setDrilldown(cli)
+                    });
+                }
+
+                return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+                    h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-200 gap-2 flex-wrap' },
+                        h('div', { className: 'text-sm font-medium' },
+                            eixo === 'cliente' ? 'Por Cliente · ' + (linhas.length || 0) + ' resultado(s)'
+                                                : 'Por Período · ' + (linhas.length || 0) + ' resultado(s)'
                         ),
-                        h('tbody', null,
-                            linhas.map((l, i) => {
-                                const pct = l.pct_prazo || 0;
-                                const corPct = pct >= 80 ? 'bg-green-50 text-green-800' : pct >= 60 ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800';
-                                const fat = l.faturamento != null ? l.faturamento : l.valor_total || 0;
-                                const onClick = eixo === 'cliente' ? () => setDrilldown(l) : null;
-                                return h('tr', {
-                                    key: eixo === 'cliente' ? l.cod_cliente : l.periodo,
-                                    onClick,
-                                    className: 'border-t border-gray-100 ' + (onClick ? 'cursor-pointer hover:bg-purple-50' : '')
-                                },
-                                    h('td', { className: 'px-3 py-2' },
-                                        eixo === 'cliente'
-                                            ? h('div', null,
-                                                h('div', { className: 'font-medium text-gray-900' }, l.nome_cliente),
-                                                h('div', { className: 'text-[10px] text-gray-400' }, 'cod ' + l.cod_cliente)
-                                            )
-                                            : h('div', { className: 'font-medium text-gray-900' }, fmtData(l.periodo, granu))
-                                    ),
-                                    h('td', { className: 'px-2 py-2 text-right font-semibold' }, (l.total_entregas || 0).toLocaleString('pt-BR')),
-                                    h('td', { className: 'px-2 py-2 text-right' },
-                                        h('span', {
-                                            className: 'inline-block px-2 py-0.5 rounded-full text-xs font-semibold ' + corPct
-                                        }, pct.toFixed(1) + '%')
-                                    ),
-                                    h('td', { className: 'px-2 py-2 text-right font-medium' }, fmtMoneyShort(fat)),
-                                    h('td', { className: 'px-2 py-2 text-right text-gray-600' }, fmtMinTime(l.tempo_medio_min || 0)),
-                                    eixo === 'cliente' && h('td', { className: 'px-3 py-2 text-center text-gray-400' }, '›')
-                                );
+                        h('div', { className: 'flex gap-2 items-center' },
+                            h('input', {
+                                type: 'text', value: busca,
+                                placeholder: eixo === 'cliente' ? '🔍 Buscar cliente...' : '🔍 Buscar período...',
+                                onChange: e => setBusca(e.target.value),
+                                className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
                             }),
-                            // Linha total (footer)
-                            h('tr', { className: 'bg-gray-900 text-white' },
-                                h('td', { className: 'px-3 py-2 font-semibold' }, 'Total · ' + linhas.length + (eixo === 'cliente' ? ' clientes' : ' períodos')),
-                                h('td', { className: 'px-2 py-2 text-right font-semibold' }, totais.total_entregas.toLocaleString('pt-BR')),
-                                h('td', { className: 'px-2 py-2 text-right' }, totais.pct_prazo.toFixed(1) + '%'),
-                                h('td', { className: 'px-2 py-2 text-right font-semibold' }, fmtMoneyShort(totais.faturamento)),
-                                h('td', { className: 'px-2 py-2 text-right text-gray-400' }, '—'),
-                                eixo === 'cliente' && h('td', { className: 'px-3 py-2' })
+                            h('select', {
+                                value: ordem, onChange: e => setOrdem(e.target.value),
+                                className: 'text-xs px-2 py-1 border border-gray-200 rounded-md bg-white'
+                            },
+                                metricasAtivas.map(m => h('option', {
+                                    key: m.id, value: m.id
+                                }, 'Ordenar: ' + m.label + ' ↓'))
+                            )
+                        )
+                    ),
+                    loading ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, '⏳ Carregando...') :
+                    linhas.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
+                    h('div', { className: 'overflow-x-auto' },
+                        h('table', { className: 'w-full text-sm' },
+                            h('thead', { className: 'bg-gray-50' },
+                                h('tr', null,
+                                    h('th', {
+                                        className: 'text-left text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 sticky left-0 bg-gray-50 z-10'
+                                    }, eixo === 'cliente' ? 'Cliente' : 'Período'),
+                                    metricasAtivas.map(m => h('th', {
+                                        key: m.id,
+                                        className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2 whitespace-nowrap'
+                                    }, m.label)),
+                                    eixo === 'cliente' && h('th', {
+                                        className: 'text-center text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 w-8'
+                                    }, '')
+                                )
+                            ),
+                            h('tbody', null,
+                                linhas.map((l, i) => {
+                                    const onClick = eixo === 'cliente' ? () => setDrilldown(l) : null;
+                                    return h('tr', {
+                                        key: eixo === 'cliente' ? l.cod_cliente : l.periodo,
+                                        onClick,
+                                        className: 'border-t border-gray-100 ' + (onClick ? 'cursor-pointer hover:bg-purple-50' : '')
+                                    },
+                                        h('td', { className: 'px-3 py-2 sticky left-0 bg-white z-10' },
+                                            eixo === 'cliente'
+                                                ? h('div', null,
+                                                    h('div', { className: 'font-medium text-gray-900' }, l.nome_cliente),
+                                                    h('div', { className: 'text-[10px] text-gray-400' }, 'cod ' + l.cod_cliente)
+                                                )
+                                                : h('div', { className: 'font-medium text-gray-900' }, fmtData(l.periodo, granu))
+                                        ),
+                                        metricasAtivas.map(m => {
+                                            const v = l[m.id] || 0;
+                                            // % prazo recebe pill colorida
+                                            if (m.id === 'pct_prazo') {
+                                                const corPct = v >= 80 ? 'bg-green-50 text-green-800' : v >= 60 ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800';
+                                                return h('td', { key: m.id, className: 'px-2 py-2 text-right' },
+                                                    h('span', { className: 'inline-block px-2 py-0.5 rounded-full text-xs font-semibold ' + corPct }, m.fmt(v))
+                                                );
+                                            }
+                                            return h('td', {
+                                                key: m.id,
+                                                className: 'px-2 py-2 text-right whitespace-nowrap font-medium text-gray-800'
+                                            }, m.fmt(v));
+                                        }),
+                                        eixo === 'cliente' && h('td', { className: 'px-3 py-2 text-center text-gray-400' }, '›')
+                                    );
+                                }),
+                                // Linha total (footer)
+                                h('tr', { className: 'bg-gray-900 text-white' },
+                                    h('td', { className: 'px-3 py-2 font-semibold sticky left-0 bg-gray-900 z-10' },
+                                        'Total · ' + linhas.length + (eixo === 'cliente' ? ' clientes' : ' períodos')
+                                    ),
+                                    metricasAtivas.map(m => {
+                                        // Métricas % e médias: recalcula o total como média ponderada quando faz sentido,
+                                        // se não, soma direto.
+                                        let v;
+                                        if (m.id === 'pct_prazo') {
+                                            const totEnt = linhas.reduce((s, l) => s + (l.total_entregas || 0), 0);
+                                            const totNoPrazo = linhas.reduce((s, l) => s + (l.no_prazo || 0), 0);
+                                            v = totEnt > 0 ? (totNoPrazo / totEnt * 100) : 0;
+                                        } else if (m.id.startsWith('tempo_') || m.id === 'media_ent_prof' || m.id === 'ticket_medio') {
+                                            // Médias — calcula média ponderada simples
+                                            const totEnt = linhas.reduce((s, l) => s + (l.total_entregas || 0), 0);
+                                            const totWeighted = linhas.reduce((s, l) => s + ((l[m.id] || 0) * (l.total_entregas || 0)), 0);
+                                            v = totEnt > 0 ? (totWeighted / totEnt) : 0;
+                                        } else {
+                                            v = linhas.reduce((s, l) => s + (l[m.id] || 0), 0);
+                                        }
+                                        return h('td', {
+                                            key: m.id,
+                                            className: 'px-2 py-2 text-right font-semibold whitespace-nowrap'
+                                        }, m.fmt(v));
+                                    }),
+                                    eixo === 'cliente' && h('td', { className: 'px-3 py-2' })
+                                )
                             )
                         )
                     )
-                )
-            ),
+                );
+            })(),
 
             // Modal drilldown (só pra eixo=cliente)
             drilldown && h(DrilldownModal, {
@@ -397,11 +439,13 @@
     }
 
     // Mini chart SVG dinâmico: renderiza N métricas selecionadas com auto-escala.
-    // Métricas com escala 'pct' compartilham eixo direito (0-100%).
-    // Métricas com escala 'auto' compartilham eixo esquerdo (max do conjunto).
-    // Quando a série tem só 1 ponto, desenha bolinhas em vez de polyline (linha precisa de 2+).
+    // 🚀 2026-05 v4: largura proporcional aos pontos + TODAS as datas no eixo X com rotação 45° + S/D em vermelho
     function MiniChart({ serie, granu, metricas }) {
-        const W = 700, H = 180, PAD_L = 56, PAD_R = 56, PAD_T = 12, PAD_B = 28;
+        // Largura mínima por ponto pra labels caberem rotacionados
+        const MIN_W_POR_PONTO = granu === 'dia' ? 32 : 56;
+        const PAD_L = 56, PAD_R = 56, PAD_T = 12, PAD_B = 60; // PAD_B aumentado pros labels rotacionados
+        const W = Math.max(700, PAD_L + PAD_R + serie.length * MIN_W_POR_PONTO);
+        const H = 220;
         const innerW = W - PAD_L - PAD_R;
         const innerH = H - PAD_T - PAD_B;
 
@@ -422,15 +466,31 @@
 
         const [hover, setHover] = useState(null);
 
-        // X labels: max ~6 marcadores
-        const labelStep = Math.max(1, Math.ceil(serie.length / 6));
+        // Helper: identifica sábado/domingo (0=domingo, 6=sábado)
+        const isFimDeSemana = (iso) => {
+            if (!iso || granu !== 'dia') return false;
+            const d = new Date(iso);
+            const dow = d.getDay();
+            return dow === 0 || dow === 6;
+        };
 
         return h('div', { style: { position: 'relative' } },
+            // Container com scroll horizontal quando o gráfico é maior que viewport
+            h('div', { style: { overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' } },
             h('svg', {
                 viewBox: '0 0 ' + W + ' ' + H,
-                style: { width: '100%', height: 200, display: 'block' },
+                style: { width: W < 700 ? '100%' : W + 'px', height: H + 'px', display: 'block', minWidth: '100%' },
                 onMouseLeave: () => setHover(null)
             },
+                // 🔴 Faixa de fundo S/D (granularidade=dia apenas)
+                serie.map((s, i) => isFimDeSemana(s.periodo) ? h('rect', {
+                    key: 'wkn' + i,
+                    x: xAt(i) - (xStep || innerW) / 2,
+                    y: PAD_T,
+                    width: xStep || innerW, height: innerH,
+                    fill: '#FCEBEB', opacity: 0.5
+                }) : null),
+
                 // gridlines
                 [0.25, 0.5, 0.75, 1].map((p, i) => h('line', {
                     key: 'gl' + i,
@@ -440,21 +500,21 @@
                     stroke: '#F1EFE8', strokeWidth: 1
                 })),
 
-                // y-labels esquerdo (auto) — só se tem métrica auto
+                // y-labels esquerdo (auto)
                 metricasAuto.length > 0 && [0, 0.5, 1].map((p, i) => h('text', {
                     key: 'yl' + i,
                     x: PAD_L - 4, y: PAD_T + (1 - p) * innerH + 3,
                     fontSize: 9, fill: '#888780', textAnchor: 'end'
                 }, Math.round(maxAuto * p).toLocaleString('pt-BR'))),
 
-                // y-labels direito (pct) — só se tem métrica pct
+                // y-labels direito (pct)
                 metricasPct.length > 0 && [0, 50, 100].map((v, i) => h('text', {
                     key: 'yr' + i,
                     x: W - PAD_R + 4, y: PAD_T + (1 - v / 100) * innerH + 3,
                     fontSize: 9, fill: '#3B6D11', textAnchor: 'start'
                 }, v + '%')),
 
-                // hover area por ponto
+                // hover area
                 serie.map((s, i) => h('rect', {
                     key: 'hv' + i,
                     x: xAt(i) - (xStep || innerW) / 2,
@@ -470,7 +530,7 @@
                     stroke: '#888780', strokeWidth: 0.5, strokeDasharray: '2,2'
                 }),
 
-                // 1 polyline por métrica (só se serie.length > 1)
+                // polylines (apenas se serie tem 2+ pontos)
                 serie.length > 1 && metricas.map(m => h('polyline', {
                     key: 'line-' + m.id,
                     fill: 'none',
@@ -479,7 +539,7 @@
                     points: serie.map((s, i) => xAt(i) + ',' + yAt(m, s[m.id])).join(' ')
                 })),
 
-                // Pontos sempre desenhados (essenciais quando serie.length === 1)
+                // pontos
                 metricas.map(m => serie.map((s, i) => h('circle', {
                     key: 'pt-' + m.id + '-' + i,
                     cx: xAt(i), cy: yAt(m, s[m.id]),
@@ -489,20 +549,28 @@
                     strokeWidth: 1
                 }))).flat(),
 
-                // Hover destacado (círculos maiores)
+                // hover circles maiores
                 hover && metricas.map(m => h('circle', {
                     key: 'hov-' + m.id,
                     cx: hover.x, cy: yAt(m, hover[m.id]),
                     r: 5, fill: m.cor
                 })),
 
-                // x-labels
-                serie.map((s, i) => i % labelStep === 0 ? h('text', {
-                    key: 'xl' + i,
-                    x: xAt(i),
-                    y: H - PAD_B + 14,
-                    fontSize: 9, fill: '#888780', textAnchor: 'middle'
-                }, fmtData(s.periodo, granu)) : null)
+                // 🚀 x-labels: TODAS as datas, rotacionadas 45°, S/D em vermelho
+                serie.map((s, i) => {
+                    const fds = isFimDeSemana(s.periodo);
+                    return h('text', {
+                        key: 'xl' + i,
+                        x: xAt(i),
+                        y: H - PAD_B + 12,
+                        fontSize: 10,
+                        fill: fds ? '#A32D2D' : '#5F5E5A',
+                        fontWeight: fds ? 600 : 400,
+                        textAnchor: 'end',
+                        transform: 'rotate(-45 ' + xAt(i) + ' ' + (H - PAD_B + 12) + ')'
+                    }, fmtData(s.periodo, granu));
+                })
+            )
             ),
             // Tooltip flutuante
             hover && h('div', {
@@ -526,6 +594,179 @@
                     key: 'tt-' + m.id,
                     style: { color: m.cor, marginTop: 1 }
                 }, '● ' + m.label + ': ' + m.fmt(hover[m.id] || 0)))
+            )
+        );
+    }
+
+    // 🚀 2026-05 v4: Tabela pivotada cliente × período (Sem 1, Sem 2... + Total)
+    // Usado quando granu=semana/mês e eixo=cliente. Mostra UMA métrica principal.
+    function TabelaPivotada({ rows, granu, metricaPrincipal, busca, setBusca, ordem, setOrdem, onDrilldown }) {
+        // Agrupa rows por cliente e extrai lista única de períodos (em ordem)
+        const { clientes, periodos } = useMemo(() => {
+            const map = {};
+            const setPer = new Set();
+            (rows || []).forEach(r => {
+                const k = r.cod_cliente;
+                if (!map[k]) {
+                    map[k] = { cod_cliente: r.cod_cliente, nome_cliente: r.nome_cliente, total: 0, porPeriodo: {} };
+                }
+                map[k].porPeriodo[r.periodo] = r;
+                setPer.add(r.periodo);
+            });
+            // total = soma da métrica principal (ou ponderada se for %)
+            const m = metricaPrincipal;
+            Object.values(map).forEach(c => {
+                if (m.id === 'pct_prazo') {
+                    let totEnt = 0, totNoPrazo = 0;
+                    Object.values(c.porPeriodo).forEach(p => {
+                        totEnt += (p.total_entregas || 0);
+                        totNoPrazo += (p.no_prazo || 0);
+                    });
+                    c.total = totEnt > 0 ? (totNoPrazo / totEnt * 100) : 0;
+                } else if (m.id.startsWith('tempo_') || m.id === 'media_ent_prof' || m.id === 'ticket_medio') {
+                    let totEnt = 0, totW = 0;
+                    Object.values(c.porPeriodo).forEach(p => {
+                        totEnt += (p.total_entregas || 0);
+                        totW += ((p[m.id] || 0) * (p.total_entregas || 0));
+                    });
+                    c.total = totEnt > 0 ? (totW / totEnt) : 0;
+                } else {
+                    c.total = Object.values(c.porPeriodo).reduce((s, p) => s + (p[m.id] || 0), 0);
+                }
+            });
+            return {
+                clientes: Object.values(map),
+                periodos: Array.from(setPer).sort()
+            };
+        }, [rows, metricaPrincipal]);
+
+        const clientesFiltrados = useMemo(() => {
+            const q = (busca || '').toLowerCase().trim();
+            const filtrados = q
+                ? clientes.filter(c => String(c.nome_cliente || '').toLowerCase().includes(q) || String(c.cod_cliente).includes(q))
+                : clientes;
+            return [...filtrados].sort((a, b) => (b.total || 0) - (a.total || 0));
+        }, [clientes, busca]);
+
+        const m = metricaPrincipal;
+        const labelPeriodo = (iso, idx) => granu === 'semana' ? 'Sem ' + (idx + 1) : 'Mês ' + (idx + 1);
+        const labelTooltip = (iso) => fmtData(iso, granu);
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+            h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-200 gap-2 flex-wrap' },
+                h('div', { className: 'text-sm font-medium' },
+                    'Por Cliente × ' + (granu === 'semana' ? 'Semana' : 'Mês') +
+                    ' · ' + clientesFiltrados.length + ' cliente(s) · métrica: ' + m.label
+                ),
+                h('div', { className: 'flex gap-2 items-center' },
+                    h('input', {
+                        type: 'text', value: busca,
+                        placeholder: '🔍 Buscar cliente...',
+                        onChange: e => setBusca(e.target.value),
+                        className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
+                    }),
+                    h('span', { className: 'text-[10px] text-gray-500' }, 'Pra trocar a métrica, ative outra no ⚙️ acima')
+                )
+            ),
+            clientesFiltrados.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
+            h('div', { className: 'overflow-x-auto' },
+                h('table', { className: 'w-full text-sm' },
+                    h('thead', { className: 'bg-gray-50' },
+                        h('tr', null,
+                            h('th', {
+                                className: 'text-left text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 sticky left-0 bg-gray-50 z-10'
+                            }, 'Cliente'),
+                            periodos.map((p, idx) => h('th', {
+                                key: p,
+                                className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2 whitespace-nowrap',
+                                title: labelTooltip(p)
+                            },
+                                h('div', null, labelPeriodo(p, idx)),
+                                h('div', { className: 'text-[9px] text-gray-400 normal-case font-normal' }, labelTooltip(p))
+                            )),
+                            h('th', {
+                                className: 'text-right text-[10px] uppercase tracking-wide text-gray-700 font-semibold px-2 py-2 bg-gray-100 whitespace-nowrap'
+                            }, 'Total'),
+                            h('th', { className: 'w-8' })
+                        )
+                    ),
+                    h('tbody', null,
+                        clientesFiltrados.map(c =>
+                            h('tr', {
+                                key: c.cod_cliente,
+                                onClick: () => onDrilldown && onDrilldown({
+                                    ...c,
+                                    total_entregas: Object.values(c.porPeriodo).reduce((s, p) => s + (p.total_entregas || 0), 0),
+                                    no_prazo: Object.values(c.porPeriodo).reduce((s, p) => s + (p.no_prazo || 0), 0),
+                                    pct_prazo: c.total,
+                                }),
+                                className: 'border-t border-gray-100 cursor-pointer hover:bg-purple-50'
+                            },
+                                h('td', { className: 'px-3 py-2 sticky left-0 bg-white z-10' },
+                                    h('div', { className: 'font-medium text-gray-900' }, c.nome_cliente),
+                                    h('div', { className: 'text-[10px] text-gray-400' }, 'cod ' + c.cod_cliente)
+                                ),
+                                periodos.map(p => {
+                                    const cell = c.porPeriodo[p];
+                                    const v = cell ? (cell[m.id] || 0) : 0;
+                                    return h('td', {
+                                        key: p,
+                                        className: 'px-2 py-2 text-right whitespace-nowrap text-gray-800 ' + (cell ? '' : 'text-gray-300')
+                                    }, cell ? m.fmt(v) : '—');
+                                }),
+                                h('td', {
+                                    className: 'px-2 py-2 text-right font-semibold whitespace-nowrap bg-gray-50'
+                                }, m.fmt(c.total)),
+                                h('td', { className: 'px-3 py-2 text-center text-gray-400' }, '›')
+                            )
+                        ),
+                        // Linha total geral
+                        h('tr', { className: 'bg-gray-900 text-white' },
+                            h('td', { className: 'px-3 py-2 font-semibold sticky left-0 bg-gray-900 z-10' },
+                                'Total · ' + clientesFiltrados.length + ' clientes'
+                            ),
+                            periodos.map(p => {
+                                let v;
+                                if (m.id === 'pct_prazo') {
+                                    let totEnt = 0, totNoPrazo = 0;
+                                    clientesFiltrados.forEach(c => {
+                                        const cell = c.porPeriodo[p];
+                                        if (cell) { totEnt += (cell.total_entregas || 0); totNoPrazo += (cell.no_prazo || 0); }
+                                    });
+                                    v = totEnt > 0 ? (totNoPrazo / totEnt * 100) : 0;
+                                } else if (m.id.startsWith('tempo_') || m.id === 'media_ent_prof' || m.id === 'ticket_medio') {
+                                    let totEnt = 0, totW = 0;
+                                    clientesFiltrados.forEach(c => {
+                                        const cell = c.porPeriodo[p];
+                                        if (cell) { totEnt += (cell.total_entregas || 0); totW += ((cell[m.id] || 0) * (cell.total_entregas || 0)); }
+                                    });
+                                    v = totEnt > 0 ? (totW / totEnt) : 0;
+                                } else {
+                                    v = clientesFiltrados.reduce((s, c) => s + ((c.porPeriodo[p]?.[m.id]) || 0), 0);
+                                }
+                                return h('td', {
+                                    key: p,
+                                    className: 'px-2 py-2 text-right font-semibold whitespace-nowrap'
+                                }, m.fmt(v));
+                            }),
+                            h('td', {
+                                className: 'px-2 py-2 text-right font-semibold whitespace-nowrap bg-gray-700'
+                            }, m.fmt(
+                                m.id === 'pct_prazo'
+                                    ? (() => {
+                                        let totEnt = 0, totNoPrazo = 0;
+                                        clientesFiltrados.forEach(c => Object.values(c.porPeriodo).forEach(cell => {
+                                            totEnt += (cell.total_entregas || 0);
+                                            totNoPrazo += (cell.no_prazo || 0);
+                                        }));
+                                        return totEnt > 0 ? (totNoPrazo / totEnt * 100) : 0;
+                                    })()
+                                    : clientesFiltrados.reduce((s, c) => s + (c.total || 0), 0)
+                            )),
+                            h('td')
+                        )
+                    )
+                )
             )
         );
     }
