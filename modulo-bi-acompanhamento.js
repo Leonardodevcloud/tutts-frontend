@@ -48,12 +48,21 @@
     // Catálogo de métricas plotáveis no gráfico.
     // Cada uma tem: chave da serie, label, cor, escala (0-100 ou auto), formatação.
     const METRICAS_CATALOGO = [
-        { id: 'total_entregas', label: 'Entregas',     cor: '#378ADD', bg: 'bg-blue-50',   txt: 'text-blue-800',   border: 'border-blue-200',   escala: 'auto',   fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'pct_prazo',      label: '% No Prazo',   cor: '#639922', bg: 'bg-green-50',  txt: 'text-green-800',  border: 'border-green-200',  escala: 'pct',    fmt: v => v.toFixed(1) + '%' },
-        { id: 'valor_total',    label: 'Faturamento',  cor: '#7F77DD', bg: 'bg-purple-50', txt: 'text-purple-800', border: 'border-purple-200', escala: 'auto',   fmt: v => fmtMoneyShort(v) },
-        { id: 'ticket_medio',   label: 'Ticket Médio', cor: '#EF9F27', bg: 'bg-amber-50',  txt: 'text-amber-800',  border: 'border-amber-200',  escala: 'auto',   fmt: v => 'R$ ' + (v || 0).toFixed(2) },
-        { id: 'retornos',       label: 'Retornos',     cor: '#E24B4A', bg: 'bg-red-50',    txt: 'text-red-800',    border: 'border-red-200',    escala: 'auto',   fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'tempo_medio_min',label: 'Tempo Médio',  cor: '#888780', bg: 'bg-gray-100',  txt: 'text-gray-800',   border: 'border-gray-300',   escala: 'auto',   fmt: v => fmtMinTime(v) },
+        { id: 'total_os',         label: 'OS',                cor: '#534AB7', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'total_entregas',   label: 'Entregas',          cor: '#378ADD', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'no_prazo',         label: 'No Prazo',          cor: '#1D9E75', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'fora_prazo',       label: 'Fora Prazo',        cor: '#D85A30', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'pct_prazo',        label: '% No Prazo',        cor: '#639922', escala: 'pct',  fmt: v => v.toFixed(1) + '%' },
+        { id: 'retornos',         label: 'Retornos',          cor: '#E24B4A', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'valor_total',      label: 'Valor Total',       cor: '#7F77DD', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'valor_prof',       label: 'Valor Prof.',       cor: '#AFA9EC', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'fat_total',        label: 'Fat. Total',        cor: '#0F6E56', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'ticket_medio',     label: 'Ticket Médio',      cor: '#EF9F27', escala: 'auto', fmt: v => 'R$ ' + (v || 0).toFixed(2) },
+        { id: 'tempo_medio_min',  label: 'Tempo Médio Entrega',   cor: '#888780', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'tempo_alocacao_min', label: 'Tempo Médio Alocação', cor: '#5F5E5A', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'tempo_coleta_min', label: 'Tempo Médio Coleta',    cor: '#444441', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'total_entregadores', label: 'Total Entregadores',  cor: '#185FA5', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'media_ent_prof',   label: 'Média Ent./Profissional', cor: '#0C447C', escala: 'auto', fmt: v => v.toFixed(1) },
     ];
 
     function AcompanhamentoPeriodico({ apiUrl, fetchAuth, filtros }) {
@@ -61,6 +70,20 @@
         const [eixo, setEixo] = useState('cliente'); // 'cliente' | 'periodo'
         // 🚀 2026-05: métricas plotáveis selecionáveis (default: entregas + % prazo)
         const [metricasSelecionadas, setMetricasSelecionadas] = useState(['total_entregas', 'pct_prazo']);
+        const [dropdownMetricas, setDropdownMetricas] = useState(false);
+        const dropdownRef = useRef(null);
+
+        // Fecha dropdown ao clicar fora
+        useEffect(() => {
+            if (!dropdownMetricas) return;
+            const onClick = (e) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                    setDropdownMetricas(false);
+                }
+            };
+            document.addEventListener('mousedown', onClick);
+            return () => document.removeEventListener('mousedown', onClick);
+        }, [dropdownMetricas]);
         const [busca, setBusca] = useState('');
         const [ordem, setOrdem] = useState('total_entregas');
         const [dados, setDados] = useState(null);
@@ -83,6 +106,8 @@
                     if (filtros?.data_fim) params.set('data_fim', filtros.data_fim);
                     if (filtros?.cod_cliente) params.set('cod_cliente', filtros.cod_cliente);
                     if (filtros?.centro_custo) params.set('centro_custo', filtros.centro_custo);
+                    if (filtros?.categoria) params.set('categoria', filtros.categoria);
+                    if (filtros?.regiao) params.set('regiao', filtros.regiao);
                     const r = await fetchAuthRef.current(apiUrl + '/bi/serie-temporal?' + params.toString());
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const j = await r.json();
@@ -94,7 +119,7 @@
                 }
             })();
             return () => { cancelado = true; };
-        }, [apiUrl, granu, filtros?.data_inicio, filtros?.data_fim, filtros?.cod_cliente, filtros?.centro_custo]);
+        }, [apiUrl, granu, filtros?.data_inicio, filtros?.data_fim, filtros?.cod_cliente, filtros?.centro_custo, filtros?.categoria, filtros?.regiao]);
 
         // Linhas filtradas+ordenadas pra tabela
         const linhas = useMemo(() => {
@@ -190,34 +215,84 @@
             h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
                 h('div', { className: 'flex items-center justify-between mb-3' },
                     h('div', { className: 'text-sm font-medium' }, 'Evolução por ' + (granu === 'dia' ? 'dia' : granu === 'semana' ? 'semana' : 'mês')),
-                    h('div', { className: 'flex gap-1.5 text-[10px] items-center flex-wrap justify-end' },
-                        // 🚀 2026-05: chips clicáveis pra adicionar/remover métricas do gráfico
-                        METRICAS_CATALOGO.map(m => {
-                            const ativo = metricasSelecionadas.includes(m.id);
-                            return h('button', {
+                    h('div', {
+                        ref: dropdownRef,
+                        className: 'flex gap-1.5 text-[10px] items-center flex-wrap justify-end',
+                        style: { position: 'relative' }
+                    },
+                        // Badges das métricas ATIVAS (max 4 visíveis, resto "+ N")
+                        METRICAS_CATALOGO.filter(m => metricasSelecionadas.includes(m.id)).slice(0, 4).map(m =>
+                            h('span', {
                                 key: m.id,
-                                onClick: () => setMetricasSelecionadas(prev =>
-                                    prev.includes(m.id)
-                                        ? (prev.length > 1 ? prev.filter(x => x !== m.id) : prev) // mantém ao menos 1
-                                        : [...prev, m.id]
-                                ),
-                                className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition-all border ' +
-                                    (ativo
-                                        ? `${m.bg} ${m.txt} ${m.border}`
-                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100 hover:text-gray-700'
-                                    ),
-                                title: ativo ? 'Clica pra ocultar' : 'Clica pra mostrar'
+                                className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium border bg-white',
+                                style: { borderColor: m.cor + '40', color: m.cor }
                             },
                                 h('span', {
-                                    style: {
-                                        width: 6, height: 6, borderRadius: 999,
-                                        background: ativo ? m.cor : '#D3D1C7',
-                                        display: 'inline-block'
-                                    }
+                                    style: { width: 6, height: 6, borderRadius: 999, background: m.cor, display: 'inline-block' }
                                 }),
                                 m.label
-                            );
-                        })
+                            )
+                        ),
+                        metricasSelecionadas.length > 4 && h('span', {
+                            className: 'inline-flex items-center px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600'
+                        }, '+' + (metricasSelecionadas.length - 4)),
+
+                        // Botão pra abrir dropdown
+                        h('button', {
+                            onClick: () => setDropdownMetricas(prev => !prev),
+                            className: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors'
+                        },
+                            '⚙️ Métricas (' + metricasSelecionadas.length + '/' + METRICAS_CATALOGO.length + ')'
+                        ),
+
+                        // Dropdown com checkboxes
+                        dropdownMetricas && h('div', {
+                            style: {
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: 6,
+                                background: 'white',
+                                border: '0.5px solid #D3D1C7',
+                                borderRadius: 8,
+                                padding: 8,
+                                width: 240,
+                                maxHeight: 360,
+                                overflowY: 'auto',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                                zIndex: 50
+                            }
+                        },
+                            h('div', { className: 'flex items-center justify-between px-1 pb-2 mb-1 border-b border-gray-100' },
+                                h('span', { className: 'text-[11px] font-semibold text-gray-700' }, 'Métricas plotáveis'),
+                                h('button', {
+                                    onClick: () => setMetricasSelecionadas(['total_entregas']),
+                                    className: 'text-[10px] text-gray-500 hover:text-purple-700'
+                                }, 'limpar')
+                            ),
+                            METRICAS_CATALOGO.map(m => {
+                                const ativo = metricasSelecionadas.includes(m.id);
+                                return h('label', {
+                                    key: m.id,
+                                    className: 'flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer text-[12px]'
+                                },
+                                    h('input', {
+                                        type: 'checkbox',
+                                        checked: ativo,
+                                        onChange: () => setMetricasSelecionadas(prev =>
+                                            prev.includes(m.id)
+                                                ? (prev.length > 1 ? prev.filter(x => x !== m.id) : prev)
+                                                : [...prev, m.id]
+                                        ),
+                                        className: 'w-3.5 h-3.5'
+                                    }),
+                                    h('span', {
+                                        style: { width: 8, height: 8, borderRadius: 999, background: m.cor, display: 'inline-block', flexShrink: 0 }
+                                    }),
+                                    h('span', { className: 'text-gray-800 flex-1', style: { fontWeight: 400 } }, m.label)
+                                );
+                            })
+                        )
                     )
                 ),
                 loading ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '⏳ Carregando...') :
