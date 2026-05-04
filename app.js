@@ -17007,34 +17007,16 @@ const hideLoadingScreen = () => {
             "dashboard" === Et && window.AcompanhamentoPeriodico && React.createElement(window.AcompanhamentoPeriodico, {
                 apiUrl: API_URL,
                 fetchAuth: fetchAuth,
-                // 🚀 v8: usa Xa() (mesma fn do dashboard-completo) pra montar filtros corretos.
-                // Xa() expande regiao em cod_cliente + centro_custo + clientes_sem_filtro_cc
-                // garantindo consistência total com o resto do BI.
-                filtros: (() => {
-                    try {
-                        const sp = Xa(); // URLSearchParams já expandido
-                        return {
-                            data_inicio: sp.get('data_inicio') || '',
-                            data_fim: sp.get('data_fim') || '',
-                            cod_cliente: sp.get('cod_cliente') || '',
-                            centro_custo: sp.get('centro_custo') || '',
-                            clientes_sem_filtro_cc: sp.get('clientes_sem_filtro_cc') || '',
-                            categoria: sp.get('categoria') || '',
-                            cidade: sp.get('cidade') || '',
-                            status_prazo: sp.get('status_prazo') || '',
-                            status_retorno: sp.get('status_retorno') || '',
-                        };
-                    } catch (e) {
-                        console.warn('[Acompanhamento] erro ao montar filtros via Xa():', e);
-                        return {
-                            data_inicio: ua.data_inicio || '',
-                            data_fim: ua.data_fim || '',
-                            cod_cliente: Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(',') : (ua.cod_cliente || ''),
-                            centro_custo: Array.isArray(ua.centro_custo) ? ua.centro_custo.join(',') : (ua.centro_custo || ''),
-                            categoria: ua.categoria || '',
-                        };
-                    }
-                })()
+                // Passa filtros do BI principal — array vira CSV pro backend.
+                // Backend já aceita cod_cliente como CSV. centro_custo agora também (vou ampliar lá).
+                filtros: {
+                    data_inicio: ua.data_inicio || '',
+                    data_fim: ua.data_fim || '',
+                    cod_cliente: Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(',') : (ua.cod_cliente || ''),
+                    centro_custo: Array.isArray(ua.centro_custo) ? ua.centro_custo.join(',') : (ua.centro_custo || ''),
+                    categoria: ua.categoria || '',
+                    regiao: ua.regiao || '',
+                }
             }),
 
             "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
