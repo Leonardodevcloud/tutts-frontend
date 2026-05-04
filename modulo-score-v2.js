@@ -125,6 +125,8 @@
         };
 
         // Regiões que ainda não foram configuradas
+        // ⚠️ Backend agora já filtra: só vêm regiões com ≥1 motoboy avaliado, ordenadas DESC.
+        // Aqui mantemos filtro extra pra excluir regiões já configuradas (defensivo, backend já faz).
         const regioesNaoConfig = regioesDisp.filter(r =>
             !configs.some(c => c.regiao.toUpperCase() === r.regiao.toUpperCase())
         );
@@ -132,23 +134,16 @@
         if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
 
         return h('div', null,
-            // CTA: nova região
-            regioesNaoConfig.length > 0 && h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4' },
-                h('p', { className: 'text-sm text-purple-900 mb-2 font-medium' },
-                    `📍 ${regioesNaoConfig.length} região(ões) sem score configurado:`
-                ),
-                h('div', { className: 'flex flex-wrap gap-2' },
-                    regioesNaoConfig.map(r => h('button', {
-                        key: r.regiao,
-                        onClick: () => setEditando({
-                            regiao: r.regiao, ativo: true, niveis_ativos: [2, 3],
-                            sorteio_valor_n2: 50, sorteio_valor_n3: 150,
-                            saque_teto_n2: 500, saque_teto_n3: 500,
-                        }),
-                        className: 'px-3 py-1.5 bg-white border border-purple-400 text-purple-700 rounded-md text-xs font-medium hover:bg-purple-100'
-                    }, '➕ ' + r.regiao + (r.total_motoboys != null ? ' (' + r.total_motoboys + ')' : '')))
-                )
-            ),
+            // 🚀 2026-05: Painel de regiões sem score — redesign com busca + chips cinzas com badge
+            // Mostra 15 inicialmente, expande via "ver mais", filtra por busca em tempo real.
+            regioesNaoConfig.length > 0 && h(PainelRegioesNaoConfig, {
+                regioes: regioesNaoConfig,
+                onSelecionar: (r) => setEditando({
+                    regiao: r.regiao, ativo: true, niveis_ativos: [2, 3],
+                    sorteio_valor_n2: 50, sorteio_valor_n3: 150,
+                    saque_teto_n2: 500, saque_teto_n3: 500,
+                })
+            }),
 
             // Lista de configs
             configs.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' },
@@ -169,6 +164,84 @@
                 onSalvar: salvar,
                 onCancelar: () => setEditando(null),
             })
+        );
+    }
+
+    // ============================================================
+    // PAINEL DE REGIÕES SEM SCORE (chips cinzas + busca + paginação)
+    // 🚀 2026-05: Redesign — backend já vem ordenado por contagem DESC
+    // sem regiões vazias. Aqui só mostra 15 inicialmente, busca filtra em tempo real.
+    // ============================================================
+    function PainelRegioesNaoConfig({ regioes, onSelecionar }) {
+        const [busca, setBusca] = useState('');
+        const [mostrarTodas, setMostrarTodas] = useState(false);
+        const VISIVEIS_INICIAL = 15;
+
+        const filtradas = useMemo(() => {
+            const q = (busca || '').toLowerCase().trim();
+            if (!q) return regioes;
+            return regioes.filter(r => (r.regiao || '').toLowerCase().includes(q));
+        }, [regioes, busca]);
+
+        const exibidas = mostrarTodas || busca ? filtradas : filtradas.slice(0, VISIVEIS_INICIAL);
+        const restantes = filtradas.length - VISIVEIS_INICIAL;
+        const totalMotoboys = useMemo(
+            () => regioes.reduce((s, r) => s + (r.total_motoboys || 0), 0),
+            [regioes]
+        );
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
+            // Header: contador honesto
+            h('div', { className: 'flex items-center justify-between mb-3' },
+                h('div', { className: 'text-sm text-gray-700' },
+                    h('span', { className: 'font-semibold text-gray-900' }, regioes.length + ' regiões'),
+                    ' com ',
+                    h('span', { className: 'font-semibold text-gray-900' }, totalMotoboys.toLocaleString('pt-BR')),
+                    ' motoboys aguardando configuração'
+                )
+            ),
+
+            // Busca em destaque
+            h('input', {
+                type: 'text',
+                value: busca,
+                placeholder: '🔍 Buscar região...',
+                onChange: e => setBusca(e.target.value),
+                className: 'w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm mb-3 focus:bg-white focus:border-purple-300 focus:outline-none transition-colors'
+            }),
+
+            // Chips cinzas com badge de contagem (ordem já vem do backend)
+            filtradas.length === 0
+                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' },
+                    busca ? `Nenhuma região com "${busca}"` : 'Nenhuma região disponível'
+                )
+                : h('div', { className: 'flex flex-wrap gap-1.5' },
+                    exibidas.map(r => h('button', {
+                        key: r.regiao,
+                        onClick: () => onSelecionar(r),
+                        className: 'inline-flex items-center gap-1.5 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-gray-800 hover:text-purple-800 rounded-full text-xs font-medium transition-colors',
+                        style: { padding: '4px 10px 4px 8px' }
+                    },
+                        h('span', { className: 'text-gray-400 font-semibold' }, '+'),
+                        h('span', null, r.regiao),
+                        r.total_motoboys != null && h('span', {
+                            className: 'bg-white text-gray-500 rounded-full text-[10px] font-medium',
+                            style: { padding: '1px 6px' }
+                        }, r.total_motoboys.toLocaleString('pt-BR'))
+                    ))
+                ),
+
+            // "Ver mais" só aparece se NÃO está buscando E ainda tem regiões escondidas
+            !busca && !mostrarTodas && restantes > 0 && h('button', {
+                onClick: () => setMostrarTodas(true),
+                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-purple-300 hover:bg-purple-50 rounded-lg text-xs text-purple-700 font-medium transition-colors'
+            }, `Ver mais ${restantes} região(ões) ↓`),
+
+            // "Ver menos" quando todas estão expandidas
+            !busca && mostrarTodas && regioes.length > VISIVEIS_INICIAL && h('button', {
+                onClick: () => setMostrarTodas(false),
+                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-gray-400 rounded-lg text-xs text-gray-500 font-medium transition-colors'
+            }, 'Ver menos ↑')
         );
     }
 
