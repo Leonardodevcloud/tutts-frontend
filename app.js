@@ -81,7 +81,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.2.3"; // Security Patch V3 - Refresh Token + Account Lock
+const APP_VERSION = "2.7.4"; // Coleta -> Consultar Enderecos + paginacao
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
@@ -202,9 +202,43 @@ const pararRefreshProativo = () => {
 let _authBootstrapResolver;
 const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = resolve; });
 
+// 🔧 BUGFIX F5-DISCONNECT (2026-05): coordenação entre páginas/abas.
+// Como o sistema é multi-HTML (index.html, roteirizador.html, solicitacao.html),
+// cada navegação é um page load completo — o IIFE abaixo dispara um POST
+// /users/refresh-token toda vez. Se duas páginas abrirem em rápida sucessão
+// (clique em link enquanto outra ainda carrega), as duas disparam refresh
+// concorrente e a segunda recebia 401 → logout silencioso.
+// Agora gravamos timestamp do último refresh bem-sucedido em localStorage
+// e pulamos o refresh se foi há menos de 10s.
+const LAST_REFRESH_KEY = 'tutts_last_refresh_ts';
+const REFRESH_SKIP_WINDOW_MS = 10000; // 10s
+
+const podePularRefreshInicial = () => {
+    try {
+        const last = parseInt(localStorage.getItem(LAST_REFRESH_KEY) || '0', 10);
+        if (!last) return false;
+        const elapsed = Date.now() - last;
+        return elapsed >= 0 && elapsed < REFRESH_SKIP_WINDOW_MS;
+    } catch (e) { return false; }
+};
+
+const marcarRefreshFeito = () => {
+    try { localStorage.setItem(LAST_REFRESH_KEY, String(Date.now())); } catch (e) {}
+};
+
 (async function restaurarTokenAoCarregar() {
     const userSalvo = sessionStorage.getItem("tutts_user");
     if (userSalvo && !_accessToken) {
+        // 🔧 Pula refresh se outra página/aba acabou de fazer (< 10s)
+        // Como o cookie HttpOnly continua válido, o próximo fetchAuth
+        // que retornar 401 com expired=true vai disparar refresh sob demanda.
+        if (podePularRefreshInicial()) {
+            console.log('🔄 Refresh pulado (outra página renovou há pouco) — fetchAuth renova sob demanda');
+            _authBootstrapResolver();
+            // Inicia o refresh proativo, mas espera 30s antes do primeiro tick
+            setTimeout(() => iniciarRefreshProativo(), 30000);
+            return;
+        }
         try {
             const response = await fetch(API_URL + '/users/refresh-token', {
                 method: 'POST',
@@ -216,6 +250,7 @@ const _authBootstrapPromise = new Promise(resolve => { _authBootstrapResolver = 
                 const data = await response.json();
                 if (data.token) {
                     _accessToken = data.token;
+                    marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem
                     // 🔧 FIX: Atualizar CSRF no restore também
                     if (data.csrfToken) {
                         sessionStorage.setItem('tutts_csrf', data.csrfToken);
@@ -273,6 +308,7 @@ const renovarToken = async () => {
             if (response.ok) {
                 const data = await response.json();
                 setToken(data.token);
+                marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem refresh inicial
                 // 🔒 Atualizar CSRF token se veio novo
                 if (data.csrfToken) {
                     sessionStorage.setItem('tutts_csrf', data.csrfToken);
@@ -317,6 +353,7 @@ const fazerLogoutCompleto = () => {
     sessionStorage.removeItem("tutts_csrf");
     sessionStorage.removeItem("tutts_todo_notif_shown"); // 🔒 Reset flag para próximo login
     localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
+    localStorage.removeItem(LAST_REFRESH_KEY); // 🔧 Limpa timestamp de refresh
     // 🔧 FIX HOME-NO-LOGIN: limpa o último módulo ativo e o estado das abas
     // pra que o próximo login sempre abra na Home, não no último módulo usado.
     try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
@@ -356,11 +393,19 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
     }
     
     try {
+        // 🔧 PERFORMANCE FIX (2026-05): cache: 'no-store' só em mutações.
+        // Antes era global, o que desabilitava o cache HTTP do browser pra TUDO,
+        // inclusive endpoints estáticos como /bi/cidades, /bi/regioes, etc.
+        // Mesmo o backend tendo cache em RAM, o browser ainda pagava o RTT
+        // Salvador → Railway toda vez (~150-300ms cada). Agora GETs usam
+        // 'default' (respeita Cache-Control do servidor) e mutações continuam
+        // com 'no-store' pra evitar dados stale após escrita.
+        const isMutation = !['GET', 'HEAD', 'OPTIONS'].includes(method);
         const response = await fetch(url, {
             ...options,
             headers,
             credentials: 'include', // 🔒 Envia cookies HttpOnly automaticamente
-            cache: 'no-store' // 🔄 Garante dados frescos após mutações (fix v6.1)
+            cache: isMutation ? 'no-store' : 'default'
         });
         
         // Se token expirou, tentar renovar automaticamente
@@ -505,7 +550,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "cs", label: "Sucesso do Cliente", icon: "🤝",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "clientes", label: "Clientes"}, {id: "interacoes", label: "Interações"}, {id: "ocorrencias", label: "Ocorrências"}, {id: "agenda", label: "Agenda"}, {id: "emails", label: "Emails"}, {id: "emails-automacao", label: "Automação E-mail"}]
     },
-    { id: "coleta", label: "Coleta de Endereços", icon: "📍", abas: [] },
+    { id: "coleta", label: "Consultar Endereços", icon: "🗺️", abas: [] },
     { id: "config", label: "Configurações", icon: "🔧",
       abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
     },
@@ -2265,6 +2310,7 @@ const hideLoadingScreen = () => {
                 _accessToken = null; // 🔒 Limpar token em memória
                 sessionStorage.removeItem("tutts_csrf");
                 localStorage.removeItem("tutts_refresh_token"); // Limpar resquício antigo
+                localStorage.removeItem(LAST_REFRESH_KEY); // 🔧 Limpa timestamp de refresh
                 // 🔧 FIX HOME-NO-LOGIN: limpa último módulo e estado das abas
                 // pra que o próximo login caia na Home.
                 try { localStorage.removeItem("tutts_modulo_ativo"); } catch(e) {}
@@ -2285,7 +2331,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -3483,7 +3529,164 @@ const hideLoadingScreen = () => {
                 }
             }
         }, [l?.codProfissional]);
-        
+
+        // 🚀 Score v2 (2026-05): mostra modal de boas-vindas pro motoboy nivel 2+
+        // que ainda não viu hoje. Se a região não tem score ou é nivel 1, não mostra.
+        // Aguarda 3s pra não competir com tutorial e dar tempo dos scripts carregarem.
+        React.useEffect(() => {
+            if (l && l.role === "user" && l.codProfissional && typeof window.ModuloScoreV2WelcomeModal !== 'undefined') {
+                const t = setTimeout(() => {
+                    window.ModuloScoreV2WelcomeModal.show({
+                        apiUrl: API_URL,
+                        token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+                        fetchAuth: fetchAuth,
+                    }).catch(err => console.warn('[ScoreV2] Welcome modal:', err));
+                }, 3000);
+                return () => clearTimeout(t);
+            }
+        }, [l?.codProfissional]);
+
+        // 🚀 2026-05: agrupado — pré-carrega dados da home (score + saldo + fila vínculo+estado).
+        // Roda em sequência com pequeno delay pra garantir que o auth bootstrap finalizou.
+        // Isso evita rajada de 3 requests simultâneas no F5 que podem confundir o token refresh.
+        React.useEffect(() => {
+            if (!l || l.role !== "user" || !l.codProfissional) return;
+            let cancelado = false;
+
+            const carregarTudo = async () => {
+                // 800ms de delay inicial pra dar tempo do auth bootstrap finalizar no F5.
+                // (O bootstrap promise já é awaited dentro do fetchAuth, mas esse delay
+                // ajuda a não disparar 3 requests no exato instante da inicialização.)
+                await new Promise(r => setTimeout(r, 800));
+                if (cancelado) return;
+
+                // 1) Score (silencioso — não desloga em erro)
+                try {
+                    const r = await fetchAuth(API_URL + "/score-v2/meu-nivel");
+                    if (r.ok) {
+                        const dados = await r.json();
+                        if (dados && dados.regiao_configurada) {
+                            window._tuttsScoreNivelCache = { nivel: dados.nivel };
+                            if (dados.progresso && Array.isArray(dados.progresso.requisitos)) {
+                                const reqs = dados.progresso.requisitos;
+                                const naoOk = reqs.filter(r => !r.ok);
+                                const referencia = naoOk.length > 0
+                                    ? naoOk.reduce((a, b) => (a.pct >= b.pct ? a : b))
+                                    : reqs[0];
+                                const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
+                                window._tuttsScoreProgressoPct = pctMedio;
+                                window._tuttsScoreProgressoTexto = naoOk.length > 0
+                                    ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro N" + dados.progresso.proximo_nivel
+                                    : "Você atingiu todos os critérios!";
+                            } else {
+                                window._tuttsScoreProgressoPct = 100;
+                                window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Nível máximo atingido!" : "Veja seu progresso";
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("[Score Home] pre-fetch falhou:", err.message);
+                }
+                if (cancelado) return;
+
+                // 2) Saldo Plific
+                try {
+                    if (saldoPlificUser.saldo === null && !saldoPlificUser.loading) {
+                        buscarSaldoPlificUsuario();
+                    }
+                } catch (err) {
+                    console.warn("[Saldo Home] pre-fetch falhou:", err.message);
+                }
+            };
+
+            carregarTudo();
+            return () => { cancelado = true; };
+        }, [l?.codProfissional]);
+
+
+
+        // 🚀 2026-05 Fase 2: polling adaptativo do estado da fila pra hero da home se sentir "ao vivo"
+        // - Faz 1 check em /minha-central (vínculo)
+        // - Polling de /minha-posicao: 8s normal, 4s quando aguardando/em_rota
+        // - Refresh imediato quando aba volta a ter foco (visibilitychange)
+        // - Detecta mudança via JSON.stringify pra log e re-render correto
+        const [_filaTick, _setFilaTick] = React.useState(0);
+        React.useEffect(() => {
+            if (!l || l.role !== "user" || !l.codProfissional) return;
+            let parado = false;
+            let timeoutId = null;
+
+            const checarVinculo = async () => {
+                try {
+                    const r = await fetchAuth(API_URL + "/filas/minha-central");
+                    if (!r.ok) {
+                        window._tuttsFilaVinculado = false;
+                        _setFilaTick(t => (t + 1) % 1000000);
+                        return;
+                    }
+                    const d = await r.json();
+                    window._tuttsFilaVinculado = !!(d && d.success && d.vinculado);
+                    _setFilaTick(t => (t + 1) % 1000000);
+                } catch (e) {
+                    window._tuttsFilaVinculado = false;
+                }
+            };
+
+            const buscarPosicao = async () => {
+                if (parado) return;
+                if (!window._tuttsFilaVinculado) return;
+                try {
+                    const r = await fetchAuth(API_URL + "/filas/minha-posicao");
+                    if (!r.ok) return;
+                    const d = await r.json();
+                    if (parado) return;
+                    // Detecta mudança real comparando JSON antes/depois
+                    const antes = JSON.stringify(window._tuttsFilaState || null);
+                    const depois = JSON.stringify(d || null);
+                    window._tuttsFilaState = d || null;
+                    if (antes !== depois) {
+                        console.log("[Fila Home] estado mudou:", d?.status || "fora", "qtd=" + (d?.notas_liberadas || 0));
+                        _setFilaTick(t => (t + 1) % 1000000);
+                    }
+                } catch (e) {
+                    // silencioso
+                }
+            };
+
+            // Polling adaptativo: 4s quando ativo (aguardando/em_rota), 8s caso contrário
+            const agendarProximo = () => {
+                if (parado) return;
+                const fila = window._tuttsFilaState;
+                const ativo = fila && fila.na_fila && (fila.status === "aguardando" || fila.status === "em_rota");
+                const delay = ativo ? 4000 : 8000;
+                timeoutId = setTimeout(async () => {
+                    await buscarPosicao();
+                    agendarProximo();
+                }, delay);
+            };
+
+            // Refresh imediato quando aba volta a ter foco
+            const onVisibility = () => {
+                if (document.visibilityState === "visible" && !parado) {
+                    buscarPosicao();
+                }
+            };
+            document.addEventListener("visibilitychange", onVisibility);
+
+            (async () => {
+                await checarVinculo();
+                if (parado) return;
+                await buscarPosicao();
+                agendarProximo();
+            })();
+
+            return () => {
+                parado = true;
+                if (timeoutId) clearTimeout(timeoutId);
+                document.removeEventListener("visibilitychange", onVisibility);
+            };
+        }, [l?.codProfissional]);
+
         // Componente do Tutorial
         const TutorialOverlay = () => {
             if (!tutorialAtivo) return null;
@@ -4496,12 +4699,18 @@ const hideLoadingScreen = () => {
             const carregarDados = async () => {
                 N(!0);
                 try {
-                    // Carregar TODOS os saques para visão geral + pedidos + gratuidades
-                    // Usar fetchAuth para enviar token JWT
-                    const [saquesRes, pedidosRes, gratuidadesRes] = await Promise.all([
-                        fetchAuth(`${API_URL}/withdrawals`),
+                    // 🔧 PERFORMANCE FIX (2026-05): antes baixava TODA a tabela
+                    // de saques (12k+ linhas, ~10MB JSON, levava 50s). Agora
+                    // pede só os 500 mais recentes (cobre operação de 1-2 dias)
+                    // e busca contadores agregados num endpoint leve para os
+                    // badges "Todas 12.378", "Aprovadas 7.182" etc.
+                    // Para visão histórica completa, abas de Validação/Conciliação
+                    // já filtram por data e seguem sem limit.
+                    const [saquesRes, pedidosRes, gratuidadesRes, contadoresRes] = await Promise.all([
+                        fetchAuth(`${API_URL}/withdrawals?limit=500`),
                         fetchAuth(`${API_URL}/loja/pedidos`),
-                        fetchAuth(`${API_URL}/gratuities`)
+                        fetchAuth(`${API_URL}/gratuities`),
+                        fetchAuth(`${API_URL}/withdrawals/resumo-contadores`).catch(() => null)
                     ]);
                     
                     // Verificar se as respostas são válidas
@@ -4514,6 +4723,10 @@ const hideLoadingScreen = () => {
                     const saques = await saquesRes.json();
                     const pedidos = await pedidosRes.json();
                     const gratuidades = await gratuidadesRes.json();
+                    let contadoresSaques = null;
+                    if (contadoresRes && contadoresRes.ok) {
+                        try { contadoresSaques = await contadoresRes.json(); } catch(_) {}
+                    }
                     
                     // Verificar se são arrays válidos
                     if (!Array.isArray(saques) || !Array.isArray(gratuidades)) {
@@ -4540,13 +4753,19 @@ const hideLoadingScreen = () => {
                         Sa.current = countPedidos;
                     }
                     
-                    // IMPORTANTE: Carregar TODOS os saques para a tabela
+                    // 🔧 Salva os 500 saques recentes + os contadores agregados.
+                    // O componente SolicitacoesV2 usa withdrawalCounts pros badges
+                    // (totais corretos vindos do backend) e q (saques) pra renderizar
+                    // a tabela paginada.
                     U(saques); tt(pedidos); H(gratuidades);
+                    if (contadoresSaques) {
+                        try { setWithdrawalCounts(contadoresSaques); } catch(_) {}
+                    }
                     
                     const abaAtiva = p.finTab || "home-fin";
                     "solicitacoes" === abaAtiva || "validacao" === abaAtiva ? Pa("solicitacoes") : "loja" === abaAtiva ? Pa("loja") : "gratuidades" === abaAtiva && Pa("gratuidades");
                     h(new Date);
-                    console.log('✅ Dados carregados:', saques.length, 'total,', pendentes.length, 'pendentes');
+                    console.log('✅ Dados carregados:', saques.length, 'recentes (de', contadoresSaques?.todas || '?', 'total),', pendentes.length, 'pendentes');
                 } catch (e) { console.error("Erro:", e); }
                 N(!1);
             };
@@ -4984,14 +5203,16 @@ const hideLoadingScreen = () => {
 
 
         // Buscar saldo Plific do usuário logado (para tela de saque)
+        // 🔧 FIX 2026-05: aceita tanto camelCase quanto snake_case (objeto user usa camelCase no login)
         const buscarSaldoPlificUsuario = async (forceRefresh = false) => {
-            if (!l || !l.cod_profissional) return;
+            const codProf = l && (l.cod_profissional || l.codProfissional);
+            if (!l || !codProf) return;
             
             setSaldoPlificUser(prev => ({ ...prev, loading: true, erro: null }));
             try {
                 const url = forceRefresh 
-                    ? `${API_URL}/plific/saldo/${l.cod_profissional}?refresh=true`
-                    : `${API_URL}/plific/saldo/${l.cod_profissional}`;
+                    ? `${API_URL}/plific/saldo/${codProf}?refresh=true`
+                    : `${API_URL}/plific/saldo/${codProf}`;
                 const response = await fetchAuth(url);
                 const data = await response.json();
                 
@@ -7487,12 +7708,19 @@ const hideLoadingScreen = () => {
                 const e = Xa();
                 console.log("📊 Carregando dashboard com filtros:", e.toString() || "(sem filtros)");
                 setLoadingMessage("Buscando métricas de desempenho...");
-                const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}`),
+                const t = await fetchAuth(`${API_URL}/bi/dashboard-completo?${e}&compact=1`),
                     a = await t.json();
                 setLoadingMessage("Processando dados...");
                 console.log("📊 Dados recebidos:", a), Nt(a.metricas || {}), Bt(a.porCliente || []), Jt(a.porProfissional || []);
-                const l = a.dadosGraficos || [],
-                    r = [{
+                // 🚀 PERFORMANCE FIX (2026-05): se backend mandou histogramas pré-agregados,
+                // usa direto. Se for backend antigo, calcula em JS (fallback).
+                let r, o;
+                if (Array.isArray(a.histogramaTempo) && Array.isArray(a.histogramaKm)) {
+                    r = a.histogramaTempo;
+                    o = a.histogramaKm;
+                } else {
+                const l = a.dadosGraficos || [];
+                r = [{
                         label: "0 a 45 min",
                         min: 0,
                         max: 45
@@ -7522,8 +7750,8 @@ const hideLoadingScreen = () => {
                             const a = parseFloat(t.tempo);
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
-                    })),
-                    o = [{
+                    }));
+                o = [{
                         label: "0-10",
                         min: 0,
                         max: 10
@@ -7586,6 +7814,7 @@ const hideLoadingScreen = () => {
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
                     }));
+                } // fim do else (fallback dadosGraficos)
                 Ht({
                     porTempo: r,
                     porKm: o,
@@ -7815,11 +8044,17 @@ const hideLoadingScreen = () => {
                 const _catsLB = e.categorias || [];
                 _catsLB.length > 0 && t.append("categoria", _catsLB.join(","));
                 e.cod_prof && t.append("cod_prof", e.cod_prof), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
-                const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}`),
+                const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}&compact=1`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
-                const r = l.dadosGraficos || [],
-                    o = [{
+                // 🚀 PERFORMANCE FIX (2026-05): histogramas pré-agregados quando vierem
+                let o, c;
+                if (Array.isArray(l.histogramaTempo) && Array.isArray(l.histogramaKm)) {
+                    o = l.histogramaTempo;
+                    c = l.histogramaKm;
+                } else {
+                const r = l.dadosGraficos || [];
+                o = [{
                         label: "0 a 45 min",
                         min: 0,
                         max: 45
@@ -7849,8 +8084,8 @@ const hideLoadingScreen = () => {
                             const a = parseFloat(t.tempo);
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
-                    })),
-                    c = [{
+                    }));
+                c = [{
                         label: "0-10",
                         min: 0,
                         max: 10
@@ -7913,6 +8148,7 @@ const hideLoadingScreen = () => {
                             return null !== a && !isNaN(a) && a >= e.min && a < e.max
                         }).length
                     }));
+                } // fim do else fallback
                 Ht({
                     porTempo: o,
                     porKm: c,
@@ -8526,6 +8762,7 @@ const hideLoadingScreen = () => {
                 // Salvar token JWT ANTES de buscar permissões
                 if (t.token) {
                     setToken(t.token);
+                    marcarRefreshFeito(); // 🔧 Marca pra outras páginas pularem refresh inicial
                 }
                 if (t.refreshToken) {
                     setRefreshToken(t.refreshToken);
@@ -9432,7 +9669,7 @@ const hideLoadingScreen = () => {
                             onClick: () => he("home"),
                             className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
                         }, "← Voltar"),
-                        React.createElement("h1", { className: "text-xl font-bold" }, "📍 Coleta de Endereços")
+                        React.createElement("h1", { className: "text-xl font-bold" }, "🗺️ Consultar Endereços")
                     ),
                     // Conteúdo
                     typeof window.ModuloColetaComponent !== 'undefined'
@@ -10163,213 +10400,378 @@ const hideLoadingScreen = () => {
         
         // ========== FIM LANDING PAGE ==========
         
-        React.createElement("div", {
-            className: "text-center mb-8"
-        }, React.createElement("h2", {
-            className: "text-2xl font-bold text-gray-800"
-        }, "Olá, ", l.fullName?.split(" ")[0], "! 👋"), React.createElement("p", {
-            className: "text-gray-600 mt-1"
-        }, "O que você precisa fazer hoje?")), React.createElement("div", {
-            className: "space-y-4"
-        }, React.createElement("button", {
-            onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); },
-            className: "w-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "👥"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Fila de Entregas"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Entre na fila e aguarde a disponibilidade de corridas")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›")),
-
-        // Coleta de Endereços (novo módulo) — estilo "featured" como o Filas
-        hasModuleAccess(l, "coleta") && React.createElement("button", {
-            onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
-            className: "w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📍"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Coleta de Endereços"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Cadastre endereços e ganhe R$ 1,00 por aprovação")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›")),
-
-        (() => {
-            // Nova lógica: usa elegibilidade do backend
-            // Mostra se elegível OU se ainda está carregando (para não piscar)
-            if (!l || !l.codProfissional) return !1;
-            if (elegibilidadeNovatos.carregando) return !1;
-            return elegibilidadeNovatos.elegivel;
-        })() && React.createElement("button", {
-            onClick: () => {
-                verificarElegibilidadeNovatos(); // Recarrega ao clicar
-                x({
-                ...p,
-                userTab: "promo-novatos"
-            })},
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🚀"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Promoções Novatos"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, elegibilidadeNovatos.motivo || "Promoções especiais para você!"), React.createElement("div", {
-            className: "flex gap-2 mt-1 flex-wrap"
-        }, elegibilidadeNovatos.promocoes && elegibilidadeNovatos.promocoes.length > 0 && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full"
-        }, elegibilidadeNovatos.promocoes.length, " promoção(ões)"), elegibilidadeNovatos.diasSemEntrega !== null && elegibilidadeNovatos.diasSemEntrega !== undefined && React.createElement("span", {
-            className: "inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold"
-        }, "📅 ", elegibilidadeNovatos.diasSemEntrega, " dias sem entregas"))), React.createElement("span", {
-            className: "text-orange-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "solicitacoes"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-purple-600"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📋"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Solicitar Ajuste"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Retornos e Pedágios")), React.createElement("span", {
-            className: "text-purple-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "correcao-endereco" }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-orange-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "📍"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Correção de Endereço"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Corrigir localização de ponto de entrega")), React.createElement("span", {
-            className: "text-orange-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({ ...p, userTab: "liberar-ponto" }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🔓"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Liberar OS"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Liberar Ponto 1 do app via RPA")), React.createElement("span", {
-            className: "text-blue-400 text-2xl"
-        }, "›")),
-        // 🆕 2026-04: card "Saque Emergencial" com lock visual quando saques desabilitados
-        React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "saque"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 " + (saquesStatus.habilitados ? "border-green-600" : "border-gray-400 opacity-75")
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 " + (saquesStatus.habilitados ? "bg-green-100" : "bg-gray-200")
-        }, saquesStatus.habilitados ? "💰" : "🔒"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-            React.createElement("h3", {
-                className: "text-lg font-bold " + (saquesStatus.habilitados ? "text-gray-800" : "text-gray-500")
-            }, "Saque Emergencial"),
-            !saquesStatus.habilitados && React.createElement("span", {
-                className: "text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full"
-            }, "Indisponível")
-        ), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Solicitar adiantamento")), React.createElement("span", {
-            className: "text-green-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "indicacoes"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-blue-600"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "👥"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Promoção de Indicação"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Indique amigos e ganhe bônus"), getPromocoesFiltradas().length > 0 && React.createElement("span", {
-            className: "inline-block mt-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full"
-        }, getPromocoesFiltradas().length, " promoção(ões) ativa(s)")), React.createElement("span", {
-            className: "text-blue-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => x({
-                ...p,
-                userTab: "seguro-iza"
-            }),
-            className: "w-full bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] border-l-4 border-cyan-500"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🛡️"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-gray-800"
-        }, "Seguro de Vida - IZA"), React.createElement("p", {
-            className: "text-sm text-gray-500"
-        }, "Coberturas, valores e como acionar")), React.createElement("span", {
-            className: "text-cyan-400 text-2xl"
-        }, "›")), React.createElement("button", {
-            onClick: () => {
-                ot(!0), st(0), Ga(), Za(), x({
-                    ...p,
-                    userTab: "loja"
-                })
+        // 🚀 2026-05: Home reformulada — header compacto, status row, hero fila, quick actions, score, mais
+        // Fase 1: sem hero adaptativo (entrar fila / aguardando / despachado). Vem na Fase 2.
+        React.createElement(React.Fragment, null,
+            // ===== HEADER =====
+            React.createElement("div", {
+                className: "flex items-center justify-between mb-4"
             },
-            className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-4 sm:p-6 flex items-center gap-3 sm:gap-4 hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        }, React.createElement("div", {
-            className: "w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
-        }, "🛒"), React.createElement("div", {
-            className: "text-left flex-1"
-        }, React.createElement("h3", {
-            className: "text-lg font-bold text-white"
-        }, "Lojinha Tutts"), React.createElement("p", {
-            className: "text-sm text-white/80"
-        }, "Ofertas exclusivas com abatimento no saldo!")), React.createElement("span", {
-            className: "text-white/60 text-2xl"
-        }, "›"))), React.createElement("div", {
-            className: "mt-6 sm:mt-8 grid grid-cols-3 gap-2 sm:gap-4"
-        }, React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-purple-600"
-        }, j.filter(e => "pendente" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Ajustes Pendentes")), React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-green-600"
-        }, M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Saques Pendentes")), React.createElement("div", {
-            className: "bg-white rounded-xl p-4 text-center shadow"
-        }, React.createElement("p", {
-            className: "text-2xl font-bold text-blue-600"
-        }, re.filter(e => "pendente" === e.status).length), React.createElement("p", {
-            className: "text-xs text-gray-500"
-        }, "Indicações Pendentes")))), p.userTab && React.createElement("div", {
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "text-lg font-bold text-gray-800" }, "Olá, ", l.fullName?.split(" ")[0]),
+                    React.createElement("p", { className: "text-xs text-gray-500" },
+                        l.cidade ? l.cidade : "Tutts"
+                    )
+                ),
+                // 🚀 Fase 2: Pílula de status reflete estado da fila em tempo real
+                // Só faz lookup do estado se motoboy é vinculado a alguma central
+                (() => {
+                    const vinculado = window._tuttsFilaVinculado === true;
+                    const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
+                    let cor = "bg-gray-500"; // default offline
+                    let bg = "bg-gray-100";
+                    let texto = "text-gray-700";
+                    let label = "Disponível";
+                    if (vinculado && fila && fila.na_fila) {
+                        if (fila.status === "em_rota") {
+                            cor = "bg-blue-500"; bg = "bg-blue-50"; texto = "text-blue-800"; label = "Em rota";
+                        } else if (fila.status === "aguardando") {
+                            cor = "bg-green-500"; bg = "bg-green-50"; texto = "text-green-800"; label = "Online";
+                        }
+                    }
+                    return React.createElement("div", {
+                        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full " + bg
+                    },
+                        React.createElement("span", { className: "w-1.5 h-1.5 rounded-full " + cor }),
+                        React.createElement("span", { className: "text-xs font-medium " + texto }, label)
+                    );
+                })()
+            ),
+
+            // ===== STATUS ROW: Saldo (dominante) + Score + OS no período =====
+            React.createElement("div", {
+                className: "bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100"
+            },
+                React.createElement("div", null,
+                    React.createElement("div", { className: "text-xs text-gray-500 mb-1" }, "Disponível para saque"),
+                    React.createElement("div", { className: "text-3xl font-bold text-green-700 leading-tight" },
+                        // saldoPlificUser pode estar carregando ou null
+                        saldoPlificUser?.loading
+                            ? "..."
+                            : (saldoPlificUser?.saldo != null
+                                ? `R$ ${parseFloat(saldoPlificUser.saldo).toFixed(2).replace('.', ',')}`
+                                : "—")
+                    )
+                ),
+                React.createElement("div", {
+                    className: "flex justify-between items-center mt-3 pt-3 border-t border-gray-100"
+                },
+                    // Score
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "text-xs text-gray-500" }, "Score"),
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                            // userScoreNivel é populado pelo modulo-score-v2-motoboy quando carrega; placeholder se ainda não
+                            (window._tuttsScoreNivelCache && window._tuttsScoreNivelCache.nivel)
+                                ? (window._tuttsScoreNivelCache.nivel === 3 ? "🥇 Nível 3" : window._tuttsScoreNivelCache.nivel === 2 ? "🥈 Nível 2" : "⚪ Nível 1")
+                                : "⚪ Nível 1"
+                        )
+                    ),
+                    // Pendências (combinadas — ajustes + saques)
+                    React.createElement("div", { className: "text-right" },
+                        React.createElement("div", { className: "text-xs text-gray-500" }, "Pendências"),
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                            (j.filter(e => "pendente" === e.status).length + 
+                             M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length),
+                            " ",
+                            React.createElement("span", { className: "text-xs font-normal text-gray-500" }, "abertas")
+                        )
+                    )
+                )
+            ),
+
+            // ===== HERO: FILA DE ENTREGAS (adaptativo) =====
+            // Lê window._tuttsFilaState (populado a cada 30s pelo useEffect de polling)
+            // 3 estados: sem dados / fora da fila / aguardando / em rota (com bairros)
+            // 🚀 2026-05: só aparece pra motoboys VINCULADOS a alguma central
+            (() => {
+                // Se ainda não respondeu o /minha-central, _tuttsFilaVinculado é undefined.
+                // Pra evitar piscar o card e depois sumir, só renderiza quando temos resposta E é true.
+                if (window._tuttsFilaVinculado !== true) return null;
+
+                const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
+                // Função pra abrir a fila
+                const abrirFila = () => { if (typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("filas"); };
+
+                // CASO A: ainda não carregou OU fora da fila
+                if (!fila || fila.na_fila === false) {
+                    return React.createElement("button", {
+                        onClick: abrirFila,
+                        className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left hover:shadow-md transition-all active:scale-[0.99]"
+                    },
+                        React.createElement("div", { className: "flex items-center justify-between" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-xs font-semibold text-teal-700 uppercase tracking-wide" }, "Fila de Entregas"),
+                                React.createElement("div", { className: "text-base font-bold text-gray-900 mt-1" }, "Pronto pra começar?"),
+                                React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Toque para entrar na fila")
+                            ),
+                            React.createElement("div", {
+                                className: "w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white text-xl"
+                            }, "▶")
+                        )
+                    );
+                }
+
+                // CASO B: aguardando despacho
+                if (fila.status === "aguardando") {
+                    const pos = fila.minha_posicao;
+                    const total = fila.total_na_fila;
+                    const min = fila.minutos_esperando;
+                    return React.createElement("div", {
+                        className: "w-full rounded-2xl p-4 mb-4 text-white",
+                        style: { backgroundColor: "#1d9e75" }
+                    },
+                        React.createElement("div", { className: "flex justify-between items-start mb-2" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-80 font-semibold" }, "Fila de Entregas"),
+                                React.createElement("div", { className: "text-base font-bold mt-1" }, "Aguardando despacho"),
+                                React.createElement("div", { className: "text-xs opacity-90 mt-0.5" },
+                                    "Posição ", React.createElement("span", { className: "font-bold" }, pos),
+                                    " de ", total,
+                                    " · ", min, " min na fila"
+                                )
+                            ),
+                            React.createElement("span", {
+                                className: "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                            }, "⏱ Ao vivo")
+                        ),
+                        React.createElement("div", { className: "flex gap-2 mt-3" },
+                            React.createElement("button", {
+                                onClick: abrirFila,
+                                className: "flex-1 bg-white text-sm font-semibold py-2 rounded-lg",
+                                style: { color: "#0F6E56" }
+                            }, "Ver fila"),
+                            React.createElement("button", {
+                                onClick: abrirFila, // sair também leva pra fila (lá tem o botão "Sair")
+                                className: "px-3 py-2 rounded-lg text-sm border text-white",
+                                style: { backgroundColor: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.3)" }
+                            }, "Sair")
+                        )
+                    );
+                }
+
+                // CASO C: em rota (despachado)
+                if (fila.status === "em_rota") {
+                    const qtd = parseInt(fila.notas_liberadas) || 0;
+                    const bairrosRaw = Array.isArray(fila.bairros) ? fila.bairros : [];
+                    // Agrupa por bairro (case-insensitive, trim)
+                    const contagem = {};
+                    bairrosRaw.forEach(b => {
+                        if (!b) return;
+                        const nome = String(b).trim().toUpperCase();
+                        if (!nome) return;
+                        contagem[nome] = (contagem[nome] || 0) + 1;
+                    });
+                    const tagueadas = Object.values(contagem).reduce((s, n) => s + n, 0);
+                    const semBairro = Math.max(0, qtd - tagueadas);
+                    const listaBairros = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+
+                    return React.createElement("div", {
+                        className: "w-full rounded-2xl p-4 mb-4 text-white",
+                        style: { backgroundColor: "#185FA5" }
+                    },
+                        React.createElement("div", { className: "flex justify-between items-start" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-80 font-semibold" }, "Corridas Despachadas"),
+                                React.createElement("div", { className: "text-2xl font-bold mt-1" }, qtd, " ", qtd === 1 ? "entrega" : "entregas")
+                            ),
+                            React.createElement("span", {
+                                className: "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                            }, "⏱ Ao vivo")
+                        ),
+                        // Seção de bairros (só se tem alguma tag)
+                        listaBairros.length > 0 && React.createElement("div", {
+                            className: "mt-3 rounded-lg p-3",
+                            style: { backgroundColor: "rgba(255,255,255,0.12)" }
+                        },
+                            React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-75 font-semibold mb-2" },
+                                semBairro > 0 ? "Bairros tagueados" : "Distribuição por bairro"
+                            ),
+                            React.createElement("div", { className: "flex flex-col gap-1.5" },
+                                listaBairros.map(([nome, count]) =>
+                                    React.createElement("div", {
+                                        key: nome,
+                                        className: "flex justify-between items-center text-sm"
+                                    },
+                                        React.createElement("span", null, "📍 ", nome),
+                                        React.createElement("span", {
+                                            className: "text-xs font-semibold px-2 rounded-full",
+                                            style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                                        }, count)
+                                    )
+                                ),
+                                // Linha "Outras" agregando OS sem tag
+                                semBairro > 0 && React.createElement("div", {
+                                    className: "flex justify-between items-center text-sm",
+                                    style: { opacity: 0.75 }
+                                },
+                                    React.createElement("span", null, "· Outras"),
+                                    React.createElement("span", {
+                                        className: "text-xs font-semibold px-2 rounded-full",
+                                        style: { backgroundColor: "rgba(255,255,255,0.16)" }
+                                    }, semBairro)
+                                )
+                            )
+                        ),
+                        React.createElement("button", {
+                            onClick: abrirFila,
+                            className: "w-full bg-white text-sm font-semibold py-2 rounded-lg mt-3",
+                            style: { color: "#0C447C" }
+                        }, "Ver fila completa")
+                    );
+                }
+
+                // Fallback (status desconhecido) — usa o card neutro
+                return React.createElement("button", {
+                    onClick: abrirFila,
+                    className: "w-full bg-white border-2 border-teal-500 rounded-2xl p-4 mb-4 text-left"
+                },
+                    React.createElement("div", { className: "text-base font-bold text-gray-900" }, "Ver fila de entregas")
+                );
+            })(),
+
+            // ===== QUICK ACTIONS (4 ícones em grid) =====
+            // Ordem: Saque · Correção · Liberar OS · Ajuste
+            React.createElement("div", {
+                className: "grid grid-cols-4 gap-2 mb-4"
+            },
+                // 1 — Saque Emergencial
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "saque" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "💰"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Saque", React.createElement("br"), "Emergencial")
+                ),
+                // 2 — Correção de Endereço
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "correcao-endereco" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-pink-300 hover:bg-pink-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "📍"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Correção", React.createElement("br"), "Endereço")
+                ),
+                // 3 — Liberar OS
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "liberar-ponto" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "🔓"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Liberar", React.createElement("br"), "OS")
+                ),
+                // 4 — Solicitar Ajuste
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "solicitacoes" }),
+                    className: "bg-white rounded-xl p-2.5 border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-all active:scale-95 flex flex-col items-center gap-1"
+                },
+                    React.createElement("div", { className: "text-xl" }, "📝"),
+                    React.createElement("div", { className: "text-[10px] text-gray-700 font-medium leading-tight text-center" }, "Solicitar", React.createElement("br"), "Ajuste")
+                )
+            ),
+
+            // ===== SCORE COM PROGRESSO INLINE =====
+            React.createElement("button", {
+                onClick: () => x({ ...p, userTab: "score" }),
+                className: "w-full bg-white rounded-2xl p-3 mb-2 border border-gray-100 hover:border-amber-300 transition-all text-left"
+            },
+                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "text-sm font-semibold text-gray-900" }, "🏆 Meu Score"),
+                        React.createElement("div", { className: "text-xs text-gray-500" },
+                            (window._tuttsScoreProgressoTexto || "Veja seu nível e bônus")
+                        )
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // Barra de progresso (lê do cache global se já tiver)
+                React.createElement("div", {
+                    className: "h-1.5 bg-gray-100 rounded-full overflow-hidden"
+                },
+                    React.createElement("div", {
+                        className: "h-full bg-amber-500 rounded-full transition-all",
+                        style: { width: ((window._tuttsScoreProgressoPct || 0) + "%") }
+                    })
+                )
+            ),
+
+            // ===== PROMOÇÕES NOVATOS (se houver promoção ativa) =====
+            React.createElement("button", {
+                onClick: () => x({ ...p, userTab: "promo-novatos" }),
+                className: "w-full bg-white rounded-2xl p-3 mb-3 border border-gray-100 hover:border-purple-300 transition-all text-left"
+            },
+                React.createElement("div", { className: "flex items-center justify-between" },
+                    React.createElement("div", { className: "flex-1 min-w-0" },
+                        React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+                            React.createElement("span", { className: "text-sm font-semibold text-gray-900" }, "🎁 Promoção Novatos"),
+                            // Badge "Ativa" só se promoNovatosAtivo (placeholder true por enquanto)
+                            React.createElement("span", {
+                                className: "bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                            }, "Disponível")
+                        ),
+                        React.createElement("div", { className: "text-xs text-gray-500 mt-0.5" }, "Volte a entregar e ganhe bônus")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm flex-shrink-0 ml-2" }, "›")
+                )
+            ),
+
+            // ===== SEÇÃO "MAIS" (lista compacta agrupada) =====
+            // Ordem: Consultar Endereços (renomeado de "Coleta de Endereços") · Indicar · Seguro · Lojinha
+            React.createElement("div", { className: "text-[10px] text-gray-400 mb-1.5 ml-1 tracking-wider font-semibold" }, "MAIS"),
+            React.createElement("div", {
+                className: "bg-white rounded-2xl border border-gray-100 overflow-hidden"
+            },
+                // 1 — Consultar Endereços (antiga "Coleta de Endereços")
+                hasModuleAccess(l, "coleta") && React.createElement("button", {
+                    onClick: function() { if(typeof window._tuttsSetModulo === 'function') window._tuttsSetModulo("coleta"); },
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🗺️"),
+                        React.createElement("span", null, "Consultar Endereços")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // 2 — Indicar amigo
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "indicacoes" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "👥"),
+                        React.createElement("span", null, "Indicar amigo"),
+                        re.filter(e => "pendente" === e.status).length > 0 && React.createElement("span", {
+                            className: "bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                        }, re.filter(e => "pendente" === e.status).length)
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // 3 — Seguro IZA
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "seguro-iza" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🛡️"),
+                        React.createElement("span", null, "Seguro de Vida IZA")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                ),
+                // 4 — Lojinha
+                React.createElement("button", {
+                    onClick: () => x({ ...p, userTab: "loja" }),
+                    className: "w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                },
+                    React.createElement("span", { className: "flex items-center gap-2 text-sm text-gray-800" },
+                        React.createElement("span", null, "🛒"),
+                        React.createElement("span", null, "Lojinha Tutts")
+                    ),
+                    React.createElement("span", { className: "text-gray-400 text-sm" }, "›")
+                )
+            )
+        )),
+
+ p.userTab && React.createElement("div", {
             className: "max-w-4xl mx-auto px-3 py-4 sm:p-6"
         }, React.createElement("div", {
             className: "flex items-center gap-3 mb-4 sm:mb-6"
@@ -10381,7 +10783,7 @@ const hideLoadingScreen = () => {
             className: "p-2 bg-white rounded-lg shadow hover:bg-gray-50"
         }, "← Voltar"), React.createElement("h1", {
             className: "text-base sm:text-xl font-bold text-gray-800"
-        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
+        }, "solicitacoes" === p.userTab && "📋 Solicitar Ajuste", "saque" === p.userTab && "💰 Saque Emergencial", "score" === p.userTab && "🏆 Meu Score", "indicacoes" === p.userTab && "👥 Promoção de Indicação", "promo-novatos" === p.userTab && "🚀 Promoções Novatos", "seguro-iza" === p.userTab && "🛡️ Seguro de Vida - IZA", "loja" === p.userTab && "🛒 Lojinha Tutts", "correcao-endereco" === p.userTab && "📍 Correção de Endereço", "liberar-ponto" === p.userTab && "🔓 Liberar OS")), "solicitacoes" === p.userTab && React.createElement(React.Fragment, null,
         // MODAL DE REJEIÇÃO
         (function() {
             var rejNaoLidas = (j || []).filter(function(s) { var hoje = new Date(); hoje.setHours(0,0,0,0); return s.status === 'rejeitado' && s.contestacao_lida === false && s.contestacao_status !== 'encerrada_rejeitada' && s.contestacao_status !== 'aberta' && new Date(s.updated_at || s.created_at) >= hoje; });
@@ -12579,11 +12981,16 @@ const hideLoadingScreen = () => {
             className: "font-bold text-gray-800 mb-2"
         }, "Outras Informações"), React.createElement("ul", {
             className: "list-disc pl-5 space-y-1"
-        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && React.createElement(ScoreEntregador, {
+        }, React.createElement("li", null, React.createElement("strong", null, "Sem carência:"), " você estará coberto a partir da primeira entrega feita no dia."), React.createElement("li", null, "A cobertura se renova a cada entrega aceita na plataforma da Tutts."))))))), "score" === p.userTab && (typeof window.ModuloScoreV2Motoboy !== 'undefined' ? React.createElement(window.ModuloScoreV2Motoboy, {
+            apiUrl: API_URL,
+            token: getToken ? getToken() : (localStorage.getItem('token') || ''),
+            fetchAuth: fetchAuth,
+            showToast: ja
+        }) : React.createElement(ScoreEntregador, {
             user: l,
             apiUrl: API_URL,
             showToast: ja
-        }), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
+        })), "loja" === p.userTab && React.createElement(React.Fragment, null, rt && React.createElement("div", {
             className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
         }, React.createElement("div", {
             className: "bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
@@ -13005,6 +13412,8 @@ const hideLoadingScreen = () => {
                     // Paginação
                     solicitacoesPagina, setSolicitacoesPagina, conciliacaoPagina, setConciliacaoPagina,
                     solicitacoesPorPagina, conciliacaoPorPagina, acertoRealizado, setAcertoRealizado,
+                    // 🔧 Contadores agregados de saques (vem do backend, não calcula no cliente)
+                    withdrawalCounts, setWithdrawalCounts,
                     // Proteção contra débito duplicado
                     processandoWithdrawals, setProcessandoWithdrawals,
                     // Validação server-side
@@ -16999,23 +17408,7 @@ const hideLoadingScreen = () => {
                 })()
             )
 
-            )),
-            
-            // 🚀 2026-05: Acompanhamento Periódico (KPIs + gráfico + tabela)
-            // Renderizado ACIMA do mapa de calor, na aba dashboard.
-            // Componente registrado em window pelo modulo-bi-acompanhamento.js
-            "dashboard" === Et && window.AcompanhamentoPeriodico && React.createElement(window.AcompanhamentoPeriodico, {
-                apiUrl: API_URL,
-                fetchAuth: fetchAuth,
-                filtros: {
-                    data_inicio: ua.data_inicio || '',
-                    data_fim: ua.data_fim || '',
-                    cod_cliente: Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(',') : (ua.cod_cliente || ''),
-                    centro_custo: Array.isArray(ua.centro_custo) ? ua.centro_custo[0] : (ua.centro_custo || ''),
-                }
-            }),
-
-            "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
+            )), "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "🗺️ Acompanhamento Regional"),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
@@ -19992,9 +20385,9 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📍")
+                                React.createElement("span", {className: "text-3xl"}, "🗺️")
                             ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Coleta de Endereços"),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Consultar Endereços"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Base colaborativa")
                         )
                     ),
