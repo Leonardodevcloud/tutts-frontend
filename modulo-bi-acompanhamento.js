@@ -483,6 +483,7 @@
                 onMouseLeave: () => setHover(null)
             },
                 // 🔴 Faixa de fundo S/D (granularidade=dia apenas)
+                // Cada faixa centralizada no ponto correspondente — largura = xStep (1 dia)
                 serie.map((s, i) => isFimDeSemana(s.periodo) ? h('rect', {
                     key: 'wkn' + i,
                     x: xAt(i) - (xStep || innerW) / 2,
@@ -557,19 +558,33 @@
                 })),
 
                 // 🚀 x-labels: TODAS as datas, rotacionadas 45°, S/D em vermelho
+                // Ancoradas no ponto: ligeiro offset pra direita (+3px) garante que o último
+                // caractere da label fique visualmente colado ao tick, evitando ilusão de deslocamento.
                 serie.map((s, i) => {
                     const fds = isFimDeSemana(s.periodo);
+                    const lx = xAt(i) + 3;
+                    const ly = H - PAD_B + 14;
                     return h('text', {
                         key: 'xl' + i,
-                        x: xAt(i),
-                        y: H - PAD_B + 12,
+                        x: lx,
+                        y: ly,
                         fontSize: 10,
                         fill: fds ? '#A32D2D' : '#5F5E5A',
                         fontWeight: fds ? 600 : 400,
                         textAnchor: 'end',
-                        transform: 'rotate(-45 ' + xAt(i) + ' ' + (H - PAD_B + 12) + ')'
+                        transform: 'rotate(-45 ' + lx + ' ' + ly + ')'
                     }, fmtData(s.periodo, granu));
-                })
+                }),
+
+                // 🔧 Tick vertical curto pra cada ponto — elimina ambiguidade visual
+                // entre label rotacionado e posição real do ponto
+                serie.map((s, i) => h('line', {
+                    key: 'tick' + i,
+                    x1: xAt(i), x2: xAt(i),
+                    y1: H - PAD_B, y2: H - PAD_B + 4,
+                    stroke: isFimDeSemana(s.periodo) ? '#A32D2D' : '#B4B2A9',
+                    strokeWidth: 1
+                }))
             )
             ),
             // Tooltip flutuante
