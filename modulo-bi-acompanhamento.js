@@ -120,8 +120,11 @@
                     if (filtros?.data_fim) params.set('data_fim', filtros.data_fim);
                     if (filtros?.cod_cliente) params.set('cod_cliente', filtros.cod_cliente);
                     if (filtros?.centro_custo) params.set('centro_custo', filtros.centro_custo);
+                    if (filtros?.clientes_sem_filtro_cc) params.set('clientes_sem_filtro_cc', filtros.clientes_sem_filtro_cc);
                     if (filtros?.categoria) params.set('categoria', filtros.categoria);
-                    if (filtros?.regiao) params.set('regiao', filtros.regiao);
+                    if (filtros?.cidade) params.set('cidade', filtros.cidade);
+                    if (filtros?.status_prazo) params.set('status_prazo', filtros.status_prazo);
+                    if (filtros?.status_retorno) params.set('status_retorno', filtros.status_retorno);
                     const r = await fetchAuthRef.current(apiUrl + '/bi/serie-temporal?' + params.toString());
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const j = await r.json();
@@ -133,7 +136,13 @@
                 }
             })();
             return () => { cancelado = true; };
-        }, [apiUrl, granu, filtros?.data_inicio, filtros?.data_fim, filtros?.cod_cliente, filtros?.centro_custo, filtros?.categoria, filtros?.regiao]);
+        }, [
+            apiUrl, granu,
+            filtros?.data_inicio, filtros?.data_fim,
+            filtros?.cod_cliente, filtros?.centro_custo, filtros?.clientes_sem_filtro_cc,
+            filtros?.categoria, filtros?.cidade,
+            filtros?.status_prazo, filtros?.status_retorno
+        ]);
 
         // Linhas filtradas+ordenadas pra tabela
         const linhas = useMemo(() => {
