@@ -17007,15 +17007,11 @@ const hideLoadingScreen = () => {
             "dashboard" === Et && window.AcompanhamentoPeriodico && React.createElement(window.AcompanhamentoPeriodico, {
                 apiUrl: API_URL,
                 fetchAuth: fetchAuth,
-                // Passa filtros do BI principal — array vira CSV pro backend.
-                // Backend já aceita cod_cliente como CSV. centro_custo agora também (vou ampliar lá).
                 filtros: {
                     data_inicio: ua.data_inicio || '',
                     data_fim: ua.data_fim || '',
                     cod_cliente: Array.isArray(ua.cod_cliente) ? ua.cod_cliente.join(',') : (ua.cod_cliente || ''),
-                    centro_custo: Array.isArray(ua.centro_custo) ? ua.centro_custo.join(',') : (ua.centro_custo || ''),
-                    categoria: ua.categoria || '',
-                    regiao: ua.regiao || '',
+                    centro_custo: Array.isArray(ua.centro_custo) ? ua.centro_custo[0] : (ua.centro_custo || ''),
                 }
             }),
 
