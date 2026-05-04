@@ -45,9 +45,22 @@
         return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
 
+    // Catálogo de métricas plotáveis no gráfico.
+    // Cada uma tem: chave da serie, label, cor, escala (0-100 ou auto), formatação.
+    const METRICAS_CATALOGO = [
+        { id: 'total_entregas', label: 'Entregas',     cor: '#378ADD', bg: 'bg-blue-50',   txt: 'text-blue-800',   border: 'border-blue-200',   escala: 'auto',   fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'pct_prazo',      label: '% No Prazo',   cor: '#639922', bg: 'bg-green-50',  txt: 'text-green-800',  border: 'border-green-200',  escala: 'pct',    fmt: v => v.toFixed(1) + '%' },
+        { id: 'valor_total',    label: 'Faturamento',  cor: '#7F77DD', bg: 'bg-purple-50', txt: 'text-purple-800', border: 'border-purple-200', escala: 'auto',   fmt: v => fmtMoneyShort(v) },
+        { id: 'ticket_medio',   label: 'Ticket Médio', cor: '#EF9F27', bg: 'bg-amber-50',  txt: 'text-amber-800',  border: 'border-amber-200',  escala: 'auto',   fmt: v => 'R$ ' + (v || 0).toFixed(2) },
+        { id: 'retornos',       label: 'Retornos',     cor: '#E24B4A', bg: 'bg-red-50',    txt: 'text-red-800',    border: 'border-red-200',    escala: 'auto',   fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'tempo_medio_min',label: 'Tempo Médio',  cor: '#888780', bg: 'bg-gray-100',  txt: 'text-gray-800',   border: 'border-gray-300',   escala: 'auto',   fmt: v => fmtMinTime(v) },
+    ];
+
     function AcompanhamentoPeriodico({ apiUrl, fetchAuth, filtros }) {
         const [granu, setGranu] = useState('dia');
         const [eixo, setEixo] = useState('cliente'); // 'cliente' | 'periodo'
+        // 🚀 2026-05: métricas plotáveis selecionáveis (default: entregas + % prazo)
+        const [metricasSelecionadas, setMetricasSelecionadas] = useState(['total_entregas', 'pct_prazo']);
         const [busca, setBusca] = useState('');
         const [ordem, setOrdem] = useState('total_entregas');
         const [dados, setDados] = useState(null);
@@ -177,18 +190,43 @@
             h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
                 h('div', { className: 'flex items-center justify-between mb-3' },
                     h('div', { className: 'text-sm font-medium' }, 'Evolução por ' + (granu === 'dia' ? 'dia' : granu === 'semana' ? 'semana' : 'mês')),
-                    h('div', { className: 'flex gap-1.5 text-[10px] items-center' },
-                        h('span', { className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-medium' },
-                            h('span', { style: { width: 6, height: 6, borderRadius: 999, background: '#378ADD', display: 'inline-block' } }), 'Entregas'
-                        ),
-                        h('span', { className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200 font-medium' },
-                            h('span', { style: { width: 6, height: 6, borderRadius: 999, background: '#639922', display: 'inline-block' } }), '% No Prazo'
-                        )
+                    h('div', { className: 'flex gap-1.5 text-[10px] items-center flex-wrap justify-end' },
+                        // 🚀 2026-05: chips clicáveis pra adicionar/remover métricas do gráfico
+                        METRICAS_CATALOGO.map(m => {
+                            const ativo = metricasSelecionadas.includes(m.id);
+                            return h('button', {
+                                key: m.id,
+                                onClick: () => setMetricasSelecionadas(prev =>
+                                    prev.includes(m.id)
+                                        ? (prev.length > 1 ? prev.filter(x => x !== m.id) : prev) // mantém ao menos 1
+                                        : [...prev, m.id]
+                                ),
+                                className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition-all border ' +
+                                    (ativo
+                                        ? `${m.bg} ${m.txt} ${m.border}`
+                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+                                    ),
+                                title: ativo ? 'Clica pra ocultar' : 'Clica pra mostrar'
+                            },
+                                h('span', {
+                                    style: {
+                                        width: 6, height: 6, borderRadius: 999,
+                                        background: ativo ? m.cor : '#D3D1C7',
+                                        display: 'inline-block'
+                                    }
+                                }),
+                                m.label
+                            );
+                        })
                     )
                 ),
                 loading ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '⏳ Carregando...') :
                 (!dados?.serie || dados.serie.length === 0) ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Sem dados no período') :
-                h(MiniChart, { serie: dados.serie, granu })
+                h(MiniChart, {
+                    serie: dados.serie,
+                    granu,
+                    metricas: METRICAS_CATALOGO.filter(m => metricasSelecionadas.includes(m.id))
+                })
             ),
 
             // TABELA
@@ -283,16 +321,29 @@
         );
     }
 
-    // Mini chart SVG (entregas + % prazo) com tooltip ao hover
-    function MiniChart({ serie, granu }) {
-        const W = 700, H = 180, PAD_L = 36, PAD_R = 36, PAD_T = 12, PAD_B = 28;
-        const maxEnt = Math.max(1, ...serie.map(s => s.total_entregas || 0));
-        const xStep = serie.length > 1 ? (W - PAD_L - PAD_R) / (serie.length - 1) : 0;
-        const yEnt = (v) => PAD_T + (1 - v / maxEnt) * (H - PAD_T - PAD_B);
-        const yPct = (v) => PAD_T + (1 - (v || 0) / 100) * (H - PAD_T - PAD_B);
+    // Mini chart SVG dinâmico: renderiza N métricas selecionadas com auto-escala.
+    // Métricas com escala 'pct' compartilham eixo direito (0-100%).
+    // Métricas com escala 'auto' compartilham eixo esquerdo (max do conjunto).
+    // Quando a série tem só 1 ponto, desenha bolinhas em vez de polyline (linha precisa de 2+).
+    function MiniChart({ serie, granu, metricas }) {
+        const W = 700, H = 180, PAD_L = 56, PAD_R = 56, PAD_T = 12, PAD_B = 28;
+        const innerW = W - PAD_L - PAD_R;
+        const innerH = H - PAD_T - PAD_B;
 
-        const pointsEnt = serie.map((s, i) => (PAD_L + i * xStep) + ',' + yEnt(s.total_entregas || 0)).join(' ');
-        const pointsPct = serie.map((s, i) => (PAD_L + i * xStep) + ',' + yPct(s.pct_prazo || 0)).join(' ');
+        // Separa métricas por escala
+        const metricasAuto = metricas.filter(m => m.escala === 'auto');
+        const metricasPct = metricas.filter(m => m.escala === 'pct');
+
+        // Max das métricas auto (eixo esquerdo)
+        const maxAuto = Math.max(1, ...serie.flatMap(s => metricasAuto.map(m => s[m.id] || 0)));
+
+        const xStep = serie.length > 1 ? innerW / (serie.length - 1) : 0;
+        const xAt = (i) => serie.length === 1 ? PAD_L + innerW / 2 : PAD_L + i * xStep;
+
+        const yAt = (m, v) => {
+            const max = m.escala === 'pct' ? 100 : maxAuto;
+            return PAD_T + (1 - (v || 0) / max) * innerH;
+        };
 
         const [hover, setHover] = useState(null);
 
@@ -307,48 +358,73 @@
             },
                 // gridlines
                 [0.25, 0.5, 0.75, 1].map((p, i) => h('line', {
-                    key: i,
+                    key: 'gl' + i,
                     x1: PAD_L, x2: W - PAD_R,
-                    y1: PAD_T + p * (H - PAD_T - PAD_B),
-                    y2: PAD_T + p * (H - PAD_T - PAD_B),
+                    y1: PAD_T + p * innerH,
+                    y2: PAD_T + p * innerH,
                     stroke: '#F1EFE8', strokeWidth: 1
                 })),
-                // y-labels eixo entregas (esquerda)
-                [0, 0.5, 1].map((p, i) => h('text', {
+
+                // y-labels esquerdo (auto) — só se tem métrica auto
+                metricasAuto.length > 0 && [0, 0.5, 1].map((p, i) => h('text', {
                     key: 'yl' + i,
-                    x: PAD_L - 4, y: PAD_T + (1 - p) * (H - PAD_T - PAD_B) + 3,
+                    x: PAD_L - 4, y: PAD_T + (1 - p) * innerH + 3,
                     fontSize: 9, fill: '#888780', textAnchor: 'end'
-                }, Math.round(maxEnt * p).toLocaleString('pt-BR'))),
-                // y-labels eixo % (direita)
-                [0, 50, 100].map((v, i) => h('text', {
+                }, Math.round(maxAuto * p).toLocaleString('pt-BR'))),
+
+                // y-labels direito (pct) — só se tem métrica pct
+                metricasPct.length > 0 && [0, 50, 100].map((v, i) => h('text', {
                     key: 'yr' + i,
-                    x: W - PAD_R + 4, y: yPct(v) + 3,
+                    x: W - PAD_R + 4, y: PAD_T + (1 - v / 100) * innerH + 3,
                     fontSize: 9, fill: '#3B6D11', textAnchor: 'start'
                 }, v + '%')),
+
                 // hover area por ponto
                 serie.map((s, i) => h('rect', {
                     key: 'hv' + i,
-                    x: PAD_L + i * xStep - xStep / 2,
+                    x: xAt(i) - (xStep || innerW) / 2,
                     y: PAD_T,
-                    width: xStep, height: H - PAD_T - PAD_B,
+                    width: xStep || innerW, height: innerH,
                     fill: 'transparent',
-                    onMouseEnter: () => setHover({ idx: i, ...s, x: PAD_L + i * xStep })
+                    onMouseEnter: () => setHover({ idx: i, ...s, x: xAt(i) })
                 })),
-                // hover line
+
+                // hover line vertical
                 hover && h('line', {
                     x1: hover.x, x2: hover.x, y1: PAD_T, y2: H - PAD_B,
                     stroke: '#888780', strokeWidth: 0.5, strokeDasharray: '2,2'
                 }),
-                // linhas
-                serie.length > 1 && h('polyline', { fill: 'none', stroke: '#378ADD', strokeWidth: 2, points: pointsEnt }),
-                serie.length > 1 && h('polyline', { fill: 'none', stroke: '#639922', strokeWidth: 2, points: pointsPct }),
-                // pontos hover
-                hover && h('circle', { cx: hover.x, cy: yEnt(hover.total_entregas || 0), r: 4, fill: '#378ADD' }),
-                hover && h('circle', { cx: hover.x, cy: yPct(hover.pct_prazo || 0), r: 4, fill: '#639922' }),
+
+                // 1 polyline por métrica (só se serie.length > 1)
+                serie.length > 1 && metricas.map(m => h('polyline', {
+                    key: 'line-' + m.id,
+                    fill: 'none',
+                    stroke: m.cor,
+                    strokeWidth: 2,
+                    points: serie.map((s, i) => xAt(i) + ',' + yAt(m, s[m.id])).join(' ')
+                })),
+
+                // Pontos sempre desenhados (essenciais quando serie.length === 1)
+                metricas.map(m => serie.map((s, i) => h('circle', {
+                    key: 'pt-' + m.id + '-' + i,
+                    cx: xAt(i), cy: yAt(m, s[m.id]),
+                    r: serie.length === 1 ? 5 : 3,
+                    fill: m.cor,
+                    stroke: 'white',
+                    strokeWidth: 1
+                }))).flat(),
+
+                // Hover destacado (círculos maiores)
+                hover && metricas.map(m => h('circle', {
+                    key: 'hov-' + m.id,
+                    cx: hover.x, cy: yAt(m, hover[m.id]),
+                    r: 5, fill: m.cor
+                })),
+
                 // x-labels
                 serie.map((s, i) => i % labelStep === 0 ? h('text', {
                     key: 'xl' + i,
-                    x: PAD_L + i * xStep,
+                    x: xAt(i),
                     y: H - PAD_B + 14,
                     fontSize: 9, fill: '#888780', textAnchor: 'middle'
                 }, fmtData(s.periodo, granu)) : null)
@@ -359,7 +435,7 @@
                     position: 'absolute',
                     left: ((hover.x / W) * 100) + '%',
                     top: 8,
-                    transform: 'translateX(-50%)',
+                    transform: hover.x > W * 0.7 ? 'translateX(-100%)' : (hover.x < W * 0.3 ? 'translateX(0)' : 'translateX(-50%)'),
                     background: 'white',
                     border: '0.5px solid #D3D1C7',
                     borderRadius: 6,
@@ -370,10 +446,11 @@
                     whiteSpace: 'nowrap',
                 }
             },
-                h('div', { style: { fontWeight: 500, marginBottom: 2 } }, fmtData(hover.periodo, granu)),
-                h('div', { style: { color: '#185FA5' } }, '● ' + (hover.total_entregas || 0).toLocaleString('pt-BR') + ' entregas'),
-                h('div', { style: { color: '#3B6D11' } }, '● ' + (hover.pct_prazo || 0).toFixed(1) + '% no prazo'),
-                hover.retornos > 0 && h('div', { style: { color: '#A32D2D' } }, '↻ ' + hover.retornos + ' retornos')
+                h('div', { style: { fontWeight: 500, marginBottom: 4 } }, fmtData(hover.periodo, granu)),
+                metricas.map(m => h('div', {
+                    key: 'tt-' + m.id,
+                    style: { color: m.cor, marginTop: 1 }
+                }, '● ' + m.label + ': ' + m.fmt(hover[m.id] || 0)))
             )
         );
     }
