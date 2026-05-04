@@ -11,7 +11,7 @@
 (function() {
     'use strict';
 
-    const { useState, useEffect, useCallback, useRef } = React;
+    const { useState, useEffect, useCallback, useRef, useMemo } = React;
     const h = React.createElement;
 
     function fmtBRL(v) {
@@ -368,29 +368,28 @@
 
     // ============================================================
     // ABA MOTOBOYS POR NÍVEL
+    // 🚀 2026-05: Redesign — cards por região com pódio compacto + drilldown modal
     // ============================================================
     function AbaMotoboys({ fetchApi, showToast }) {
-        const [filtroRegiao, setFiltroRegiao] = useState('');
         const [filtroNivel, setFiltroNivel] = useState('');
+        const [busca, setBusca] = useState('');
         const [motoboys, setMotoboys] = useState([]);
         const [total, setTotal] = useState(0);
-        const [limit, setLimit] = useState(1000);
         const [loading, setLoading] = useState(false);
+        const [regiaoModal, setRegiaoModal] = useState(null); // { regiao, motoboys }
 
-        // 🔧 FIX loop: refs estáveis
         const fetchApiRef = useRef(fetchApi);
         const showToastRef = useRef(showToast);
         useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
         useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
+        // Carrega TODOS os motoboys (limit alto). Front agrupa por região.
         const carregar = useCallback(async () => {
             setLoading(true);
             try {
-                const params = ['limit=' + limit];
-                if (filtroRegiao) params.push('regiao=' + encodeURIComponent(filtroRegiao));
+                const params = ['limit=10000'];
                 if (filtroNivel) params.push('nivel=' + filtroNivel);
                 const data = await fetchApiRef.current('/score-v2/admin/motoboys-por-nivel?' + params.join('&'));
-                // Compat: aceita { total, rows } (novo) ou array direto (legado)
                 if (data && Array.isArray(data.rows)) {
                     setMotoboys(data.rows);
                     setTotal(data.total || data.rows.length);
@@ -403,62 +402,183 @@
                 }
             } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
             finally { setLoading(false); }
-        }, [filtroRegiao, filtroNivel, limit]);
+        }, [filtroNivel]);
 
         useEffect(() => { carregar(); }, [carregar]);
 
+        // Agrupa motoboys por região + filtra por busca
+        const grupos = useMemo(() => {
+            const buscaNorm = (busca || '').toLowerCase().trim();
+            const map = {};
+            (motoboys || []).forEach(m => {
+                if (buscaNorm) {
+                    const matchNome = String(m.nome_prof || '').toLowerCase().includes(buscaNorm);
+                    const matchCod = String(m.cod_prof || '').toLowerCase().includes(buscaNorm);
+                    const matchRegiao = String(m.regiao || '').toLowerCase().includes(buscaNorm);
+                    if (!matchNome && !matchCod && !matchRegiao) return;
+                }
+                const r = m.regiao || '(sem região)';
+                if (!map[r]) map[r] = [];
+                map[r].push(m);
+            });
+            const lista = Object.entries(map).map(([regiao, lista]) => {
+                const ordenado = [...lista].sort((a, b) => (b.entregas_periodo || 0) - (a.entregas_periodo || 0));
+                const porNivel = { 1: 0, 2: 0, 3: 0 };
+                ordenado.forEach(m => { porNivel[m.nivel_atual] = (porNivel[m.nivel_atual] || 0) + 1; });
+                return { regiao, motoboys: ordenado, total: ordenado.length, porNivel };
+            });
+            // Ordena regiões por total (maior primeiro)
+            return lista.sort((a, b) => b.total - a.total);
+        }, [motoboys, busca]);
+
+        // Total geral exibido = soma de todos os cards (já filtrado)
+        const totalExibido = useMemo(() => grupos.reduce((s, g) => s + g.total, 0), [grupos]);
+
+        const formatarPodioNome = (nome, max = 22) => {
+            if (!nome) return '-';
+            return nome.length > max ? nome.substring(0, max - 1) + '…' : nome;
+        };
+
         return h('div', null,
-            h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 mb-3 flex gap-3 items-end flex-wrap' },
-                h('div', { className: 'flex-1 min-w-[150px]' },
-                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Região'),
-                    h('input', { type: 'text', value: filtroRegiao, placeholder: 'Ex: Salvador', onChange: e => setFiltroRegiao(e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' })
+            // Filtros
+            h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 mb-3 flex gap-2 items-center flex-wrap' },
+                h('input', {
+                    type: 'text',
+                    value: busca,
+                    placeholder: '🔍 Buscar por motoboy, código ou região...',
+                    onChange: e => setBusca(e.target.value),
+                    className: 'flex-1 min-w-[220px] px-3 py-2 border rounded-lg text-sm'
+                }),
+                h('select', {
+                    value: filtroNivel,
+                    onChange: e => setFiltroNivel(e.target.value),
+                    className: 'px-3 py-2 border rounded-lg text-sm'
+                },
+                    h('option', { value: '' }, 'Todos os níveis'),
+                    h('option', { value: '1' }, 'Apenas N1'),
+                    h('option', { value: '2' }, 'Apenas N2'),
+                    h('option', { value: '3' }, 'Apenas N3')
                 ),
-                h('div', null,
-                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Nível'),
-                    h('select', { value: filtroNivel, onChange: e => setFiltroNivel(e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' },
-                        h('option', { value: '' }, 'Todos'),
-                        h('option', { value: '1' }, 'Nível 1'),
-                        h('option', { value: '2' }, 'Nível 2'),
-                        h('option', { value: '3' }, 'Nível 3')
-                    )
-                ),
-                h('div', null,
-                    h('label', { className: 'text-xs font-medium text-gray-600' }, 'Mostrar'),
-                    h('select', { value: limit, onChange: e => setLimit(parseInt(e.target.value)), className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1' },
-                        h('option', { value: 100 }, '100'),
-                        h('option', { value: 500 }, '500'),
-                        h('option', { value: 1000 }, '1000'),
-                        h('option', { value: 5000 }, '5000')
-                    )
+                !loading && h('div', { className: 'text-xs text-gray-500 ml-auto' },
+                    grupos.length + ' regiões · ' + totalExibido.toLocaleString('pt-BR') + ' motoboys'
                 )
             ),
-            // Resumo de contagem
-            !loading && total > 0 && h('div', { className: 'text-xs text-gray-600 mb-2' },
-                'Mostrando ' + motoboys.length + ' de ' + total + ' motoboys' +
-                (motoboys.length < total ? ' (aumente o limite pra ver mais)' : '')
-            ),
+
             loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
-            motoboys.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Nenhum motoboy avaliado ainda.') :
-            h('div', { className: 'bg-white rounded-lg border border-gray-200 overflow-x-auto' },
-                h('table', { className: 'w-full text-sm' },
-                    h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
-                        h('tr', null,
-                            ['Motoboy', 'Região', 'Nível', 'Entregas (28d)', 'Após 16h', '% Prazo', 'Avaliado em'].map((h2, i) =>
-                                h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
+            grupos.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm bg-white rounded-lg border border-gray-200' }, 'Nenhum motoboy encontrado.') :
+
+            // Grid 2 colunas com cards por região
+            h('div', { className: 'grid md:grid-cols-2 gap-3' },
+                grupos.map(g => {
+                    const top3 = g.motoboys.slice(0, 3);
+                    return h('div', {
+                        key: g.regiao,
+                        className: 'bg-white rounded-xl border border-gray-200 p-3 hover:border-purple-300 transition-colors'
+                    },
+                        // Header região + total
+                        h('div', { className: 'flex items-center justify-between mb-2' },
+                            h('span', { className: 'text-sm font-semibold text-gray-800' }, '📍 ' + g.regiao),
+                            h('span', { className: 'text-[10px] text-gray-400' }, g.total.toLocaleString('pt-BR') + ' total')
+                        ),
+                        // 3 mini-cards de nível
+                        h('div', { className: 'grid grid-cols-3 gap-1.5 mb-2.5' },
+                            h('div', { className: 'bg-yellow-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-yellow-800 uppercase' }, 'N3'),
+                                h('div', { className: 'text-base font-semibold text-yellow-900 leading-none' }, g.porNivel[3] || 0)
+                            ),
+                            h('div', { className: 'bg-gray-100 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-gray-600 uppercase' }, 'N2'),
+                                h('div', { className: 'text-base font-semibold text-gray-800 leading-none' }, g.porNivel[2] || 0)
+                            ),
+                            h('div', { className: 'bg-gray-100 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-gray-600 uppercase' }, 'N1'),
+                                h('div', { className: 'text-base font-semibold text-gray-800 leading-none' }, g.porNivel[1] || 0)
                             )
+                        ),
+                        // Pódio (top 3)
+                        h('div', { className: 'text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1' }, 'Pódio'),
+                        h('div', { className: 'space-y-0.5 mb-2.5' },
+                            top3.length === 0
+                                ? h('div', { className: 'text-xs text-gray-400 italic px-1.5 py-2' }, 'Nenhum motoboy nessa região')
+                                : top3.map((m, idx) => h('div', {
+                                    key: m.cod_prof,
+                                    className: 'flex items-center justify-between text-xs px-1.5 py-1 rounded ' + (idx === 0 ? 'bg-yellow-50' : '')
+                                },
+                                    h('span', { className: 'truncate flex-1 ' + (idx === 0 ? 'font-medium text-gray-900' : 'text-gray-700') },
+                                        (idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : '🥉 '),
+                                        formatarPodioNome(m.nome_prof || ('#' + m.cod_prof))
+                                    ),
+                                    h('span', { className: 'font-semibold ' + (idx === 0 ? 'text-gray-900' : 'text-gray-500') }, m.entregas_periodo)
+                                ))
+                        ),
+                        // Botão drilldown
+                        h('button', {
+                            onClick: () => setRegiaoModal(g),
+                            className: 'w-full text-xs py-1.5 bg-gray-50 hover:bg-purple-50 text-purple-700 hover:text-purple-800 border border-gray-200 hover:border-purple-300 rounded-md font-medium transition-colors'
+                        }, 'Ver ranking completo →')
+                    );
+                })
+            ),
+
+            // Modal drilldown — abre quando clica em "Ver ranking completo"
+            regiaoModal && h('div', {
+                className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+                onClick: (e) => { if (e.target === e.currentTarget) setRegiaoModal(null); }
+            },
+                h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col' },
+                    // Header modal
+                    h('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex items-center justify-between flex-shrink-0' },
+                        h('div', null,
+                            h('h2', { className: 'text-lg font-bold' }, '📍 ' + regiaoModal.regiao),
+                            h('p', { className: 'text-purple-200 text-sm' },
+                                regiaoModal.total.toLocaleString('pt-BR') + ' motoboys · ',
+                                'N3: ' + (regiaoModal.porNivel[3] || 0) + ' · ',
+                                'N2: ' + (regiaoModal.porNivel[2] || 0) + ' · ',
+                                'N1: ' + (regiaoModal.porNivel[1] || 0)
+                            )
+                        ),
+                        h('button', {
+                            onClick: () => setRegiaoModal(null),
+                            className: 'text-white/80 hover:text-white text-2xl leading-none'
+                        }, '×')
+                    ),
+                    // Tabela completa
+                    h('div', { className: 'flex-1 overflow-auto' },
+                        h('table', { className: 'w-full text-sm' },
+                            h('thead', { className: 'bg-gray-50 border-b border-gray-200 sticky top-0' },
+                                h('tr', null,
+                                    ['#', 'Motoboy', 'Nível', 'Entregas (28d)', 'Após 16h', '% Prazo', 'Avaliado em'].map((h2, i) =>
+                                        h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
+                                    )
+                                )
+                            ),
+                            h('tbody', null, regiaoModal.motoboys.map((m, idx) => h('tr', {
+                                key: m.cod_prof,
+                                className: 'border-b border-gray-100 hover:bg-gray-50 ' + (idx === 0 ? 'bg-yellow-50/30' : '')
+                            },
+                                h('td', { className: 'px-3 py-2 text-gray-500 font-mono text-xs w-12' },
+                                    idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1)
+                                ),
+                                h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
+                                h('td', { className: 'px-3 py-2' },
+                                    h('span', {
+                                        className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700')
+                                    }, 'N' + m.nivel_atual)
+                                ),
+                                h('td', { className: 'px-3 py-2 font-semibold' }, m.entregas_periodo),
+                                h('td', { className: 'px-3 py-2 text-gray-600' }, m.dias_16h_periodo),
+                                h('td', { className: 'px-3 py-2 text-green-700 font-medium' }, parseFloat(m.pct_prazo).toFixed(1) + '%'),
+                                h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(m.avaliado_em))
+                            )))
                         )
                     ),
-                    h('tbody', null, motoboys.map(m => h('tr', { key: m.cod_prof, className: 'border-b border-gray-100 hover:bg-gray-50' },
-                        h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || m.cod_prof),
-                        h('td', { className: 'px-3 py-2 text-gray-600' }, m.regiao || '-'),
-                        h('td', { className: 'px-3 py-2' },
-                            h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700') }, 'N' + m.nivel_atual)
-                        ),
-                        h('td', { className: 'px-3 py-2' }, m.entregas_periodo),
-                        h('td', { className: 'px-3 py-2' }, m.dias_16h_periodo),
-                        h('td', { className: 'px-3 py-2' }, parseFloat(m.pct_prazo).toFixed(1) + '%'),
-                        h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(m.avaliado_em))
-                    )))
+                    // Footer
+                    h('div', { className: 'p-3 border-t flex justify-end flex-shrink-0' },
+                        h('button', {
+                            onClick: () => setRegiaoModal(null),
+                            className: 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm'
+                        }, 'Fechar')
+                    )
                 )
             )
         );
