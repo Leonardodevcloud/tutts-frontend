@@ -38,6 +38,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const [penalidades, setPenalidades] = React.useState([]);
     const [minhaPenalidade, setMinhaPenalidade] = React.useState(null);
     const [modalSaida, setModalSaida] = React.useState(false);
+    // 🆕 2026-05: estados do modal de punição manual (admin)
+    const [modalPunir, setModalPunir] = React.useState(false);
+    const [punirCod, setPunirCod] = React.useState('');
+    const [punirMinutos, setPunirMinutos] = React.useState(480); // default 8h
+    const [punirCustom, setPunirCustom] = React.useState(false);
+    const [punirCustomValor, setPunirCustomValor] = React.useState('');
+    const [punirMotivo, setPunirMotivo] = React.useState('');
+    const [punirEnviando, setPunirEnviando] = React.useState(false);
     const [dragData, setDragData] = React.useState(null);
     const [timerTick, setTimerTick] = React.useState(0);
 
@@ -168,6 +176,64 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     // PENALIDADES
     const carregarPenalidades = async (centralId) => { if(!centralId)return; try{ const r=await fetchAuth(`${apiUrl}/filas/penalidades/${centralId}`); const d=await r.json(); if(d.success) setPenalidades(d.penalidades||[]); }catch(e){} };
     const anularPenalidade = async (cod) => { if(!centralSelecionada||!window.confirm('Anular penalidade deste profissional?'))return; try{ const r=await fetchAuth(`${apiUrl}/filas/anular-penalidade`,{method:'POST',body:JSON.stringify({cod_profissional:cod,central_id:centralSelecionada.id})}); const d=await r.json(); if(d.success){ showToast('Penalidade anulada!','success'); carregarPenalidades(centralSelecionada.id); }else showToast(d.error||'Erro','error'); }catch(e){ showToast('Erro','error'); } };
+    // 🆕 2026-05: aplicar punição manual
+    const abrirModalPunir = () => {
+        setPunirCod(''); setPunirMinutos(480); setPunirCustom(false);
+        setPunirCustomValor(''); setPunirMotivo(''); setModalPunir(true);
+    };
+    const aplicarPunicao = async () => {
+        if (!centralSelecionada) return;
+        if (!punirCod) { showToast('Selecione um motoboy', 'warning'); return; }
+        let mins = punirMinutos;
+        if (punirCustom) {
+            const v = parseInt(punirCustomValor);
+            if (!Number.isFinite(v) || v < 1 || v > 10080) {
+                showToast('Tempo personalizado inválido (1 a 10080 min)', 'error'); return;
+            }
+            mins = v;
+        }
+        if (punirEnviando) return; // guard contra clique duplo
+        setPunirEnviando(true);
+        try {
+            const r = await fetchAuth(`${apiUrl}/filas/aplicar-penalidade`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    cod_profissional: punirCod,
+                    central_id: centralSelecionada.id,
+                    minutos: mins,
+                    motivo: punirMotivo.trim() || undefined
+                })
+            });
+            const d = await r.json();
+            if (r.ok && d.success) {
+                const aviso = d.penalidade?.ja_havia_penalidade_maior
+                    ? 'Punição registrada (motoboy já tinha bloqueio maior — mantido)'
+                    : `Punição aplicada: ${mins} min`;
+                showToast(aviso, 'success');
+                setModalPunir(false);
+                carregarPenalidades(centralSelecionada.id);
+                carregarFila(centralSelecionada.id);
+            } else {
+                showToast(d.error || 'Erro ao aplicar', 'error');
+            }
+        } catch (e) {
+            showToast('Erro de rede', 'error');
+        } finally {
+            setPunirEnviando(false);
+        }
+    };
+    const formatarBloqueioRestante = (bloqueadoAte) => {
+        if (!bloqueadoAte) return '';
+        const ms = new Date(bloqueadoAte).getTime() - Date.now();
+        if (ms <= 0) return 'expirado';
+        const totalMin = Math.ceil(ms / 60000);
+        if (totalMin >= 60) {
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            return m > 0 ? `${h}h${String(m).padStart(2,'0')}min restantes` : `${h}h restantes`;
+        }
+        return `${totalMin}min restantes`;
+    };
     const carregarMinhaPenalidade = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-penalidade`); const d=await r.json(); if(d.success) setMinhaPenalidade(d); }catch(e){} };
 
     // BUSCA ENDEREÇO GOOGLE
@@ -530,15 +596,37 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                     ),
                     // PENALIDADES
                     abaAtiva === 'penalidades' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
-                        React.createElement('h3', { className: 'font-bold text-lg' }, '🚫 Penalidades Ativas'),
+                        // Header com título + botão de aplicar punição manual
+                        React.createElement('div', { className: 'flex items-center justify-between' },
+                            React.createElement('h3', { className: 'font-bold text-lg' }, '🚫 Penalidades Ativas'),
+                            React.createElement('button', {
+                                onClick: abrirModalPunir,
+                                className: 'px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700'
+                            }, '➕ Aplicar punição')
+                        ),
                         penalidades.length === 0 ? React.createElement('p', { className: 'text-gray-500 text-center py-8' }, 'Nenhuma penalidade ativa') :
-                        React.createElement('div', { className: 'space-y-2' }, penalidades.map(p => React.createElement('div', { key: p.id, className: 'bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between' },
-                            React.createElement('div', null,
-                                React.createElement('p', { className: 'font-bold text-red-800' }, p.nome_profissional || `#${p.cod_profissional}`),
-                                React.createElement('p', { className: 'text-sm text-red-600' }, `Saídas hoje: ${p.saidas_hoje} • Bloqueado até: ${new Date(p.bloqueado_ate).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}`)
-                            ),
-                            React.createElement('button', { onClick: () => anularPenalidade(p.cod_profissional), className: 'px-4 py-2 bg-green-600 text-white rounded-lg font-medium text-sm' }, '✅ Anular')
-                        )))
+                        React.createElement('div', { className: 'space-y-2' }, penalidades.map(p => {
+                            const ehManual = p.tipo === 'manual';
+                            const horaBloqueio = new Date(p.bloqueado_ate).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+                            const restante = formatarBloqueioRestante(p.bloqueado_ate);
+                            const subtitulo = ehManual
+                                ? `${p.aplicado_por_nome ? 'Aplicada por ' + p.aplicado_por_nome + ' • ' : ''}Bloqueado até ${horaBloqueio} • ${restante}`
+                                : `Saídas hoje: ${p.saidas_hoje || 0} • Bloqueado até ${horaBloqueio} • ${restante}`;
+                            return React.createElement('div', { key: p.id, className: 'bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between' },
+                                React.createElement('div', null,
+                                    React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
+                                        React.createElement('p', { className: 'font-bold text-red-800' }, p.nome_profissional || `#${p.cod_profissional}`),
+                                        React.createElement('span', {
+                                            className: ehManual
+                                                ? 'px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800'
+                                                : 'px-2 py-0.5 rounded text-xs font-medium bg-white border border-red-200 text-red-700'
+                                        }, ehManual ? 'manual' : 'automática')
+                                    ),
+                                    React.createElement('p', { className: 'text-sm text-red-600' }, subtitulo)
+                                ),
+                                React.createElement('button', { onClick: () => anularPenalidade(p.cod_profissional), className: 'px-4 py-2 bg-green-600 text-white rounded-lg font-medium text-sm' }, '✅ Anular')
+                            );
+                        }))
                     ),
                     // VINCULOS
                     abaAtiva === 'vinculos' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
@@ -761,7 +849,106 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         }, 'Fechar')
                     )
                 )
+            ),
+        // 🆕 2026-05: MODAL APLICAR PUNIÇÃO MANUAL (admin)
+        modalPunir && React.createElement('div', {
+            className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4',
+            onClick: (e) => { if (e.target === e.currentTarget && !punirEnviando) setModalPunir(false); }
+        },
+            React.createElement('div', { className: 'bg-white rounded-2xl p-6 max-w-md w-full' },
+                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                    React.createElement('h3', { className: 'font-bold text-lg flex items-center gap-2' }, '🚫 Aplicar punição manual'),
+                    React.createElement('button', { onClick: () => !punirEnviando && setModalPunir(false), className: 'text-gray-400 hover:text-gray-600 text-xl leading-none', disabled: punirEnviando }, '×')
+                ),
+                // Seletor motoboy
+                React.createElement('div', { className: 'mb-4' },
+                    React.createElement('label', { className: 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1' }, 'Motoboy'),
+                    React.createElement('select', {
+                        value: punirCod,
+                        onChange: e => setPunirCod(e.target.value),
+                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+                        disabled: punirEnviando
+                    },
+                        React.createElement('option', { value: '' }, vinculos.length === 0 ? 'Nenhum motoboy vinculado a esta central' : 'Selecione um motoboy vinculado…'),
+                        vinculos.map(v => React.createElement('option', { key: v.cod_profissional, value: v.cod_profissional }, `${v.cod_profissional} — ${v.nome_profissional}`))
+                    )
+                ),
+                // Chips tempo
+                React.createElement('div', { className: 'mb-4' },
+                    React.createElement('label', { className: 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2' }, 'Tempo de bloqueio'),
+                    React.createElement('div', { className: 'flex flex-wrap gap-2 mb-2' },
+                        [
+                            { v: 30, l: '30 min' }, { v: 60, l: '1h' }, { v: 120, l: '2h' },
+                            { v: 240, l: '4h' }, { v: 480, l: '8h' }, { v: 1440, l: '24h' },
+                            { v: 2880, l: '48h' }
+                        ].map(opt => React.createElement('button', {
+                            key: opt.v,
+                            onClick: () => { setPunirCustom(false); setPunirMinutos(opt.v); },
+                            disabled: punirEnviando,
+                            className: 'px-3 py-1.5 rounded-full text-xs font-medium border ' +
+                                (!punirCustom && punirMinutos === opt.v
+                                    ? 'bg-purple-100 border-purple-400 text-purple-800'
+                                    : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400')
+                        }, opt.l)),
+                        React.createElement('button', {
+                            onClick: () => { setPunirCustom(true); },
+                            disabled: punirEnviando,
+                            className: 'px-3 py-1.5 rounded-full text-xs font-medium border ' +
+                                (punirCustom
+                                    ? 'bg-purple-100 border-purple-400 text-purple-800'
+                                    : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400')
+                        }, 'Personalizado')
+                    ),
+                    punirCustom && React.createElement('div', { className: 'flex items-center gap-2 mt-2' },
+                        React.createElement('input', {
+                            type: 'number',
+                            min: 1, max: 10080,
+                            value: punirCustomValor,
+                            onChange: e => setPunirCustomValor(e.target.value),
+                            placeholder: 'Minutos (1 a 10080)',
+                            className: 'flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm',
+                            disabled: punirEnviando
+                        }),
+                        React.createElement('span', { className: 'text-xs text-gray-500' }, 'min')
+                    ),
+                    !punirCustom && React.createElement('p', { className: 'text-xs text-gray-400 mt-1' },
+                        'Bloqueio até ' + new Date(Date.now() + punirMinutos * 60000).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    )
+                ),
+                // Motivo opcional
+                React.createElement('div', { className: 'mb-4' },
+                    React.createElement('label', { className: 'block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1' }, 'Motivo (opcional, interno)'),
+                    React.createElement('textarea', {
+                        rows: 2,
+                        maxLength: 500,
+                        value: punirMotivo,
+                        onChange: e => setPunirMotivo(e.target.value),
+                        placeholder: 'Ex: insistência em pegar entregas após aviso',
+                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
+                        disabled: punirEnviando
+                    }),
+                    React.createElement('p', { className: 'text-xs text-gray-400 mt-1' }, 'Apenas para registro interno. Não é exibido pro motoboy.')
+                ),
+                // Aviso remoção da fila
+                React.createElement('div', { className: 'bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-start gap-2' },
+                    React.createElement('span', { className: 'text-yellow-600' }, '⚠️'),
+                    React.createElement('p', { className: 'text-xs text-yellow-800' }, 'Se o motoboy estiver na fila, será removido automaticamente.')
+                ),
+                // Botões
+                React.createElement('div', { className: 'flex justify-end gap-2' },
+                    React.createElement('button', {
+                        onClick: () => setModalPunir(false),
+                        disabled: punirEnviando,
+                        className: 'px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50'
+                    }, 'Cancelar'),
+                    React.createElement('button', {
+                        onClick: aplicarPunicao,
+                        disabled: punirEnviando || !punirCod,
+                        className: 'px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                    }, punirEnviando ? '⏳ Aplicando...' : '🚫 Aplicar punição')
+                )
             )
+        )
         );
     }
 
