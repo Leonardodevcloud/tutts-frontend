@@ -77,9 +77,16 @@
   // ────────────────────────────────────────────────────────────────────────────
 
   function ModuloRoadmap({ usuario, apiUrl, showToast, fetchAuth: fetchAuthExterno }) {
-    // Compatibilidade: fetchAuth vem do escopo global no app.js (igual outros módulos)
-    const _fetch = fetchAuthExterno || (typeof window !== 'undefined' && window.fetchAuth) || fetch;
-    const _api = apiUrl || (typeof window !== 'undefined' && window.API_URL) || '';
+    // 🆕 2026-05 FIX: useRef pra estabilizar referências e evitar loop infinito.
+    // Sem isso, _fetch e _api são recriados a cada render, fazem o useCallback do
+    // 'carregar' reidentificar, e o useEffect dispara em loop (~milhares de reqs/s).
+    const _fetchRef = React.useRef(fetchAuthExterno || (typeof window !== 'undefined' && window.fetchAuth) || fetch);
+    const _apiRef = React.useRef(apiUrl || (typeof window !== 'undefined' && window.API_URL) || '');
+    // Atualiza ref se props mudarem (sem disparar re-render)
+    React.useEffect(() => { if (fetchAuthExterno) _fetchRef.current = fetchAuthExterno; }, [fetchAuthExterno]);
+    React.useEffect(() => { if (apiUrl) _apiRef.current = apiUrl; }, [apiUrl]);
+    const _fetch = _fetchRef.current;
+    const _api = _apiRef.current;
 
     const [tab, setTab] = React.useState('roadmap');
     const [itens, setItens] = React.useState([]);
@@ -103,28 +110,40 @@
     const [drawerItem, setDrawerItem] = React.useState(null); // detalhe + anexos
 
     // ─── Carregar dados ───
+    // 🆕 2026-05 FIX: deps reduzidas pra só [tab] — _fetch e _api vêm das refs estáveis.
+    // Antes incluía [_fetch, _api, showToast] que mudavam a cada render → loop infinito.
     const carregar = React.useCallback(async () => {
       setLoading(true);
       try {
+        const f = _fetchRef.current;
+        const api = _apiRef.current;
         const [resItens, resCnt] = await Promise.all([
-          _fetch(`${_api}/feedback/itens?tipo=${tab}`),
-          _fetch(`${_api}/feedback/contadores`)
+          f(`${api}/feedback/itens?tipo=${tab}`),
+          f(`${api}/feedback/contadores`)
         ]);
+        // Trata 404 explícito (backend sem módulo deployado) sem floodar toasts
+        if (resItens.status === 404 || resCnt.status === 404) {
+          if (showToast) showToast('Backend ainda não tem o módulo Roadmap deployado', 'warning');
+          setItens([]);
+          setContadores({ roadmap: {}, bug: {}, sugestao: {} });
+          return;
+        }
         const dItens = await resItens.json();
         const dCnt = await resCnt.json();
         if (dItens.success) setItens(dItens.itens || []);
         if (dCnt.success) setContadores(dCnt.contadores || {});
       } catch (err) {
+        console.error('[Roadmap] erro carregar:', err);
         if (showToast) showToast('Erro ao carregar feedback', 'error');
       } finally {
         setLoading(false);
       }
-    }, [tab, _api, _fetch, showToast]);
+    }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
       carregar();
       setFiltroStatus('todos');
-    }, [tab, carregar]);
+    }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Filtragem ───
     const itensFiltrados = React.useMemo(() => {
