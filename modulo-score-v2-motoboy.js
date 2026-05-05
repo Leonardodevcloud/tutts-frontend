@@ -80,7 +80,7 @@
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
             // Card de nível atual
-            h(CardNivelAtual, { nivel, stats }),
+            h(CardNivelAtual, { nivel, stats, thresholds }),
 
             // Mudança de nível recente
             mudou && subiu && h('div', { className: 'bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center' },
@@ -124,10 +124,32 @@
         );
     };
 
-    function CardNivelAtual({ nivel, stats }) {
-        const cor = nivel === 3 ? 'from-yellow-400 to-yellow-600' : nivel === 2 ? 'from-amber-400 to-amber-600' : 'from-gray-300 to-gray-500';
-        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '⚪';
-        const nome = nivel === 3 ? 'Nível 3 — Ouro' : nivel === 2 ? 'Nível 2 — Prata' : 'Nível 1 — Bronze';
+    function CardNivelAtual({ nivel, stats, thresholds }) {
+        const cor = nivel === 3 ? 'from-yellow-400 to-yellow-600' : nivel === 2 ? 'from-amber-400 to-amber-600' : 'from-orange-400 to-orange-600';
+        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
+        const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
+
+        // Defaults pra metas (caso backend não mande thresholds)
+        const t = thresholds || {
+            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
+            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
+        };
+
+        // Metas exibidas: pra Bronze e Prata mostra a meta do PRÓXIMO nível,
+        // pra Ouro mostra a própria meta de manutenção (n3)
+        const metaRef = nivel === 1 ? t.n2 : t.n3;
+        const metaEntregas = metaRef.entregas_min;
+        const meta16h = metaRef.dias_16h_min;
+        const metaPrazo = metaRef.pct_prazo_min;
+
+        // Mensagem de incentivo conforme nível
+        const mensagem = nivel === 3
+            ? '🔒 Mantenha sua performance para continuar como Ouro'
+            : nivel === 2
+                ? '🔒 Mantenha sua performance para continuar como Prata'
+                : '🎯 Suba para Prata e desbloqueie saque grátis mensal';
+
+        const fmtPrazo = (v) => (parseFloat(v) || 0).toFixed(2).replace('.', ',') + '%';
 
         return h('div', { className: 'rounded-xl p-5 text-white bg-gradient-to-br ' + cor + ' shadow-lg' },
             h('div', { className: 'text-center' },
@@ -138,24 +160,28 @@
             h('div', { className: 'grid grid-cols-3 gap-2 mt-4 text-center' },
                 h('div', null,
                     h('div', { className: 'text-xs opacity-80' }, 'Entregas'),
-                    h('div', { className: 'text-lg font-bold' }, stats.entregas)
+                    h('div', { className: 'text-base font-bold' }, stats.entregas + ' / ' + metaEntregas)
                 ),
                 h('div', null,
                     h('div', { className: 'text-xs opacity-80' }, 'Após 16h'),
-                    h('div', { className: 'text-lg font-bold' }, stats.dias_16h)
+                    h('div', { className: 'text-base font-bold' }, stats.dias_16h + ' / ' + meta16h)
                 ),
                 h('div', null,
                     h('div', { className: 'text-xs opacity-80' }, '% Prazo'),
-                    h('div', { className: 'text-lg font-bold' }, stats.pct_prazo + '%')
+                    h('div', { className: 'text-base font-bold' }, fmtPrazo(stats.pct_prazo) + ' / ' + metaPrazo + '%')
                 )
+            ),
+            h('div', { className: 'mt-3 px-3 py-2 bg-white/20 rounded-lg text-center text-xs font-medium' },
+                mensagem
             )
         );
     }
 
     function BarrasProgresso({ progresso }) {
+        const nomeProx = progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze';
         return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
             h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                '🎯 Progresso para Nível ' + progresso.proximo_nivel
+                '🎯 Progresso para ' + nomeProx
             ),
             h('div', { className: 'space-y-3' },
                 progresso.requisitos.map((r, i) => h(BarraReq, { key: i, req: r }))
@@ -175,13 +201,13 @@
                 h('div', { className: 'h-full ' + corBarra + ' transition-all', style: { width: req.pct + '%' } })
             ),
             req.faixa && req.atual >= req.meta && req.atual >= 90 && h('p', { className: 'text-[10px] text-amber-600 mt-1' },
-                '⚠️ Acima de 90% → você pula pro Nível 3!'
+                '⚠️ Acima de 90% → você pula pro Ouro!'
             )
         );
     }
 
     // ============================================================
-    // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: N1, N2, N3)
+    // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: Bronze, Prata, Ouro)
     // ============================================================
     function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores }) {
         // Defaults caso a response não traga (compat)
@@ -197,7 +223,7 @@
 
         const niveis = [
             {
-                num: 1, nome: 'Bronze', emoji: '⚪',
+                num: 1, nome: 'Bronze', emoji: '🥉',
                 criterios: ['Disponível para todos'],
                 bonus: ['Sem bônus extra'],
             },
@@ -255,7 +281,7 @@
                     h('span', { className: 'text-2xl' }, nivel.emoji),
                     h('div', null,
                         h('div', { className: 'font-bold text-sm text-gray-900' },
-                            'Nível ' + nivel.num + ' — ' + nivel.nome
+                            nivel.nome
                         ),
                         isAtual && h('div', { className: 'text-[10px] font-bold text-purple-700 uppercase' }, '⭐ Você está aqui')
                     )
@@ -455,8 +481,8 @@
 
     function WelcomeModal({ dados, onFechar, onMount }) {
         const { nivel, stats, progresso, bonus, subiu } = dados;
-        const emoji = nivel === 3 ? '🥇' : '🥈';
-        const nome = nivel === 3 ? 'Nível 3 — Ouro' : 'Nível 2 — Prata';
+        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
+        const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
 
         return h('div', { className: 'fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4' },
             h('div', { className: 'bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full p-5 max-h-[85vh] overflow-y-auto' },
@@ -475,7 +501,9 @@
                     )
                 ),
                 progresso && h('div', { className: 'mb-4' },
-                    h('h3', { className: 'text-xs font-bold text-gray-700 mb-2' }, '📊 Falta pouco pro Nível ' + progresso.proximo_nivel),
+                    h('h3', { className: 'text-xs font-bold text-gray-700 mb-2' },
+                        '📊 Falta pouco pro ' + (progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze')
+                    ),
                     h('div', { className: 'space-y-2' }, progresso.requisitos.map((r, i) => h('div', { key: i },
                         h('div', { className: 'flex items-center justify-between text-xs mb-1' },
                             h('span', { className: 'text-gray-700' }, (r.ok ? '✅ ' : '🔸 ') + r.label),
