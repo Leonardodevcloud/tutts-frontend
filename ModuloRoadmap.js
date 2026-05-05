@@ -551,20 +551,46 @@
   function renderAcoesInline(e, item, actions) {
     const acoes = [];
 
+    // ROADMAP: transições por status (faltavam todas — fix 2026-05-05)
+    if (item.tipo === 'roadmap') {
+      if (item.status === 'em_avaliacao') {
+        acoes.push(e('button', { key: 'plan', onClick: () => actions.onTransicao('planejado'), className: 'text-yellow-700 hover:underline font-medium' }, '📋 Planejar'));
+        acoes.push(e('button', { key: 'desenv', onClick: () => actions.onTransicao('em_desenvolvimento'), className: 'text-blue-700 hover:underline' }, '🚧 Iniciar'));
+        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
+      } else if (item.status === 'planejado') {
+        acoes.push(e('button', { key: 'desenv', onClick: () => actions.onTransicao('em_desenvolvimento'), className: 'text-blue-700 hover:underline font-medium' }, '🚧 Iniciar desenvolvimento'));
+        acoes.push(e('button', { key: 'avail', onClick: () => actions.onTransicao('em_avaliacao'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ avaliação'));
+        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
+      } else if (item.status === 'em_desenvolvimento') {
+        acoes.push(e('button', { key: 'concl', onClick: () => actions.onTransicao('concluido'), className: 'text-green-700 hover:underline font-medium' }, '✓ Concluir'));
+        acoes.push(e('button', { key: 'plan', onClick: () => actions.onTransicao('planejado'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ planejado'));
+        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
+      } else if (item.status === 'concluido' || item.status === 'cancelado') {
+        acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('em_avaliacao'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
+      }
+    }
+
     if (item.tipo === 'bug') {
       if (item.status === 'aberto') {
-        acoes.push(e('button', { key: 'corr', onClick: () => actions.onTransicao('em_correcao'), className: 'text-yellow-700 hover:underline' }, '→ Em correção'));
+        acoes.push(e('button', { key: 'corr', onClick: () => actions.onTransicao('em_correcao'), className: 'text-yellow-700 hover:underline font-medium' }, '→ Em correção'));
         acoes.push(e('button', { key: 'res', onClick: () => actions.onTransicao('resolvido'), className: 'text-green-700 hover:underline' }, '✓ Resolvido'));
+        acoes.push(e('button', { key: 'naorepro', onClick: () => actions.onTransicao('nao_reproduzivel'), className: 'text-gray-500 hover:underline' }, '⚪ Não reproduzível'));
       } else if (item.status === 'em_correcao') {
-        acoes.push(e('button', { key: 'res', onClick: () => actions.onTransicao('resolvido'), className: 'text-green-700 hover:underline' }, '✓ Resolvido'));
-      } else if (item.status === 'resolvido') {
+        acoes.push(e('button', { key: 'res', onClick: () => actions.onTransicao('resolvido'), className: 'text-green-700 hover:underline font-medium' }, '✓ Resolvido'));
+        acoes.push(e('button', { key: 'voltar', onClick: () => actions.onTransicao('aberto'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ aberto'));
+      } else if (item.status === 'resolvido' || item.status === 'nao_reproduzivel') {
         acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('aberto'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
       }
     }
 
-    if (item.tipo === 'sugestao' && item.status === 'pendente') {
-      acoes.push(e('button', { key: 'ac', onClick: actions.onAceitar, className: 'text-green-700 hover:underline font-medium' }, '✓ Aceitar e mover pro roadmap'));
-      acoes.push(e('button', { key: 'rc', onClick: () => actions.onTransicao('recusada'), className: 'text-red-700 hover:underline' }, '✗ Recusar'));
+    if (item.tipo === 'sugestao') {
+      if (item.status === 'pendente') {
+        acoes.push(e('button', { key: 'ac', onClick: actions.onAceitar, className: 'text-green-700 hover:underline font-medium' }, '✓ Aceitar e mover pro roadmap'));
+        acoes.push(e('button', { key: 'rc', onClick: () => actions.onTransicao('recusada'), className: 'text-red-700 hover:underline' }, '✗ Recusar'));
+      } else if (item.status === 'recusada') {
+        acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('pendente'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
+      }
+      // 'aceita' não tem ação (já virou roadmap)
     }
 
     // Universais
