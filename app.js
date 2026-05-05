@@ -564,7 +564,8 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
-    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"config",label:"Config"}] }
+    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"config",label:"Config"}] },
+    { id: "roadmap", label: "Roadmap", icon: "🗺️", admin: true, abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -14593,6 +14594,39 @@ const hideLoadingScreen = () => {
             )
         }
         
+        // ========== MÓDULO ROADMAP (admin only) ==========
+        if ("roadmap" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            },
+                i && React.createElement(Toast, i),
+                n && React.createElement(LoadingOverlay, null),
+                React.createElement(HeaderCompacto, {
+                    usuario: l,
+                    moduloAtivo: Ee,
+                    abaAtiva: "",
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: () => window.location.reload(),
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: () => {}
+                }),
+                typeof window.ModuloRoadmap !== 'undefined'
+                    ? React.createElement(window.ModuloRoadmap, {
+                        usuario: l,
+                        apiUrl: API_URL,
+                        showToast: ja,
+                        fetchAuth: fetchAuth
+                    })
+                    : React.createElement("div", { className: "text-center py-12" },
+                        React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo Roadmap não carregado. Verifique se ModuloRoadmap.js está presente.")
+                    )
+            );
+        }
+
         // ========== MÓDULO FILAS ==========
         if ("filas" === Ee) {
             return React.createElement("div", {
