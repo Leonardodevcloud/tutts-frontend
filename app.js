@@ -3576,11 +3576,11 @@ const hideLoadingScreen = () => {
                                 const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
                                 window._tuttsScoreProgressoPct = pctMedio;
                                 window._tuttsScoreProgressoTexto = naoOk.length > 0
-                                    ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro N" + dados.progresso.proximo_nivel
+                                    ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro " + (dados.progresso.proximo_nivel === 3 ? "Ouro" : dados.progresso.proximo_nivel === 2 ? "Prata" : "Bronze")
                                     : "Você atingiu todos os critérios!";
                             } else {
                                 window._tuttsScoreProgressoPct = 100;
-                                window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Nível máximo atingido!" : "Veja seu progresso";
+                                window._tuttsScoreProgressoTexto = dados.nivel === 3 ? "Categoria máxima atingida!" : "Veja seu progresso";
                             }
                         }
                     }
@@ -10462,8 +10462,8 @@ const hideLoadingScreen = () => {
                         React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
                             // userScoreNivel é populado pelo modulo-score-v2-motoboy quando carrega; placeholder se ainda não
                             (window._tuttsScoreNivelCache && window._tuttsScoreNivelCache.nivel)
-                                ? (window._tuttsScoreNivelCache.nivel === 3 ? "🥇 Nível 3" : window._tuttsScoreNivelCache.nivel === 2 ? "🥈 Nível 2" : "⚪ Nível 1")
-                                : "⚪ Nível 1"
+                                ? (window._tuttsScoreNivelCache.nivel === 3 ? "🥇 Ouro" : window._tuttsScoreNivelCache.nivel === 2 ? "🥈 Prata" : "🥉 Bronze")
+                                : "🥉 Bronze"
                         )
                     ),
                     // Pendências (combinadas — ajustes + saques)
