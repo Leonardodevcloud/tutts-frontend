@@ -607,11 +607,22 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         penalidades.length === 0 ? React.createElement('p', { className: 'text-gray-500 text-center py-8' }, 'Nenhuma penalidade ativa') :
                         React.createElement('div', { className: 'space-y-2' }, penalidades.map(p => {
                             const ehManual = p.tipo === 'manual';
-                            const horaBloqueio = new Date(p.bloqueado_ate).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+                            // 🆕 2026-05-05: mostrar DATA + hora pro admin saber quando termina o bloqueio
+                            // Se for hoje, mostra "Hoje HH:MM"
+                            // Se for amanhã ou depois, mostra "DD/MM HH:MM" (com ano se for outro ano)
+                            const dtBloqueio = new Date(p.bloqueado_ate);
+                            const hojeStr = new Date().toDateString();
+                            const ehHoje = dtBloqueio.toDateString() === hojeStr;
+                            const ehMesmoAno = dtBloqueio.getFullYear() === new Date().getFullYear();
+                            const horaBloqueio = ehHoje
+                                ? 'Hoje ' + dtBloqueio.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
+                                : dtBloqueio.toLocaleString('pt-BR', ehMesmoAno
+                                    ? {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}
+                                    : {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
                             const restante = formatarBloqueioRestante(p.bloqueado_ate);
                             const subtitulo = ehManual
-                                ? `${p.aplicado_por_nome ? 'Aplicada por ' + p.aplicado_por_nome + ' • ' : ''}Bloqueado até ${horaBloqueio} • ${restante}`
-                                : `Saídas hoje: ${p.saidas_hoje || 0} • Bloqueado até ${horaBloqueio} • ${restante}`;
+                                ? `${p.aplicado_por_nome ? 'Aplicada por ' + p.aplicado_por_nome + ' • ' : ''}Até ${horaBloqueio} • ${restante}`
+                                : `Saídas hoje: ${p.saidas_hoje || 0} • Até ${horaBloqueio} • ${restante}`;
                             return React.createElement('div', { key: p.id, className: 'bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between' },
                                 React.createElement('div', null,
                                     React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
@@ -912,7 +923,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         React.createElement('span', { className: 'text-xs text-gray-500' }, 'min')
                     ),
                     !punirCustom && React.createElement('p', { className: 'text-xs text-gray-400 mt-1' },
-                        'Bloqueio até ' + new Date(Date.now() + punirMinutos * 60000).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                        (() => {
+                            const fim = new Date(Date.now() + punirMinutos * 60000);
+                            const ehHoje = fim.toDateString() === new Date().toDateString();
+                            const txt = ehHoje
+                                ? 'Hoje ' + fim.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})
+                                : fim.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                            return 'Bloqueio até ' + txt;
+                        })()
                     )
                 ),
                 // Motivo opcional
