@@ -4,7 +4,7 @@
 //
 // Estrutura:
 //   - Aba "Configurações": ativa/desativa score por região, valores
-//   - Aba "Motoboys por Nível": lista quem está em cada nível
+//   - Aba "Motoboys por Categoria": lista quem está em cada categoria (Bronze/Prata/Ouro)
 //   - Aba "Sorteios": histórico mensal e disparo manual
 // =====================================================================
 
@@ -32,7 +32,7 @@
                 h('div', { className: 'flex gap-1 p-1' },
                     [
                         { id: 'configuracoes', label: '⚙️ Configurações' },
-                        { id: 'motoboys', label: '👥 Motoboys por Nível' },
+                        { id: 'motoboys', label: '👥 Motoboys por Categoria' },
                         { id: 'sorteios', label: '🎲 Sorteios' },
                     ].map(t => h('button', {
                         key: t.id,
@@ -117,7 +117,7 @@
                     method: 'POST',
                     body: JSON.stringify({ regiao }),
                 });
-                showToast(`✅ ${r.processados} avaliados — N1:${r.niveis[1]} N2:${r.niveis[2]} N3:${r.niveis[3]}`, 'success');
+                showToast(`✅ ${r.processados} avaliados — Bronze:${r.niveis[1]} Prata:${r.niveis[2]} Ouro:${r.niveis[3]}`, 'success');
                 carregar();
             } catch (err) {
                 showToast('❌ ' + err.message, 'error');
@@ -262,7 +262,7 @@
                         )
                     ),
                     h('p', { className: 'text-xs text-gray-500 mt-1' },
-                        'Níveis ativos: ' + niveis.map(n => 'N' + n).join(', ') +
+                        'Categorias ativas: ' + niveis.map(n => n === 3 ? 'Ouro' : n === 2 ? 'Prata' : 'Bronze').join(', ') +
                         ' • Atualizado em ' + fmtData(cfg.atualizado_em)
                     )
                 ),
@@ -281,20 +281,20 @@
             // Cards com valores e contagens
             h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 text-center' },
                 h('div', { className: 'bg-amber-50 border border-amber-200 rounded p-2' },
-                    h('div', { className: 'text-xs text-amber-700 font-medium' }, '🥈 N2'),
+                    h('div', { className: 'text-xs text-amber-700 font-medium' }, '🥈 Prata'),
                     h('div', { className: 'text-lg font-bold text-amber-900' }, counts[2] + ' motoboys'),
                     h('div', { className: 'text-[10px] text-amber-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n2)),
                     h('div', { className: 'text-[10px] text-amber-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n2) + '/mês')
                 ),
                 h('div', { className: 'bg-yellow-50 border border-yellow-300 rounded p-2' },
-                    h('div', { className: 'text-xs text-yellow-700 font-medium' }, '🥇 N3'),
+                    h('div', { className: 'text-xs text-yellow-700 font-medium' }, '🥇 Ouro'),
                     h('div', { className: 'text-lg font-bold text-yellow-900' }, counts[3] + ' motoboys'),
                     h('div', { className: 'text-[10px] text-yellow-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n3)),
                     h('div', { className: 'text-[10px] text-yellow-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n3) + '/sem')
                 ),
-                h('div', { className: 'bg-gray-50 border border-gray-200 rounded p-2' },
-                    h('div', { className: 'text-xs text-gray-600 font-medium' }, '⚪ N1'),
-                    h('div', { className: 'text-lg font-bold text-gray-700' }, counts[1] + ' motoboys')
+                h('div', { className: 'bg-orange-50 border border-orange-200 rounded p-2' },
+                    h('div', { className: 'text-xs text-orange-700 font-medium' }, '🥉 Bronze'),
+                    h('div', { className: 'text-lg font-bold text-orange-900' }, counts[1] + ' motoboys')
                 ),
                 h('div', { className: 'bg-blue-50 border border-blue-200 rounded p-2' },
                     h('div', { className: 'text-xs text-blue-700 font-medium' }, 'Total'),
@@ -353,18 +353,18 @@
                     ),
                     // Níveis ativos
                     h('div', null,
-                        h('label', { className: 'text-sm font-medium text-gray-700 mb-2 block' }, 'Níveis disponíveis'),
+                        h('label', { className: 'text-sm font-medium text-gray-700 mb-2 block' }, 'Categorias disponíveis'),
                         h('div', { className: 'flex gap-3' },
                             [2, 3].map(n => h('label', { key: n, className: 'flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer ' + (form.niveis_ativos.includes(n) ? 'border-purple-400 bg-purple-50' : 'border-gray-300') },
                                 h('input', { type: 'checkbox', checked: form.niveis_ativos.includes(n), onChange: () => toggleNivel(n) }),
-                                h('span', { className: 'text-sm font-medium' }, 'Nível ' + n)
+                                h('span', { className: 'text-sm font-medium' }, n === 3 ? 'Ouro' : 'Prata')
                             ))
                         )
                     ),
 
-                    // 🥈 Bloco completo Nível 2: critérios + valores
+                    // 🥈 Bloco completo Prata: critérios + valores
                     form.niveis_ativos.includes(2) && h('div', { className: 'border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-3' },
-                        h('h4', { className: 'text-sm font-bold text-amber-900' }, '🥈 Nível 2 — Prata'),
+                        h('h4', { className: 'text-sm font-bold text-amber-900' }, '🥈 Prata'),
                         h('p', { className: 'text-[11px] text-amber-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
                         h('div', { className: 'grid grid-cols-3 gap-2' },
                             h('div', null,
@@ -393,9 +393,9 @@
                         )
                     ),
 
-                    // 🥇 Bloco completo Nível 3: critérios + valores
+                    // 🥇 Bloco completo Ouro: critérios + valores
                     form.niveis_ativos.includes(3) && h('div', { className: 'border border-yellow-300 bg-yellow-50 rounded-lg p-3 space-y-3' },
-                        h('h4', { className: 'text-sm font-bold text-yellow-900' }, '🥇 Nível 3 — Ouro'),
+                        h('h4', { className: 'text-sm font-bold text-yellow-900' }, '🥇 Ouro'),
                         h('p', { className: 'text-[11px] text-yellow-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
                         h('div', { className: 'grid grid-cols-3 gap-2' },
                             h('div', null,
@@ -427,7 +427,7 @@
                     h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900' },
                         h('p', { className: 'font-medium mb-1' }, '💡 Dica de calibragem'),
                         h('p', null, 'Pra ver quantos motoboys vão se enquadrar antes de salvar definitivo, ' +
-                            'salva com valores baixos primeiro, clica "Reavaliar" no card e veja os totais por nível na aba "Motoboys por Nível". Depois ajusta.'),
+                            'salva com valores baixos primeiro, clica "Reavaliar" no card e veja os totais por categoria na aba "Motoboys por Categoria". Depois ajusta.'),
                         h('p', { className: 'mt-2' }, '⚠️ Mudar critérios reavalia automaticamente todos os motoboys da região em background ao salvar.')
                     )
                 ),
@@ -527,10 +527,10 @@
                     onChange: e => setFiltroNivel(e.target.value),
                     className: 'px-3 py-2 border rounded-lg text-sm'
                 },
-                    h('option', { value: '' }, 'Todos os níveis'),
-                    h('option', { value: '1' }, 'Apenas N1'),
-                    h('option', { value: '2' }, 'Apenas N2'),
-                    h('option', { value: '3' }, 'Apenas N3')
+                    h('option', { value: '' }, 'Todas as categorias'),
+                    h('option', { value: '1' }, 'Apenas Bronze'),
+                    h('option', { value: '2' }, 'Apenas Prata'),
+                    h('option', { value: '3' }, 'Apenas Ouro')
                 ),
                 !loading && h('div', { className: 'text-xs text-gray-500 ml-auto' },
                     grupos.length + ' regiões · ' + totalExibido.toLocaleString('pt-BR') + ' motoboys'
@@ -553,19 +553,19 @@
                             h('span', { className: 'text-sm font-semibold text-gray-800' }, '📍 ' + g.regiao),
                             h('span', { className: 'text-[10px] text-gray-400' }, g.total.toLocaleString('pt-BR') + ' total')
                         ),
-                        // 3 mini-cards de nível
+                        // 3 mini-cards de categoria
                         h('div', { className: 'grid grid-cols-3 gap-1.5 mb-2.5' },
                             h('div', { className: 'bg-yellow-50 rounded-md px-2 py-1.5 text-center' },
-                                h('div', { className: 'text-[9px] font-semibold text-yellow-800 uppercase' }, 'N3'),
+                                h('div', { className: 'text-[9px] font-semibold text-yellow-800 uppercase' }, 'Ouro'),
                                 h('div', { className: 'text-base font-semibold text-yellow-900 leading-none' }, g.porNivel[3] || 0)
                             ),
-                            h('div', { className: 'bg-gray-100 rounded-md px-2 py-1.5 text-center' },
-                                h('div', { className: 'text-[9px] font-semibold text-gray-600 uppercase' }, 'N2'),
-                                h('div', { className: 'text-base font-semibold text-gray-800 leading-none' }, g.porNivel[2] || 0)
+                            h('div', { className: 'bg-amber-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-amber-800 uppercase' }, 'Prata'),
+                                h('div', { className: 'text-base font-semibold text-amber-900 leading-none' }, g.porNivel[2] || 0)
                             ),
-                            h('div', { className: 'bg-gray-100 rounded-md px-2 py-1.5 text-center' },
-                                h('div', { className: 'text-[9px] font-semibold text-gray-600 uppercase' }, 'N1'),
-                                h('div', { className: 'text-base font-semibold text-gray-800 leading-none' }, g.porNivel[1] || 0)
+                            h('div', { className: 'bg-orange-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-orange-800 uppercase' }, 'Bronze'),
+                                h('div', { className: 'text-base font-semibold text-orange-900 leading-none' }, g.porNivel[1] || 0)
                             )
                         ),
                         // Pódio (top 3)
@@ -605,9 +605,9 @@
                             h('h2', { className: 'text-lg font-bold' }, '📍 ' + regiaoModal.regiao),
                             h('p', { className: 'text-purple-200 text-sm' },
                                 regiaoModal.total.toLocaleString('pt-BR') + ' motoboys · ',
-                                'N3: ' + (regiaoModal.porNivel[3] || 0) + ' · ',
-                                'N2: ' + (regiaoModal.porNivel[2] || 0) + ' · ',
-                                'N1: ' + (regiaoModal.porNivel[1] || 0)
+                                'Ouro: ' + (regiaoModal.porNivel[3] || 0) + ' · ',
+                                'Prata: ' + (regiaoModal.porNivel[2] || 0) + ' · ',
+                                'Bronze: ' + (regiaoModal.porNivel[1] || 0)
                             )
                         ),
                         h('button', {
@@ -620,7 +620,7 @@
                         h('table', { className: 'w-full text-sm' },
                             h('thead', { className: 'bg-gray-50 border-b border-gray-200 sticky top-0' },
                                 h('tr', null,
-                                    ['#', 'Motoboy', 'Nível', 'Entregas (28d)', 'Após 16h', '% Prazo', 'Avaliado em'].map((h2, i) =>
+                                    ['#', 'Motoboy', 'Categoria', 'Entregas (28d)', 'Após 16h', '% Prazo', 'Avaliado em'].map((h2, i) =>
                                         h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
                                     )
                                 )
@@ -635,8 +635,8 @@
                                 h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
                                 h('td', { className: 'px-3 py-2' },
                                     h('span', {
-                                        className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700')
-                                    }, 'N' + m.nivel_atual)
+                                        className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-orange-100 text-orange-800')
+                                    }, m.nivel_atual === 3 ? 'Ouro' : m.nivel_atual === 2 ? 'Prata' : 'Bronze')
                                 ),
                                 h('td', { className: 'px-3 py-2 font-semibold' }, m.entregas_periodo),
                                 h('td', { className: 'px-3 py-2 text-gray-600' }, m.dias_16h_periodo),
@@ -711,7 +711,7 @@
                 h('table', { className: 'w-full text-sm' },
                     h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
                         h('tr', null,
-                            ['Mês', 'Região', 'Nível', 'Vencedor', 'Valor', 'Participantes', 'Sorteado em'].map((h2, i) =>
+                            ['Mês', 'Região', 'Categoria', 'Vencedor', 'Valor', 'Participantes', 'Sorteado em'].map((h2, i) =>
                                 h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
                             )
                         )
@@ -720,7 +720,7 @@
                         h('td', { className: 'px-3 py-2 font-medium' }, s.mes_referencia),
                         h('td', { className: 'px-3 py-2' }, s.regiao),
                         h('td', { className: 'px-3 py-2' },
-                            h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, 'N' + s.nivel)
+                            h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
                         ),
                         h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '🏆 ' + (s.vencedor_nome || s.vencedor_cod_prof)),
                         h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
