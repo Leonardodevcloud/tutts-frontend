@@ -10414,20 +10414,18 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 // 🚀 Fase 2: Pílula de status reflete estado da fila em tempo real
-                // Só faz lookup do estado se motoboy é vinculado a alguma central
+                // Só mostra quando há atividade real (Online/Em rota). Se for o default cinza "Disponível", esconde.
                 (() => {
                     const vinculado = window._tuttsFilaVinculado === true;
                     const fila = (typeof window !== 'undefined') ? window._tuttsFilaState : null;
-                    let cor = "bg-gray-500"; // default offline
-                    let bg = "bg-gray-100";
-                    let texto = "text-gray-700";
-                    let label = "Disponível";
-                    if (vinculado && fila && fila.na_fila) {
-                        if (fila.status === "em_rota") {
-                            cor = "bg-blue-500"; bg = "bg-blue-50"; texto = "text-blue-800"; label = "Em rota";
-                        } else if (fila.status === "aguardando") {
-                            cor = "bg-green-500"; bg = "bg-green-50"; texto = "text-green-800"; label = "Online";
-                        }
+                    if (!vinculado || !fila || !fila.na_fila) return null;
+                    let cor, bg, texto, label;
+                    if (fila.status === "em_rota") {
+                        cor = "bg-blue-500"; bg = "bg-blue-50"; texto = "text-blue-800"; label = "Em rota";
+                    } else if (fila.status === "aguardando") {
+                        cor = "bg-green-500"; bg = "bg-green-50"; texto = "text-green-800"; label = "Online";
+                    } else {
+                        return null;
                     }
                     return React.createElement("div", {
                         className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full " + bg
@@ -10467,15 +10465,69 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     // Pendências (combinadas — ajustes + saques)
-                    React.createElement("div", { className: "text-right" },
-                        React.createElement("div", { className: "text-xs text-gray-500" }, "Pendências"),
-                        React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
-                            (j.filter(e => "pendente" === e.status).length + 
-                             M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length),
-                            " ",
-                            React.createElement("span", { className: "text-xs font-normal text-gray-500" }, "abertas")
-                        )
-                    )
+                    // Clicável: 0 = inativa, só ajustes -> userTab "solicitacoes", só saques -> "saque", ambos -> mini-menu
+                    (() => {
+                        const PendenciasBadge = function() {
+                            const [menuAberto, setMenuAberto] = React.useState(false);
+                            const qtdAjustes = j.filter(e => "pendente" === e.status).length;
+                            const qtdSaques = M.filter(e => "aguardando_aprovacao" === e.status || "aguardando_pagamento_stark" === e.status).length;
+                            const total = qtdAjustes + qtdSaques;
+                            const irAjustes = () => { setMenuAberto(false); x({ ...p, userTab: "solicitacoes" }); };
+                            const irSaques = () => { setMenuAberto(false); x({ ...p, userTab: "saque" }); };
+                            const onClick = () => {
+                                if (total === 0) return;
+                                if (qtdAjustes > 0 && qtdSaques > 0) { setMenuAberto(true); return; }
+                                if (qtdAjustes > 0) irAjustes();
+                                else if (qtdSaques > 0) irSaques();
+                            };
+                            const clicavel = total > 0;
+                            return React.createElement("div", { className: "text-right relative" },
+                                React.createElement("button", {
+                                    onClick: onClick,
+                                    disabled: !clicavel,
+                                    className: "block text-right " + (clicavel ? "cursor-pointer hover:opacity-80 active:scale-95 transition-all" : "cursor-default"),
+                                    style: { background: "transparent", border: "none", padding: 0 }
+                                },
+                                    React.createElement("div", { className: "text-xs text-gray-500" }, "Pendências"),
+                                    React.createElement("div", { className: "text-sm font-semibold " + (clicavel ? "text-purple-700" : "text-gray-800") },
+                                        total,
+                                        " ",
+                                        React.createElement("span", { className: "text-xs font-normal text-gray-500" }, "abertas")
+                                    )
+                                ),
+                                // Mini-menu quando ambos têm pendência
+                                menuAberto && React.createElement(React.Fragment, null,
+                                    // Backdrop pra fechar clicando fora
+                                    React.createElement("div", {
+                                        onClick: () => setMenuAberto(false),
+                                        className: "fixed inset-0 z-40",
+                                        style: { background: "transparent" }
+                                    }),
+                                    // Menu
+                                    React.createElement("div", {
+                                        className: "absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden",
+                                        style: { minWidth: "180px" }
+                                    },
+                                        React.createElement("button", {
+                                            onClick: irAjustes,
+                                            className: "w-full px-3 py-2.5 text-left text-sm hover:bg-amber-50 flex items-center justify-between gap-2 border-b border-gray-100"
+                                        },
+                                            React.createElement("span", null, "📝 Ajustes"),
+                                            React.createElement("span", { className: "text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full" }, qtdAjustes)
+                                        ),
+                                        React.createElement("button", {
+                                            onClick: irSaques,
+                                            className: "w-full px-3 py-2.5 text-left text-sm hover:bg-green-50 flex items-center justify-between gap-2"
+                                        },
+                                            React.createElement("span", null, "💰 Saques"),
+                                            React.createElement("span", { className: "text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full" }, qtdSaques)
+                                        )
+                                    )
+                                )
+                            );
+                        };
+                        return React.createElement(PendenciasBadge, null);
+                    })()
                 )
             ),
 
