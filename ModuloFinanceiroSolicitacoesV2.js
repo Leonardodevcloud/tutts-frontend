@@ -220,7 +220,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
       // Botão Gerar Lote
       e("div", { style: { display: "flex", flexDirection: "column", gap: 6, paddingLeft: 18, borderLeft: "1px solid #E5E7EB" } },
         e("button", {
-          onClick: () => {
+          onClick: async () => {
+            // 🆕 2026-05 FIX: o handler antigo só fazia setState({modalGerarLote:true})
+            // mas o modal de fato NUNCA foi implementado no parent — refactor V2
+            // deixou o state órfão e o botão "não fazia nada". Agora chamamos o
+            // backend direto após confirmação simples (mesmo padrão da aba Acerto
+            // em ModuloFinanceiro.js linha 6974: criarLote).
             const selecionadosValidos = q.filter(s =>
               z.includes(s.id) &&
               (s.status === 'aprovado' || s.status === 'aprovado_gratuidade' || s.status === 'aguardando_pagamento_stark') &&
@@ -230,21 +235,68 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               ja('⚠️ Nenhum saque válido selecionado. Selecione apenas saques aprovados que não estejam em lote.', 'warning');
               return;
             }
-            x(Object.assign({}, p, {
-              modalGerarLote: true,
-              loteValidos: selecionadosValidos,
-              loteValorTotal: selecionadosValidos.reduce((a, s) => a + parseFloat(s.final_amount || 0), 0)
-            }));
+            const valorTotal = selecionadosValidos.reduce((a, s) => a + parseFloat(s.final_amount || 0), 0);
+            const valorBR = valorTotal.toFixed(2).replace('.', ',');
+            const ok = window.confirm(
+              `Gerar lote com ${selecionadosValidos.length} saque(s)?\n\n` +
+              `Valor total: R$ ${valorBR}\n\n` +
+              `Os saques ficarão marcados como "em_lote" e aparecerão na aba Pix Stark para execução.`
+            );
+            if (!ok) return;
+
+            // Guard contra clique duplo (idempotência client-side)
+            if (p.gerandoLote) return;
+            x(Object.assign({}, p, { gerandoLote: true }));
+
+            try {
+              const resp = await fetchAuth(API_URL + '/stark/lote/marcar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ saque_ids: selecionadosValidos.map(s => s.id) })
+              });
+              const data = await resp.json();
+              if (resp.ok && data.success) {
+                ja(`✅ ${data.marcados} saque(s) marcado(s) para lote. Acesse "Pix Stark" para executar.`, 'success');
+                // Atualização otimista: mover saques marcados pra stark_status='em_lote'
+                // sem precisar refetch completo (parent recarrega via polling/WS)
+                const idsMarcados = new Set(selecionadosValidos.map(s => s.id));
+                if (typeof U === 'function') {
+                  U(prev => Array.isArray(prev)
+                    ? prev.map(s => idsMarcados.has(s.id)
+                        ? Object.assign({}, s, {
+                            stark_status: 'em_lote',
+                            status: (s.status === 'aguardando_pagamento_stark'
+                              ? (s.has_gratuity ? 'aprovado_gratuidade' : 'aprovado')
+                              : s.status)
+                          })
+                        : s)
+                    : prev);
+                }
+                // Limpar seleção
+                if (typeof B === 'function') B([]);
+              } else {
+                ja(`❌ ${data.error || 'Erro ao gerar lote'}`, 'error');
+              }
+            } catch (err) {
+              console.error('[Gerar Lote] Erro:', err);
+              ja(`❌ Erro de rede: ${err.message || 'verifique conexão'}`, 'error');
+            } finally {
+              x(prev => Object.assign({}, prev, { gerandoLote: false }));
+            }
           },
+          disabled: !!p.gerandoLote,
           style: {
-            background: "#534AB7", color: "white",
-            border: "1px solid #534AB7",
+            background: p.gerandoLote ? "#9CA3AF" : "#534AB7", color: "white",
+            border: "1px solid " + (p.gerandoLote ? "#9CA3AF" : "#534AB7"),
             padding: "8px 14px", borderRadius: 8,
             fontSize: 12, fontWeight: 600,
-            cursor: "pointer", whiteSpace: "nowrap",
+            cursor: p.gerandoLote ? "wait" : "pointer", whiteSpace: "nowrap",
+            opacity: p.gerandoLote ? 0.7 : 1,
           },
-          title: z.length === 0 ? "Selecione saques antes de gerar o lote" : `Gerar lote com ${z.length} saques`,
-        }, `+ Gerar Lote ${z.length > 0 ? `(${z.length})` : ""}`),
+          title: p.gerandoLote
+            ? "Gerando lote..."
+            : (z.length === 0 ? "Selecione saques antes de gerar o lote" : `Gerar lote com ${z.length} saques`),
+        }, p.gerandoLote ? "⏳ Gerando..." : `+ Gerar Lote ${z.length > 0 ? `(${z.length})` : ""}`),
         e("button", {
           onClick: () => {
             const selecionados = q.filter(s => z.includes(s.id));
