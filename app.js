@@ -314,7 +314,16 @@ const renovarToken = async () => {
                     sessionStorage.setItem('tutts_csrf', data.csrfToken);
                 }
                 if (data.user) {
-                    sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
+                    // 🔧 FIX 2026-05-05: backend retorna user com cod_profissional (snake_case).
+                    // Front usa codProfissional (camelCase). Sem essa normalização, após qualquer
+                    // refresh token o objeto user perde codProfissional → quebra publicação de
+                    // mensagem da liderança e qualquer outra feature que depende desse campo.
+                    const userNormalizado = {
+                        ...data.user,
+                        codProfissional: data.user.cod_profissional || data.user.codProfissional,
+                        fullName: data.user.full_name || data.user.fullName
+                    };
+                    sessionStorage.setItem("tutts_user", JSON.stringify(userNormalizado));
                 }
                 console.log('🔄 Token renovado automaticamente');
                 return data.token;
@@ -564,8 +573,7 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
-    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"config",label:"Config"}] },
-    { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
+    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"config",label:"Config"}] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -4019,14 +4027,22 @@ const hideLoadingScreen = () => {
         
         // Criar nova mensagem da liderança
         const criarLiderancaMensagem = async (dados) => {
+            // 🔧 FIX 2026-05-05: garante que codProfissional não vai null pro backend.
+            // Cobre caso pós-refresh-token onde l pode estar com cod_profissional ainda.
+            const codProf = l.codProfissional || l.cod_profissional || l.cod || null;
+            if (!codProf) {
+                ja("Erro de sessão — tente sair e logar de novo", "error");
+                console.error("[liderança] codProfissional ausente:", l);
+                return false;
+            }
             try {
                 const res = await fetchAuth(`${API_URL}/lideranca/mensagens`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
                         ...dados,
-                        criado_por_cod: l.codProfissional,
-                        criado_por_nome: socialProfile?.display_name || l.fullName,
+                        criado_por_cod: codProf,
+                        criado_por_nome: socialProfile?.display_name || l.fullName || l.full_name,
                         criado_por_foto: socialProfile?.profile_photo || null
                     })
                 });
@@ -4038,7 +4054,12 @@ const hideLoadingScreen = () => {
                     await loadLiderancaMensagens();
                     return true;
                 }
+                // Loga o erro do backend pro DevTools
+                const errData = await res.json().catch(() => ({}));
+                console.error("[liderança] erro backend:", res.status, errData);
+                ja(errData.error || `Erro ao criar mensagem (${res.status})`, "error");
             } catch (err) {
+                console.error("[liderança] erro de rede:", err);
                 ja("Erro ao criar mensagem", "error");
             }
             return false;
@@ -14594,39 +14615,6 @@ const hideLoadingScreen = () => {
             )
         }
         
-        // ========== MÓDULO ROADMAP (admin only) ==========
-        if ("roadmap" === Ee) {
-            return React.createElement("div", {
-                className: "min-h-screen bg-gray-50"
-            },
-                i && React.createElement(Toast, i),
-                n && React.createElement(LoadingOverlay, null),
-                React.createElement(HeaderCompacto, {
-                    usuario: l,
-                    moduloAtivo: Ee,
-                    abaAtiva: "",
-                    socialProfile: socialProfile,
-                    isLoading: f,
-                    lastUpdate: E,
-                    onRefresh: () => window.location.reload(),
-                    onLogout: () => o(null),
-                    onGoHome: () => he("home"),
-                    onNavigate: navegarSidebar,
-                    onChangeTab: () => {}
-                }),
-                typeof window.ModuloRoadmap !== 'undefined'
-                    ? React.createElement(window.ModuloRoadmap, {
-                        usuario: l,
-                        apiUrl: API_URL,
-                        showToast: ja,
-                        fetchAuth: fetchAuth
-                    })
-                    : React.createElement("div", { className: "text-center py-12" },
-                        React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo Roadmap não carregado. Verifique se ModuloRoadmap.js está presente.")
-                    )
-            );
-        }
-
         // ========== MÓDULO FILAS ==========
         if ("filas" === Ee) {
             return React.createElement("div", {
@@ -20441,21 +20429,6 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos e ajustes")
-                        )
-                    ),
-                    // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
-                    (l.role === "admin" || l.role === "admin_master") &&
-                    React.createElement("div", {
-                        onClick: () => he("roadmap"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
-                    },
-                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
-                        React.createElement("div", {className: "p-6"},
-                            React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "⚡")
-                            ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Desenvolvimentos"),
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Roadmap, bugs e sugestões")
                         )
                     ),
 
