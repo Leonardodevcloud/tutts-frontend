@@ -565,7 +565,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
     { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"config",label:"Config"}] },
-    { id: "roadmap", label: "Roadmap", icon: "🗺️", admin: true, abas: [] }
+    { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
