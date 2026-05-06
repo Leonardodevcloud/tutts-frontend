@@ -899,7 +899,15 @@
   }
 
   /* ═════════ COMPONENTE RAIZ ═════════ */
-  function ModuloBiMonitoramento({ apiUrl, fetchAuth }) {
+  function ModuloBiMonitoramento(props) {
+    const {
+      apiUrl, fetchAuth,
+      // Props pra navbar global (passadas pelo app.js)
+      HeaderCompacto, usuario, moduloAtivo, abaAtiva,
+      socialProfile, isLoading, lastUpdate,
+      onRefresh, onLogout, onGoHome, onNavigate, onChangeTab
+    } = props;
+
     const [aba, setAba] = useState('dashboard');
     const [filtrosAbertos, setFiltrosAbertos] = useState(false);
     const [filtros, setFiltros] = useState({
@@ -938,7 +946,13 @@
     }, [filtros]);
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
-      // Header com tabs
+      // Navbar global do app (mesma de todos os módulos)
+      HeaderCompacto ? h(HeaderCompacto, {
+        usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate,
+        onRefresh, onLogout, onGoHome, onNavigate, onChangeTab
+      }) : null,
+
+      // Sub-header do módulo (tabs internas + filtros)
       h('div', { className: 'bg-white border-b border-gray-200' },
         h('div', { className: 'px-5 py-3 flex items-center justify-between flex-wrap gap-2' },
           h('div', null,
