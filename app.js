@@ -2342,7 +2342,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -6974,17 +6974,58 @@ const hideLoadingScreen = () => {
             } catch (err) {
                 ja("Erro ao carregar imagem", "error")
             }
-        }, carregarRankingRetorno = async (periodo) => {
+        }, carregarRankingRetorno = async (opts) => {
+            // Aceita string legada (periodo) OU objeto { periodo, categoria, dataInicio, dataFim }
+            let periodo = 'all', categoria = 'retorno', dataInicio = '', dataFim = '';
+            if (typeof opts === 'string') {
+                periodo = opts;
+            } else if (opts && typeof opts === 'object') {
+                periodo = opts.periodo || 'all';
+                categoria = opts.categoria || 'retorno';
+                dataInicio = opts.dataInicio || '';
+                dataFim = opts.dataFim || '';
+            }
             try {
                 setRankingLoading(true);
-                const params = periodo && periodo !== 'all' ? `?periodo=${periodo}` : '';
-                const resp = await fetchAuth(`${API_URL}/submissions/ranking-retorno${params}`);
+                const qs = new URLSearchParams();
+                if (categoria) qs.set('categoria', categoria);
+                if (dataInicio && dataFim) {
+                    qs.set('dataInicio', dataInicio);
+                    qs.set('dataFim', dataFim);
+                } else if (periodo && periodo !== 'all') {
+                    qs.set('periodo', periodo);
+                }
+                const resp = await fetchAuth(`${API_URL}/submissions/ranking-retorno?${qs.toString()}`);
                 if (resp.ok) {
                     const data = await resp.json();
                     setRankingRetorno(data.ranking || []);
                 }
             } catch (e) { console.error('Erro ranking:', e); }
             setRankingLoading(false);
+        }, carregarRankingResumo = async (opts) => {
+            // Carrega os totais por categoria (cards do topo). Mesmos filtros de período.
+            let periodo = 'all', dataInicio = '', dataFim = '';
+            if (typeof opts === 'string') {
+                periodo = opts;
+            } else if (opts && typeof opts === 'object') {
+                periodo = opts.periodo || 'all';
+                dataInicio = opts.dataInicio || '';
+                dataFim = opts.dataFim || '';
+            }
+            try {
+                const qs = new URLSearchParams();
+                if (dataInicio && dataFim) {
+                    qs.set('dataInicio', dataInicio);
+                    qs.set('dataFim', dataFim);
+                } else if (periodo && periodo !== 'all') {
+                    qs.set('periodo', periodo);
+                }
+                const resp = await fetchAuth(`${API_URL}/submissions/ranking-resumo?${qs.toString()}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setRankingResumo(data);
+                }
+            } catch (e) { console.error('Erro ranking resumo:', e); }
         }, carregarRelatorio = async (mes, ano, dataInicio, dataFim) => {
             try {
                 setRelatorioLoading(true);
@@ -20874,7 +20915,15 @@ const hideLoadingScreen = () => {
             onLogout: () => o(null),
             onGoHome: () => he("home"),
             onNavigate: navegarSidebar,
-            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => { x({...p, adminTab: abaId}); if (abaId === 'ranking') carregarRankingRetorno(p.rankingPeriod || 'all'); if (abaId === 'relatorios') carregarRelatorio(p.relMes, p.relAno); }
+            onChangeTab: Ee === "disponibilidade" ? null : (abaId) => {
+                x({...p, adminTab: abaId});
+                if (abaId === 'ranking') {
+                    const opts = { periodo: p.rankingPeriod || 'all', categoria: p.rankingCategoria || 'retorno', dataInicio: p.rankingDataInicio || '', dataFim: p.rankingDataFim || '' };
+                    carregarRankingRetorno(opts);
+                    carregarRankingResumo(opts);
+                }
+                if (abaId === 'relatorios') carregarRelatorio(p.relMes, p.relAno);
+            }
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
@@ -21353,27 +21402,124 @@ const hideLoadingScreen = () => {
             className: "text-xs text-gray-400"
         }, e.timestamp), e.validated_by_name && "pendente" !== e.status && React.createElement("p", {
             className: "text-xs text-purple-600 font-semibold"
-        }, "👤 ", e.validated_by_name)))))), "ranking" === adminTabEfetivo && React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
-        }, React.createElement("h2", {
-            className: "text-lg font-semibold mb-4"
-        }, "🏆 Ranking de Retorno - Aprovações"), React.createElement("div", {
-            className: "mb-6"
-        }, React.createElement("select", {
-            value: p.rankingPeriod || "all",
-            onChange: e => { x({ ...p, rankingPeriod: e.target.value }); carregarRankingRetorno(e.target.value); },
-            className: "px-4 py-2 border rounded-lg"
-        }, React.createElement("option", {
-            value: "all"
-        }, "📅 Todos os Tempos"), React.createElement("option", {
-            value: "today"
-        }, "📅 Hoje"), React.createElement("option", {
-            value: "week"
-        }, "📅 Esta Semana"), React.createElement("option", {
-            value: "month"
-        }, "📅 Este Mês"))), React.createElement("div", {
-            className: "space-y-3"
-        }, (() => {
+        }, "👤 ", e.validated_by_name)))))), "ranking" === adminTabEfetivo && (() => {
+            // Helper: aplica filtros e dispara recarregamento (resumo + ranking)
+            const aplicarFiltros = (patch) => {
+                const novo = { ...p, ...patch };
+                x(novo);
+                const opts = {
+                    periodo: novo.rankingPeriod || 'all',
+                    categoria: novo.rankingCategoria || 'retorno',
+                    dataInicio: novo.rankingDataInicio || '',
+                    dataFim: novo.rankingDataFim || ''
+                };
+                carregarRankingRetorno(opts);
+                carregarRankingResumo(opts);
+            };
+            const periodoAtivo = (p.rankingDataInicio && p.rankingDataFim) ? 'custom' : (p.rankingPeriod || 'all');
+            const categoriaAtiva = p.rankingCategoria || 'retorno';
+            const resumo = rankingResumo || { total_geral: 0, total_profissionais: 0, categorias: {} };
+            const cats = resumo.categorias || {};
+            const totalGeral = resumo.total_geral || 0;
+            // Estilos compartilhados pros 4 cards
+            const cardCats = [
+                { key: 'retorno',  emoji: '🔄', label: 'Retorno',         tema: { fg: '#993C1D', bg: '#FAECE7', borda: '#D85A30' } },
+                { key: 'pedagio',  emoji: '🛣️', label: 'Pedágio',         tema: { fg: '#854F0B', bg: '#FAEEDA', borda: '#EF9F27' } },
+                { key: 'simoes',   emoji: '🏭', label: 'Simões/Camaçari', tema: { fg: '#0F6E56', bg: '#E1F5EE', borda: '#5DCAA5' } },
+                { key: 'ponto1',   emoji: '📍', label: 'Ponto 1',         tema: { fg: '#0C447C', bg: '#E6F1FB', borda: '#85B7EB' } }
+            ];
+            const labelCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].label) || categoriaAtiva;
+            const totalCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].total) || 0;
+            const btnPeriodo = (id, label) => React.createElement("button", {
+                key: id,
+                onClick: () => aplicarFiltros({ rankingPeriod: id, rankingDataInicio: '', rankingDataFim: '' }),
+                style: periodoAtivo === id ? { background: '#ede9fe', borderColor: '#7c3aed', color: '#6d28d9', fontWeight: 500 } : {},
+                className: "text-xs px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition"
+            }, label);
+
+            return React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            },
+                // ── Header ─────────────────────────────────────────────
+                React.createElement("div", { className: "flex items-start justify-between mb-4 flex-wrap gap-3" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-lg font-semibold text-gray-900" }, "🏆 Ranking de Solicitações"),
+                        React.createElement("p", { className: "text-xs text-gray-500 mt-0.5" },
+                            totalGeral, " solicitações aprovadas no período · ",
+                            resumo.total_profissionais || 0, " profissionais")
+                    ),
+                    React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
+                        btnPeriodo('today', 'Hoje'),
+                        btnPeriodo('week', 'Semana'),
+                        btnPeriodo('month', 'Mês'),
+                        btnPeriodo('all', 'Tudo'),
+                        React.createElement("span", { className: "text-gray-300 mx-1" }, "|"),
+                        React.createElement("input", {
+                            type: 'date',
+                            value: p.rankingDataInicio || '',
+                            onChange: (e) => {
+                                const di = e.target.value;
+                                if (di && p.rankingDataFim) aplicarFiltros({ rankingDataInicio: di, rankingPeriod: 'custom' });
+                                else x({ ...p, rankingDataInicio: di });
+                            },
+                            className: "text-xs px-2 py-1 border border-gray-300 rounded-md bg-white",
+                            style: { width: '130px' }
+                        }),
+                        React.createElement("span", { className: "text-xs text-gray-400" }, "→"),
+                        React.createElement("input", {
+                            type: 'date',
+                            value: p.rankingDataFim || '',
+                            onChange: (e) => {
+                                const df = e.target.value;
+                                if (df && p.rankingDataInicio) aplicarFiltros({ rankingDataFim: df, rankingPeriod: 'custom' });
+                                else x({ ...p, rankingDataFim: df });
+                            },
+                            className: "text-xs px-2 py-1 border border-gray-300 rounded-md bg-white",
+                            style: { width: '130px' }
+                        })
+                    )
+                ),
+                // ── 4 cards de categoria ──────────────────────────────
+                React.createElement("div", {
+                    className: "grid grid-cols-2 md:grid-cols-4 gap-2 mb-4"
+                }, cardCats.map(c => {
+                    const ativa = categoriaAtiva === c.key;
+                    const dados = cats[c.key] || { total: 0, pct: 0 };
+                    return React.createElement("div", {
+                        key: c.key,
+                        onClick: () => aplicarFiltros({ rankingCategoria: c.key }),
+                        style: ativa
+                            ? { background: c.tema.bg, border: `2px solid ${c.tema.borda}`, cursor: 'pointer' }
+                            : { background: '#f3f4f6', border: '2px solid transparent', cursor: 'pointer' },
+                        className: "rounded-lg p-3 transition hover:opacity-90"
+                    },
+                        React.createElement("div", {
+                            className: "text-xs font-semibold flex items-center gap-1",
+                            style: { color: ativa ? c.tema.fg : '#6b7280' }
+                        }, React.createElement("span", null, c.emoji), c.label),
+                        React.createElement("div", {
+                            className: "text-2xl font-medium mt-0.5",
+                            style: { color: ativa ? c.tema.fg : '#111827' }
+                        }, dados.total),
+                        React.createElement("div", {
+                            className: "text-[10px]",
+                            style: { color: ativa ? c.tema.fg : '#9ca3af', opacity: 0.85 }
+                        }, dados.pct, '% do total')
+                    );
+                })),
+                // ── Sub-header da categoria atual ─────────────────────
+                React.createElement("div", {
+                    className: "border-t border-gray-200 pt-3 pb-2 flex justify-between items-center"
+                },
+                    React.createElement("div", { className: "text-sm font-medium text-gray-900" },
+                        "Ranking · ", labelCategoria),
+                    React.createElement("div", { className: "text-xs text-gray-500" },
+                        totalCategoria, ' solicitações · ', rankingRetorno.length, ' profissionais')
+                ),
+                // ── Lista de profissionais (lógica original preservada)
+                React.createElement("div", {
+                    className: "space-y-3"
+                }, (() => {
             if (rankingLoading) return React.createElement("div", { className: "text-center py-8" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking..."));
             const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ id: s.id, ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem, imagemComprovante: s.imagemComprovante })) }]);
             return 0 === l.length ? React.createElement("p", {
@@ -21447,7 +21593,7 @@ const hideLoadingScreen = () => {
                     g(img)
                 }
             })))))))))
-        })())), "disponibilidade" === adminTabEfetivo && (
+        })()))})(), "disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth, getToken
