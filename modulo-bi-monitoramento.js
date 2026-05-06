@@ -200,13 +200,27 @@
 
     if (!aberto) return null;
 
+    // Helpers de multi-seleção (arrays)
+    function toggleArr(arr, val) {
+      const a = Array.isArray(arr) ? [...arr] : [];
+      const idx = a.indexOf(val);
+      if (idx >= 0) a.splice(idx, 1); else a.push(val);
+      return a;
+    }
+    const arrCli = Array.isArray(local.cod_cliente) ? local.cod_cliente
+      : (local.cod_cliente ? [local.cod_cliente] : []);
+    const arrCC  = Array.isArray(local.centro_custo) ? local.centro_custo
+      : (local.centro_custo ? [local.centro_custo] : []);
+    const arrCat = Array.isArray(local.categoria) ? local.categoria
+      : (local.categoria ? [local.categoria] : []);
+
     function aplicar() { setFiltros(local); onFechar(); }
     function limpar() {
       setLocal({
         data_inicio: dataNDiasAtrasISO(5),
         data_fim: dataHojeISO(),
         status_prazo: '', status_retorno: '', regiao: '',
-        categoria: '', cod_cliente: '', centro_custo: ''
+        categoria: [], cod_cliente: [], centro_custo: []
       });
     }
 
@@ -281,34 +295,37 @@
             )
           ),
           h('div', { className: 'border border-gray-200 rounded-lg p-3 mb-3 bg-blue-50/30' },
-            h('div', { className: 'text-xs font-semibold text-gray-700 mb-2' }, '🏷 Categoria'),
+            h('div', { className: 'flex justify-between items-center mb-2' },
+              h('div', { className: 'text-xs font-semibold text-gray-700' }, '🏷 Categoria'),
+              h('button', {
+                className: 'text-[10px] text-blue-600 hover:underline',
+                onClick: () => setLocal({ ...local, categoria: [] })
+              }, 'Limpar')
+            ),
             h('div', { className: 'max-h-32 overflow-y-auto' },
               categorias.map(cat =>
-                h('label', { key: cat, className: 'flex items-center gap-2 text-xs text-gray-700 py-1 cursor-pointer' },
+                h('label', { key: cat, className: 'flex items-center gap-2 text-xs text-gray-700 py-1 cursor-pointer hover:bg-white rounded px-1' },
                   h('input', {
-                    type: 'radio', name: 'cat-bimon',
-                    checked: local.categoria === cat,
-                    onChange: () => setLocal({ ...local, categoria: cat })
+                    type: 'checkbox',
+                    checked: arrCat.includes(cat),
+                    onChange: () => setLocal({ ...local, categoria: toggleArr(arrCat, cat) })
                   }), cat)
-              ),
-              h('label', { className: 'flex items-center gap-2 text-xs text-gray-500 py-1 cursor-pointer italic' },
-                h('input', {
-                  type: 'radio', name: 'cat-bimon',
-                  checked: !local.categoria,
-                  onChange: () => setLocal({ ...local, categoria: '' })
-                }), 'Todas as categorias')
+              )
             ),
             h('div', { className: 'text-[10px] text-amber-600 mt-1' },
-              `${categorias.length} disponíveis | Sem seleção = Todas`)
+              `${categorias.length} disponíveis · ${arrCat.length === 0 ? 'Sem seleção = Todas' : arrCat.length + ' selecionada(s)'}`)
           ),
           h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
             h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-purple-50/30' },
               h('div', { className: 'flex justify-between items-center mb-2' },
-                h('div', { className: 'text-xs font-semibold text-gray-700' }, '📚 Cliente (Loja)'),
+                h('div', { className: 'text-xs font-semibold text-gray-700' },
+                  '📚 Cliente (Loja) ',
+                  arrCli.length > 0 ? h('span', { className: 'text-purple-700' }, `· ${arrCli.length} selec.`) : null
+                ),
                 h('button', {
                   className: 'text-[10px] text-purple-600 hover:underline',
-                  onClick: () => setLocal({ ...local, cod_cliente: '' })
-                }, 'Todas')
+                  onClick: () => setLocal({ ...local, cod_cliente: [] })
+                }, 'Limpar')
               ),
               h('input', {
                 type: 'text', placeholder: 'Buscar por código ou nome...',
@@ -316,15 +333,15 @@
                 className: 'w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 mb-2'
               }),
               h('div', { className: 'max-h-32 overflow-y-auto' },
-                clientesFiltrados.slice(0, 100).map(c =>
+                clientesFiltrados.slice(0, 200).map(c =>
                   h('label', {
                     key: c.cod_cliente,
                     className: 'flex items-center gap-2 text-xs text-gray-700 py-0.5 cursor-pointer hover:bg-white rounded px-1'
                   },
                     h('input', {
-                      type: 'radio', name: 'cli-bimon',
-                      checked: String(local.cod_cliente) === String(c.cod_cliente),
-                      onChange: () => setLocal({ ...local, cod_cliente: c.cod_cliente })
+                      type: 'checkbox',
+                      checked: arrCli.some(v => String(v) === String(c.cod_cliente)),
+                      onChange: () => setLocal({ ...local, cod_cliente: toggleArr(arrCli, c.cod_cliente) })
                     }),
                     `${c.cod_cliente} - ${c.nome_fantasia || ''}`)
                 )
@@ -332,27 +349,30 @@
             ),
             h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-emerald-50/30' },
               h('div', { className: 'flex justify-between items-center mb-2' },
-                h('div', { className: 'text-xs font-semibold text-gray-700' }, '📁 Centro de Custo'),
+                h('div', { className: 'text-xs font-semibold text-gray-700' },
+                  '📁 Centro de Custo ',
+                  arrCC.length > 0 ? h('span', { className: 'text-emerald-700' }, `· ${arrCC.length} selec.`) : null
+                ),
                 h('button', {
                   className: 'text-[10px] text-emerald-600 hover:underline',
-                  onClick: () => setLocal({ ...local, centro_custo: '' })
-                }, 'Todos')
+                  onClick: () => setLocal({ ...local, centro_custo: [] })
+                }, 'Limpar')
               ),
               h('div', { className: 'max-h-40 overflow-y-auto' },
-                centros.slice(0, 200).map(cc =>
+                centros.slice(0, 500).map(cc =>
                   h('label', {
                     key: cc,
                     className: 'flex items-center gap-2 text-xs text-gray-700 py-0.5 cursor-pointer hover:bg-white rounded px-1'
                   },
                     h('input', {
-                      type: 'radio', name: 'cc-bimon',
-                      checked: local.centro_custo === cc,
-                      onChange: () => setLocal({ ...local, centro_custo: cc })
+                      type: 'checkbox',
+                      checked: arrCC.includes(cc),
+                      onChange: () => setLocal({ ...local, centro_custo: toggleArr(arrCC, cc) })
                     }), cc)
                 )
               ),
               h('div', { className: 'text-[10px] text-emerald-700 mt-1' },
-                `Marque o centro desejado | Sem seleção = Todos`)
+                `${centros.length} disponíveis · ${arrCC.length === 0 ? 'Sem seleção = Todos' : arrCC.length + ' selecionado(s)'}`)
             )
           )
         ),
@@ -377,6 +397,14 @@
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
     const [busca, setBusca] = useState('');
+    const [expandidos, setExpandidos] = useState(() => new Set());
+
+    function toggleExpand(codCliente) {
+      const novo = new Set(expandidos);
+      if (novo.has(codCliente)) novo.delete(codCliente);
+      else novo.add(codCliente);
+      setExpandidos(novo);
+    }
 
     useEffect(() => {
       let cancel = false;
@@ -385,7 +413,13 @@
         try {
           const params = new URLSearchParams();
           Object.entries(filtros || {}).forEach(([k, v]) => {
-            if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+            if (v === '' || v === null || v === undefined) return;
+            if (Array.isArray(v)) {
+              if (v.length === 0) return;
+              params.set(k, v.join(','));
+            } else {
+              params.set(k, v);
+            }
           });
           const r = await fetchAuth(apiUrl + '/bi-monitoramento/dashboard?' + params.toString());
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -406,7 +440,9 @@
       const q = (busca || '').toLowerCase().trim();
       if (!q) return fonte;
       return fonte.filter(l =>
+        String(l.nome_display || '').toLowerCase().includes(q) ||
         String(l.nome_fantasia || '').toLowerCase().includes(q) ||
+        String(l.nome_cliente || '').toLowerCase().includes(q) ||
         String(l.cod_cliente || '').includes(q)
       );
     }, [dados, busca]);
@@ -499,32 +535,75 @@
                   h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Carregando...'))
                 : linhas.length === 0 ?
                   h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Nenhum dado encontrado'))
-                : linhas.map(l => h('tr', { key: l.cod_cliente, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
-                    h('td', { className: 'px-3 py-2 text-gray-900' },
-                      h('span', { className: 'text-purple-500 mr-1' }, '+'),
-                      `${l.cod_cliente} - ${l.nome_fantasia || ''}`),
-                    h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_os)),
-                    h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_entregas)),
-                    h('td', { className: 'px-3 py-2 text-right text-purple-700 font-medium' }, fmtNum(l.retornos)),
-                    h('td', { className: 'px-3 py-2 text-right bg-green-50/50' },
-                      h('span', { className: 'font-medium text-green-700' }, fmtNum(l.dentro_prazo)),
-                      ' ',
-                      h('span', { className: 'text-[10px] text-green-600 opacity-80' },
-                        l.taxa_prazo != null ? Number(l.taxa_prazo).toFixed(1) + '%' : '')
-                    ),
-                    h('td', { className: 'px-3 py-2 text-right bg-amber-50/50' },
-                      h('span', { className: 'font-medium text-amber-700' }, fmtNum(l.fora_prazo)),
-                      ' ',
-                      h('span', { className: 'text-[10px] text-amber-600 opacity-80' },
-                        l.taxa_prazo != null ? (100 - Number(l.taxa_prazo)).toFixed(1) + '%' : '')
-                    ),
-                    h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtMin(l.tempo_medio)),
-                    h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_profissionais)),
-                    h('td', { className: 'px-3 py-2 text-right tabular-nums' },
-                      l.media_ent_prof != null ? Number(l.media_ent_prof).toFixed(2) : '—'),
-                    h('td', { className: 'px-3 py-2 text-right text-emerald-700 text-[11px]' },
-                      h('span', null, '● ' + fmtDataBr(l.ultima_entrega)))
-                  ))
+                : linhas.flatMap(l => {
+                    const aberto = expandidos.has(l.cod_cliente);
+                    const temCcs = (l.centros_custo || []).length > 0;
+                    const linhaCli = h('tr', { key: 'cli-' + l.cod_cliente, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
+                      h('td', { className: 'px-3 py-2 text-gray-900' },
+                        h('button', {
+                          className: 'inline-flex items-center justify-center w-5 h-5 mr-2 rounded text-purple-600 hover:bg-purple-100 ' + (temCcs ? '' : 'opacity-30 cursor-not-allowed'),
+                          onClick: () => temCcs && toggleExpand(l.cod_cliente),
+                          disabled: !temCcs,
+                          title: temCcs ? (aberto ? 'Recolher centros de custo' : 'Expandir centros de custo') : 'Sem centros de custo'
+                        }, aberto ? '−' : '+'),
+                        h('span', { className: 'font-medium' }, l.cod_cliente),
+                        h('span', { className: 'text-gray-400' }, ' · '),
+                        h('span', null, l.nome_display || l.nome_fantasia || l.nome_cliente || '—')
+                      ),
+                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_os)),
+                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_entregas)),
+                      h('td', { className: 'px-3 py-2 text-right text-purple-700 font-medium' }, fmtNum(l.retornos)),
+                      h('td', { className: 'px-3 py-2 text-right bg-green-50/50' },
+                        h('span', { className: 'font-medium text-green-700' }, fmtNum(l.dentro_prazo)),
+                        ' ',
+                        h('span', { className: 'text-[10px] text-green-600 opacity-80' },
+                          l.taxa_prazo != null ? Number(l.taxa_prazo).toFixed(1) + '%' : '')
+                      ),
+                      h('td', { className: 'px-3 py-2 text-right bg-amber-50/50' },
+                        h('span', { className: 'font-medium text-amber-700' }, fmtNum(l.fora_prazo)),
+                        ' ',
+                        h('span', { className: 'text-[10px] text-amber-600 opacity-80' },
+                          l.taxa_prazo != null ? (100 - Number(l.taxa_prazo)).toFixed(1) + '%' : '')
+                      ),
+                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtMin(l.tempo_medio)),
+                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_profissionais)),
+                      h('td', { className: 'px-3 py-2 text-right tabular-nums' },
+                        l.media_ent_prof != null ? Number(l.media_ent_prof).toFixed(2) : '—'),
+                      h('td', { className: 'px-3 py-2 text-right text-emerald-700 text-[11px]' },
+                        h('span', null, '● ' + fmtDataBr(l.ultima_entrega)))
+                    );
+
+                    if (!aberto || !temCcs) return [linhaCli];
+
+                    // Linhas-filhas (centros de custo)
+                    const filhas = l.centros_custo.map(cc =>
+                      h('tr', { key: `cc-${l.cod_cliente}-${cc.centro_custo}`, className: 'border-t border-purple-100 bg-purple-50/30' },
+                        h('td', { className: 'px-3 py-1.5 text-gray-700 text-[11px]' },
+                          h('span', { style: { paddingLeft: '32px' } },
+                            h('span', { className: 'text-gray-400 mr-2' }, '└'),
+                            h('span', { className: 'text-purple-700 font-medium' }, cc.centro_custo)
+                          )
+                        ),
+                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_os)),
+                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_entregas)),
+                        h('td', { className: 'px-3 py-1.5 text-right text-purple-700 text-[11px]' }, fmtNum(cc.retornos)),
+                        h('td', { className: 'px-3 py-1.5 text-right text-[11px]' },
+                          h('span', { className: 'text-green-700' }, fmtNum(cc.dentro_prazo)),
+                          ' ',
+                          h('span', { className: 'text-[10px] text-green-600' },
+                            cc.taxa_prazo != null ? Number(cc.taxa_prazo).toFixed(1) + '%' : '')
+                        ),
+                        h('td', { className: 'px-3 py-1.5 text-right text-[11px]' },
+                          h('span', { className: 'text-amber-700' }, fmtNum(cc.fora_prazo))
+                        ),
+                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtMin(cc.tempo_medio)),
+                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_profissionais)),
+                        h('td', { className: 'px-3 py-1.5 text-right text-gray-400 text-[11px]' }, '—'),
+                        h('td', { className: 'px-3 py-1.5 text-right text-gray-400 text-[11px]' }, '')
+                      )
+                    );
+                    return [linhaCli, ...filhas];
+                  })
               )
             )
           )
@@ -548,7 +627,13 @@
         try {
           const params = new URLSearchParams();
           Object.entries(filtros || {}).forEach(([k, v]) => {
-            if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+            if (v === '' || v === null || v === undefined) return;
+            if (Array.isArray(v)) {
+              if (v.length === 0) return;
+              params.set(k, v.join(','));
+            } else {
+              params.set(k, v);
+            }
           });
           const r = await fetchAuth(apiUrl + '/bi-monitoramento/profissionais?' + params.toString());
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -674,7 +759,13 @@
         try {
           const params = new URLSearchParams();
           Object.entries(filtros || {}).forEach(([k, v]) => {
-            if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+            if (v === '' || v === null || v === undefined) return;
+            if (Array.isArray(v)) {
+              if (v.length === 0) return;
+              params.set(k, v.join(','));
+            } else {
+              params.set(k, v);
+            }
           });
           const r = await fetchAuth(apiUrl + '/bi-monitoramento/regioes?' + params.toString());
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -780,7 +871,13 @@
         try {
           const params = new URLSearchParams();
           Object.entries(filtros || {}).forEach(([k, v]) => {
-            if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+            if (v === '' || v === null || v === undefined) return;
+            if (Array.isArray(v)) {
+              if (v.length === 0) return;
+              params.set(k, v.join(','));
+            } else {
+              params.set(k, v);
+            }
           });
           const r = await fetchAuth(apiUrl + '/bi-monitoramento/hora-a-hora?' + params.toString());
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -914,7 +1011,7 @@
       data_inicio: dataNDiasAtrasISO(5),
       data_fim: dataHojeISO(),
       status_prazo: '', status_retorno: '', regiao: '',
-      categoria: '', cod_cliente: '', centro_custo: ''
+      categoria: [], cod_cliente: [], centro_custo: []
     });
     const [info, setInfo] = useState({});
 
@@ -936,10 +1033,23 @@
       if (filtros.data_inicio || filtros.data_fim) {
         out.push(`${fmtDataBr(filtros.data_inicio)} → ${fmtDataBr(filtros.data_fim)}`);
       }
-      if (filtros.cod_cliente) out.push('Cliente: ' + filtros.cod_cliente);
-      if (filtros.centro_custo) out.push('CC: ' + filtros.centro_custo);
+      const arrCli = Array.isArray(filtros.cod_cliente) ? filtros.cod_cliente
+        : (filtros.cod_cliente ? [filtros.cod_cliente] : []);
+      const arrCC = Array.isArray(filtros.centro_custo) ? filtros.centro_custo
+        : (filtros.centro_custo ? [filtros.centro_custo] : []);
+      const arrCat = Array.isArray(filtros.categoria) ? filtros.categoria
+        : (filtros.categoria ? [filtros.categoria] : []);
+
+      if (arrCli.length === 1) out.push('Cliente ' + arrCli[0]);
+      else if (arrCli.length > 1) out.push(arrCli.length + ' clientes');
+
+      if (arrCC.length === 1) out.push('CC: ' + arrCC[0]);
+      else if (arrCC.length > 1) out.push(arrCC.length + ' centros');
+
+      if (arrCat.length === 1) out.push(arrCat[0]);
+      else if (arrCat.length > 1) out.push(arrCat.length + ' categorias');
+
       if (filtros.regiao) out.push('Região: ' + filtros.regiao);
-      if (filtros.categoria) out.push(filtros.categoria);
       if (filtros.status_prazo) out.push(filtros.status_prazo === 'dentro' ? 'No prazo' : 'Fora do prazo');
       if (filtros.status_retorno) out.push(filtros.status_retorno === 'com_retorno' ? 'Com retorno' : 'Sem retorno');
       return out;
