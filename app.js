@@ -15682,7 +15682,22 @@ const hideLoadingScreen = () => {
         }
         if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master")) {
             if (typeof window.ModuloBiMonitoramento !== "undefined") {
-                return React.createElement(window.ModuloBiMonitoramento, { apiUrl: API_URL, fetchAuth: fetchAuth });
+                return React.createElement(window.ModuloBiMonitoramento, {
+                    apiUrl: API_URL,
+                    fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto,
+                    usuario: l,
+                    moduloAtivo: Ee,
+                    abaAtiva: Et,
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: ul,
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: (abaId) => ht(abaId)
+                });
             } else {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" }, React.createElement("div", { className: "text-center" }, React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }), React.createElement("p", { className: "text-gray-600" }, "Carregando BI Monitoramento...")));
             }
@@ -20696,6 +20711,19 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
+                        )
+                    ),
+                    
+                    // BI Monitoramento
+                    (l?.role === "admin" || l?.role === "admin_master") &&
+                    React.createElement("div", { onClick: () => he("bi-monitoramento"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300" },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-teal-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "📡")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "BI Monitoramento"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Visão operacional sem dados financeiros")
                         )
                     ),
                     
