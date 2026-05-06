@@ -6998,6 +6998,7 @@ const hideLoadingScreen = () => {
                 const resp = await fetchAuth(`${API_URL}/submissions/ranking-retorno?${qs.toString()}`);
                 if (resp.ok) {
                     const data = await resp.json();
+                    console.log(`[ranking] categoria=${categoria} | recebidos ${(data.ranking || []).length} profissionais | params=${qs.toString()}`);
                     setRankingRetorno(data.ranking || []);
                 }
             } catch (e) { console.error('Erro ranking:', e); }
@@ -9345,8 +9346,20 @@ const hideLoadingScreen = () => {
                     const errData = await resp.json().catch(() => ({}));
                     if (errData.error === 'foto_duplicada') {
                         x(prev => ({ ...prev, _modalFotoDuplicada: true, _fotoDupOS: errData.os_original || '?', _fotoDupData: errData.data_original || '?' }));
+                    } else if (errData.error === 'janela_expirada') {
+                        // OS antiga (>24h) detectada via cruzamento com BI
+                        const dataFmt = errData.os_data_hora ? new Date(errData.os_data_hora).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                        const horasFmt = errData.horas_atras ? Math.round(errData.horas_atras) : '?';
+                        x(prev => ({
+                            ...prev,
+                            _modalJanelaExpirada: true,
+                            _janelaOS: errData.os || '?',
+                            _janelaDataHora: dataFmt,
+                            _janelaHorasAtras: horasFmt,
+                            _janelaHoras: errData.janela_horas || 24
+                        }));
                     } else {
-                        ja(errData.motivo || errData.error || "Erro ao enviar solicitação", "error");
+                        ja(errData.mensagem || errData.motivo || errData.error || "Erro ao enviar solicitação", "error");
                     }
                     s(!1);
                     return;
@@ -10908,6 +10921,70 @@ const hideLoadingScreen = () => {
                 }, "Entendi")
             )
         ),
+        // MODAL DE JANELA EXPIRADA (OS antiga via cruzamento BI)
+        p._modalJanelaExpirada && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+            React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                React.createElement("div", { className: "text-center mb-4" },
+                    React.createElement("span", { className: "text-5xl block mb-3" }, "⏰"),
+                    React.createElement("h2", { className: "text-xl font-bold text-red-800 mb-2" }, "OS Fora da Janela")
+                ),
+                React.createElement("div", { className: "bg-red-50 rounded-xl p-4 mb-4 border border-red-200" },
+                    React.createElement("p", { className: "text-sm text-red-800 text-center mb-2" },
+                        "A OS ",
+                        React.createElement("strong", null, p._janelaOS || "?"),
+                        " foi gerada em ",
+                        React.createElement("strong", null, p._janelaDataHora || "?"),
+                        "."
+                    ),
+                    React.createElement("p", { className: "text-sm text-red-800 text-center" },
+                        "Já se passaram ",
+                        React.createElement("strong", null, p._janelaHorasAtras || "?", "h"),
+                        "."
+                    )
+                ),
+                React.createElement("div", { className: "bg-yellow-50 rounded-xl p-3 mb-4 border border-yellow-200" },
+                    React.createElement("p", { className: "text-sm text-yellow-800 text-center" },
+                        "⚠️ A janela para solicitar ajuste é de ",
+                        React.createElement("strong", null, p._janelaHoras || 24, " horas"),
+                        " após a OS ser gerada.")
+                ),
+                React.createElement("button", {
+                    onClick: function() { x(function(prev) { return { ...prev, _modalJanelaExpirada: false }; }); },
+                    className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
+                }, "Entendi")
+            )
+        ),
+        // MODAL DE CONTESTAÇÃO EXPIRADA (>24h após rejeição)
+        p._modalContestacaoExpirada && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+            React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                React.createElement("div", { className: "text-center mb-4" },
+                    React.createElement("span", { className: "text-5xl block mb-3" }, "⏰"),
+                    React.createElement("h2", { className: "text-xl font-bold text-red-800 mb-2" }, "Janela de Contestação Encerrada")
+                ),
+                React.createElement("div", { className: "bg-red-50 rounded-xl p-4 mb-4 border border-red-200" },
+                    React.createElement("p", { className: "text-sm text-red-800 text-center mb-2" },
+                        "Esta solicitação foi rejeitada em ",
+                        React.createElement("strong", null, p._contestRejeitadoEm || "?"),
+                        "."
+                    ),
+                    React.createElement("p", { className: "text-sm text-red-800 text-center" },
+                        "Já se passaram ",
+                        React.createElement("strong", null, p._contestHorasAtras || "?", "h"),
+                        "."
+                    )
+                ),
+                React.createElement("div", { className: "bg-yellow-50 rounded-xl p-3 mb-4 border border-yellow-200" },
+                    React.createElement("p", { className: "text-sm text-yellow-800 text-center" },
+                        "⚠️ A janela para contestar é de ",
+                        React.createElement("strong", null, p._contestJanelaHoras || 24, " horas"),
+                        " após a rejeição.")
+                ),
+                React.createElement("button", {
+                    onClick: function() { x(function(prev) { return { ...prev, _modalContestacaoExpirada: false }; }); },
+                    className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
+                }, "Entendi")
+            )
+        ),
         // MODAL DE FILA — MOVIDO PARA ÚLTIMO
         p._filaMovidoModal && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
             React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
@@ -11199,7 +11276,12 @@ const hideLoadingScreen = () => {
                         const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: p.contestMsg, imagens: p.contestImgs || [] }) });
                         const d = await r.json();
                         if (d.success || r.ok) { ja("✅ Contestação enviada!", "success"); x({ ...p, contestandoId: null, contestMsg: '', contestImgs: [] }); try { const rr = await fetchAuth(`${API_URL}/submissions`); const dd = await rr.json(); if (Array.isArray(dd)) C(dd.map(function(s){ return { ...s, ordemServico: s.ordem_servico, codProfissional: s.user_cod, fullName: s.user_name, temImagem: s.tem_imagem, imagemComprovante: null, timestamp: new Date(s.created_at).toLocaleString("pt-BR") }; })); } catch {} }
-                        else ja(d.error || "Erro", "error");
+                        else if (d.error === 'janela_contestacao_expirada') {
+                            const dataFmt = d.rejeitado_em ? new Date(d.rejeitado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '?';
+                            const horasFmt = d.horas_atras ? Math.round(d.horas_atras) : '?';
+                            x(prev => ({ ...prev, contestandoId: null, contestMsg: '', contestImgs: [], _modalContestacaoExpirada: true, _contestRejeitadoEm: dataFmt, _contestHorasAtras: horasFmt, _contestJanelaHoras: d.janela_horas || 24 }));
+                        }
+                        else ja(d.mensagem || d.error || "Erro", "error");
                     } catch { ja("Erro ao enviar", "error"); } s(!1);
                 }, disabled: !(p.contestMsg || '').trim(), className: "flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-bold disabled:opacity-50" }, "📤 Enviar Contestação")
             )
@@ -21513,8 +21595,37 @@ const hideLoadingScreen = () => {
                 },
                     React.createElement("div", { className: "text-sm font-medium text-gray-900" },
                         "Ranking · ", labelCategoria),
-                    React.createElement("div", { className: "text-xs text-gray-500" },
-                        totalCategoria, ' solicitações · ', rankingRetorno.length, ' profissionais')
+                    React.createElement("div", { className: "flex items-center gap-3" },
+                        React.createElement("span", { className: "text-xs text-gray-500" },
+                            totalCategoria, ' solicitações · ', rankingRetorno.length, ' profissionais'),
+                        rankingRetorno.length > 0 && React.createElement("button", {
+                            onClick: () => {
+                                // Gera CSV com todos os profissionais (independente de quantos)
+                                const linhas = [['Posição', 'Código', 'Nome', 'Aprovações']];
+                                rankingRetorno.forEach((r, i) => {
+                                    linhas.push([
+                                        (i + 1) + 'º',
+                                        r.user_cod || '',
+                                        (r.user_name || '').replace(/"/g, '""'),
+                                        r.total || 0
+                                    ]);
+                                });
+                                const csv = '\uFEFF' + linhas.map(r => r.map(c => `"${c}"`).join(';')).join('\r\n');
+                                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                const periodoStr = (p.rankingDataInicio && p.rankingDataFim)
+                                    ? `${p.rankingDataInicio}_a_${p.rankingDataFim}`
+                                    : (p.rankingPeriod || 'todos');
+                                a.download = `ranking_${categoriaAtiva}_${periodoStr}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            },
+                            className: "text-xs px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition flex items-center gap-1",
+                            title: "Exportar a lista completa em CSV"
+                        }, "📥 Exportar CSV")
+                    )
                 ),
                 // ── Lista de profissionais (lógica original preservada)
                 React.createElement("div", {
