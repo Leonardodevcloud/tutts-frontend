@@ -352,7 +352,10 @@
     return e('div', { className: 'max-w-6xl mx-auto p-6' },
       // HEADER
       e('div', { className: 'mb-6' },
-        e('h2', { className: 'text-2xl font-semibold text-gray-900 mb-1' }, 'Roadmap & Feedback'),
+        e('h2', { className: 'text-2xl font-semibold text-gray-900 mb-1 flex items-center gap-2' },
+          e('span', null, '⚡'),
+          e('span', null, 'Desenvolvimentos')
+        ),
         e('p', { className: 'text-sm text-gray-500' }, 'Acompanhe o que vem, reporte bugs e sugira melhorias')
       ),
 
@@ -402,8 +405,10 @@
               ),
               e('p', { className: 'text-sm' }, 'Nada por aqui ainda.')
             )
-          : e('div', { className: 'space-y-2' },
-              itensFiltrados.map(item => renderCard(e, item, {
+          : e('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' },
+              itensFiltrados.map(item => e(Card, {
+                key: item.id,
+                item,
                 onEdit: () => abrirEdicao(item),
                 onDelete: () => deletarItem(item),
                 onTransicao: (st) => transicionar(item, st),
@@ -489,118 +494,182 @@
     }, label);
   }
 
-  function renderCard(e, item, actions) {
+  function Card({ item, onEdit, onDelete, onTransicao, onAceitar, onDetalhe }) {
     const st = statusInfo(item.tipo, item.status);
     const ehTerminal = ['concluido','cancelado','resolvido','recusada','nao_reproduzivel'].includes(item.status);
     const opacidade = ehTerminal ? 0.85 : 1;
+    const [menuAberto, setMenuAberto] = React.useState(false);
+    const menuRef = React.useRef(null);
+
+    // Fecha o menu ao clicar fora
+    React.useEffect(() => {
+      if (!menuAberto) return;
+      const handler = (ev) => {
+        if (menuRef.current && !menuRef.current.contains(ev.target)) {
+          setMenuAberto(false);
+        }
+      };
+      document.addEventListener('click', handler);
+      return () => document.removeEventListener('click', handler);
+    }, [menuAberto]);
+
+    const acoes = montarAcoes(item, { onEdit, onDelete, onTransicao, onAceitar, onDetalhe });
 
     return e('div', {
-      key: item.id,
-      className: 'bg-white border border-gray-200 rounded-xl p-4',
-      style: { borderLeftWidth: '3px', borderLeftColor: st.cor, opacity: opacidade }
+      className: 'bg-white border border-gray-200 rounded-xl p-3 flex flex-col',
+      style: {
+        borderLeftWidth: '3px',
+        borderLeftColor: st.cor,
+        opacity: opacidade,
+        minHeight: 168
+      }
     },
-      // Linha 1: badges + data
-      e('div', { className: 'flex items-center justify-between mb-2 flex-wrap gap-2' },
-        e('div', { className: 'flex items-center gap-2 flex-wrap' },
-          e('span', {
-            className: 'text-xs font-medium px-2 py-0.5 rounded-full',
-            style: { background: st.bg, color: st.txt }
-          }, st.label),
-          item.modulo && e('span', { className: 'text-xs text-gray-600 px-2 py-0.5 bg-gray-100 rounded' }, item.modulo),
-          item.tipo === 'bug' && item.gravidade && e('span', {
-            className: 'text-xs px-2 py-0.5 rounded',
-            style: { background: '#F3F4F6' }
-          }, GRAVIDADE_CONFIG[item.gravidade]?.label || item.gravidade),
-          item.tipo === 'roadmap' && item.prioridade && item.prioridade !== 'media' && e('span', {
-            className: 'text-xs text-gray-600 px-2 py-0.5 bg-gray-100 rounded'
-          }, PRIORIDADE_CONFIG[item.prioridade]?.label || item.prioridade),
-          item.origem_sugestao_id && e('span', {
-            className: 'text-xs px-2 py-0.5 rounded',
-            style: { background: '#EEEDFE', color: '#3C3489' }
-          }, '↳ de sugestão'),
-        ),
-        e('span', { className: 'text-xs text-gray-400' },
-          `${formatarData(item.created_at)}${item.created_by_nome ? ' · ' + item.created_by_nome : ''}`)
+      // Linha 1: badges
+      e('div', { className: 'flex items-center gap-1.5 flex-wrap mb-1.5' },
+        e('span', {
+          className: 'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+          style: { background: st.bg, color: st.txt }
+        }, st.label),
+        item.modulo && e('span', { className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded' }, item.modulo),
+        item.tipo === 'bug' && item.gravidade && e('span', {
+          className: 'text-[10px] px-1.5 py-0.5 rounded',
+          style: { background: '#F3F4F6' }
+        }, GRAVIDADE_CONFIG[item.gravidade]?.label || item.gravidade),
+        item.tipo === 'roadmap' && item.prioridade === 'alta' && e('span', {
+          className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded'
+        }, 'Alta'),
+        item.origem_sugestao_id && e('span', {
+          className: 'text-[10px] px-1.5 py-0.5 rounded',
+          style: { background: '#EEEDFE', color: '#3C3489' }
+        }, '↳ sugestão')
       ),
 
-      // Linha 2: título
-      e('p', { className: 'text-base font-medium text-gray-900 mb-1' }, item.titulo),
+      // Linha 2: título (compacto)
+      e('p', {
+        className: 'text-sm font-medium text-gray-900 leading-snug mb-1',
+        style: { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+      }, item.titulo),
 
-      // Linha 3: descrição (truncada)
+      // Linha 3: descrição (1 linha pra economizar espaço)
       item.descricao && e('p', {
-        className: 'text-sm text-gray-600 leading-relaxed mb-2',
+        className: 'text-xs text-gray-500 leading-relaxed mb-1.5',
         style: { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
       }, item.descricao),
 
-      // Linha 4: footer com ações inline
-      e('div', { className: 'flex items-center justify-between pt-2 border-t border-gray-100 flex-wrap gap-2' },
-        e('div', { className: 'flex items-center gap-3 text-xs text-gray-500' },
-          item.tipo === 'roadmap' && item.data_prevista && e('span', null, `📅 ${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
-          item.tipo === 'roadmap' && !item.data_prevista && !ehTerminal && e('span', { className: 'text-gray-400' }, 'Sem previsão'),
-          (item.anexos_count || 0) > 0 && e('span', null, `📎 ${item.anexos_count} anexo${item.anexos_count > 1 ? 's' : ''}`),
-          item.motivo_recusa && e('span', { className: 'italic' }, `Motivo: ${item.motivo_recusa.slice(0, 80)}${item.motivo_recusa.length > 80 ? '...' : ''}`),
-        ),
-        e('div', { className: 'flex items-center gap-3 text-xs' },
-          // Ações específicas por tipo + status
-          ...renderAcoesInline(e, item, actions)
+      // Spacer (empurra footer pro fim)
+      e('div', { className: 'flex-1' }),
+
+      // Linha 4: meta info (data, anexos) — pequena
+      (item.data_prevista || (item.anexos_count || 0) > 0 || item.motivo_recusa) && e('div', { className: 'text-[10px] text-gray-500 mb-1.5 flex items-center gap-2 flex-wrap' },
+        item.tipo === 'roadmap' && item.data_prevista && e('span', null, `📅 ${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
+        (item.anexos_count || 0) > 0 && e('span', null, `📎 ${item.anexos_count}`),
+        item.motivo_recusa && e('span', { className: 'italic truncate', style: { maxWidth: '100%' } }, item.motivo_recusa.slice(0, 50) + (item.motivo_recusa.length > 50 ? '…' : ''))
+      ),
+
+      // Linha 5: data criação + ações (footer)
+      e('div', { className: 'flex items-center justify-between pt-1.5 border-t border-gray-100' },
+        e('span', { className: 'text-[10px] text-gray-400' },
+          `${formatarData(item.created_at)}${item.created_by_nome ? ' · ' + item.created_by_nome.split(' ')[0] : ''}`),
+        e('div', { className: 'flex items-center gap-2' },
+          // Ação principal (visível)
+          acoes.principal && e('button', {
+            onClick: acoes.principal.onClick,
+            className: 'text-[11px] font-medium hover:underline whitespace-nowrap',
+            style: { color: acoes.principal.cor || '#374151' }
+          }, acoes.principal.label),
+          // Menu ⋮ (com ações secundárias)
+          acoes.secundarias.length > 0 && e('div', { className: 'relative', ref: menuRef },
+            e('button', {
+              onClick: (ev) => { ev.stopPropagation(); setMenuAberto(v => !v); },
+              className: 'text-gray-400 hover:text-gray-700 px-1 leading-none text-base font-bold',
+              style: { lineHeight: 1 },
+              title: 'Mais ações'
+            }, '⋮'),
+            menuAberto && e('div', {
+              className: 'absolute right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px] overflow-hidden'
+            },
+              acoes.secundarias.map((a, idx) => e('button', {
+                key: idx,
+                onClick: () => { setMenuAberto(false); a.onClick(); },
+                className: 'block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 whitespace-nowrap',
+                style: { color: a.cor || '#374151' }
+              }, a.label))
+            )
+          )
         )
       )
     );
   }
 
-  function renderAcoesInline(e, item, actions) {
-    const acoes = [];
+  // Monta lista de ações: { principal: {label, onClick, cor}, secundarias: [...] }
+  // Principal = ação destacada visualmente (geralmente avançar status pra próximo passo).
+  // Secundarias vão pro menu ⋮.
+  function montarAcoes(item, actions) {
+    const principal = obterAcaoPrincipal(item, actions);
+    const secundarias = obterAcoesSecundarias(item, actions);
+    return { principal, secundarias };
+  }
 
-    // ROADMAP: transições por status (faltavam todas — fix 2026-05-05)
+  function obterAcaoPrincipal(item, actions) {
+    if (item.tipo === 'roadmap') {
+      if (item.status === 'em_avaliacao')       return { label: '📋 Planejar', cor: '#BA7517', onClick: () => actions.onTransicao('planejado') };
+      if (item.status === 'planejado')          return { label: '🚧 Iniciar', cor: '#185FA5', onClick: () => actions.onTransicao('em_desenvolvimento') };
+      if (item.status === 'em_desenvolvimento') return { label: '✓ Concluir', cor: '#1D9E75', onClick: () => actions.onTransicao('concluido') };
+      // concluido / cancelado: principal = reabrir
+      if (item.status === 'concluido' || item.status === 'cancelado') {
+        return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('em_avaliacao') };
+      }
+    }
+    if (item.tipo === 'bug') {
+      if (item.status === 'aberto')         return { label: '→ Em correção', cor: '#BA7517', onClick: () => actions.onTransicao('em_correcao') };
+      if (item.status === 'em_correcao')    return { label: '✓ Resolvido', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') };
+      if (item.status === 'resolvido' || item.status === 'nao_reproduzivel') {
+        return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') };
+      }
+    }
+    if (item.tipo === 'sugestao') {
+      if (item.status === 'pendente') return { label: '✓ Aceitar', cor: '#1D9E75', onClick: actions.onAceitar };
+      if (item.status === 'recusada') return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('pendente') };
+      // 'aceita' não tem principal
+    }
+    return null;
+  }
+
+  function obterAcoesSecundarias(item, actions) {
+    const sec = [];
+
     if (item.tipo === 'roadmap') {
       if (item.status === 'em_avaliacao') {
-        acoes.push(e('button', { key: 'plan', onClick: () => actions.onTransicao('planejado'), className: 'text-yellow-700 hover:underline font-medium' }, '📋 Planejar'));
-        acoes.push(e('button', { key: 'desenv', onClick: () => actions.onTransicao('em_desenvolvimento'), className: 'text-blue-700 hover:underline' }, '🚧 Iniciar'));
-        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
+        sec.push({ label: '🚧 Iniciar desenvolvimento', onClick: () => actions.onTransicao('em_desenvolvimento') });
+        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       } else if (item.status === 'planejado') {
-        acoes.push(e('button', { key: 'desenv', onClick: () => actions.onTransicao('em_desenvolvimento'), className: 'text-blue-700 hover:underline font-medium' }, '🚧 Iniciar desenvolvimento'));
-        acoes.push(e('button', { key: 'avail', onClick: () => actions.onTransicao('em_avaliacao'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ avaliação'));
-        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
+        sec.push({ label: '↺ Voltar p/ avaliação', cor: '#6B7280', onClick: () => actions.onTransicao('em_avaliacao') });
+        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       } else if (item.status === 'em_desenvolvimento') {
-        acoes.push(e('button', { key: 'concl', onClick: () => actions.onTransicao('concluido'), className: 'text-green-700 hover:underline font-medium' }, '✓ Concluir'));
-        acoes.push(e('button', { key: 'plan', onClick: () => actions.onTransicao('planejado'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ planejado'));
-        acoes.push(e('button', { key: 'canc', onClick: () => actions.onTransicao('cancelado'), className: 'text-gray-500 hover:underline' }, '✗ Cancelar'));
-      } else if (item.status === 'concluido' || item.status === 'cancelado') {
-        acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('em_avaliacao'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
+        sec.push({ label: '↺ Voltar p/ planejado', cor: '#6B7280', onClick: () => actions.onTransicao('planejado') });
+        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       }
     }
-
     if (item.tipo === 'bug') {
       if (item.status === 'aberto') {
-        acoes.push(e('button', { key: 'corr', onClick: () => actions.onTransicao('em_correcao'), className: 'text-yellow-700 hover:underline font-medium' }, '→ Em correção'));
-        acoes.push(e('button', { key: 'res', onClick: () => actions.onTransicao('resolvido'), className: 'text-green-700 hover:underline' }, '✓ Resolvido'));
-        acoes.push(e('button', { key: 'naorepro', onClick: () => actions.onTransicao('nao_reproduzivel'), className: 'text-gray-500 hover:underline' }, '⚪ Não reproduzível'));
+        sec.push({ label: '✓ Resolvido (sem correção)', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') });
+        sec.push({ label: '⚪ Não reproduzível', cor: '#6B7280', onClick: () => actions.onTransicao('nao_reproduzivel') });
       } else if (item.status === 'em_correcao') {
-        acoes.push(e('button', { key: 'res', onClick: () => actions.onTransicao('resolvido'), className: 'text-green-700 hover:underline font-medium' }, '✓ Resolvido'));
-        acoes.push(e('button', { key: 'voltar', onClick: () => actions.onTransicao('aberto'), className: 'text-gray-500 hover:underline' }, '↺ Voltar p/ aberto'));
-      } else if (item.status === 'resolvido' || item.status === 'nao_reproduzivel') {
-        acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('aberto'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
+        sec.push({ label: '↺ Voltar p/ aberto', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') });
       }
     }
-
-    if (item.tipo === 'sugestao') {
-      if (item.status === 'pendente') {
-        acoes.push(e('button', { key: 'ac', onClick: actions.onAceitar, className: 'text-green-700 hover:underline font-medium' }, '✓ Aceitar e mover pro roadmap'));
-        acoes.push(e('button', { key: 'rc', onClick: () => actions.onTransicao('recusada'), className: 'text-red-700 hover:underline' }, '✗ Recusar'));
-      } else if (item.status === 'recusada') {
-        acoes.push(e('button', { key: 'reabrir', onClick: () => actions.onTransicao('pendente'), className: 'text-gray-500 hover:underline' }, '↺ Reabrir'));
-      }
-      // 'aceita' não tem ação (já virou roadmap)
+    if (item.tipo === 'sugestao' && item.status === 'pendente') {
+      sec.push({ label: '✗ Recusar', cor: '#A32D2D', onClick: () => actions.onTransicao('recusada') });
     }
 
-    // Universais
+    // Universais (em todos os cards)
     if ((item.anexos_count || 0) > 0) {
-      acoes.push(e('button', { key: 'det', onClick: actions.onDetalhe, className: 'text-blue-700 hover:underline' }, 'Ver anexos'));
+      sec.push({ label: '📎 Ver anexos', cor: '#185FA5', onClick: actions.onDetalhe });
     }
-    acoes.push(e('button', { key: 'ed', onClick: actions.onEdit, className: 'text-gray-600 hover:underline' }, 'Editar'));
-    acoes.push(e('button', { key: 'del', onClick: actions.onDelete, className: 'text-red-600 hover:underline' }, '🗑️'));
+    sec.push({ label: '✏️ Editar', onClick: actions.onEdit });
+    sec.push({ label: '🗑️ Excluir', cor: '#A32D2D', onClick: actions.onDelete });
 
-    return acoes;
+    return sec;
   }
 
   function renderModalForm(e, p) {
