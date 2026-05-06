@@ -1459,6 +1459,16 @@
                       className: 'mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 text-center',
                       title: 'Endereço corrigido, mas o frete NÃO foi recalculado automaticamente. Necessário recalcular manualmente.',
                     }, '⚠️ Frete pendente'),
+                    // Motivo da falha (status=falhou OU status=erro)
+                    (r.status === 'falhou' || r.status === 'erro') && (r.erro || r.detalhe_erro) && h('div', {
+                      className: 'mt-1 text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-1 max-w-[220px] break-words leading-tight',
+                      title: r.erro || r.detalhe_erro,
+                    },
+                      h('div', { className: 'font-bold mb-0.5' }, '⚠️ Motivo:'),
+                      h('div', { className: 'font-normal' }, r.erro || r.detalhe_erro),
+                      r.etapa_atual ? h('div', { className: 'font-normal text-red-500 mt-0.5 italic' },
+                        'Etapa: ' + r.etapa_atual) : null
+                    ),
                     // Badge de validação IA
                     (() => {
                       const v = r.validacao_localizacao;
