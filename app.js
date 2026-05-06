@@ -547,6 +547,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "bi", label: "BI", icon: "📊",
       abas: [{id: "home-bi", label: "🏠 Home"}, {id: "dashboard", label: "📊 Dashboard"}, {id: "profissionais", label: "👤 Por Profissional"}, {id: "garantido", label: "💰 Garantido"}, {id: "os", label: "📋 Análise por OS"}, {id: "cliente767", label: "🏢 Cliente 767"}, {id: "chat-ia", label: "💬 Chat IA"}, {id: "relatorio-ia", label: "🤖 Relatório IA"}, {id: "upload", label: "📤 Upload"}, {id: "config", label: "⚙️ Configurações"}]
     },
+    { id: "bi-monitoramento", label: "BI Monitoramento", icon: "📡", admin: true, abas: [] },
     { id: "todo", label: "TO-DO", icon: "📝",
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
     },
@@ -8825,6 +8826,7 @@ const hideLoadingScreen = () => {
                                     "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
                                     agente: !hasConfig || allowedMods.includes("agente"),
                                     "rastreio-clientes": !hasConfig || allowedMods.includes("rastreio-clientes"),
+                                    "bi-monitoramento": !hasConfig || allowedMods.includes("bi-monitoramento"),
                                     antifraude: !hasConfig || allowedMods.includes("antifraude"),
                                     performance: !hasConfig || allowedMods.includes("performance")
                                 },
@@ -15676,6 +15678,13 @@ const hideLoadingScreen = () => {
                         React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Agente RPA...")
                     )
                 );
+            }
+        }
+        if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master")) {
+            if (typeof window.ModuloBiMonitoramento !== "undefined") {
+                return React.createElement(window.ModuloBiMonitoramento, { apiUrl: API_URL, fetchAuth: fetchAuth });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" }, React.createElement("div", { className: "text-center" }, React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }), React.createElement("p", { className: "text-gray-600" }, "Carregando BI Monitoramento...")));
             }
         }
         if ("rastreio-clientes" === Ee && l?.role?.includes("admin")) {
