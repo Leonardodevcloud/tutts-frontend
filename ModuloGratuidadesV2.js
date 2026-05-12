@@ -126,6 +126,122 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────
+  // Hook: lookup de motoboy por código com debounce
+  //
+  // Uso:
+  //   const { lookupStatus, nomeAutoRef, onCodigoChange } = useLookupUser({
+  //     api, codigo, nome, setNome,
+  //   });
+  //
+  // Retorna:
+  //   lookupStatus: 'idle' | 'buscando' | 'encontrado' | 'nao_encontrado'
+  //   nomeAutoRef:  ref pra rastrear se o nome foi preenchido auto
+  //   onNomeChange: handler pro input Nome (marca como manual)
+  //
+  // Centraliza a lógica duplicada do ModalCadastrar (gratuidade) e do
+  // ModalCadastrarIsencao. A request bate em /gratuities/lookup-user/:cod
+  // (mesmo endpoint atende ambos).
+  // ───────────────────────────────────────────────────────────────────────
+  function useLookupUser({ api, codigo, nome, setNome }) {
+    const [lookupStatus, setLookupStatus] = useState('idle');
+    const lookupTimerRef = useRef(null);
+    const nomeAutoRef = useRef(false);
+
+    useEffect(() => {
+      if (lookupTimerRef.current) {
+        clearTimeout(lookupTimerRef.current);
+        lookupTimerRef.current = null;
+      }
+      const cod = (codigo || '').trim();
+      if (cod.length < 1) {
+        setLookupStatus('idle');
+        if (nomeAutoRef.current) { setNome(''); nomeAutoRef.current = false; }
+        return;
+      }
+      setLookupStatus('buscando');
+      lookupTimerRef.current = setTimeout(async () => {
+        try {
+          const r = await api(`/gratuities/lookup-user/${encodeURIComponent(cod)}`);
+          if (r && r.fullName) {
+            if (!nome || nomeAutoRef.current) {
+              setNome(r.fullName);
+              nomeAutoRef.current = true;
+            }
+            setLookupStatus('encontrado');
+          } else {
+            setLookupStatus('nao_encontrado');
+            if (nomeAutoRef.current) { setNome(''); nomeAutoRef.current = false; }
+          }
+        } catch (_) {
+          setLookupStatus('idle');
+        }
+      }, 300);
+
+      return () => {
+        if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [codigo, api]);
+
+    const onNomeChange = useCallback((novoNome) => {
+      setNome(novoNome);
+      nomeAutoRef.current = false;  // admin editou manualmente
+    }, [setNome]);
+
+    return { lookupStatus, nomeAutoRef, onNomeChange };
+  }
+
+  // Sub-componente: campos Código + Nome com lookup automático.
+  // Usado no ModalCadastrar (gratuidade) e ModalCadastrarIsencao.
+  function CodigoNomeFields({ api, codigo, setCodigo, nome, setNome, codigoLabel, nomeLabel, nomePlaceholder }) {
+    const { lookupStatus, nomeAutoRef, onNomeChange } = useLookupUser({ api, codigo, nome, setNome });
+
+    return React.createElement(React.Fragment, null,
+      React.createElement('div', null,
+        React.createElement('label', {
+          style: { display: 'block', fontSize: 12, fontWeight: 600, color: cores.textMuted, marginBottom: 4 },
+        }, codigoLabel || 'Código *'),
+        React.createElement('div', { style: { position: 'relative' } },
+          React.createElement('input', {
+            type: 'text', value: codigo,
+            onChange: (e) => setCodigo(e.target.value),
+            placeholder: 'Código do profissional',
+            style: Object.assign(inputStyle(), { paddingRight: 36 }),
+          }),
+          lookupStatus === 'buscando' && React.createElement('span', {
+            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: cores.textMuted },
+          }, '⏳'),
+          lookupStatus === 'encontrado' && React.createElement('span', {
+            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#065f46' },
+            title: 'Motoboy encontrado',
+          }, '✓'),
+          lookupStatus === 'nao_encontrado' && React.createElement('span', {
+            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#A32D2D' },
+            title: 'Código não encontrado',
+          }, '✕')
+        ),
+        lookupStatus === 'nao_encontrado' && (codigo || '').trim().length >= 2 &&
+        React.createElement('p', {
+          style: { fontSize: 11, color: '#A32D2D', margin: '4px 0 0' },
+        }, '⚠️ Código não encontrado. Preencha o nome manualmente.')
+      ),
+      React.createElement('div', null,
+        React.createElement('label', {
+          style: { display: 'block', fontSize: 12, fontWeight: 600, color: cores.textMuted, marginBottom: 4 },
+        }, nomeLabel || 'Nome'),
+        React.createElement('input', {
+          type: 'text', value: nome,
+          onChange: (e) => onNomeChange(e.target.value),
+          placeholder: nomePlaceholder || 'Nome do usuário',
+          style: Object.assign(inputStyle(), {
+            background: nomeAutoRef.current && nome ? '#F0FDF4' : '#fff',
+          }),
+        })
+      )
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
   // Componentes atômicos
   // ───────────────────────────────────────────────────────────────────────
 
@@ -514,24 +630,10 @@
       React.createElement('div', {
         style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
       },
-        // Código
-        campo('Código *',
-          React.createElement('input', {
-            type: 'text', value: codigo,
-            onChange: (e) => setCodigo(e.target.value),
-            placeholder: 'Código do profissional',
-            style: inputStyle(),
-          })
-        ),
-        // Nome
-        campo('Nome',
-          React.createElement('input', {
-            type: 'text', value: nome,
-            onChange: (e) => setNome(e.target.value),
-            placeholder: 'Nome do usuário',
-            style: inputStyle(),
-          })
-        ),
+        // Código + Nome (com lookup automático)
+        React.createElement(CodigoNomeFields, {
+          api, codigo, setCodigo, nome, setNome,
+        }),
         // Quantidade
         campo('Quantidade *',
           React.createElement('input', {
@@ -1405,22 +1507,12 @@
       React.createElement('div', {
         style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
       },
-        campo('Código *',
-          React.createElement('input', {
-            type: 'text', value: codigo,
-            onChange: (e) => setCodigo(e.target.value),
-            placeholder: 'Código do motoboy',
-            style: inputStyle(),
-          })
-        ),
-        campo('Nome',
-          React.createElement('input', {
-            type: 'text', value: nome,
-            onChange: (e) => setNome(e.target.value),
-            placeholder: 'Nome (opcional)',
-            style: inputStyle(),
-          })
-        ),
+        // Código + Nome (com lookup automático)
+        React.createElement(CodigoNomeFields, {
+          api, codigo, setCodigo, nome, setNome,
+          codigoLabel: 'Código *',
+          nomePlaceholder: 'Nome (opcional)',
+        }),
         React.createElement('div', { style: { gridColumn: '1 / -1' } },
           React.createElement('div', {
             style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
