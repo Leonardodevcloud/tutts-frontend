@@ -1902,150 +1902,15 @@
             resumoLoading && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("div", {className: "w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"}),
-            React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && React.createElement("div", {
-                className: "space-y-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "text-lg font-semibold mb-4"
-            }, "➕ Cadastrar Gratuidade"), React.createElement("div", {
-                className: "grid sm:grid-cols-2 lg:grid-cols-6 gap-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-xs font-semibold mb-1 text-gray-600"
-            }, "Código *"), React.createElement("input", {
-                type: "text",
-                placeholder: "Código",
-                value: p.gratUserCod || "",
-                onChange: async e => {
-                    const t = e.target.value;
-                    if (x({
-                            ...p,
-                            gratUserCod: t,
-                            gratUserName: ""
-                        }), t.length >= 3) {
-                        const e = A.find(e => e.codProfissional?.toLowerCase() === t.toLowerCase());
-                        e && x(a => ({
-                            ...a,
-                            gratUserCod: t,
-                            gratUserName: e.fullName
-                        }))
-                    }
-                },
-                className: "w-full px-4 py-2 border rounded-lg"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-xs font-semibold mb-1 text-gray-600"
-            }, "Nome"), React.createElement("input", {
-                type: "text",
-                placeholder: "Nome do usuário",
-                value: p.gratUserName || "",
-                readOnly: !0,
-                className: "w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-700"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-xs font-semibold mb-1 text-gray-600"
-            }, "Quantidade *"), React.createElement("input", {
-                type: "number",
-                placeholder: "Qtd",
-                value: p.gratQty || "",
-                onChange: e => x({
-                    ...p,
-                    gratQty: e.target.value
-                }),
-                className: "w-full px-4 py-2 border rounded-lg"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-xs font-semibold mb-1 text-gray-600"
-            }, "Valor (R$) *"), React.createElement("input", {
-                type: "number",
-                placeholder: "Valor",
-                value: p.gratValue || "",
-                onChange: e => x({
-                    ...p,
-                    gratValue: e.target.value
-                }),
-                className: "w-full px-4 py-2 border rounded-lg"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-xs font-semibold mb-1 text-gray-600"
-            }, "Motivo"), React.createElement("input", {
-                type: "text",
-                placeholder: "Motivo",
-                value: p.gratReason || "",
-                onChange: e => x({
-                    ...p,
-                    gratReason: e.target.value
-                }),
-                className: "w-full px-4 py-2 border rounded-lg"
-            })), React.createElement("div", {
-                className: "flex items-end"
-            }, React.createElement("button", {
-                onClick: Hl,
-                disabled: c || !p.gratUserName,
-                className: "w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold disabled:opacity-50"
-            }, "➕ Adicionar"))), p.gratUserCod && !p.gratUserName && p.gratUserCod.length >= 3 && React.createElement("p", {
-                className: "text-red-500 text-xs mt-2"
-            }, "⚠️ Usuário não encontrado com este código"), p.gratUserName && React.createElement("p", {
-                className: "text-green-600 text-xs mt-2"
-            }, "✅ Usuário encontrado: ", p.gratUserName)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-sm min-w-[750px]"
-            }, React.createElement("thead", {
-                className: "bg-gray-50"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Código"), React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Nome"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Qtd"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Rest."), React.createElement("th", {
-                className: "px-4 py-3 text-right"
-            }, "Valor"), React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Motivo"), React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Cadastrado por"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Status"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Ação"))), React.createElement("tbody", null, Q.map(e => React.createElement("tr", {
-                key: e.id,
-                className: "border-t " + ("ativa" === e.status ? "bg-green-50" : "")
-            }, React.createElement("td", {
-                className: "px-4 py-3 font-mono"
-            }, e.user_cod), React.createElement("td", {
-                className: "px-4 py-3 font-semibold"
-            }, e.user_name || "-"), React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, e.quantity), React.createElement("td", {
-                className: "px-4 py-3 text-center font-bold"
-            }, e.remaining), React.createElement("td", {
-                className: "px-4 py-3 text-right"
-            }, er(e.value)), React.createElement("td", {
-                className: "px-4 py-3"
-            }, e.reason || "-"), React.createElement("td", {
-                className: "px-4 py-3 text-xs text-gray-600"
-            }, React.createElement("div", null, e.created_by || "-", e.created_at && React.createElement("div", {style: {fontSize: "10px", color: "#9ca3af", marginTop: "2px"}}, new Date(e.created_at).toLocaleDateString("pt-BR") + " " + new Date(e.created_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})))), React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", {
-                className: "px-2 py-1 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-green-500 text-white" : "bg-gray-400 text-white")
-            }, e.status)), React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("button", {
-                onClick: () => {
-                    confirm(`⚠️ Excluir gratuidade de ${e.user_name||e.user_cod}?\n\nValor: ${er(e.value)}\nRestante: ${e.remaining}/${e.quantity}\n\nEsta ação não pode ser desfeita!`) && (async e => {
-                        s(!0);
-                        try {
-                            await fetchAuth(`${API_URL}/gratuities/${e}`, {
-                                method: "DELETE"
-                            }), ja("🗑️ Gratuidade excluída!", "success"), za()
-                        } catch (e) {
-                            ja("Erro ao excluir", "error")
-                        }
-                        s(!1)
-                    })(e.id)
-                },
-                className: "px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-            }, "🗑️ Excluir")))))))), "restritos" === p.finTab && React.createElement("div", {
+            React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && (window.ModuloGratuidadesV2Component
+                ? React.createElement(window.ModuloGratuidadesV2Component, {
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    ja: ja
+                  })
+                : React.createElement("div", {
+                    style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
+                  }, "⚠️ Componente ModuloGratuidadesV2 não foi carregado. Verifique se ModuloGratuidadesV2.js está no index.html antes do ModuloFinanceiro.js.")), "restritos" === p.finTab && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
