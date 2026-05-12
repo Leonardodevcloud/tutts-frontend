@@ -759,18 +759,25 @@
     // 2026-05: aceita tanto fetchAuth (padrão Tutts) quanto fetchApi (compat)
     const api = useApi({ apiUrl, token, fetchAuth: fetchAuth || fetchApi });
 
-    // Liga showToast/confirm injetados (se fornecidos) aos helpers globais
-    // do módulo. Permite que o pai (ModuloFinanceiro) repasse `ja` e o seu
-    // próprio `confirmar` em vez do alert/confirm nativos.
+    // 2026-05 v3 fix: estabilizar toast/confirm via REF — vide comentário em TelaIsencoes.
+    // Sem isso, o pai (ModuloFinanceiro) re-renderiza, showToast muda referência,
+    // useCallback recria, useEffect dispara, e vira loop infinito de requests.
+    const showToastRef = useRef(showToast);
+    const confirmFnRef = useRef(confirmFn);
+    useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+    useEffect(() => { confirmFnRef.current = confirmFn; }, [confirmFn]);
+
     const toastLocal = useCallback((msg, tipo) => {
-      if (typeof showToast === 'function') return showToast(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
+      const fn = showToastRef.current;
+      if (typeof fn === 'function') return fn(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
       return toast(msg, tipo);
-    }, [showToast]);
+    }, []);
 
     const confirmarLocal = useCallback(async (msg) => {
-      if (typeof confirmFn === 'function') return confirmFn(msg);
+      const fn = confirmFnRef.current;
+      if (typeof fn === 'function') return fn(msg);
       return confirmar(msg);
-    }, [confirmFn]);
+    }, []);
 
     // Estado da listagem
     const [aba, setAba] = useState('ativa'); // 'ativa' | 'expirada' | 'todas'
@@ -1181,15 +1188,29 @@
   function TelaIsencoes({ apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn }) {
     const api = useApi({ apiUrl, token, fetchAuth: fetchAuth || fetchApi });
 
+    // 2026-05 v3 fix: estabilizar toast/confirmar via REF (não useCallback) —
+    // o pai (ModuloFinanceiro) passa `ja`/`confirm` como closures que mudam
+    // referência a cada render dele. Se _toast for useCallback([showToast]),
+    // ele recria → carregarLista recria → useEffect dispara → request →
+    // re-render → loop infinito (ERR_INSUFFICIENT_RESOURCES no browser).
+    //
+    // Padrão idêntico ao usado no useApi e ao fix legado em FinConfigTogglesSecao.
+    const showToastRef = useRef(showToast);
+    const confirmFnRef = useRef(confirmFn);
+    useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+    useEffect(() => { confirmFnRef.current = confirmFn; }, [confirmFn]);
+
     const _toast = useCallback((msg, tipo) => {
-      if (typeof showToast === 'function') return showToast(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
+      const fn = showToastRef.current;
+      if (typeof fn === 'function') return fn(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
       return toast(msg, tipo);
-    }, [showToast]);
+    }, []);  // ZERO deps — função estável durante toda a vida do componente
 
     const _confirmar = useCallback(async (msg) => {
-      if (typeof confirmFn === 'function') return confirmFn(msg);
+      const fn = confirmFnRef.current;
+      if (typeof fn === 'function') return fn(msg);
       return confirmar(msg);
-    }, [confirmFn]);
+    }, []);
 
     const [aba, setAba] = useState('ativa'); // 'ativa' | 'desativada' | 'todas'
     const [busca, setBusca] = useState('');
@@ -1241,7 +1262,7 @@
       } finally {
         setCarregando(false);
       }
-    }, [api, aba, motivoFiltro, buscaEfetiva, page, pageSize, _toast]);
+    }, [api, aba, motivoFiltro, buscaEfetiva, page, pageSize]);
 
     useEffect(() => { setPage(1); }, [aba, motivoFiltro, buscaEfetiva]);
     useEffect(() => { carregarLista(); }, [carregarLista]);
