@@ -148,13 +148,18 @@
   }
 
   function StatusBadge({ status }) {
+    // 2026-05 v3: separação utilizada vs expirada
+    //   ATIVA      → consumível
+    //   UTILIZADA  → remaining = 0 (consumida pelo motoboy)
+    //   EXPIRADA   → passou prazo de 10 dias sem uso
+    //   REMOVIDA   → soft-delete
     const map = {
       ativa: { txt: 'ativa', bg: cores.successSoft, fg: '#065f46' },
-      parcial: { txt: 'parcial', bg: cores.warningSoft, fg: '#92400e' },
-      expirada: { txt: 'expirada', bg: cores.graySoft, fg: cores.gray },
+      utilizada: { txt: 'utilizada', bg: cores.graySoft, fg: cores.gray },
+      expirada: { txt: 'expirada', bg: '#FAECE7', fg: '#993C1D' },
       removida: { txt: 'removida', bg: cores.dangerSoft, fg: '#991b1b' },
     };
-    const m = map[status] || map.expirada;
+    const m = map[status] || map.utilizada;
     return React.createElement('span', {
       style: {
         display: 'inline-block',
@@ -166,6 +171,33 @@
         fontWeight: 600,
       },
     }, m.txt);
+  }
+
+  // Badge sutil mostrando prazo de expiração
+  function PrazoBadge({ dias }) {
+    if (dias == null) return null;
+    let txt, bg, fg;
+    if (dias < 0) {
+      txt = `Expirou há ${Math.abs(dias)}d`;
+      bg = '#FAECE7'; fg = '#993C1D';
+    } else if (dias <= 2) {
+      txt = `Expira em ${dias}d`;
+      bg = cores.warningSoft; fg = '#92400e';
+    } else if (dias <= 5) {
+      txt = `Expira em ${dias}d`;
+      bg = '#FAEEDA'; fg = '#854F0B';
+    } else {
+      txt = `${dias}d restantes`;
+      bg = cores.graySoft; fg = cores.textMuted;
+    }
+    return React.createElement('span', {
+      style: {
+        display: 'inline-block', padding: '2px 8px',
+        background: bg, color: fg,
+        borderRadius: 10, fontSize: 11, fontWeight: 500,
+        whiteSpace: 'nowrap',
+      },
+    }, txt);
   }
 
   // Input com CAPS LOCK automático (visual + commit em UPPER)
@@ -651,7 +683,7 @@
     const [paginacao, setPaginacao] = useState({ total: 0, totalPaginas: 1 });
     const [carregando, setCarregando] = useState(false);
 
-    const [kpis, setKpis] = useState({ ativas: 0, expiradas_mes: 0, valor_ativo: 0, total_mes: 0 });
+    const [kpis, setKpis] = useState({ ativas: 0, utilizadas_mes: 0, expiradas_mes: 0, valor_ativo: 0, total_mes: 0 });
     const [motivos, setMotivos] = useState([]);
     const [criadores, setCriadores] = useState([]);
 
@@ -743,12 +775,13 @@
     // ─── Render ─────────────────────────────────────────────────────────
     return React.createElement('div', { style: { padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif', color: cores.text } },
 
-      // KPIs
+      // KPIs (5 cards: ativas, utilizadas, expiradas, valor ativo, total cadastrado)
       React.createElement('div', {
-        style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 },
+        style: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 },
       },
         React.createElement(KpiCard, { label: 'Ativas', valor: kpis.ativas, sub: 'a vencer este mês', cor: '#065f46' }),
-        React.createElement(KpiCard, { label: 'Expiradas (mês)', valor: kpis.expiradas_mes, sub: 'já consumidas' }),
+        React.createElement(KpiCard, { label: 'Utilizadas (mês)', valor: kpis.utilizadas_mes || 0, sub: 'já consumidas' }),
+        React.createElement(KpiCard, { label: 'Expiradas (mês)', valor: kpis.expiradas_mes || 0, sub: 'venceu sem uso', cor: '#993C1D' }),
         React.createElement(KpiCard, { label: 'Valor ativo', valor: fmt.moeda(kpis.valor_ativo), sub: 'soma das restantes' }),
         React.createElement(KpiCard, { label: 'Total cadastrado', valor: fmt.moeda(kpis.total_mes), sub: 'acumulado no mês' })
       ),
@@ -774,7 +807,8 @@
         },
           [
             { id: 'ativa', label: 'Ativas', count: kpis.ativas },
-            { id: 'expirada', label: 'Expiradas', count: kpis.expiradas_mes },
+            { id: 'utilizada', label: 'Utilizadas', count: kpis.utilizadas_mes || 0 },
+            { id: 'expirada', label: 'Expiradas', count: kpis.expiradas_mes || 0 },
             { id: 'todas', label: 'Todas', count: null },
           ].map((t) =>
             React.createElement('button', {
@@ -856,11 +890,12 @@
           React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 13 } },
             React.createElement('thead', null,
               React.createElement('tr', null,
-                ['Código', 'Nome', 'Qtd', 'Rest.', 'Valor', 'Motivo', 'Cadastrado por', 'Status', 'Ação'].map((h, i) =>
+                // 2026-05 v3: adicionada coluna "Validade" (dias_para_expirar)
+                ['Código', 'Nome', 'Qtd', 'Rest.', 'Valor', 'Motivo', 'Cadastrado por', 'Status', 'Validade', 'Ação'].map((h, i) =>
                   React.createElement('th', {
                     key: h,
                     style: {
-                      textAlign: i === 2 || i === 3 || i === 7 ? 'center' : i === 4 || i === 8 ? 'right' : 'left',
+                      textAlign: i === 2 || i === 3 || i === 7 || i === 8 ? 'center' : i === 4 || i === 9 ? 'right' : 'left',
                       padding: '10px 14px', fontWeight: 600, color: cores.textMuted,
                       fontSize: 12, background: cores.graySoft, borderBottom: `1px solid ${cores.border}`,
                     },
@@ -872,14 +907,14 @@
               carregando
                 ? React.createElement('tr', null,
                   React.createElement('td', {
-                    colSpan: 9,
+                    colSpan: 10,
                     style: { padding: 30, textAlign: 'center', color: cores.textMuted },
                   }, 'Carregando…')
                 )
                 : dados.length === 0
                   ? React.createElement('tr', null,
                     React.createElement('td', {
-                      colSpan: 9,
+                      colSpan: 10,
                       style: { padding: 30, textAlign: 'center', color: cores.textMuted },
                     }, 'Nenhuma gratuidade encontrada com esses filtros.')
                   )
@@ -904,6 +939,12 @@
                       ),
                       React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'center' }) },
                         React.createElement(StatusBadge, { status: g.status_ui })
+                      ),
+                      // 2026-05 v3: coluna Validade — só mostra prazo se está ativa
+                      React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'center' }) },
+                        g.status_ui === 'ativa'
+                          ? React.createElement(PrazoBadge, { dias: g.dias_para_expirar })
+                          : React.createElement('span', { style: { color: cores.textMuted, fontSize: 11 } }, '—')
                       ),
                       React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'right' }) },
                         React.createElement('button', {
@@ -1027,9 +1068,507 @@
   //        })
   // ───────────────────────────────────────────────────────────────────────
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // TelaIsencoes — sub-aba "Isenções" dentro do módulo
+  // ═══════════════════════════════════════════════════════════════════════
+  // Diferenças vs TelaGratuidades:
+  //   - Sem "Qtd / Restante / Valor" (isenção é binária e sem custo direto)
+  //   - Sem "Validade" (isenção é permanente)
+  //   - Ação principal é "Desativar" (não "Excluir") pra preservar histórico
+  //   - KPIs: ativas, criadas no mês, desativadas no mês
+  function TelaIsencoes({ apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn }) {
+    const api = useApi({ apiUrl, token, fetchAuth: fetchAuth || fetchApi });
+
+    const _toast = useCallback((msg, tipo) => {
+      if (typeof showToast === 'function') return showToast(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
+      return toast(msg, tipo);
+    }, [showToast]);
+
+    const _confirmar = useCallback(async (msg) => {
+      if (typeof confirmFn === 'function') return confirmFn(msg);
+      return confirmar(msg);
+    }, [confirmFn]);
+
+    const [aba, setAba] = useState('ativa'); // 'ativa' | 'desativada' | 'todas'
+    const [busca, setBusca] = useState('');
+    const [motivoFiltro, setMotivoFiltro] = useState('');
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(20);
+
+    const [dados, setDados] = useState([]);
+    const [paginacao, setPaginacao] = useState({ total: 0, totalPaginas: 1 });
+    const [kpis, setKpis] = useState({ ativas: 0, criadas_mes: 0, desativadas_mes: 0 });
+    const [motivos, setMotivos] = useState([]);
+    const [carregando, setCarregando] = useState(false);
+
+    const [modalCadastro, setModalCadastro] = useState(false);
+    const [modalMotivos, setModalMotivos] = useState(false);
+
+    const buscaDebounce = useRef(null);
+    const [buscaEfetiva, setBuscaEfetiva] = useState('');
+    useEffect(() => {
+      if (buscaDebounce.current) clearTimeout(buscaDebounce.current);
+      buscaDebounce.current = setTimeout(() => setBuscaEfetiva(busca), 300);
+      return () => buscaDebounce.current && clearTimeout(buscaDebounce.current);
+    }, [busca]);
+
+    const carregarKpis = useCallback(async () => {
+      try { setKpis(await api('/exemptions/kpis')); } catch (e) { console.error(e); }
+    }, [api]);
+
+    const carregarMotivos = useCallback(async () => {
+      try { setMotivos(await api('/exemptions/motivos')); } catch (e) { console.error(e); }
+    }, [api]);
+
+    const carregarLista = useCallback(async () => {
+      setCarregando(true);
+      try {
+        const qs = new URLSearchParams();
+        qs.set('status', aba);
+        if (motivoFiltro) qs.set('motivo', motivoFiltro);
+        if (buscaEfetiva) qs.set('busca', buscaEfetiva);
+        qs.set('page', String(page));
+        qs.set('pageSize', String(pageSize));
+
+        const r = await api(`/exemptions/listar?${qs.toString()}`);
+        setDados(r.dados || []);
+        setPaginacao(r.paginacao || { total: 0, totalPaginas: 1 });
+      } catch (e) {
+        _toast(e.message, 'erro');
+        setDados([]);
+      } finally {
+        setCarregando(false);
+      }
+    }, [api, aba, motivoFiltro, buscaEfetiva, page, pageSize, _toast]);
+
+    useEffect(() => { setPage(1); }, [aba, motivoFiltro, buscaEfetiva]);
+    useEffect(() => { carregarLista(); }, [carregarLista]);
+    useEffect(() => { carregarKpis(); carregarMotivos(); }, [carregarKpis, carregarMotivos]);
+
+    const desativar = async (e) => {
+      const ok = await _confirmar(`Desativar isenção de ${e.user_name || e.user_cod}?`);
+      if (!ok) return;
+      try {
+        await api(`/exemptions/${e.id}/desativar`, { method: 'PATCH' });
+        _toast('Isenção desativada ✓', 'success');
+        carregarLista();
+        carregarKpis();
+      } catch (err) {
+        _toast(err.message, 'erro');
+      }
+    };
+
+    return React.createElement('div', { style: { padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif', color: cores.text } },
+
+      // KPIs
+      React.createElement('div', {
+        style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 },
+      },
+        React.createElement(KpiCard, { label: 'Isenções ativas', valor: kpis.ativas || 0, sub: 'permanentes', cor: '#065f46' }),
+        React.createElement(KpiCard, { label: 'Criadas no mês', valor: kpis.criadas_mes || 0 }),
+        React.createElement(KpiCard, { label: 'Desativadas no mês', valor: kpis.desativadas_mes || 0 })
+      ),
+
+      // Header com botão de cadastrar
+      React.createElement('div', {
+        style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+      },
+        React.createElement('div', null,
+          React.createElement('h2', { style: { fontSize: 18, fontWeight: 600, margin: 0 } }, 'Isenções'),
+          React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '2px 0 0' } },
+            'Motoboys isentos não pagam taxa quando não têm gratuidade disponível. A isenção conta como saque gratuito do mês.')
+        ),
+        React.createElement('button', { onClick: () => setModalCadastro(true), style: btnPrimary() }, '+ Cadastrar isenção')
+      ),
+
+      // Card da tabela
+      React.createElement('div', {
+        style: { background: '#fff', border: `1px solid ${cores.border}`, borderRadius: 12, overflow: 'hidden' },
+      },
+        // Abas
+        React.createElement('div', {
+          style: { display: 'flex', gap: 0, padding: '8px 12px 0', borderBottom: `1px solid ${cores.border}`, background: cores.graySoft },
+        },
+          [
+            { id: 'ativa', label: 'Ativas', count: kpis.ativas || 0 },
+            { id: 'desativada', label: 'Desativadas', count: null },
+            { id: 'todas', label: 'Todas', count: null },
+          ].map((t) =>
+            React.createElement('button', {
+              key: t.id,
+              onClick: () => setAba(t.id),
+              style: {
+                padding: '10px 16px', background: 'transparent', border: 'none',
+                borderBottom: `2px solid ${aba === t.id ? cores.primary : 'transparent'}`,
+                color: aba === t.id ? cores.text : cores.textMuted,
+                fontWeight: aba === t.id ? 600 : 400, fontSize: 13,
+                cursor: 'pointer', marginBottom: -1,
+                display: 'flex', alignItems: 'center', gap: 6,
+              },
+            },
+              t.label,
+              t.count != null && React.createElement('span', {
+                style: {
+                  background: aba === t.id ? cores.primarySoft : '#fff',
+                  color: aba === t.id ? cores.primaryDark : cores.textMuted,
+                  border: aba === t.id ? 'none' : `1px solid ${cores.border}`,
+                  fontSize: 11, padding: '1px 7px', borderRadius: 10, fontWeight: 600,
+                },
+              }, t.count)
+            )
+          )
+        ),
+
+        // Toolbar
+        React.createElement('div', {
+          style: {
+            display: 'flex', gap: 8, padding: '12px 14px', flexWrap: 'wrap',
+            alignItems: 'center', borderBottom: `1px solid ${cores.border}`,
+          },
+        },
+          React.createElement('div', { style: { flex: 1, minWidth: 200, position: 'relative' } },
+            React.createElement('span', {
+              style: { position: 'absolute', left: 10, top: 9, color: cores.textMuted, fontSize: 14 },
+            }, '🔍'),
+            React.createElement('input', {
+              type: 'text', value: busca,
+              onChange: (e) => setBusca(e.target.value),
+              placeholder: 'Buscar por código, nome ou motivo…',
+              style: Object.assign(inputStyle(), { paddingLeft: 32 }),
+            })
+          ),
+          React.createElement('select', {
+            value: motivoFiltro, onChange: (e) => setMotivoFiltro(e.target.value),
+            style: selectStyle(),
+          },
+            React.createElement('option', { value: '' }, 'Motivo: todos'),
+            motivos.map((m) =>
+              React.createElement('option', { key: m.id, value: m.motivo }, m.motivo)
+            )
+          )
+        ),
+
+        // Tabela
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 13 } },
+            React.createElement('thead', null,
+              React.createElement('tr', null,
+                ['Código', 'Nome', 'Motivo', 'Cadastrado por', 'Usos', 'Status', 'Ação'].map((h, i) =>
+                  React.createElement('th', {
+                    key: h,
+                    style: {
+                      textAlign: i === 4 || i === 5 ? 'center' : i === 6 ? 'right' : 'left',
+                      padding: '10px 14px', fontWeight: 600, color: cores.textMuted,
+                      fontSize: 12, background: cores.graySoft, borderBottom: `1px solid ${cores.border}`,
+                    },
+                  }, h)
+                )
+              )
+            ),
+            React.createElement('tbody', null,
+              carregando
+                ? React.createElement('tr', null,
+                  React.createElement('td', { colSpan: 7, style: { padding: 30, textAlign: 'center', color: cores.textMuted } }, 'Carregando…'))
+                : dados.length === 0
+                  ? React.createElement('tr', null,
+                    React.createElement('td', { colSpan: 7, style: { padding: 30, textAlign: 'center', color: cores.textMuted } }, 'Nenhuma isenção encontrada.'))
+                  : dados.map((e, idx) =>
+                    React.createElement('tr', {
+                      key: e.id,
+                      style: { background: idx % 2 === 0 ? '#fff' : '#fafafa', opacity: e.ativa ? 1 : 0.6 },
+                    },
+                      td(e.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
+                      td(e.user_name || '—', { fontWeight: 500 }),
+                      td(e.motivo, { fontWeight: 500 }),
+                      React.createElement('td', { style: tdBase() },
+                        React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+                          React.createElement('span', { style: { fontSize: 13 } }, e.criado_por || '—'),
+                          React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, fmt.data(e.criado_em))
+                        )
+                      ),
+                      td(e.usos || 0, { textAlign: 'center', fontWeight: 600 }),
+                      React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'center' }) },
+                        React.createElement('span', {
+                          style: {
+                            display: 'inline-block', padding: '3px 10px',
+                            background: e.ativa ? cores.successSoft : cores.graySoft,
+                            color: e.ativa ? '#065f46' : cores.gray,
+                            borderRadius: 10, fontSize: 11, fontWeight: 600,
+                          },
+                        }, e.ativa ? 'ativa' : 'desativada')
+                      ),
+                      React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'right' }) },
+                        e.ativa
+                          ? React.createElement('button', {
+                            onClick: () => desativar(e),
+                            style: {
+                              padding: '5px 10px', background: cores.warningSoft, color: '#92400e',
+                              border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                            },
+                          }, 'Desativar')
+                          : React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } },
+                            e.desativada_em ? `Em ${fmt.data(e.desativada_em)}` : '—')
+                      )
+                    )
+                  )
+            )
+          )
+        ),
+
+        // Paginação
+        paginacao.total > 0 && React.createElement('div', {
+          style: {
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderTop: `1px solid ${cores.border}`,
+            fontSize: 12, color: cores.textMuted,
+          },
+        },
+          React.createElement('span', null,
+            `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, paginacao.total)} de ${paginacao.total}`
+          ),
+          React.createElement('div', { style: { display: 'flex', gap: 4 } },
+            React.createElement('button', { onClick: () => setPage(Math.max(1, page - 1)), disabled: page <= 1, style: pagerBtn(false) }, '‹'),
+            pagerNumeros(page, paginacao.totalPaginas).map((n, i) =>
+              n === '…'
+                ? React.createElement('span', { key: `e${i}`, style: { padding: '0 8px', alignSelf: 'center' } }, '…')
+                : React.createElement('button', { key: n, onClick: () => setPage(n), style: pagerBtn(n === page) }, n)
+            ),
+            React.createElement('button', { onClick: () => setPage(Math.min(paginacao.totalPaginas, page + 1)), disabled: page >= paginacao.totalPaginas, style: pagerBtn(false) }, '›')
+          )
+        )
+      ),
+
+      // Modal de cadastrar isenção (componente local)
+      React.createElement(ModalCadastrarIsencao, {
+        aberto: modalCadastro,
+        onClose: () => setModalCadastro(false),
+        api, motivos, toast: _toast,
+        onAbrirGerenciar: () => setModalMotivos(true),
+        onCriado: () => { carregarLista(); carregarKpis(); },
+      }),
+      React.createElement(ModalGerenciarMotivosIsencao, {
+        aberto: modalMotivos,
+        onClose: () => setModalMotivos(false),
+        api, toast: _toast, confirmar: _confirmar,
+        onSalvo: () => carregarMotivos(),
+      })
+    );
+  }
+
+  // Modal de cadastrar isenção — usa SELECT (não chip) já que é poucos motivos
+  function ModalCadastrarIsencao({ aberto, onClose, api, motivos, onCriado, onAbrirGerenciar, toast: toastProp }) {
+    const _toast = toastProp || toast;
+    const [codigo, setCodigo] = useState('');
+    const [nome, setNome] = useState('');
+    const [motivo, setMotivo] = useState('');
+    const [observacao, setObservacao] = useState('');
+    const [salvando, setSalvando] = useState(false);
+
+    useEffect(() => {
+      if (aberto) {
+        setCodigo(''); setNome(''); setMotivo(''); setObservacao('');
+      }
+    }, [aberto]);
+
+    const submeter = async () => {
+      if (!codigo.trim()) { _toast('Código é obrigatório'); return; }
+      if (!motivo) { _toast('Selecione um motivo'); return; }
+
+      setSalvando(true);
+      try {
+        await api('/exemptions', {
+          method: 'POST',
+          body: JSON.stringify({
+            userCod: codigo.trim(),
+            userName: nome.trim() || null,
+            motivo,
+            observacao: observacao.trim() || null,
+          }),
+        });
+        _toast('Isenção cadastrada ✓', 'success');
+        if (onCriado) onCriado();
+        onClose();
+      } catch (e) {
+        _toast(e.message, 'erro');
+      } finally {
+        setSalvando(false);
+      }
+    };
+
+    return React.createElement(Modal, {
+      aberto, onClose, titulo: 'Cadastrar isenção', icone: '🛡', largura: 480,
+    },
+      React.createElement('p', {
+        style: { fontSize: 13, color: cores.textMuted, margin: '0 0 14px' },
+      }, 'Isenção é permanente até desativar. Motoboys isentos não pagam taxa quando ficam sem gratuidade.'),
+
+      React.createElement('div', {
+        style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
+      },
+        campo('Código *',
+          React.createElement('input', {
+            type: 'text', value: codigo,
+            onChange: (e) => setCodigo(e.target.value),
+            placeholder: 'Código do motoboy',
+            style: inputStyle(),
+          })
+        ),
+        campo('Nome',
+          React.createElement('input', {
+            type: 'text', value: nome,
+            onChange: (e) => setNome(e.target.value),
+            placeholder: 'Nome (opcional)',
+            style: inputStyle(),
+          })
+        ),
+        React.createElement('div', { style: { gridColumn: '1 / -1' } },
+          React.createElement('div', {
+            style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+          },
+            React.createElement('label', { style: { fontSize: 12, fontWeight: 600, color: cores.textMuted } }, 'Motivo *'),
+            React.createElement('button', {
+              onClick: onAbrirGerenciar,
+              style: { background: 'transparent', border: 'none', color: cores.primary, fontSize: 12, cursor: 'pointer', fontWeight: 500 },
+            }, '⚙ Gerenciar motivos')
+          ),
+          React.createElement('select', {
+            value: motivo, onChange: (e) => setMotivo(e.target.value),
+            style: Object.assign(inputStyle(), { paddingRight: 32 }),
+          },
+            React.createElement('option', { value: '' }, '— Selecione —'),
+            motivos.map((m) =>
+              React.createElement('option', { key: m.id, value: m.motivo }, m.motivo)
+            )
+          )
+        ),
+        React.createElement('div', { style: { gridColumn: '1 / -1' } },
+          campo('Observação (opcional)',
+            React.createElement('textarea', {
+              value: observacao, onChange: (e) => setObservacao(e.target.value),
+              rows: 2, placeholder: 'Contexto interno…',
+              style: Object.assign(inputStyle(), { height: 'auto', padding: 10, resize: 'vertical' }),
+            })
+          )
+        )
+      ),
+
+      React.createElement('div', {
+        style: { display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 14, borderTop: `1px solid ${cores.border}` },
+      },
+        React.createElement('button', { onClick: onClose, style: btnSecondary(), disabled: salvando }, 'Cancelar'),
+        React.createElement('button', { onClick: submeter, style: btnPrimary(), disabled: salvando },
+          salvando ? 'Salvando…' : '+ Cadastrar')
+      )
+    );
+  }
+
+  // Modal de gerenciar motivos de isenção — bem similar ao de gratuidades
+  function ModalGerenciarMotivosIsencao({ aberto, onClose, api, onSalvo, toast: toastProp, confirmar: confirmarProp }) {
+    const _toast = toastProp || toast;
+    const _confirmar = confirmarProp || confirmar;
+    const [motivos, setMotivos] = useState([]);
+    const [carregando, setCarregando] = useState(false);
+    const [novoMotivo, setNovoMotivo] = useState('');
+    const [editandoId, setEditandoId] = useState(null);
+    const [textoEdit, setTextoEdit] = useState('');
+
+    const carregar = useCallback(async () => {
+      setCarregando(true);
+      try { setMotivos(await api('/exemptions/motivos')); }
+      catch (e) { _toast(e.message, 'erro'); }
+      finally { setCarregando(false); }
+    }, [api, _toast]);
+
+    useEffect(() => { if (aberto) carregar(); }, [aberto, carregar]);
+
+    const adicionar = async () => {
+      const m = (novoMotivo || '').trim().toUpperCase();
+      if (!m) return;
+      try {
+        await api('/exemptions/motivos', { method: 'POST', body: JSON.stringify({ motivo: m }) });
+        setNovoMotivo('');
+        await carregar();
+        if (onSalvo) onSalvo();
+      } catch (e) { _toast(e.message, 'erro'); }
+    };
+
+    const salvarEdicao = async (id) => {
+      const novo = (textoEdit || '').trim().toUpperCase();
+      if (!novo) return;
+      try {
+        await api(`/exemptions/motivos/${id}`, { method: 'PATCH', body: JSON.stringify({ motivo: novo }) });
+        setEditandoId(null); setTextoEdit('');
+        await carregar();
+        if (onSalvo) onSalvo();
+      } catch (e) { _toast(e.message, 'erro'); }
+    };
+
+    const excluir = async (m) => {
+      const ok = await _confirmar(`Remover motivo "${m.motivo}"?`);
+      if (!ok) return;
+      try {
+        await api(`/exemptions/motivos/${m.id}`, { method: 'DELETE' });
+        await carregar();
+        if (onSalvo) onSalvo();
+      } catch (e) { _toast(e.message, 'erro'); }
+    };
+
+    return React.createElement(Modal, {
+      aberto, onClose, largura: 460, titulo: 'Gerenciar motivos de isenção', icone: '⚙',
+    },
+      React.createElement('p', {
+        style: { fontSize: 13, color: cores.textMuted, margin: '0 0 12px' },
+      }, 'Motivos pré-definidos para isenções (ex: motoboy parceiro, fundador). Toda mudança é auditada.'),
+
+      React.createElement('div', {
+        style: { background: cores.graySoft, borderRadius: 8, padding: 6, marginBottom: 14, maxHeight: 260, overflowY: 'auto' },
+      },
+        carregando
+          ? React.createElement('p', { style: { textAlign: 'center', padding: 20, color: cores.textMuted, fontSize: 13 } }, 'Carregando…')
+          : motivos.length === 0
+            ? React.createElement('p', { style: { textAlign: 'center', padding: 20, color: cores.textMuted, fontSize: 13 } }, 'Nenhum motivo cadastrado ainda.')
+            : motivos.map((m) =>
+              React.createElement('div', {
+                key: m.id,
+                style: { display: 'flex', alignItems: 'center', background: '#fff', borderRadius: 6, padding: '8px 10px', marginBottom: 4, gap: 8 },
+              },
+                editandoId === m.id
+                  ? React.createElement('input', {
+                    type: 'text', value: textoEdit, autoFocus: true,
+                    onChange: (e) => setTextoEdit(e.target.value.toUpperCase()),
+                    onKeyDown: (e) => { if (e.key === 'Enter') salvarEdicao(m.id); },
+                    style: { flex: 1, height: 28, padding: '0 8px', border: `1px solid ${cores.primary}`, borderRadius: 6, fontSize: 13, textTransform: 'uppercase' },
+                  })
+                  : React.createElement('span', { style: { flex: 1, fontWeight: 500, fontSize: 13 } }, m.motivo),
+                React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, `${m.contador_uso} uso${m.contador_uso === 1 ? '' : 's'}`),
+                editandoId === m.id
+                  ? React.createElement('button', { onClick: () => salvarEdicao(m.id), title: 'Salvar', style: btnIcon(cores.successSoft, '#065f46') }, '✓')
+                  : React.createElement('button', { onClick: () => { setEditandoId(m.id); setTextoEdit(m.motivo); }, title: 'Editar', style: btnIcon('#fff', cores.gray) }, '✎'),
+                React.createElement('button', { onClick: () => excluir(m), title: 'Excluir', style: btnIcon(cores.dangerSoft, '#991b1b') }, '×')
+              )
+            )
+      ),
+
+      React.createElement('p', { style: { fontSize: 12, fontWeight: 600, color: cores.textMuted, margin: '0 0 6px' } }, 'Novo motivo'),
+      React.createElement('div', { style: { display: 'flex', gap: 8 } },
+        React.createElement(CapsInput, { value: novoMotivo, onChange: setNovoMotivo, placeholder: 'EX: MOTOBOY PARCEIRO' }),
+        React.createElement('button', { onClick: adicionar, style: btnPrimary() }, '+ Adicionar')
+      ),
+      React.createElement('p', { style: { fontSize: 11, color: cores.textMuted, margin: '6px 0 0' } }, '↑ Convertido pra caixa alta automaticamente'),
+
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: `1px solid ${cores.border}` } },
+        React.createElement('button', { onClick: onClose, style: btnSecondary() }, 'Fechar')
+      )
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // Wrapper que aceita as 2 convenções de naming usadas no Tutts:
   // - { apiUrl, fetchAuth, showToast }    (estilo módulos novos)
   // - { API_URL, fetchAuth, ja }          (estilo ModuloFinanceiro)
+  //
+  // 2026-05 v3: agora tem sub-abas Gratuidades | Isenções
+  // ═══════════════════════════════════════════════════════════════════════
   function ModuloGratuidadesV2Component(props) {
     const apiUrl = props.apiUrl || props.API_URL;
     const fetchAuth = props.fetchAuth;
@@ -1038,14 +1577,41 @@
     const showToast = props.showToast || props.ja;
     const confirmFn = props.confirm || props.confirmar;
 
-    return React.createElement(TelaGratuidades, {
-      apiUrl,
-      token,
-      fetchAuth,
-      fetchApi,
-      showToast,
-      confirm: confirmFn,
-    });
+    const [subAba, setSubAba] = useState('gratuidades'); // 'gratuidades' | 'isencoes'
+
+    const tela = subAba === 'isencoes'
+      ? React.createElement(TelaIsencoes, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn })
+      : React.createElement(TelaGratuidades, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn });
+
+    return React.createElement('div', null,
+      // Sub-abas top-level (Gratuidades | Isenções)
+      React.createElement('div', {
+        style: {
+          display: 'flex', gap: 4, padding: '0 16px',
+          borderBottom: `1px solid ${cores.border}`,
+          background: '#fff',
+        },
+      },
+        [
+          { id: 'gratuidades', label: '🎁 Gratuidades' },
+          { id: 'isencoes', label: '🛡 Isenções' },
+        ].map((s) =>
+          React.createElement('button', {
+            key: s.id,
+            onClick: () => setSubAba(s.id),
+            style: {
+              padding: '12px 18px',
+              background: 'transparent', border: 'none',
+              borderBottom: `2px solid ${subAba === s.id ? cores.primary : 'transparent'}`,
+              color: subAba === s.id ? cores.primaryDark : cores.textMuted,
+              fontWeight: subAba === s.id ? 600 : 500, fontSize: 14,
+              cursor: 'pointer', marginBottom: -1,
+            },
+          }, s.label)
+        )
+      ),
+      tela
+    );
   }
 
   function renderizar(container, opts) {
