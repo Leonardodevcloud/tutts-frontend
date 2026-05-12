@@ -2342,7 +2342,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -7087,11 +7087,23 @@ const hideLoadingScreen = () => {
                 console.error('Erro ao buscar limites:', e);
             }
         }, qa = async () => {
+            // 2026-05 v3: além das gratuidades, busca isenção ativa (se houver).
+            // Isenção é permanente e zera taxa quando motoboy não tem gratuidade.
             try {
                 const e = await fetchAuth(`${API_URL}/gratuities/user/${l.cod_profissional}`);
                 if (e.ok) W(await e.json())
             } catch (e) {
                 console.error(e)
+            }
+            try {
+                const r = await fetchAuth(`${API_URL}/exemptions/user/${l.cod_profissional}`);
+                if (r.ok) {
+                    const data = await r.json();
+                    setIsencaoUsuario(data); // null ou { id, motivo, ativa, ... }
+                }
+            } catch (e) {
+                console.error('isencao:', e);
+                setIsencaoUsuario(null);
             }
         }, Ua = async () => {
             try {
@@ -11551,6 +11563,8 @@ const hideLoadingScreen = () => {
                 // Gratuidade selecionada (usa a do state ou a primeira disponível)
                 e = gratuidadesAtivas.find(g => g.id === p.selectedGratuityId) || gratuidadesAtivas[0] || null,
                 t = !!e,
+                // 2026-05 v3: motoboy isento (sem gratuidade mas com isenção permanente)
+                isento = !t && !!(isencaoUsuario && isencaoUsuario.ativa),
                 a = e ? parseFloat(e.value) : 0,
                 l = parseFloat(p.withdrawAmount) || 0,
                 r = t && l > a,
@@ -11682,7 +11696,22 @@ const hideLoadingScreen = () => {
                 className: "text-green-700 text-sm mt-1"
             }, "Valor máximo permitido: ", React.createElement("strong", null, er(a))), React.createElement("p", {
                 className: "text-green-600 text-xs mt-1"
-            }, "Restam ", e.remaining, " uso(s) desta gratuidade")), limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
+            }, "Restam ", e.remaining, " uso(s) desta gratuidade")),
+            // 2026-05 v3: aviso visual para motoboy isento (sem gratuidade mas com isenção)
+            isento && React.createElement("div", {
+                className: "bg-blue-50 border border-blue-300 rounded-lg p-4"
+            },
+                React.createElement("p", {
+                    className: "text-blue-800 font-semibold"
+                }, "🛡 Você possui isenção ativa!"),
+                React.createElement("p", {
+                    className: "text-blue-700 text-sm mt-1"
+                }, "Motivo: ", React.createElement("strong", null, isencaoUsuario.motivo || "—")),
+                React.createElement("p", {
+                    className: "text-blue-600 text-xs mt-1"
+                }, "Seus saques não pagam taxa enquanto a isenção estiver ativa.")
+            ),
+            limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
                 className: "bg-purple-50 border-2 border-purple-400 rounded-lg p-4 animate-pulse"
             }, React.createElement("div", { className: "flex items-center gap-2" },
                 React.createElement("span", { className: "text-2xl" }, "⏳"),
@@ -11752,13 +11781,17 @@ const hideLoadingScreen = () => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t;
+                    // 2026-05 v3: motoboy isento também é "grátis" (mesmo sem gratuidade).
+                    // Backend tem mesma lógica: se não tem gratuidade, tenta isenção.
+                    const isento = !a && !!(isencaoUsuario && isencaoUsuario.ativa);
+                    const isFree = a || isento;
                     // 🆕 2026-04-30: Nova taxa
                     //   - Saques de R$ 15 a R$ 100 → 4,5% + R$ 0,40
                     //   - Saques acima de R$ 100   → só 4,5%
-                    //   - Com gratuidade           → grátis (zero)
+                    //   - Com gratuidade OU isenção → grátis (zero)
                     let l = 0;
                     let temTaxaFixa = false;
-                    if (!a) {
+                    if (!isFree) {
                         l = 0.045 * e;
                         if (e >= 15 && e <= 100) {
                             l += 0.40;
@@ -11768,7 +11801,9 @@ const hideLoadingScreen = () => {
                     return {
                         fee: l,
                         final: e - l,
-                        hasGrat: a,
+                        hasGrat: isFree,           // mantém o nome pra reusar o JSX abaixo
+                        gratuidadeReal: a,         // só pra distinguir no rótulo
+                        isento: isento,
                         temTaxaFixa: temTaxaFixa,
                         maxGratValue: t ? parseFloat(t.value) : 0,
                         gratAtiva: t
@@ -11786,7 +11821,7 @@ const hideLoadingScreen = () => {
                     className: "flex justify-between"
                 }, React.createElement("span", null, "Taxa:"), React.createElement("span", {
                     className: "text-green-600 font-bold"
-                }, "ISENTA")) : React.createElement(React.Fragment, null,
+                }, e.isento ? "ISENTO" : "ISENTA")) : React.createElement(React.Fragment, null,
                     React.createElement("div", {
                         className: "flex justify-between text-sm"
                     },
@@ -12286,9 +12321,25 @@ const hideLoadingScreen = () => {
             className: (F ? "flex-1" : "w-full") + " bg-blue-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
         }, c ? "..." : "💾 Salvar Dados")))), "gratuidades" === p.saqueTab && React.createElement(React.Fragment, null, React.createElement("h3", {
             className: "font-semibold mb-4"
-        }, "🎁 Minhas Gratuidades"), 0 === G.length ? React.createElement("p", {
+        }, "🎁 Minhas Gratuidades e Isenções"),
+        // 2026-05 v3: card de isenção (se houver) aparece no topo
+        isencaoUsuario && isencaoUsuario.ativa && React.createElement("div", {
+            className: "border-2 border-blue-300 bg-blue-50 rounded-lg p-4 mb-3"
+        },
+            React.createElement("div", { className: "flex justify-between items-start" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "font-bold text-blue-800" }, "🛡 Isenção permanente"),
+                    React.createElement("p", { className: "text-sm text-blue-700 mt-1" }, "Motivo: ", React.createElement("strong", null, isencaoUsuario.motivo || "—")),
+                    React.createElement("p", { className: "text-xs text-blue-600 mt-1" }, "Você não paga taxa nos saques enquanto a isenção estiver ativa.")
+                ),
+                React.createElement("span", {
+                    className: "px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white"
+                }, "ativa")
+            )
+        ),
+        0 === G.length ? React.createElement("p", {
             className: "text-gray-500"
-        }, "Nenhuma") : React.createElement("div", {
+        }, isencaoUsuario && isencaoUsuario.ativa ? "Sem gratuidades adicionais." : "Nenhuma") : React.createElement("div", {
             className: "space-y-3"
         }, G.map(e => React.createElement("div", {
             key: e.id,
