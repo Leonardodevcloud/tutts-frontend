@@ -71,30 +71,58 @@
   };
 
   // ───────────────────────────────────────────────────────────────────────
-  // Hook genérico de API (estabiliza fetchApi via useRef)
+  // Hook genérico de API — compatível com fetchAuth do Tutts
+  //
+  // fetchAuth do projeto retorna uma Response do fetch (NÃO json direto).
+  // Aqui encapsulamos: faz a chamada, valida ok, parse json, lança erro
+  // com detalhe se o backend mandou `error` no body.
+  //
+  // Aceita 2 modos de injeção:
+  //   - { apiUrl, fetchAuth }  → usa o fetch oficial do Tutts (default)
+  //   - { apiUrl, token }      → fallback com fetch nativo + Bearer
   // ───────────────────────────────────────────────────────────────────────
-  function useApi({ apiUrl, token, fetchApi }) {
-    const fetchRef = useRef(fetchApi);
-    useEffect(() => { fetchRef.current = fetchApi; }, [fetchApi]);
+  function useApi({ apiUrl, token, fetchAuth }) {
+    // Refs pra estabilizar fetchAuth/apiUrl entre renders — sem isso,
+    // useCallback abaixo recria a função a cada render do componente pai,
+    // o que faz qualquer useEffect que dependa de `api` disparar de novo.
+    // (Bug conhecido no Tutts: ler FinConfigTogglesSecao linha 80-90)
+    const fetchAuthRef = useRef(fetchAuth);
+    const apiUrlRef = useRef(apiUrl);
+    const tokenRef = useRef(token);
+    useEffect(() => { fetchAuthRef.current = fetchAuth; }, [fetchAuth]);
+    useEffect(() => { apiUrlRef.current = apiUrl; }, [apiUrl]);
+    useEffect(() => { tokenRef.current = token; }, [token]);
 
     return useCallback(async (path, opts = {}) => {
-      const url = `${apiUrl}${path}`;
-      if (fetchRef.current) {
-        return fetchRef.current(url, opts);
+      const url = `${apiUrlRef.current}${path}`;
+
+      // Body default: se vier objeto JS, serializa. Se vier string, preserva.
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      const fetchOpts = { ...opts, headers };
+
+      let resp;
+      if (fetchAuthRef.current) {
+        // fetchAuth do Tutts já injeta Authorization Bearer e credentials
+        resp = await fetchAuthRef.current(url, fetchOpts);
+      } else {
+        // Fallback
+        if (tokenRef.current) headers.Authorization = `Bearer ${tokenRef.current}`;
+        resp = await fetch(url, { ...fetchOpts, credentials: 'include' });
       }
-      // Fallback se fetchApi não foi injetado
-      const headers = Object.assign({
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      }, opts.headers || {});
-      const r = await fetch(url, { ...opts, headers, credentials: 'include' });
-      if (!r.ok) {
-        let detalhe = `HTTP ${r.status}`;
-        try { const j = await r.json(); if (j.error) detalhe = j.error; } catch (_) {}
+
+      if (!resp || !resp.ok) {
+        let detalhe = `HTTP ${resp ? resp.status : '?'}`;
+        try {
+          const j = await resp.json();
+          if (j && j.error) detalhe = j.error;
+        } catch (_) {}
         throw new Error(detalhe);
       }
-      return r.status === 204 ? null : r.json();
-    }, [apiUrl, token]);
+
+      if (resp.status === 204) return null;
+      // Algumas respostas vêm sem body — tenta json mas não quebra se vazio
+      try { return await resp.json(); } catch (_) { return null; }
+    }, []);
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -207,7 +235,9 @@
   // ───────────────────────────────────────────────────────────────────────
   // Sub-modal: Gerenciar motivos pré-definidos
   // ───────────────────────────────────────────────────────────────────────
-  function ModalGerenciarMotivos({ aberto, onClose, api, onSalvo }) {
+  function ModalGerenciarMotivos({ aberto, onClose, api, onSalvo, toast: toastProp, confirmar: confirmarProp }) {
+    const _toast = toastProp || toast;
+    const _confirmar = confirmarProp || confirmar;
     const [motivos, setMotivos] = useState([]);
     const [carregando, setCarregando] = useState(false);
     const [novoMotivo, setNovoMotivo] = useState('');
@@ -217,10 +247,10 @@
     const carregar = useCallback(async () => {
       setCarregando(true);
       try {
-        const dados = await api('/financial/gratuities/motivos');
+        const dados = await api('/gratuities/motivos');
         setMotivos(dados);
       } catch (e) {
-        toast(e.message, 'erro');
+        _toast(e.message, 'erro');
       } finally {
         setCarregando(false);
       }
@@ -234,7 +264,7 @@
       const m = (novoMotivo || '').trim().toUpperCase();
       if (!m) return;
       try {
-        await api('/financial/gratuities/motivos', {
+        await api('/gratuities/motivos', {
           method: 'POST',
           body: JSON.stringify({ motivo: m }),
         });
@@ -242,7 +272,7 @@
         await carregar();
         if (onSalvo) onSalvo();
       } catch (e) {
-        toast(e.message, 'erro');
+        _toast(e.message, 'erro');
       }
     };
 
@@ -250,7 +280,7 @@
       const novo = (textoEdit || '').trim().toUpperCase();
       if (!novo) return;
       try {
-        await api(`/financial/gratuities/motivos/${id}`, {
+        await api(`/gratuities/motivos/${id}`, {
           method: 'PATCH',
           body: JSON.stringify({ motivo: novo }),
         });
@@ -259,19 +289,19 @@
         await carregar();
         if (onSalvo) onSalvo();
       } catch (e) {
-        toast(e.message, 'erro');
+        _toast(e.message, 'erro');
       }
     };
 
     const excluir = async (m) => {
-      const ok = await confirmar(`Remover motivo "${m.motivo}"?`);
+      const ok = await _confirmar(`Remover motivo "${m.motivo}"?`);
       if (!ok) return;
       try {
-        await api(`/financial/gratuities/motivos/${m.id}`, { method: 'DELETE' });
+        await api(`/gratuities/motivos/${m.id}`, { method: 'DELETE' });
         await carregar();
         if (onSalvo) onSalvo();
       } catch (e) {
-        toast(e.message, 'erro');
+        _toast(e.message, 'erro');
       }
     };
 
@@ -398,7 +428,8 @@
   // ───────────────────────────────────────────────────────────────────────
   // Modal: Cadastrar gratuidade
   // ───────────────────────────────────────────────────────────────────────
-  function ModalCadastrar({ aberto, onClose, api, motivos, onCriado, onAbrirGerenciar }) {
+  function ModalCadastrar({ aberto, onClose, api, motivos, onCriado, onAbrirGerenciar, toast: toastProp }) {
+    const _toast = toastProp || toast;
     const [codigo, setCodigo] = useState('');
     const [nome, setNome] = useState('');
     const [qtd, setQtd] = useState('1');
@@ -417,13 +448,13 @@
     const total = valorNum * qtdNum;
 
     const submeter = async () => {
-      if (!codigo.trim()) { toast('Código é obrigatório'); return; }
-      if (qtdNum <= 0) { toast('Quantidade inválida'); return; }
-      if (valorNum <= 0) { toast('Valor inválido'); return; }
+      if (!codigo.trim()) { _toast('Código é obrigatório'); return; }
+      if (qtdNum <= 0) { _toast('Quantidade inválida'); return; }
+      if (valorNum <= 0) { _toast('Valor inválido'); return; }
 
       setSalvando(true);
       try {
-        await api('/financial/gratuities', {
+        await api('/gratuities', {
           method: 'POST',
           body: JSON.stringify({
             userCod: codigo.trim(),
@@ -434,11 +465,11 @@
             createdBy: null, // backend pega do req.user
           }),
         });
-        toast('Gratuidade cadastrada ✓');
+        _toast('Gratuidade cadastrada ✓');
         if (onCriado) onCriado();
         onClose();
       } catch (e) {
-        toast(e.message, 'erro');
+        _toast(e.message, 'erro');
       } finally {
         setSalvando(false);
       }
@@ -590,8 +621,22 @@
   // ───────────────────────────────────────────────────────────────────────
   // Componente principal — Tela de listagem
   // ───────────────────────────────────────────────────────────────────────
-  function TelaGratuidades({ apiUrl, token, fetchApi }) {
-    const api = useApi({ apiUrl, token, fetchApi });
+  function TelaGratuidades({ apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn }) {
+    // 2026-05: aceita tanto fetchAuth (padrão Tutts) quanto fetchApi (compat)
+    const api = useApi({ apiUrl, token, fetchAuth: fetchAuth || fetchApi });
+
+    // Liga showToast/confirm injetados (se fornecidos) aos helpers globais
+    // do módulo. Permite que o pai (ModuloFinanceiro) repasse `ja` e o seu
+    // próprio `confirmar` em vez do alert/confirm nativos.
+    const toastLocal = useCallback((msg, tipo) => {
+      if (typeof showToast === 'function') return showToast(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
+      return toast(msg, tipo);
+    }, [showToast]);
+
+    const confirmarLocal = useCallback(async (msg) => {
+      if (typeof confirmFn === 'function') return confirmFn(msg);
+      return confirmar(msg);
+    }, [confirmFn]);
 
     // Estado da listagem
     const [aba, setAba] = useState('ativa'); // 'ativa' | 'expirada' | 'todas'
@@ -624,7 +669,7 @@
 
     const carregarKpis = useCallback(async () => {
       try {
-        const k = await api('/financial/gratuities/kpis');
+        const k = await api('/gratuities/kpis');
         setKpis(k);
       } catch (e) {
         console.error('KPIs:', e);
@@ -633,7 +678,7 @@
 
     const carregarMotivos = useCallback(async () => {
       try {
-        const m = await api('/financial/gratuities/motivos');
+        const m = await api('/gratuities/motivos');
         setMotivos(m);
       } catch (e) {
         console.error('Motivos:', e);
@@ -642,7 +687,7 @@
 
     const carregarCriadores = useCallback(async () => {
       try {
-        const c = await api('/financial/gratuities/created-by');
+        const c = await api('/gratuities/created-by');
         setCriadores(c);
       } catch (e) {
         console.error('Criadores:', e);
@@ -661,11 +706,11 @@
         qs.set('page', String(page));
         qs.set('pageSize', String(pageSize));
 
-        const r = await api(`/financial/gratuities/listar?${qs.toString()}`);
+        const r = await api(`/gratuities/listar?${qs.toString()}`);
         setDados(r.dados || []);
         setPaginacao(r.paginacao || { total: 0, totalPaginas: 1 });
       } catch (e) {
-        toast(e.message, 'erro');
+        toastLocal(e.message, 'erro');
         setDados([]);
       } finally {
         setCarregando(false);
@@ -679,15 +724,15 @@
     useEffect(() => { carregarKpis(); carregarMotivos(); carregarCriadores(); }, [carregarKpis, carregarMotivos, carregarCriadores]);
 
     const excluir = async (g) => {
-      const ok = await confirmar(`Remover gratuidade do código ${g.user_cod}?`);
+      const ok = await confirmarLocal(`Remover gratuidade do código ${g.user_cod}?`);
       if (!ok) return;
       try {
-        await api(`/financial/gratuities/${g.id}`, { method: 'DELETE' });
-        toast('Removida ✓');
+        await api(`/gratuities/${g.id}`, { method: 'DELETE' });
+        toastLocal('Removida ✓', 'success');
         carregarLista();
         carregarKpis();
       } catch (e) {
-        toast(e.message, 'erro');
+        toastLocal(e.message, 'erro');
       }
     };
 
@@ -915,6 +960,7 @@
         aberto: modalCadastro,
         onClose: () => setModalCadastro(false),
         api, motivos,
+        toast: toastLocal,
         onAbrirGerenciar: () => setModalMotivos(true),
         onCriado: () => { carregarLista(); carregarKpis(); carregarCriadores(); },
       }),
@@ -922,6 +968,8 @@
         aberto: modalMotivos,
         onClose: () => setModalMotivos(false),
         api,
+        toast: toastLocal,
+        confirmar: confirmarLocal,
         onSalvo: apósMudancaMotivos,
       })
     );
@@ -965,24 +1013,61 @@
 
   // ───────────────────────────────────────────────────────────────────────
   // API pública do módulo
+  //
+  // Duas formas de uso:
+  //
+  //   1) Como componente React (integração nativa no ModuloFinanceiro):
+  //        React.createElement(window.ModuloGratuidadesV2Component, {
+  //          API_URL, fetchAuth, ja
+  //        })
+  //
+  //   2) Imperativo (renderizar em um div arbitrário):
+  //        window.ModuloGratuidadesV2.renderizar(container, {
+  //          apiUrl, fetchAuth, showToast
+  //        })
   // ───────────────────────────────────────────────────────────────────────
-  function renderizar(container, { apiUrl, token, fetchApi }) {
+
+  // Wrapper que aceita as 2 convenções de naming usadas no Tutts:
+  // - { apiUrl, fetchAuth, showToast }    (estilo módulos novos)
+  // - { API_URL, fetchAuth, ja }          (estilo ModuloFinanceiro)
+  function ModuloGratuidadesV2Component(props) {
+    const apiUrl = props.apiUrl || props.API_URL;
+    const fetchAuth = props.fetchAuth;
+    const fetchApi = props.fetchApi;
+    const token = props.token;
+    const showToast = props.showToast || props.ja;
+    const confirmFn = props.confirm || props.confirmar;
+
+    return React.createElement(TelaGratuidades, {
+      apiUrl,
+      token,
+      fetchAuth,
+      fetchApi,
+      showToast,
+      confirm: confirmFn,
+    });
+  }
+
+  function renderizar(container, opts) {
     if (!container) {
       console.error('[ModuloGratuidadesV2] container inválido');
       return;
     }
+    const elemento = React.createElement(ModuloGratuidadesV2Component, opts || {});
     const root = ReactDOM.createRoot
       ? ReactDOM.createRoot(container)
       : null;
     if (root) {
-      root.render(React.createElement(TelaGratuidades, { apiUrl, token, fetchApi }));
+      root.render(elemento);
       return { unmount: () => root.unmount() };
     }
     // Fallback React 17
-    ReactDOM.render(React.createElement(TelaGratuidades, { apiUrl, token, fetchApi }), container);
+    ReactDOM.render(elemento, container);
     return { unmount: () => ReactDOM.unmountComponentAtNode(container) };
   }
 
+  // Expõe os 2 entrypoints
   global.ModuloGratuidadesV2 = { renderizar, _versao: '2026-05-12' };
+  global.ModuloGratuidadesV2Component = ModuloGratuidadesV2Component;
 
 })(typeof window !== 'undefined' ? window : globalThis);
