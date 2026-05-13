@@ -796,39 +796,12 @@
         // RENDER
         // ====================================================================
 
-        // Helper pra montar polyline do SVG a partir dos pontos
-        const montarPolyline = (campo, maxValor, alturaSvg, larguraSvg, paddingL, paddingR, paddingT, paddingB) => {
-            if (serie.pontos.length === 0 || maxValor === 0) return '';
-            const usableW = larguraSvg - paddingL - paddingR;
-            const usableH = alturaSvg - paddingT - paddingB;
-            const stepX = serie.pontos.length === 1 ? 0 : usableW / (serie.pontos.length - 1);
-            return serie.pontos.map((pt, i) => {
-                const x = paddingL + i * stepX;
-                const y = paddingT + usableH - (pt[campo] / maxValor) * usableH;
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(' ');
-        };
-
+        // maxValor: usado pra detectar período vazio (todos zerados)
         const maxValor = useMemo(() => {
             return Math.max(
                 ...serie.pontos.map(p => Math.max(p.solicitado, p.pago, p.lucro)),
-                1
+                0
             );
-        }, [serie]);
-
-        // Labels do eixo X (até 5 marcas distribuídas)
-        const eixoXLabels = useMemo(() => {
-            const n = serie.pontos.length;
-            if (n === 0) return [];
-            const indices = n <= 5 ? serie.pontos.map((_, i) => i) : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1];
-            return indices.map(i => {
-                const pt = serie.pontos[i];
-                const d = pt.inicio;
-                return {
-                    idx: i,
-                    label: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
-                };
-            });
         }, [serie]);
 
         // Variação do comparativo
@@ -924,108 +897,165 @@
                 )
             ),
 
-            // Gráfico em linha
-            React.createElement('div', { className: 'bg-white rounded-xl shadow p-5 mb-4' },
-                React.createElement('div', { className: 'flex items-center justify-between mb-3 flex-wrap gap-2' },
-                    React.createElement('div', null,
-                        React.createElement('h3', { className: 'font-bold text-gray-800' }, '📈 Evolução do período'),
-                        React.createElement('p', { className: 'text-xs text-gray-500 mt-0.5' },
-                            'Granularidade ', serie.tipo === 'diario' ? 'diária' : 'semanal',
-                            ' · ', serie.pontos.length, ' ponto(s)'
+            // Gráfico em linha (Recharts — interativo, animado, responsivo)
+            // 2026-05 v3: usa window.Recharts (já carregado por CDN no index.html, mesma versão 2.12.7
+            // usada pelo dashboard BI). Substituiu o SVG manual que era pequeno e estático.
+            // Quando Recharts não estiver disponível (carregamento ainda em andamento), faz fallback
+            // pra mensagem simples.
+            (() => {
+                const R = (typeof window !== 'undefined') && window.Recharts;
+                // Dataset normalizado pro Recharts (array de objetos com labels prontos)
+                const chartData = serie.pontos.map((pt) => {
+                    const d = pt.inicio;
+                    const dia = String(d.getDate()).padStart(2, '0');
+                    const mes = String(d.getMonth() + 1).padStart(2, '0');
+                    // Pra granularidade semanal, mostra range "DD/MM-DD/MM"; pra diária, "DD/MM"
+                    const label = serie.tipo === 'semanal'
+                        ? `${dia}/${mes}-${String(pt.fim.getDate()).padStart(2, '0')}/${String(pt.fim.getMonth() + 1).padStart(2, '0')}`
+                        : `${dia}/${mes}`;
+                    return {
+                        label,
+                        labelCompleto: formatarDataBR(formatarData(d)) +
+                            (serie.tipo === 'semanal' ? ' a ' + formatarDataBR(formatarData(pt.fim)) : ''),
+                        Solicitado: Math.round(pt.solicitado * 100) / 100,
+                        Pago: Math.round(pt.pago * 100) / 100,
+                        Lucro: Math.round(pt.lucro * 100) / 100,
+                        qtd: pt.qtd,
+                    };
+                });
+
+                // Custom tooltip — bonito e legível
+                const CustomTooltip = ({ active, payload }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const dado = payload[0].payload;
+                    return React.createElement('div', {
+                        className: 'bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-xs',
+                        style: { minWidth: 200 },
+                    },
+                        React.createElement('p', { className: 'font-bold text-gray-800 mb-2 pb-2 border-b border-gray-100' }, dado.labelCompleto),
+                        React.createElement('div', { className: 'space-y-1.5' },
+                            React.createElement('div', { className: 'flex items-center justify-between gap-3' },
+                                React.createElement('span', { className: 'flex items-center gap-1.5' },
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#185FA5', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { className: 'text-gray-600' }, 'Solicitado')
+                                ),
+                                React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Solicitado))
+                            ),
+                            React.createElement('div', { className: 'flex items-center justify-between gap-3' },
+                                React.createElement('span', { className: 'flex items-center gap-1.5' },
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#1D9E75', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { className: 'text-gray-600' }, 'Pago')
+                                ),
+                                React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Pago))
+                            ),
+                            React.createElement('div', { className: 'flex items-center justify-between gap-3' },
+                                React.createElement('span', { className: 'flex items-center gap-1.5' },
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#7F77DD', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { className: 'text-gray-600' }, 'Lucro (taxas)')
+                                ),
+                                React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Lucro))
+                            ),
+                            React.createElement('div', { className: 'flex items-center justify-between gap-3 pt-1.5 mt-1.5 border-t border-gray-100' },
+                                React.createElement('span', { className: 'text-gray-500' }, 'Saques'),
+                                React.createElement('span', { className: 'font-bold text-gray-900' }, dado.qtd.toLocaleString('pt-BR'))
+                            )
+                        )
+                    );
+                };
+
+                // Format do eixo Y (R$ Xk pra valores grandes)
+                const formatarEixoY = (v) => {
+                    if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(1) + 'M';
+                    if (v >= 1000) return 'R$ ' + Math.round(v / 1000) + 'k';
+                    return 'R$ ' + Math.round(v);
+                };
+
+                return React.createElement('div', { className: 'bg-white rounded-xl shadow p-5 mb-4' },
+                    React.createElement('div', { className: 'flex items-center justify-between mb-3 flex-wrap gap-2' },
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: 'font-bold text-gray-800' }, '📈 Evolução do período'),
+                            React.createElement('p', { className: 'text-xs text-gray-500 mt-0.5' },
+                                'Granularidade ', serie.tipo === 'diario' ? 'diária' : 'semanal',
+                                ' · ', serie.pontos.length, ' ponto(s)'
+                            )
                         )
                     ),
-                    React.createElement('div', { className: 'flex gap-3 text-xs' },
-                        legendaItem('#185FA5', 'Solicitado'),
-                        legendaItem('#1D9E75', 'Pago'),
-                        legendaItem('#7F77DD', 'Lucro (taxas)')
-                    )
-                ),
-                serie.pontos.length === 0 || maxValor <= 0
-                    ? React.createElement('p', { className: 'text-center text-gray-400 py-12 text-sm' }, 'Sem dados no período selecionado.')
-                    : React.createElement('svg', {
-                        viewBox: '0 0 620 240',
-                        style: { width: '100%', height: '240px' },
-                        role: 'img',
-                        'aria-label': 'Gráfico de evolução de saques'
-                    },
-                        // Eixos
-                        React.createElement('line', { x1: 50, y1: 20, x2: 50, y2: 200, stroke: '#E5E7EB', strokeWidth: 0.5 }),
-                        React.createElement('line', { x1: 50, y1: 200, x2: 610, y2: 200, stroke: '#E5E7EB', strokeWidth: 0.5 }),
-                        // Grades horizontais (4 níveis)
-                        [0.25, 0.5, 0.75].map(frac =>
-                            React.createElement('line', {
-                                key: 'g' + frac,
-                                x1: 50, y1: 20 + frac * 180, x2: 610, y2: 20 + frac * 180,
-                                stroke: '#E5E7EB', strokeWidth: 0.5, strokeDasharray: '2,3',
-                            })
-                        ),
-                        // Labels do eixo Y (valores)
-                        [0, 0.25, 0.5, 0.75, 1].map(frac => {
-                            const valor = maxValor * (1 - frac);
-                            const y = 20 + frac * 180;
-                            return React.createElement('text', {
-                                key: 'y' + frac,
-                                x: 44, y: y + 3,
-                                textAnchor: 'end', fontSize: 9, fill: '#9CA3AF',
-                            }, valor >= 1000 ? `R$ ${Math.round(valor / 1000)}k` : `R$ ${Math.round(valor)}`);
-                        }),
-                        // Linhas (3 séries)
-                        React.createElement('polyline', {
-                            points: montarPolyline('solicitado', maxValor, 220, 620, 50, 10, 20, 40),
-                            fill: 'none', stroke: '#185FA5', strokeWidth: 2,
-                        }),
-                        React.createElement('polyline', {
-                            points: montarPolyline('pago', maxValor, 220, 620, 50, 10, 20, 40),
-                            fill: 'none', stroke: '#1D9E75', strokeWidth: 2,
-                        }),
-                        React.createElement('polyline', {
-                            points: montarPolyline('lucro', maxValor, 220, 620, 50, 10, 20, 40),
-                            fill: 'none', stroke: '#7F77DD', strokeWidth: 2, strokeDasharray: '3,2',
-                        }),
-                        // Pontinhos (só se ≤ 32 pontos pra não ficar poluído)
-                        serie.pontos.length <= 32 && serie.pontos.map((pt, i) => {
-                            const stepX = serie.pontos.length === 1 ? 0 : (620 - 50 - 10) / (serie.pontos.length - 1);
-                            const x = 50 + i * stepX;
-                            return React.createElement(React.Fragment, { key: 'p' + i },
-                                React.createElement('circle', {
-                                    cx: x, cy: 20 + 180 - (pt.solicitado / maxValor) * 180,
-                                    r: 2.5, fill: '#185FA5',
-                                }),
-                                React.createElement('circle', {
-                                    cx: x, cy: 20 + 180 - (pt.pago / maxValor) * 180,
-                                    r: 2.5, fill: '#1D9E75',
-                                }),
-                                React.createElement('circle', {
-                                    cx: x, cy: 20 + 180 - (pt.lucro / maxValor) * 180,
-                                    r: 2.5, fill: '#7F77DD',
-                                }),
-                                // Tooltip nativo via <title>
-                                React.createElement('rect', {
-                                    x: x - 12, y: 15, width: 24, height: 195,
-                                    fill: 'transparent', style: { cursor: 'pointer' },
-                                },
-                                    React.createElement('title', null,
-                                        `${formatarDataBR(formatarData(pt.inicio))}\n` +
-                                        `Solicitado: ${er(pt.solicitado)}\n` +
-                                        `Pago: ${er(pt.pago)}\n` +
-                                        `Lucro: ${er(pt.lucro)}\n` +
-                                        `${pt.qtd} saque(s)`
+                    // Sem dados ou Recharts ainda não disponível
+                    serie.pontos.length === 0 || maxValor <= 0
+                        ? React.createElement('p', { className: 'text-center text-gray-400 py-12 text-sm' }, 'Sem dados no período selecionado.')
+                        : !R
+                            ? React.createElement('p', { className: 'text-center text-gray-400 py-12 text-sm' }, 'Carregando gráfico…')
+                            : React.createElement('div', { style: { width: '100%', height: '380px' } },
+                                React.createElement(R.ResponsiveContainer, { width: '100%', height: '100%' },
+                                    React.createElement(R.LineChart, {
+                                        data: chartData,
+                                        margin: { top: 20, right: 30, left: 10, bottom: 10 },
+                                    },
+                                        React.createElement(R.CartesianGrid, {
+                                            strokeDasharray: '3 3',
+                                            stroke: '#E5E7EB',
+                                            vertical: false,
+                                        }),
+                                        React.createElement(R.XAxis, {
+                                            dataKey: 'label',
+                                            tick: { fontSize: 11, fill: '#6B7280' },
+                                            tickLine: false,
+                                            axisLine: { stroke: '#E5E7EB' },
+                                            interval: 'preserveStartEnd',
+                                            minTickGap: 30,
+                                        }),
+                                        React.createElement(R.YAxis, {
+                                            tickFormatter: formatarEixoY,
+                                            tick: { fontSize: 11, fill: '#6B7280' },
+                                            tickLine: false,
+                                            axisLine: { stroke: '#E5E7EB' },
+                                            width: 65,
+                                        }),
+                                        React.createElement(R.Tooltip, {
+                                            content: CustomTooltip,
+                                            cursor: { stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 4' },
+                                        }),
+                                        React.createElement(R.Legend, {
+                                            verticalAlign: 'top',
+                                            height: 36,
+                                            iconType: 'plainline',
+                                            wrapperStyle: { fontSize: 12, paddingBottom: 8 },
+                                        }),
+                                        React.createElement(R.Line, {
+                                            type: 'monotone',
+                                            dataKey: 'Solicitado',
+                                            stroke: '#185FA5',
+                                            strokeWidth: 2.5,
+                                            dot: { r: 3, fill: '#185FA5', strokeWidth: 0 },
+                                            activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
+                                            animationDuration: 800,
+                                        }),
+                                        React.createElement(R.Line, {
+                                            type: 'monotone',
+                                            dataKey: 'Pago',
+                                            stroke: '#1D9E75',
+                                            strokeWidth: 2.5,
+                                            dot: { r: 3, fill: '#1D9E75', strokeWidth: 0 },
+                                            activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
+                                            animationDuration: 800,
+                                            animationBegin: 100,
+                                        }),
+                                        React.createElement(R.Line, {
+                                            type: 'monotone',
+                                            dataKey: 'Lucro',
+                                            stroke: '#7F77DD',
+                                            strokeWidth: 2.5,
+                                            strokeDasharray: '5 3',
+                                            dot: { r: 3, fill: '#7F77DD', strokeWidth: 0 },
+                                            activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
+                                            animationDuration: 800,
+                                            animationBegin: 200,
+                                        })
                                     )
                                 )
-                            );
-                        }),
-                        // Labels do eixo X
-                        eixoXLabels.map((it, i) => {
-                            const stepX = serie.pontos.length === 1 ? 0 : (620 - 50 - 10) / (serie.pontos.length - 1);
-                            const x = 50 + it.idx * stepX;
-                            return React.createElement('text', {
-                                key: 'x' + i,
-                                x: x, y: 220,
-                                textAnchor: 'middle', fontSize: 10, fill: '#9CA3AF',
-                            }, it.label);
-                        })
-                    )
-            ),
+                            )
+                );
+            })(),
 
             // Top 10 - 2 colunas
             React.createElement('div', { className: 'grid md:grid-cols-2 gap-4 mb-4' },
