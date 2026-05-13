@@ -1,604 +1,818 @@
-// ==================== MÓDULO SCORE V2 (MOTOBOY) ====================
-// Arquivo: modulo-score-v2-motoboy.js
+// ==================== MÓDULO SCORE V2 (ADMIN) ====================
+// Arquivo: modulo-score-v2.js
+// Tela admin pra configurar score por região + ver sorteios + motoboys.
 //
-// Componentes:
-//   - window.ModuloScoreV2Motoboy        → tela completa de score (rota /score)
-//   - window.ModuloScoreV2WelcomeModal   → modal automático ao entrar no app
-//
-// Integração com app.js:
-//   No mount/login do motoboy, chamar:
-//     window.ModuloScoreV2WelcomeModal.show({ apiUrl, token })
-//   Decide sozinho se deve aparecer (cookie + condições).
+// Estrutura:
+//   - Aba "Configurações": ativa/desativa score por região, valores
+//   - Aba "Motoboys por Categoria": lista quem está em cada categoria (Bronze/Prata/Ouro)
+//   - Aba "Sorteios": histórico mensal e disparo manual
 // =====================================================================
 
 (function() {
     'use strict';
 
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useCallback, useRef, useMemo } = React;
     const h = React.createElement;
 
     function fmtBRL(v) {
         return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
     }
+    function fmtData(s) {
+        if (!s) return '-';
+        const d = new Date(s);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
 
-    // ============================================================
-    // TELA COMPLETA DE SCORE (motoboy)
-    // ============================================================
-    window.ModuloScoreV2Motoboy = function(props) {
-        const { apiUrl, token, fetchAuth, showToast } = props;
-        const [dados, setDados] = useState(null);
-        const [loading, setLoading] = useState(true);
-        const [erro, setErro] = useState(null);
+    window.ModuloScoreV2Component = function(props) {
+        const { fetchApi, showToast } = props;
+        const [tab, setTab] = useState('configuracoes');
 
-        useEffect(() => {
-            (async () => {
-                try {
-                    let r;
-                    // 🔧 FIX: prefere fetchAuth (padrão Tutts: usa cookie httpOnly)
-                    // sobre fetch manual com Bearer (que falhava com 401).
-                    if (typeof fetchAuth === 'function') {
-                        r = await fetchAuth(apiUrl + '/score-v2/meu-nivel');
-                    } else {
-                        r = await fetch(apiUrl + '/score-v2/meu-nivel', {
-                            headers: { 'Authorization': 'Bearer ' + (token || ''), 'Content-Type': 'application/json' },
-                            credentials: 'include'
-                        });
-                    }
-                    if (!r.ok) throw new Error('Falha ao carregar score (' + r.status + ')');
-                    setDados(await r.json());
-                } catch (err) { setErro(err.message); }
-                finally { setLoading(false); }
-            })();
-        }, [apiUrl]); // só roda 1x por mount
-
-        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
-        if (erro) return h('div', { className: 'text-center py-12 text-red-500 text-sm' }, '❌ ' + erro);
-        if (!dados) return null;
-
-        // Região não configurada
-        if (!dados.regiao_configurada) {
-            return h('div', { className: 'max-w-md mx-auto p-4' },
-                h('div', { className: 'bg-gray-100 border border-gray-200 rounded-xl p-6 text-center' },
-                    h('div', { className: 'text-5xl mb-3' }, '🔒'),
-                    h('h2', { className: 'text-lg font-bold text-gray-700 mb-2' }, 'Score indisponível'),
-                    h('p', { className: 'text-sm text-gray-600' }, dados.mensagem || 'Score ainda não está disponível na sua região.')
-                )
-            );
-        }
-
-        const { nivel, stats, progresso, bonus, mudou, subiu, thresholds, debug, carencia } = dados;
-        // Valores de bônus podem vir tanto no debug quanto direto na response.
-        // Como o backend só retorna ao motoboy regiao_configurada=true, dá pra usar o
-        // bonus.valor pra inferir se é semanal/mensal mas o teto/sorteio precisa vir do payload.
-        // Por hora pegamos do bonus se existe; se não, usa fallback nos defaults do componente.
-        const bonusValores = {
-            sorteio_n2: dados.sorteio_valor_n2,
-            sorteio_n3: dados.sorteio_valor_n3,
-            saque_n2: dados.saque_teto_n2,
-            saque_n3: dados.saque_teto_n3,
-        };
-
-        return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
-            // Card de nível atual
-            h(CardNivelAtual, { nivel, stats, thresholds }),
-
-            // Mudança de nível recente
-            mudou && subiu && h('div', { className: 'bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center' },
-                h('div', { className: 'text-3xl mb-2' }, '🎉'),
-                h('p', { className: 'text-sm font-bold text-green-900' }, 'Você subiu para Nível ' + nivel + '!')
-            ),
-
-            // 🆕 2026-05 v3: Card de carência (mostra contagem regressiva quando em_carencia=true)
-            // Aparece SÓ se o motoboy está em nível 2+ e dentro da janela de 7 dias após a subida.
-            // O backend já barra o lançamento de bônus durante esse período — o card explica isso.
-            nivel >= 2 && carencia && carencia.em_carencia && h(CardCarencia, { carencia, nivel }),
-
-            // Bônus lançado neste período
-            bonus && bonus.lancado && h('div', { className: 'bg-blue-50 border-2 border-blue-300 rounded-xl p-4' },
-                h('div', { className: 'flex items-start gap-3' },
-                    h('div', { className: 'text-2xl' }, '💰'),
-                    h('div', null,
-                        h('p', { className: 'text-sm font-bold text-blue-900' }, 'Saque liberado!'),
-                        h('p', { className: 'text-xs text-blue-700 mt-1' },
-                            'Você tem direito a 1 saque grátis até ' + fmtBRL(bonus.valor) +
-                            ' este ' + (bonus.tipo === 'saque_semanal' ? 'esta semana' : 'mês') + '.'
-                        ),
-                        h('p', { className: 'text-xs text-blue-600 mt-1' }, 'Vá no menu Financeiro → Saques pra usar.')
-                    )
+        return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
+            h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
+                h('div', { className: 'flex gap-1 p-1' },
+                    [
+                        { id: 'configuracoes', label: '⚙️ Configurações' },
+                        { id: 'motoboys', label: '👥 Motoboys por Categoria' },
+                        { id: 'sorteios', label: '🎲 Sorteios' },
+                    ].map(t => h('button', {
+                        key: t.id,
+                        onClick: () => setTab(t.id),
+                        className: 'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ' +
+                            (tab === t.id ? 'bg-purple-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100')
+                    }, t.label))
                 )
             ),
-            bonus && !bonus.lancado && bonus.motivo === 'ja_lancado_no_periodo' && h('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-600' },
-                '✅ Saque grátis deste período já foi liberado anteriormente.'
-            ),
-
-            // Progresso pro próximo nível
-            progresso && h(BarrasProgresso, { progresso }),
-
-            // 🎁 Roadmap de bonificações (usa thresholds reais da região)
-            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores }),
-
-            // 📋 Lista das entregas dos últimos 28 dias (lazy load)
-            h(MinhasEntregas, { apiUrl, fetchAuth, token }),
-
-            // Info nivel atual
-            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs text-purple-900' },
-                h('p', { className: 'font-medium mb-1' }, '📊 Sobre o Score'),
-                h('p', null, 'Avaliação rolling de 28 dias. Quanto mais você entrega no horário e nas faixas certas, maior seu nível.'),
-                h('p', { className: 'mt-1' }, 'Sorteios mensais entre todos do nível na sua região!'),
-                // 🆕 2026-05 v3: deixa claro pra quem ainda está em N1 que vai ter carência
-                h('p', { className: 'mt-1' }, '⏳ Ao subir de nível, é preciso manter por 7 dias antes de receber o saque-bônus.')
-            )
+            tab === 'configuracoes' && h(AbaConfiguracoes, { fetchApi, showToast }),
+            tab === 'motoboys' && h(AbaMotoboys, { fetchApi, showToast }),
+            tab === 'sorteios' && h(AbaSorteios, { fetchApi, showToast })
         );
     };
 
-    // 🆕 2026-05 v3: Card de carência pós-subida com contagem regressiva.
-    //
-    // Recebe `carencia` = { em_carencia, libera_em (ISO), dias_restantes, ms_restantes, motivo }
-    // do backend. Roda um timer interno que atualiza a cada 1 minuto (não
-    // precisa ser a cada segundo — o overhead não compensa pro UX).
-    //
-    // Quando ms_restantes chega a zero, mostra "Liberado!" e o próximo
-    // fetch já vai trazer em_carencia=false + bônus lançado (na próxima
-    // chamada de avaliarMotoboy).
-    function CardCarencia({ carencia, nivel }) {
-        // Estado local: ms_restantes recalculado a cada minuto
-        const [msRest, setMsRest] = useState(() => {
-            if (!carencia.libera_em) return carencia.ms_restantes || 0;
-            return Math.max(0, new Date(carencia.libera_em).getTime() - Date.now());
-        });
-
-        useEffect(() => {
-            if (!carencia.libera_em) return;
-            // Atualiza a cada 60s (suficiente pra contagem em dias/horas)
-            const interval = setInterval(() => {
-                const restantes = Math.max(0, new Date(carencia.libera_em).getTime() - Date.now());
-                setMsRest(restantes);
-            }, 60_000);
-            return () => clearInterval(interval);
-        }, [carencia.libera_em]);
-
-        // Decompõe ms em dias/horas/minutos
-        const dias = Math.floor(msRest / (24 * 60 * 60 * 1000));
-        const horas = Math.floor((msRest % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-        const minutos = Math.floor((msRest % (60 * 60 * 1000)) / (60 * 1000));
-
-        // Texto humano da contagem
-        let textoContagem;
-        if (msRest <= 0) {
-            textoContagem = 'Liberado! Atualize a tela.';
-        } else if (dias >= 1) {
-            textoContagem = dias + (dias === 1 ? ' dia' : ' dias') + ' e ' + horas + 'h restantes';
-        } else if (horas >= 1) {
-            textoContagem = horas + 'h ' + minutos + 'min restantes';
-        } else {
-            textoContagem = minutos + (minutos === 1 ? ' minuto' : ' minutos') + ' restante' + (minutos === 1 ? '' : 's');
-        }
-
-        const liberaEmFormatado = carencia.libera_em
-            ? new Date(carencia.libera_em).toLocaleString('pt-BR', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit',
-            })
-            : null;
-
-        const nomeNivel = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
-
-        return h('div', { className: 'bg-amber-50 border-2 border-amber-300 rounded-xl p-4' },
-            h('div', { className: 'flex items-start gap-3' },
-                h('div', { className: 'text-2xl' }, '🕒'),
-                h('div', { className: 'flex-1' },
-                    h('p', { className: 'text-sm font-bold text-amber-900' }, 'Período de carência'),
-                    h('p', { className: 'text-xs text-amber-800 mt-1' },
-                        'Você acabou de subir para ', nomeNivel, '. Mantenha o nível por ',
-                        h('strong', null, '7 dias'),
-                        ' pra liberar o saque-bônus.'
-                    ),
-                    // Contagem regressiva
-                    h('div', { className: 'mt-2 bg-white rounded-lg px-3 py-2 border border-amber-200' },
-                        h('p', { className: 'text-xs text-amber-700 font-medium' }, '⏳ ' + textoContagem),
-                        liberaEmFormatado && h('p', { className: 'text-xs text-amber-600 mt-0.5' },
-                            'Libera em ', liberaEmFormatado
-                        )
-                    )
-                )
-            )
-        );
-    }
-
-    function CardNivelAtual({ nivel, stats, thresholds }) {
-        const cor = nivel === 3 ? 'from-yellow-400 to-yellow-600' : nivel === 2 ? 'from-amber-400 to-amber-600' : 'from-orange-400 to-orange-600';
-        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
-        const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
-
-        // Defaults pra metas (caso backend não mande thresholds)
-        const t = thresholds || {
-            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
-            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
-        };
-
-        // Metas exibidas: pra Bronze e Prata mostra a meta do PRÓXIMO nível,
-        // pra Ouro mostra a própria meta de manutenção (n3)
-        const metaRef = nivel === 1 ? t.n2 : t.n3;
-        const metaEntregas = metaRef.entregas_min;
-        const meta16h = metaRef.dias_16h_min;
-        const metaPrazo = metaRef.pct_prazo_min;
-
-        // Mensagem de incentivo conforme nível
-        const mensagem = nivel === 3
-            ? '🔒 Mantenha sua performance para continuar como Ouro'
-            : nivel === 2
-                ? '🔒 Mantenha sua performance para continuar como Prata'
-                : '🎯 Suba para Prata e desbloqueie saque grátis mensal';
-
-        const fmtPrazo = (v) => (parseFloat(v) || 0).toFixed(2).replace('.', ',') + '%';
-
-        return h('div', { className: 'rounded-xl p-5 text-white bg-gradient-to-br ' + cor + ' shadow-lg' },
-            h('div', { className: 'text-center' },
-                h('div', { className: 'text-5xl mb-2' }, emoji),
-                h('h2', { className: 'text-xl font-bold' }, nome),
-                h('p', { className: 'text-xs opacity-90 mt-1' }, 'Seu nível atual')
-            ),
-            h('div', { className: 'grid grid-cols-3 gap-2 mt-4 text-center' },
-                h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, 'Entregas'),
-                    h('div', { className: 'text-base font-bold' }, stats.entregas + ' / ' + metaEntregas)
-                ),
-                h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, 'Após 16h'),
-                    h('div', { className: 'text-base font-bold' }, stats.dias_16h + ' / ' + meta16h)
-                ),
-                h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, '% Prazo'),
-                    h('div', { className: 'text-base font-bold' }, fmtPrazo(stats.pct_prazo) + ' / ' + metaPrazo + '%')
-                )
-            ),
-            h('div', { className: 'mt-3 px-3 py-2 bg-white/20 rounded-lg text-center text-xs font-medium' },
-                mensagem
-            )
-        );
-    }
-
-    function BarrasProgresso({ progresso }) {
-        const nomeProx = progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze';
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-            h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                '🎯 Progresso para ' + nomeProx
-            ),
-            h('div', { className: 'space-y-3' },
-                progresso.requisitos.map((r, i) => h(BarraReq, { key: i, req: r }))
-            )
-        );
-    }
-
-    function BarraReq({ req }) {
-        const sufixo = req.sufixo || '';
-        const corBarra = req.ok ? 'bg-green-500' : 'bg-purple-500';
-        return h('div', null,
-            h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                h('span', { className: 'font-medium text-gray-700' }, (req.ok ? '✅ ' : '🔸 ') + req.label),
-                h('span', { className: 'text-gray-600 font-mono' }, req.atual + sufixo + ' / ' + req.meta + sufixo)
-            ),
-            h('div', { className: 'w-full bg-gray-200 rounded-full h-2 overflow-hidden' },
-                h('div', { className: 'h-full ' + corBarra + ' transition-all', style: { width: req.pct + '%' } })
-            ),
-            req.faixa && req.atual >= req.meta && req.atual >= 90 && h('p', { className: 'text-[10px] text-amber-600 mt-1' },
-                '⚠️ Acima de 90% → você pula pro Ouro!'
-            )
-        );
-    }
-
     // ============================================================
-    // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: Bronze, Prata, Ouro)
+    // ABA CONFIGURAÇÕES
     // ============================================================
-    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores }) {
-        // Defaults caso a response não traga (compat)
-        const t = thresholds || {
-            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
-            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
-        };
-        const b = bonusValores || {
-            sorteio_n2: 50, sorteio_n3: 150,
-            saque_n2: 500, saque_n3: 500,
-        };
-        const fmt = (v) => 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+    function AbaConfiguracoes({ fetchApi, showToast }) {
+        const [configs, setConfigs] = useState([]);
+        const [regioesDisp, setRegioesDisp] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [editando, setEditando] = useState(null); // null | objeto com { regiao, ... }
 
-        const niveis = [
-            {
-                num: 1, nome: 'Bronze', emoji: '🥉',
-                criterios: ['Disponível para todos'],
-                bonus: ['Sem bônus extra'],
-            },
-            {
-                num: 2, nome: 'Prata', emoji: '🥈',
-                criterios: [
-                    '≥ ' + t.n2.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n2.dias_16h_min + ' entregas após 16h',
-                    '≥ ' + t.n2.pct_prazo_min + '% no prazo',
-                ],
-                bonus: [
-                    '💰 1 saque grátis/mês de até ' + fmt(b.saque_n2),
-                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
-                ],
-            },
-            {
-                num: 3, nome: 'Ouro', emoji: '🥇',
-                criterios: [
-                    '≥ ' + t.n3.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n3.dias_16h_min + ' entregas após 16h',
-                    '≥ ' + t.n3.pct_prazo_min + '% no prazo',
-                ],
-                bonus: [
-                    '💰 1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
-                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
-                ],
-            },
-        ];
+        // 🔧 FIX loop infinito: refs estáveis pra fetchApi/showToast.
+        // O componente pai (operacional) recria fetchApi a cada render → useCallback
+        // invalida → useEffect dispara → render → loop infinito de toast 401.
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-            h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                '🎁 O que você ganha em cada nível'
-            ),
-            h('div', { className: 'space-y-3' },
-                niveis.map(n => h(CardRoadmap, {
-                    key: n.num,
-                    nivel: n,
-                    isAtual: n.num === nivelAtual,
-                    isAlcancado: n.num <= nivelAtual,
-                }))
-            )
-        );
-    }
-
-    function CardRoadmap({ nivel, isAtual, isAlcancado }) {
-        return h('div', {
-            className: 'border-2 rounded-lg p-3 ' + (
-                isAtual ? 'border-purple-500 bg-purple-50 shadow' :
-                isAlcancado ? 'border-green-300 bg-green-50' :
-                'border-gray-200 bg-gray-50'
-            )
-        },
-            h('div', { className: 'flex items-center justify-between mb-2' },
-                h('div', { className: 'flex items-center gap-2' },
-                    h('span', { className: 'text-2xl' }, nivel.emoji),
-                    h('div', null,
-                        h('div', { className: 'font-bold text-sm text-gray-900' },
-                            nivel.nome
-                        ),
-                        isAtual && h('div', { className: 'text-[10px] font-bold text-purple-700 uppercase' }, '⭐ Você está aqui')
-                    )
-                ),
-                isAlcancado && !isAtual && h('span', { className: 'text-xs text-green-700 font-bold' }, '✓')
-            ),
-            h('div', { className: 'text-xs space-y-1 mt-2' },
-                h('div', { className: 'font-semibold text-gray-700' }, 'Critérios:'),
-                nivel.criterios.map((c, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, '• ' + c)),
-                h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus:'),
-                nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b))
-            )
-        );
-    }
-
-    // ============================================================
-    // 📋 MINHAS ENTREGAS (lazy load — só busca quando expande)
-    // ============================================================
-    function MinhasEntregas({ apiUrl, fetchAuth, token }) {
-        const [aberto, setAberto] = useState(false);
-        const [dados, setDados] = useState(null);
-        const [loading, setLoading] = useState(false);
-        const [erro, setErro] = useState(null);
-        const [filtroPrazo, setFiltroPrazo] = useState('todos');
-
-        const carregar = async () => {
-            if (dados || loading) return;
+        const carregar = useCallback(async () => {
             setLoading(true);
             try {
-                let r;
-                if (typeof fetchAuth === 'function') {
-                    r = await fetchAuth(apiUrl + '/score-v2/minhas-entregas');
-                } else {
-                    r = await fetch(apiUrl + '/score-v2/minhas-entregas', {
-                        headers: { 'Authorization': 'Bearer ' + (token || '') },
-                        credentials: 'include'
-                    });
-                }
-                if (!r.ok) throw new Error('Falha ao carregar entregas');
-                setDados(await r.json());
-            } catch (err) { setErro(err.message); }
-            finally { setLoading(false); }
+                const [cfgs, regs] = await Promise.all([
+                    fetchApiRef.current('/score-v2/admin/configuracoes'),
+                    fetchApiRef.current('/score-v2/admin/regioes-disponiveis'),
+                ]);
+                setConfigs(cfgs || []);
+                setRegioesDisp(regs || []);
+            } catch (err) {
+                showToastRef.current('❌ ' + err.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }, []); // sem dependências — refs são estáveis
+
+        useEffect(() => { carregar(); }, [carregar]);
+
+        const salvar = async (cfg) => {
+            try {
+                await fetchApi('/score-v2/admin/configuracoes', {
+                    method: 'POST',
+                    body: JSON.stringify(cfg),
+                });
+                showToast('✅ Configuração salva', 'success');
+                setEditando(null);
+                carregar();
+            } catch (err) {
+                showToast('❌ ' + err.message, 'error');
+            }
         };
 
-        const toggle = () => {
-            const novoEstado = !aberto;
-            setAberto(novoEstado);
-            if (novoEstado) carregar();
+        const desativar = async (id, regiao) => {
+            if (!confirm(`Desativar score para "${regiao}"?\n\nMotoboys da região vão deixar de ver/ganhar score. Histórico de sorteios é mantido.`)) return;
+            try {
+                await fetchApi('/score-v2/admin/configuracoes/' + id, { method: 'DELETE' });
+                showToast('✅ Desativada', 'success');
+                carregar();
+            } catch (err) {
+                showToast('❌ ' + err.message, 'error');
+            }
         };
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-            h('button', {
-                onClick: toggle,
-                className: 'w-full p-4 flex items-center justify-between hover:bg-gray-50'
-            },
-                h('span', { className: 'font-bold text-sm text-gray-900' }, '📋 Minhas Entregas (28 dias)'),
-                h('span', { className: 'text-gray-400 text-sm' }, aberto ? '▲' : '▼')
-            ),
-            aberto && h('div', { className: 'p-4 border-t border-gray-200' },
-                loading && h('div', { className: 'text-center text-gray-500 text-sm py-4' }, '⏳ Carregando...'),
-                erro && h('div', { className: 'text-center text-red-500 text-sm py-4' }, '❌ ' + erro),
-                dados && dados.entregas.length === 0 && h('div', { className: 'text-center text-gray-400 text-sm py-4' },
-                    'Nenhuma entrega nos últimos 28 dias.'
-                ),
-                dados && dados.entregas.length > 0 && h(EntregasLista, {
-                    entregas: dados.entregas,
-                    resumoDia: dados.resumo_dia,
-                    filtro: filtroPrazo,
-                    setFiltro: setFiltroPrazo,
+        // 🚀 Reavalia em massa todos os motoboys da região (CRM + Planilha)
+        const reavaliar = async (regiao) => {
+            if (!confirm(`Re-avaliar TODOS os motoboys de "${regiao}"?\n\nIsso vai recalcular o nível de cada motoboy da região (CRM + Planilha) e popular as contagens. Pode demorar alguns segundos.`)) return;
+            try {
+                showToast('🔄 Re-avaliando... aguarde', 'info');
+                const r = await fetchApi('/score-v2/admin/reavaliar-regiao', {
+                    method: 'POST',
+                    body: JSON.stringify({ regiao }),
+                });
+                showToast(`✅ ${r.processados} avaliados — Bronze:${r.niveis[1]} Prata:${r.niveis[2]} Ouro:${r.niveis[3]}`, 'success');
+                carregar();
+            } catch (err) {
+                showToast('❌ ' + err.message, 'error');
+            }
+        };
+
+        // Regiões que ainda não foram configuradas
+        // ⚠️ Backend agora já filtra: só vêm regiões com ≥1 motoboy avaliado, ordenadas DESC.
+        // Aqui mantemos filtro extra pra excluir regiões já configuradas (defensivo, backend já faz).
+        const regioesNaoConfig = regioesDisp.filter(r =>
+            !configs.some(c => c.regiao.toUpperCase() === r.regiao.toUpperCase())
+        );
+
+        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
+
+        return h('div', null,
+            // 🚀 2026-05: Painel de regiões sem score — redesign com busca + chips cinzas com badge
+            // Mostra 15 inicialmente, expande via "ver mais", filtra por busca em tempo real.
+            regioesNaoConfig.length > 0 && h(PainelRegioesNaoConfig, {
+                regioes: regioesNaoConfig,
+                onSelecionar: (r) => setEditando({
+                    regiao: r.regiao, ativo: true, niveis_ativos: [2, 3],
+                    sorteio_valor_n2: 50, sorteio_valor_n3: 150,
+                    saque_teto_n2: 500, saque_teto_n3: 500,
                 })
+            }),
+
+            // Lista de configs
+            configs.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' },
+                'Nenhuma região configurada. Use os botões acima para começar.'
+            ) : h('div', { className: 'space-y-3' },
+                configs.map(cfg => h(CardConfig, {
+                    key: cfg.id, cfg,
+                    onEditar: () => setEditando(cfg),
+                    onDesativar: () => desativar(cfg.id, cfg.regiao),
+                    onAtivar: async () => salvar({ ...cfg, ativo: true }),
+                    onReavaliar: () => reavaliar(cfg.regiao),
+                }))
+            ),
+
+            // Modal de edição
+            editando && h(ModalEditar, {
+                cfg: editando,
+                onSalvar: salvar,
+                onCancelar: () => setEditando(null),
+            })
+        );
+    }
+
+    // ============================================================
+    // PAINEL DE REGIÕES SEM SCORE (chips cinzas + busca + paginação)
+    // 🚀 2026-05: Redesign — backend já vem ordenado por contagem DESC
+    // sem regiões vazias. Aqui só mostra 15 inicialmente, busca filtra em tempo real.
+    // ============================================================
+    function PainelRegioesNaoConfig({ regioes, onSelecionar }) {
+        const [busca, setBusca] = useState('');
+        const [mostrarTodas, setMostrarTodas] = useState(false);
+        const VISIVEIS_INICIAL = 15;
+
+        const filtradas = useMemo(() => {
+            const q = (busca || '').toLowerCase().trim();
+            if (!q) return regioes;
+            return regioes.filter(r => (r.regiao || '').toLowerCase().includes(q));
+        }, [regioes, busca]);
+
+        const exibidas = mostrarTodas || busca ? filtradas : filtradas.slice(0, VISIVEIS_INICIAL);
+        const restantes = filtradas.length - VISIVEIS_INICIAL;
+        const totalMotoboys = useMemo(
+            () => regioes.reduce((s, r) => s + (r.total_motoboys || 0), 0),
+            [regioes]
+        );
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
+            // Header: contador honesto
+            h('div', { className: 'flex items-center justify-between mb-3' },
+                h('div', { className: 'text-sm text-gray-700' },
+                    h('span', { className: 'font-semibold text-gray-900' }, regioes.length + ' regiões'),
+                    ' com ',
+                    h('span', { className: 'font-semibold text-gray-900' }, totalMotoboys.toLocaleString('pt-BR')),
+                    ' motoboys aguardando configuração'
+                )
+            ),
+
+            // Busca em destaque
+            h('input', {
+                type: 'text',
+                value: busca,
+                placeholder: '🔍 Buscar região...',
+                onChange: e => setBusca(e.target.value),
+                className: 'w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm mb-3 focus:bg-white focus:border-purple-300 focus:outline-none transition-colors'
+            }),
+
+            // Chips cinzas com badge de contagem (ordem já vem do backend)
+            filtradas.length === 0
+                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' },
+                    busca ? `Nenhuma região com "${busca}"` : 'Nenhuma região disponível'
+                )
+                : h('div', { className: 'flex flex-wrap gap-1.5' },
+                    exibidas.map(r => h('button', {
+                        key: r.regiao,
+                        onClick: () => onSelecionar(r),
+                        className: 'inline-flex items-center gap-1.5 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-gray-800 hover:text-purple-800 rounded-full text-xs font-medium transition-colors',
+                        style: { padding: '4px 10px 4px 8px' }
+                    },
+                        h('span', { className: 'text-gray-400 font-semibold' }, '+'),
+                        h('span', null, r.regiao),
+                        r.total_motoboys != null && h('span', {
+                            className: 'bg-white text-gray-500 rounded-full text-[10px] font-medium',
+                            style: { padding: '1px 6px' }
+                        }, r.total_motoboys.toLocaleString('pt-BR'))
+                    ))
+                ),
+
+            // "Ver mais" só aparece se NÃO está buscando E ainda tem regiões escondidas
+            !busca && !mostrarTodas && restantes > 0 && h('button', {
+                onClick: () => setMostrarTodas(true),
+                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-purple-300 hover:bg-purple-50 rounded-lg text-xs text-purple-700 font-medium transition-colors'
+            }, `Ver mais ${restantes} região(ões) ↓`),
+
+            // "Ver menos" quando todas estão expandidas
+            !busca && mostrarTodas && regioes.length > VISIVEIS_INICIAL && h('button', {
+                onClick: () => setMostrarTodas(false),
+                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-gray-400 rounded-lg text-xs text-gray-500 font-medium transition-colors'
+            }, 'Ver menos ↑')
+        );
+    }
+
+    function CardConfig({ cfg, onEditar, onDesativar, onAtivar, onReavaliar }) {
+        const niveis = Array.isArray(cfg.niveis_ativos) ? cfg.niveis_ativos : (typeof cfg.niveis_ativos === 'string' ? JSON.parse(cfg.niveis_ativos) : []);
+        const ativo = cfg.ativo !== false;
+        const counts = cfg.motoboys_por_nivel || { 1: 0, 2: 0, 3: 0 };
+
+        return h('div', {
+            className: 'bg-white border rounded-lg p-4 ' + (ativo ? 'border-gray-200' : 'border-gray-200 opacity-60')
+        },
+            h('div', { className: 'flex items-start justify-between gap-3 mb-3' },
+                h('div', null,
+                    h('div', { className: 'flex items-center gap-2' },
+                        h('h3', { className: 'font-bold text-gray-900' }, '📍 ' + cfg.regiao),
+                        h('span', { className: 'px-2 py-0.5 rounded text-xs font-medium ' + (ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600') },
+                            ativo ? '✓ Ativo' : '⏸ Inativo'
+                        )
+                    ),
+                    h('p', { className: 'text-xs text-gray-500 mt-1' },
+                        'Categorias ativas: ' + niveis.map(n => n === 3 ? 'Ouro' : n === 2 ? 'Prata' : 'Bronze').join(', ') +
+                        ' • Atualizado em ' + fmtData(cfg.atualizado_em)
+                    )
+                ),
+                h('div', { className: 'flex gap-2 flex-wrap' },
+                    ativo && h('button', {
+                        onClick: onReavaliar,
+                        className: 'px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-xs font-medium hover:bg-blue-100',
+                        title: 'Re-avaliar todos os motoboys da região agora'
+                    }, '🔄 Reavaliar'),
+                    ativo
+                        ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-medium hover:bg-red-100' }, '⏸ Desativar')
+                        : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-xs font-medium hover:bg-green-100' }, '▶ Reativar'),
+                    h('button', { onClick: onEditar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-md text-xs font-medium hover:bg-purple-700' }, '✏️ Editar')
+                )
+            ),
+            // Cards com valores e contagens
+            h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 text-center' },
+                h('div', { className: 'bg-amber-50 border border-amber-200 rounded p-2' },
+                    h('div', { className: 'text-xs text-amber-700 font-medium' }, '🥈 Prata'),
+                    h('div', { className: 'text-lg font-bold text-amber-900' }, counts[2] + ' motoboys'),
+                    h('div', { className: 'text-[10px] text-amber-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n2)),
+                    h('div', { className: 'text-[10px] text-amber-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n2) + '/mês')
+                ),
+                h('div', { className: 'bg-yellow-50 border border-yellow-300 rounded p-2' },
+                    h('div', { className: 'text-xs text-yellow-700 font-medium' }, '🥇 Ouro'),
+                    h('div', { className: 'text-lg font-bold text-yellow-900' }, counts[3] + ' motoboys'),
+                    h('div', { className: 'text-[10px] text-yellow-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n3)),
+                    h('div', { className: 'text-[10px] text-yellow-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n3) + '/sem')
+                ),
+                h('div', { className: 'bg-orange-50 border border-orange-200 rounded p-2' },
+                    h('div', { className: 'text-xs text-orange-700 font-medium' }, '🥉 Bronze'),
+                    h('div', { className: 'text-lg font-bold text-orange-900' }, counts[1] + ' motoboys')
+                ),
+                h('div', { className: 'bg-blue-50 border border-blue-200 rounded p-2' },
+                    h('div', { className: 'text-xs text-blue-700 font-medium' }, 'Total'),
+                    h('div', { className: 'text-lg font-bold text-blue-900' }, (counts[1] + counts[2] + counts[3]) + ' avaliados')
+                )
             )
         );
     }
 
-    function EntregasLista({ entregas, resumoDia, filtro, setFiltro }) {
-        // Aplica filtro
-        const filtradas = entregas.filter(e => {
-            if (filtro === 'no_prazo') return e.dentro_prazo === true;
-            if (filtro === 'fora_prazo') return e.dentro_prazo === false;
-            return true;
+    function ModalEditar({ cfg, onSalvar, onCancelar }) {
+        const [form, setForm] = useState({
+            regiao: cfg.regiao,
+            ativo: cfg.ativo !== false,
+            niveis_ativos: Array.isArray(cfg.niveis_ativos) ? cfg.niveis_ativos : (typeof cfg.niveis_ativos === 'string' ? JSON.parse(cfg.niveis_ativos) : [2, 3]),
+            sorteio_valor_n2: cfg.sorteio_valor_n2 != null ? Number(cfg.sorteio_valor_n2) : 50,
+            sorteio_valor_n3: cfg.sorteio_valor_n3 != null ? Number(cfg.sorteio_valor_n3) : 150,
+            saque_teto_n2: cfg.saque_teto_n2 != null ? Number(cfg.saque_teto_n2) : 500,
+            saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
+            // 🚀 Thresholds (defaults)
+            n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
+            n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 15,
+            n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
+            n3_min_entregas: cfg.n3_min_entregas != null ? Number(cfg.n3_min_entregas) : 150,
+            n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 20,
+            n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
         });
 
-        const totais = {
-            geral: entregas.length,
-            no_prazo: entregas.filter(e => e.dentro_prazo === true).length,
-            fora_prazo: entregas.filter(e => e.dentro_prazo === false).length,
+        const toggleNivel = (n) => {
+            const tem = form.niveis_ativos.includes(n);
+            setForm({ ...form, niveis_ativos: tem ? form.niveis_ativos.filter(x => x !== n) : [...form.niveis_ativos, n].sort() });
+        };
+
+        // Helper de input numérico inline
+        const numInput = (key, step, min, max) => h('input', {
+            type: 'number', step: step || 1, min: min != null ? min : 0, max: max,
+            value: form[key], 
+            onChange: e => setForm({ ...form, [key]: parseFloat(e.target.value) || 0 }),
+            className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1'
+        });
+
+        return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4' },
+            h('div', { className: 'bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto' },
+                h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10' },
+                    h('h2', { className: 'text-lg font-bold text-gray-900' }, '⚙️ ' + (cfg.id ? 'Editar' : 'Configurar') + ' — ' + form.regiao),
+                    h('button', { onClick: onCancelar, className: 'text-gray-400 hover:text-gray-600 text-2xl' }, '×')
+                ),
+                h('div', { className: 'p-4 space-y-4' },
+                    // Toggle ativo
+                    h('div', { className: 'flex items-center justify-between bg-gray-50 rounded-lg p-3' },
+                        h('span', { className: 'text-sm font-medium text-gray-700' }, 'Score ativo nesta região'),
+                        h('input', {
+                            type: 'checkbox', checked: form.ativo,
+                            onChange: e => setForm({ ...form, ativo: e.target.checked }),
+                            className: 'w-5 h-5'
+                        })
+                    ),
+                    // Níveis ativos
+                    h('div', null,
+                        h('label', { className: 'text-sm font-medium text-gray-700 mb-2 block' }, 'Categorias disponíveis'),
+                        h('div', { className: 'flex gap-3' },
+                            [2, 3].map(n => h('label', { key: n, className: 'flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer ' + (form.niveis_ativos.includes(n) ? 'border-purple-400 bg-purple-50' : 'border-gray-300') },
+                                h('input', { type: 'checkbox', checked: form.niveis_ativos.includes(n), onChange: () => toggleNivel(n) }),
+                                h('span', { className: 'text-sm font-medium' }, n === 3 ? 'Ouro' : 'Prata')
+                            ))
+                        )
+                    ),
+
+                    // 🥈 Bloco completo Prata: critérios + valores
+                    form.niveis_ativos.includes(2) && h('div', { className: 'border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-3' },
+                        h('h4', { className: 'text-sm font-bold text-amber-900' }, '🥈 Prata'),
+                        h('p', { className: 'text-[11px] text-amber-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas (28d)'),
+                                numInput('n2_min_entregas', 1, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas após 16h'),
+                                numInput('n2_min_dias_16h', 1, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, '% prazo mín.'),
+                                numInput('n2_min_pct_prazo', 0.1, 0, 100)
+                            )
+                        ),
+                        h('p', { className: 'text-[11px] text-amber-700 mt-2' }, 'Bonificações:'),
+                        h('div', { className: 'grid grid-cols-2 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Sorteio mensal (R$)'),
+                                numInput('sorteio_valor_n2', 0.01, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Teto saque/mês (R$)'),
+                                numInput('saque_teto_n2', 0.01, 0)
+                            )
+                        )
+                    ),
+
+                    // 🥇 Bloco completo Ouro: critérios + valores
+                    form.niveis_ativos.includes(3) && h('div', { className: 'border border-yellow-300 bg-yellow-50 rounded-lg p-3 space-y-3' },
+                        h('h4', { className: 'text-sm font-bold text-yellow-900' }, '🥇 Ouro'),
+                        h('p', { className: 'text-[11px] text-yellow-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
+                        h('div', { className: 'grid grid-cols-3 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas (28d)'),
+                                numInput('n3_min_entregas', 1, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas após 16h'),
+                                numInput('n3_min_dias_16h', 1, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, '% prazo mín.'),
+                                numInput('n3_min_pct_prazo', 0.1, 0, 100)
+                            )
+                        ),
+                        h('p', { className: 'text-[11px] text-yellow-700 mt-2' }, 'Bonificações:'),
+                        h('div', { className: 'grid grid-cols-2 gap-2' },
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Sorteio mensal (R$)'),
+                                numInput('sorteio_valor_n3', 0.01, 0)
+                            ),
+                            h('div', null,
+                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Teto saque/sem (R$)'),
+                                numInput('saque_teto_n3', 0.01, 0)
+                            )
+                        )
+                    ),
+
+                    h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900' },
+                        h('p', { className: 'font-medium mb-1' }, '💡 Dica de calibragem'),
+                        h('p', null, 'Pra ver quantos motoboys vão se enquadrar antes de salvar definitivo, ' +
+                            'salva com valores baixos primeiro, clica "Reavaliar" no card e veja os totais por categoria na aba "Motoboys por Categoria". Depois ajusta.'),
+                        h('p', { className: 'mt-2' }, '⚠️ Mudar critérios reavalia automaticamente todos os motoboys da região em background ao salvar.')
+                    )
+                ),
+                h('div', { className: 'p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white' },
+                    h('button', { onClick: onCancelar, className: 'flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50' }, 'Cancelar'),
+                    h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, '💾 Salvar')
+                )
+            )
+        );
+    }
+
+    // ============================================================
+    // ABA MOTOBOYS POR NÍVEL
+    // 🚀 2026-05: Redesign — cards por região com pódio compacto + drilldown modal
+    // ============================================================
+    function AbaMotoboys({ fetchApi, showToast }) {
+        const [filtroNivel, setFiltroNivel] = useState('');
+        const [busca, setBusca] = useState('');
+        const [motoboys, setMotoboys] = useState([]);
+        const [total, setTotal] = useState(0);
+        const [loading, setLoading] = useState(false);
+        const [regiaoModal, setRegiaoModal] = useState(null); // { regiao, motoboys }
+
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+        // Carrega TODOS os motoboys (limit alto). Front agrupa por região.
+        const carregar = useCallback(async () => {
+            setLoading(true);
+            try {
+                const params = ['limit=10000'];
+                if (filtroNivel) params.push('nivel=' + filtroNivel);
+                const data = await fetchApiRef.current('/score-v2/admin/motoboys-por-nivel?' + params.join('&'));
+                if (data && Array.isArray(data.rows)) {
+                    setMotoboys(data.rows);
+                    setTotal(data.total || data.rows.length);
+                } else if (Array.isArray(data)) {
+                    setMotoboys(data);
+                    setTotal(data.length);
+                } else {
+                    setMotoboys([]);
+                    setTotal(0);
+                }
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            finally { setLoading(false); }
+        }, [filtroNivel]);
+
+        useEffect(() => { carregar(); }, [carregar]);
+
+        // Agrupa motoboys por região + filtra por busca
+        const grupos = useMemo(() => {
+            const buscaNorm = (busca || '').toLowerCase().trim();
+            const map = {};
+            (motoboys || []).forEach(m => {
+                if (buscaNorm) {
+                    const matchNome = String(m.nome_prof || '').toLowerCase().includes(buscaNorm);
+                    const matchCod = String(m.cod_prof || '').toLowerCase().includes(buscaNorm);
+                    const matchRegiao = String(m.regiao || '').toLowerCase().includes(buscaNorm);
+                    if (!matchNome && !matchCod && !matchRegiao) return;
+                }
+                const r = m.regiao || '(sem região)';
+                if (!map[r]) map[r] = [];
+                map[r].push(m);
+            });
+            const lista = Object.entries(map).map(([regiao, lista]) => {
+                // 🆕 2026-05 v3: ordena por CLASSIFICAÇÃO (nível desc) e dentro do
+                // nível desempata por % prazo desc — antes ordenava só por entregas,
+                // o que afundava motoboys Ouro com poucas entregas pra baixo da lista.
+                const ordenado = [...lista].sort((a, b) => {
+                    const nivelA = a.nivel_atual || 1;
+                    const nivelB = b.nivel_atual || 1;
+                    if (nivelA !== nivelB) return nivelB - nivelA; // Ouro(3) → Prata(2) → Bronze(1)
+                    const prazoA = parseFloat(a.pct_prazo) || 0;
+                    const prazoB = parseFloat(b.pct_prazo) || 0;
+                    return prazoB - prazoA; // dentro do nível, % prazo desc
+                });
+                const porNivel = { 1: 0, 2: 0, 3: 0 };
+                ordenado.forEach(m => { porNivel[m.nivel_atual] = (porNivel[m.nivel_atual] || 0) + 1; });
+                return { regiao, motoboys: ordenado, total: ordenado.length, porNivel };
+            });
+            // Ordena regiões por total (maior primeiro)
+            return lista.sort((a, b) => b.total - a.total);
+        }, [motoboys, busca]);
+
+        // Total geral exibido = soma de todos os cards (já filtrado)
+        const totalExibido = useMemo(() => grupos.reduce((s, g) => s + g.total, 0), [grupos]);
+
+        const formatarPodioNome = (nome, max = 22) => {
+            if (!nome) return '-';
+            return nome.length > max ? nome.substring(0, max - 1) + '…' : nome;
         };
 
         return h('div', null,
             // Filtros
-            h('div', { className: 'flex gap-1 mb-3 text-xs' },
-                [
-                    { id: 'todos', label: 'Todas (' + totais.geral + ')', cor: 'bg-gray-200 text-gray-700' },
-                    { id: 'no_prazo', label: '✓ No prazo (' + totais.no_prazo + ')', cor: 'bg-green-100 text-green-800' },
-                    { id: 'fora_prazo', label: '✗ Fora (' + totais.fora_prazo + ')', cor: 'bg-red-100 text-red-800' },
-                ].map(f => h('button', {
-                    key: f.id,
-                    onClick: () => setFiltro(f.id),
-                    className: 'px-2 py-1 rounded font-medium ' + (
-                        filtro === f.id ? 'bg-purple-600 text-white' : f.cor + ' hover:opacity-80'
-                    )
-                }, f.label))
+            h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 mb-3 flex gap-2 items-center flex-wrap' },
+                h('input', {
+                    type: 'text',
+                    value: busca,
+                    placeholder: '🔍 Buscar por motoboy, código ou região...',
+                    onChange: e => setBusca(e.target.value),
+                    className: 'flex-1 min-w-[220px] px-3 py-2 border rounded-lg text-sm'
+                }),
+                h('select', {
+                    value: filtroNivel,
+                    onChange: e => setFiltroNivel(e.target.value),
+                    className: 'px-3 py-2 border rounded-lg text-sm'
+                },
+                    h('option', { value: '' }, 'Todas as categorias'),
+                    h('option', { value: '1' }, 'Apenas Bronze'),
+                    h('option', { value: '2' }, 'Apenas Prata'),
+                    h('option', { value: '3' }, 'Apenas Ouro')
+                ),
+                !loading && h('div', { className: 'text-xs text-gray-500 ml-auto' },
+                    grupos.length + ' regiões · ' + totalExibido.toLocaleString('pt-BR') + ' motoboys'
+                )
             ),
 
-            // Lista (limitada a 50 pra performance)
-            h('div', { className: 'space-y-1 max-h-96 overflow-y-auto' },
-                filtradas.slice(0, 50).map((e, i) => h(EntregaItem, { key: e.os + '-' + i, entrega: e }))
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            grupos.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm bg-white rounded-lg border border-gray-200' }, 'Nenhum motoboy encontrado.') :
+
+            // Grid 2 colunas com cards por região
+            h('div', { className: 'grid md:grid-cols-2 gap-3' },
+                grupos.map(g => {
+                    const top3 = g.motoboys.slice(0, 3);
+                    return h('div', {
+                        key: g.regiao,
+                        className: 'bg-white rounded-xl border border-gray-200 p-3 hover:border-purple-300 transition-colors'
+                    },
+                        // Header região + total
+                        h('div', { className: 'flex items-center justify-between mb-2' },
+                            h('span', { className: 'text-sm font-semibold text-gray-800' }, '📍 ' + g.regiao),
+                            h('span', { className: 'text-[10px] text-gray-400' }, g.total.toLocaleString('pt-BR') + ' total')
+                        ),
+                        // 3 mini-cards de categoria
+                        h('div', { className: 'grid grid-cols-3 gap-1.5 mb-2.5' },
+                            h('div', { className: 'bg-yellow-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-yellow-800 uppercase' }, 'Ouro'),
+                                h('div', { className: 'text-base font-semibold text-yellow-900 leading-none' }, g.porNivel[3] || 0)
+                            ),
+                            h('div', { className: 'bg-amber-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-amber-800 uppercase' }, 'Prata'),
+                                h('div', { className: 'text-base font-semibold text-amber-900 leading-none' }, g.porNivel[2] || 0)
+                            ),
+                            h('div', { className: 'bg-orange-50 rounded-md px-2 py-1.5 text-center' },
+                                h('div', { className: 'text-[9px] font-semibold text-orange-800 uppercase' }, 'Bronze'),
+                                h('div', { className: 'text-base font-semibold text-orange-900 leading-none' }, g.porNivel[1] || 0)
+                            )
+                        ),
+                        // Pódio (top 3)
+                        h('div', { className: 'text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1' }, 'Pódio'),
+                        h('div', { className: 'space-y-0.5 mb-2.5' },
+                            top3.length === 0
+                                ? h('div', { className: 'text-xs text-gray-400 italic px-1.5 py-2' }, 'Nenhum motoboy nessa região')
+                                : top3.map((m, idx) => h('div', {
+                                    key: m.cod_prof,
+                                    className: 'flex items-center justify-between text-xs px-1.5 py-1 rounded ' + (idx === 0 ? 'bg-yellow-50' : '')
+                                },
+                                    h('span', { className: 'truncate flex-1 ' + (idx === 0 ? 'font-medium text-gray-900' : 'text-gray-700') },
+                                        (idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : '🥉 '),
+                                        formatarPodioNome(m.nome_prof || ('#' + m.cod_prof))
+                                    ),
+                                    h('span', { className: 'font-semibold ' + (idx === 0 ? 'text-gray-900' : 'text-gray-500') }, m.entregas_periodo)
+                                ))
+                        ),
+                        // Botão drilldown
+                        h('button', {
+                            onClick: () => setRegiaoModal(g),
+                            className: 'w-full text-xs py-1.5 bg-gray-50 hover:bg-purple-50 text-purple-700 hover:text-purple-800 border border-gray-200 hover:border-purple-300 rounded-md font-medium transition-colors'
+                        }, 'Ver ranking completo →')
+                    );
+                })
             ),
-            filtradas.length > 50 && h('p', { className: 'text-[10px] text-gray-400 text-center mt-2' },
-                '+ ' + (filtradas.length - 50) + ' entregas não exibidas'
-            )
+
+            // Modal drilldown — abre quando clica em "Ver ranking completo"
+            regiaoModal && h(ModalMotoboysRegiao, {
+                regiaoModal,
+                onClose: () => setRegiaoModal(null),
+            })
         );
     }
 
-    function EntregaItem({ entrega }) {
-        const noPrazo = entrega.dentro_prazo === true;
-        const foraPrazo = entrega.dentro_prazo === false;
-        const dia = entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString('pt-BR') : '-';
-        const hora = entrega.hora_solicitado ? String(entrega.hora_solicitado).slice(0, 5) : '';
-        const tempo = entrega.tempo_execucao_minutos != null ? Math.round(entrega.tempo_execucao_minutos) + ' min' : '-';
+    // ============================================================
+    // MODAL DE MOTOBOYS DA REGIÃO
+    // ============================================================
+    // 🆕 2026-05 v3: componente isolado com chips de filtro Todos | Ouro |
+    // Prata | Bronze + renumeração ao filtrar + troféu nas 3 primeiras
+    // posições quando ordenação é por classificação (sempre, neste modal).
+    function ModalMotoboysRegiao({ regiaoModal, onClose }) {
+        const [filtroNivel, setFiltroNivel] = useState('todos'); // 'todos' | 1 | 2 | 3
+
+        // Lista filtrada (mantém a ordem já aplicada — classificação + % prazo)
+        const motoboysFiltrados = useMemo(() => {
+            if (filtroNivel === 'todos') return regiaoModal.motoboys;
+            return regiaoModal.motoboys.filter(m => m.nivel_atual === filtroNivel);
+        }, [regiaoModal.motoboys, filtroNivel]);
+
+        // Definição dos chips (com contagem dinâmica)
+        const chips = [
+            { id: 'todos', label: 'Todos', count: regiaoModal.total },
+            { id: 3, label: 'Ouro', count: regiaoModal.porNivel[3] || 0 },
+            { id: 2, label: 'Prata', count: regiaoModal.porNivel[2] || 0 },
+            { id: 1, label: 'Bronze', count: regiaoModal.porNivel[1] || 0 },
+        ];
+
+        // Estilo de chip ativo vs inativo
+        const chipAtivo = 'bg-purple-600 text-white border-purple-600';
+        const chipInativo = 'bg-white text-gray-600 border-gray-300 hover:border-gray-400';
 
         return h('div', {
-            className: 'flex items-center gap-2 p-2 rounded text-xs border-l-4 ' + (
-                noPrazo ? 'border-green-400 bg-green-50' :
-                foraPrazo ? 'border-red-400 bg-red-50' :
-                'border-gray-300 bg-gray-50'
-            )
+            className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+            onClick: (e) => { if (e.target === e.currentTarget) onClose(); }
         },
-            h('span', { className: 'text-base' },
-                noPrazo ? '✅' : foraPrazo ? '❌' : '⏳'
-            ),
-            h('div', { className: 'flex-1 min-w-0' },
-                h('div', { className: 'font-medium text-gray-900 truncate' },
-                    'OS ' + entrega.os + (entrega.nome_fantasia ? ' • ' + entrega.nome_fantasia : '')
+            h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col' },
+                // Header modal
+                h('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex items-center justify-between flex-shrink-0' },
+                    h('div', null,
+                        h('h2', { className: 'text-lg font-bold' }, '📍 ' + regiaoModal.regiao),
+                        h('p', { className: 'text-purple-200 text-sm' },
+                            regiaoModal.total.toLocaleString('pt-BR') + ' motoboys · ',
+                            'Ouro: ' + (regiaoModal.porNivel[3] || 0) + ' · ',
+                            'Prata: ' + (regiaoModal.porNivel[2] || 0) + ' · ',
+                            'Bronze: ' + (regiaoModal.porNivel[1] || 0)
+                        )
+                    ),
+                    h('button', {
+                        onClick: onClose,
+                        className: 'text-white/80 hover:text-white text-2xl leading-none'
+                    }, '×')
                 ),
-                h('div', { className: 'text-gray-500 truncate' },
-                    dia + ' ' + hora + ' • ' + tempo + (entrega.bairro ? ' • ' + entrega.bairro : '')
+
+                // Toolbar de chips (filtro por categoria)
+                h('div', {
+                    className: 'px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-2 flex-wrap flex-shrink-0'
+                },
+                    h('span', { className: 'text-xs font-medium text-gray-600 mr-1' }, 'Filtrar:'),
+                    ...chips.map(c =>
+                        h('button', {
+                            key: c.id,
+                            onClick: () => setFiltroNivel(c.id),
+                            className: 'px-3 py-1 rounded-full text-xs font-medium border transition ' +
+                                (filtroNivel === c.id ? chipAtivo : chipInativo),
+                        },
+                            c.label,
+                            h('span', {
+                                className: 'ml-1.5 opacity-75 ' + (filtroNivel === c.id ? '' : 'text-gray-500')
+                            }, c.count)
+                        )
+                    )
+                ),
+
+                // Tabela
+                h('div', { className: 'flex-1 overflow-auto' },
+                    motoboysFiltrados.length === 0
+                        ? h('div', { className: 'p-12 text-center text-gray-500 text-sm' },
+                            'Nenhum motoboy nesta categoria.'
+                        )
+                        : h('table', { className: 'w-full text-sm' },
+                            h('thead', { className: 'bg-gray-50 border-b border-gray-200 sticky top-0' },
+                                h('tr', null,
+                                    ['#', 'Motoboy', 'Categoria', 'Entregas (28d)', 'Após 16h', '% Prazo'].map((h2, i) =>
+                                        h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
+                                    )
+                                )
+                            ),
+                            // 🆕 2026-05 v3: renumera DENTRO da lista filtrada (idx do .map)
+                            // Os troféus marcam 1º/2º/3º lugar dentro do recorte atual.
+                            h('tbody', null, motoboysFiltrados.map((m, idx) => {
+                                // Cor de fundo do bloco por nível (só quando filtroNivel === 'todos'
+                                // pra criar a separação visual Ouro/Prata/Bronze)
+                                let bgClasse = '';
+                                if (filtroNivel === 'todos') {
+                                    if (m.nivel_atual === 3) bgClasse = 'bg-yellow-50/60';
+                                    else if (m.nivel_atual === 2) bgClasse = 'bg-gray-50';
+                                }
+                                return h('tr', {
+                                    key: m.cod_prof,
+                                    className: 'border-b border-gray-100 hover:bg-purple-50/40 ' + bgClasse
+                                },
+                                    h('td', { className: 'px-3 py-2 text-gray-600 text-center w-12' },
+                                        idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' :
+                                            h('span', { className: 'text-xs font-medium text-gray-500' }, idx + 1)
+                                    ),
+                                    h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
+                                    h('td', { className: 'px-3 py-2' },
+                                        h('span', {
+                                            className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-orange-100 text-orange-800')
+                                        }, m.nivel_atual === 3 ? 'Ouro' : m.nivel_atual === 2 ? 'Prata' : 'Bronze')
+                                    ),
+                                    h('td', { className: 'px-3 py-2 font-semibold' }, m.entregas_periodo),
+                                    h('td', { className: 'px-3 py-2 text-gray-600' }, m.dias_16h_periodo),
+                                    h('td', { className: 'px-3 py-2 text-green-700 font-medium' }, parseFloat(m.pct_prazo).toFixed(1) + '%')
+                                );
+                            }))
+                        )
+                ),
+
+                // Footer
+                h('div', { className: 'px-4 py-3 border-t flex items-center justify-between flex-shrink-0' },
+                    h('span', { className: 'text-xs text-gray-500' },
+                        filtroNivel === 'todos'
+                            ? 'Mostrando ' + motoboysFiltrados.length + ' de ' + regiaoModal.total
+                            : 'Filtrando ' + chips.find(c => c.id === filtroNivel).label + ': ' + motoboysFiltrados.length + ' de ' + regiaoModal.total
+                    ),
+                    h('button', {
+                        onClick: onClose,
+                        className: 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm'
+                    }, 'Fechar')
                 )
             )
         );
     }
 
     // ============================================================
-    // MODAL DE BOAS-VINDAS (mostra ao entrar no app)
+    // ABA SORTEIOS
     // ============================================================
-    // Exibe automaticamente se:
-    //   - Motoboy está em região configurada
-    //   - É nível 2 ou 3
-    //   - Não viu hoje (cookie/localStorage com data)
-    window.ModuloScoreV2WelcomeModal = {
-        show: async function({ apiUrl, token, fetchAuth, onMount }) {
+    function AbaSorteios({ fetchApi, showToast }) {
+        const [sorteios, setSorteios] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [mesManual, setMesManual] = useState('');
+
+        // 🔧 FIX loop: refs estáveis
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+        const carregar = useCallback(async () => {
+            setLoading(true);
             try {
-                // Já mostrou hoje?
-                const hoje = new Date().toISOString().slice(0, 10);
-                const ultimaVez = (typeof localStorage !== 'undefined') ? localStorage.getItem('score_v2_modal_visto') : null;
-                if (ultimaVez === hoje) return;
+                const data = await fetchApiRef.current('/score-v2/admin/sorteios');
+                setSorteios(data || []);
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            finally { setLoading(false); }
+        }, []);
 
-                let r;
-                if (typeof fetchAuth === 'function') {
-                    r = await fetchAuth(apiUrl + '/score-v2/meu-nivel');
-                } else {
-                    r = await fetch(apiUrl + '/score-v2/meu-nivel', {
-                        headers: { 'Authorization': 'Bearer ' + (token || '') },
-                        credentials: 'include'
-                    });
-                }
-                if (!r.ok) return;
-                const dados = await r.json();
+        useEffect(() => { carregar(); }, [carregar]);
 
-                // Só exibe se região configurada E nível 2+
-                if (!dados.regiao_configurada || dados.nivel < 2) return;
-
-                if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('score_v2_modal_visto', hoje);
-                }
-
-                // Renderiza modal
-                const container = document.createElement('div');
-                container.id = 'score-v2-welcome-modal';
-                document.body.appendChild(container);
-
-                const root = ReactDOM.createRoot ? ReactDOM.createRoot(container) : null;
-                const fechar = () => {
-                    if (root) root.unmount();
-                    else ReactDOM.unmountComponentAtNode(container);
-                    container.remove();
-                };
-
-                const modal = h(WelcomeModal, { dados, onFechar: fechar, onMount });
-                if (root) root.render(modal);
-                else ReactDOM.render(modal, container);
-            } catch (err) {
-                console.warn('[ScoreV2] Modal de welcome falhou silenciosamente:', err.message);
+        const sortearAgora = async () => {
+            if (!mesManual.match(/^\d{4}-\d{2}$/)) {
+                showToastRef.current('⚠️ Informe mês no formato YYYY-MM', 'warning'); return;
             }
-        }
-    };
+            if (!confirm(`Disparar sorteio manual para ${mesManual}?\n\nVai sortear 1 vencedor por (região × nível) ativo. Operação idempotente — não duplica se já foi sorteado.`)) return;
+            try {
+                const r = await fetchApiRef.current('/score-v2/admin/sortear-agora', { method: 'POST', body: JSON.stringify({ mes_referencia: mesManual }) });
+                showToastRef.current(`✅ ${r.sorteios.length} sorteios realizados`, 'success');
+                carregar();
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+        };
 
-    function WelcomeModal({ dados, onFechar, onMount }) {
-        const { nivel, stats, progresso, bonus, subiu } = dados;
-        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
-        const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
-
-        return h('div', { className: 'fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4' },
-            h('div', { className: 'bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full p-5 max-h-[85vh] overflow-y-auto' },
-                h('div', { className: 'text-center mb-4' },
-                    h('div', { className: 'text-5xl mb-2' }, emoji),
-                    h('h2', { className: 'text-lg font-bold text-gray-900' },
-                        subiu ? '🎉 Parabéns, você subiu!' : 'Bem-vindo de volta!'
+        return h('div', null,
+            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
+                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, '🤖 Sorteio automático: dia 1 de cada mês 00:05 (sorteia o mês anterior)'),
+                h('div', { className: 'flex gap-2 items-end' },
+                    h('div', null,
+                        h('label', { className: 'text-xs text-purple-700' }, 'Disparo manual (mês)'),
+                        h('input', { type: 'text', placeholder: 'YYYY-MM', value: mesManual, onChange: e => setMesManual(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' })
                     ),
-                    h('p', { className: 'text-sm text-gray-600 mt-1' }, 'Você está em ' + nome)
-                ),
-                bonus && bonus.lancado && h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-3 mb-3' },
-                    h('p', { className: 'text-sm font-bold text-green-900' }, '💰 Saque grátis disponível!'),
-                    h('p', { className: 'text-xs text-green-700 mt-1' },
-                        'Você tem direito a 1 saque grátis até ' + fmtBRL(bonus.valor) +
-                        ' (' + (bonus.tipo === 'saque_semanal' ? 'esta semana' : 'este mês') + ').'
-                    )
-                ),
-                progresso && h('div', { className: 'mb-4' },
-                    h('h3', { className: 'text-xs font-bold text-gray-700 mb-2' },
-                        '📊 Falta pouco pro ' + (progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze')
-                    ),
-                    h('div', { className: 'space-y-2' }, progresso.requisitos.map((r, i) => h('div', { key: i },
-                        h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                            h('span', { className: 'text-gray-700' }, (r.ok ? '✅ ' : '🔸 ') + r.label),
-                            h('span', { className: 'text-gray-500 font-mono' }, r.atual + (r.sufixo || ''))
-                        ),
-                        h('div', { className: 'w-full bg-gray-200 rounded-full h-1.5' },
-                            h('div', { className: 'h-full bg-purple-500 rounded-full', style: { width: r.pct + '%' } })
+                    h('button', { onClick: sortearAgora, className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, '🎲 Sortear')
+                )
+            ),
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            sorteios.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Nenhum sorteio realizado ainda.') :
+            h('div', { className: 'bg-white rounded-lg border border-gray-200 overflow-x-auto' },
+                h('table', { className: 'w-full text-sm' },
+                    h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
+                        h('tr', null,
+                            ['Mês', 'Região', 'Categoria', 'Vencedor', 'Valor', 'Participantes', 'Sorteado em'].map((h2, i) =>
+                                h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, h2)
+                            )
                         )
+                    ),
+                    h('tbody', null, sorteios.map(s => h('tr', { key: s.id, className: 'border-b border-gray-100' },
+                        h('td', { className: 'px-3 py-2 font-medium' }, s.mes_referencia),
+                        h('td', { className: 'px-3 py-2' }, s.regiao),
+                        h('td', { className: 'px-3 py-2' },
+                            h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
+                        ),
+                        h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '🏆 ' + (s.vencedor_nome || s.vencedor_cod_prof)),
+                        h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
+                        h('td', { className: 'px-3 py-2 text-gray-600' }, s.total_participantes),
+                        h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(s.sorteado_em))
                     )))
-                ),
-                h('button', {
-                    onClick: () => { onFechar(); if (onMount) onMount(dados); },
-                    className: 'w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700'
-                }, 'Continuar')
+                )
             )
         );
     }
