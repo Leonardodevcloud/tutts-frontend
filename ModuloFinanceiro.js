@@ -447,6 +447,677 @@
         );
     }
 
+    // ========================================================================
+    // 🆕 2026-05: ABA RELATÓRIOS — REDESIGN COMPLETO
+    // ========================================================================
+    // Substituiu a versão antiga que:
+    //   - Filtrava `q` (lista carregada com LIMIT 500) por mês/ano client-side
+    //   - Não tinha filtro por período livre
+    //   - Tinha gráfico de barras semanal estático com janela fixa de 4 semanas
+    //   - Misturava cálculos de "tempo médio" obsoletos (saques são em tempo real
+    //     agora via Stark Bank automático)
+    //
+    // O componente agora:
+    //   - Tem state PRÓPRIO de dados (independente do `q` global)
+    //   - Faz fetch direto a /withdrawals com dataInicio/dataFim (sem limit)
+    //   - Período livre via 2 date pickers + 6 atalhos
+    //   - Gráfico em linha (SVG) com 3 séries: Solicitado, Pago, Lucro
+    //   - Granularidade auto: ≤31 dias = diário, senão semanal
+    //   - Comparativo só quando o período é um mês inteiro
+    // ========================================================================
+    function RelatoriosFinanceiroV2({ fetchAuth, API_URL, er, ja }) {
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        // Helpers de data
+        const hoje = () => {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d;
+        };
+        const formatarData = (d) => {
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
+        };
+        const formatarDataBR = (iso) => {
+            // Aceita 'YYYY-MM-DD' ou Date
+            const d = typeof iso === 'string' ? new Date(iso + 'T12:00:00') : iso;
+            return d.toLocaleDateString('pt-BR');
+        };
+
+        // Inicializa com o mês corrente
+        const inicialIni = useMemo(() => {
+            const d = hoje();
+            d.setDate(1);
+            return formatarData(d);
+        }, []);
+        const inicialFim = useMemo(() => {
+            const d = hoje();
+            d.setMonth(d.getMonth() + 1, 0); // último dia do mês corrente
+            return formatarData(d);
+        }, []);
+
+        const [dataIni, setDataIni] = useState(inicialIni);
+        const [dataFim, setDataFim] = useState(inicialFim);
+        const [dados, setDados] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [erro, setErro] = useState(null);
+
+        // Refs estáveis pra fetchAuth/API_URL/ja (padrão Tutts pra evitar loop)
+        const fetchAuthRef = useRef(fetchAuth);
+        const apiUrlRef = useRef(API_URL);
+        const jaRef = useRef(ja);
+        useEffect(() => { fetchAuthRef.current = fetchAuth; }, [fetchAuth]);
+        useEffect(() => { apiUrlRef.current = API_URL; }, [API_URL]);
+        useEffect(() => { jaRef.current = ja; }, [ja]);
+
+        // Fetch quando as datas mudam
+        const carregar = useCallback(async () => {
+            setLoading(true);
+            setErro(null);
+            try {
+                const url = `${apiUrlRef.current}/withdrawals?dataInicio=${dataIni}&dataFim=${dataFim}&tipoFiltro=solicitacao`;
+                const resp = await fetchAuthRef.current(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const json = await resp.json();
+                setDados(Array.isArray(json) ? json : (json && Array.isArray(json.rows) ? json.rows : []));
+            } catch (e) {
+                console.error('Erro ao carregar relatório:', e);
+                setErro(e.message);
+                setDados([]);
+            } finally {
+                setLoading(false);
+            }
+        }, [dataIni, dataFim]);
+
+        useEffect(() => { carregar(); }, [carregar]);
+
+        // ====================================================================
+        // CÁLCULOS DERIVADOS (memoizados)
+        // ====================================================================
+
+        // Filtros por status com semântica correta (incluindo pago_stark)
+        const filtrados = useMemo(() => {
+            const aprovados = dados.filter(e =>
+                e.status === 'aprovado' ||
+                e.status === 'aprovado_gratuidade' ||
+                e.status === 'pago_stark'
+            );
+            // Sem gratuidade: aprovado strict + pago_stark sem has_gratuity
+            const semGrat = dados.filter(e =>
+                e.status === 'aprovado' ||
+                (e.status === 'pago_stark' && !e.has_gratuity)
+            );
+            // Com gratuidade: aprovado_gratuidade + pago_stark com has_gratuity
+            const comGrat = dados.filter(e =>
+                e.status === 'aprovado_gratuidade' ||
+                (e.status === 'pago_stark' && e.has_gratuity === true)
+            );
+            const rejeitados = dados.filter(e => e.status === 'rejeitado');
+            const pendentes = dados.filter(e => e.status === 'aguardando_aprovacao' || e.status === 'pending');
+            return { aprovados, semGrat, comGrat, rejeitados, pendentes };
+        }, [dados]);
+
+        // KPIs monetários
+        const kpis = useMemo(() => {
+            const totalSolicitado = dados.reduce((s, e) => s + parseFloat(e.requested_amount || 0), 0);
+            const totalPago = filtrados.aprovados.reduce((s, e) => s + parseFloat(e.final_amount || 0), 0);
+            // Lucro = soma da diferença (requested - final) dos SEM gratuidade
+            const lucro = filtrados.semGrat.reduce((s, e) =>
+                s + (parseFloat(e.requested_amount || 0) - parseFloat(e.final_amount || 0)), 0
+            );
+            // Deixou arrecadar = 4,5% do que teria taxa nos COM gratuidade
+            const deixouArrecadar = filtrados.comGrat.reduce((s, e) =>
+                s + 0.045 * parseFloat(e.requested_amount || 0), 0
+            );
+            return { totalSolicitado, totalPago, lucro, deixouArrecadar };
+        }, [dados, filtrados]);
+
+        // ====================================================================
+        // SÉRIES DO GRÁFICO (auto granularidade)
+        // ====================================================================
+        const serie = useMemo(() => {
+            if (!dataIni || !dataFim) return { pontos: [], tipo: 'diario' };
+            const d1 = new Date(dataIni + 'T00:00:00');
+            const d2 = new Date(dataFim + 'T23:59:59');
+            const msPorDia = 24 * 60 * 60 * 1000;
+            const dias = Math.round((d2.getTime() - d1.getTime()) / msPorDia) + 1;
+
+            // ≤32 dias = diário (incluindo mês cheio); senão = semanal
+            const tipoGranularidade = dias <= 32 ? 'diario' : 'semanal';
+            const bucketsMs = tipoGranularidade === 'diario' ? msPorDia : 7 * msPorDia;
+            const totalBuckets = Math.ceil(dias / (tipoGranularidade === 'diario' ? 1 : 7));
+
+            // Inicializa buckets
+            const buckets = [];
+            for (let i = 0; i < totalBuckets; i++) {
+                const inicio = new Date(d1.getTime() + i * bucketsMs);
+                const fim = new Date(Math.min(inicio.getTime() + bucketsMs - 1, d2.getTime()));
+                buckets.push({
+                    inicio, fim,
+                    solicitado: 0, pago: 0, lucro: 0,
+                    qtd: 0,
+                });
+            }
+
+            // Distribui os registros nos buckets
+            dados.forEach(e => {
+                const ts = new Date(e.created_at).getTime();
+                if (ts < d1.getTime() || ts > d2.getTime()) return;
+                const idx = Math.floor((ts - d1.getTime()) / bucketsMs);
+                if (!buckets[idx]) return;
+                const req = parseFloat(e.requested_amount || 0);
+                const fin = parseFloat(e.final_amount || 0);
+                const aprovado = e.status === 'aprovado' ||
+                                 e.status === 'aprovado_gratuidade' ||
+                                 e.status === 'pago_stark';
+                const semGrat = e.status === 'aprovado' ||
+                                (e.status === 'pago_stark' && !e.has_gratuity);
+                buckets[idx].solicitado += req;
+                if (aprovado) buckets[idx].pago += fin;
+                if (semGrat) buckets[idx].lucro += (req - fin);
+                buckets[idx].qtd++;
+            });
+
+            return { pontos: buckets, tipo: tipoGranularidade };
+        }, [dados, dataIni, dataFim]);
+
+        // ====================================================================
+        // TOPS 10
+        // ====================================================================
+        const tops = useMemo(() => {
+            const mapSolicitam = {};
+            filtrados.semGrat.forEach(e => {
+                const k = e.user_cod + '|' + (e.user_name || '');
+                if (!mapSolicitam[k]) {
+                    mapSolicitam[k] = { cod: e.user_cod, nome: e.user_name, qtd: 0, valor: 0, lucro: 0 };
+                }
+                mapSolicitam[k].qtd++;
+                mapSolicitam[k].valor += parseFloat(e.final_amount || 0);
+                mapSolicitam[k].lucro += parseFloat(e.requested_amount || 0) - parseFloat(e.final_amount || 0);
+            });
+            const topSolicitam = Object.values(mapSolicitam).sort((a, b) => b.qtd - a.qtd).slice(0, 10);
+
+            const mapGrat = {};
+            filtrados.comGrat.forEach(e => {
+                const k = e.user_cod + '|' + (e.user_name || '');
+                if (!mapGrat[k]) {
+                    mapGrat[k] = { cod: e.user_cod, nome: e.user_name, qtd: 0, valor: 0, deixouArrecadar: 0 };
+                }
+                mapGrat[k].qtd++;
+                mapGrat[k].valor += parseFloat(e.final_amount || 0);
+                mapGrat[k].deixouArrecadar += 0.045 * parseFloat(e.requested_amount || 0);
+            });
+            const topGratuidade = Object.values(mapGrat).sort((a, b) => b.qtd - a.qtd).slice(0, 10);
+
+            return { topSolicitam, topGratuidade };
+        }, [filtrados]);
+
+        // ====================================================================
+        // COMPARATIVO COM MÊS ANTERIOR (só se período é mês inteiro)
+        // ====================================================================
+        const [comparativo, setComparativo] = useState(null);
+
+        // Detecta se o período cobre exatamente um mês inteiro
+        const ehMesInteiro = useMemo(() => {
+            if (!dataIni || !dataFim) return false;
+            const di = new Date(dataIni + 'T00:00:00');
+            const df = new Date(dataFim + 'T00:00:00');
+            if (di.getMonth() !== df.getMonth() || di.getFullYear() !== df.getFullYear()) return false;
+            if (di.getDate() !== 1) return false;
+            // último dia do mês
+            const ultimoDia = new Date(di.getFullYear(), di.getMonth() + 1, 0).getDate();
+            if (df.getDate() !== ultimoDia) return false;
+            return true;
+        }, [dataIni, dataFim]);
+
+        useEffect(() => {
+            // Só busca comparativo se for mês inteiro
+            if (!ehMesInteiro) { setComparativo(null); return; }
+            const di = new Date(dataIni + 'T00:00:00');
+            // Calcula mês anterior
+            const mesAntIni = new Date(di.getFullYear(), di.getMonth() - 1, 1);
+            const mesAntFim = new Date(di.getFullYear(), di.getMonth(), 0);
+            const iniIso = formatarData(mesAntIni);
+            const fimIso = formatarData(mesAntFim);
+
+            (async () => {
+                try {
+                    const url = `${apiUrlRef.current}/withdrawals?dataInicio=${iniIso}&dataFim=${fimIso}&tipoFiltro=solicitacao`;
+                    const resp = await fetchAuthRef.current(url);
+                    if (!resp.ok) return;
+                    const json = await resp.json();
+                    const arr = Array.isArray(json) ? json : (json && Array.isArray(json.rows) ? json.rows : []);
+                    const totalAnt = arr
+                        .filter(e => ['aprovado', 'aprovado_gratuidade', 'pago_stark'].includes(e.status))
+                        .reduce((s, e) => s + parseFloat(e.final_amount || 0), 0);
+                    setComparativo({ totalAnt, mesAntIni, mesAntFim });
+                } catch (e) {
+                    console.warn('Comparativo falhou:', e);
+                }
+            })();
+        }, [ehMesInteiro, dataIni]);
+
+        // ====================================================================
+        // ATALHOS DE PERÍODO
+        // ====================================================================
+        const atalhos = useMemo(() => {
+            const h = hoje();
+            const mesIni = new Date(h.getFullYear(), h.getMonth(), 1);
+            const mesFim = new Date(h.getFullYear(), h.getMonth() + 1, 0);
+            const mesAntIni = new Date(h.getFullYear(), h.getMonth() - 1, 1);
+            const mesAntFim = new Date(h.getFullYear(), h.getMonth(), 0);
+            const seteAtras = new Date(h); seteAtras.setDate(h.getDate() - 6);
+            const trintaAtras = new Date(h); trintaAtras.setDate(h.getDate() - 29);
+            const anoIni = new Date(h.getFullYear(), 0, 1);
+            const anoFim = new Date(h.getFullYear(), 11, 31);
+
+            return [
+                { id: 'hoje', label: 'Hoje', ini: formatarData(h), fim: formatarData(h) },
+                { id: '7d', label: '7 dias', ini: formatarData(seteAtras), fim: formatarData(h) },
+                { id: '30d', label: '30 dias', ini: formatarData(trintaAtras), fim: formatarData(h) },
+                { id: 'mes', label: 'Este mês', ini: formatarData(mesIni), fim: formatarData(mesFim) },
+                { id: 'mes_ant', label: 'Mês anterior', ini: formatarData(mesAntIni), fim: formatarData(mesAntFim) },
+                { id: 'ano', label: 'Este ano', ini: formatarData(anoIni), fim: formatarData(anoFim) },
+            ];
+        }, []);
+
+        const atalhoAtivo = useMemo(() => {
+            return atalhos.find(a => a.ini === dataIni && a.fim === dataFim)?.id || null;
+        }, [atalhos, dataIni, dataFim]);
+
+        const aplicarAtalho = (atalho) => {
+            setDataIni(atalho.ini);
+            setDataFim(atalho.fim);
+        };
+
+        // ====================================================================
+        // GERAR PDF
+        // ====================================================================
+        const gerarPdf = () => {
+            const html = `
+                <html>
+                <head>
+                <title>Relatório Financeiro - ${formatarDataBR(dataIni)} até ${formatarDataBR(dataFim)}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }
+                    h1 { color: #166534; border-bottom: 3px solid #166534; padding-bottom: 10px; }
+                    h2 { color: #374151; margin-top: 25px; }
+                    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+                    .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }
+                    .card-value { font-size: 20px; font-weight: bold; color: #166534; }
+                    .card-label { font-size: 11px; color: #6b7280; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+                    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+                    th { background: #166534; color: white; }
+                    .footer { margin-top: 30px; text-align: center; color: #9ca3af; font-size: 10px; }
+                </style>
+                </head>
+                <body>
+                <h1>📊 Relatório Financeiro</h1>
+                <p><strong>Período:</strong> ${formatarDataBR(dataIni)} até ${formatarDataBR(dataFim)}</p>
+                <p><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+                <div class="cards">
+                    <div class="card"><div class="card-value">R$ ${kpis.totalSolicitado.toFixed(2)}</div><div class="card-label">Total Solicitado</div></div>
+                    <div class="card"><div class="card-value">R$ ${kpis.totalPago.toFixed(2)}</div><div class="card-label">Total Pago</div></div>
+                    <div class="card"><div class="card-value" style="color:#059669">R$ ${kpis.lucro.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>
+                    <div class="card"><div class="card-value" style="color:#dc2626">R$ ${kpis.deixouArrecadar.toFixed(2)}</div><div class="card-label">Deixou Arrecadar</div></div>
+                </div>
+                <h2>📋 Detalhamento (primeiros 100)</h2>
+                <table>
+                    <thead><tr><th>Data</th><th>Profissional</th><th>Código</th><th>Solicitado</th><th>Pago</th><th>Status</th></tr></thead>
+                    <tbody>
+                    ${dados.slice(0, 100).map(e => `
+                        <tr>
+                        <td>${new Date(e.created_at).toLocaleDateString('pt-BR')}</td>
+                        <td>${e.user_name || '-'}</td>
+                        <td>${e.user_cod}</td>
+                        <td>R$ ${parseFloat(e.requested_amount).toFixed(2)}</td>
+                        <td>R$ ${parseFloat(e.final_amount).toFixed(2)}</td>
+                        <td>${e.status === 'aprovado' || (e.status === 'pago_stark' && !e.has_gratuity) ? '✅' :
+                              e.status === 'aprovado_gratuidade' || (e.status === 'pago_stark' && e.has_gratuity) ? '🎁' :
+                              e.status === 'rejeitado' ? '❌' : '⏳'}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+                <div class="footer"><p>Central do Entregador Tutts</p></div>
+                </body>
+                </html>
+            `;
+            const w = window.open('', '_blank');
+            w.document.write(html);
+            w.document.close();
+            w.print();
+        };
+
+        // ====================================================================
+        // RENDER
+        // ====================================================================
+
+        // Helper pra montar polyline do SVG a partir dos pontos
+        const montarPolyline = (campo, maxValor, alturaSvg, larguraSvg, paddingL, paddingR, paddingT, paddingB) => {
+            if (serie.pontos.length === 0 || maxValor === 0) return '';
+            const usableW = larguraSvg - paddingL - paddingR;
+            const usableH = alturaSvg - paddingT - paddingB;
+            const stepX = serie.pontos.length === 1 ? 0 : usableW / (serie.pontos.length - 1);
+            return serie.pontos.map((pt, i) => {
+                const x = paddingL + i * stepX;
+                const y = paddingT + usableH - (pt[campo] / maxValor) * usableH;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+        };
+
+        const maxValor = useMemo(() => {
+            return Math.max(
+                ...serie.pontos.map(p => Math.max(p.solicitado, p.pago, p.lucro)),
+                1
+            );
+        }, [serie]);
+
+        // Labels do eixo X (até 5 marcas distribuídas)
+        const eixoXLabels = useMemo(() => {
+            const n = serie.pontos.length;
+            if (n === 0) return [];
+            const indices = n <= 5 ? serie.pontos.map((_, i) => i) : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1];
+            return indices.map(i => {
+                const pt = serie.pontos[i];
+                const d = pt.inicio;
+                return {
+                    idx: i,
+                    label: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+                };
+            });
+        }, [serie]);
+
+        // Variação do comparativo
+        const variacao = useMemo(() => {
+            if (!comparativo) return null;
+            const ant = comparativo.totalAnt || 0;
+            const atual = kpis.totalPago || 0;
+            if (ant === 0) return atual === 0 ? 0 : 100;
+            return ((atual - ant) / ant) * 100;
+        }, [comparativo, kpis.totalPago]);
+
+        return React.createElement(React.Fragment, null,
+            // Card de filtros (período + atalhos + botão PDF)
+            React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-4' },
+                React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-3 mb-3' },
+                    React.createElement('div', { className: 'flex flex-wrap items-center gap-2' },
+                        React.createElement('span', { className: 'font-semibold text-gray-700 text-sm' }, '📅 Período:'),
+                        React.createElement('input', {
+                            type: 'date', value: dataIni,
+                            onChange: e => setDataIni(e.target.value),
+                            className: 'px-3 py-2 border rounded-lg text-sm',
+                        }),
+                        React.createElement('span', { className: 'text-gray-400 text-sm' }, 'até'),
+                        React.createElement('input', {
+                            type: 'date', value: dataFim,
+                            onChange: e => setDataFim(e.target.value),
+                            className: 'px-3 py-2 border rounded-lg text-sm',
+                        })
+                    ),
+                    React.createElement('button', {
+                        onClick: gerarPdf,
+                        disabled: loading || dados.length === 0,
+                        className: 'px-5 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed',
+                    }, '📄 Gerar PDF')
+                ),
+                // Atalhos rápidos
+                React.createElement('div', { className: 'flex flex-wrap gap-2 items-center' },
+                    atalhos.map(a =>
+                        React.createElement('button', {
+                            key: a.id,
+                            onClick: () => aplicarAtalho(a),
+                            className: 'px-3 py-1 rounded-full text-xs font-medium border transition ' +
+                                (atalhoAtivo === a.id
+                                    ? 'bg-purple-600 text-white border-purple-600'
+                                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'),
+                        }, a.label)
+                    ),
+                    React.createElement('span', { className: 'text-xs text-gray-500 ml-2' },
+                        loading
+                            ? 'Carregando…'
+                            : erro
+                                ? React.createElement('span', { className: 'text-red-600' }, '⚠️ ' + erro)
+                                : `Mostrando ${dados.length.toLocaleString('pt-BR')} saques · ${formatarDataBR(dataIni)} a ${formatarDataBR(dataFim)}`
+                    )
+                )
+            ),
+
+            // KPIs monetários (4 cards)
+            React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 mb-3' },
+                kpiCard('Total Solicitado', er(kpis.totalSolicitado), `${dados.length} saques`, 'text-blue-600'),
+                kpiCard('Total Pago', er(kpis.totalPago), 'após taxas', 'text-green-600'),
+                kpiCard('Lucro (Taxas 4,5%)', er(kpis.lucro), `${filtrados.semGrat.length} saques`, 'text-purple-600'),
+                kpiCard('Deixou Arrecadar', er(kpis.deixouArrecadar), `${filtrados.comGrat.length} com gratuidade`, 'text-orange-600')
+            ),
+
+            // KPIs de contagem (5 cards)
+            React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-3 mb-4' },
+                kpiContagem(dados.length, 'Total', 'text-purple-600'),
+                kpiContagem(filtrados.aprovados.length, 'Aprovados', 'text-green-600'),
+                kpiContagem(filtrados.comGrat.length, 'Com Gratuidade', 'text-blue-600'),
+                kpiContagem(filtrados.rejeitados.length, 'Rejeitados', 'text-red-600'),
+                kpiContagem(filtrados.pendentes.length, 'Pendentes', 'text-yellow-600')
+            ),
+
+            // Comparativo (só se mês inteiro)
+            ehMesInteiro && comparativo && React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-4' },
+                React.createElement('div', { className: 'flex items-center justify-between flex-wrap gap-2 mb-2' },
+                    React.createElement('h3', { className: 'font-bold text-gray-800' }, '📊 Comparativo com mês anterior'),
+                    React.createElement('span', { className: 'text-xs text-gray-500' },
+                        formatarDataBR(formatarData(comparativo.mesAntIni)), ' a ', formatarDataBR(formatarData(comparativo.mesAntFim))
+                    )
+                ),
+                React.createElement('div', { className: 'flex items-center gap-3 flex-wrap text-sm' },
+                    React.createElement('span', { className: 'text-gray-600' }, 'Mês anterior: ', React.createElement('strong', { className: 'text-gray-900' }, er(comparativo.totalAnt))),
+                    React.createElement('span', { className: 'text-gray-400' }, '→'),
+                    React.createElement('span', { className: 'text-gray-600' }, 'Mês atual: ', React.createElement('strong', { className: 'text-gray-900' }, er(kpis.totalPago))),
+                    React.createElement('span', {
+                        className: 'px-3 py-1 rounded-full text-xs font-bold ' +
+                            (variacao >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'),
+                    },
+                        variacao >= 0 ? '↑' : '↓', ' ', Math.abs(variacao).toFixed(1), '%'
+                    )
+                )
+            ),
+
+            // Gráfico em linha
+            React.createElement('div', { className: 'bg-white rounded-xl shadow p-5 mb-4' },
+                React.createElement('div', { className: 'flex items-center justify-between mb-3 flex-wrap gap-2' },
+                    React.createElement('div', null,
+                        React.createElement('h3', { className: 'font-bold text-gray-800' }, '📈 Evolução do período'),
+                        React.createElement('p', { className: 'text-xs text-gray-500 mt-0.5' },
+                            'Granularidade ', serie.tipo === 'diario' ? 'diária' : 'semanal',
+                            ' · ', serie.pontos.length, ' ponto(s)'
+                        )
+                    ),
+                    React.createElement('div', { className: 'flex gap-3 text-xs' },
+                        legendaItem('#185FA5', 'Solicitado'),
+                        legendaItem('#1D9E75', 'Pago'),
+                        legendaItem('#7F77DD', 'Lucro (taxas)')
+                    )
+                ),
+                serie.pontos.length === 0 || maxValor <= 0
+                    ? React.createElement('p', { className: 'text-center text-gray-400 py-12 text-sm' }, 'Sem dados no período selecionado.')
+                    : React.createElement('svg', {
+                        viewBox: '0 0 620 240',
+                        style: { width: '100%', height: '240px' },
+                        role: 'img',
+                        'aria-label': 'Gráfico de evolução de saques'
+                    },
+                        // Eixos
+                        React.createElement('line', { x1: 50, y1: 20, x2: 50, y2: 200, stroke: '#E5E7EB', strokeWidth: 0.5 }),
+                        React.createElement('line', { x1: 50, y1: 200, x2: 610, y2: 200, stroke: '#E5E7EB', strokeWidth: 0.5 }),
+                        // Grades horizontais (4 níveis)
+                        [0.25, 0.5, 0.75].map(frac =>
+                            React.createElement('line', {
+                                key: 'g' + frac,
+                                x1: 50, y1: 20 + frac * 180, x2: 610, y2: 20 + frac * 180,
+                                stroke: '#E5E7EB', strokeWidth: 0.5, strokeDasharray: '2,3',
+                            })
+                        ),
+                        // Labels do eixo Y (valores)
+                        [0, 0.25, 0.5, 0.75, 1].map(frac => {
+                            const valor = maxValor * (1 - frac);
+                            const y = 20 + frac * 180;
+                            return React.createElement('text', {
+                                key: 'y' + frac,
+                                x: 44, y: y + 3,
+                                textAnchor: 'end', fontSize: 9, fill: '#9CA3AF',
+                            }, valor >= 1000 ? `R$ ${Math.round(valor / 1000)}k` : `R$ ${Math.round(valor)}`);
+                        }),
+                        // Linhas (3 séries)
+                        React.createElement('polyline', {
+                            points: montarPolyline('solicitado', maxValor, 220, 620, 50, 10, 20, 40),
+                            fill: 'none', stroke: '#185FA5', strokeWidth: 2,
+                        }),
+                        React.createElement('polyline', {
+                            points: montarPolyline('pago', maxValor, 220, 620, 50, 10, 20, 40),
+                            fill: 'none', stroke: '#1D9E75', strokeWidth: 2,
+                        }),
+                        React.createElement('polyline', {
+                            points: montarPolyline('lucro', maxValor, 220, 620, 50, 10, 20, 40),
+                            fill: 'none', stroke: '#7F77DD', strokeWidth: 2, strokeDasharray: '3,2',
+                        }),
+                        // Pontinhos (só se ≤ 32 pontos pra não ficar poluído)
+                        serie.pontos.length <= 32 && serie.pontos.map((pt, i) => {
+                            const stepX = serie.pontos.length === 1 ? 0 : (620 - 50 - 10) / (serie.pontos.length - 1);
+                            const x = 50 + i * stepX;
+                            return React.createElement(React.Fragment, { key: 'p' + i },
+                                React.createElement('circle', {
+                                    cx: x, cy: 20 + 180 - (pt.solicitado / maxValor) * 180,
+                                    r: 2.5, fill: '#185FA5',
+                                }),
+                                React.createElement('circle', {
+                                    cx: x, cy: 20 + 180 - (pt.pago / maxValor) * 180,
+                                    r: 2.5, fill: '#1D9E75',
+                                }),
+                                React.createElement('circle', {
+                                    cx: x, cy: 20 + 180 - (pt.lucro / maxValor) * 180,
+                                    r: 2.5, fill: '#7F77DD',
+                                }),
+                                // Tooltip nativo via <title>
+                                React.createElement('rect', {
+                                    x: x - 12, y: 15, width: 24, height: 195,
+                                    fill: 'transparent', style: { cursor: 'pointer' },
+                                },
+                                    React.createElement('title', null,
+                                        `${formatarDataBR(formatarData(pt.inicio))}\n` +
+                                        `Solicitado: ${er(pt.solicitado)}\n` +
+                                        `Pago: ${er(pt.pago)}\n` +
+                                        `Lucro: ${er(pt.lucro)}\n` +
+                                        `${pt.qtd} saque(s)`
+                                    )
+                                )
+                            );
+                        }),
+                        // Labels do eixo X
+                        eixoXLabels.map((it, i) => {
+                            const stepX = serie.pontos.length === 1 ? 0 : (620 - 50 - 10) / (serie.pontos.length - 1);
+                            const x = 50 + it.idx * stepX;
+                            return React.createElement('text', {
+                                key: 'x' + i,
+                                x: x, y: 220,
+                                textAnchor: 'middle', fontSize: 10, fill: '#9CA3AF',
+                            }, it.label);
+                        })
+                    )
+            ),
+
+            // Top 10 - 2 colunas
+            React.createElement('div', { className: 'grid md:grid-cols-2 gap-4 mb-4' },
+                // Mais Solicitam
+                React.createElement('div', { className: 'bg-white rounded-xl shadow p-5' },
+                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, '🏆 Top 10 - Mais Solicitam Saques'),
+                    tops.topSolicitam.length === 0
+                        ? React.createElement('p', { className: 'text-gray-500 text-center py-4' }, 'Nenhum dado no período')
+                        : React.createElement('div', { className: 'space-y-2' },
+                            tops.topSolicitam.map((e, i) =>
+                                React.createElement('div', {
+                                    key: i,
+                                    className: 'flex items-center justify-between p-3 rounded-lg ' +
+                                        (i === 0 ? 'bg-yellow-50 border border-yellow-200' :
+                                            i === 1 ? 'bg-gray-100' :
+                                                i === 2 ? 'bg-orange-50' : 'bg-gray-50'),
+                                },
+                                    React.createElement('div', { className: 'flex items-center gap-2' },
+                                        React.createElement('span', { className: 'font-bold text-gray-600 text-sm w-6' }, (i + 1) + 'º'),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-semibold text-sm' }, e.nome || '-'),
+                                            React.createElement('p', { className: 'text-xs text-gray-500' }, 'Cód: ', e.cod)
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'text-right' },
+                                        React.createElement('p', { className: 'font-bold text-green-600' }, er(e.valor)),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, e.qtd, ' saques'),
+                                        React.createElement('p', { className: 'text-xs text-green-700' }, 'Lucro: ', er(e.lucro))
+                                    )
+                                )
+                            )
+                        )
+                ),
+                // Com Gratuidade
+                React.createElement('div', { className: 'bg-white rounded-xl shadow p-5' },
+                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, '🎁 Top 10 - Saques com Gratuidade'),
+                    tops.topGratuidade.length === 0
+                        ? React.createElement('p', { className: 'text-gray-500 text-center py-4' }, 'Nenhum dado no período')
+                        : React.createElement('div', { className: 'space-y-2' },
+                            tops.topGratuidade.map((e, i) =>
+                                React.createElement('div', {
+                                    key: i,
+                                    className: 'flex items-center justify-between p-3 rounded-lg ' +
+                                        (i === 0 ? 'bg-purple-50 border border-purple-200' :
+                                            i === 1 ? 'bg-gray-100' :
+                                                i === 2 ? 'bg-orange-50' : 'bg-gray-50'),
+                                },
+                                    React.createElement('div', { className: 'flex items-center gap-2' },
+                                        React.createElement('span', { className: 'font-bold text-gray-600 text-sm w-6' }, (i + 1) + 'º'),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-semibold text-sm' }, e.nome || '-'),
+                                            React.createElement('p', { className: 'text-xs text-gray-500' }, 'Cód: ', e.cod)
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'text-right' },
+                                        React.createElement('p', { className: 'font-bold text-purple-600' }, er(e.valor)),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, e.qtd, ' saques'),
+                                        React.createElement('p', { className: 'text-xs text-red-600' }, 'Deixou: ', er(e.deixouArrecadar))
+                                    )
+                                )
+                            )
+                        )
+                )
+            )
+        );
+
+        // Helpers internos de render
+        function kpiCard(label, valor, sub, corClass) {
+            return React.createElement('div', { className: 'bg-white rounded-xl shadow p-4' },
+                React.createElement('p', { className: 'text-sm text-gray-600' }, label),
+                React.createElement('p', { className: 'text-2xl font-bold ' + corClass }, valor),
+                React.createElement('p', { className: 'text-xs text-gray-500 mt-1' }, sub)
+            );
+        }
+        function kpiContagem(valor, label, corClass) {
+            return React.createElement('div', { className: 'bg-white rounded-xl shadow p-3 text-center' },
+                React.createElement('p', { className: 'text-2xl font-bold ' + corClass }, valor.toLocaleString('pt-BR')),
+                React.createElement('p', { className: 'text-xs text-gray-600' }, label)
+            );
+        }
+        function legendaItem(cor, label) {
+            return React.createElement('span', { className: 'flex items-center gap-1.5' },
+                React.createElement('span', {
+                    style: { width: 10, height: 10, background: cor, borderRadius: 2, display: 'inline-block' },
+                }),
+                label
+            );
+        }
+    }
+    // Expõe globalmente pra ser usado no IIFE da aba "relatorios"
+    window.__RelatoriosFinanceiroV2 = RelatoriosFinanceiroV2;
+
     window.renderModuloFinanceiro = function(props) {
         const {
             c, s, p, x, q, U, Q, H, Z, Y, K, X, z, B, V, J,
@@ -4673,315 +5344,9 @@
                     }), Ya()
                 },
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "❌ Confirmar Recusa"))))))))), "relatorios" === p.finTab && React.createElement(React.Fragment, null, (() => {
-                const e = new Date,
-                    t = e.getMonth(),
-                    a = e.getFullYear(),
-                    l = void 0 !== p.relMes ? parseInt(p.relMes) : t,
-                    r = void 0 !== p.relAno ? parseInt(p.relAno) : a,
-                    o = e => {
-                        const t = new Date(e),
-                            a = t.getDay(),
-                            l = t.getHours() + t.getMinutes() / 60;
-                        return 0 !== a && (6 === a ? l >= 9 && l < 12 : l >= 9 && l < 18)
-                    },
-                    c = q.filter(e => {
-                        const t = new Date(e.created_at);
-                        return t.getMonth() === l && t.getFullYear() === r
-                    }),
-                    s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status),
-                    // 🐛 FIX 2026-05: saques aprovados sem gratuidade incluindo pago_stark.
-                    // Antes filtrava só status==='aprovado' strict — mas depois que o Stark Bank
-                    // paga, o status vira 'pago_stark', e o filtro perdia esses registros
-                    // (zerando Top 10 / Lucro / contadores).
-                    n = c.filter(e =>
-                        e.status === "aprovado" ||
-                        (e.status === "pago_stark" && !e.has_gratuity)
-                    ),
-                    // 🐛 FIX 2026-05: saques com gratuidade — inclui pago_stark com has_gratuity
-                    m = c.filter(e =>
-                        e.status === "aprovado_gratuidade" ||
-                        (e.status === "pago_stark" && e.has_gratuity === true)
-                    ),
-                    i = 2025,
-                    d = e => {
-                        const t = new Date(e);
-                        return t.getFullYear() > i || !(t.getFullYear() < i) && (t.getMonth() > 11 || !(t.getMonth() < 11) && t.getDate() >= 13)
-                    },
-                    u = s.filter(e => !(!e.updated_at || !e.created_at) && (!!o(e.created_at) && !!d(e.created_at))).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
-                    g = u.length > 0 ? Math.round(u.reduce((e, t) => e + t, 0) / u.length) : 0,
-                    b = s.filter(e => {
-                        if (!e.updated_at || !e.created_at || !o(e.created_at)) return !1;
-                        if (!d(e.created_at)) return !1;
-                        const t = (new Date(e.updated_at) - new Date(e.created_at)) / 6e4;
-                        return t > 60 && t <= 1440
-                    }),
-                    R = [],
-                    E = new Date(r, l + 1, 0).getDate();
-                for (let e = 1; e <= E; e++) {
-                    if (r === i && 11 === l && e < 13) {
-                        R.push({
-                            dia: e,
-                            tempoMedio: 0,
-                            qtd: 0
-                        });
-                        continue
-                    }
-                    const t = s.filter(t => new Date(t.created_at).getDate() === e && o(t.created_at)),
-                        a = t.filter(e => e.updated_at).map(e => (new Date(e.updated_at) - new Date(e.created_at)) / 6e4).filter(e => e > 0 && e <= 1440),
-                        c = a.length > 0 ? Math.round(a.reduce((e, t) => e + t, 0) / a.length) : 0;
-                    R.push({
-                        dia: e,
-                        tempoMedio: c,
-                        qtd: t.length
-                    })
-                }
-                const h = Math.max(...R.map(e => e.tempoMedio), 1),
-                    f = {};
-                n.forEach(e => {
-                    const t = e.user_cod + "|" + e.user_name;
-                    f[t] || (f[t] = {
-                        cod: e.user_cod,
-                        nome: e.user_name,
-                        qtd: 0,
-                        valor: 0,
-                        lucro: 0
-                    }), f[t].qtd++, f[t].valor += parseFloat(e.final_amount || 0), f[t].lucro += parseFloat(e.requested_amount || 0) - parseFloat(e.final_amount || 0)
-                });
-                const N = Object.values(f).sort((e, t) => t.qtd - e.qtd).slice(0, 10),
-                    y = {};
-                m.forEach(e => {
-                    const t = e.user_cod + "|" + e.user_name;
-                    y[t] || (y[t] = {
-                        cod: e.user_cod,
-                        nome: e.user_name,
-                        qtd: 0,
-                        valor: 0,
-                        deixouArrecadar: 0
-                    }), y[t].qtd++, y[t].valor += parseFloat(e.final_amount || 0), y[t].deixouArrecadar += .045 * parseFloat(e.requested_amount || 0)
-                });
-                const v = Object.values(y).sort((e, t) => t.qtd - e.qtd).slice(0, 10),
-                    w = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
-                    _ = w[l],
-                    j = c.filter(e => "rejeitado" === e.status),
-                    C = c.filter(e => "aguardando_aprovacao" === e.status),
-                    A = c.reduce((e, t) => e + parseFloat(t.requested_amount || 0), 0),
-                    S = s.reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
-                    k = n.reduce((e, t) => e + (parseFloat(t.requested_amount || 0) - parseFloat(t.final_amount || 0)), 0),
-                    P = m.reduce((e, t) => e + .045 * parseFloat(t.requested_amount || 0), 0),
-                    T = [{
-                        nome: "Semana 1",
-                        dias: [1, 7]
-                    }, {
-                        nome: "Semana 2",
-                        dias: [8, 14]
-                    }, {
-                        nome: "Semana 3",
-                        dias: [15, 21]
-                    }, {
-                        nome: "Semana 4",
-                        dias: [22, 31]
-                    }].map(e => {
-                        const t = s.filter(t => {
-                            const a = new Date(t.created_at).getDate();
-                            return a >= e.dias[0] && a <= e.dias[1]
-                        });
-                        return {
-                            nome: e.nome,
-                            valor: t.reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
-                            qtd: t.length
-                        }
-                    }),
-                    D = Math.max(...T.map(e => e.valor), 1),
-                    L = 0 === l ? 11 : l - 1,
-                    I = 0 === l ? r - 1 : r,
-                    F = q.filter(e => {
-                        const t = new Date(e.created_at);
-                        return t.getMonth() === L && t.getFullYear() === I && ("aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status)
-                    }).reduce((e, t) => e + parseFloat(t.final_amount || 0), 0),
-                    $ = F > 0 ? (S - F) / F * 100 : 0;
-                return React.createElement(React.Fragment, null, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4 mb-6"
-                }, React.createElement("div", {
-                    className: "flex flex-wrap gap-4 items-center justify-between"
-                }, React.createElement("div", {
-                    className: "flex gap-4 items-center"
-                }, React.createElement("span", {
-                    className: "font-semibold text-gray-700"
-                }, "📅 Período:"), React.createElement("select", {
-                    value: l,
-                    onChange: e => x({
-                        ...p,
-                        relMes: e.target.value
-                    }),
-                    className: "px-4 py-2 border rounded-lg"
-                }, w.map((e, t) => React.createElement("option", {
-                    key: t,
-                    value: t
-                }, e))), React.createElement("select", {
-                    value: r,
-                    onChange: e => x({
-                        ...p,
-                        relAno: e.target.value
-                    }),
-                    className: "px-4 py-2 border rounded-lg"
-                }, [2024, 2025, 2026].map(e => React.createElement("option", {
-                    key: e,
-                    value: e
-                }, e)))), React.createElement("button", {
-                    onClick: () => {
-                        const e = `\n                        <html>\n                        <head>\n                          <title>Relatório ${_} ${r}</title>\n                          <style>\n                            body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }\n                            h1 { color: #166534; border-bottom: 3px solid #166534; padding-bottom: 10px; }\n                            h2 { color: #374151; margin-top: 25px; }\n                            .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                            .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                            .card-value { font-size: 20px; font-weight: bold; color: #166534; }\n                            .card-label { font-size: 11px; color: #6b7280; }\n                            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }\n                            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }\n                            th { background: #166534; color: white; }\n                            .footer { margin-top: 30px; text-align: center; color: #9ca3af; font-size: 10px; }\n                          </style>\n                        </head>\n                        <body>\n                          <h1>📊 Relatório Financeiro - ${_} ${r}</h1>\n                          <p><strong>Gerado em:</strong> ${(new Date).toLocaleString("pt-BR")}</p>\n                          <div class="cards">\n                            <div class="card"><div class="card-value">R$ ${A.toFixed(2)}</div><div class="card-label">Total Solicitado</div></div>\n                            <div class="card"><div class="card-value">R$ ${S.toFixed(2)}</div><div class="card-label">Total Pago</div></div>\n                            <div class="card"><div class="card-value" style="color:#059669">R$ ${k.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>\n                            <div class="card"><div class="card-value" style="color:#dc2626">R$ ${P.toFixed(2)}</div><div class="card-label">Deixou Arrecadar</div></div>\n                          </div>\n                          <h2>📋 Detalhamento</h2>\n                          <table>\n                            <thead><tr><th>Data</th><th>Profissional</th><th>Código</th><th>Solicitado</th><th>Pago</th><th>Status</th></tr></thead>\n                            <tbody>\n                              ${c.slice(0,100).map(e=>`\n                                <tr>\n                                  <td>${new Date(e.created_at).toLocaleDateString("pt-BR")}</td>\n                                  <td>${e.user_name||"-"}</td>\n                                  <td>${e.user_cod}</td>\n                                  <td>R$ ${parseFloat(e.requested_amount).toFixed(2)}</td>\n                                  <td>R$ ${parseFloat(e.final_amount).toFixed(2)}</td>\n                                  <td>${"aprovado"===e.status?"✅":"aprovado_gratuidade"===e.status?"🎁":"rejeitado"===e.status?"❌":"⏳"}</td>\n                                </tr>\n                              `).join("")}\n                            </tbody>\n                          </table>\n                          <div class="footer"><p>Central do Entregador Tutts</p></div>\n                        </body>\n                        </html>\n                      `,
-                            t = window.open("", "_blank");
-                        t.document.write(e), t.document.close(), t.print()
-                    },
-                    className: "px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-                }, "📄 Gerar PDF"))), React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Total Solicitado"), React.createElement("p", {
-                    className: "text-2xl font-bold text-blue-600"
-                }, er(A))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Total Pago"), React.createElement("p", {
-                    className: "text-2xl font-bold text-green-600"
-                }, er(S))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "💰 Lucro (Taxas 4,5%)"), React.createElement("p", {
-                    className: "text-2xl font-bold text-violet-600"
-                }, er(k))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "❌ Deixou Arrecadar"), React.createElement("p", {
-                    className: "text-2xl font-bold text-red-600"
-                }, er(P)))), React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-3 text-center"
-                }, React.createElement("p", {
-                    className: "text-2xl font-bold text-purple-600"
-                }, c.length), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, "Total")), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-3 text-center"
-                }, React.createElement("p", {
-                    className: "text-2xl font-bold text-green-600"
-                }, n.length), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, "Aprovados")), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-3 text-center"
-                }, React.createElement("p", {
-                    className: "text-2xl font-bold text-blue-600"
-                }, m.length), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, "Com Gratuidade")), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-3 text-center"
-                }, React.createElement("p", {
-                    className: "text-2xl font-bold text-red-600"
-                }, j.length), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, "Rejeitados")), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-3 text-center"
-                }, React.createElement("p", {
-                    className: "text-2xl font-bold text-yellow-600"
-                }, C.length), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, "Pendentes"))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4 mb-6"
-                }, React.createElement("h3", {
-                    className: "font-bold text-gray-800 mb-2"
-                }, "📊 Comparativo com Mês Anterior"), React.createElement("div", {
-                    className: "flex items-center gap-4 flex-wrap"
-                }, React.createElement("span", null, "Mês anterior: ", React.createElement("strong", null, er(F))), React.createElement("span", null, "→"), React.createElement("span", null, "Mês atual: ", React.createElement("strong", null, er(S))), React.createElement("span", {
-                    className: "px-3 py-1 rounded-full text-sm font-bold " + ($ >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
-                }, $ >= 0 ? "↑" : "↓", " ", Math.abs($).toFixed(1), "%"))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4 mb-6"
-                }, React.createElement("h3", {
-                    className: "font-bold text-gray-800 mb-4"
-                }, "📈 Evolução por Semana"), React.createElement("div", {
-                    className: "flex items-end justify-around gap-4",
-                    style: {
-                        height: "180px"
-                    }
-                }, T.map((e, t) => React.createElement("div", {
-                    key: t,
-                    className: "flex flex-col items-center"
-                }, React.createElement("span", {
-                    className: "text-xs font-semibold text-green-700 mb-1"
-                }, er(e.valor)), React.createElement("div", {
-                    className: "bg-gradient-to-t from-green-600 to-green-400 rounded-t w-16",
-                    style: {
-                        height: `${Math.max(e.valor/D*140,10)}px`
-                    }
-                }), React.createElement("span", {
-                    className: "text-xs font-semibold mt-2"
-                }, e.nome), React.createElement("span", {
-                    className: "text-xs text-gray-500"
-                }, e.qtd, " saque(s)"))))), React.createElement("div", {
-                    className: "grid md:grid-cols-2 gap-6 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-6"
-                }, React.createElement("h3", {
-                    className: "text-lg font-bold text-gray-800 mb-4"
-                }, "🏆 Top 10 - Mais Solicitam Saques"), 0 === N.length ? React.createElement("p", {
-                    className: "text-gray-500 text-center py-4"
-                }, "Nenhum dado no período") : React.createElement("div", {
-                    className: "space-y-2"
-                }, N.map((e, t) => React.createElement("div", {
-                    key: t,
-                    className: "flex items-center justify-between p-3 rounded-lg " + (0 === t ? "bg-yellow-50 border border-yellow-200" : 1 === t ? "bg-gray-100" : 2 === t ? "bg-orange-50" : "bg-gray-50")
-                }, React.createElement("div", {
-                    className: "flex items-center gap-3"
-                }, React.createElement("span", {
-                    className: "text-xl " + (0 === t ? "🥇" : 1 === t ? "🥈" : 2 === t ? "🥉" : "")
-                }, t >= 3 ? `${t+1}º` : ""), React.createElement("div", null, React.createElement("p", {
-                    className: "font-semibold text-gray-800"
-                }, e.nome || e.cod), React.createElement("p", {
-                    className: "text-xs text-gray-500"
-                }, "Cód: ", e.cod))), React.createElement("div", {
-                    className: "text-right"
-                }, React.createElement("p", {
-                    className: "font-bold text-green-600"
-                }, er(e.valor)), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, e.qtd, " saques"), React.createElement("p", {
-                    className: "text-xs text-blue-600"
-                }, "Lucro: ", er(e.lucro))))))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-6"
-                }, React.createElement("h3", {
-                    className: "text-lg font-bold text-gray-800 mb-4"
-                }, "🎁 Top 10 - Saques com Gratuidade"), 0 === v.length ? React.createElement("p", {
-                    className: "text-gray-500 text-center py-4"
-                }, "Nenhum dado no período") : React.createElement("div", {
-                    className: "space-y-2"
-                }, v.map((e, t) => React.createElement("div", {
-                    key: t,
-                    className: "flex items-center justify-between p-3 rounded-lg " + (0 === t ? "bg-purple-50 border border-purple-200" : "bg-gray-50")
-                }, React.createElement("div", {
-                    className: "flex items-center gap-3"
-                }, React.createElement("span", {
-                    className: "text-xl " + (0 === t ? "🥇" : 1 === t ? "🥈" : 2 === t ? "🥉" : "")
-                }, t >= 3 ? `${t+1}º` : ""), React.createElement("div", null, React.createElement("p", {
-                    className: "font-semibold text-gray-800"
-                }, e.nome || e.cod), React.createElement("p", {
-                    className: "text-xs text-gray-500"
-                }, "Cód: ", e.cod))), React.createElement("div", {
-                    className: "text-right"
-                }, React.createElement("p", {
-                    className: "font-bold text-purple-600"
-                }, er(e.valor)), React.createElement("p", {
-                    className: "text-xs text-gray-600"
-                }, e.qtd, " saques"), React.createElement("p", {
-                    className: "text-xs text-red-600"
-                }, "Deixou: ", er(e.deixouArrecadar)))))))))
-            })()), "horarios" === p.finTab && React.createElement(React.Fragment, null,
+            }, "❌ Confirmar Recusa"))))))))), "relatorios" === p.finTab && React.createElement(window.__RelatoriosFinanceiroV2 || (() => null), {
+                fetchAuth, API_URL, er, ja
+            }), "horarios" === p.finTab && React.createElement(React.Fragment, null,
                 // 🔧 NOVO 2026-04: Seção de toggles do financeiro (saques habilitados / saques automáticos)
                 // Sub-componente isolado com state próprio. Só admin/admin_master pode ver/editar.
                 React.createElement(FinConfigTogglesSecao, { API_URL: API_URL, fetchAuth: fetchAuth, usuario: l, ja: ja }),
