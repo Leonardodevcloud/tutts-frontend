@@ -65,7 +65,18 @@
         if (c.id) await api('/config/'+c.id,{method:'PUT',body});
         else      await api('/config',{method:'POST',body});
         setEditing(null); await carregarClientes();
-      } catch(e){ alert('Erro: '+e.message); }
+      } catch(e) {
+        // 2026-05 v3: mensagem específica pro conflito de cliente+grupo
+        const msg = String(e.message || '');
+        if (msg.includes('cliente_grupo_ja_existe')) {
+          alert('Esse código + grupo Evolution já está cadastrado. Use outro grupo ou edite o existente.');
+        } else if (msg.includes('cliente_ja_existe')) {
+          // Fallback pra backends antigos antes do v3
+          alert('Esse cliente já está cadastrado.');
+        } else {
+          alert('Erro: ' + msg);
+        }
+      }
     }
     async function removerCliente(id) {
       if (!confirm('Remover cliente do rastreio?')) return;
@@ -145,20 +156,27 @@
       ),
 
       tab==='config' && h('div',null,
-        h('div',{style:{marginBottom:16}},
-          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:''})},'+ Novo cliente')
+        h('div',{style:{marginBottom:16,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
+          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:''})},'+ Novo cadastro'),
+          // 2026-05 v3: dica de uso
+          h('span',{style:{fontSize:12,color:'#6b7280'}},'Você pode cadastrar o mesmo código várias vezes com grupos e palavras-chave diferentes.')
         ),
         h('div',{style:card},
           clientes.length===0 ? h('p',{style:{color:'#6b7280',padding:16}},'Nenhum cliente cadastrado') :
           h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:14}},
             h('thead',null,h('tr',{style:{borderBottom:'2px solid #e5e7eb',textAlign:'left'}},
-              ['Cód','Nome','Grupo WhatsApp','Filtro','Status','Ações'].map(c=>h('th',{key:c,style:{padding:10,fontWeight:600,color:'#374151'}},c))
+              ['Cód','Nome','Grupo WhatsApp','Palavras-chave','Status','Ações'].map(c=>h('th',{key:c,style:{padding:10,fontWeight:600,color:'#374151'}},c))
             )),
             h('tbody',null,clientes.map(c => h('tr',{key:c.id,style:{borderBottom:'1px solid #f3f4f6'}},
               h('td',{style:{padding:10,fontFamily:'monospace',fontWeight:600}},c.cliente_cod),
               h('td',{style:{padding:10}},c.nome_exibicao),
               h('td',{style:{padding:10,fontSize:12,fontFamily:'monospace',color:'#6b7280'}},(c.evolution_group_id||'').substring(0,28)+'…'),
-              h('td',{style:{padding:10,fontSize:12}},(c.termos_filtro?.length||0)+' termo(s)'),
+              // 2026-05 v3: mostra os termos resumidos pra discriminar cadastros do mesmo cód
+              h('td',{style:{padding:10,fontSize:12}},
+                !c.termos_filtro || c.termos_filtro.length === 0
+                  ? h('span',{style:{color:'#9ca3af',fontStyle:'italic'}},'(pega tudo)')
+                  : c.termos_filtro.slice(0,3).join(', ') + (c.termos_filtro.length > 3 ? ` +${c.termos_filtro.length-3}` : '')
+              ),
               h('td',{style:{padding:10}},h('span',{style:{background:c.ativo?'#d1fae5':'#e5e7eb',color:c.ativo?'#065f46':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo')),
               h('td',{style:{padding:10}},
                 h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
@@ -169,16 +187,19 @@
         ),
         editing && h('div',{style:{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000},onClick:e=>{if(e.target===e.currentTarget)setEditing(null);}},
           h('div',{style:{...card,width:480,maxHeight:'90vh',overflow:'auto'}},
-            h('h2',{style:{margin:'0 0 16px 0',fontSize:20}},editing.id?'Editar cliente':'Novo cliente'),
+            h('h2',{style:{margin:'0 0 16px 0',fontSize:20}},editing.id?'Editar cadastro':'Novo cadastro'),
             ['cliente_cod','nome_exibicao','evolution_group_id'].map(f =>
               h('div',{key:f,style:{marginBottom:12}},
                 h('label',{style:{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:4}},f.replace(/_/g,' ')),
+                // 2026-05 v3: cliente_cod agora editável mesmo em PUT (precisa mover cadastro entre clientes? raro, mas possível)
                 h('input',{value:editing[f]||'',disabled:f==='cliente_cod'&&!!editing.id,onChange:e=>setEditing({...editing,[f]:e.target.value}),style:{width:'100%',padding:8,border:'1px solid #d1d5db',borderRadius:6,fontSize:14}})
               )
             ),
             h('div',{style:{marginBottom:12}},
-              h('label',{style:{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:4}},'termos filtro (1 por linha, vazio = sem filtro)'),
-              h('textarea',{value:editing.termos_filtro_str||'',onChange:e=>setEditing({...editing,termos_filtro_str:e.target.value}),rows:4,style:{width:'100%',padding:8,border:'1px solid #d1d5db',borderRadius:6,fontFamily:'monospace',fontSize:13}})
+              h('label',{style:{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:4}},'palavras-chave (1 por linha, vazio = sem filtro)'),
+              h('textarea',{value:editing.termos_filtro_str||'',onChange:e=>setEditing({...editing,termos_filtro_str:e.target.value}),rows:4,placeholder:'Ex: GALBA\nNOVAS DE CASTRO\n57061-510',style:{width:'100%',padding:8,border:'1px solid #d1d5db',borderRadius:6,fontFamily:'monospace',fontSize:13}}),
+              // 2026-05 v3: dica explicativa
+              h('p',{style:{fontSize:11,color:'#6b7280',marginTop:4}},'Se uma OS deste cliente tem o Ponto 1 contendo QUALQUER uma dessas palavras, a mensagem vai pra este grupo. Sem palavras = pega todas as OS do cliente.')
             ),
             h('div',{style:{marginBottom:12}},
               h('label',{style:{display:'block',fontSize:12,fontWeight:600,color:'#374151',marginBottom:4}},'observações'),
