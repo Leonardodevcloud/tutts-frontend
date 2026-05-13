@@ -1902,15 +1902,150 @@
             resumoLoading && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("div", {className: "w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"}),
-            React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && (window.ModuloGratuidadesV2Component
-                ? React.createElement(window.ModuloGratuidadesV2Component, {
-                    API_URL: API_URL,
-                    fetchAuth: fetchAuth,
-                    ja: ja
-                  })
-                : React.createElement("div", {
-                    style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
-                  }, "⚠️ Componente ModuloGratuidadesV2 não foi carregado. Verifique se ModuloGratuidadesV2.js está no index.html antes do ModuloFinanceiro.js.")), "restritos" === p.finTab && React.createElement("div", {
+            React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && React.createElement("div", {
+                className: "space-y-6"
+            }, React.createElement("div", {
+                className: "bg-white rounded-xl shadow p-6"
+            }, React.createElement("h3", {
+                className: "text-lg font-semibold mb-4"
+            }, "➕ Cadastrar Gratuidade"), React.createElement("div", {
+                className: "grid sm:grid-cols-2 lg:grid-cols-6 gap-4"
+            }, React.createElement("div", null, React.createElement("label", {
+                className: "block text-xs font-semibold mb-1 text-gray-600"
+            }, "Código *"), React.createElement("input", {
+                type: "text",
+                placeholder: "Código",
+                value: p.gratUserCod || "",
+                onChange: async e => {
+                    const t = e.target.value;
+                    if (x({
+                            ...p,
+                            gratUserCod: t,
+                            gratUserName: ""
+                        }), t.length >= 3) {
+                        const e = A.find(e => e.codProfissional?.toLowerCase() === t.toLowerCase());
+                        e && x(a => ({
+                            ...a,
+                            gratUserCod: t,
+                            gratUserName: e.fullName
+                        }))
+                    }
+                },
+                className: "w-full px-4 py-2 border rounded-lg"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-xs font-semibold mb-1 text-gray-600"
+            }, "Nome"), React.createElement("input", {
+                type: "text",
+                placeholder: "Nome do usuário",
+                value: p.gratUserName || "",
+                readOnly: !0,
+                className: "w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-700"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-xs font-semibold mb-1 text-gray-600"
+            }, "Quantidade *"), React.createElement("input", {
+                type: "number",
+                placeholder: "Qtd",
+                value: p.gratQty || "",
+                onChange: e => x({
+                    ...p,
+                    gratQty: e.target.value
+                }),
+                className: "w-full px-4 py-2 border rounded-lg"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-xs font-semibold mb-1 text-gray-600"
+            }, "Valor (R$) *"), React.createElement("input", {
+                type: "number",
+                placeholder: "Valor",
+                value: p.gratValue || "",
+                onChange: e => x({
+                    ...p,
+                    gratValue: e.target.value
+                }),
+                className: "w-full px-4 py-2 border rounded-lg"
+            })), React.createElement("div", null, React.createElement("label", {
+                className: "block text-xs font-semibold mb-1 text-gray-600"
+            }, "Motivo"), React.createElement("input", {
+                type: "text",
+                placeholder: "Motivo",
+                value: p.gratReason || "",
+                onChange: e => x({
+                    ...p,
+                    gratReason: e.target.value
+                }),
+                className: "w-full px-4 py-2 border rounded-lg"
+            })), React.createElement("div", {
+                className: "flex items-end"
+            }, React.createElement("button", {
+                onClick: Hl,
+                disabled: c || !p.gratUserName,
+                className: "w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold disabled:opacity-50"
+            }, "➕ Adicionar"))), p.gratUserCod && !p.gratUserName && p.gratUserCod.length >= 3 && React.createElement("p", {
+                className: "text-red-500 text-xs mt-2"
+            }, "⚠️ Usuário não encontrado com este código"), p.gratUserName && React.createElement("p", {
+                className: "text-green-600 text-xs mt-2"
+            }, "✅ Usuário encontrado: ", p.gratUserName)), React.createElement("div", {
+                className: "bg-white rounded-xl shadow overflow-x-auto"
+            }, React.createElement("table", {
+                className: "w-full text-sm min-w-[750px]"
+            }, React.createElement("thead", {
+                className: "bg-gray-50"
+            }, React.createElement("tr", null, React.createElement("th", {
+                className: "px-4 py-3 text-left"
+            }, "Código"), React.createElement("th", {
+                className: "px-4 py-3 text-left"
+            }, "Nome"), React.createElement("th", {
+                className: "px-4 py-3 text-center"
+            }, "Qtd"), React.createElement("th", {
+                className: "px-4 py-3 text-center"
+            }, "Rest."), React.createElement("th", {
+                className: "px-4 py-3 text-right"
+            }, "Valor"), React.createElement("th", {
+                className: "px-4 py-3 text-left"
+            }, "Motivo"), React.createElement("th", {
+                className: "px-4 py-3 text-left"
+            }, "Cadastrado por"), React.createElement("th", {
+                className: "px-4 py-3 text-center"
+            }, "Status"), React.createElement("th", {
+                className: "px-4 py-3 text-center"
+            }, "Ação"))), React.createElement("tbody", null, Q.map(e => React.createElement("tr", {
+                key: e.id,
+                className: "border-t " + ("ativa" === e.status ? "bg-green-50" : "")
+            }, React.createElement("td", {
+                className: "px-4 py-3 font-mono"
+            }, e.user_cod), React.createElement("td", {
+                className: "px-4 py-3 font-semibold"
+            }, e.user_name || "-"), React.createElement("td", {
+                className: "px-4 py-3 text-center"
+            }, e.quantity), React.createElement("td", {
+                className: "px-4 py-3 text-center font-bold"
+            }, e.remaining), React.createElement("td", {
+                className: "px-4 py-3 text-right"
+            }, er(e.value)), React.createElement("td", {
+                className: "px-4 py-3"
+            }, e.reason || "-"), React.createElement("td", {
+                className: "px-4 py-3 text-xs text-gray-600"
+            }, React.createElement("div", null, e.created_by || "-", e.created_at && React.createElement("div", {style: {fontSize: "10px", color: "#9ca3af", marginTop: "2px"}}, new Date(e.created_at).toLocaleDateString("pt-BR") + " " + new Date(e.created_at).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})))), React.createElement("td", {
+                className: "px-4 py-3 text-center"
+            }, React.createElement("span", {
+                className: "px-2 py-1 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-green-500 text-white" : "bg-gray-400 text-white")
+            }, e.status)), React.createElement("td", {
+                className: "px-4 py-3 text-center"
+            }, React.createElement("button", {
+                onClick: () => {
+                    confirm(`⚠️ Excluir gratuidade de ${e.user_name||e.user_cod}?\n\nValor: ${er(e.value)}\nRestante: ${e.remaining}/${e.quantity}\n\nEsta ação não pode ser desfeita!`) && (async e => {
+                        s(!0);
+                        try {
+                            await fetchAuth(`${API_URL}/gratuities/${e}`, {
+                                method: "DELETE"
+                            }), ja("🗑️ Gratuidade excluída!", "success"), za()
+                        } catch (e) {
+                            ja("Erro ao excluir", "error")
+                        }
+                        s(!1)
+                    })(e.id)
+                },
+                className: "px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+            }, "🗑️ Excluir")))))))), "restritos" === p.finTab && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
@@ -4555,8 +4690,19 @@
                         return t.getMonth() === l && t.getFullYear() === r
                     }),
                     s = c.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status || "pago_stark" === e.status),
-                    n = c.filter(e => "aprovado" === e.status),
-                    m = c.filter(e => "aprovado_gratuidade" === e.status),
+                    // 🐛 FIX 2026-05: saques aprovados sem gratuidade incluindo pago_stark.
+                    // Antes filtrava só status==='aprovado' strict — mas depois que o Stark Bank
+                    // paga, o status vira 'pago_stark', e o filtro perdia esses registros
+                    // (zerando Top 10 / Lucro / contadores).
+                    n = c.filter(e =>
+                        e.status === "aprovado" ||
+                        (e.status === "pago_stark" && !e.has_gratuity)
+                    ),
+                    // 🐛 FIX 2026-05: saques com gratuidade — inclui pago_stark com has_gratuity
+                    m = c.filter(e =>
+                        e.status === "aprovado_gratuidade" ||
+                        (e.status === "pago_stark" && e.has_gratuity === true)
+                    ),
                     i = 2025,
                     d = e => {
                         const t = new Date(e);
@@ -4779,85 +4925,6 @@
                 }, e.nome), React.createElement("span", {
                     className: "text-xs text-gray-500"
                 }, e.qtd, " saque(s)"))))), React.createElement("div", {
-                    className: "border-t-4 border-purple-500 pt-6 mt-6"
-                }, React.createElement("h2", {
-                    className: "text-xl font-bold text-purple-800 mb-4"
-                }, "📊 Métricas de Atendimento")), React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow p-4 text-white"
-                }, React.createElement("p", {
-                    className: "text-blue-100 text-sm"
-                }, "⏱️ Tempo Médio Geral"), React.createElement("p", {
-                    className: "text-3xl font-bold"
-                }, g < 60 ? `${g}min` : `${Math.floor(g/60)}h${g%60}m`), React.createElement("p", {
-                    className: "text-xs text-blue-200"
-                }, "de atendimento")), React.createElement("div", {
-                    className: "bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow p-4 text-white"
-                }, React.createElement("p", {
-                    className: "text-green-100 text-sm"
-                }, "✅ Total Aprovados"), React.createElement("p", {
-                    className: "text-3xl font-bold"
-                }, s.length), React.createElement("p", {
-                    className: "text-xs text-green-200"
-                }, "saques no período")), React.createElement("div", {
-                    className: "bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow p-4 text-white"
-                }, React.createElement("p", {
-                    className: "text-red-100 text-sm"
-                }, "🚨 Acima de 1h"), React.createElement("p", {
-                    className: "text-3xl font-bold"
-                }, b.length), React.createElement("p", {
-                    className: "text-xs text-red-200"
-                }, "saques demorados")), React.createElement("div", {
-                    className: "bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow p-4 text-white"
-                }, React.createElement("p", {
-                    className: "text-purple-100 text-sm"
-                }, "🎁 Com Gratuidade"), React.createElement("p", {
-                    className: "text-3xl font-bold"
-                }, m.length), React.createElement("p", {
-                    className: "text-xs text-purple-200"
-                }, "saques sem taxa"))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-6 mb-6"
-                }, React.createElement("h3", {
-                    className: "text-lg font-bold text-gray-800 mb-4"
-                }, "📊 Tempo Médio de Atendimento por Dia"), React.createElement("div", {
-                    className: "overflow-x-auto"
-                }, React.createElement("div", {
-                    className: "flex items-end gap-1 min-w-max",
-                    style: {
-                        height: "200px"
-                    }
-                }, R.map((e, t) => React.createElement("div", {
-                    key: t,
-                    className: "flex flex-col items-center",
-                    style: {
-                        width: "28px"
-                    }
-                }, React.createElement("div", {
-                    className: "text-xs text-gray-500 mb-1"
-                }, e.tempoMedio > 0 ? `${e.tempoMedio}m` : ""), React.createElement("div", {
-                    className: "w-5 rounded-t " + (e.tempoMedio > 60 ? "bg-red-500" : e.tempoMedio > 30 ? "bg-yellow-500" : "bg-green-500"),
-                    style: {
-                        height: `${Math.max(e.tempoMedio/h*150,e.tempoMedio>0?10:0)}px`
-                    },
-                    title: `Dia ${e.dia}: ${e.tempoMedio}min (${e.qtd} saques)`
-                }), React.createElement("div", {
-                    className: "text-xs text-gray-600 mt-1"
-                }, e.dia))))), React.createElement("div", {
-                    className: "flex gap-4 mt-4 text-xs"
-                }, React.createElement("span", {
-                    className: "flex items-center gap-1"
-                }, React.createElement("span", {
-                    className: "w-3 h-3 bg-green-500 rounded"
-                }), " Até 30min"), React.createElement("span", {
-                    className: "flex items-center gap-1"
-                }, React.createElement("span", {
-                    className: "w-3 h-3 bg-yellow-500 rounded"
-                }), " 30-60min"), React.createElement("span", {
-                    className: "flex items-center gap-1"
-                }, React.createElement("span", {
-                    className: "w-3 h-3 bg-red-500 rounded"
-                }), " Acima de 60min"))), React.createElement("div", {
                     className: "grid md:grid-cols-2 gap-6 mb-6"
                 }, React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-6"
@@ -4913,49 +4980,7 @@
                     className: "text-xs text-gray-600"
                 }, e.qtd, " saques"), React.createElement("p", {
                     className: "text-xs text-red-600"
-                }, "Deixou: ", er(e.deixouArrecadar)))))))), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-6"
-                }, React.createElement("h3", {
-                    className: "text-lg font-bold text-gray-800 mb-4"
-                }, "🚨 Saques Realizados Acima de 1 Hora (", b.length, ")"), 0 === b.length ? React.createElement("p", {
-                    className: "text-gray-500 text-center py-4"
-                }, "✅ Nenhum saque acima de 1 hora no período!") : React.createElement("div", {
-                    className: "overflow-x-auto"
-                }, React.createElement("table", {
-                    className: "w-full text-sm"
-                }, React.createElement("thead", {
-                    className: "bg-red-50"
-                }, React.createElement("tr", null, React.createElement("th", {
-                    className: "px-3 py-2 text-left"
-                }, "Profissional"), React.createElement("th", {
-                    className: "px-3 py-2 text-left"
-                }, "Data"), React.createElement("th", {
-                    className: "px-3 py-2 text-right"
-                }, "Valor"), React.createElement("th", {
-                    className: "px-3 py-2 text-right"
-                }, "Tempo"))), React.createElement("tbody", null, b.slice(0, 20).map((e, t) => {
-                    const a = Math.round((new Date(e.updated_at) - new Date(e.created_at)) / 6e4);
-                    return React.createElement("tr", {
-                        key: t,
-                        className: "border-b hover:bg-red-50"
-                    }, React.createElement("td", {
-                        className: "px-3 py-2"
-                    }, React.createElement("p", {
-                        className: "font-semibold"
-                    }, e.user_name), React.createElement("p", {
-                        className: "text-xs text-gray-500"
-                    }, e.user_cod)), React.createElement("td", {
-                        className: "px-3 py-2"
-                    }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
-                        className: "px-3 py-2 text-right"
-                    }, er(e.final_amount)), React.createElement("td", {
-                        className: "px-3 py-2 text-right"
-                    }, React.createElement("span", {
-                        className: "px-2 py-1 bg-red-100 text-red-700 rounded font-semibold"
-                    }, a < 60 ? `${a}min` : `${Math.floor(a/60)}h${a%60}m`)))
-                }))), b.length > 20 && React.createElement("p", {
-                    className: "text-center text-gray-500 text-sm mt-2"
-                }, "Mostrando 20 de ", b.length, " registros"))))
+                }, "Deixou: ", er(e.deixouArrecadar)))))))))
             })()), "horarios" === p.finTab && React.createElement(React.Fragment, null,
                 // 🔧 NOVO 2026-04: Seção de toggles do financeiro (saques habilitados / saques automáticos)
                 // Sub-componente isolado com state próprio. Só admin/admin_master pode ver/editar.
