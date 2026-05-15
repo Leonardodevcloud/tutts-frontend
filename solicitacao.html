@@ -396,7 +396,556 @@
             
             return <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: '300px' }} />;
         };
-        
+
+        // ═══════════════════════════════════════════════════════════════════
+        // CONTROLE DE MÁQUINAS — sub-aba (Operação / Cadastro / Histórico)
+        // ═══════════════════════════════════════════════════════════════════
+        const ControleMaquinas = ({ cliente, token, showToast }) => {
+            const [subTab, setSubTab] = useState('operacao');
+            const [carregando, setCarregando] = useState(false);
+            const [maquinas, setMaquinas] = useState([]);
+            const [emCampo, setEmCampo] = useState([]);
+            const [disponiveis, setDisponiveis] = useState([]);
+            const [motoboys, setMotoboys] = useState([]);
+            const [historico, setHistorico] = useState([]);
+            const [horarioLimite, setHorarioLimite] = useState('17:00:00');
+            const [agoraServidor, setAgoraServidor] = useState(null);
+            const [maquinaSel, setMaquinaSel] = useState('');
+            const [motoboySel, setMotoboySel] = useState('');
+            const [despachando, setDespachando] = useState(false);
+            const [modalCadastro, setModalCadastro] = useState(null);
+            const [modalHorario, setModalHorario] = useState(false);
+            const [tick, setTick] = useState(0);
+
+            const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+            // Carregar todos os dados da operação
+            const carregarOperacao = useCallback(async () => {
+                try {
+                    const [campoR, dispR, motoR] = await Promise.all([
+                        fetch(`${API_URL}/api/maquinas/em-campo`, { headers }),
+                        fetch(`${API_URL}/api/maquinas/disponiveis`, { headers }),
+                        fetch(`${API_URL}/api/maquinas/motoboys-livres`, { headers }),
+                    ]);
+                    if (campoR.ok) {
+                        const d = await campoR.json();
+                        setEmCampo(d.em_campo || []);
+                        setHorarioLimite(d.horario_limite || '17:00:00');
+                        setAgoraServidor(d.agora);
+                    }
+                    if (dispR.ok) {
+                        const d = await dispR.json();
+                        setDisponiveis(d.disponiveis || []);
+                    }
+                    if (motoR.ok) {
+                        const d = await motoR.json();
+                        setMotoboys(d.motoboys || []);
+                    }
+                } catch (e) {
+                    showToast('Erro ao carregar operação: ' + e.message, 'error');
+                }
+            }, [token]);
+
+            const carregarCadastro = useCallback(async () => {
+                try {
+                    const r = await fetch(`${API_URL}/api/maquinas`, { headers });
+                    if (r.ok) {
+                        const d = await r.json();
+                        setMaquinas(d.maquinas || []);
+                    }
+                } catch (e) {
+                    showToast('Erro ao carregar cadastro: ' + e.message, 'error');
+                }
+            }, [token]);
+
+            const carregarHistoricoLog = useCallback(async () => {
+                try {
+                    const r = await fetch(`${API_URL}/api/maquinas/historico?limit=100`, { headers });
+                    if (r.ok) {
+                        const d = await r.json();
+                        setHistorico(d.historico || []);
+                    }
+                } catch (e) {
+                    showToast('Erro ao carregar histórico: ' + e.message, 'error');
+                }
+            }, [token]);
+
+            // Carregar ao montar e ao mudar de sub-tab
+            useEffect(() => {
+                setCarregando(true);
+                const tasks = [];
+                if (subTab === 'operacao') tasks.push(carregarOperacao());
+                if (subTab === 'cadastro') tasks.push(carregarCadastro());
+                if (subTab === 'historico') tasks.push(carregarHistoricoLog());
+                Promise.all(tasks).finally(() => setCarregando(false));
+            }, [subTab, carregarOperacao, carregarCadastro, carregarHistoricoLog]);
+
+            // Auto-refresh da operação a cada 30s + tick local pro contador
+            useEffect(() => {
+                if (subTab !== 'operacao') return;
+                const r = setInterval(() => carregarOperacao(), 30000);
+                const t = setInterval(() => setTick(x => x + 1), 30000);
+                return () => { clearInterval(r); clearInterval(t); };
+            }, [subTab, carregarOperacao]);
+
+            // ── Ações ─────────────────────────────────────────────────────
+            const despachar = async () => {
+                if (!maquinaSel || !motoboySel) {
+                    showToast('Selecione motoboy e máquina', 'error');
+                    return;
+                }
+                setDespachando(true);
+                try {
+                    const motoboy = motoboys.find(m => String(m.codigo) === String(motoboySel));
+                    const r = await fetch(`${API_URL}/api/maquinas/despachar`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            maquina_id: parseInt(maquinaSel, 10),
+                            motoboy_codigo: motoboySel,
+                            motoboy_nome: motoboy?.nome || '',
+                        }),
+                    });
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.mensagem || data.error || 'Erro ao despachar');
+                    showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca} despachada para ${motoboy?.nome}`, 'success');
+                    setMaquinaSel('');
+                    setMotoboySel('');
+                    await carregarOperacao();
+                } catch (e) {
+                    showToast(e.message, 'error');
+                } finally {
+                    setDespachando(false);
+                }
+            };
+
+            const restituir = async (movimentacao) => {
+                if (!confirm(`Confirma a restituição da máquina ${movimentacao.identificador} ${movimentacao.marca} de ${movimentacao.motoboy_nome}?`)) return;
+                try {
+                    const r = await fetch(`${API_URL}/api/maquinas/movimentacoes/${movimentacao.movimentacao_id}/restituir`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({}),
+                    });
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.error || 'Erro ao restituir');
+                    showToast(`✅ Máquina restituída`, 'success');
+                    await carregarOperacao();
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+            };
+
+            const salvarCadastro = async (form) => {
+                const isEdit = form.id != null;
+                const url = isEdit ? `${API_URL}/api/maquinas/${form.id}` : `${API_URL}/api/maquinas`;
+                const method = isEdit ? 'PATCH' : 'POST';
+                const r = await fetch(url, {
+                    method, headers,
+                    body: JSON.stringify({
+                        identificador: form.identificador,
+                        marca: form.marca,
+                        observacao: form.observacao || null,
+                        ativa: form.ativa !== false,
+                    }),
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'Erro ao salvar');
+                return data;
+            };
+
+            const excluirMaquina = async (id, label) => {
+                if (!confirm(`Excluir a máquina ${label}? Esta ação não pode ser desfeita.`)) return;
+                try {
+                    const r = await fetch(`${API_URL}/api/maquinas/${id}`, { method: 'DELETE', headers });
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+                    showToast(`Máquina excluída`, 'success');
+                    await carregarCadastro();
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+            };
+
+            const salvarHorario = async (novoHorario) => {
+                try {
+                    const r = await fetch(`${API_URL}/api/maquinas/configuracao`, {
+                        method: 'PATCH', headers,
+                        body: JSON.stringify({ horario_limite: novoHorario }),
+                    });
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.error || 'Erro');
+                    setHorarioLimite(data.horario_limite);
+                    setModalHorario(false);
+                    showToast(`Horário limite atualizado para ${novoHorario}`, 'success');
+                    await carregarOperacao();
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+            };
+
+            // ── Helpers de formatação ─────────────────────────────────────
+            const fmtHorario = (h) => (h ? h.substring(0, 5) : '17:00');
+            const fmtDataHora = (iso) => {
+                if (!iso) return '';
+                const d = new Date(iso);
+                return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            };
+            const fmtMinutos = (mins) => {
+                const m = Math.floor(mins);
+                if (m < 60) return `${m}min`;
+                const h = Math.floor(m / 60);
+                return `${h}h ${m % 60}min`;
+            };
+
+            // Stats
+            const totalDisp = disponiveis.length;
+            const totalCampo = emCampo.length;
+            const totalPendentes = emCampo.filter(e => e.pendente_apos_limite).length;
+
+            return (
+                <div className="w-full px-3 md:px-6 pt-4 pb-8 max-w-7xl mx-auto">
+                    {/* Header com horário limite */}
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+                        <h2 className="text-base md:text-lg font-bold text-gray-800">🏷️ Controle de máquinas</h2>
+                        <button onClick={() => setModalHorario(true)} className="text-xs md:text-sm bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md text-gray-700 flex items-center gap-1.5">
+                            <span>⏰</span>
+                            <span>Horário limite: <strong>{fmtHorario(horarioLimite)}</strong></span>
+                        </button>
+                    </div>
+
+                    {/* Sub-tabs */}
+                    <div className="flex gap-2 mb-4 overflow-x-auto">
+                        <button onClick={() => setSubTab('operacao')} className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${subTab === 'operacao' ? 'bg-purple-600 text-white font-medium' : 'bg-white text-gray-600 border border-gray-200'}`}>📱 Operação</button>
+                        <button onClick={() => setSubTab('cadastro')} className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${subTab === 'cadastro' ? 'bg-purple-600 text-white font-medium' : 'bg-white text-gray-600 border border-gray-200'}`}>⚙️ Cadastro</button>
+                        <button onClick={() => setSubTab('historico')} className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${subTab === 'historico' ? 'bg-purple-600 text-white font-medium' : 'bg-white text-gray-600 border border-gray-200'}`}>📜 Histórico</button>
+                    </div>
+
+                    {/* ─── SUB-TAB: OPERAÇÃO ─── */}
+                    {subTab === 'operacao' && (
+                        <>
+                            {totalPendentes > 0 && (
+                                <div className="bg-amber-50 border border-amber-300 rounded-md p-2.5 mb-3 flex items-center gap-2 text-xs md:text-sm text-amber-900">
+                                    <span className="text-base">🚩</span>
+                                    <span><strong>{totalPendentes}</strong> {totalPendentes === 1 ? 'máquina ainda em campo' : 'máquinas ainda em campo'} após o horário limite ({fmtHorario(horarioLimite)})</span>
+                                </div>
+                            )}
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+                                <div className="bg-white border border-gray-200 rounded-md p-3">
+                                    <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wide">Em campo</div>
+                                    <div className="text-xl md:text-2xl font-semibold">{totalCampo}</div>
+                                </div>
+                                <div className={`rounded-md p-3 border ${totalPendentes > 0 ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200'}`}>
+                                    <div className={`text-[10px] md:text-xs uppercase tracking-wide ${totalPendentes > 0 ? 'text-amber-700' : 'text-gray-500'}`}>Pendentes após {fmtHorario(horarioLimite)}</div>
+                                    <div className={`text-xl md:text-2xl font-semibold ${totalPendentes > 0 ? 'text-amber-700' : ''}`}>{totalPendentes}</div>
+                                </div>
+                                <div className="bg-white border border-gray-200 rounded-md p-3">
+                                    <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wide">Disponíveis</div>
+                                    <div className="text-xl md:text-2xl font-semibold">{totalDisp}</div>
+                                </div>
+                            </div>
+
+                            {/* Card despachar */}
+                            <div className="bg-white border border-gray-200 rounded-md p-3 md:p-4 mb-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">🚚 Despachar máquina</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Motoboy (sem máquina)</label>
+                                        <select value={motoboySel} onChange={e => setMotoboySel(e.target.value)} className="w-full h-9 px-2 border border-gray-300 rounded-md text-sm bg-white">
+                                            <option value="">— selecione —</option>
+                                            {motoboys.map(m => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Máquina disponível</label>
+                                        <select value={maquinaSel} onChange={e => setMaquinaSel(e.target.value)} className="w-full h-9 px-2 border border-gray-300 rounded-md text-sm bg-white">
+                                            <option value="">— selecione —</option>
+                                            {disponiveis.map(m => <option key={m.id} value={m.id}>{m.identificador} {m.marca}</option>)}
+                                        </select>
+                                    </div>
+                                    <button onClick={despachar} disabled={despachando || !maquinaSel || !motoboySel} className="h-9 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md whitespace-nowrap">
+                                        {despachando ? '...' : '📤 Despachar'}
+                                    </button>
+                                </div>
+                                {motoboys.length === 0 && disponiveis.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-2">Todos os motoboys já estão com máquina.</p>
+                                )}
+                                {disponiveis.length === 0 && (
+                                    <p className="text-xs text-gray-500 mt-2">Nenhuma máquina disponível. Cadastre na aba "Cadastro".</p>
+                                )}
+                            </div>
+
+                            {/* Máquinas em campo */}
+                            <div className="flex justify-between items-baseline mb-2">
+                                <h3 className="text-xs text-gray-500 uppercase tracking-wide font-medium">Máquinas em campo</h3>
+                                <span className="text-xs text-gray-400">{totalCampo} {totalCampo === 1 ? 'ativa' : 'ativas'}</span>
+                            </div>
+
+                            {totalCampo === 0 ? (
+                                <div className="bg-white border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500">
+                                    Nenhuma máquina em campo agora.
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {emCampo.map(mov => {
+                                        const isPendente = mov.pendente_apos_limite;
+                                        return (
+                                            <div key={mov.movimentacao_id} className={`rounded-md p-3 border ${isPendente ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200'}`}>
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${isPendente ? 'bg-amber-200 text-amber-900' : 'bg-purple-100 text-purple-700'}`}>
+                                                        {mov.motoboy_nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-medium text-gray-800">
+                                                            {mov.motoboy_nome} — <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
+                                                        </div>
+                                                        <div className={`text-xs mt-0.5 ${isPendente ? 'text-amber-700' : 'text-gray-500'}`}>
+                                                            🕐 Despachada às {fmtDataHora(mov.despachada_em)} · {fmtMinutos(mov.minutos_em_campo)} em campo
+                                                        </div>
+                                                    </div>
+                                                    {isPendente && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-medium uppercase tracking-wide flex items-center gap-1">🚩 Pendente</span>
+                                                    )}
+                                                    {!isPendente && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium uppercase tracking-wide">No prazo</span>
+                                                    )}
+                                                    <button onClick={() => restituir(mov)} className="text-xs px-3 py-1 bg-white border border-purple-600 text-purple-600 hover:bg-purple-50 rounded-md font-medium whitespace-nowrap">
+                                                        ↩️ Restituir
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ─── SUB-TAB: CADASTRO ─── */}
+                    {subTab === 'cadastro' && (
+                        <>
+                            <div className="flex justify-between items-center mb-3">
+                                <p className="text-xs md:text-sm text-gray-600">
+                                    {maquinas.length} {maquinas.length === 1 ? 'máquina cadastrada' : 'máquinas cadastradas'}
+                                </p>
+                                <button onClick={() => setModalCadastro({ identificador: '', marca: '', observacao: '', ativa: true })} className="text-xs md:text-sm bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-md font-medium">
+                                    + Nova máquina
+                                </button>
+                            </div>
+
+                            {maquinas.length === 0 ? (
+                                <div className="bg-white border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500">
+                                    Nenhuma máquina cadastrada. Clique em "+ Nova máquina" para começar.
+                                </div>
+                            ) : (
+                                <div className="bg-white border border-gray-200 rounded-md overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Identif.</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Marca</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2 hidden md:table-cell">Observação</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Status</th>
+                                                <th className="text-right text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {maquinas.map(m => (
+                                                <tr key={m.id} className="border-b border-gray-100 last:border-0">
+                                                    <td className="px-3 py-2"><span className="inline-block px-2 py-0.5 bg-gray-100 rounded text-xs font-mono font-medium">{m.identificador}</span></td>
+                                                    <td className="px-3 py-2 font-mono text-xs">{m.marca}</td>
+                                                    <td className="px-3 py-2 text-xs text-gray-500 hidden md:table-cell">{m.observacao || '—'}</td>
+                                                    <td className="px-3 py-2">
+                                                        {m.em_uso ? (
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium uppercase">Em uso</span>
+                                                        ) : !m.ativa ? (
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 font-medium uppercase">Inativa</span>
+                                                        ) : (
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium uppercase">Disponível</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                                                        <button onClick={() => setModalCadastro({ ...m })} className="text-gray-500 hover:text-purple-600 px-1.5" title="Editar">✏️</button>
+                                                        <button onClick={() => excluirMaquina(m.id, `${m.identificador} ${m.marca}`)} disabled={m.em_uso} className="text-gray-500 hover:text-red-600 px-1.5 disabled:opacity-30" title={m.em_uso ? 'Restitua antes de excluir' : 'Excluir'}>🗑️</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ─── SUB-TAB: HISTÓRICO ─── */}
+                    {subTab === 'historico' && (
+                        <>
+                            <p className="text-xs md:text-sm text-gray-600 mb-3">
+                                Últimas {historico.length} movimentações
+                            </p>
+                            {historico.length === 0 ? (
+                                <div className="bg-white border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500">
+                                    Nenhuma movimentação registrada ainda.
+                                </div>
+                            ) : (
+                                <div className="bg-white border border-gray-200 rounded-md overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Despacho</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Máquina</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Motoboy</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2 hidden md:table-cell">Tempo</th>
+                                                <th className="text-left text-[10px] uppercase tracking-wide text-gray-500 font-medium px-3 py-2">Restituição</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {historico.map(h => (
+                                                <tr key={h.id} className="border-b border-gray-100 last:border-0">
+                                                    <td className="px-3 py-2 text-xs whitespace-nowrap">{new Date(h.despachada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                                                    <td className="px-3 py-2 text-xs font-mono">{h.identificador} {h.marca}</td>
+                                                    <td className="px-3 py-2 text-xs">{h.motoboy_nome}</td>
+                                                    <td className="px-3 py-2 text-xs text-gray-500 hidden md:table-cell">{fmtMinutos(h.minutos_total)}</td>
+                                                    <td className="px-3 py-2 text-xs">
+                                                        {h.restituida_em
+                                                            ? <span className="text-green-700">{new Date(h.restituida_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                            : <span className="text-amber-700 font-medium">Em campo</span>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ─── MODAL CADASTRO ─── */}
+                    {modalCadastro && (
+                        <CadastroMaquinaModal
+                            form={modalCadastro}
+                            onClose={() => setModalCadastro(null)}
+                            onSave={async (form) => {
+                                try {
+                                    await salvarCadastro(form);
+                                    showToast(form.id ? 'Máquina atualizada' : 'Máquina cadastrada', 'success');
+                                    setModalCadastro(null);
+                                    await carregarCadastro();
+                                } catch (e) {
+                                    showToast(e.message, 'error');
+                                }
+                            }}
+                        />
+                    )}
+
+                    {/* ─── MODAL HORÁRIO LIMITE ─── */}
+                    {modalHorario && (
+                        <HorarioLimiteModal
+                            atual={fmtHorario(horarioLimite)}
+                            onClose={() => setModalHorario(false)}
+                            onSave={salvarHorario}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // ─── Modal de cadastro/edição de máquina ─────────────────────────────
+        const CadastroMaquinaModal = ({ form, onClose, onSave }) => {
+            const [identificador, setIdentificador] = useState(form.identificador || '');
+            const [marca, setMarca] = useState(form.marca || '');
+            const [observacao, setObservacao] = useState(form.observacao || '');
+            const [ativa, setAtiva] = useState(form.ativa !== false);
+            const [salvando, setSalvando] = useState(false);
+
+            const handleSubmit = async () => {
+                if (!identificador.trim() || !marca.trim()) return;
+                setSalvando(true);
+                try {
+                    await onSave({ id: form.id, identificador, marca, observacao, ativa });
+                } finally {
+                    setSalvando(false);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-50 px-3" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-base font-medium">{form.id ? 'Editar máquina' : 'Cadastrar nova máquina'}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1 flex items-center justify-between">
+                                    Identificador *
+                                    <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full text-[9px] font-medium normal-case">CAPS</span>
+                                </label>
+                                <input type="text" value={identificador} onChange={e => setIdentificador(e.target.value.toUpperCase())} placeholder="Ex: 04" className="w-full h-9 px-2 border border-purple-400 rounded-md text-sm font-mono font-medium tracking-wide" autoFocus />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1 flex items-center justify-between">
+                                    Marca *
+                                    <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full text-[9px] font-medium normal-case">CAPS</span>
+                                </label>
+                                <input type="text" value={marca} onChange={e => setMarca(e.target.value.toUpperCase())} placeholder="Ex: GET, CIELO, STONE" className="w-full h-9 px-2 border border-purple-400 rounded-md text-sm font-mono font-medium tracking-wide" />
+                            </div>
+                        </div>
+
+                        <div className="mb-3">
+                            <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Observação</label>
+                            <input type="text" value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Opcional — ex: maquininha de chip, reserva..." className="w-full h-9 px-2 border border-gray-300 rounded-md text-sm" />
+                        </div>
+
+                        <label className="flex items-center gap-2 text-sm mb-4 cursor-pointer">
+                            <input type="checkbox" checked={ativa} onChange={e => setAtiva(e.target.checked)} className="w-4 h-4 accent-purple-600" />
+                            <span>Máquina ativa para despacho</span>
+                        </label>
+
+                        <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                            <button onClick={onClose} className="h-9 px-3 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">Cancelar</button>
+                            <button onClick={handleSubmit} disabled={salvando || !identificador.trim() || !marca.trim()} className="h-9 px-4 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-medium rounded-md">
+                                {salvando ? '...' : (form.id ? 'Salvar' : 'Cadastrar')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ─── Modal de horário limite ─────────────────────────────────────────
+        const HorarioLimiteModal = ({ atual, onClose, onSave }) => {
+            const [valor, setValor] = useState(atual || '17:00');
+            const [salvando, setSalvando] = useState(false);
+            const handleSubmit = async () => {
+                setSalvando(true);
+                try { await onSave(valor); } finally { setSalvando(false); }
+            };
+            return (
+                <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-50 px-3" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-base font-medium">⏰ Horário limite</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-3">
+                            Após esse horário, máquinas ainda em campo recebem flag de sinalização. <strong>Não bloqueia nada</strong> — apenas alerta visual para você acompanhar.
+                        </p>
+                        <input type="time" value={valor} onChange={e => setValor(e.target.value)} className="w-full h-10 px-2 border border-gray-300 rounded-md text-sm mb-4" />
+                        <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                            <button onClick={onClose} className="h-9 px-3 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">Cancelar</button>
+                            <button onClick={handleSubmit} disabled={salvando} className="h-9 px-4 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-medium rounded-md">
+                                {salvando ? '...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const Solicitacao = ({ cliente, token, onLogout, showToast }) => {
             const [abaAtiva, setAbaAtiva] = useState('nova');
             const [pontos, setPontos] = useState([]);
@@ -1801,6 +2350,7 @@
                                 </button>
                                 <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'concluidas' ? 'bg-white text-blue-900' : 'text-blue-100 hover:bg-blue-800'}`}>✅ Concluídas</button>
                                 <button onClick={() => { setAbaAtiva('enderecos'); carregarTodosEnderecos(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'enderecos' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}>📚 Endereços</button>
+                                <button onClick={() => setAbaAtiva('maquinas')} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'maquinas' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}>🏷️ Máquinas</button>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded">Sair</button>
@@ -3339,6 +3889,11 @@
                                 </div>
                             </div>
                         </div>
+                    )}
+                    
+                    {/* ========== ABA CONTROLE DE MÁQUINAS ========== */}
+                    {abaAtiva === 'maquinas' && (
+                        <ControleMaquinas cliente={cliente} token={token} showToast={showToast} />
                     )}
                     
                     {/* Modal de fotos com zoom */}

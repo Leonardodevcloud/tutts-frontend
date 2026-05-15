@@ -2390,7 +2390,7 @@ const hideLoadingScreen = () => {
         // e pro modal de sucesso após enviar saque (auto-destrói em 2,8s).
         [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }),
         [modalLimitesAberto, setModalLimitesAberto] = useState(false),
-        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [maquinaPendenteModal, setMaquinaPendenteModal] = useState(null), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -9060,6 +9060,16 @@ const hideLoadingScreen = () => {
                 });
                 if (!response.ok) {
                     const err = await response.json();
+                    // 🚀 BLOQUEIO MÁQUINA (2026-05): HTTP 423 com payload da máquina pendente
+                    if (response.status === 423 && err.error === 'maquina_pendente') {
+                        setMaquinaPendenteModal({
+                            motoboyNome: l.nome || T.full_name || 'motoboy',
+                            maquina: err.maquina,
+                            mensagem: err.mensagem,
+                        });
+                        s(!1);
+                        return;
+                    }
                     ja("❌ " + (err.error || "Erro ao solicitar saque"), "error");
                     s(!1);
                     return;
@@ -12127,6 +12137,101 @@ const hideLoadingScreen = () => {
                 )
             )
         )
+        ),
+        // 🚀 MÁQUINA PENDENTE (2026-05): modal de bloqueio do saque emergencial
+        maquinaPendenteModal && React.createElement("div", {
+            style: {
+                position: "fixed", inset: 0,
+                background: "rgba(18,15,28,0.55)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 99999, padding: "16px"
+            },
+            onClick: () => setMaquinaPendenteModal(null)
+        },
+            React.createElement("div", {
+                onClick: (e) => e.stopPropagation(),
+                style: {
+                    background: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "12px",
+                    width: "100%", maxWidth: "440px",
+                    overflow: "hidden",
+                    boxShadow: "0 25px 50px rgba(0,0,0,0.25)"
+                }
+            },
+                React.createElement("div", {
+                    style: {
+                        background: "#FCEBEB",
+                        borderBottom: "1px solid #F7C1C1",
+                        padding: "18px 20px 14px",
+                        textAlign: "center"
+                    }
+                },
+                    React.createElement("div", {
+                        style: {
+                            width: "48px", height: "48px", borderRadius: "50%",
+                            background: "#F7C1C1", color: "#791F1F",
+                            margin: "0 auto 8px",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "24px"
+                        }
+                    }, "🔒"),
+                    React.createElement("p", {
+                        style: { fontSize: "17px", fontWeight: 500, color: "#501313", margin: "0 0 2px" }
+                    }, "Saque bloqueado"),
+                    React.createElement("p", {
+                        style: { fontSize: "12px", color: "#791F1F", margin: 0 }
+                    }, "Devolva a máquina para liberar")
+                ),
+                React.createElement("div", { style: { padding: "16px 20px" } },
+                    React.createElement("p", {
+                        style: { fontSize: "13px", margin: "0 0 10px" }
+                    }, "Prezado ", React.createElement("strong", { style: { fontWeight: 500 } }, (maquinaPendenteModal.motoboyNome || "").split(' ')[0] || "motoboy"), ","),
+                    React.createElement("p", {
+                        style: { fontSize: "13px", color: "#111", lineHeight: 1.55, margin: "0 0 14px" }
+                    }, maquinaPendenteModal.mensagem || "Você está com uma máquina da loja em uso. Faça a devolução para acessar seus valores."),
+                    React.createElement("div", {
+                        style: { background: "#f5f5f4", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }
+                    },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontSize: "12px" } },
+                            React.createElement("span", { style: { color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.3px", fontSize: "11px" } }, "Máquina"),
+                            React.createElement("span", { style: { fontWeight: 500 } }, `${maquinaPendenteModal.maquina?.identificador || ''} ${maquinaPendenteModal.maquina?.marca || ''}`.trim())
+                        ),
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontSize: "12px" } },
+                            React.createElement("span", { style: { color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.3px", fontSize: "11px" } }, "Loja"),
+                            React.createElement("span", { style: { fontWeight: 500 } }, maquinaPendenteModal.maquina?.loja || "—")
+                        ),
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" } },
+                            React.createElement("span", { style: { color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.3px", fontSize: "11px" } }, "Despachada em"),
+                            React.createElement("span", { style: { fontWeight: 500 } }, maquinaPendenteModal.maquina?.despachada_em ? new Date(maquinaPendenteModal.maquina.despachada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : "—")
+                        )
+                    ),
+                    React.createElement("div", {
+                        style: { display: "flex", gap: "8px", justifyContent: "flex-end" }
+                    },
+                        maquinaPendenteModal.maquina?.telefone_loja && React.createElement("a", {
+                            href: `tel:${maquinaPendenteModal.maquina.telefone_loja}`,
+                            style: {
+                                background: "transparent", color: "#111",
+                                border: "1px solid #d1d5db",
+                                padding: "0 14px", height: "34px",
+                                borderRadius: "8px", fontSize: "13px",
+                                display: "inline-flex", alignItems: "center", gap: "6px",
+                                textDecoration: "none"
+                            }
+                        }, "📞 Falar com a loja"),
+                        React.createElement("button", {
+                            onClick: () => setMaquinaPendenteModal(null),
+                            style: {
+                                background: "#7c3aed", color: "white", border: 0,
+                                padding: "0 16px", height: "34px",
+                                borderRadius: "8px", fontSize: "13px", fontWeight: 500,
+                                cursor: "pointer"
+                            }
+                        }, "Entendi")
+                    )
+                )
+            )
         ), "dados" === p.saqueTab && React.createElement("div", {
             className: "space-y-4"
         }, T && !F ? React.createElement(React.Fragment, null, React.createElement("div", {
