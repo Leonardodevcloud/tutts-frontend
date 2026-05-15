@@ -415,6 +415,7 @@
             const [despachando, setDespachando] = useState(false);
             const [modalCadastro, setModalCadastro] = useState(null);
             const [modalHorario, setModalHorario] = useState(false);
+            const [modalConfirm, setModalConfirm] = useState(null);
             const [tick, setTick] = useState(0);
 
             const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -519,8 +520,17 @@
                 }
             };
 
-            const restituir = async (movimentacao) => {
-                if (!confirm(`Confirma a restituição da máquina ${movimentacao.identificador} ${movimentacao.marca} de ${movimentacao.motoboy_nome}?`)) return;
+            const restituir = (movimentacao) => {
+                setModalConfirm({
+                    titulo: 'Restituir máquina',
+                    mensagem: `Confirma a restituição da máquina ${movimentacao.identificador} ${movimentacao.marca} de ${movimentacao.motoboy_nome}?`,
+                    textoConfirmar: '↩️ Restituir',
+                    variant: 'primary',
+                    onConfirm: () => doRestituir(movimentacao),
+                });
+            };
+
+            const doRestituir = async (movimentacao) => {
                 try {
                     const r = await fetch(`${API_URL}/api/maquinas/movimentacoes/${movimentacao.movimentacao_id}/restituir`, {
                         method: 'POST',
@@ -554,8 +564,17 @@
                 return data;
             };
 
-            const excluirMaquina = async (id, label) => {
-                if (!confirm(`Excluir a máquina ${label}? Esta ação não pode ser desfeita.`)) return;
+            const excluirMaquina = (id, label) => {
+                setModalConfirm({
+                    titulo: 'Excluir máquina',
+                    mensagem: `Excluir a máquina ${label}? Esta ação não pode ser desfeita.`,
+                    textoConfirmar: '🗑️ Excluir',
+                    variant: 'danger',
+                    onConfirm: () => doExcluirMaquina(id, label),
+                });
+            };
+
+            const doExcluirMaquina = async (id, label) => {
                 try {
                     const r = await fetch(`${API_URL}/api/maquinas/${id}`, { method: 'DELETE', headers });
                     const data = await r.json();
@@ -848,6 +867,14 @@
                             onSave={salvarHorario}
                         />
                     )}
+
+                    {/* ─── MODAL CONFIRMAÇÃO (restituir / excluir) ─── */}
+                    {modalConfirm && (
+                        <ConfirmModal
+                            data={modalConfirm}
+                            onClose={() => setModalConfirm(null)}
+                        />
+                    )}
                 </div>
             );
         };
@@ -939,6 +966,54 @@
                             <button onClick={onClose} className="h-9 px-3 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">Cancelar</button>
                             <button onClick={handleSubmit} disabled={salvando} className="h-9 px-4 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-medium rounded-md">
                                 {salvando ? '...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ─── Modal de confirmação (restituir / excluir / etc) ────────────────
+        const ConfirmModal = ({ data, onClose }) => {
+            const [executando, setExecutando] = useState(false);
+            const variant = data.variant || 'primary';
+            const acentoCor = variant === 'danger' ? '#dc2626' : '#7c3aed';
+            const acentoHover = variant === 'danger' ? '#b91c1c' : '#6d28d9';
+            const acentoBgSuave = variant === 'danger' ? '#fef2f2' : '#f3eaff';
+            const iconeBgCor = variant === 'danger' ? '#fee2e2' : '#ede9fe';
+            const iconeCor = variant === 'danger' ? '#b91c1c' : '#6d28d9';
+            const icone = variant === 'danger' ? '⚠️' : '❓';
+
+            const handleConfirm = async () => {
+                setExecutando(true);
+                try {
+                    await data.onConfirm();
+                } finally {
+                    onClose();
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-50 px-3 fade-in" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5" onClick={e => e.stopPropagation()} style={{ animation: 'confirmIn 0.25s ease-out' }}>
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-xl" style={{ background: iconeBgCor, color: iconeCor }}>
+                                {icone}
+                            </div>
+                            <div className="flex-1 pt-0.5">
+                                <h3 className="text-base font-medium text-gray-900 mb-1">{data.titulo}</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">{data.mensagem}</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                            <button onClick={onClose} disabled={executando} className="h-9 px-4 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                                Cancelar
+                            </button>
+                            <button onClick={handleConfirm} disabled={executando} className="h-9 px-4 text-sm text-white font-medium rounded-md disabled:opacity-60"
+                                style={{ background: acentoCor }}
+                                onMouseEnter={e => e.currentTarget.style.background = acentoHover}
+                                onMouseLeave={e => e.currentTarget.style.background = acentoCor}>
+                                {executando ? '...' : (data.textoConfirmar || 'Confirmar')}
                             </button>
                         </div>
                     </div>
