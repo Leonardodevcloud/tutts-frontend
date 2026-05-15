@@ -2390,7 +2390,7 @@ const hideLoadingScreen = () => {
         // e pro modal de sucesso após enviar saque (auto-destrói em 2,8s).
         [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }),
         [modalLimitesAberto, setModalLimitesAberto] = useState(false),
-        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [maquinaPendenteModal, setMaquinaPendenteModal] = useState(null), [maquinaEmMaos, setMaquinaEmMaos] = useState(null), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [maquinaPendenteModal, setMaquinaPendenteModal] = useState(null), [maquinaEmMaos, setMaquinaEmMaos] = useState(null), [movIdAvisado, setMovIdAvisado] = useState(null), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -3635,6 +3635,26 @@ const hideLoadingScreen = () => {
             const iv = setInterval(carregar, 30000); // re-check a cada 30s
             return () => { parado = true; clearInterval(iv); };
         }, [l]);
+
+        // 🚀 AUTO-MODAL (2026-05): quando o motoboy entra na tela de Saque
+        // e tem máquina pendente, abre o modal 1x por movimentação.
+        // Se ele restituir e despachar de novo, abre de novo (novo movimentacao_id).
+        React.useEffect(() => {
+            if (p.userTab === 'saque' && maquinaEmMaos && maquinaEmMaos.movimentacao_id !== movIdAvisado) {
+                setMaquinaPendenteModal({
+                    motoboyNome: (l && l.nome) || (T && T.full_name) || '',
+                    maquina: {
+                        identificador: maquinaEmMaos.identificador,
+                        marca: maquinaEmMaos.marca,
+                        loja: maquinaEmMaos.cliente_nome,
+                        despachada_em: maquinaEmMaos.despachada_em,
+                        telefone_loja: maquinaEmMaos.cliente_telefone,
+                    },
+                    mensagem: 'Você está com uma máquina da loja em uso. Faça a devolução para acessar seus valores.',
+                    movimentacao_id_origem: maquinaEmMaos.movimentacao_id,
+                });
+            }
+        }, [p.userTab, maquinaEmMaos, movIdAvisado, l, T]);
 
         // 🚀 2026-05 Fase 2: polling adaptativo do estado da fila pra hero da home se sentir "ao vivo"
         // - Faz 1 check em /minha-central (vínculo)
@@ -12268,7 +12288,12 @@ const hideLoadingScreen = () => {
                             }
                         }, "📞 Falar com a loja"),
                         React.createElement("button", {
-                            onClick: () => setMaquinaPendenteModal(null),
+                            onClick: () => {
+                                if (maquinaPendenteModal && maquinaPendenteModal.movimentacao_id_origem) {
+                                    setMovIdAvisado(maquinaPendenteModal.movimentacao_id_origem);
+                                }
+                                setMaquinaPendenteModal(null);
+                            },
                             style: {
                                 background: "#7c3aed", color: "white", border: 0,
                                 padding: "0 16px", height: "34px",

@@ -417,6 +417,9 @@
             const [modalHorario, setModalHorario] = useState(false);
             const [modalConfirm, setModalConfirm] = useState(null);
             const [tick, setTick] = useState(0);
+            // Filtros do histórico
+            const [histFiltros, setHistFiltros] = useState({ inicio: '', fim: '', motoboy_codigo: '', maquina_id: '' });
+            const [histFiltrosDisp, setHistFiltrosDisp] = useState({ motoboys: [], maquinas: [] });
 
             const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -461,15 +464,43 @@
 
             const carregarHistoricoLog = useCallback(async () => {
                 try {
-                    const r = await fetch(`${API_URL}/api/maquinas/historico?limit=100`, { headers });
-                    if (r.ok) {
-                        const d = await r.json();
+                    // Monta query string com filtros ativos
+                    const params = new URLSearchParams();
+                    if (histFiltros.inicio) params.set('inicio', histFiltros.inicio + ' 00:00:00');
+                    if (histFiltros.fim) params.set('fim', histFiltros.fim + ' 23:59:59');
+                    if (histFiltros.motoboy_codigo) params.set('motoboy_codigo', histFiltros.motoboy_codigo);
+                    if (histFiltros.maquina_id) params.set('maquina_id', histFiltros.maquina_id);
+                    params.set('limit', '200');
+
+                    const [r1, r2] = await Promise.all([
+                        fetch(`${API_URL}/api/maquinas/historico?${params.toString()}`, { headers }),
+                        // Carrega filtros disponíveis (apenas na primeira vez ou se vazio)
+                        histFiltrosDisp.motoboys.length === 0
+                            ? fetch(`${API_URL}/api/maquinas/historico/filtros`, { headers })
+                            : Promise.resolve(null),
+                    ]);
+                    if (r1.ok) {
+                        const d = await r1.json();
                         setHistorico(d.historico || []);
+                    }
+                    if (r2 && r2.ok) {
+                        const d = await r2.json();
+                        setHistFiltrosDisp({
+                            motoboys: d.motoboys || [],
+                            maquinas: d.maquinas || [],
+                        });
                     }
                 } catch (e) {
                     showToast('Erro ao carregar histórico: ' + e.message, 'error');
                 }
-            }, [token]);
+            }, [token, histFiltros, histFiltrosDisp.motoboys.length]);
+
+            // Limpa todos os filtros do histórico
+            const limparFiltrosHist = () => {
+                setHistFiltros({ inicio: '', fim: '', motoboy_codigo: '', maquina_id: '' });
+            };
+
+            const temFiltroAtivo = !!(histFiltros.inicio || histFiltros.fim || histFiltros.motoboy_codigo || histFiltros.maquina_id);
 
             // Carregar ao montar e ao mudar de sub-tab
             useEffect(() => {
@@ -812,12 +843,56 @@
                     {/* ─── SUB-TAB: HISTÓRICO ─── */}
                     {subTab === 'historico' && (
                         <>
+                            <div className="bg-white border border-gray-200 rounded-md p-3 mb-3">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <h3 className="text-xs font-medium text-gray-700 uppercase tracking-wide flex items-center gap-1.5">
+                                        <span>🔍</span>
+                                        Filtros
+                                        {temFiltroAtivo && <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium normal-case tracking-normal">ativos</span>}
+                                    </h3>
+                                    {temFiltroAtivo && (
+                                        <button onClick={limparFiltrosHist} className="text-xs text-gray-500 hover:text-purple-600 underline">
+                                            Limpar tudo
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">De</label>
+                                        <input type="date" value={histFiltros.inicio} onChange={e => setHistFiltros(f => ({ ...f, inicio: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Até</label>
+                                        <input type="date" value={histFiltros.fim} onChange={e => setHistFiltros(f => ({ ...f, fim: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Motoboy</label>
+                                        <select value={histFiltros.motoboy_codigo} onChange={e => setHistFiltros(f => ({ ...f, motoboy_codigo: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs bg-white">
+                                            <option value="">Todos</option>
+                                            {histFiltrosDisp.motoboys.map(m => (
+                                                <option key={m.motoboy_codigo} value={m.motoboy_codigo}>{m.motoboy_nome}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Máquina</label>
+                                        <select value={histFiltros.maquina_id} onChange={e => setHistFiltros(f => ({ ...f, maquina_id: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs bg-white">
+                                            <option value="">Todas</option>
+                                            {histFiltrosDisp.maquinas.map(m => (
+                                                <option key={m.id} value={m.id}>{m.identificador} {m.marca}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <p className="text-xs md:text-sm text-gray-600 mb-3">
-                                Últimas {historico.length} movimentações
+                                {historico.length === 0 ? 'Nenhuma movimentação' : `${historico.length} ${historico.length === 1 ? 'movimentação encontrada' : 'movimentações encontradas'}`}
+                                {temFiltroAtivo && ' com os filtros aplicados'}
                             </p>
                             {historico.length === 0 ? (
                                 <div className="bg-white border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500">
-                                    Nenhuma movimentação registrada ainda.
+                                    {temFiltroAtivo ? 'Nenhuma movimentação encontrada com esses filtros. Tente outros valores.' : 'Nenhuma movimentação registrada ainda.'}
                                 </div>
                             ) : (
                                 <div className="bg-white border border-gray-200 rounded-md overflow-x-auto">
