@@ -12208,22 +12208,34 @@ const hideLoadingScreen = () => {
         // 🚀 MÁQUINA PENDENTE (2026-05): modal de bloqueio do saque emergencial
         maquinaPendenteModal && React.createElement("div", {
             style: {
-                position: "fixed", inset: 0,
+                position: "fixed",
+                top: 0, left: 0,
+                width: "100vw", height: "100vh",
                 background: "rgba(18,15,28,0.55)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                zIndex: 99999, padding: "16px"
+                zIndex: 99999,
+                padding: "16px",
+                boxSizing: "border-box",
+                overflowY: "auto"
             },
-            onClick: () => setMaquinaPendenteModal(null)
+            onClick: () => {
+                if (maquinaPendenteModal && maquinaPendenteModal.movimentacao_id_origem) {
+                    setMovIdAvisado(maquinaPendenteModal.movimentacao_id_origem);
+                }
+                setMaquinaPendenteModal(null);
+            }
         },
             React.createElement("div", {
                 onClick: (e) => e.stopPropagation(),
                 style: {
-                    background: "white",
+                    background: "var(--color-background-primary, white)",
                     border: "1px solid #e5e7eb",
                     borderRadius: "12px",
                     width: "100%", maxWidth: "440px",
-                    overflow: "hidden",
-                    boxShadow: "0 25px 50px rgba(0,0,0,0.25)"
+                    maxHeight: "calc(100vh - 32px)",
+                    overflow: "auto",
+                    boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
+                    boxSizing: "border-box"
                 }
             },
                 React.createElement("div", {
