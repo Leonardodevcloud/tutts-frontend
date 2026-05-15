@@ -510,6 +510,10 @@
                     const data = await r.json();
                     if (!r.ok) throw new Error(data.mensagem || data.error || 'Erro ao despachar');
                     showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca} despachada para ${motoboy?.nome}`, 'success');
+                    // Aviso adicional se o motoboy não foi encontrado no cadastro da Central
+                    if (data.vinculado_central === false && data.aviso_vinculo) {
+                        setTimeout(() => showToast(`⚠️ ${data.aviso_vinculo}`, 'error'), 600);
+                    }
                     setMaquinaSel('');
                     setMotoboySel('');
                     await carregarOperacao();
@@ -717,8 +721,15 @@
                                                         {mov.motoboy_nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-sm font-medium text-gray-800">
-                                                            {mov.motoboy_nome} — <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
+                                                        <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5 flex-wrap">
+                                                            <span>{mov.motoboy_nome}</span>
+                                                            <span className="text-gray-400">—</span>
+                                                            <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
+                                                            {mov.vinculado_central === false && (
+                                                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium uppercase tracking-wide" title="Motoboy não encontrado no cadastro da Central. O bloqueio do saque não vai funcionar pra ele.">
+                                                                    ⚠ sem vínculo
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className={`text-xs mt-0.5 ${isPendente ? 'text-amber-700' : 'text-gray-500'}`}>
                                                             🕐 Despachada às {fmtDataHora(mov.despachada_em)} · {fmtMinutos(mov.minutos_em_campo)} em campo
