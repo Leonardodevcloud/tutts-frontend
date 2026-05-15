@@ -2390,7 +2390,7 @@ const hideLoadingScreen = () => {
         // e pro modal de sucesso após enviar saque (auto-destrói em 2,8s).
         [saquesStatus, setSaquesStatus] = useState({ habilitados: true, automaticos: false, mensagem: '' }),
         [modalLimitesAberto, setModalLimitesAberto] = useState(false),
-        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [maquinaPendenteModal, setMaquinaPendenteModal] = useState(null), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
+        [saqueSucessoModal, setSaqueSucessoModal] = useState(false), [maquinaPendenteModal, setMaquinaPendenteModal] = useState(null), [maquinaEmMaos, setMaquinaEmMaos] = useState(null), [Et, ht] = useState(() => { try { return localStorage.getItem("tutts_tab_bi") || "home-bi"; } catch(e) { return "home-bi"; } }), [chatIaMsgs, setChatIaMsgs] = useState([]), [chatIaInput, setChatIaInput] = useState(""), [chatIaLoading, setChatIaLoading] = useState(false), [chatIaSql, setChatIaSql] = useState(null), [chatIaFiltros, setChatIaFiltros] = useState({ cod_cliente: [], nomes_clientes: [], centro_custo: [], data_inicio: "", data_fim: "", regiao: "" }), [chatIaIniciado, setChatIaIniciado] = useState(false), [chatIaClientes, setChatIaClientes] = useState([]), [chatIaCentros, setChatIaCentros] = useState([]), [chatIaFiltrosLoading, setChatIaFiltrosLoading] = useState(false), [chatIaDropAberto, setChatIaDropAberto] = useState(null), [chatIaBuscaCliente, setChatIaBuscaCliente] = useState(""), [chatIaConversas, setChatIaConversas] = useState([]), [chatIaConversaAtual, setChatIaConversaAtual] = useState(null), [chatIaConversasLoading, setChatIaConversasLoading] = useState(false), [chatIaSidebarAberta, setChatIaSidebarAberta] = useState(false), [chatIaExportando, setChatIaExportando] = useState(false), [chatIaRegioes, setChatIaRegioes] = useState([]), [ft, Nt] = useState(null), [mostrarDetalhes, setMostrarDetalhes] = useState(false), [yt, vt] = useState([]), [wt, _t] = useState([{
             km_min: 0,
             km_max: 15,
             prazo_minutos: 45
@@ -3615,6 +3615,26 @@ const hideLoadingScreen = () => {
         }, [l?.codProfissional]);
 
 
+
+        // 🚀 MÁQUINA EM MÃOS (2026-05): polling do status do motoboy logado.
+        // Quando true, renderiza banner vermelho no topo da aba "Solicitar" e
+        // bloqueia o handler Vl (defense in depth com o backend).
+        React.useEffect(() => {
+            if (!l || l.role !== "user" || !l.codProfissional) { setMaquinaEmMaos(null); return; }
+            let parado = false;
+            const carregar = async () => {
+                try {
+                    const r = await fetchAuth(API_URL + "/maquinas/meu-status");
+                    if (!r.ok || parado) return;
+                    const d = await r.json();
+                    if (parado) return;
+                    setMaquinaEmMaos(d.tem_maquina ? d.maquina : null);
+                } catch (e) { /* silencioso — fail-open */ }
+            };
+            carregar();
+            const iv = setInterval(carregar, 30000); // re-check a cada 30s
+            return () => { parado = true; clearInterval(iv); };
+        }, [l]);
 
         // 🚀 2026-05 Fase 2: polling adaptativo do estado da fila pra hero da home se sentir "ao vivo"
         // - Faz 1 check em /minha-central (vínculo)
@@ -9008,6 +9028,12 @@ const hideLoadingScreen = () => {
                 s(!1)
             } else ja(`❌ ${e.mensagem}`, "error")
         }, Vl = async () => {
+            // 🚀 GUARD MÁQUINA EM MÃOS (2026-05): bloqueio client-side antes do POST.
+            // O banner já avisa, mas se o motoboy ignorar e tentar mesmo assim,
+            // não deixa passar. Defense in depth com o bloqueio no backend.
+            if (maquinaEmMaos) {
+                return void ja("🔒 Devolva a máquina da loja antes de solicitar saque.", "error");
+            }
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
             if (e < 15) return void ja("⚠️ Valor mínimo é R$ 15,00", "error");
@@ -11552,7 +11578,28 @@ const hideLoadingScreen = () => {
             }, "Rejeitados:"), React.createElement("span", {
                 className: "font-semibold text-red-600"
             }, l.filter(e => "rejeitado" === e.status).length)))))
-        })()), (!p.saqueTab || "solicitar" === p.saqueTab) && React.createElement(React.Fragment, null, (() => {
+        })()), (!p.saqueTab || "solicitar" === p.saqueTab) && React.createElement(React.Fragment, null,
+            // 🚀 BANNER MÁQUINA EM MÃOS (2026-05): fica fixo no topo enquanto não restituir
+            maquinaEmMaos && React.createElement("div", {
+                className: "bg-red-50 border-2 border-red-400 rounded-xl p-4 mb-4 flex items-start gap-3"
+            },
+                React.createElement("span", { className: "text-3xl flex-shrink-0", style: { lineHeight: 1 } }, "🔒"),
+                React.createElement("div", { className: "flex-1 min-w-0" },
+                    React.createElement("p", { className: "font-bold text-red-800 mb-1.5 text-base" }, "Saque bloqueado"),
+                    React.createElement("p", { className: "text-sm text-red-700 leading-relaxed" },
+                        "Você está com a máquina ",
+                        React.createElement("strong", { className: "font-mono bg-red-100 px-1.5 py-0.5 rounded" }, (maquinaEmMaos.identificador || "") + " " + (maquinaEmMaos.marca || "")),
+                        " da loja ",
+                        React.createElement("strong", null, maquinaEmMaos.cliente_nome || "—"),
+                        ". Devolva a máquina na loja para liberar o saque emergencial."
+                    ),
+                    maquinaEmMaos.despachada_em && React.createElement("p", { className: "text-xs text-red-600 mt-2 flex items-center gap-1" },
+                        React.createElement("span", null, "🕐"),
+                        React.createElement("span", null, "Despachada em " + new Date(maquinaEmMaos.despachada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))
+                    )
+                )
+            ),
+            (() => {
             // Verificar se profissional está restrito
             if (p._userRestrito) {
                 return React.createElement("div", { className: "flex flex-col items-center justify-center py-16 px-6 text-center" },
