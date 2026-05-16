@@ -2125,7 +2125,10 @@
                                 onChange: e => { 
                                     setConciliacaoPagina(1); 
                                     x({...p, concDataRealizacao: e.target.value, concDataSolicitacao: ""});
-                                    if (e.target.value) carregarConciliacao(e.target.value, e.target.value, "lancamento");
+                                    // 🆕 2026-05 FIX: "aprovacao" → approved_at, a MESMA coluna exibida
+                                    // como "Realizado". Antes era "lancamento" (lancamento_at), que
+                                    // diverge em re-lançamentos e trazia saques de outro dia.
+                                    if (e.target.value) carregarConciliacao(e.target.value, e.target.value, "aprovacao");
                                     else setConciliacaoData(null);
                                 },
                                 className: "px-3 py-2 border rounded-lg text-sm"
