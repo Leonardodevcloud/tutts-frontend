@@ -9740,6 +9740,20 @@ const hideLoadingScreen = () => {
             className: "text-gray-500 hover:underline"
         }, "Esqueci minha senha")))));
         }
+        // 🆕 2026-05: GATE DE CADASTRO — motoboy só acessa após selfie + WhatsApp.
+        // Renderizado por cima de tudo. Sem botão de pular. Só some quando completa.
+        if ("user" === l.role && l.cadastro_completo !== true && typeof window.GateCadastro !== 'undefined') {
+            return React.createElement(window.GateCadastro, {
+                usuario: l,
+                apiUrl: API_URL,
+                fetchAuth: fetchAuth,
+                showToast: ja,
+                onConcluido: () => {
+                    // Atualiza o usuário em memória e re-renderiza liberando o app
+                    o({ ...l, cadastro_completo: true });
+                }
+            });
+        }
         if ("user" === l.role) {
             // Se está no módulo de Filas, renderizar o módulo
             if ("filas" === Ee) {
