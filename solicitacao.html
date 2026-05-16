@@ -2873,6 +2873,18 @@
                                                                     {p.complemento && <div className="text-xs text-blue-700">🏠 {p.complemento}</div>}
                                                                     {p.bairro && <div className="text-xs text-gray-500 break-words">{p.bairro}</div>}
                                                                     {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
+                                                                    {p.telefone && (
+                                                                        <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
+                                                                            <span>📞 {p.telefone}</span>
+                                                                            {(() => {
+                                                                                const v = waValidacao[p.id];
+                                                                                if (v && v.estado === 'ok') return <span className="text-green-600" title="WhatsApp confirmado">✅</span>;
+                                                                                if (v && v.estado === 'sem_whatsapp') return <span className="text-amber-600" title="Sem WhatsApp neste número">⚠️</span>;
+                                                                                if (v && v.estado === 'invalido') return <span className="text-red-500" title="Número inválido">❌</span>;
+                                                                                return null;
+                                                                            })()}
+                                                                        </div>
+                                                                    )}
                                                                     {p.observacao && <div className="text-xs text-orange-600 break-words">📝 {p.observacao}</div>}
                                                                     {p.ajustado_manualmente && <div className="text-xs text-green-600">🎯 Posição ajustada</div>}
                                                                 </div>
