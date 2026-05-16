@@ -2349,10 +2349,6 @@ const hideLoadingScreen = () => {
             loja: [],
             gratuidades: []
         }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null); 
-    // 🆕 2026-05: fotos dos usuários — mesma mecânica do Financeiro (hook useFotos)
-    const fotosUsuarios = (typeof window.FotosMotoboy !== 'undefined' && window.FotosMotoboy.useFotos)
-        ? window.FotosMotoboy.useFotos((A || []).map(u => u.codProfissional).filter(Boolean), fetchAuth, API_URL)
-        : {};
     const parseSaldoBR = (valor) => {
             if (typeof valor === "number") return valor;
             if (!valor) return 0;
@@ -6987,15 +6983,44 @@ const hideLoadingScreen = () => {
             try {
                 const e = await fetchAuth(`${API_URL}/users`),
                     t = await e.json();
-                S(t.map(e => ({
+                // monta a lista de usuários
+                const listaUsuarios = t.map(e => ({
                     codProfissional: e.cod_profissional,
                     fullName: e.full_name,
                     role: e.role,
                     setor_id: e.setor_id,
                     setor_nome: e.setor_nome,
                     setor_cor: e.setor_cor,
-                    createdAt: new Date(e.created_at).toLocaleString("pt-BR")
-                })))
+                    createdAt: new Date(e.created_at).toLocaleString("pt-BR"),
+                    foto: null
+                }));
+                // mostra a lista já (sem foto ainda)
+                S(listaUsuarios);
+                // 🆕 2026-05: busca as fotos e injeta dentro de cada usuário.
+                // Sem hook — só um fetch direto + um S() com a lista atualizada.
+                try {
+                    const cods = listaUsuarios.map(u => u.codProfissional).filter(Boolean);
+                    // pede em lotes de 150 (limite do backend é 200)
+                    const mapaFotos = {};
+                    for (let i = 0; i < cods.length; i += 150) {
+                        const lote = cods.slice(i, i + 150);
+                        const respFoto = await fetchAuth(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
+                        if (respFoto.ok) {
+                            const dataFoto = await respFoto.json();
+                            Object.assign(mapaFotos, dataFoto.fotos || {});
+                        }
+                    }
+                    // injeta a foto em cada usuário e atualiza a lista
+                    if (Object.keys(mapaFotos).length > 0) {
+                        S(listaUsuarios.map(u => ({
+                            ...u,
+                            foto: mapaFotos[u.codProfissional] || null
+                        })));
+                        console.log(`✅ Fotos dos usuários: ${Object.keys(mapaFotos).length} carregadas`);
+                    }
+                } catch (errFoto) {
+                    console.warn('Fotos dos usuários não carregaram:', errFoto.message);
+                }
             } catch (e) {
                 console.error(e)
             }
@@ -22385,10 +22410,10 @@ const hideLoadingScreen = () => {
         }, React.createElement("div", {
             className: "flex items-center gap-3 flex-1"
         }, (
-            // 🆕 2026-05: foto do motoboy ou inicial — igual ao Financeiro
-            fotosUsuarios && fotosUsuarios[e.codProfissional]
+            // 🆕 2026-05: foto do motoboy (campo e.foto) ou inicial
+            e.foto
                 ? React.createElement("img", {
-                    src: fotosUsuarios[e.codProfissional],
+                    src: e.foto,
                     alt: e.fullName || "",
                     className: "w-11 h-11 rounded-full object-cover border border-gray-200 flex-shrink-0"
                 })
