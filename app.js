@@ -14982,6 +14982,38 @@ const hideLoadingScreen = () => {
         }
         
         // ========== MÓDULO ROADMAP / DESENVOLVIMENTOS (admin only) ==========
+        if ("controle-maquinas" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            },
+                i && React.createElement(Toast, i),
+                n && React.createElement(LoadingOverlay, null),
+                React.createElement(HeaderCompacto, {
+                    usuario: l,
+                    moduloAtivo: Ee,
+                    abaAtiva: "",
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: () => window.location.reload(),
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: () => {}
+                }),
+                typeof window.ModuloControleMaquinas !== 'undefined'
+                    ? React.createElement(window.ModuloControleMaquinas, {
+                        usuario: l,
+                        apiUrl: API_URL,
+                        showToast: ja,
+                        fetchAuth: fetchAuth
+                    })
+                    : React.createElement("div", { className: "text-center py-12" },
+                        React.createElement("p", { className: "text-red-500" }, "⚠️ Módulo Controle de Máquinas não carregado. Verifique se ModuloControleMaquinas.js está presente.")
+                    )
+            );
+        }
+
         if ("roadmap" === Ee) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
@@ -20852,6 +20884,22 @@ const hideLoadingScreen = () => {
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos e ajustes")
                         )
                     ),
+                    // 🆕 2026-05 — Controle de Máquinas (liberação de saque) — só admin
+                    (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro") &&
+                    React.createElement("div", {
+                        onClick: () => he("controle-maquinas"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🔓")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Controle de Máquinas"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Liberar saque de motoboy com máquina")
+                        )
+                    ),
+
                     // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
                     (l.role === "admin" || l.role === "admin_master") &&
                     React.createElement("div", {
