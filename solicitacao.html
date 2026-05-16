@@ -540,7 +540,8 @@
                     });
                     const data = await r.json();
                     if (!r.ok) throw new Error(data.mensagem || data.error || 'Erro ao despachar');
-                    showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca} despachada para ${motoboy?.nome}`, 'success');
+                    const obsTxt = data.maquina.observacao ? ` (${data.maquina.observacao})` : '';
+                    showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca}${obsTxt} despachada para ${motoboy?.nome}`, 'success');
                     // Aviso adicional se o motoboy não foi encontrado no cadastro da Central
                     if (data.vinculado_central === false && data.aviso_vinculo) {
                         setTimeout(() => showToast(`⚠️ ${data.aviso_vinculo}`, 'error'), 600);
@@ -716,7 +717,11 @@
                                         <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Máquina disponível</label>
                                         <select value={maquinaSel} onChange={e => setMaquinaSel(e.target.value)} className="w-full h-9 px-2 border border-gray-300 rounded-md text-sm bg-white">
                                             <option value="">— selecione —</option>
-                                            {disponiveis.map(m => <option key={m.id} value={m.id}>{m.identificador} {m.marca}</option>)}
+                                            {disponiveis.map(m => (
+                                                <option key={m.id} value={m.id}>
+                                                    {m.identificador} {m.marca}{m.observacao ? ` — ${m.observacao}` : ''}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <button onClick={despachar} disabled={despachando || !maquinaSel || !motoboySel} className="h-9 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md whitespace-nowrap">
@@ -756,6 +761,9 @@
                                                             <span>{mov.motoboy_nome}</span>
                                                             <span className="text-gray-400">—</span>
                                                             <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
+                                                            {mov.observacao && (
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-normal italic">{mov.observacao}</span>
+                                                            )}
                                                             {mov.vinculado_central === false && (
                                                                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium uppercase tracking-wide" title="Motoboy não encontrado no cadastro da Central. O bloqueio do saque não vai funcionar pra ele.">
                                                                     ⚠ sem vínculo
@@ -879,7 +887,9 @@
                                         <select value={histFiltros.maquina_id} onChange={e => setHistFiltros(f => ({ ...f, maquina_id: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs bg-white">
                                             <option value="">Todas</option>
                                             {histFiltrosDisp.maquinas.map(m => (
-                                                <option key={m.id} value={m.id}>{m.identificador} {m.marca}</option>
+                                                <option key={m.id} value={m.id}>
+                                                    {m.identificador} {m.marca}{m.observacao ? ` — ${m.observacao}` : ''}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -910,7 +920,10 @@
                                             {historico.map(h => (
                                                 <tr key={h.id} className="border-b border-gray-100 last:border-0">
                                                     <td className="px-3 py-2 text-xs whitespace-nowrap">{new Date(h.despachada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                                                    <td className="px-3 py-2 text-xs font-mono">{h.identificador} {h.marca}</td>
+                                                    <td className="px-3 py-2 text-xs font-mono">
+                                                        {h.identificador} {h.marca}
+                                                        {h.observacao && <span className="ml-1 text-gray-400 italic font-sans">— {h.observacao}</span>}
+                                                    </td>
                                                     <td className="px-3 py-2 text-xs">{h.motoboy_nome}</td>
                                                     <td className="px-3 py-2 text-xs text-gray-500 hidden md:table-cell">{fmtMinutos(h.minutos_total)}</td>
                                                     <td className="px-3 py-2 text-xs">
