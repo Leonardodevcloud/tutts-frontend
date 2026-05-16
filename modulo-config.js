@@ -380,12 +380,19 @@
                             },
                                 React.createElement("div", {className: "flex items-center justify-between"},
                                     React.createElement("div", {className: "flex items-center gap-3"},
-                                        React.createElement("div", {
-                                            className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
-                                                (user.role === "admin_master" ? "bg-purple-600" :
-                                                 user.role === "admin" ? "bg-blue-600" :
-                                                 user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
-                                        }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
+                                        // 🆕 2026-05: foto do motoboy (user.foto) ou avatar de inicial
+                                        user.foto
+                                            ? React.createElement("img", {
+                                                src: user.foto,
+                                                alt: user.fullName || "",
+                                                className: "w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                            })
+                                            : React.createElement("div", {
+                                                className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 " +
+                                                    (user.role === "admin_master" ? "bg-purple-600" :
+                                                     user.role === "admin" ? "bg-blue-600" :
+                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
+                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
                                         React.createElement("div", null,
                                             React.createElement("p", {className: "font-semibold"}, user.fullName),
                                             React.createElement("p", {className: "text-sm text-gray-500"},
