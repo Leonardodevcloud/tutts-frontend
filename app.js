@@ -6943,6 +6943,26 @@ const hideLoadingScreen = () => {
                         const idsJa = new Set(allSubs.map(s => s.id));
                         pendSubs.forEach(s => { if (!idsJa.has(s.id)) allSubs.push(s); });
                     }
+                    // 🆕 2026-05: busca as fotos dos profissionais e injeta em cada card
+                    try {
+                        const codsSub = [...new Set(allSubs.map(s => s.codProfissional).filter(Boolean))];
+                        if (codsSub.length > 0) {
+                            const mapaFotosSub = {};
+                            for (let i = 0; i < codsSub.length; i += 150) {
+                                const lote = codsSub.slice(i, i + 150);
+                                const rf = await fetchAuth(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
+                                if (rf.ok) {
+                                    const df = await rf.json();
+                                    Object.assign(mapaFotosSub, df.fotos || {});
+                                }
+                            }
+                            if (Object.keys(mapaFotosSub).length > 0) {
+                                allSubs = allSubs.map(s => ({ ...s, foto: mapaFotosSub[s.codProfissional] || null }));
+                            }
+                        }
+                    } catch (errFotoSub) {
+                        console.warn('Fotos das solicitações não carregaram:', errFotoSub.message);
+                    }
                     C(allSubs);
                 } else {
                     const e = `?userId=${l.id}&userCod=${l.cod_profissional}`,
@@ -21567,11 +21587,26 @@ const hideLoadingScreen = () => {
                 onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
             }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
-            }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("p", {
-                className: "text-xs text-gray-700"
+            }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("div", {
+                className: "flex items-center gap-2 mb-1"
+            }, (
+                // 🆕 2026-05: foto do profissional (e.foto) ou avatar de inicial
+                e.foto
+                    ? React.createElement("img", {
+                        src: e.foto,
+                        alt: e.fullName || "",
+                        className: "w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                    })
+                    : React.createElement("div", {
+                        className: "w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0"
+                    }, (e.fullName || "?").charAt(0).toUpperCase())
+            ), React.createElement("div", {
+                className: "min-w-0"
+            }, React.createElement("p", {
+                className: "text-xs text-gray-700 truncate"
             }, e.fullName), React.createElement("p", {
                 className: "text-xs text-gray-500 font-mono"
-            }, "COD: ", e.codProfissional), React.createElement("p", {
+            }, "COD: ", e.codProfissional))), React.createElement("p", {
                 className: "text-xs text-purple-900 font-semibold"
             }, e.motivo), e.subcategoria && React.createElement("p", {
                 className: "text-[11px] text-purple-600 font-medium"
