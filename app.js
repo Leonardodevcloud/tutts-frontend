@@ -455,6 +455,12 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
     }
 };
 
+// 🆕 2026-05: expõe fetchAuth globalmente pra helpers externos (ex: fotos-motoboy.js)
+if (typeof window !== 'undefined') {
+    window.fetchAuth = fetchAuth;
+    window.API_URL = API_URL;
+}
+
 // ==================== FIM FUNÇÕES DE AUTENTICAÇÃO ====================
 
 // Função helper para verificar permissões de módulo

@@ -50,7 +50,9 @@
     for (let i = 0; i < pendentes.length; i += LOTE) {
       const lote = pendentes.slice(i, i + LOTE);
       try {
-        const resp = await fetchFn(`${api}/perfil/fotos?codigos=${lote.join(',')}`);
+        const resp = await fetchFn(`${api}/perfil/fotos?codigos=${lote.join(',')}`, {
+          credentials: 'include',
+        });
         if (resp.ok) {
           const data = await resp.json();
           const fotos = data.fotos || {};
@@ -58,8 +60,10 @@
             consultados[cod] = true;
             cache[cod] = fotos[cod] || false; // false = consultado, sem foto
           });
+        } else if (resp.status === 401 || resp.status === 403) {
+          // auth ainda não pronta — NÃO marca consultado, vale re-tentar depois
         } else {
-          // erro — marca como consultado mesmo, pra não ficar re-tentando em loop
+          // outro erro — marca como consultado pra não ficar em loop
           lote.forEach(cod => { consultados[cod] = true; });
         }
       } catch (err) {
