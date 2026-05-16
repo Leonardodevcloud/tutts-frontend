@@ -6994,8 +6994,14 @@ const hideLoadingScreen = () => {
                     createdAt: new Date(e.created_at).toLocaleString("pt-BR"),
                     foto: null
                 }));
-                // mostra a lista já (sem foto ainda)
-                S(listaUsuarios);
+                // mostra a lista já — preservando fotos que um Ia anterior
+                // já tenha carregado (evita flicker se Ia rodar 2x)
+                S(listaAtual => {
+                    if (!listaAtual || !listaAtual.length) return listaUsuarios;
+                    const fotoPorCod = {};
+                    listaAtual.forEach(u => { if (u.foto) fotoPorCod[u.codProfissional] = u.foto; });
+                    return listaUsuarios.map(u => ({ ...u, foto: fotoPorCod[u.codProfissional] || null }));
+                });
                 // 🆕 2026-05: busca as fotos e injeta dentro de cada usuário.
                 // Sem hook — só um fetch direto + um S() com a lista atualizada.
                 try {
@@ -7010,11 +7016,13 @@ const hideLoadingScreen = () => {
                             Object.assign(mapaFotos, dataFoto.fotos || {});
                         }
                     }
-                    // injeta a foto em cada usuário e atualiza a lista
+                    // injeta a foto em cada usuário e atualiza a lista.
+                    // forma funcional: mescla na lista ATUAL (não sobrescreve
+                    // se um Ia paralelo tiver rodado e mudado A).
                     if (Object.keys(mapaFotos).length > 0) {
-                        S(listaUsuarios.map(u => ({
+                        S(listaAtual => (listaAtual && listaAtual.length ? listaAtual : listaUsuarios).map(u => ({
                             ...u,
-                            foto: mapaFotos[u.codProfissional] || null
+                            foto: mapaFotos[u.codProfissional] || u.foto || null
                         })));
                         console.log(`✅ Fotos dos usuários: ${Object.keys(mapaFotos).length} carregadas`);
                     }
