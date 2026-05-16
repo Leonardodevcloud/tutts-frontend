@@ -260,7 +260,30 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
 
     // CARREGAMENTOS
     const carregarCentrais = async () => { try { const r=await fetchAuth(`${apiUrl}/filas/centrais`); const d=await r.json(); if(d.success){ setCentrais(d.centrais); } } catch(e){} finally{ setLoading(false); } };
-    const carregarFila = async (id) => { if(!id)return; try{ const r=await fetchAuth(`${apiUrl}/filas/centrais/${id}/fila`); const d=await r.json(); if(d.success) setFilaAtual(d); }catch(e){} };
+    const carregarFila = async (id) => {
+        if(!id) return;
+        try{
+            const r = await fetchAuth(`${apiUrl}/filas/centrais/${id}/fila`);
+            const d = await r.json();
+            if(d.success){
+                // 🆕 2026-05: injeta a foto dos motoboys da fila (aguardando + em_rota)
+                try{
+                    const todos = [...(d.aguardando||[]), ...(d.em_rota||[])];
+                    const cods = [...new Set(todos.map(p => p.cod_profissional).filter(Boolean))];
+                    if(cods.length > 0){
+                        const rf = await fetchAuth(`${apiUrl}/perfil/fotos?codigos=${cods.join(',')}`);
+                        if(rf.ok){
+                            const df = await rf.json();
+                            const mapaF = df.fotos || {};
+                            if(d.aguardando) d.aguardando = d.aguardando.map(p => ({...p, foto: mapaF[p.cod_profissional]||null}));
+                            if(d.em_rota) d.em_rota = d.em_rota.map(p => ({...p, foto: mapaF[p.cod_profissional]||null}));
+                        }
+                    }
+                }catch(errF){}
+                setFilaAtual(d);
+            }
+        }catch(e){}
+    };
     const carregarVinculos = async (id) => { if(!id)return; try{ const r=await fetchAuth(`${apiUrl}/filas/centrais/${id}/vinculos`); const d=await r.json(); if(d.success) setVinculos(d.vinculos); }catch(e){} };
     const carregarMinhaCentral = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-central`); const d=await r.json(); if(d.success){ if(d.vinculado){ setMinhaCentral(d.central); setMinhaPosicao(d.posicao_atual); }else{ setMinhaCentral(null); } } }catch(e){} finally{ setLoading(false); } };
     const carregarMinhaPosicao = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-posicao`); const d=await r.json(); if(d.success) setMinhaPosicao(d); }catch(e){} };
@@ -360,10 +383,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                     React.createElement('div', {
                         className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${i === 0 ? 'bg-green-100 text-green-700' : p.motivo_posicao === 'movido_ultimo' ? 'bg-red-100 text-red-700' : p.motivo_posicao === 'retorno_prioritario' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`
                     }, p.posicao),
-                    // Avatar iniciais
-                    React.createElement('div', {
-                        className: 'w-7 h-7 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0'
-                    }, iniciais),
+                    // Avatar: foto do motoboy (p.foto) ou iniciais
+                    p.foto
+                        ? React.createElement('img', {
+                            src: p.foto,
+                            alt: p.nome_profissional || '',
+                            className: 'w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0'
+                        })
+                        : React.createElement('div', {
+                            className: 'w-7 h-7 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0'
+                        }, iniciais),
                     // Nome + meta
                     React.createElement('div', { className: 'flex-1 min-w-0' },
                         React.createElement('p', { className: 'font-medium text-sm text-gray-900 truncate' }, p.nome_profissional),
