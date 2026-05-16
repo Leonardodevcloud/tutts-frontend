@@ -2342,7 +2342,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), [fotosMap, setFotosMap] = useState({}), 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null), 
         
         // Helper para parse de saldo (aceita número ou string brasileira)
         parseSaldoBR = (valor) => {
@@ -6988,13 +6988,6 @@ const hideLoadingScreen = () => {
                     setor_cor: e.setor_cor,
                     createdAt: new Date(e.created_at).toLocaleString("pt-BR")
                 })))
-                // 🆕 2026-05: carrega as fotos (thumbnails) dos motoboys da lista
-                if (typeof window.FotosMotoboy !== 'undefined') {
-                    const cods = t.map(u => u.cod_profissional).filter(Boolean);
-                    window.FotosMotoboy.carregar(cods, fetchAuth, API_URL)
-                        .then(mapa => { if (mapa && Object.keys(mapa).length) setFotosMap(prev => ({ ...prev, ...mapa })); })
-                        .catch(() => {});
-                }
             } catch (e) {
                 console.error(e)
             }
@@ -22383,20 +22376,20 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50"
         }, React.createElement("div", {
             className: "flex items-center gap-3 flex-1"
-        }, (() => {
-            // 🆕 2026-05: foto do motoboy (thumbnail) ou avatar de inicial.
-            // Lê de fotosMap (estado React) — re-render automático quando carrega.
-            const _foto = fotosMap && fotosMap[e.codProfissional];
-            return _foto
-                ? React.createElement("img", {
-                    src: _foto,
-                    alt: e.fullName || "",
-                    className: "w-11 h-11 rounded-full object-cover border border-gray-200 flex-shrink-0"
+        }, (
+            // 🆕 2026-05: avatar com foto do motoboy (componente com hook próprio)
+            typeof window.FotosMotoboy !== 'undefined' && window.FotosMotoboy.AvatarMotoboy
+                ? React.createElement(window.FotosMotoboy.AvatarMotoboy, {
+                    cod: e.codProfissional,
+                    nome: e.fullName,
+                    size: 44,
+                    fetchAuth: fetchAuth,
+                    apiUrl: API_URL
                 })
                 : React.createElement("div", {
                     className: "w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold flex-shrink-0"
-                }, (e.fullName || "?").charAt(0).toUpperCase());
-        })(), React.createElement("div", {
+                }, (e.fullName || "?").charAt(0).toUpperCase())
+        ), React.createElement("div", {
             className: "flex-1"
         }, React.createElement("p", {
             className: "font-semibold"

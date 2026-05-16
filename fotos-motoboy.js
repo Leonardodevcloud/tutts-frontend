@@ -88,8 +88,38 @@
     return mapa;
   }
 
+  // Componente avatar: foto do motoboy ou inicial do nome.
+  // Usa o hook internamente — re-renderiza sozinho quando a foto carrega.
+  // Props: cod, nome, size (px, default 44), className opcional
+  function AvatarMotoboy(props) {
+    const e = React.createElement;
+    const cod = props.cod;
+    const nome = props.nome || '';
+    const size = props.size || 44;
+    const mapa = useFotos(cod ? [cod] : [], props.fetchAuth, props.apiUrl);
+    const foto = mapa && cod ? mapa[String(cod)] : null;
+    const estiloBase = {
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+    };
+    if (foto) {
+      return e('img', {
+        src: foto, alt: nome,
+        className: props.className || '',
+        style: Object.assign({}, estiloBase, { objectFit: 'cover', border: '1px solid #E5E7EB' }),
+      });
+    }
+    return e('div', {
+      className: props.className || '',
+      style: Object.assign({}, estiloBase, {
+        background: '#EDE9FE', color: '#6D28D9', fontWeight: 700,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: Math.round(size * 0.4),
+      }),
+    }, (nome || '?').charAt(0).toUpperCase());
+  }
+
   if (typeof window !== 'undefined') {
-    window.FotosMotoboy = { carregar, doCache, useFotos };
+    window.FotosMotoboy = { carregar, doCache, useFotos, AvatarMotoboy };
   }
 
   console.log('✅ FotosMotoboy v1.0 carregado');
