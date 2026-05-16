@@ -682,7 +682,7 @@
                             {totalPendentes > 0 && (
                                 <div className="bg-amber-50 border border-amber-300 rounded-md p-2.5 mb-3 flex items-center gap-2 text-xs md:text-sm text-amber-900">
                                     <span className="text-base">🚩</span>
-                                    <span><strong>{totalPendentes}</strong> {totalPendentes === 1 ? 'máquina ainda em campo' : 'máquinas ainda em campo'} após o horário limite ({fmtHorario(horarioLimite)})</span>
+                                    <span><strong>{totalPendentes}</strong> {totalPendentes === 1 ? 'máquina atrasada' : 'máquinas atrasadas'} — não restituída{totalPendentes === 1 ? '' : 's'} até o horário limite ({fmtHorario(horarioLimite)})</span>
                                 </div>
                             )}
 
@@ -693,7 +693,7 @@
                                     <div className="text-xl md:text-2xl font-semibold">{totalCampo}</div>
                                 </div>
                                 <div className={`rounded-md p-3 border ${totalPendentes > 0 ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200'}`}>
-                                    <div className={`text-[10px] md:text-xs uppercase tracking-wide ${totalPendentes > 0 ? 'text-amber-700' : 'text-gray-500'}`}>Pendentes após {fmtHorario(horarioLimite)}</div>
+                                    <div className={`text-[10px] md:text-xs uppercase tracking-wide ${totalPendentes > 0 ? 'text-amber-700' : 'text-gray-500'}`}>Atrasadas (após {fmtHorario(horarioLimite)})</div>
                                     <div className={`text-xl md:text-2xl font-semibold ${totalPendentes > 0 ? 'text-amber-700' : ''}`}>{totalPendentes}</div>
                                 </div>
                                 <div className="bg-white border border-gray-200 rounded-md p-3">
@@ -775,7 +775,7 @@
                                                         </div>
                                                     </div>
                                                     {isPendente && (
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-medium uppercase tracking-wide flex items-center gap-1">🚩 Pendente</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-medium uppercase tracking-wide flex items-center gap-1">🚩 Atrasada</span>
                                                     )}
                                                     {!isPendente && (
                                                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium uppercase tracking-wide">No prazo</span>
