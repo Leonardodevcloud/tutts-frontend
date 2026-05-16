@@ -93,6 +93,13 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
   const inicio = (solicitacoesPagina - 1) * solicitacoesPorPagina;
   const paginadas = filtradas.slice(inicio, inicio + solicitacoesPorPagina);
 
+  // 🆕 2026-05: fotos (thumbnails) dos motoboys da página atual.
+  // Usa o helper compartilhado window.FotosMotoboy — carrega só os visíveis.
+  const codigosPagina = paginadas.map(s => s.user_cod).filter(Boolean);
+  const fotosMotoboy = (typeof window.FotosMotoboy !== 'undefined' && window.FotosMotoboy.useFotos)
+    ? window.FotosMotoboy.useFotos(codigosPagina, fetchAuth, API_URL)
+    : {};
+
   // ────────────────────────────────────────────────────────────────────────────
   // 🔧 PERFORMANCE FIX (2026-05): Contadores pros badges
   // ────────────────────────────────────────────────────────────────────────────
@@ -506,15 +513,25 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                   // Profissional
                   e("td", { style: tdStyle() },
                     e("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                      e("div", {
-                        style: {
-                          width: 24, height: 24, borderRadius: "50%",
-                          background: corAvatar(s.user_cod), color: "white",
-                          fontSize: 9, fontWeight: 600,
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          flexShrink: 0,
-                        }
-                      }, iniciaisDe(s.user_name)),
+                      (fotosMotoboy && fotosMotoboy[s.user_cod])
+                        ? e("img", {
+                            src: fotosMotoboy[s.user_cod],
+                            alt: s.user_name || "",
+                            style: {
+                              width: 24, height: 24, borderRadius: "50%",
+                              objectFit: "cover", flexShrink: 0,
+                              border: "1px solid #E5E7EB",
+                            }
+                          })
+                        : e("div", {
+                            style: {
+                              width: 24, height: 24, borderRadius: "50%",
+                              background: corAvatar(s.user_cod), color: "white",
+                              fontSize: 9, fontWeight: 600,
+                              display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              flexShrink: 0,
+                            }
+                          }, iniciaisDe(s.user_name)),
                       e("div", null,
                         e("div", { style: { fontWeight: 500, color: "#111827", lineHeight: 1.2 } }, s.user_name || "—"),
                         e("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 10, color: "#9CA3AF" } }, s.user_cod || "")
