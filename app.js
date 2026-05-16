@@ -463,6 +463,35 @@ if (typeof window !== 'undefined') {
 
 // ==================== FIM FUNÇÕES DE AUTENTICAÇÃO ====================
 
+// 🆕 2026-05: avatar do motoboy (foto ou inicial) — componente estável.
+// Referência fixa (definido 1x) pra o React não remontar a cada render da lista.
+// Usa o helper FotosMotoboy pra buscar/cachear o thumbnail.
+function AvatarMotoboyApp(props) {
+    const cod = props.cod;
+    const nome = props.nome || '';
+    const [foto, setFoto] = React.useState(null);
+    React.useEffect(() => {
+        let vivo = true;
+        if (!cod || typeof window.FotosMotoboy === 'undefined') return;
+        window.FotosMotoboy.carregar([cod], fetchAuth, API_URL)
+            .then(mapa => {
+                if (vivo && mapa && mapa[String(cod)]) setFoto(mapa[String(cod)]);
+            })
+            .catch(() => {});
+        return () => { vivo = false; };
+    }, [cod]);
+    if (foto) {
+        return React.createElement("img", {
+            src: foto,
+            alt: nome,
+            className: "w-11 h-11 rounded-full object-cover border border-gray-200 flex-shrink-0"
+        });
+    }
+    return React.createElement("div", {
+        className: "w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold flex-shrink-0"
+    }, (nome || "?").charAt(0).toUpperCase());
+}
+
 // Função helper para verificar permissões de módulo
 // Retorna true se o usuário tem acesso ao módulo
 function hasModuleAccess(user, moduleId) {
@@ -22382,20 +22411,10 @@ const hideLoadingScreen = () => {
             className: "border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50"
         }, React.createElement("div", {
             className: "flex items-center gap-3 flex-1"
-        }, (
-            // 🆕 2026-05: avatar com foto do motoboy (componente com hook próprio)
-            typeof window.FotosMotoboy !== 'undefined' && window.FotosMotoboy.AvatarMotoboy
-                ? React.createElement(window.FotosMotoboy.AvatarMotoboy, {
-                    cod: e.codProfissional,
-                    nome: e.fullName,
-                    size: 44,
-                    fetchAuth: fetchAuth,
-                    apiUrl: API_URL
-                })
-                : React.createElement("div", {
-                    className: "w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold flex-shrink-0"
-                }, (e.fullName || "?").charAt(0).toUpperCase())
-        ), React.createElement("div", {
+        }, React.createElement(AvatarMotoboyApp, {
+            cod: e.codProfissional,
+            nome: e.fullName
+        }), React.createElement("div", {
             className: "flex-1"
         }, React.createElement("p", {
             className: "font-semibold"
