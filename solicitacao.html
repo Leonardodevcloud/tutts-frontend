@@ -1120,6 +1120,47 @@
             );
         };
 
+        // ─── Banner promocional: telefone obrigatório / rastreio ─────────────
+        const BannerRastreioPromo = ({ onClose }) => {
+            return (
+                <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-50 px-3 fade-in" style={{ width: '100vw', height: '100vh', top: 0, left: 0, boxSizing: 'border-box' }} onClick={onClose}>
+                    <div onClick={e => e.stopPropagation()} className="bg-white rounded-xl shadow-xl w-full overflow-hidden" style={{ maxWidth: '420px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+                        <div className="px-6 pt-6 pb-5 text-center relative" style={{ background: '#534AB7' }}>
+                            <button onClick={onClose} aria-label="Fechar" className="absolute text-xl leading-none" style={{ top: '12px', right: '14px', color: '#CECBF6' }}>×</button>
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: '#26215C' }}>
+                                <span style={{ fontSize: '28px' }}>📲</span>
+                            </div>
+                            <div className="inline-block text-[10px] font-medium uppercase px-2.5 py-1 rounded-full mb-2" style={{ background: '#26215C', color: '#AFA9EC', letterSpacing: '0.6px' }}>Novidade</div>
+                            <p className="text-white font-medium m-0" style={{ fontSize: '19px', lineHeight: 1.3 }}>Agora com rastreio em tempo real</p>
+                        </div>
+                        <div className="px-6 pt-5 pb-6">
+                            <p className="text-sm text-gray-800 leading-relaxed mb-4">
+                                A partir de agora, ao cadastrar uma entrega, é necessário informar o <strong className="font-medium">telefone do cliente</strong>. É rápido e muda tudo na operação:
+                            </p>
+                            {[
+                                { ico: '📍', cor: '#E1F5EE', icoCor: '#0F6E56', tt: 'O cliente acompanha a entrega ao vivo', ds: 'Ele recebe o link de rastreio no WhatsApp e vê a mercadoria chegando.' },
+                                { ico: '📞', cor: '#EEEDFE', icoCor: '#534AB7', tt: 'Menos ligações, menos retrabalho', ds: 'O motoboy fala direto com o cliente quando precisar.' },
+                                { ico: '✅', cor: '#E1F5EE', icoCor: '#0F6E56', tt: 'Entregas mais rápidas e sem erro', ds: 'Contato certo na mão evita endereço errado e viagem perdida.' },
+                            ].map((f, i) => (
+                                <div key={i} className="flex gap-3 mb-3 items-start">
+                                    <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: f.cor }}>
+                                        <span style={{ fontSize: '15px' }}>{f.ico}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[13px] font-medium text-gray-800 m-0">{f.tt}</p>
+                                        <p className="text-xs text-gray-500 leading-snug m-0">{f.ds}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={onClose} className="w-full text-white border-0 rounded-md font-medium mt-2" style={{ background: '#534AB7', height: '42px', fontSize: '14px' }}>
+                                Entendi, vamos lá
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const Solicitacao = ({ cliente, token, onLogout, showToast }) => {
             const [abaAtiva, setAbaAtiva] = useState('nova');
             const [pontos, setPontos] = useState([]);
@@ -1132,6 +1173,11 @@
             const [abaMobile, setAbaMobile] = useState('form');
             const [pontoEditando, setPontoEditando] = useState(null);
             const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', razao_social: '', numero_nota: '', codigo_finalizar: '', complemento: '' });
+            // Validação de WhatsApp por ponto: { [pontoId]: { estado, numero, motivo } }
+            // estado: 'idle' | 'validando' | 'ok' | 'sem_whatsapp' | 'invalido' | 'indeterminado'
+            const [waValidacao, setWaValidacao] = useState({});
+            // Banner promocional (telefone obrigatório / rastreio)
+            const [bannerRastreio, setBannerRastreio] = useState(false);
             const [corridasAtivas, setCorridasAtivas] = useState([]);
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
@@ -1173,6 +1219,30 @@
             const [posicaoAjustada, setPosicaoAjustada] = useState({ lat: null, lng: null });
             const [enderecoAjustado, setEnderecoAjustado] = useState(null);
             const [buscandoEnderecoReverso, setBuscandoEnderecoReverso] = useState(false);
+
+            // 🚀 BANNER PROMOCIONAL (2026-05): aparece 1x a cada 3h, das 8h às 18h.
+            // Última exibição guardada em localStorage pra sobreviver a refresh.
+            useEffect(() => {
+                const checar = () => {
+                    const agora = new Date();
+                    const hora = agora.getHours();
+                    if (hora < 8 || hora >= 18) return; // fora do horário comercial
+                    const ultima = parseInt(localStorage.getItem('tutts_banner_rastreio_ts') || '0', 10);
+                    const TRES_HORAS = 3 * 60 * 60 * 1000;
+                    if (Date.now() - ultima >= TRES_HORAS) {
+                        setBannerRastreio(true);
+                    }
+                };
+                checar();
+                // Re-checa a cada 15min (caso o atendente deixe a aba aberta o dia todo)
+                const iv = setInterval(checar, 15 * 60 * 1000);
+                return () => clearInterval(iv);
+            }, []);
+
+            const fecharBannerRastreio = () => {
+                localStorage.setItem('tutts_banner_rastreio_ts', String(Date.now()));
+                setBannerRastreio(false);
+            };
             
             // NOVO: localização do usuário (geolocation) para centralizar o mapa na região de acesso
             const [localizacaoUsuario, setLocalizacaoUsuario] = useState(null);
@@ -1661,7 +1731,28 @@
                     else showToast(data.error || 'Erro ao cancelar', 'error');
                 } catch (err) { showToast('Erro ao cancelar', 'error'); }
             };
-            
+
+            // 🚀 Reenvio manual do link de rastreio pro WhatsApp do cliente
+            const [enviandoRastreio, setEnviandoRastreio] = useState(false);
+            const enviarRastreioManual = async (corridaId) => {
+                setEnviandoRastreio(true);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/${corridaId}/enviar-rastreio`, {
+                        method: 'POST', headers,
+                        body: JSON.stringify({}),
+                    });
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        showToast('📨 Rastreio enviado pro WhatsApp do cliente!', 'success');
+                    } else {
+                        showToast(data.error || 'Não foi possível enviar o rastreio', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro ao enviar rastreio', 'error');
+                }
+                setEnviandoRastreio(false);
+            };
+
             const sincronizarStatus = async () => {
                 setSincronizando(true);
                 try {
@@ -2174,6 +2265,54 @@
             };
             
             // Salvar nota rápida
+            // ─── Validação de telefone / WhatsApp ──────────────────────────
+            // Valida formato BR localmente (sem API): DDD válido, 9 dígitos, anti-sequência
+            const DDDS_VALIDOS_FE = new Set([11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99]);
+            const validarFormatoTelefone = (raw) => {
+                let d = String(raw || '').replace(/\D/g, '');
+                if (d.length === 13 && d.startsWith('55')) d = d.slice(2);
+                if (d.length !== 11) return false;
+                if (d[2] !== '9') return false;
+                if (!DDDS_VALIDOS_FE.has(parseInt(d.slice(0, 2), 10))) return false;
+                const cel = d.slice(2);
+                if (/^(\d)\1{8}$/.test(cel)) return false;
+                if (cel === '912345678' || cel === '987654321') return false;
+                return true;
+            };
+
+            // Chamado no onBlur do campo telefone — valida WhatsApp via Evolution
+            const validarWhatsAppPonto = async (pontoId, telefone) => {
+                if (!telefone || !telefone.trim()) {
+                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'idle' } }));
+                    return;
+                }
+                if (!validarFormatoTelefone(telefone)) {
+                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'invalido', motivo: 'Número inválido. Confira o DDD e os 9 dígitos.' } }));
+                    return;
+                }
+                setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'validando' } }));
+                try {
+                    const r = await fetch(`${API_URL}/api/solicitacao/validar-whatsapp`, {
+                        method: 'POST', headers,
+                        body: JSON.stringify({ telefone }),
+                    });
+                    const d = await r.json();
+                    if (!r.ok) {
+                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: d.error || 'Não foi possível verificar' } }));
+                        return;
+                    }
+                    if (d.tem_whatsapp === true) {
+                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'ok', numero: d.numero } }));
+                    } else if (d.tem_whatsapp === false) {
+                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'sem_whatsapp', motivo: d.motivo || 'Sem WhatsApp neste número' } }));
+                    } else {
+                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: d.motivo || 'Não foi possível verificar agora' } }));
+                    }
+                } catch (e) {
+                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: 'Erro de conexão ao verificar' } }));
+                }
+            };
+
             const salvarNotaRapida = () => {
                 if (pontoRecemAdicionado && notaRapida.trim()) {
                     setPontos(prev => prev.map(p => 
@@ -2800,20 +2939,57 @@
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <span className="text-xs font-medium text-green-800">📞 Telefone do cliente</span>
+                                                                    <span className="text-xs font-medium text-green-800">📞 Telefone do cliente <span className="text-red-500">*</span></span>
                                                                     <input 
                                                                         type="tel" 
                                                                         value={p.telefone || ''} 
-                                                                        onChange={(e) => setPontos(prev => prev.map(pt => pt.id === p.id ? { ...pt, telefone: e.target.value } : pt))}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value;
+                                                                            setPontos(prev => prev.map(pt => pt.id === p.id ? { ...pt, telefone: val } : pt));
+                                                                            setWaValidacao(prev => ({ ...prev, [p.id]: { estado: 'idle' } }));
+                                                                        }}
+                                                                        onBlur={(e) => validarWhatsAppPonto(p.id, e.target.value)}
                                                                         className="w-full px-2 py-1.5 border border-green-300 rounded text-xs outline-none focus:ring-1 focus:ring-green-400 mt-1" 
-                                                                        placeholder="(DDD) 9XXXX-XXXX (opcional)"
+                                                                        placeholder="(DDD) 9XXXX-XXXX"
                                                                     />
+                                                                    {(() => {
+                                                                        const v = waValidacao[p.id];
+                                                                        if (!v || v.estado === 'idle') return null;
+                                                                        if (v.estado === 'validando') return (
+                                                                            <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                                                                                <span className="inline-block w-3 h-3 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></span>
+                                                                                Verificando WhatsApp...
+                                                                            </p>
+                                                                        );
+                                                                        if (v.estado === 'ok') return (
+                                                                            <p className="text-[11px] text-green-700 mt-1 flex items-center gap-1">
+                                                                                <span>✅</span> WhatsApp confirmado — o cliente vai receber o rastreio
+                                                                            </p>
+                                                                        );
+                                                                        if (v.estado === 'invalido') return (
+                                                                            <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                                                                                <span>❌</span> {v.motivo}
+                                                                            </p>
+                                                                        );
+                                                                        if (v.estado === 'sem_whatsapp') return (
+                                                                            <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1">
+                                                                                <span>⚠️</span> {v.motivo} — confira o número
+                                                                            </p>
+                                                                        );
+                                                                        return (
+                                                                            <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+                                                                                <span>ℹ️</span> {v.motivo}
+                                                                            </p>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                                 <div className="flex gap-2 pt-1">
                                                                     <button onClick={() => {
                                                                         const ponto = pontos.find(pt => pt.id === p.id);
                                                                         if (!ponto?.nome_fantasia?.trim()) { showToast('⚠️ Nome fantasia é obrigatório', 'warning'); return; }
                                                                         if (!notaRapida?.trim()) { showToast('⚠️ Nº da NF é obrigatório', 'warning'); return; }
+                                                                        if (!ponto?.telefone?.trim()) { showToast('⚠️ Telefone do cliente é obrigatório', 'warning'); return; }
+                                                                        if (!validarFormatoTelefone(ponto.telefone)) { showToast('⚠️ Telefone inválido — confira o DDD e os 9 dígitos', 'warning'); return; }
                                                                         salvarNotaRapida();
                                                                     }} className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700">✓ Confirmar</button>
                                                                     <button onClick={pularNotaRapida} className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs">Pular</button>
@@ -3078,6 +3254,11 @@
                                                             <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
                                                                 🗺️ Rastrear
                                                             </a>
+                                                        )}
+                                                        {detalheCorrida.tutts_url_rastreamento && !['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                            <button onClick={() => enviarRastreioManual(detalheCorrida.id)} disabled={enviandoRastreio} className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-60 text-center">
+                                                                {enviandoRastreio ? '...' : '📨 Enviar rastreio'}
+                                                            </button>
                                                         )}
                                                         {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
                                                             <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
@@ -4068,6 +4249,11 @@
                     {/* ========== ABA CONTROLE DE MÁQUINAS ========== */}
                     {abaAtiva === 'maquinas' && (
                         <ControleMaquinas cliente={cliente} token={token} showToast={showToast} />
+                    )}
+                    
+                    {/* ========== BANNER PROMOCIONAL RASTREIO ========== */}
+                    {bannerRastreio && (
+                        <BannerRastreioPromo onClose={fecharBannerRastreio} />
                     )}
                     
                     {/* Modal de fotos com zoom */}
