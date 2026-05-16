@@ -409,6 +409,9 @@
               itensFiltrados.map(item => e(Card, {
                 key: item.id,
                 item,
+                api: _api,
+                fetchAuth: _fetch,
+                showToast,
                 onEdit: () => abrirEdicao(item),
                 onDelete: () => deletarItem(item),
                 onTransicao: (st) => transicionar(item, st),
@@ -494,12 +497,23 @@
     }, label);
   }
 
-  function Card({ item, onEdit, onDelete, onTransicao, onAceitar, onDetalhe }) {
+  // Detecta se um anexo é imagem (pra renderizar preview inline)
+  function ehImagemMime(mime) {
+    return /^image\//i.test(mime || '');
+  }
+
+  function Card({ item, onEdit, onDelete, onTransicao, onAceitar, onDetalhe, api, fetchAuth, showToast }) {
     const st = statusInfo(item.tipo, item.status);
     const ehTerminal = ['concluido','cancelado','resolvido','recusada','nao_reproduzivel'].includes(item.status);
     const opacidade = ehTerminal ? 0.85 : 1;
     const [menuAberto, setMenuAberto] = React.useState(false);
     const menuRef = React.useRef(null);
+
+    // 🆕 2026-05 Expansão inline: clicar no card abre os detalhes completos
+    const [expandido, setExpandido] = React.useState(false);
+    const [anexos, setAnexos] = React.useState(null);   // null = ainda não carregou
+    const [anexosErro, setAnexosErro] = React.useState(false);
+    const [lightbox, setLightbox] = React.useState(null); // { src, nome } | null
 
     // Fecha o menu ao clicar fora
     React.useEffect(() => {
@@ -513,67 +527,167 @@
       return () => document.removeEventListener('click', handler);
     }, [menuAberto]);
 
+    // Carrega a lista de anexos na 1ª vez que o card é expandido (lazy).
+    React.useEffect(() => {
+      if (!expandido) return;
+      if (anexos !== null) return;                       // já carregado
+      if ((item.anexos_count || 0) === 0) { setAnexos([]); return; }
+      let abortado = false;
+      (async () => {
+        try {
+          const r = await fetchAuth(`${api}/feedback/itens/${item.id}`);
+          const d = await r.json();
+          if (abortado) return;
+          if (d && d.success) setAnexos(d.anexos || []);
+          else { setAnexos([]); setAnexosErro(true); }
+        } catch (err) {
+          if (!abortado) { setAnexos([]); setAnexosErro(true); }
+        }
+      })();
+      return () => { abortado = true; };
+    }, [expandido]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const acoes = montarAcoes(item, { onEdit, onDelete, onTransicao, onAceitar, onDetalhe });
+    const toggleExpandir = () => setExpandido(v => !v);
+
+    // ── Estilo do clamp de texto: aplicado só quando NÃO expandido ──
+    const clamp = (linhas) => expandido
+      ? { whiteSpace: 'pre-wrap' }
+      : { display: '-webkit-box', WebkitLineClamp: linhas, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
+
+    const imagens = (anexos || []).filter(a => ehImagemMime(a.mime_type));
+    const arquivos = (anexos || []).filter(a => !ehImagemMime(a.mime_type));
 
     return e('div', {
-      className: 'bg-white border border-gray-200 rounded-xl p-3 flex flex-col',
+      className: 'bg-white border rounded-xl p-3 flex flex-col transition-shadow',
       style: {
         borderLeftWidth: '3px',
         borderLeftColor: st.cor,
+        borderColor: expandido ? '#D1CFFA' : '#E5E7EB',
         opacity: opacidade,
-        minHeight: 168
+        minHeight: expandido ? 'auto' : 168,
+        boxShadow: expandido ? '0 4px 16px rgba(83,74,183,0.10)' : 'none'
       }
     },
-      // Linha 1: badges
-      e('div', { className: 'flex items-center gap-1.5 flex-wrap mb-1.5' },
-        e('span', {
-          className: 'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
-          style: { background: st.bg, color: st.txt }
-        }, st.label),
-        item.modulo && e('span', { className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded' }, item.modulo),
-        item.tipo === 'bug' && item.gravidade && e('span', {
-          className: 'text-[10px] px-1.5 py-0.5 rounded',
-          style: { background: '#F3F4F6' }
-        }, GRAVIDADE_CONFIG[item.gravidade]?.label || item.gravidade),
-        item.tipo === 'roadmap' && item.prioridade === 'alta' && e('span', {
-          className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded'
-        }, 'Alta'),
-        item.origem_sugestao_id && e('span', {
-          className: 'text-[10px] px-1.5 py-0.5 rounded',
-          style: { background: '#EEEDFE', color: '#3C3489' }
-        }, '↳ sugestão')
+      // ── CORPO CLICÁVEL (expande/recolhe) ──
+      e('div', {
+        className: 'flex flex-col flex-1 cursor-pointer',
+        onClick: toggleExpandir,
+        title: expandido ? 'Clique para recolher' : 'Clique para ver os detalhes completos'
+      },
+        // Linha 1: badges
+        e('div', { className: 'flex items-center gap-1.5 flex-wrap mb-1.5' },
+          e('span', {
+            className: 'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+            style: { background: st.bg, color: st.txt }
+          }, st.label),
+          item.modulo && e('span', { className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded' }, item.modulo),
+          item.tipo === 'bug' && item.gravidade && e('span', {
+            className: 'text-[10px] px-1.5 py-0.5 rounded',
+            style: { background: '#F3F4F6' }
+          }, GRAVIDADE_CONFIG[item.gravidade]?.label || item.gravidade),
+          item.tipo === 'roadmap' && item.prioridade === 'alta' && e('span', {
+            className: 'text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded'
+          }, 'Alta'),
+          item.origem_sugestao_id && e('span', {
+            className: 'text-[10px] px-1.5 py-0.5 rounded',
+            style: { background: '#EEEDFE', color: '#3C3489' }
+          }, '↳ sugestão')
+        ),
+
+        // Linha 2: título (clamp 2 quando recolhido / completo quando expandido)
+        e('p', {
+          className: 'text-sm font-medium text-gray-900 leading-snug mb-1',
+          style: clamp(2)
+        }, item.titulo),
+
+        // Linha 3: descrição (clamp 2 quando recolhido / completa quando expandido)
+        item.descricao && e('p', {
+          className: 'text-xs text-gray-500 leading-relaxed mb-1.5',
+          style: clamp(2)
+        }, item.descricao),
+
+        // Spacer (empurra o resto pro fim quando recolhido)
+        !expandido && e('div', { className: 'flex-1' }),
+
+        // ── BLOCO EXPANDIDO: detalhes completos + anexos ──
+        expandido && e('div', { className: 'mt-1' },
+          // Grade de detalhes
+          e('div', { className: 'rounded-lg bg-gray-50 border border-gray-100 p-2.5 mb-2 grid grid-cols-2 gap-x-3 gap-y-1.5' },
+            item.modulo && linhaDetalhe(e, 'Módulo', item.modulo),
+            linhaDetalhe(e, 'Prioridade', (PRIORIDADE_CONFIG[item.prioridade]?.label) || item.prioridade || 'Média prioridade'),
+            item.tipo === 'bug' && item.gravidade &&
+              linhaDetalhe(e, 'Gravidade', (GRAVIDADE_CONFIG[item.gravidade]?.label) || item.gravidade),
+            item.tipo === 'roadmap' && item.data_prevista &&
+              linhaDetalhe(e, 'Previsão', new Date(item.data_prevista).toLocaleDateString('pt-BR')),
+            item.created_by_nome && linhaDetalhe(e, 'Criado por', item.created_by_nome),
+            linhaDetalhe(e, 'Criado em', formatarData(item.created_at)),
+            item.updated_at && item.updated_at !== item.created_at &&
+              linhaDetalhe(e, 'Atualizado', formatarData(item.updated_at) + (item.updated_by_nome ? ' · ' + item.updated_by_nome.split(' ')[0] : '')),
+            item.concluido_at && linhaDetalhe(e, 'Finalizado', formatarData(item.concluido_at))
+          ),
+
+          // Motivo de recusa completo (sugestões recusadas)
+          item.motivo_recusa && e('div', { className: 'rounded-lg p-2.5 mb-2', style: { background: '#FCEBEB' } },
+            e('p', { className: 'text-[10px] font-semibold mb-0.5', style: { color: '#791F1F' } }, 'Motivo da recusa'),
+            e('p', { className: 'text-xs whitespace-pre-wrap', style: { color: '#791F1F' } }, item.motivo_recusa)
+          ),
+
+          // Anexos
+          (item.anexos_count || 0) > 0 && e('div', { className: 'mb-1' },
+            e('p', { className: 'text-[10px] font-semibold text-gray-500 mb-1.5' },
+              `📎 Anexos (${item.anexos_count})`),
+            anexos === null
+              ? e('p', { className: 'text-[11px] text-gray-400' }, 'Carregando anexos…')
+              : anexosErro
+                ? e('p', { className: 'text-[11px] text-red-500' }, 'Erro ao carregar anexos')
+                : e('div', null,
+                    // Imagens — grade de miniaturas
+                    imagens.length > 0 && e('div', { className: 'grid grid-cols-3 gap-1.5 mb-1.5' },
+                      imagens.map(a => e(AnexoImagem, {
+                        key: a.id, anexo: a, api, fetchAuth,
+                        onAbrir: (src) => setLightbox({ src, nome: a.nome_arquivo })
+                      }))
+                    ),
+                    // Demais arquivos (PDF, TXT…) — lista com download
+                    arquivos.map(a => e('div', {
+                      key: a.id,
+                      className: 'flex items-center justify-between bg-gray-50 border border-gray-100 px-2.5 py-1.5 rounded text-[11px] mb-1'
+                    },
+                      e('span', { className: 'text-gray-600 truncate', style: { maxWidth: '70%' } },
+                        `${a.mime_type === 'application/pdf' ? '📄' : '📃'} ${a.nome_arquivo}`),
+                      e('button', {
+                        onClick: (ev) => { ev.stopPropagation(); baixarAnexoRoadmap(a, api, fetchAuth, showToast); },
+                        className: 'text-blue-600 hover:underline font-medium'
+                      }, `Baixar · ${(a.tamanho_bytes/1024).toFixed(0)}KB`)
+                    ))
+                  )
+          )
+        ),
+
+        // Dica de expandir/recolher
+        e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#534AB7' } },
+          e('span', { style: { display: 'inline-block', transform: expandido ? 'rotate(180deg)' : 'none' } }, '▾'),
+          e('span', null, expandido ? 'Recolher' : 'Ver detalhes')
+        )
       ),
 
-      // Linha 2: título (compacto)
-      e('p', {
-        className: 'text-sm font-medium text-gray-900 leading-snug mb-1',
-        style: { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-      }, item.titulo),
+      // Linha 4: meta info compacta (só quando recolhido — no expandido já tem o bloco de detalhes)
+      !expandido && (item.data_prevista || (item.anexos_count || 0) > 0 || item.motivo_recusa) &&
+        e('div', { className: 'text-[10px] text-gray-500 mt-1.5 mb-1.5 flex items-center gap-2 flex-wrap' },
+          item.tipo === 'roadmap' && item.data_prevista && e('span', null, `📅 ${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
+          (item.anexos_count || 0) > 0 && e('span', null, `📎 ${item.anexos_count}`),
+          item.motivo_recusa && e('span', { className: 'italic truncate', style: { maxWidth: '100%' } }, item.motivo_recusa.slice(0, 50) + (item.motivo_recusa.length > 50 ? '…' : ''))
+        ),
 
-      // Linha 3: descrição (1 linha pra economizar espaço)
-      item.descricao && e('p', {
-        className: 'text-xs text-gray-500 leading-relaxed mb-1.5',
-        style: { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-      }, item.descricao),
-
-      // Spacer (empurra footer pro fim)
-      e('div', { className: 'flex-1' }),
-
-      // Linha 4: meta info (data, anexos) — pequena
-      (item.data_prevista || (item.anexos_count || 0) > 0 || item.motivo_recusa) && e('div', { className: 'text-[10px] text-gray-500 mb-1.5 flex items-center gap-2 flex-wrap' },
-        item.tipo === 'roadmap' && item.data_prevista && e('span', null, `📅 ${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
-        (item.anexos_count || 0) > 0 && e('span', null, `📎 ${item.anexos_count}`),
-        item.motivo_recusa && e('span', { className: 'italic truncate', style: { maxWidth: '100%' } }, item.motivo_recusa.slice(0, 50) + (item.motivo_recusa.length > 50 ? '…' : ''))
-      ),
-
-      // Linha 5: data criação + ações (footer)
-      e('div', { className: 'flex items-center justify-between pt-1.5 border-t border-gray-100' },
+      // Linha 5: data criação + ações (footer — NÃO clicável p/ expandir)
+      e('div', { className: 'flex items-center justify-between pt-1.5 mt-1.5 border-t border-gray-100' },
         e('span', { className: 'text-[10px] text-gray-400' },
           `${formatarData(item.created_at)}${item.created_by_nome ? ' · ' + item.created_by_nome.split(' ')[0] : ''}`),
         e('div', { className: 'flex items-center gap-2' },
           // Ação principal (visível)
           acoes.principal && e('button', {
-            onClick: acoes.principal.onClick,
+            onClick: (ev) => { ev.stopPropagation(); acoes.principal.onClick(); },
             className: 'text-[11px] font-medium hover:underline whitespace-nowrap',
             style: { color: acoes.principal.cor || '#374151' }
           }, acoes.principal.label),
@@ -590,14 +704,109 @@
             },
               acoes.secundarias.map((a, idx) => e('button', {
                 key: idx,
-                onClick: () => { setMenuAberto(false); a.onClick(); },
+                onClick: (ev) => { ev.stopPropagation(); setMenuAberto(false); a.onClick(); },
                 className: 'block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 whitespace-nowrap',
                 style: { color: a.cor || '#374151' }
               }, a.label))
             )
           )
         )
+      ),
+
+      // Lightbox de imagem (preview em tela cheia)
+      lightbox && e('div', {
+        className: 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4',
+        onClick: (ev) => { ev.stopPropagation(); setLightbox(null); }
+      },
+        e('div', { className: 'relative max-w-3xl max-h-[90vh] flex flex-col items-center' },
+          e('img', { src: lightbox.src, alt: lightbox.nome, className: 'max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain' }),
+          e('div', { className: 'mt-2 flex items-center gap-3' },
+            e('span', { className: 'text-white text-xs' }, lightbox.nome),
+            e('a', {
+              href: lightbox.src, download: lightbox.nome,
+              onClick: (ev) => ev.stopPropagation(),
+              className: 'text-[11px] text-white underline'
+            }, 'Baixar'),
+            e('button', {
+              onClick: (ev) => { ev.stopPropagation(); setLightbox(null); },
+              className: 'text-[11px] text-white underline'
+            }, 'Fechar')
+          )
+        )
       )
+    );
+  }
+
+  // Linha "rótulo: valor" usada na grade de detalhes do card expandido
+  function linhaDetalhe(e, rotulo, valor) {
+    return e('div', { key: rotulo },
+      e('p', { className: 'text-[9px] uppercase tracking-wide text-gray-400 leading-none mb-0.5' }, rotulo),
+      e('p', { className: 'text-[11px] text-gray-700 leading-snug' }, valor)
+    );
+  }
+
+  // Baixa um anexo (não-imagem) — usado no card expandido
+  async function baixarAnexoRoadmap(anexo, api, fetchAuth, showToast) {
+    try {
+      const r = await fetchAuth(`${api}/feedback/anexos/${anexo.id}`);
+      const d = await r.json();
+      if (d && d.success) {
+        const link = document.createElement('a');
+        link.href = `data:${d.anexo.mime_type};base64,${d.anexo.conteudo_base64}`;
+        link.download = d.anexo.nome_arquivo;
+        link.click();
+      } else if (showToast) {
+        showToast('Erro ao baixar anexo', 'error');
+      }
+    } catch (err) {
+      if (showToast) showToast('Erro de rede ao baixar', 'error');
+    }
+  }
+
+  // Miniatura de imagem com carregamento lazy do conteúdo base64
+  function AnexoImagem({ anexo, api, fetchAuth, onAbrir }) {
+    const [src, setSrc] = React.useState(null);
+    const [erro, setErro] = React.useState(false);
+
+    React.useEffect(() => {
+      let abortado = false;
+      (async () => {
+        try {
+          const r = await fetchAuth(`${api}/feedback/anexos/${anexo.id}`);
+          const d = await r.json();
+          if (abortado) return;
+          if (d && d.success) setSrc(`data:${d.anexo.mime_type};base64,${d.anexo.conteudo_base64}`);
+          else setErro(true);
+        } catch (err) {
+          if (!abortado) setErro(true);
+        }
+      })();
+      return () => { abortado = true; };
+    }, [anexo.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (erro) {
+      return e('div', {
+        className: 'rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-[9px] text-gray-400',
+        style: { aspectRatio: '1 / 1' }
+      }, 'falhou');
+    }
+    if (!src) {
+      return e('div', {
+        className: 'rounded border border-gray-200 bg-gray-100 animate-pulse',
+        style: { aspectRatio: '1 / 1' }
+      });
+    }
+    return e('button', {
+      onClick: (ev) => { ev.stopPropagation(); onAbrir(src); },
+      className: 'rounded border border-gray-200 overflow-hidden hover:border-purple-400 transition-colors',
+      style: { aspectRatio: '1 / 1', padding: 0 },
+      title: `${anexo.nome_arquivo} — clique para ampliar`
+    },
+      e('img', {
+        src, alt: anexo.nome_arquivo,
+        className: 'w-full h-full object-cover',
+        loading: 'lazy'
+      })
     );
   }
 
@@ -900,5 +1109,5 @@
     module.exports = { ModuloRoadmap };
   }
 
-  console.log('✅ ModuloRoadmap v1.0 carregado');
+  console.log('✅ ModuloRoadmap v1.1 carregado (cards expansíveis)');
 })();
