@@ -580,7 +580,7 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
-    { id: "uber", label: "Uber Direct", icon: "🛵", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"provedores",label:"🔌 Provedores"},{id:"config",label:"Config"}] },
+    { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"provedores",label:"🔌 Provedores"},{id:"config",label:"Config"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
 ];
 
@@ -2907,7 +2907,7 @@ const hideLoadingScreen = () => {
             } else if (moduloId === "performance") {
                 if (abaId) setPerfTab(abaId);
             } else if (moduloId === "uber") {
-                x(prev => ({...prev, uberTab: abaId || "dashboard"}));
+                x(prev => ({...prev, logisticaTab: abaId || "dashboard"}));
             }
         };
 
@@ -16289,8 +16289,8 @@ const hideLoadingScreen = () => {
         // ========== MODULO UBER DIRECT (CARREGAMENTO EXTERNO) ==========
         const canAccessUber = hasModuleAccess(l, "uber");
         if (canAccessUber && "uber" === Ee) {
-            if (typeof window.ModuloUberComponent !== 'undefined') {
-                return React.createElement(window.ModuloUberComponent, {
+            if (typeof window.ModuloLogisticaComponent !== 'undefined') {
+                return React.createElement(window.ModuloLogisticaComponent, {
                     usuario: l,
                     estado: p,
                     setEstado: x,
@@ -16315,7 +16315,7 @@ const hideLoadingScreen = () => {
                 return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
                     React.createElement("div", { className: "text-center" },
                         React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
-                        React.createElement("p", { className: "text-gray-600" }, "Carregando modulo Uber Direct...")
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando modulo Hub Logistico...")
                     )
                 );
             }
@@ -21120,19 +21120,19 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     
-                                        // Uber Direct
+                                        // Hub Logistico
                     hasModuleAccess(l, "uber") &&
                     React.createElement("div", {
-                        onClick: () => { he("uber"); x(e => ({...e, uberTab: "dashboard"})); },
+                        onClick: () => { he("uber"); x(e => ({...e, logisticaTab: "dashboard"})); },
                         className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
                     },
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🛵")
+                                React.createElement("span", {className: "text-3xl"}, "🚚")
                             ),
-                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Uber Direct"),
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Entregas via Uber")
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Hub Logístico"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Despacho multi-provedor")
                         )
                     ),
                     

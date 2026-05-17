@@ -1,7 +1,7 @@
 // ==================== MÓDULO UBER DIRECT ====================
 // Arquivo: modulo-uber.js
 // Admin: Dashboard, Tracking em tempo real, Entregas, Configuração
-// Integração Mapp <-> Uber Direct via Central Tutts
+// Hub Logístico — despacho multi-provedor (Uber Direct + 99) via Central Tutts
 // ============================================================
 
 (function () {
@@ -23,7 +23,7 @@
   const STATUS_LABELS = {
     aguardando_cotacao:    { label: 'Aguardando cotação',  cor: 'bg-gray-100 text-gray-700' },
     cotacao_recebida:      { label: 'Cotação OK',           cor: 'bg-blue-100 text-blue-700' },
-    enviado_uber:          { label: 'Enviado p/ Uber',      cor: 'bg-purple-100 text-purple-700' },
+    enviado_uber:          { label: 'Enviado ao provedor',      cor: 'bg-purple-100 text-purple-700' },
     entregador_atribuido:  { label: 'Entregador atribuído', cor: 'bg-indigo-100 text-indigo-700' },
     pickup:                { label: 'A caminho da coleta',  cor: 'bg-amber-100 text-amber-700' },
     pickup_complete:       { label: 'Coletou',              cor: 'bg-amber-200 text-amber-800' },
@@ -85,7 +85,7 @@
       { label: 'Em andamento', value: data.em_andamento || 0, icon: '🛵', bg: 'bg-blue-50', tc: 'text-blue-600' },
       { label: 'Cancelados', value: data.cancelados || 0, icon: '❌', bg: 'bg-red-50', tc: 'text-red-600' },
       { label: 'Fallback p/ fila', value: data.fallback || 0, icon: '↩️', bg: 'bg-yellow-50', tc: 'text-yellow-600' },
-      { label: 'Custo total Uber', value: fmtMoney(parseFloat(data.custo_total_uber || 0)), icon: '💰', bg: 'bg-emerald-50', tc: 'text-emerald-600', small: true },
+      { label: 'Custo total provedores', value: fmtMoney(parseFloat(data.custo_total_uber || 0)), icon: '💰', bg: 'bg-emerald-50', tc: 'text-emerald-600', small: true },
       { label: 'Valor médio', value: fmtMoney(parseFloat(data.valor_medio_uber || 0)), icon: '📊', bg: 'bg-indigo-50', tc: 'text-indigo-600', small: true },
       { label: 'ETA médio', value: `${Math.round(parseFloat(data.eta_medio || 0))} min`, icon: '⏱️', bg: 'bg-pink-50', tc: 'text-pink-600' },
     ];
@@ -97,7 +97,7 @@
 
     return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-6' },
       h('div', { className: 'flex items-center justify-between' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard Uber Direct'),
+        h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard do Hub'),
         h('button', {
           onClick: () => { carregar(); carregarMargem(); },
           className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700'
@@ -122,8 +122,8 @@
           h('div', null,
             h('h3', { className: 'text-lg font-bold text-gray-800' }, '💼 Margem por cliente'),
             h('p', { className: 'text-xs text-gray-500 mt-1' },
-              'Quanto cada cliente está rendendo (ou custando) quando despachado pelo Uber. ',
-              h('span', { className: 'text-gray-400' }, 'Margem = valor cliente Mapp − custo Uber.'))
+              'Quanto cada cliente está rendendo (ou custando) quando despachado pelo hub. ',
+              h('span', { className: 'text-gray-400' }, 'Margem = valor cliente Mapp − custo do provedor.'))
           ),
           h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-1' },
             ['1d', '7d', '30d'].map(p => h('button', {
@@ -155,7 +155,7 @@
                     h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.receita || 0)))
                   ),
                   h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo Uber'),
+                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
                     h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.custo || 0)))
                   ),
                   (function () {
@@ -204,7 +204,7 @@
                         h('th', { className: 'px-3 py-2 text-left' }, 'Cliente'),
                         h('th', { className: 'px-3 py-2 text-right' }, 'Qtd'),
                         h('th', { className: 'px-3 py-2 text-right' }, 'Receita'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Custo Uber'),
+                        h('th', { className: 'px-3 py-2 text-right' }, 'Custo do provedor'),
                         h('th', { className: 'px-3 py-2 text-right' }, 'Margem'),
                         h('th', { className: 'px-3 py-2 text-right' }, 'Margem méd.'),
                         h('th', { className: 'px-3 py-2 text-right' }, '%'),
@@ -358,7 +358,7 @@
                       target: '_blank',
                       rel: 'noopener noreferrer',
                       onClick: (ev) => ev.stopPropagation(),
-                      title: 'Abrir tracking oficial Uber',
+                      title: 'Abrir tracking oficial do provedor',
                       className: 'text-purple-600 hover:text-purple-800 text-base',
                     }, '🔗'),
                   ),
@@ -388,14 +388,14 @@
                     h(Badge, { status: selecionada.status_uber })
                   )
                 ),
-                // Botão tracking oficial Uber
+                // Botão tracking oficial do provedor
                 selecionada.tracking_url && h('a', {
                   href: selecionada.tracking_url,
                   target: '_blank',
                   rel: 'noopener noreferrer',
                   className: 'flex items-center gap-1.5 text-xs px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold flex-shrink-0',
-                  title: 'Abrir página oficial de rastreio do Uber em nova aba',
-                }, '🔗 Tracking Uber'),
+                  title: 'Abrir página oficial de rastreio da entrega em nova aba',
+                }, '🔗 Tracking'),
               ),
 
               // Dados do entregador
@@ -468,6 +468,18 @@
   }
 
   // Card individual de entrega — extraído pra ficar legível
+  // 🆕 2026-05 Hub — rótulo + ícone do provedor de uma entrega.
+  // O registro pode trazer provider_code (logistics_deliveries) ou não
+  // (uber_entregas legado). Sem o campo, assume 'uber' — é o que há na
+  // tabela legada hoje. Quando a leitura migrar pra logistics_deliveries
+  // (Fase 6), o provider real já aparece sem mudar nada aqui.
+  function provedorInfo(entrega) {
+    const code = (entrega && (entrega.provider_code || entrega.provider)) || 'uber';
+    if (code === 'noventanove' || code === '99') return { code, nome: '99', icone: '🚗' };
+    if (code === 'uber') return { code, nome: 'Uber Direct', icone: '🛵' };
+    return { code, nome: code, icone: '📦' };
+  }
+
   function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
     const e = entrega;
 
@@ -476,6 +488,7 @@
     const valorUber      = parseFloat(e.valor_uber || 0);
     const margem         = valorCliente - valorUber;
     const margemPositiva = margem >= 0;
+    const prov           = provedorInfo(e);
 
     const podeCancelar = !['delivered', 'cancelado', 'canceled', 'fallback_fila'].includes(e.status_uber);
     const temEntregador = !!e.entregador_nome;
@@ -528,6 +541,10 @@
           h('div', { className: 'flex items-center gap-3 flex-wrap' },
             h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
             h(Badge, { status: e.status_uber }),
+            h('span', {
+              className: 'text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-600',
+              title: 'Provedor que despachou esta entrega',
+            }, `${prov.icone} ${prov.nome}`),
           ),
           // Nome do cliente vindo da regra que casou (ou "Manual" se foi despacho manual)
           h('div', { className: 'text-xs text-gray-500' },
@@ -540,7 +557,7 @@
           onVerTracking && h('button', {
             onClick: () => onVerTracking(e),
             disabled: !e.tracking_url,
-            title: e.tracking_url ? 'Abrir rastreio no Uber' : 'Sem URL de rastreio',
+            title: e.tracking_url ? 'Abrir rastreio no provedor' : 'Sem URL de rastreio',
             className: `text-xs px-3 py-1.5 border rounded-lg ${
               e.tracking_url
                 ? 'border-gray-200 hover:bg-gray-50 text-gray-700'
@@ -575,7 +592,7 @@
         ),
       ),
 
-      // ── 4 cards de valores: cliente Mapp / prof Mapp / Uber / margem ──
+      // ── 4 cards de valores: cliente Mapp / prof Mapp / provedor / margem ──
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
         h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
           h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
@@ -586,7 +603,7 @@
           h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorProfMapp))
         ),
         h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo Uber'),
+          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
           h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber))
         ),
         h('div', {
@@ -865,7 +882,7 @@
     }
 
     async function cancelarEntrega(id) {
-      if (!confirm('Cancelar entrega no Uber e reabrir na Mapp?')) return;
+      if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
       try {
         const res = await fetchAuth(`${API_URL}/uber/entregas/${id}/cancelar`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -924,7 +941,7 @@
       return { total, negativas, qtd: entregasFiltradas.length };
     }, [entregasFiltradas]);
 
-    // Tracking: abre a página oficial de rastreio do Uber Direct em nova aba.
+    // Tracking: abre a página oficial de rastreio do provedor em nova aba.
     // O tracking_url vem da resposta do Create Delivery e é salvo no banco no despacho.
     function abrirTracking(e) {
       if (!e.tracking_url) {
@@ -961,7 +978,7 @@
       setDetalhesAberto(null);
     }
 
-    // Redespacho: cancela a delivery atual no Uber e cria nova com novo endereço
+    // Redespacho: cancela a delivery atual no provedor e cria nova com novo endereço
     function abrirRedespacho(e) {
       setRedespachoAberto({
         entrega: e,
@@ -1014,7 +1031,7 @@
       // ── Header ──
       h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
         h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Entregas Uber'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Entregas'),
           h('p', { className: 'text-xs text-gray-500 mt-1' },
             `${resumo.qtd} entrega${resumo.qtd !== 1 ? 's' : ''} · `,
             'Margem total ',
@@ -1112,11 +1129,11 @@
             h('h3', { className: 'text-lg font-bold text-gray-800' },
               `Redespachar OS ${redespachoAberto.entrega.codigo_os}`),
             h('p', { className: 'text-xs text-gray-500 mt-1' },
-              'A entrega atual será cancelada no Uber e uma nova será criada com o novo endereço.'),
+              'A entrega atual será cancelada no provedor e uma nova será criada com o novo endereço.'),
           ),
           h('div', { className: 'p-5 space-y-3' },
             h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
-              '⚠ Esta ação cancela a delivery atual no Uber (perdendo qualquer progresso de courier) e cria uma nova com a mesma coleta + novo destino. Use apenas se o endereço de entrega original estava errado.'),
+              '⚠ Esta ação cancela a delivery atual no provedor (perdendo qualquer progresso de courier) e cria uma nova com a mesma coleta + novo destino. Use apenas se o endereço de entrega original estava errado.'),
 
             h('div', null,
               h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Endereço atual'),
@@ -1180,7 +1197,7 @@
       },
         h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-sm w-full' },
           h('div', { className: 'border-b border-gray-200 px-5 py-4' },
-            h('h3', { className: 'text-base font-bold text-gray-800' }, 'Despachar OS para Uber'),
+            h('h3', { className: 'text-base font-bold text-gray-800' }, 'Despachar OS'),
             h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Digite o código da OS pra cotar')
           ),
           h('div', { className: 'p-5' },
@@ -1395,7 +1412,7 @@
   }
 
   // ════════════════════════════════════════════════════════
-  // MODAL: Detalhes de uma entrega Uber
+  // MODAL: Detalhes de uma entrega
   // ════════════════════════════════════════════════════════
   function ModalDetalhesEntrega({ data, onClose, showToast }) {
     const { entrega: e, tracking, webhooks, loading } = data;
@@ -1404,7 +1421,7 @@
     function copiarDeliveryId() {
       if (!e.uber_delivery_id) return;
       navigator.clipboard?.writeText(e.uber_delivery_id).then(
-        () => showToast('ID Uber Direct copiado', 'success'),
+        () => showToast('ID da entrega copiado', 'success'),
         () => showToast('Erro ao copiar', 'error')
       );
     }
@@ -1463,7 +1480,7 @@
                   h('div', { className: 'text-base font-semibold' }, fmtMoney(parseFloat(e.valor_profissional || 0)))
                 ),
                 h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                  h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo Uber'),
+                  h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
                   h('div', { className: 'text-base font-semibold' }, fmtMoney(parseFloat(e.valor_uber || 0)))
                 ),
                 (function () {
@@ -1501,9 +1518,9 @@
                 ),
               ),
 
-              // Tracking URL oficial do Uber
+              // Tracking URL oficial do provedor
               e.tracking_url && h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3' },
-                h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-2' }, '🔗 Rastreio Uber Direct'),
+                h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-2' }, '🔗 Rastreio da entrega'),
                 h('div', { className: 'flex items-center gap-2 flex-wrap' },
                   h('a', {
                     href: e.tracking_url,
@@ -1534,10 +1551,10 @@
                 e.cancelado_por && h('div', null, `Cancelada por: ${e.cancelado_por}${e.cancelado_motivo ? ' — ' + e.cancelado_motivo : ''}`),
               ),
 
-              // ID Uber Direct (rotulado, com botão copiar) — último item antes do debug
+              // ID da entrega (rotulado, com botão copiar) — último item antes do debug
               e.uber_delivery_id && h('div', { className: 'flex items-center justify-between gap-2 text-xs pt-2 border-t border-gray-100' },
                 h('div', { className: 'min-w-0 flex-1' },
-                  h('span', { className: 'text-gray-500' }, 'ID Uber Direct: '),
+                  h('span', { className: 'text-gray-500' }, 'ID da entrega: '),
                   h('span', { className: 'font-mono text-gray-700 break-all' }, e.uber_delivery_id),
                 ),
                 h('button', {
@@ -1720,7 +1737,7 @@
         h('div', null,
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Regras por endereço de coleta'),
           h('p', { className: 'text-xs text-gray-500 mt-1' },
-            'O worker só despacha pra Uber OS cujo endereço de coleta casa com algum trecho cadastrado aqui. ',
+            'O worker só despacha OS cujo endereço de coleta casa com algum trecho cadastrado aqui. ',
             'A Mapp não retorna nome do cliente — match é por trecho do endereço. Sem regra ativa = sem despacho automático.')
         ),
         h('button', {
@@ -1735,7 +1752,7 @@
           ? h('div', { className: 'p-12 text-center text-gray-400' },
               h('div', { className: 'text-4xl mb-2' }, '📭'),
               h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
-              h('p', { className: 'text-xs mt-1' }, 'Enquanto não houver regras, o worker não vai despachar nada pra Uber automaticamente.'))
+              h('p', { className: 'text-xs mt-1' }, 'Enquanto não houver regras, o worker não vai despachar nada automaticamente.'))
           : h('table', { className: 'w-full text-sm' },
               h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
                 h('tr', null,
@@ -1832,7 +1849,7 @@
                 className: 'w-full px-3 py-2 border rounded-lg text-sm',
               }),
               h('p', { className: 'text-xs text-amber-700 mt-1 font-semibold' },
-                '⚠ Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura Uber sejam travadas na Mapp.')
+                '⚠ Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura sejam travadas na Mapp.')
             ),
 
             h('div', { className: 'grid grid-cols-2 gap-3' },
@@ -1879,7 +1896,7 @@
                 ),
               ),
               h('p', { className: 'text-xs text-gray-500 mt-2' },
-                '⚠ OSs com margem (valor cliente − custo Uber) abaixo desses limites NÃO serão despachadas automaticamente. ',
+                '⚠ OSs com margem (valor cliente − custo do provedor) abaixo desses limites NÃO serão despachadas automaticamente. ',
                 'Se ambos forem definidos, a OS precisa passar nos dois. Deixe vazio pra desativar o filtro.')
             ),
 
@@ -2022,13 +2039,13 @@
     };
 
     return h('div', { className: 'max-w-4xl mx-auto p-4 space-y-4' },
-      h('h2', { className: 'text-2xl font-bold text-gray-800' }, '⚙️ Configuração Uber Direct'),
+      h('h2', { className: 'text-2xl font-bold text-gray-800' }, '⚙️ Configuração do Hub'),
 
       h('div', { className: 'bg-white rounded-xl border shadow-sm p-6' },
         h('div', { className: 'flex items-center justify-between mb-4 pb-4 border-b' },
           h('div', null,
             h('h3', { className: 'font-bold text-gray-800' }, 'Status da integração'),
-            h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Quando ativo, o worker faz polling na Mapp e despacha pra Uber')
+            h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Quando ativo, o worker faz polling na Mapp e despacha pra Uber Direct')
           ),
           h('label', { className: 'inline-flex items-center cursor-pointer' },
             h('input', { type: 'checkbox', checked: !!config.ativo, onChange: e => update('ativo', e.target.checked), className: 'sr-only peer' }),
@@ -2082,7 +2099,7 @@
       ),
 
       h('div', { className: 'bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-800' },
-        h('p', { className: 'font-bold mb-2' }, '📌 URLs de webhook para configurar no painel Uber Direct:'),
+        h('p', { className: 'font-bold mb-2' }, '📌 URLs de webhook para configurar no painel do provedor:'),
         h('code', { className: 'block bg-white p-2 rounded mb-1' }, `${API_URL.replace(/\/api$/, '')}/api/uber/webhook/status`),
         h('code', { className: 'block bg-white p-2 rounded' }, `${API_URL.replace(/\/api$/, '')}/api/uber/webhook/courier`)
       )
@@ -2091,13 +2108,13 @@
 
   // ════════════════════════════════════════════════════════
   // COMPONENTE RAIZ
-  // Usa props.estado.uberTab (controlado pelo OverflowNav do app.js)
+  // Usa props.estado.logisticaTab (controlado pelo OverflowNav do app.js)
   // ════════════════════════════════════════════════════════
-  function ModuloUber(props) {
+  function ModuloLogistica(props) {
     const { HeaderCompacto, usuario, Ee, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, navegarSidebar, estado, setEstado } = props;
 
-    // Aba ativa controlada pelo OverflowNav do app.js (via estado.uberTab)
-    const aba = (estado && estado.uberTab) || 'dashboard';
+    // Aba ativa controlada pelo OverflowNav do app.js (via estado.logisticaTab)
+    const aba = (estado && estado.logisticaTab) || 'dashboard';
 
     const abas = {
       dashboard: TabDashboard,
@@ -2126,7 +2143,7 @@
         onLogout: onLogout,
         onGoHome: () => props.he && props.he('home'),
         onNavigate: navegarSidebar,
-        onChangeTab: (abaId) => setEstado(e => ({ ...e, uberTab: abaId })),
+        onChangeTab: (abaId) => setEstado(e => ({ ...e, logisticaTab: abaId })),
       }),
       // Conteúdo da aba ativa
       h(Atual, props)
@@ -2134,5 +2151,5 @@
   }
 
   // Expor globalmente para o app.js carregar (padrão dos outros módulos)
-  window.ModuloUberComponent = ModuloUber;
+  window.ModuloLogisticaComponent = ModuloLogistica;
 })();
