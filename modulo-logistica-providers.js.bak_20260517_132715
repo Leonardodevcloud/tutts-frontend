@@ -206,7 +206,7 @@
         }
       })();
       return () => { abortado = true; };
-    }, [expandido, detalhe]); // re-dispara quando detalhe é zerado pós-salvar
+    }, [expandido]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const schema = SCHEMA[code] || (detalhe ? schemaGenerico(detalhe.config) : { grupos: [] });
 
@@ -309,7 +309,7 @@
 
       // Corpo expandido
       expandido && e('div', { className: 'border-t border-gray-100 p-4' },
-        carregandoDet || !form || !detalhe
+        carregandoDet || !form
           ? e('div', { className: 'flex items-center justify-center py-8' },
               e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
           : e(ProviderForm, {
@@ -360,8 +360,8 @@
     // topLevel lê a flag de provider.{key}_setado; config lê de config.{key}_setado.
     const SecretField = (campo) => {
       const setado = campo.topLevel
-        ? !!(detalhe && detalhe[campo.key + '_setado'])
-        : !!(form.config && form.config[campo.key + '_setado']);
+        ? !!detalhe[campo.key + '_setado']
+        : !!form.config[campo.key + '_setado'];
       return e('div', { className: 'mb-3', key: campo.key },
         e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
         e('input', {

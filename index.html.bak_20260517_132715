@@ -336,7 +336,7 @@
   <script src="/modulo-antifraude.js?v=20260505_FULL_REFRESH"></script>
   <script src="/modulo-performance.js?v=20260505_FULL_REFRESH"></script>
   <script src="/modulo-gerencial.js?v=20260505_FULL_REFRESH"></script>
-  <script src="/modulo-logistica-providers.js?v=20260517_99ENTREGA_FIX"></script>
+  <script src="/modulo-logistica-providers.js?v=20260517_99ENTREGA"></script>
   <script src="/modulo-logistica.js?v=20260517_FASE6_2C"></script>
   <!-- ðŸš€ Score v2 (2026-05) â€” admin de configuraÃ§Ã£o + componentes do motoboy -->
   <script src="/modulo-score-v2.js?v=20260505_FULL_REFRESH"></script>
