@@ -173,52 +173,40 @@
 
     const [detalhe, setDetalhe] = useState(null);   // resposta do GET /:code
     const [carregandoDet, setCarregandoDet] = useState(false);
-    const [erroDet, setErroDet] = useState(null);    // mensagem de erro na carga
     const [form, setForm] = useState(null);          // estado editável
     const [salvando, setSalvando] = useState(false);
     const [testando, setTestando] = useState(false);
     const [testResult, setTestResult] = useState(null);
 
-    // Carrega o detalhe na 1ª expansão (e re-carrega após salvar, quando
-    // detalhe é zerado). Em caso de falha, registra erroDet — o gate de render
-    // mostra um card de erro com botão "tentar de novo" em vez de spinner eterno.
-    const carregarDetalhe = useCallback(async () => {
-      setCarregandoDet(true);
-      setErroDet(null);
-      try {
-        const res = await fetchAuth(`${apiBase()}/providers/${code}`);
-        let d = null;
-        try { d = await res.json(); } catch (_) { d = null; }
-
-        if (res.ok && d && d.success && d.provider) {
-          setDetalhe(d.provider);
-          setForm({
-            ativo: !!d.provider.ativo,
-            sandbox_mode: !!d.provider.sandbox_mode,
-            prioridade: d.provider.prioridade != null ? d.provider.prioridade : 100,
-            config: { ...(d.provider.config || {}) },
-          });
-        } else {
-          const msg = (d && d.error)
-            ? d.error
-            : `Falha ao carregar (HTTP ${res.status})`;
-          setErroDet(msg);
-          showToast('Erro ao carregar detalhe do provider', 'error');
-        }
-      } catch (err) {
-        console.error('[logistica/providers] erro carregar detalhe:', err);
-        setErroDet('Erro de rede ao carregar o provider.');
-        showToast('Erro de rede ao carregar provider', 'error');
-      } finally {
-        setCarregandoDet(false);
-      }
-    }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Dispara a carga na expansão e quando detalhe é zerado pós-salvar.
+    // Carrega o detalhe na 1ª expansão.
     useEffect(() => {
       if (!expandido || detalhe) return;
-      carregarDetalhe();
-    }, [expandido, detalhe, carregarDetalhe]);
+      let abortado = false;
+      (async () => {
+        setCarregandoDet(true);
+        try {
+          const res = await fetchAuth(`${apiBase()}/providers/${code}`);
+          const d = await res.json();
+          if (abortado) return;
+          if (d && d.success && d.provider) {
+            setDetalhe(d.provider);
+            setForm({
+              ativo: !!d.provider.ativo,
+              sandbox_mode: !!d.provider.sandbox_mode,
+              prioridade: d.provider.prioridade != null ? d.provider.prioridade : 100,
+              config: { ...(d.provider.config || {}) },
+            });
+          } else {
+            showToast('Erro ao carregar detalhe do provider', 'error');
+          }
+        } catch (err) {
+          if (!abortado) showToast('Erro de rede ao carregar provider', 'error');
+        } finally {
+          if (!abortado) setCarregandoDet(false);
+        }
+      })();
+      return () => { abortado = true; };
+    }, [expandido, detalhe]); // re-dispara quando detalhe é zerado pós-salvar
 
     const schema = SCHEMA[code] || (detalhe ? schemaGenerico(detalhe.config) : { grupos: [] });
 
@@ -321,27 +309,16 @@
 
       // Corpo expandido
       expandido && e('div', { className: 'border-t border-gray-100 p-4' },
-        carregandoDet
+        carregandoDet || !form || !detalhe
           ? e('div', { className: 'flex items-center justify-center py-8' },
               e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
-          : erroDet
-            ? e('div', { className: 'text-center py-8' },
-                e('div', { className: 'text-3xl mb-2' }, '⚠️'),
-                e('p', { className: 'text-sm text-red-600 mb-3' }, erroDet),
-                e('button', {
-                  onClick: carregarDetalhe,
-                  className: 'inline-flex items-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200'
-                }, '🔄 Tentar de novo'))
-            : (!form || !detalhe)
-              ? e('div', { className: 'flex items-center justify-center py-8' },
-                  e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
-              : e(ProviderForm, {
-                  code, provider, detalhe, schema, form,
-                  updateForm, updateConfig,
-                  webhookUrl: webhookUrlDe(code),
-                  salvar, salvando,
-                  testarConexao, testando, testResult,
-                })
+          : e(ProviderForm, {
+              code, provider, detalhe, schema, form,
+              updateForm, updateConfig,
+              webhookUrl: webhookUrlDe(code),
+              salvar, salvando,
+              testarConexao, testando, testResult,
+            })
       )
     );
   }
