@@ -695,7 +695,7 @@
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
-    const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, novo_endereco, ...}
+    const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
     // Modal de cotação manual (Opção C)
     const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
@@ -980,13 +980,7 @@
 
     // Redespacho: cancela a delivery atual no provedor e cria nova com novo endereço
     function abrirRedespacho(e) {
-      setRedespachoAberto({
-        entrega: e,
-        novo_endereco: e.endereco_entrega || '',
-        nome_destinatario: '',
-        telefone_destinatario: '',
-        complemento: '',
-      });
+      setRedespachoAberto({ entrega: e, motivo: '' });
     }
 
     function fecharRedespacho() {
@@ -995,25 +989,20 @@
     }
 
     async function confirmarRedespacho() {
-      if (!redespachoAberto?.novo_endereco?.trim() || redespachoAberto.novo_endereco.trim().length < 8) {
-        showToast('Endereço novo deve ter pelo menos 8 caracteres', 'error');
-        return;
-      }
       setRedespachando(true);
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/${redespachoAberto.entrega.id}/redespachar`, {
+        // 🆕 Fase 6 — repontado pro hub. O /redispatch do hub cancela a
+        // entrega atual e redespacha a MESMA OS (endereço vem da Mapp).
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${redespachoAberto.entrega.id}/redispatch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            novo_endereco: redespachoAberto.novo_endereco.trim(),
-            nome_destinatario: redespachoAberto.nome_destinatario || null,
-            telefone_destinatario: redespachoAberto.telefone_destinatario || null,
-            complemento: redespachoAberto.complemento || null,
+            motivo: (redespachoAberto.motivo || '').trim() || 'Redespacho solicitado',
           }),
         });
         const json = await res.json();
         if (res.ok && json.success) {
-          showToast(`Redespachado! Nova entrega id=${json.entrega_nova_id}`, 'success');
+          showToast('Entrega redespachada', 'success');
           setRedespachoAberto(null);
           carregar();
         } else {
@@ -1129,50 +1118,27 @@
             h('h3', { className: 'text-lg font-bold text-gray-800' },
               `Redespachar OS ${redespachoAberto.entrega.codigo_os}`),
             h('p', { className: 'text-xs text-gray-500 mt-1' },
-              'A entrega atual será cancelada no provedor e uma nova será criada com o novo endereço.'),
+              'A entrega atual será cancelada e a OS será redespachada.'),
           ),
           h('div', { className: 'p-5 space-y-3' },
             h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
-              '⚠ Esta ação cancela a delivery atual no provedor (perdendo qualquer progresso de courier) e cria uma nova com a mesma coleta + novo destino. Use apenas se o endereço de entrega original estava errado.'),
+              '⚠ Esta ação cancela a delivery atual no provedor (perdendo qualquer progresso de courier) e redespacha a mesma OS. O endereço vem da Mapp — se ele estiver errado, corrija na Mapp antes.'),
 
             h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Endereço atual'),
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Endereço de entrega'),
               h('div', { className: 'text-sm text-gray-500 bg-gray-50 rounded p-2 border border-gray-200' },
                 redespachoAberto.entrega.endereco_entrega || '—'),
             ),
 
             h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Novo endereço de entrega *'),
-              h('textarea', {
-                value: redespachoAberto.novo_endereco,
-                onChange: e => setRedespachoAberto({ ...redespachoAberto, novo_endereco: e.target.value }),
-                placeholder: 'Rua, número, bairro, cidade, estado, CEP',
-                rows: 2,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Motivo (opcional)'),
+              h('input', {
+                type: 'text',
+                value: redespachoAberto.motivo || '',
+                onChange: e => setRedespachoAberto({ ...redespachoAberto, motivo: e.target.value }),
+                placeholder: 'ex: courier não apareceu',
                 className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
               }),
-            ),
-
-            h('div', { className: 'grid grid-cols-2 gap-2' },
-              h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome destinatário'),
-                h('input', {
-                  type: 'text',
-                  value: redespachoAberto.nome_destinatario,
-                  onChange: e => setRedespachoAberto({ ...redespachoAberto, nome_destinatario: e.target.value }),
-                  placeholder: 'opcional',
-                  className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
-                }),
-              ),
-              h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Telefone'),
-                h('input', {
-                  type: 'tel',
-                  value: redespachoAberto.telefone_destinatario,
-                  onChange: e => setRedespachoAberto({ ...redespachoAberto, telefone_destinatario: e.target.value }),
-                  placeholder: '+55...',
-                  className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm',
-                }),
-              ),
             ),
           ),
           h('div', { className: 'border-t border-gray-200 px-5 py-3 flex justify-end gap-2' },
@@ -1919,192 +1885,6 @@
     );
   }
 
-  function TabConfig({ API_URL, fetchAuth, showToast }) {
-    const [config, setConfig] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [salvando, setSalvando] = useState(false);
-
-    const carregar = useCallback(async () => {
-      setLoading(true);
-      try {
-        const res = await fetchAuth(`${API_URL}/uber/config`);
-        const json = await res.json();
-        setConfig(json.config || {});
-      } catch { showToast('Erro ao carregar config', 'error'); }
-      finally { setLoading(false); }
-    }, [fetchAuth, API_URL]);
-
-    useEffect(() => { carregar(); }, []);
-
-    async function salvar() {
-      setSalvando(true);
-      try {
-        // Não enviar campos sensíveis vazios OU que sejam só máscara visual.
-        // Mesma regra do backend (defesa em camadas).
-        const ehMascara = (v) => typeof v === 'string' && /^[•·●○*–\-\u2022\u00b7]+$/.test(v.trim());
-        const payload = { ...config };
-        ['client_secret', 'mapp_api_token', 'webhook_secret'].forEach(k => {
-          const v = payload[k];
-          if (v === undefined || v === null || v === '' || ehMascara(v)) {
-            delete payload[k];
-          }
-        });
-        // Limpa flags de leitura — não devem ir no PUT
-        delete payload.client_secret_setado;
-        delete payload.mapp_api_token_setado;
-        delete payload.webhook_secret_setado;
-
-        const res = await fetchAuth(`${API_URL}/uber/config`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) { showToast('Configuração salva!', 'success'); carregar(); }
-        else showToast('Erro ao salvar', 'error');
-      } finally { setSalvando(false); }
-    }
-
-    async function testarMapp() {
-      try {
-        const res = await fetchAuth(`${API_URL}/uber/config/testar-mapp`, { method: 'POST' });
-        const json = await res.json();
-        if (json.success) showToast(json.message, 'success');
-        else showToast(json.error || 'Falha no teste', 'error');
-      } catch { showToast('Erro ao testar', 'error'); }
-    }
-
-    async function testarCotacaoUber() {
-      const enderecoColeta = prompt('Endereço de COLETA (rua, bairro, cidade - UF - CEP):');
-      if (!enderecoColeta) return;
-      const enderecoEntrega = prompt('Endereço de ENTREGA (rua, bairro, cidade - UF - CEP):');
-      if (!enderecoEntrega) return;
-
-      try {
-        const res = await fetchAuth(`${API_URL}/uber/teste-cotacao`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            coleta:  { endereco: enderecoColeta },
-            entrega: { endereco: enderecoEntrega },
-          }),
-        });
-        const json = await res.json();
-        if (json.success) {
-          const c = json.cotacao;
-          showToast(`✅ Cotação OK: R$${c.valor.toFixed(2)} | ETA ${c.eta_minutos}min | quote_id: ${c.quote_id}`, 'success');
-        } else {
-          showToast(`❌ ${json.error}`, 'error');
-        }
-      } catch (e) { showToast('Erro na requisição', 'error'); }
-    }
-
-    if (loading || !config) return h('div', { className: 'flex items-center justify-center py-16' },
-      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
-    );
-
-    const update = (k, v) => setConfig(c => ({ ...c, [k]: v }));
-
-    const Field = (label, key, type = 'text', placeholder = '') =>
-      h('div', { className: 'mb-3' },
-        h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, label),
-        h('input', {
-          type, value: config[key] || '',
-          onChange: e => update(key, type === 'number' ? parseInt(e.target.value) || 0 : e.target.value),
-          placeholder,
-          className: 'w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-        })
-      );
-
-    // SecretField — campo pra credenciais (token, secret).
-    // O backend NUNCA devolve o valor real, só uma flag _setado dizendo se há valor configurado.
-    // Quando há valor, o placeholder fica "✓ Configurado · cole novo valor pra alterar".
-    // Quando não há, o placeholder pede pra colar o token.
-    // O input começa SEMPRE vazio — só envia algo se o usuário digitar de fato.
-    const SecretField = (label, key, hint = '') => {
-      const setado = !!config[key + '_setado'];
-      return h('div', { className: 'mb-3' },
-        h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, label),
-        h('input', {
-          type: 'password',
-          value: config[key] || '',
-          onChange: e => update(key, e.target.value),
-          placeholder: setado
-            ? '✓ Configurado · cole novo valor só se quiser alterar'
-            : (hint || 'Cole o valor aqui'),
-          className: `w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-            setado ? 'border-green-300 bg-green-50' : 'border-gray-300'
-          }`,
-        }),
-        setado && h('p', { className: 'text-[11px] text-green-700 mt-1' },
-          '✓ Já existe valor salvo. Deixe em branco pra preservar.')
-      );
-    };
-
-    return h('div', { className: 'max-w-4xl mx-auto p-4 space-y-4' },
-      h('h2', { className: 'text-2xl font-bold text-gray-800' }, '⚙️ Configuração do Hub'),
-
-      h('div', { className: 'bg-white rounded-xl border shadow-sm p-6' },
-        h('div', { className: 'flex items-center justify-between mb-4 pb-4 border-b' },
-          h('div', null,
-            h('h3', { className: 'font-bold text-gray-800' }, 'Status da integração'),
-            h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Quando ativo, o worker faz polling na Mapp e despacha pra Uber Direct')
-          ),
-          h('label', { className: 'inline-flex items-center cursor-pointer' },
-            h('input', { type: 'checkbox', checked: !!config.ativo, onChange: e => update('ativo', e.target.checked), className: 'sr-only peer' }),
-            h('div', { className: "w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 relative" })
-          )
-        ),
-
-        h('label', { className: 'inline-flex items-center mb-4' },
-          h('input', { type: 'checkbox', checked: !!config.auto_despacho, onChange: e => update('auto_despacho', e.target.checked), className: 'mr-2' }),
-          h('span', { className: 'text-sm text-gray-700' }, 'Despacho automático (worker decide sozinho qual OS enviar)')
-        ),
-
-        h('label', { className: 'inline-flex items-center mb-4 ml-4' },
-          h('input', { type: 'checkbox', checked: !!config.sandbox_mode, onChange: e => update('sandbox_mode', e.target.checked), className: 'mr-2' }),
-          h('span', { className: 'text-sm text-amber-700 font-semibold' }, '🤖 Modo SANDBOX (RoboCourier — não gera entregas reais)')
-        ),
-
-        h('h4', { className: 'font-bold text-gray-700 mt-4 mb-2' }, '🚗 Credenciais Uber Direct'),
-        Field('Client ID', 'client_id', 'text', 'Seu client_id da Uber'),
-        SecretField('Client Secret', 'client_secret', 'Seu client_secret da Uber'),
-        Field('Customer ID', 'customer_id', 'text', 'Seu customer_id'),
-        SecretField('Webhook Secret', 'webhook_secret', 'Para validar HMAC dos webhooks'),
-
-        h('button', {
-          onClick: testarCotacaoUber,
-          className: 'mt-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200'
-        }, '🧪 Testar cotação Uber (sem criar entrega)'),
-
-        h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '🔌 API Mapp/Tutts'),
-        Field('URL da API Mapp', 'mapp_api_url', 'text', 'https://seuDominio.com/sem/v1/rotas.php'),
-        SecretField('Token Mapp', 'mapp_api_token', 'Seu token de integração com a Mapp'),
-        h('button', {
-          onClick: testarMapp,
-          className: 'mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200'
-        }, '🧪 Testar conexão com Mapp'),
-
-        h('h4', { className: 'font-bold text-gray-700 mt-6 mb-2' }, '⏱️ Comportamento'),
-        Field('Intervalo de polling (segundos)', 'polling_intervalo_seg', 'number', '30'),
-        Field('Janela temporal do worker (minutos)', 'worker_janela_minutos', 'number', '30 — OS mais antigas que isso são ignoradas'),
-        Field('Timeout sem entregador (minutos)', 'timeout_sem_entregador_min', 'number', '10'),
-        Field('Telefone suporte (fallback E.164)', 'telefone_suporte', 'text', '(71) 99999-8888'),
-        Field('Valor declarado da encomenda (centavos)', 'manifest_total_value_centavos', 'number', '10000 = R$ 100,00'),
-
-        h('div', { className: 'flex justify-end gap-2 mt-6 pt-4 border-t' },
-          h('button', { onClick: carregar, className: 'px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, 'Cancelar'),
-          h('button', {
-            onClick: salvar, disabled: salvando,
-            className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50'
-          }, salvando ? 'Salvando...' : '💾 Salvar')
-        )
-      ),
-
-      h('div', { className: 'bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-800' },
-        h('p', { className: 'font-bold mb-2' }, '📌 URLs de webhook para configurar no painel do provedor:'),
-        h('code', { className: 'block bg-white p-2 rounded mb-1' }, `${API_URL.replace(/\/api$/, '')}/api/uber/webhook/status`),
-        h('code', { className: 'block bg-white p-2 rounded' }, `${API_URL.replace(/\/api$/, '')}/api/uber/webhook/courier`)
-      )
-    );
-  }
 
   // ════════════════════════════════════════════════════════
   // COMPONENTE RAIZ
@@ -2126,7 +1906,6 @@
       provedores: window.ModuloLogisticaProviders || (() => h('div', {
         className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg'
       }, '⚠️ modulo-logistica-providers.js não foi carregado. Verifique o index.html.')),
-      config:    TabConfig,
     };
     const Atual = abas[aba] || TabDashboard;
 
