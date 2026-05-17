@@ -54,7 +54,7 @@
     const carregar = useCallback(async () => {
       setLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/uber/metricas`);
+        const res = await fetchAuth(`${API_URL}/logistics/dashboard/metricas`);
         const json = await res.json();
         setData(json.metricas || {});
       } catch { showToast('Erro ao carregar métricas', 'error'); }
@@ -64,7 +64,7 @@
     const carregarMargem = useCallback(async () => {
       setMargemLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/uber/dashboard/margem-clientes?periodo=${periodo}`);
+        const res = await fetchAuth(`${API_URL}/logistics/dashboard/margem-clientes?periodo=${periodo}`);
         const json = await res.json();
         if (json.success) setMargemData(json);
         else showToast(json.error || 'Erro ao carregar margem', 'error');
@@ -256,7 +256,7 @@
 
     const carregarAtivas = useCallback(async () => {
       try {
-        const res = await fetchAuth(`${API_URL}/uber/tracking/ativas`);
+        const res = await fetchAuth(`${API_URL}/logistics/tracking/ativas`);
         const json = await res.json();
         setAtivas(json.entregas || []);
       } catch { showToast('Erro ao carregar entregas ativas', 'error'); }
@@ -706,7 +706,7 @@
     const carregar = useCallback(async () => {
       setLoading(true);
       try {
-        const url = `${API_URL}/uber/entregas${filtroStatus ? `?status=${filtroStatus}` : ''}`;
+        const url = `${API_URL}/logistics/deliveries${filtroStatus ? `?status=${filtroStatus}` : ''}`;
         const res = await fetchAuth(url);
         const json = await res.json();
         setEntregas(json.entregas || []);
@@ -884,7 +884,7 @@
     async function cancelarEntrega(id) {
       if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/${id}/cancelar`, {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${id}/cancel`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ motivo: 'Cancelamento manual' })
         });
@@ -955,7 +955,7 @@
     async function abrirDetalhes(e) {
       setDetalhesAberto({ entrega: e, tracking: [], webhooks: [], loading: true });
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/${e.codigo_os}`);
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}`);
         const json = await res.json();
         if (json.success) {
           setDetalhesAberto({
@@ -1623,7 +1623,7 @@
     const carregar = useCallback(async () => {
       setLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/uber/regras`);
+        const res = await fetchAuth(`${API_URL}/logistics/dispatch-rules`);
         const json = await res.json();
         setRegras(json.regras || []);
       } catch { showToast('Erro ao carregar regras', 'error'); }
@@ -1689,7 +1689,7 @@
         ativo: !!editando.ativo,
       };
       const metodo = editando.id ? 'PUT' : 'POST';
-      const url = editando.id ? `${API_URL}/uber/regras/${editando.id}` : `${API_URL}/uber/regras`;
+      const url = editando.id ? `${API_URL}/logistics/dispatch-rules/${editando.id}` : `${API_URL}/logistics/dispatch-rules`;
       try {
         const res = await fetchAuth(url, {
           method: metodo,
@@ -1709,7 +1709,7 @@
 
     async function toggleAtivo(r) {
       try {
-        const res = await fetchAuth(`${API_URL}/uber/regras/${r.id}`, {
+        const res = await fetchAuth(`${API_URL}/logistics/dispatch-rules/${r.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativo: !r.ativo }),
@@ -1721,7 +1721,7 @@
     async function excluir(r) {
       if (!confirm(`Excluir a regra do cliente "${r.cliente_nome}"?`)) return;
       try {
-        const res = await fetchAuth(`${API_URL}/uber/regras/${r.id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`${API_URL}/logistics/dispatch-rules/${r.id}`, { method: 'DELETE' });
         if (res.ok) { showToast('Regra excluída', 'success'); carregar(); }
       } catch { showToast('Erro ao excluir', 'error'); }
     }
