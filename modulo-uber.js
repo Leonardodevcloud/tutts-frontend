@@ -713,145 +713,149 @@
       setPedirCodigoModal({ valor: '' });
     }
 
-    // Confirma o código digitado no mini-modal e dispara a cotação dupla
+    // 🆕 2026-05 Fase 5 — Cotação comparativa multi-provider.
+    // O modal agora cota TODOS os providers ativos em paralelo via o hub
+    // (/api/logistics/quotes/multi por provider) e despacha via /api/logistics/deliveries.
+    // Substitui o fluxo antigo /uber/entregas/cotar|despachar (Opção A: corte cirúrgico).
+    const [providersAtivos, setProvidersAtivos] = useState(null); // null=carregando | [{provider_code,display_name}]
+
+    // Carrega a lista de providers ativos do hub (uma vez).
+    useEffect(() => {
+      let abortado = false;
+      (async () => {
+        try {
+          const res = await fetchAuth(`${API_URL}/logistics/providers`);
+          if (res.status === 404) { if (!abortado) setProvidersAtivos([]); return; }
+          const d = await res.json();
+          if (abortado) return;
+          const ativos = (d && d.providers || []).filter(p => p.ativo);
+          setProvidersAtivos(ativos);
+        } catch { if (!abortado) setProvidersAtivos([]); }
+      })();
+      return () => { abortado = true; };
+    }, [fetchAuth, API_URL]);
+
+    // Confirma o código digitado no mini-modal e dispara a cotação multi-provider
     async function confirmarCodigoEcotar() {
       const codigoOS = pedirCodigoModal?.valor?.trim();
-      if (!codigoOS) {
-        showToast('Digite um código de OS', 'error');
-        return;
-      }
+      if (!codigoOS) { showToast('Digite um código de OS', 'error'); return; }
       const codigoOSNum = parseInt(codigoOS);
-      if (isNaN(codigoOSNum) || codigoOSNum <= 0) {
-        showToast('Código inválido', 'error');
-        return;
-      }
-      // Fecha o mini-modal e abre o de cotação
+      if (isNaN(codigoOSNum) || codigoOSNum <= 0) { showToast('Código inválido', 'error'); return; }
       setPedirCodigoModal(null);
+      await cotarMultiProvider(codigoOSNum);
+    }
+
+    // Cota a OS em todos os providers ativos, em paralelo.
+    // Resultado: cotacaoModal.porProvider = { [code]: { display_name, cotacoes: [...], error } }
+    async function cotarMultiProvider(codigoOSNum) {
+      const ativos = (providersAtivos && providersAtivos.length > 0)
+        ? providersAtivos
+        : [{ provider_code: 'uber', display_name: 'Uber Direct' }]; // fallback defensivo
+
       setCotacaoModal({
         state: 'cotando', codigoOS: codigoOSNum,
-        cotacoes: null, selecionado: null, error: null,
+        porProvider: null, selecionado: null, error: null,
       });
+
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigoOS: codigoOSNum, vehicle_types: ['motorcycle', 'car'] }),
-        });
-        const json = await res.json();
-        if (res.ok && json.success) {
-          const primeiraDisponivel = json.cotacoes.find(c => c.available);
+        const resultados = await Promise.all(ativos.map(async (prov) => {
+          try {
+            const res = await fetchAuth(`${API_URL}/logistics/quotes/multi`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                codigoOS: codigoOSNum,
+                providerCode: prov.provider_code,
+                vehicleTypes: ['motorcycle', 'car'],
+              }),
+            });
+            const json = await res.json();
+            if (res.ok && json.success) {
+              return { code: prov.provider_code, display_name: prov.display_name, cotacoes: json.cotacoes || [], error: null };
+            }
+            return { code: prov.provider_code, display_name: prov.display_name, cotacoes: [], error: json.error || 'Erro ao cotar' };
+          } catch {
+            return { code: prov.provider_code, display_name: prov.display_name, cotacoes: [], error: 'Erro de rede' };
+          }
+        }));
+
+        const porProvider = {};
+        resultados.forEach(r => { porProvider[r.code] = r; });
+
+        // Tem ao menos uma cotação disponível em algum provider?
+        const algumDisponivel = resultados.some(r => r.cotacoes.some(c => c.available));
+        if (!algumDisponivel) {
+          const primErro = resultados.find(r => r.error)?.error;
           setCotacaoModal({
-            state: 'ok',
-            codigoOS: codigoOSNum,
-            cotacoes: json.cotacoes,
-            selecionado: primeiraDisponivel?.vehicle_type || null,
-            error: null,
+            state: 'erro', codigoOS: codigoOSNum,
+            porProvider, selecionado: null,
+            error: primErro || 'Nenhum provedor retornou cotação disponível',
           });
-        } else {
-          setCotacaoModal({
-            state: 'erro',
-            codigoOS: codigoOSNum,
-            cotacoes: json.cotacoes || null,
-            selecionado: null,
-            error: json.error || 'Erro ao cotar',
-          });
+          return;
         }
+
+        setCotacaoModal({
+          state: 'ok', codigoOS: codigoOSNum,
+          porProvider,
+          selecionado: { veiculo: 'motorcycle' }, // veículo escolhido (provider é por botão)
+          error: null,
+        });
       } catch (err) {
         setCotacaoModal({
           state: 'erro', codigoOS: codigoOSNum,
-          cotacoes: null, selecionado: null, error: 'Erro de rede ao cotar',
+          porProvider: null, selecionado: null, error: 'Erro ao cotar',
         });
       }
     }
 
-    // Re-cota: usado tanto no botão "Tentar de novo" do estado de erro
-    // quanto no "Cotar de novo" quando a quote expira
+    // Re-cota — usado no "Tentar de novo" e no "Cotar de novo" (quote expirada)
     async function recotarOS() {
       if (!cotacaoModal?.codigoOS) return;
-      const cod = cotacaoModal.codigoOS;
-      setCotacaoModal({
-        state: 'cotando', codigoOS: cod,
-        cotacoes: null, selecionado: null, error: null,
-      });
-      try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/cotar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigoOS: cod, vehicle_types: ['motorcycle', 'car'] }),
-        });
-        const json = await res.json();
-        if (res.ok && json.success) {
-          const primeiraDisponivel = json.cotacoes.find(c => c.available);
-          setCotacaoModal({
-            state: 'ok', codigoOS: cod,
-            cotacoes: json.cotacoes,
-            selecionado: primeiraDisponivel?.vehicle_type || null,
-            error: null,
-          });
-        } else {
-          setCotacaoModal({
-            state: 'erro', codigoOS: cod,
-            cotacoes: json.cotacoes || null,
-            selecionado: null,
-            error: json.error || 'Erro ao cotar',
-          });
-        }
-      } catch {
-        setCotacaoModal({
-          state: 'erro', codigoOS: cod,
-          cotacoes: null, selecionado: null, error: 'Erro de rede ao cotar',
-        });
-      }
+      await cotarMultiProvider(cotacaoModal.codigoOS);
     }
 
-    // Seleciona um veículo no modal (clica no card)
-    function selecionarVeiculo(vehicleType) {
+    // Troca o veículo selecionado (Moto/Carro) — afeta os dois providers
+    function selecionarVeiculo(veiculo) {
       if (!cotacaoModal) return;
-      const cot = cotacaoModal.cotacoes?.find(c => c.vehicle_type === vehicleType);
-      if (!cot || !cot.available) return; // não seleciona indisponível
-      setCotacaoModal({ ...cotacaoModal, selecionado: vehicleType });
+      setCotacaoModal({ ...cotacaoModal, selecionado: { veiculo } });
     }
 
-    // Confirma o despacho usando o quote_id do veículo selecionado
-    async function confirmarDespacho() {
-      if (!cotacaoModal?.selecionado || !cotacaoModal?.cotacoes) return;
-      const cotSelecionada = cotacaoModal.cotacoes.find(c => c.vehicle_type === cotacaoModal.selecionado);
-      if (!cotSelecionada || !cotSelecionada.available) return;
-
-      // Verifica se a quote ainda tá válida (fail-safe — o botão deveria estar desabilitado)
-      if (Date.now() > cotSelecionada.expires_at) {
+    // Despacha pelo provider escolhido (o "Provider Switcher": botão de cada card).
+    async function despacharPorProvider(providerCode) {
+      if (!cotacaoModal || cotacaoModal.state !== 'ok') return;
+      const veiculo = cotacaoModal.selecionado?.veiculo || 'motorcycle';
+      const bloco = cotacaoModal.porProvider?.[providerCode];
+      const cot = bloco?.cotacoes?.find(c => c.vehicle_type === veiculo && c.available);
+      if (!cot) { showToast('Sem cotação válida pra esse provedor/veículo', 'error'); return; }
+      if (Date.now() > cot.expires_at) {
         showToast('Cotação expirada — cote novamente', 'error');
         return;
       }
-      setCotacaoModal({ ...cotacaoModal, state: 'despachando' });
+
+      setCotacaoModal({ ...cotacaoModal, state: 'despachando', despachandoProvider: providerCode });
       try {
-        const res = await fetchAuth(`${API_URL}/uber/entregas/despachar`, {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             codigoOS: cotacaoModal.codigoOS,
-            quote_id: cotSelecionada.quote_id,
+            providerCode,
+            vehicleType: veiculo,
+            quoteId: cot.quote_id,
           }),
         });
         const json = await res.json();
         if (res.ok && json.success) {
-          showToast(`OS ${cotacaoModal.codigoOS} despachada com sucesso!`, 'success');
+          showToast(`OS ${cotacaoModal.codigoOS} despachada via ${bloco.display_name}!`, 'success');
           setCotacaoModal(null);
           carregar();
         } else {
           showToast(json.error || 'Erro ao despachar', 'error');
-          // Se a quote expirou no servidor (410), volta pra estado ok pra usuário recotar
-          if (res.status === 410) {
-            // Marca todas as cotações como expiradas pra forçar "Cotar de novo"
-            const cotacoesExpiradas = cotacaoModal.cotacoes.map(c => ({ ...c, expires_at: 0 }));
-            setCotacaoModal({ ...cotacaoModal, state: 'ok', cotacoes: cotacoesExpiradas });
-          } else {
-            setCotacaoModal({ ...cotacaoModal, state: 'ok' });
-          }
+          setCotacaoModal({ ...cotacaoModal, state: 'ok', despachandoProvider: null });
         }
       } catch {
         showToast('Erro de rede ao despachar', 'error');
-        setCotacaoModal({ ...cotacaoModal, state: 'ok' });
+        setCotacaoModal({ ...cotacaoModal, state: 'ok', despachandoProvider: null });
       }
     }
 
@@ -1207,248 +1211,183 @@
       ),
 
       // ── Modal de cotação manual com seleção de veículo (Opção C + Desenho 1) ──
+      // 🆕 2026-05 Fase 5 — Modal de cotação COMPARATIVA multi-provider.
       cotacaoModal && (function () {
         const m = cotacaoModal;
-        const cotacoes = m.cotacoes || [];
-        // Cotação atualmente selecionada (se houver)
-        const cotSel = cotacoes.find(c => c.vehicle_type === m.selecionado);
+        const veiculo = m.selecionado?.veiculo || 'motorcycle';
+        const porProvider = m.porProvider || {};
+        const blocos = Object.values(porProvider);
 
-        // Timer da cotação SELECIONADA (cada veículo tem seu próprio expires_at,
-        // mas como foram cotados juntos, a diferença é desprezível)
-        const segundosRestantes = cotSel?.available
-          ? Math.max(0, Math.floor((cotSel.expires_at - Date.now()) / 1000))
-          : 0;
-        const expirou = cotSel?.available && segundosRestantes === 0;
-        const margemSel = cotSel?.available ? parseFloat(cotSel.margem || 0) : 0;
-        const margemNegativaForte = cotSel?.available && margemSel < 0;
-        const mm = Math.floor(segundosRestantes / 60);
-        const ss = segundosRestantes % 60;
-
-        // Endereços (vêm em qualquer cotação disponível)
-        const primeiraDisponivel = cotacoes.find(c => c.available);
-        const enderecoColeta = primeiraDisponivel?.endereco_coleta || '—';
-        const enderecoEntrega = primeiraDisponivel?.endereco_entrega || '—';
-
-        // Label e SVG por tipo de veículo (estilo flat, monocromático, cor controlada por currentColor)
-        function svgVeiculo(tipo, selecionado, indisponivel) {
-          const cor = indisponivel ? '#9ca3af' : (selecionado ? '#5b21b6' : '#6b7280');
-          if (tipo === 'motorcycle') {
-            return h('svg', {
-              width: 56, height: 40, viewBox: '0 0 64 44', fill: 'none',
-              xmlns: 'http://www.w3.org/2000/svg',
-            },
-              h('circle', { cx: 13, cy: 33, r: 9, stroke: cor, strokeWidth: 2.5, fill: 'none' }),
-              h('circle', { cx: 13, cy: 33, r: 2, fill: cor }),
-              h('circle', { cx: 51, cy: 33, r: 9, stroke: cor, strokeWidth: 2.5, fill: 'none' }),
-              h('circle', { cx: 51, cy: 33, r: 2, fill: cor }),
-              h('path', {
-                d: 'M13 33 L26 16 L40 16 L51 33',
-                stroke: cor, strokeWidth: 2.5,
-                strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none',
-              }),
-              h('path', {
-                d: 'M26 16 L22 8 L30 8',
-                stroke: cor, strokeWidth: 2.5,
-                strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none',
-              }),
-              h('rect', { x: 36, y: 10, width: 10, height: 6, rx: 1, fill: cor }),
-            );
-          }
-          // car
-          return h('svg', {
-            width: 64, height: 40, viewBox: '0 0 72 44', fill: 'none',
-            xmlns: 'http://www.w3.org/2000/svg',
-          },
-            h('path', {
-              d: 'M8 30 L8 22 L18 12 L52 12 L62 22 L62 30 L56 30 L56 33 L50 33 L50 30 L22 30 L22 33 L16 33 L16 30 Z',
-              stroke: cor, strokeWidth: 2.5, strokeLinejoin: 'round', fill: 'none',
-            }),
-            h('circle', { cx: 20, cy: 33, r: 6, stroke: cor, strokeWidth: 2.5, fill: 'white' }),
-            h('circle', { cx: 20, cy: 33, r: 1.5, fill: cor }),
-            h('circle', { cx: 52, cy: 33, r: 6, stroke: cor, strokeWidth: 2.5, fill: 'white' }),
-            h('circle', { cx: 52, cy: 33, r: 1.5, fill: cor }),
-          );
+        function labelVeiculo(t) {
+          return t === 'motorcycle' ? 'Moto' : t === 'car' ? 'Carro'
+               : t === 'van' ? 'Van' : t === 'bicycle' ? 'Bike' : t === 'walker' ? 'A pé' : t;
         }
-        function labelVeiculo(tipo) {
-          if (tipo === 'motorcycle') return 'Moto';
-          if (tipo === 'car') return 'Carro';
-          if (tipo === 'van') return 'Van';
-          if (tipo === 'bicycle') return 'Bike';
-          if (tipo === 'walker') return 'A pé';
-          return tipo;
+        const fmt = (v) => 'R$ ' + (parseFloat(v || 0)).toFixed(2).replace('.', ',');
+
+        // Cotação de um provider pro veículo selecionado.
+        const cotacaoDe = (bloco) => (bloco.cotacoes || []).find(c => c.vehicle_type === veiculo);
+
+        // Recomendado = entre os disponíveis, o de MAIOR margem (estratégia "menor custo").
+        let codeRecomendado = null;
+        if (m.state === 'ok') {
+          let melhor = -Infinity;
+          blocos.forEach(b => {
+            const c = cotacaoDe(b);
+            if (c && c.available && parseFloat(c.margem || 0) > melhor) {
+              melhor = parseFloat(c.margem || 0);
+              codeRecomendado = b.code;
+            }
+          });
+        }
+
+        // Countdown: menor expires_at entre as cotações disponíveis do veículo.
+        let segRestantes = 0;
+        if (m.state === 'ok') {
+          let menorExp = Infinity;
+          blocos.forEach(b => {
+            const c = cotacaoDe(b);
+            if (c && c.available && c.expires_at) menorExp = Math.min(menorExp, c.expires_at);
+          });
+          if (menorExp !== Infinity) segRestantes = Math.max(0, Math.floor((menorExp - Date.now()) / 1000));
+        }
+        const expirou = m.state === 'ok' && segRestantes === 0;
+        const mmss = `${Math.floor(segRestantes / 60)}:${String(segRestantes % 60).padStart(2, '0')}`;
+
+        // Endereços (de qualquer cotação disponível).
+        let endColeta = '—', endEntrega = '—';
+        for (const b of blocos) {
+          const c = (b.cotacoes || []).find(x => x.available);
+          if (c) { endColeta = c.endereco_coleta || '—'; endEntrega = c.endereco_entrega || '—'; break; }
+        }
+
+        // Card de um provider.
+        function CardProvider(bloco) {
+          const c = cotacaoDe(bloco);
+          const disp = c && c.available;
+          const ehRecomendado = bloco.code === codeRecomendado;
+          const margem = disp ? parseFloat(c.margem || 0) : 0;
+          const margemNeg = disp && margem < 0;
+          const despachandoEste = m.state === 'despachando' && m.despachandoProvider === bloco.code;
+
+          return h('div', {
+            key: bloco.code,
+            className: `rounded-xl p-3.5 border ${ehRecomendado ? 'border-2 border-purple-400' : 'border-gray-200'}`,
+          },
+            h('div', { className: 'flex items-center gap-2 mb-1' },
+              h('span', { className: 'text-xl' }, bloco.code === 'uber' ? '🛵' : bloco.code === 'noventanove' ? '🚗' : '📦'),
+              h('span', { className: 'font-semibold text-sm text-gray-800' }, bloco.display_name),
+              ehRecomendado && h('span', {
+                className: 'ml-auto text-[10px] px-2 py-0.5 rounded-md bg-purple-100 text-purple-700',
+              }, 'Recomendado'),
+            ),
+            !disp
+              ? h('div', { className: 'py-6 text-center text-xs text-gray-400' },
+                  bloco.error || (c && c.error) || 'Sem cotação disponível')
+              : h('div', null,
+                  h('div', { className: 'flex items-baseline gap-1.5 mt-1' },
+                    h('span', { className: 'text-2xl font-bold text-gray-900' }, fmt(c.valor_provider)),
+                    h('span', { className: 'text-[11px] text-gray-500' }, 'custo provedor'),
+                  ),
+                  h('div', { className: 'mt-2 pt-2 border-t border-gray-100 text-xs space-y-1' },
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, 'Cobrado do cliente'),
+                      h('span', null, fmt(c.valor_cliente))),
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, 'Margem'),
+                      h('span', {
+                        className: `font-medium ${margemNeg ? 'text-red-600' : 'text-green-600'}`,
+                      }, `${margem >= 0 ? '+' : ''}${fmt(margem)} · ${parseFloat(c.margem_pct || 0).toFixed(0)}%`)),
+                    h('div', { className: 'flex justify-between' },
+                      h('span', { className: 'text-gray-500' }, 'ETA'),
+                      h('span', null, c.eta_minutos != null ? `~ ${c.eta_minutos} min` : '—')),
+                  ),
+                  h('button', {
+                    onClick: () => despacharPorProvider(bloco.code),
+                    disabled: m.state !== 'ok' || expirou,
+                    className: `w-full mt-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 ${
+                      ehRecomendado
+                        ? (margemNeg ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-purple-600 text-white hover:bg-purple-700')
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`,
+                  }, despachandoEste ? 'Despachando…'
+                     : margemNeg ? `Despachar mesmo assim`
+                     : `Despachar pela ${bloco.display_name}`),
+                ),
+          );
         }
 
         return h('div', {
           className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
           onClick: (ev) => { if (ev.target === ev.currentTarget) fecharCotacaoModal(); },
         },
-          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-3xl w-full' },
+          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-2xl w-full' },
 
             // Header
-            h('div', { className: 'border-b border-gray-200 px-5 py-4' },
-              h('h3', { className: 'text-lg font-bold text-gray-800' }, `Cotação OS ${m.codigoOS}`),
-              h('p', { className: 'text-xs text-gray-500 mt-1' },
-                'Escolha o tipo de veículo. A entrega só é criada quando você confirmar.')
-            ),
-
-            // Body — depende do estado
-            m.state === 'cotando' || m.state === 'despachando'
-              ? h('div', { className: 'p-12 text-center' },
-                  h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-3' }),
-                  h('p', { className: 'text-sm text-gray-500' },
-                    m.state === 'cotando' ? 'Cotando moto e carro na Uber…' : 'Despachando…'))
-
-              : m.state === 'erro'
-              ? h('div', { className: 'p-5' },
-                  h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-4 mb-4' },
-                    h('div', { className: 'flex items-start gap-2' },
-                      h('span', { className: 'text-red-600 text-lg flex-shrink-0' }, '⚠'),
-                      h('div', { className: 'flex-1' },
-                        h('div', { className: 'text-sm font-semibold text-red-800 mb-1' }, 'Erro ao cotar'),
-                        h('div', { className: 'text-xs text-red-700 break-words' }, m.error || 'Erro desconhecido'),
-                        h('div', { className: 'text-xs text-red-600 mt-2' },
-                          'A OS continua livre na Mapp pra ser despachada manualmente ou pelos motoboys internos.')
-                      )
-                    )
-                  ),
-                  h('div', { className: 'flex justify-end gap-2' },
-                    h('button', {
-                      onClick: fecharCotacaoModal,
-                      className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50',
-                    }, 'Fechar'),
-                    h('button', {
-                      onClick: recotarOS,
-                      className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
-                    }, 'Tentar novamente'),
-                  )
-                )
-
-              : // state === 'ok'
-                h('div', { className: 'p-5 space-y-4' },
-
-                  // Cards de veículos lado a lado (compactos)
-                  h('div', { className: 'grid grid-cols-2 gap-3' },
-                    cotacoes.map(cot => {
-                      const isSelecionado = cot.vehicle_type === m.selecionado;
-                      const indisponivel = !cot.available;
-                      const margemCard = cot.available ? parseFloat(cot.margem || 0) : 0;
-                      const margemPosCard = margemCard >= 0;
-
-                      return h('button', {
-                        key: cot.vehicle_type,
-                        onClick: () => selecionarVeiculo(cot.vehicle_type),
-                        disabled: indisponivel,
-                        className: `text-left rounded-xl p-3 transition-all ${
-                          indisponivel
-                            ? 'border border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                            : isSelecionado
-                              ? 'border-2 border-purple-700 bg-purple-50 shadow-sm'
-                              : 'border border-gray-200 bg-white hover:border-purple-300 cursor-pointer'
-                        }`,
-                      },
-                        // Linha 1: ícone + nome + valor (em flex horizontal)
-                        h('div', { className: 'flex items-center gap-3' },
-                          h('div', { className: 'flex-shrink-0' },
-                            svgVeiculo(cot.vehicle_type, isSelecionado, indisponivel)
-                          ),
-                          h('div', { className: 'flex-1 min-w-0' },
-                            h('div', {
-                              className: `text-sm font-semibold ${
-                                indisponivel ? 'text-gray-400' : isSelecionado ? 'text-purple-900' : 'text-gray-800'
-                              }`,
-                            }, labelVeiculo(cot.vehicle_type)),
-                            indisponivel
-                              ? h('div', { className: 'text-[11px] text-gray-400' }, 'Indisponível agora')
-                              : h('div', {
-                                  className: `text-lg font-bold leading-tight ${isSelecionado ? 'text-purple-900' : 'text-gray-800'}`,
-                                }, fmtMoney(parseFloat(cot.valor_uber || 0))),
-                          ),
-                        ),
-
-                        // Linha 2: ETA + margem (só se disponível)
-                        !indisponivel && h('div', {
-                          className: `flex items-center justify-between mt-2 pt-2 border-t text-xs ${
-                            isSelecionado ? 'border-purple-200' : 'border-gray-100'
-                          }`,
-                        },
-                          h('span', { className: isSelecionado ? 'text-purple-700' : 'text-gray-500' },
-                            `ETA ${cot.eta_minutos || '?'} min`),
-                          h('span', {
-                            className: `font-semibold ${margemPosCard ? 'text-green-700' : 'text-red-700'}`,
-                          }, `${margemPosCard ? '+' : '−'}${fmtMoney(Math.abs(margemCard))} (${parseFloat(cot.margem_pct || 0).toFixed(0)}%)`),
-                        ),
-                      );
-                    })
-                  ),
-
-                  // Endereços (compactos, 1 linha cada)
-                  h('div', { className: 'text-xs text-gray-500 space-y-0.5' },
-                    h('div', { className: 'truncate' },
-                      h('span', { className: 'font-semibold text-gray-600' }, '📦 '),
-                      enderecoColeta
-                    ),
-                    h('div', { className: 'truncate' },
-                      h('span', { className: 'font-semibold text-gray-600' }, '📍 '),
-                      enderecoEntrega
-                    ),
-                  ),
-
-                  // Detalhes da cotação selecionada — 1 linha horizontal compacta
-                  cotSel?.available && h('div', { className: 'flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2' },
-                    h('div', { className: 'flex gap-4' },
-                      h('span', null,
-                        h('span', { className: 'text-gray-500' }, 'Cliente: '),
-                        h('span', { className: 'font-semibold text-gray-800' }, fmtMoney(parseFloat(cotSel.valor_cliente || 0))),
-                      ),
-                      h('span', null,
-                        h('span', { className: 'text-gray-500' }, 'Profissional: '),
-                        h('span', { className: 'font-semibold text-gray-800' }, fmtMoney(parseFloat(cotSel.valor_profissional || 0))),
-                      ),
-                      h('span', null,
-                        h('span', { className: 'text-gray-500' }, `Uber (${labelVeiculo(cotSel.vehicle_type)}): `),
-                        h('span', { className: 'font-semibold text-purple-800' }, fmtMoney(parseFloat(cotSel.valor_uber || 0))),
-                      ),
-                    ),
-                    h('span', {
-                      className: `font-mono ${expirou ? 'text-red-700 font-semibold' : 'text-gray-500'}`,
-                    },
-                      expirou ? '⌛ Expirada' : `⏱ ${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`),
-                  ),
-
-                  // Warning de margem negativa (forte) na cotação selecionada
-                  margemNegativaForte && h('div', { className: 'bg-red-50 border-2 border-red-300 rounded-lg px-3 py-2 flex items-center gap-2' },
-                    h('span', { className: 'text-red-600 text-base flex-shrink-0' }, '⚠'),
-                    h('div', { className: 'text-xs text-red-800' },
-                      h('span', { className: 'font-semibold' }, `Prejuízo de ${fmtMoney(Math.abs(margemSel))}`),
-                      ' — o custo Uber está acima do valor que o cliente paga.'
-                    )
-                  ),
-                ),
-
-            // Footer com ações (só aparece no estado 'ok')
-            m.state === 'ok' && h('div', { className: 'border-t border-gray-200 px-5 py-3 flex justify-between gap-2 bg-gray-50' },
+            h('div', { className: 'border-b border-gray-200 px-5 py-4 flex items-start justify-between' },
+              h('div', null,
+                h('h3', { className: 'text-base font-bold text-gray-800' }, `Cotar OS ${m.codigoOS}`),
+                h('p', { className: 'text-xs text-gray-500 mt-0.5' },
+                  m.state === 'ok' ? `${endColeta} → ${endEntrega}` : 'comparando provedores'),
+              ),
               h('button', {
                 onClick: fecharCotacaoModal,
-                className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-white',
-              }, 'Cancelar'),
-              h('div', { className: 'flex gap-2' },
-                expirou && h('button', {
-                  onClick: recotarOS,
-                  className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
-                }, 'Cotar de novo'),
-                !expirou && cotSel?.available && h('button', {
-                  onClick: confirmarDespacho,
-                  disabled: !m.selecionado,
-                  className: `px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 ${
-                    margemNegativaForte
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`,
-                }, margemNegativaForte
-                    ? `Despachar mesmo assim · ${labelVeiculo(m.selecionado)}`
-                    : `Confirmar despacho · ${labelVeiculo(m.selecionado)}`),
+                className: 'text-gray-400 hover:text-gray-700 text-xl leading-none',
+              }, '✕'),
+            ),
+
+            // Body
+            (m.state === 'cotando')
+              ? h('div', { className: 'p-12 text-center' },
+                  h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-3' }),
+                  h('p', { className: 'text-sm text-gray-500' }, 'Cotando nos provedores ativos…'))
+
+            : (m.state === 'erro')
+              ? h('div', { className: 'p-8 text-center' },
+                  h('div', { className: 'text-3xl mb-2' }, '⚠️'),
+                  h('p', { className: 'text-sm text-gray-700 mb-4' }, m.error || 'Erro ao cotar'),
+                  h('button', {
+                    onClick: recotarOS,
+                    className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700',
+                  }, 'Tentar de novo'))
+
+            : h('div', { className: 'p-5' },
+                // Seletor de veículo + countdown
+                h('div', { className: 'flex items-center gap-2 mb-4' },
+                  h('span', { className: 'text-[11px] font-semibold text-gray-500 uppercase' }, 'Veículo'),
+                  ['motorcycle', 'car'].map(vt => h('button', {
+                    key: vt,
+                    onClick: () => selecionarVeiculo(vt),
+                    className: `text-xs px-3 py-1 rounded-md ${
+                      veiculo === vt ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`,
+                  }, labelVeiculo(vt))),
+                  h('div', { className: 'flex-1' }),
+                  h('span', {
+                    className: `text-[11px] ${expirou ? 'text-red-600 font-medium' : 'text-gray-500'}`,
+                  }, expirou ? 'cotação expirada' : `expira em ${mmss}`),
+                ),
+
+                // Cards lado a lado
+                h('div', {
+                  className: `grid gap-3 ${blocos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`,
+                }, blocos.map(CardProvider)),
+
+                // Nota da estratégia
+                h('div', { className: 'mt-4 bg-gray-50 rounded-lg px-3 py-2 text-[11px] text-gray-600 flex items-center gap-1.5' },
+                  h('span', null, 'ℹ️'),
+                  h('span', null, 'Recomendado = maior margem para o veículo selecionado. O despacho automático do worker usa a estratégia configurada.')),
+
+                // Rodapé
+                h('div', { className: 'flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100' },
+                  expirou && h('button', {
+                    onClick: recotarOS,
+                    className: 'px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200',
+                  }, 'Cotar de novo'),
+                  h('button', {
+                    onClick: fecharCotacaoModal,
+                    className: 'px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200',
+                  }, 'Cancelar')),
               )
-            )
           )
         );
       })()
