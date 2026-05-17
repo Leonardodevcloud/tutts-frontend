@@ -2165,6 +2165,11 @@
       tracking:  TabTracking,
       entregas:  TabEntregas,
       regras:    TabRegras,
+      // 🆕 2026-05 Hub logístico — painel de provedores (modulo-logistica-providers.js).
+      // Componente externo (window global) — fallback se o script não carregou.
+      provedores: window.ModuloLogisticaProviders || (() => h('div', {
+        className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg'
+      }, '⚠️ modulo-logistica-providers.js não foi carregado. Verifique o index.html.')),
       config:    TabConfig,
     };
     const Atual = abas[aba] || TabDashboard;
