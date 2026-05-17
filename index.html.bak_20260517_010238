@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -6,7 +6,7 @@
   <title>Central do Entregador Tutts</title>
   
   <!-- PWA Meta Tags -->
-  <meta name="description" content="Central do Entregador Tutts - GestÃ£o de SolicitaÃ§Ãµes, Saques e Disponibilidade de Entregadores">
+  <meta name="description" content="Central do Entregador Tutts - Gestão de Solicitações, Saques e Disponibilidade de Entregadores">
   <meta name="theme-color" content="#7c3aed">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
   
-  <!-- Preconnect para carregar recursos mais rÃ¡pido -->
+  <!-- Preconnect para carregar recursos mais rápido -->
   <link rel="preconnect" href="https://tutts-backend-production.up.railway.app">
   <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://unpkg.com">
@@ -99,7 +99,7 @@
     }
     /* ==================== FIM SPLASH SCREEN ==================== */
 
-    /* Mapa Leaflet - FORÃ‡AR VISIBILIDADE */
+    /* Mapa Leaflet - FORÇAR VISIBILIDADE */
     #mapa-calor-leaflet,
     #mapa-clientes-leaflet {
       z-index: 100 !important;
@@ -147,7 +147,7 @@
       transform: scale(1.3) !important;
     }
     
-    /* Garantir que o popup do Leaflet apareÃ§a NA FRENTE */
+    /* Garantir que o popup do Leaflet apareça NA FRENTE */
     .leaflet-popup-pane {
       z-index: 10000 !important;
     }
@@ -180,7 +180,7 @@
     .row-blue { background-color: #dbeafe !important; border-left: 4px solid #3b82f6 !important; }
     .row-red { background-color: #fee2e2 !important; border-left: 4px solid #ef4444 !important; }
     
-    /* ðŸ†• 2026-04-30 REDESIGN: animaÃ§Ãµes da tela de saque do motoboy */
+    /* 🆕 2026-04-30 REDESIGN: animações da tela de saque do motoboy */
     @keyframes tuttsFadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -266,9 +266,9 @@
   <div id="update-banner" class="hidden update-banner fixed top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 z-[10000] shadow-lg">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-2xl">ðŸ”„</span>
+        <span class="text-2xl">🔄</span>
         <div>
-          <p class="font-semibold">Nova versÃ£o disponÃ­vel!</p>
+          <p class="font-semibold">Nova versão disponível!</p>
           <p class="text-sm opacity-90">Clique para atualizar o aplicativo</p>
         </div>
       </div>
@@ -282,10 +282,10 @@
   <div id="pwa-install-banner" class="hidden pwa-install-banner fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 z-[10000] shadow-lg">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-2xl">ðŸ“±</span>
+        <span class="text-2xl">📱</span>
         <div>
           <p class="font-semibold">Instale o App Tutts</p>
-          <p class="text-sm opacity-90">Acesse mais rÃ¡pido direto da sua tela inicial</p>
+          <p class="text-sm opacity-90">Acesse mais rápido direto da sua tela inicial</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -293,7 +293,7 @@
           Instalar
         </button>
         <button onclick="document.getElementById('pwa-install-banner').classList.add('hidden'); localStorage.setItem('pwa-dismissed', Date.now());" class="text-white/70 hover:text-white px-2">
-          âœ•
+          ✕
         </button>
       </div>
     </div>
@@ -303,16 +303,16 @@
   
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
-  <!-- Recharts: grÃ¡ficos modernos React-native (animaÃ§Ã£o, tooltip, hover, responsivo) -->
+  <!-- Recharts: gráficos modernos React-native (animação, tooltip, hover, responsivo) -->
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin="anonymous"></script>
-  <!-- Service Worker + MÃ³dulos -->
-  <!-- ðŸ›¡ï¸ image-utils.js: compressÃ£o segura de foto pra mobile (carrega ANTES de tudo
-       porque vÃ¡rios mÃ³dulos dependem de window.imageUtils). Resolve PWA fechando
+  <!-- Service Worker + Módulos -->
+  <!-- 🛡️ image-utils.js: compressão segura de foto pra mobile (carrega ANTES de tudo
+       porque vários módulos dependem de window.imageUtils). Resolve PWA fechando
        sozinho ao motoboy enviar foto em celular fraco. -->
   <script src="/image-utils.js?v=20260505_FULL_REFRESH"></script>
   <script src="/ModuloFinanceiroSolicitacoesV2.js?v=20260516_FOTOS_MOTOBOY"></script>
-  <!-- ðŸ†• 2026-05 v3: mÃ³dulo Gratuidades v3 (sub-aba IsenÃ§Ãµes, KPIs, paginaÃ§Ã£o)
+  <!-- 🆕 2026-05 v3: módulo Gratuidades v3 (sub-aba Isenções, KPIs, paginação)
        PRECISA carregar ANTES de ModuloFinanceiro.js pra expor window.ModuloGratuidadesV2Component -->
   <script src="/ModuloGratuidadesV2.js?v=20260513_GRATV3_RESTORE"></script>
   <script src="/ModuloFinanceiro.js?v=20260516_CONC_DATA_REALIZACAO"></script>
@@ -336,15 +336,15 @@
   <script src="/modulo-antifraude.js?v=20260505_FULL_REFRESH"></script>
   <script src="/modulo-performance.js?v=20260505_FULL_REFRESH"></script>
   <script src="/modulo-gerencial.js?v=20260505_FULL_REFRESH"></script>
-  <script src="/modulo-logistica-providers.js?v=20260517_99ENTREGA"></script>
-  <script src="/modulo-logistica.js?v=20260517_FASE6_2C"></script>
-  <!-- ðŸš€ Score v2 (2026-05) â€” admin de configuraÃ§Ã£o + componentes do motoboy -->
+  <script src="/modulo-logistica-providers.js?v=20260517_FASE6_2B"></script>
+  <script src="/modulo-logistica.js?v=20260517_FASE6_2B"></script>
+  <!-- 🚀 Score v2 (2026-05) — admin de configuração + componentes do motoboy -->
   <script src="/modulo-score-v2.js?v=20260505_FULL_REFRESH"></script>
   <script src="/modulo-score-v2-motoboy.js?v=20260505_FULL_REFRESH"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/ChatIAModule.js?v=20260505_FULL_REFRESH"></script>
   <script src="/BIGarantidoV2.js?v=20260505_FULL_REFRESH"></script>
-  <script src="/app.js?v=20260517_FASE6_2C"></script>
+  <script src="/app.js?v=20260517_HUB_REBRAND"></script>
   
   <script>
     // PWA Install Prompt
@@ -354,13 +354,13 @@
       e.preventDefault();
       deferredPrompt = e;
       
-      // Verificar se jÃ¡ foi dispensado recentemente (7 dias)
+      // Verificar se já foi dispensado recentemente (7 dias)
       const dismissed = localStorage.getItem('pwa-dismissed');
       if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) {
         return;
       }
       
-      // Mostrar banner apenas se nÃ£o estiver instalado
+      // Mostrar banner apenas se não estiver instalado
       if (!window.matchMedia('(display-mode: standalone)').matches) {
         setTimeout(() => {
           document.getElementById('pwa-install-banner').classList.remove('hidden');
@@ -412,10 +412,10 @@
     window.initMapaCalor = function(pontos, tentativa) {
       tentativa = tentativa || 0;
       
-      console.log('ðŸ—ºï¸ [INDEX] initMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos, tentativa', tentativa);
+      console.log('🗺️ [INDEX] initMapaCalor chamado com', pontos ? pontos.length : 0, 'pontos, tentativa', tentativa);
       
       if (typeof L === 'undefined') {
-        console.log('âŒ Leaflet nÃ£o carregado!');
+        console.log('❌ Leaflet não carregado!');
         if (tentativa < 10) {
           setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 300);
         }
@@ -424,14 +424,14 @@
       
       var container = document.getElementById('mapa-calor-leaflet');
       if (!container || container.offsetWidth === 0) {
-        console.log('â³ Container nÃ£o pronto, tentativa', tentativa + 1);
+        console.log('⏳ Container não pronto, tentativa', tentativa + 1);
         if (tentativa < 20) {
           setTimeout(function() { window.initMapaCalor(pontos, tentativa + 1); }, 150);
         }
         return;
       }
       
-      console.log('ðŸ“ Container:', container.offsetWidth, 'x', container.offsetHeight);
+      console.log('📐 Container:', container.offsetWidth, 'x', container.offsetHeight);
       
       if (mapaLeaflet) {
         try { mapaLeaflet.remove(); } catch(e) {}
@@ -445,16 +445,16 @@
         mapaLeaflet = L.map('mapa-calor-leaflet').setView([-16.6869, -49.2648], 10);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: 'Â© OpenStreetMap',
+          attribution: '© OpenStreetMap',
           maxZoom: 18
         }).addTo(mapaLeaflet);
         
         markersLayer = L.layerGroup().addTo(mapaLeaflet);
         mapaInicializado = true;
-        console.log('âœ… Mapa Leaflet criado com sucesso!');
+        console.log('✅ Mapa Leaflet criado com sucesso!');
         
       } catch(e) {
-        console.error('âŒ Erro ao criar mapa:', e);
+        console.error('❌ Erro ao criar mapa:', e);
         return;
       }
       
@@ -486,7 +486,7 @@
           color: color, fillColor: color,
           fillOpacity: 0.3 + intensity * 0.3,
           radius: 300 + intensity * 1500, weight: 1
-        }).bindPopup('<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>ðŸ“¦ ' + (ponto.count || 0) + ' entregas').addTo(markersLayer);
+        }).bindPopup('<b>' + (ponto.cidade || ponto.bairro || 'Local') + '</b><br>📦 ' + (ponto.count || 0) + ' entregas').addTo(markersLayer);
         
         L.circleMarker([ponto.lat, ponto.lng], {
           radius: 5 + intensity * 12,
@@ -495,30 +495,30 @@
         }).addTo(markersLayer);
       });
       
-      console.log('âœ… Pontos adicionados:', adicionados);
+      console.log('✅ Pontos adicionados:', adicionados);
       
       try {
         var valid = pontos.filter(function(p) { return p.lat && p.lng; });
         if (valid.length > 0) {
           mapaLeaflet.fitBounds(L.latLngBounds(valid.map(function(p) { return [p.lat, p.lng]; })), { padding: [50, 50] });
-          console.log('âœ… Bounds ajustados para', valid.length, 'pontos vÃ¡lidos');
+          console.log('✅ Bounds ajustados para', valid.length, 'pontos válidos');
         }
       } catch(e) { console.log('Erro ao ajustar bounds:', e); }
       
       setTimeout(function() { 
         if (mapaLeaflet) {
           mapaLeaflet.invalidateSize();
-          console.log('âœ… Mapa finalizado!');
+          console.log('✅ Mapa finalizado!');
           
           // DEBUG: Verificar se o mapa existe no DOM
           var container = document.getElementById('mapa-calor-leaflet');
           if (container) {
-            console.log('ðŸ” DEBUG - Container innerHTML length:', container.innerHTML.length);
-            console.log('ðŸ” DEBUG - Container children:', container.children.length);
-            console.log('ðŸ” DEBUG - Container style:', container.style.cssText);
-            console.log('ðŸ” DEBUG - mapaLeaflet._container:', mapaLeaflet._container ? 'existe' : 'NÃƒO EXISTE');
+            console.log('🔍 DEBUG - Container innerHTML length:', container.innerHTML.length);
+            console.log('🔍 DEBUG - Container children:', container.children.length);
+            console.log('🔍 DEBUG - Container style:', container.style.cssText);
+            console.log('🔍 DEBUG - mapaLeaflet._container:', mapaLeaflet._container ? 'existe' : 'NÃO EXISTE');
             
-            // FORÃ‡AR VISIBILIDADE
+            // FORÇAR VISIBILIDADE
             container.style.zIndex = '9999';
             container.style.position = 'relative';
             container.style.visibility = 'visible';
@@ -526,20 +526,20 @@
             container.style.display = 'block';
             container.style.overflow = 'visible';
             
-            // ForÃ§ar nos filhos tambÃ©m
+            // Forçar nos filhos também
             var leafletContainer = container.querySelector('.leaflet-container');
             if (leafletContainer) {
               leafletContainer.style.zIndex = '9999';
               leafletContainer.style.visibility = 'visible';
               leafletContainer.style.opacity = '1';
-              console.log('ðŸ”§ CSS forÃ§ado no leaflet-container');
+              console.log('🔧 CSS forçado no leaflet-container');
             }
             
-            // ForÃ§ar invalidateSize novamente
+            // Forçar invalidateSize novamente
             setTimeout(function() {
               if (mapaLeaflet) {
                 mapaLeaflet.invalidateSize();
-                console.log('ðŸ”§ invalidateSize chamado novamente');
+                console.log('🔧 invalidateSize chamado novamente');
               }
             }, 500);
           }
@@ -561,7 +561,7 @@
     };
     
     // ============================================
-    // MAPA DE CLIENTES (LocalizaÃ§Ã£o)
+    // MAPA DE CLIENTES (Localização)
     // ============================================
     var mapaClientesLeaflet = null;
     var markersClientesLayer = null;
@@ -569,16 +569,16 @@
     window.initMapaClientes = function(clientes, tentativa) {
       tentativa = tentativa || 0;
       
-      console.log('ðŸ—ºï¸ [INDEX] initMapaClientes chamado com', clientes ? clientes.length : 0, 'clientes');
+      console.log('🗺️ [INDEX] initMapaClientes chamado com', clientes ? clientes.length : 0, 'clientes');
       
-      // Validar se clientes Ã© um array
+      // Validar se clientes é um array
       if (!clientes || !Array.isArray(clientes)) {
-        console.log('âŒ clientes nÃ£o Ã© um array vÃ¡lido');
+        console.log('❌ clientes não é um array válido');
         return;
       }
       
       if (typeof L === 'undefined') {
-        console.log('âŒ Leaflet nÃ£o carregado!');
+        console.log('❌ Leaflet não carregado!');
         if (tentativa < 10) {
           setTimeout(function() { window.initMapaClientes(clientes, tentativa + 1); }, 300);
         }
@@ -587,14 +587,14 @@
       
       var container = document.getElementById('mapa-clientes-leaflet');
       if (!container || container.offsetWidth === 0) {
-        console.log('â³ Container nÃ£o pronto, tentativa', tentativa + 1);
+        console.log('⏳ Container não pronto, tentativa', tentativa + 1);
         if (tentativa < 20) {
           setTimeout(function() { window.initMapaClientes(clientes, tentativa + 1); }, 150);
         }
         return;
       }
       
-      console.log('ðŸ“ Container:', container.offsetWidth, 'x', container.offsetHeight);
+      console.log('📐 Container:', container.offsetWidth, 'x', container.offsetHeight);
       
       // Destruir mapa anterior se existir
       if (mapaClientesLeaflet) {
@@ -609,7 +609,7 @@
         mapaClientesLeaflet = L.map('mapa-clientes-leaflet').setView([-16.6869, -49.2648], 10);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: 'Â© OpenStreetMap',
+          attribution: '© OpenStreetMap',
           maxZoom: 18
         }).addTo(mapaClientesLeaflet);
         
@@ -632,10 +632,10 @@
           
           // Emoji baseado no cliente
           var isCliente767 = String(cliente.cod_cliente) === '767';
-          var emoji = isCliente767 ? 'â­' : 'ðŸ¢';
+          var emoji = isCliente767 ? '⭐' : '🏢';
           var tamanho = isCliente767 ? 32 : 28;
           
-          // Criar Ã­cone com emoji - usando estilo inline para garantir visibilidade
+          // Criar ícone com emoji - usando estilo inline para garantir visibilidade
           var emojiIcon = L.divIcon({
             html: '<div style="font-size:' + tamanho + 'px;cursor:pointer;transition:transform 0.2s;line-height:1;" onmouseover="this.style.transform=\'scale(1.3)\'" onmouseout="this.style.transform=\'scale(1)\'">' + emoji + '</div>',
             className: 'emoji-marker',
@@ -647,16 +647,16 @@
           // Criar link do Waze
           var wazeLink = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
           
-          // Popup com informaÃ§Ãµes
+          // Popup com informações
           var cidadeInfo = [end.bairro, end.cidade, end.estado].filter(function(x) { return x; }).join(' - ');
           var popupHtml = '<div style="min-width:220px;font-family:system-ui,sans-serif;padding:4px;">' +
             '<p style="font-weight:bold;color:#0d9488;margin:0 0 6px 0;font-size:15px;">' +
             cliente.cod_cliente + ' - ' + (cliente.nome_cliente || '') +
             '</p>' +
-            (cliente.centro_custo ? '<p style="color:#7c3aed;font-size:12px;margin:0 0 6px 0;font-weight:600;">ðŸ“¦ ' + cliente.centro_custo + '</p>' : '') +
-            '<p style="color:#555;font-size:12px;margin:0 0 6px 0;">ðŸ“Œ ' + (end.endereco || 'Sem endereÃ§o') + '</p>' +
+            (cliente.centro_custo ? '<p style="color:#7c3aed;font-size:12px;margin:0 0 6px 0;font-weight:600;">📦 ' + cliente.centro_custo + '</p>' : '') +
+            '<p style="color:#555;font-size:12px;margin:0 0 6px 0;">📌 ' + (end.endereco || 'Sem endereço') + '</p>' +
             (cidadeInfo ? '<p style="color:#888;font-size:11px;margin:0 0 10px 0;">' + cidadeInfo + '</p>' : '') +
-            '<a href="' + wazeLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:10px 18px;background:#06b6d4;color:white;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">ðŸš— Abrir no Waze</a>' +
+            '<a href="' + wazeLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:10px 18px;background:#06b6d4;color:white;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">🚗 Abrir no Waze</a>' +
             '</div>';
           
           // Criar marcador e adicionar popup
@@ -674,23 +674,23 @@
           marker.addTo(markersClientesLayer);
         }
         
-        console.log('âœ… Adicionados', adicionados, 'marcadores ao mapa');
+        console.log('✅ Adicionados', adicionados, 'marcadores ao mapa');
         
         // Ajustar zoom para mostrar todos os pontos
         if (bounds.length > 0) {
           mapaClientesLeaflet.fitBounds(bounds, { padding: [50, 50] });
         }
         
-        // ForÃ§ar redimensionamento
+        // Forçar redimensionamento
         setTimeout(function() {
           if (mapaClientesLeaflet) {
             mapaClientesLeaflet.invalidateSize();
-            console.log('âœ… Mapa de clientes finalizado!');
+            console.log('✅ Mapa de clientes finalizado!');
           }
         }, 100);
         
       } catch(e) {
-        console.error('âŒ Erro ao criar mapa de clientes:', e);
+        console.error('❌ Erro ao criar mapa de clientes:', e);
       }
     };
     

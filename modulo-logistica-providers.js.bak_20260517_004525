@@ -25,34 +25,17 @@
   // ────────────────────────────────────────────────────────────
   const SCHEMA = {
     noventanove: {
-      icon: '🛵',
+      icon: '🚗',
       grupos: [
-        { titulo: '🔑 Credenciais 99Entrega (OAuth)', campos: [
-          { key: 'client_id',     label: 'Client ID',     secret: false, hint: 'client_id da 99Entrega' },
-          { key: 'client_secret', label: 'Client Secret', secret: true,  hint: 'client_secret da 99Entrega' },
+        { titulo: '🔑 Credenciais 99 Corp API', campos: [
+          { key: 'api_key',        label: 'API Key (x-api-key)', secret: true,  hint: 'x-api-key da conta 99' },
+          { key: 'employee_id',    label: 'Employee ID',          secret: false, hint: 'colaborador técnico' },
+          { key: 'cost_center_id', label: 'Cost Center ID',       secret: false, hint: 'centro de custo' },
+          { key: 'project_id',     label: 'Project ID (opcional)',secret: false },
         ]},
-        { titulo: '📦 Padrões do pacote', campos: [
-          { key: 'package_type',   label: 'Tipo do pacote',  secret: false, hint: 'ex: documents, food, parcel' },
-          { key: 'package_weight', label: 'Peso do pacote',  secret: false, hint: 'ex: 1kg, 3kg, 5kg' },
-        ]},
-        { titulo: '📞 Contato', campos: [
-          { key: 'telefone_suporte', label: 'Telefone de suporte', secret: false,
-            hint: 'fallback quando a OS não tem telefone' },
-        ]},
-        { titulo: '🔐 Códigos de verificação', campos: [
-          { key: 'need_pickup_code',  label: 'Exigir código na coleta',  type: 'boolean',
-            hint: 'courier informa um código pra retirar o pacote' },
-          { key: 'need_dropoff_code', label: 'Exigir código na entrega', type: 'boolean',
-            hint: 'destinatário informa um código pra receber' },
-        ]},
-        { titulo: '⚙️ Avançado', campos: [
-          { key: 'cancel_reason_id', label: 'Cancel reason ID padrão', secret: false,
-            hint: 'enum 410013…410021 — default 410013' },
-        ]},
-        { titulo: '🪝 Webhook (HMAC-SHA256)', campos: [
-          // webhook_secret é coluna top-level — não vai dentro de config
-          { key: 'webhook_secret', label: 'Webhook Secret (HMAC)', secret: true, topLevel: true,
-            hint: 'se vazio, usa o client_secret pra validar a assinatura' },
+        { titulo: '🪝 Webhook (Basic Auth)', campos: [
+          { key: 'webhook_username', label: 'Webhook Username', secret: false },
+          { key: 'webhook_password', label: 'Webhook Password', secret: true },
         ]},
       ],
     },
@@ -224,11 +207,8 @@
       schema.grupos.forEach(g => g.campos.forEach(campo => {
         const val = form.config[campo.key];
         if (campo.topLevel) {
-          // segredo top-level (ex: uber/99 webhook_secret) — só envia se digitou
+          // segredo top-level (ex: uber webhook_secret) — só envia se digitou
           if (val && String(val).trim()) body[campo.key] = String(val).trim();
-        } else if (campo.type === 'boolean') {
-          // boolean real — o parser do backend testa `=== true`, não pode virar string
-          config[campo.key] = (val === true || val === 'true');
         } else {
           // backend preserva segredo vazio; campo comum vai como está
           config[campo.key] = val == null ? '' : val;
@@ -380,14 +360,6 @@
       );
     };
 
-    // Campo boolean — renderizado como toggle (ex: códigos de verificação da 99).
-    const BooleanField = (campo) => {
-      const val = form.config[campo.key] === true || form.config[campo.key] === 'true';
-      return e('div', { className: 'mb-2', key: campo.key },
-        Toggle(campo.label, campo.hint, val, v => updateConfig(campo.key, v))
-      );
-    };
-
     return e('div', null,
       // Toggles de status
       e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4' },
@@ -404,10 +376,7 @@
       schema.grupos.map((grupo, gi) =>
         e('div', { key: gi, className: 'mb-4' },
           e('div', { className: 'text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2' }, grupo.titulo),
-          grupo.campos.map(campo =>
-            campo.type === 'boolean' ? BooleanField(campo)
-              : campo.secret ? SecretField(campo)
-              : Field(campo))
+          grupo.campos.map(campo => campo.secret ? SecretField(campo) : Field(campo))
         )
       ),
 
