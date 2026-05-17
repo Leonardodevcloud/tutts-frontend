@@ -20,13 +20,7 @@
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   }
 
-  // Labels de status. Duas famílias de chave:
-  //  - LEGADAS (snake_case): formato antigo da Uber (enviado_uber, pickup...).
-  //  - CANÔNICAS (UPPER): o enum do hub multi-provider (DISPATCHED, PICKED_UP...).
-  // O Badge tenta as duas — assim Uber e 99Entrega exibem o MESMO texto em
-  // português, independente de qual provider mandou o status.
   const STATUS_LABELS = {
-    // ── Família legada (Uber) ──
     aguardando_cotacao:    { label: 'Aguardando cotação',  cor: 'bg-gray-100 text-gray-700' },
     cotacao_recebida:      { label: 'Cotação OK',           cor: 'bg-blue-100 text-blue-700' },
     enviado_uber:          { label: 'Enviado ao provedor',      cor: 'bg-purple-100 text-purple-700' },
@@ -39,66 +33,10 @@
     cancelado:             { label: 'Cancelado',            cor: 'bg-red-100 text-red-700' },
     fallback_fila:         { label: 'Fallback p/ fila',     cor: 'bg-yellow-100 text-yellow-800' },
     erro:                  { label: 'Erro',                 cor: 'bg-red-200 text-red-900' },
-    // ── Família canônica (hub multi-provider — CanonicalStatus) ──
-    PENDING:               { label: 'Pendente',                cor: 'bg-gray-100 text-gray-700' },
-    QUOTED:                { label: 'Cotação OK',              cor: 'bg-blue-100 text-blue-700' },
-    DISPATCHED:            { label: 'Procurando entregador',   cor: 'bg-purple-100 text-purple-700' },
-    COURIER_ASSIGNED:      { label: 'Entregador atribuído',    cor: 'bg-indigo-100 text-indigo-700' },
-    PICKUP_EN_ROUTE:       { label: 'A caminho da coleta',     cor: 'bg-amber-100 text-amber-700' },
-    ARRIVED_PICKUP:        { label: 'Na coleta',              cor: 'bg-amber-100 text-amber-700' },
-    PICKED_UP:             { label: 'Coletou',                cor: 'bg-amber-200 text-amber-800' },
-    DROPOFF_EN_ROUTE:      { label: 'A caminho da entrega',    cor: 'bg-orange-100 text-orange-700' },
-    ARRIVED_DROPOFF:       { label: 'Na entrega',             cor: 'bg-orange-100 text-orange-700' },
-    DELIVERED:             { label: 'Entregue',                cor: 'bg-green-100 text-green-700' },
-    CANCELED:              { label: 'Cancelado',               cor: 'bg-red-100 text-red-700' },
-    RETURNED:              { label: 'Devolvido',               cor: 'bg-red-100 text-red-700' },
-    FAILED:                { label: 'Falha',                   cor: 'bg-red-200 text-red-900' },
-    FALLBACK_QUEUE:        { label: 'Fallback p/ fila',        cor: 'bg-yellow-100 text-yellow-800' },
   };
 
-  // Tradução de status NATIVO da 99Entrega → label PT-BR (rede de segurança:
-  // se por algum motivo só o status_native chegar, ainda exibe em português).
-  const STATUS_NATIVE_99 = {
-    finding:           'Procurando entregador',
-    waiting:           'Entregador atribuído',
-    delivering:        'Em entrega',
-    completed:         'Entregue',
-    canceled:          'Cancelado',
-    closed:            'Encerrado',
-    sendback:          'Em devolução',
-    sendbackcompleted: 'Devolução concluída',
-  };
-
-  // Resolve o melhor label PT-BR a partir do registro de entrega.
-  // Prioridade: status canônico → status legado → tradução do nativo 99 → cru.
-  function resolverStatus(e) {
-    const canon = e && e.status_canonico;
-    if (canon && STATUS_LABELS[canon]) return STATUS_LABELS[canon];
-
-    const legado = e && e.status_uber;
-    if (legado && STATUS_LABELS[legado]) return STATUS_LABELS[legado];
-
-    const nat99 = STATUS_NATIVE_99[String(legado || '').toLowerCase()];
-    if (nat99) return { label: nat99, cor: 'bg-gray-100 text-gray-700' };
-
-    return { label: legado || '—', cor: 'bg-gray-100 text-gray-700' };
-  }
-
-  // Status oferecidos no dropdown de filtro — só os canônicos, na ordem do
-  // ciclo de vida da entrega.
-  const STATUS_FILTRO_OPCOES = [
-    'PENDING', 'QUOTED', 'DISPATCHED', 'COURIER_ASSIGNED',
-    'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP', 'PICKED_UP',
-    'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF', 'DELIVERED',
-    'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE',
-  ];
-
-  function Badge({ status, entrega }) {
-    // Aceita tanto Badge({entrega}) (preferido — usa status canônico) quanto
-    // Badge({status}) (compat — string solta).
-    const s = entrega
-      ? resolverStatus(entrega)
-      : (STATUS_LABELS[status] || { label: status, cor: 'bg-gray-100 text-gray-700' });
+  function Badge({ status }) {
+    const s = STATUS_LABELS[status] || { label: status, cor: 'bg-gray-100 text-gray-700' };
     return h('span', { className: `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${s.cor}` }, s.label);
   }
 
@@ -414,7 +352,7 @@
                 h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
                   h('span', { className: 'text-sm font-bold' }, `OS ${e.codigo_os}`),
                   h('div', { className: 'flex items-center gap-1.5' },
-                    h(Badge, { entrega: e }),
+                    h(Badge, { status: e.status_uber }),
                     e.tracking_url && h('a', {
                       href: e.tracking_url,
                       target: '_blank',
@@ -447,7 +385,7 @@
                     : null,
                   h('div', { className: 'min-w-0' },
                     h('h3', { className: 'font-bold text-gray-800' }, `OS ${selecionada.codigo_os}`),
-                    h(Badge, { entrega: selecionada })
+                    h(Badge, { status: selecionada.status_uber })
                   )
                 ),
                 // Botão tracking oficial do provedor
@@ -602,7 +540,7 @@
         h('div', { className: 'flex flex-col gap-1 min-w-0 flex-1' },
           h('div', { className: 'flex items-center gap-3 flex-wrap' },
             h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
-            h(Badge, { entrega: e }),
+            h(Badge, { status: e.status_uber }),
             h('span', {
               className: 'text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-600',
               title: 'Provedor que despachou esta entrega',
@@ -732,19 +670,7 @@
             ),
           )
         : h('div', { className: 'p-3 bg-gray-50 rounded-lg text-xs text-gray-400 italic text-center' },
-            // Sem dados do entregador. A mensagem depende do status: se a
-            // entrega já avançou (provider não expôs o courier — comum em
-            // sandbox), não faz sentido dizer "aguardando atribuição".
-            (function () {
-              const st = e.status_canonico;
-              if (st === 'DELIVERED')   return 'Entrega concluída.';
-              if (st === 'CANCELED' || st === 'FAILED' || st === 'RETURNED')
-                return 'Entrega encerrada sem entregador vinculado.';
-              if (['COURIER_ASSIGNED','PICKUP_EN_ROUTE','ARRIVED_PICKUP',
-                   'PICKED_UP','DROPOFF_EN_ROUTE','ARRIVED_DROPOFF'].includes(st))
-                return 'Em andamento — dados do entregador não informados pelo provedor.';
-              return 'Aguardando atribuição de entregador...';
-            })()
+            'Aguardando atribuição de entregador...'
           ),
 
       // ── Rodapé com timestamps ──
@@ -788,14 +714,7 @@
       finally { setLoading(false); }
     }, [fetchAuth, API_URL, filtroStatus]);
 
-    // Carga inicial + auto-refresh a cada 30s — mantém os status em dia
-    // sem o operador precisar recarregar a tela na mão (o poller/webhook
-    // atualizam o backend; a tela acompanha sozinha).
-    useEffect(() => {
-      carregar();
-      const i = setInterval(carregar, 30000);
-      return () => clearInterval(i);
-    }, [carregar]);
+    useEffect(() => { carregar(); }, [carregar]);
 
     // Timer de re-render por segundo enquanto o modal de cotação está aberto.
     // Necessário pra o countdown atualizar visualmente.
@@ -1138,9 +1057,7 @@
           className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
         },
           h('option', { value: '' }, 'Todos os status'),
-          // Só os status canônicos (UPPER) — o backend casa status_canonico
-          // OU status_native, e as chaves legadas só duplicariam labels.
-          STATUS_FILTRO_OPCOES.map(s => h('option', { key: s, value: s }, STATUS_LABELS[s].label))
+          Object.keys(STATUS_LABELS).map(s => h('option', { key: s, value: s }, STATUS_LABELS[s].label))
         ),
         h('select', {
           value: filtroMargem,
@@ -1486,7 +1403,7 @@
           h('div', null,
             h('h3', { className: 'text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
             h('div', { className: 'flex items-center gap-2 mt-1' },
-              h(Badge, { entrega: e }),
+              h(Badge, { status: e.status_uber }),
             )
           ),
           h('button', {
