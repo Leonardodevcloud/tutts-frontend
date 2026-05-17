@@ -6,6 +6,211 @@
 (function() {
     'use strict';
 
+    // ==================== VIEW: CONTAS BLOQUEADAS ====================
+    // Sub-aba de Usuários — lista contas bloqueadas por múltiplas tentativas
+    // de login falhas. Permite desbloquear e abrir o modal de alteração de senha.
+    function ContasBloqueadasView(props) {
+        var API_URL = props.API_URL;
+        var fetchAuth = props.fetchAuth;
+        var showToast = props.showToast;
+        var estado = props.estado;
+        var setEstado = props.setEstado;
+
+        var listaState = React.useState([]);
+        var lista = listaState[0], setLista = listaState[1];
+        var loadingState = React.useState(true);
+        var loading = loadingState[0], setLoading = loadingState[1];
+        var erroState = React.useState("");
+        var erro = erroState[0], setErro = erroState[1];
+        var processandoState = React.useState(null); // cod_profissional em processamento
+        var processando = processandoState[0], setProcessando = processandoState[1];
+
+        // Ref com valores mais recentes (padrão do projeto: evita closures velhas
+        // e mantém o useCallback com deps vazias)
+        var refs = React.useRef({});
+        refs.current = { API_URL: API_URL, fetchAuth: fetchAuth, showToast: showToast };
+
+        var carregar = React.useCallback(function() {
+            var r = refs.current;
+            setLoading(true);
+            setErro("");
+            r.fetchAuth(r.API_URL + "/users/blocked-accounts")
+                .then(function(resp) {
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    return resp.json();
+                })
+                .then(function(data) {
+                    setLista(Array.isArray(data) ? data : []);
+                    setLoading(false);
+                })
+                .catch(function() {
+                    setErro("Não foi possível carregar as contas bloqueadas.");
+                    setLoading(false);
+                });
+        }, []);
+
+        React.useEffect(function() { carregar(); }, [carregar]);
+
+        var desbloquear = function(cod, nome) {
+            if (!cod) return;
+            if (!confirm("🔓 Desbloquear a conta de " + (nome || cod) + "?\n\nO bloqueio e as tentativas de login registradas serão removidos.")) return;
+            setProcessando(cod);
+            fetchAuth(API_URL + "/users/unblock-account", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ codProfissional: cod })
+            })
+                .then(function(resp) {
+                    return resp.json().then(function(d) { return { ok: resp.ok, data: d }; });
+                })
+                .then(function(res) {
+                    setProcessando(null);
+                    if (res.ok) {
+                        showToast("🔓 Conta de " + (nome || cod) + " desbloqueada!", "success");
+                        carregar();
+                    } else {
+                        showToast("❌ " + (res.data.error || "Erro ao desbloquear"), "error");
+                    }
+                })
+                .catch(function() {
+                    setProcessando(null);
+                    showToast("❌ Erro de conexão ao desbloquear", "error");
+                });
+        };
+
+        // Abre o modal de alteração de senha já existente no ModuloConfigComponent
+        var abrirModalSenha = function(row) {
+            setEstado({
+                ...estado,
+                senhaModal: true,
+                senhaModalUser: {
+                    cod_profissional: row.cod_profissional,
+                    full_name: row.full_name || row.cod_profissional
+                },
+                senhaModalValue: "", senhaModalConfirm: "", senhaModalShow: false, senhaModalErro: ""
+            });
+        };
+
+        var formatarData = function(iso) {
+            if (!iso) return "—";
+            try {
+                return new Date(iso).toLocaleString("pt-BR", {
+                    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                });
+            } catch (e) { return "—"; }
+        };
+
+        var ativos = lista.filter(function(x) { return x.ativo; });
+        var expirados = lista.filter(function(x) { return !x.ativo; });
+
+        return React.createElement("div", { className: "bg-white rounded-xl shadow-sm border p-6" },
+            // Header
+            React.createElement("div", { className: "flex items-center justify-between mb-1 flex-wrap gap-3" },
+                React.createElement("h2", { className: "text-lg font-bold flex items-center gap-2" },
+                    React.createElement("span", null, "🔒"),
+                    "Contas Bloqueadas (", ativos.length, ")"
+                ),
+                React.createElement("button", {
+                    onClick: carregar,
+                    disabled: loading,
+                    className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                }, loading ? "⏳ Carregando..." : "🔄 Atualizar")
+            ),
+            React.createElement("p", { className: "text-sm text-gray-500 mb-4" },
+                "Contas bloqueadas automaticamente após muitas tentativas de login falhas. Use \"Desbloquear\" para liberar o acesso e \"Senha\" caso o usuário tenha esquecido a senha."
+            ),
+
+            // Erro
+            erro && React.createElement("div", {
+                className: "bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"
+            }, "⚠️ " + erro),
+
+            // Loading
+            loading && React.createElement("div", { className: "text-center py-10 text-gray-400" },
+                React.createElement("span", { className: "text-3xl block mb-2" }, "⏳"),
+                "Carregando contas bloqueadas..."
+            ),
+
+            // Vazio
+            !loading && !erro && lista.length === 0 && React.createElement("div", { className: "text-center py-10 text-gray-500" },
+                React.createElement("span", { className: "text-4xl block mb-2" }, "✅"),
+                "Nenhuma conta bloqueada no momento."
+            ),
+
+            // Bloqueios ATIVOS
+            !loading && ativos.length > 0 && React.createElement("div", { className: "space-y-3" },
+                ativos.map(function(row) {
+                    var emProcesso = processando === row.cod_profissional;
+                    return React.createElement("div", {
+                        key: "ativo-" + row.id,
+                        className: "border border-red-200 bg-red-50/50 rounded-lg p-4"
+                    },
+                        React.createElement("div", { className: "flex items-start justify-between flex-wrap gap-3" },
+                            React.createElement("div", { className: "flex items-center gap-3" },
+                                React.createElement("div", {
+                                    className: "w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white text-lg flex-shrink-0"
+                                }, "🔒"),
+                                React.createElement("div", null,
+                                    React.createElement("p", { className: "font-semibold" },
+                                        row.full_name || "(usuário não encontrado)"),
+                                    React.createElement("p", { className: "text-sm text-gray-500" },
+                                        "COD: ", row.cod_profissional),
+                                    React.createElement("div", { className: "flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-600" },
+                                        React.createElement("span", null, "🚫 ", row.attempts_count || 0, " tentativas"),
+                                        React.createElement("span", null, "⏱️ Libera em ", row.minutos_restantes, " min"),
+                                        React.createElement("span", null, "📅 Bloqueada até ", formatarData(row.blocked_until))
+                                    )
+                                )
+                            ),
+                            React.createElement("div", { className: "flex gap-2 flex-shrink-0" },
+                                React.createElement("button", {
+                                    onClick: function() { abrirModalSenha(row); },
+                                    className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                }, "🔑 Senha"),
+                                React.createElement("button", {
+                                    onClick: function() { desbloquear(row.cod_profissional, row.full_name); },
+                                    disabled: emProcesso,
+                                    className: "px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors disabled:opacity-50"
+                                }, emProcesso ? "⏳..." : "🔓 Desbloquear")
+                            )
+                        )
+                    );
+                })
+            ),
+
+            // Bloqueios EXPIRADOS (registro residual — já liberados pelo tempo)
+            !loading && expirados.length > 0 && React.createElement("div", { className: "mt-6" },
+                React.createElement("p", { className: "text-sm font-semibold text-gray-500 mb-2" },
+                    "Bloqueios expirados (", expirados.length, ") — já liberados pelo tempo, registro residual"
+                ),
+                React.createElement("div", { className: "space-y-2" },
+                    expirados.map(function(row) {
+                        var emProcesso = processando === row.cod_profissional;
+                        return React.createElement("div", {
+                            key: "exp-" + row.id,
+                            className: "border rounded-lg p-3 flex items-center justify-between gap-3 opacity-70"
+                        },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "font-medium text-sm" },
+                                    row.full_name || "(usuário não encontrado)",
+                                    React.createElement("span", { className: "text-gray-400" },
+                                        " • COD: ", row.cod_profissional)
+                                ),
+                                React.createElement("p", { className: "text-xs text-gray-400" },
+                                    "Expirou em ", formatarData(row.blocked_until))
+                            ),
+                            React.createElement("button", {
+                                onClick: function() { desbloquear(row.cod_profissional, row.full_name); },
+                                disabled: emProcesso,
+                                className: "px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            }, emProcesso ? "⏳..." : "🧹 Limpar registro")
+                        );
+                    })
+                )
+            )
+        );
+    }
+
     // Componente principal do módulo Config
     window.ModuloConfigComponent = function(props) {
         const {
@@ -98,7 +303,28 @@
             
             // ==================== TAB USUÁRIOS ====================
             (!p.configTab || p.configTab === "usuarios") && verificarPermissaoAba("usuarios") && React.createElement("div", null,
-                
+
+                // ========== SUB-ABAS DE USUÁRIOS ==========
+                React.createElement("div", {className: "flex gap-1 mb-6 border-b border-gray-200"},
+                    [
+                        { id: "lista", label: "👥 Usuários" },
+                        { id: "bloqueadas", label: "🔒 Contas Bloqueadas" }
+                    ].map(function(sub) {
+                        var ativa = (p.usuariosSubTab || "lista") === sub.id;
+                        return React.createElement("button", {
+                            key: sub.id,
+                            onClick: function() { x({...p, usuariosSubTab: sub.id}); },
+                            className: "px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px " +
+                                (ativa
+                                    ? "border-purple-600 text-purple-700"
+                                    : "border-transparent text-gray-500 hover:text-gray-700")
+                        }, sub.label);
+                    })
+                ),
+
+                // ========== SUB-ABA: LISTA DE USUÁRIOS ==========
+                (!p.usuariosSubTab || p.usuariosSubTab === "lista") && React.createElement(React.Fragment, null,
+
                 // Criar usuário
                 React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                     React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
@@ -469,6 +695,16 @@
                         );
                     })()
                 )
+                ),
+
+                // ========== SUB-ABA: CONTAS BLOQUEADAS ==========
+                p.usuariosSubTab === "bloqueadas" && React.createElement(ContasBloqueadasView, {
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    showToast: ja,
+                    estado: p,
+                    setEstado: x
+                })
             ),
             
             // ==================== TAB PERMISSÕES ADM ====================
