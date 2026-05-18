@@ -27,6 +27,7 @@
     const [enviando, setEnviando] = useState(false);
     const [jobAtivo, setJobAtivo] = useState(null);
     const [dataManual, setDataManual] = useState('');
+    const [linhaExpandida, setLinhaExpandida] = useState(null); // id da linha com log aberto
 
     const filtrosRef = useRef(filtros);
     filtrosRef.current = filtros;
@@ -169,7 +170,7 @@
           h('h3', { className: 'text-lg font-bold text-purple-900' }, '🤖 Importação Automática (RPA)'),
           h('p', { className: 'text-sm text-purple-700' },
             'O sistema baixa a planilha do Tutts/expresso, aplica o tratamento e sobe pro BI. ',
-            h('strong', null, 'Cron diário às 10h (TZ Bahia)'), ' processa D-1 automaticamente.'
+            h('strong', null, 'Cron diário às 12h (TZ Bahia)'), ' processa D-1 automaticamente.'
           )
         ),
         h('div', { className: 'flex items-end gap-3 flex-wrap' },
@@ -301,11 +302,12 @@
                       h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Linhas'),
                       h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Solicitado por'),
                       h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Criado'),
-                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Detalhe')
+                      h('th', { className: 'text-left px-3 py-2 font-semibold text-gray-600' }, 'Log')
                     )
                   ),
                   h('tbody', null,
-                    dados.map(r => h('tr', {
+                    dados.flatMap(r => [
+                      h('tr', {
                       key: r.id,
                       className: 'border-b border-gray-100 hover:bg-gray-50',
                     },
@@ -332,12 +334,33 @@
                       h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, r.usuario_nome || '—'),
                       h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, fmtData(r.criado_em)),
                       h('td', { className: 'px-3 py-2 text-xs' },
-                        r.status === 'falhou' && r.erro && h('div', { className: 'text-red-600 max-w-md break-words' }, '⚠️ ', r.erro),
-                        r.status === 'processando' && h('span', { className: 'text-blue-600' },
-                          r.etapa_atual ? `${labelEtapa[r.etapa_atual] || r.etapa_atual} (${r.progresso || 0}%)` : 'Em andamento...'
-                        )
+                        r.status === 'processando'
+                          ? h('span', { className: 'text-blue-600' },
+                              r.etapa_atual ? `${labelEtapa[r.etapa_atual] || r.etapa_atual} (${r.progresso || 0}%)` : 'Em andamento...'
+                            )
+                          : (r.erro
+                              ? h('button', {
+                                  onClick: () => setLinhaExpandida(linhaExpandida === r.id ? null : r.id),
+                                  className: `inline-flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium ${linhaExpandida === r.id ? 'bg-gray-100 border-gray-400 text-gray-700' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`,
+                                }, linhaExpandida === r.id ? '▲ Ocultar log' : '▼ Ver log')
+                              : h('span', { className: 'text-gray-300' }, '—'))
                       )
-                    ))
+                    ),
+                    linhaExpandida === r.id && r.erro && h('tr', { key: `${r.id}-log`, className: 'bg-gray-50' },
+                      h('td', { colSpan: 8, className: 'px-3 py-3' },
+                        h('div', { className: 'flex items-center justify-between mb-1' },
+                          h('span', { className: 'text-xs font-semibold text-gray-600' }, '📋 Log do agente Playwright'),
+                          h('button', {
+                            onClick: () => { try { navigator.clipboard.writeText(r.erro); showToastFn('Log copiado!', 'success'); } catch (e) {} },
+                            className: 'text-xs text-purple-600 hover:underline',
+                          }, 'Copiar')
+                        ),
+                        h('pre', {
+                          className: 'text-xs text-red-700 bg-white border border-gray-200 rounded p-3 whitespace-pre-wrap break-words max-h-64 overflow-y-auto',
+                        }, r.erro)
+                      )
+                    )
+                  ].filter(Boolean))
                   )
                 )
               )

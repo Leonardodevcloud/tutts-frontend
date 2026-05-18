@@ -7931,7 +7931,11 @@ const hideLoadingScreen = () => {
                     const datasSet = new Set();
                     l.forEach(item => {
                         if (item.data) {
-                            const dataFormatada = new Date(item.data).toISOString().split('T')[0];
+                            // Bug de fuso: new Date("2026-05-16") = meia-noite UTC, que no
+                            // Brasil (UTC-3) é dia 15. Usar a string direto evita o shift.
+                            const dataFormatada = typeof item.data === 'string'
+                                ? item.data.slice(0, 10)
+                                : new Date(item.data).toLocaleDateString('en-CA'); // en-CA = YYYY-MM-DD local
                             datasSet.add(dataFormatada);
                         }
                     });
