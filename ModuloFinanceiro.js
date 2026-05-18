@@ -3178,10 +3178,22 @@
             }, React.createElement("div", {
                 className: "flex justify-end mb-4"
             }, React.createElement("button", {
-                onClick: () => Ne({
-                    ...fe,
-                    ativo: !fe.ativo
-                }),
+                onClick: async () => {
+                    const novoFe = { ...fe, ativo: !fe.ativo };
+                    Ne(novoFe);
+                    try {
+                        const resp = await fetchAuth(`${API_URL}/quiz-procedimentos/config`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(novoFe)
+                        });
+                        if (!resp.ok) throw new Error("falha");
+                        ja(novoFe.ativo ? "✅ Quiz ativado!" : "⏸️ Quiz desativado!", "success");
+                    } catch (err) {
+                        Ne(fe);
+                        ja("❌ Erro ao alterar status do quiz", "error");
+                    }
+                },
                 className: "px-4 py-2 rounded-lg font-semibold text-sm " + (fe.ativo ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600")
             }, fe.ativo ? "⏸️ Desativar Quiz" : "▶️ Ativar Quiz")), React.createElement("div", {
                 className: "grid md:grid-cols-2 gap-4 mb-4"
