@@ -548,149 +548,227 @@
                     )
                 ),
                 
-                // Lista de usuários
-                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6"},
-                    React.createElement("div", {className: "flex items-center justify-between mb-4 flex-wrap gap-3"},
+                // Lista de usuários — REDESIGN: cards 4/linha, com foto primeiro, paginação
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-sm border p-6"},
+                    // Toolbar: título + busca + filtro de tipo
+                    React.createElement("div", {className: "flex items-center justify-between mb-5 flex-wrap gap-3"},
                         React.createElement("h2", {className: "text-lg font-bold flex items-center gap-2"},
                             React.createElement("span", null, "📋"),
-                            "Usuários Cadastrados (",
-                            A.length,
-                            ")"
+                            "Usuários Cadastrados ",
+                            React.createElement("span", {className: "bg-purple-100 text-purple-700 text-sm font-semibold px-2.5 py-0.5 rounded-full"}, A.length)
                         ),
-                        // Campo de busca
-                        React.createElement("div", {className: "relative flex-1 max-w-md"},
-                            React.createElement("input", {
-                                type: "text",
-                                value: p.buscaUsuario || "",
-                                onChange: function(e) { x({...p, buscaUsuario: e.target.value}); },
-                                className: "w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                                placeholder: "Buscar por nome ou código..."
-                            }),
-                            React.createElement("span", {className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"}, "🔍"),
-                            p.buscaUsuario && React.createElement("button", {
-                                onClick: function() { x({...p, buscaUsuario: ""}); },
-                                className: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            }, "✕")
+                        React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                            // Campo de busca
+                            React.createElement("div", {className: "relative"},
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.buscaUsuario || "",
+                                    onChange: function(e) { x({...p, buscaUsuario: e.target.value, usuariosPagina: 1}); },
+                                    className: "w-72 pl-10 pr-8 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
+                                    placeholder: "Buscar por nome ou código..."
+                                }),
+                                React.createElement("span", {className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"}, "🔍"),
+                                p.buscaUsuario && React.createElement("button", {
+                                    onClick: function() { x({...p, buscaUsuario: "", usuariosPagina: 1}); },
+                                    className: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                }, "✕")
+                            ),
+                            // Filtro de tipo
+                            React.createElement("select", {
+                                value: p.filtroTipoUsuario || "todos",
+                                onChange: function(e) { x({...p, filtroTipoUsuario: e.target.value, usuariosPagina: 1}); },
+                                className: "border rounded-lg text-sm px-3 py-2 bg-white focus:ring-2 focus:ring-purple-500"
+                            },
+                                React.createElement("option", {value: "todos"}, "Todos os tipos"),
+                                React.createElement("option", {value: "admin_master"}, "👑 Master"),
+                                React.createElement("option", {value: "admin"}, "👑 Admin"),
+                                React.createElement("option", {value: "admin_financeiro"}, "💰 Financeiro"),
+                                React.createElement("option", {value: "user"}, "👤 Usuário")
+                            )
                         )
                     ),
-                    
-                    // Filtrar usuários pela busca
+
+                    // Lista filtrada + ordenada + paginada
                     (function() {
                         const busca = (p.buscaUsuario || "").toLowerCase().trim();
-                        const usuariosFiltrados = busca 
-                            ? A.filter(function(user) {
-                                const nome = (user.fullName || "").toLowerCase();
-                                const cod = String(user.codProfissional || "").toLowerCase();
-                                return nome.includes(busca) || cod.includes(busca);
-                            })
-                            : A;
-                        
-                        if (usuariosFiltrados.length === 0) {
-                            return React.createElement("div", {className: "text-center py-8 text-gray-500"},
+                        const filtroTipo = p.filtroTipoUsuario || "todos";
+                        const POR_PAGINA = 40;
+
+                        // 1) Filtrar por busca + tipo
+                        let filtrados = A.filter(function(user) {
+                            if (filtroTipo !== "todos" && user.role !== filtroTipo) return false;
+                            if (!busca) return true;
+                            const nome = (user.fullName || user.full_name || "").toLowerCase();
+                            const cod = String(user.codProfissional || user.cod_profissional || "").toLowerCase();
+                            return nome.includes(busca) || cod.includes(busca);
+                        });
+
+                        // 2) Ordenar: contas com foto sempre primeiro, depois alfabético
+                        filtrados = filtrados.slice().sort(function(a, b) {
+                            const fa = a.foto ? 0 : 1;
+                            const fb = b.foto ? 0 : 1;
+                            if (fa !== fb) return fa - fb;
+                            return (a.fullName || a.full_name || "").localeCompare(b.fullName || b.full_name || "");
+                        });
+
+                        const total = filtrados.length;
+                        const totalComFoto = filtrados.filter(function(u) { return !!u.foto; }).length;
+
+                        if (total === 0) {
+                            return React.createElement("div", {className: "text-center py-12 text-gray-500"},
                                 React.createElement("span", {className: "text-4xl block mb-2"}, "🔍"),
-                                busca 
-                                    ? "Nenhum usuário encontrado para \"" + p.buscaUsuario + "\""
+                                (busca || filtroTipo !== "todos")
+                                    ? "Nenhum usuário encontrado com esses filtros"
                                     : "Nenhum usuário cadastrado"
                             );
                         }
-                        
-                        return React.createElement("div", null,
-                            busca && React.createElement("p", {className: "text-sm text-gray-500 mb-3"},
-                                "Mostrando ", usuariosFiltrados.length, " de ", A.length, " usuários"
-                            ),
-                            React.createElement("div", {className: "space-y-3"},
-                                usuariosFiltrados.map(function(user) {
+
+                        // 3) Paginação
+                        const totalPaginas = Math.ceil(total / POR_PAGINA);
+                        let pagina = p.usuariosPagina || 1;
+                        if (pagina > totalPaginas) pagina = totalPaginas;
+                        if (pagina < 1) pagina = 1;
+                        const inicio = (pagina - 1) * POR_PAGINA;
+                        const paginaItens = filtrados.slice(inicio, inicio + POR_PAGINA);
+
+                        // Separar a página atual em com/sem foto (mantém a ordenação global)
+                        const comFotoPag = paginaItens.filter(function(u) { return !!u.foto; });
+                        const semFotoPag = paginaItens.filter(function(u) { return !u.foto; });
+
+                        // Metadados visuais por tipo de usuário
+                        const ROLE_INFO = {
+                            admin_master:     { txt: "👑 Master",     bar: "bg-purple-600", ring: "ring-purple-200", badge: "bg-purple-100 text-purple-700" },
+                            admin:            { txt: "👑 Admin",      bar: "bg-blue-600",   ring: "ring-blue-200",   badge: "bg-blue-100 text-blue-700" },
+                            admin_financeiro: { txt: "💰 Financeiro", bar: "bg-green-600",  ring: "ring-green-200",  badge: "bg-green-100 text-green-700" },
+                            user:             { txt: "👤 Usuário",    bar: "bg-gray-400",   ring: "ring-gray-200",   badge: "bg-gray-100 text-gray-600" }
+                        };
+
+                        // Renderizador de card individual
+                        function renderCardUsuario(user) {
+                            const r = ROLE_INFO[user.role] || ROLE_INFO.user;
+                            const nome = user.fullName || user.full_name || "";
+                            const cod = user.codProfissional || user.cod_profissional || "";
                             return React.createElement("div", {
-                                key: user.codProfissional,
-                                className: "border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                                key: cod,
+                                className: "relative border rounded-2xl p-5 flex flex-col items-center text-center bg-white hover:shadow-md hover:border-purple-200 transition-all"
                             },
-                                React.createElement("div", {className: "flex items-center justify-between"},
-                                    React.createElement("div", {className: "flex items-center gap-3"},
-                                        // 🆕 2026-05: foto do motoboy (user.foto) ou avatar de inicial
-                                        user.foto
-                                            ? React.createElement("img", {
-                                                src: user.foto,
-                                                alt: user.fullName || "",
-                                                className: "w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                                            })
-                                            : React.createElement("div", {
-                                                className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 " +
-                                                    (user.role === "admin_master" ? "bg-purple-600" :
-                                                     user.role === "admin" ? "bg-blue-600" :
-                                                     user.role === "admin_financeiro" ? "bg-green-600" : "bg-gray-500")
-                                            }, user.fullName ? user.fullName.charAt(0).toUpperCase() : "?"),
-                                        React.createElement("div", null,
-                                            React.createElement("p", {className: "font-semibold"}, user.fullName),
-                                            React.createElement("p", {className: "text-sm text-gray-500"},
-                                                "COD: ", user.codProfissional, " • ",
-                                                user.role === "admin_master" ? "👑 Master" :
-                                                user.role === "admin" ? "👑 Admin" :
-                                                user.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
-                                            )
-                                        )
-                                    ),
-                                    React.createElement("div", {className: "flex gap-2"},
-                                        React.createElement("button", {
-                                            onClick: function() {
-                                                x({...p, senhaModal: true, senhaModalUser: user, senhaModalValue: "", senhaModalConfirm: "", senhaModalShow: false, senhaModalErro: ""});
-                                            },
-                                            className: "px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                                        }, "🔑 Senha"),
-                                        user.role !== "admin_master" && React.createElement("button", {
-                                            onClick: async function() {
-                                                let userCod = user.codProfissional || user.cod_profissional;
-                                                if (userCod && typeof userCod === 'string') {
-                                                    userCod = userCod.replace('#', '');
-                                                }
-                                                if (!userCod) {
-                                                    ja("❌ Código do usuário não encontrado", "error");
-                                                    return;
-                                                }
-                                                if (confirm("⚠️ Excluir " + (user.fullName || user.full_name) + "?\n\nEsta ação não pode ser desfeita!")) {
-                                                    try {
-                                                        const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
-                                                        if (response.ok) {
-                                                            ja("🗑️ Usuário excluído!", "success");
-                                                            Ia();
-                                                        } else {
-                                                            const errData = await response.json().catch(() => ({}));
-                                                            ja("❌ Erro: " + (errData.error || response.statusText), "error");
-                                                        }
-                                                    } catch (err) {
-                                                        ja("❌ Erro ao excluir", "error");
-                                                    }
-                                                }
-                                            },
-                                            className: "px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-                                        }, "🗑️")
-                                    )
-                                ),
-                                // Linha do Setor
-                                React.createElement("div", {className: "mt-3 pt-3 border-t flex items-center gap-2"},
-                                    React.createElement("span", {className: "text-sm text-gray-600"}, "🏢 Setor:"),
-                                    React.createElement("select", {
-                                        value: user.setor_id || '',
-                                        onChange: async (e) => {
-                                            const novoSetorId = e.target.value ? parseInt(e.target.value) : null;
-                                            await atualizarSetorUsuario(user.codProfissional || user.cod_profissional, novoSetorId);
-                                        },
-                                        className: "px-3 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+                                // Faixa de cor no topo (indica o tipo)
+                                React.createElement("div", {className: "absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl " + r.bar}),
+                                // Avatar (foto ou inicial)
+                                user.foto
+                                    ? React.createElement("img", {
+                                        src: user.foto,
+                                        alt: nome,
+                                        className: "w-16 h-16 rounded-full object-cover ring-4 " + r.ring
+                                    })
+                                    : React.createElement("div", {
+                                        className: "w-16 h-16 rounded-full ring-4 flex items-center justify-center text-white text-2xl font-bold " + r.ring + " " + r.bar
+                                    }, nome ? nome.charAt(0).toUpperCase() : "?"),
+                                // Nome
+                                React.createElement("p", {
+                                    className: "font-bold text-sm mt-3 leading-tight h-9 flex items-center justify-center overflow-hidden",
+                                    title: nome
+                                }, nome),
+                                React.createElement("p", {className: "text-xs text-gray-400 mb-2"}, "COD: ", cod),
+                                // Badge de tipo
+                                React.createElement("span", {className: "text-xs font-semibold px-2.5 py-0.5 rounded-full mb-3 " + r.badge}, r.txt),
+                                // Setor (select compacto — mantém edição inline)
+                                React.createElement("select", {
+                                    value: user.setor_id || "",
+                                    onChange: async function(e) {
+                                        const novoSetorId = e.target.value ? parseInt(e.target.value) : null;
+                                        await atualizarSetorUsuario(cod, novoSetorId);
                                     },
-                                        React.createElement("option", {value: ""}, "-- Sem setor --"),
-                                        setores.filter(s => s.ativo).map(setor =>
-                                            React.createElement("option", {
-                                                key: setor.id,
-                                                value: setor.id
-                                            }, setor.nome)
-                                        )
-                                    ),
-                                    user.setor_nome && React.createElement("span", {
-                                        className: "ml-2 px-2 py-0.5 rounded text-xs font-medium text-white",
-                                        style: { backgroundColor: user.setor_cor || '#6366f1' }
-                                    }, user.setor_nome)
+                                    className: "w-full mb-4 px-2 py-1.5 border rounded-lg text-xs bg-gray-50 text-gray-600 focus:ring-2 focus:ring-indigo-500"
+                                },
+                                    React.createElement("option", {value: ""}, "🏢 Sem setor"),
+                                    setores.filter(function(s) { return s.ativo; }).map(function(setor) {
+                                        return React.createElement("option", {key: setor.id, value: setor.id}, setor.nome);
+                                    })
+                                ),
+                                // Ações
+                                React.createElement("div", {className: "flex gap-2 w-full mt-auto"},
+                                    React.createElement("button", {
+                                        onClick: function() {
+                                            x({...p, senhaModal: true, senhaModalUser: user, senhaModalValue: "", senhaModalConfirm: "", senhaModalShow: false, senhaModalErro: ""});
+                                        },
+                                        className: "flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                                    }, "🔑 Senha"),
+                                    user.role !== "admin_master" && React.createElement("button", {
+                                        onClick: async function() {
+                                            let userCod = cod;
+                                            if (userCod && typeof userCod === "string") userCod = userCod.replace("#", "");
+                                            if (!userCod) { ja("❌ Código do usuário não encontrado", "error"); return; }
+                                            if (confirm("⚠️ Excluir " + nome + "?\n\nEsta ação não pode ser desfeita!")) {
+                                                try {
+                                                    const response = await fetchAuth(API_URL + "/users/" + userCod, {method: "DELETE"});
+                                                    if (response.ok) { ja("🗑️ Usuário excluído!", "success"); Ia(); }
+                                                    else {
+                                                        const errData = await response.json().catch(function() { return {}; });
+                                                        ja("❌ Erro: " + (errData.error || response.statusText), "error");
+                                                    }
+                                                } catch (err) { ja("❌ Erro ao excluir", "error"); }
+                                            }
+                                        },
+                                        className: "px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
+                                    }, "🗑️")
                                 )
                             );
-                        })
+                        }
+
+                        const irParaPagina = function(n) {
+                            x({...p, usuariosPagina: Math.min(Math.max(1, n), totalPaginas)});
+                        };
+
+                        return React.createElement("div", null,
+                            // Linha de resumo
+                            React.createElement("p", {className: "text-sm text-gray-500 mb-4"},
+                                "Mostrando ", paginaItens.length, " de ", total, " usuário(s)",
+                                (busca || filtroTipo !== "todos") ? " (filtrado)" : "",
+                                " • ", totalComFoto, " com foto"
+                            ),
+
+                            // SEÇÃO: COM FOTO
+                            comFotoPag.length > 0 && React.createElement("div", {className: "mb-6"},
+                                React.createElement("div", {className: "flex items-center gap-2 mb-3"},
+                                    React.createElement("span", {className: "text-sm font-bold text-gray-700"}, "📷 Com foto"),
+                                    React.createElement("span", {className: "text-xs text-gray-400"}, comFotoPag.length),
+                                    React.createElement("div", {className: "flex-1 h-px bg-gray-100"})
+                                ),
+                                React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"},
+                                    comFotoPag.map(renderCardUsuario)
+                                )
+                            ),
+
+                            // SEÇÃO: SEM FOTO
+                            semFotoPag.length > 0 && React.createElement("div", null,
+                                React.createElement("div", {className: "flex items-center gap-2 mb-3"},
+                                    React.createElement("span", {className: "text-sm font-bold text-gray-700"}, "👤 Sem foto"),
+                                    React.createElement("span", {className: "text-xs text-gray-400"}, semFotoPag.length),
+                                    React.createElement("div", {className: "flex-1 h-px bg-gray-100"})
+                                ),
+                                React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"},
+                                    semFotoPag.map(renderCardUsuario)
+                                )
+                            ),
+
+                            // PAGINAÇÃO
+                            totalPaginas > 1 && React.createElement("div", {className: "flex items-center justify-center gap-3 mt-6 pt-4 border-t"},
+                                React.createElement("button", {
+                                    onClick: function() { irParaPagina(pagina - 1); },
+                                    disabled: pagina <= 1,
+                                    className: "px-4 py-2 rounded-lg text-sm font-semibold border transition-colors " +
+                                        (pagina <= 1 ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-50")
+                                }, "← Anterior"),
+                                React.createElement("span", {className: "text-sm text-gray-600"},
+                                    "Página ", pagina, " de ", totalPaginas
+                                ),
+                                React.createElement("button", {
+                                    onClick: function() { irParaPagina(pagina + 1); },
+                                    disabled: pagina >= totalPaginas,
+                                    className: "px-4 py-2 rounded-lg text-sm font-semibold border transition-colors " +
+                                        (pagina >= totalPaginas ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-50")
+                                }, "Próxima →")
                             )
                         );
                     })()
