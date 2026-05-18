@@ -28,6 +28,7 @@
     const [jobAtivo, setJobAtivo] = useState(null);
     const [dataManual, setDataManual] = useState('');
     const [linhaExpandida, setLinhaExpandida] = useState(null); // id da linha com log aberto
+    const [historicoAberto, setHistoricoAberto] = useState(false); // histórico recolhido por padrão
 
     const filtrosRef = useRef(filtros);
     filtrosRef.current = filtros;
@@ -221,15 +222,27 @@
         )
       ),
 
-      // Cabeçalho histórico + atualizar
-      h('div', { className: 'flex justify-between items-center' },
-        h('h3', { className: 'text-lg font-bold text-gray-800' }, `📋 Histórico de Importações Automáticas (${total})`),
-        h('button', {
-          onClick: () => carregar(page, filtros),
-          disabled: loading,
-          className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-semibold disabled:opacity-50',
-        }, loading ? 'Carregando...' : '🔄 Atualizar')
+      // Cabeçalho histórico — clicável, colapsa/expande tudo abaixo
+      h('div', {
+        className: 'flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition',
+        onClick: () => setHistoricoAberto(v => !v),
+      },
+        h('h3', { className: 'text-lg font-bold text-gray-800 flex items-center gap-2' },
+          h('span', { className: 'text-gray-400 text-base' }, historicoAberto ? '▼' : '▶'),
+          `📋 Histórico de Importações Automáticas (${total})`
+        ),
+        h('div', { className: 'flex items-center gap-2' },
+          h('button', {
+            onClick: (e) => { e.stopPropagation(); carregar(page, filtros); },
+            disabled: loading,
+            className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-semibold disabled:opacity-50',
+          }, loading ? 'Carregando...' : '🔄 Atualizar'),
+          h('span', { className: 'text-xs text-gray-400' }, historicoAberto ? 'recolher' : 'expandir')
+        )
       ),
+
+      // Conteúdo colapsável: filtros + tabela + paginação
+      historicoAberto && h('div', { className: 'space-y-6' },
 
       // Filtros
       h('div', { className: 'bg-white p-4 rounded-xl shadow-sm border border-gray-200' },
@@ -258,7 +271,7 @@
               className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
             },
               h('option', { value: '' }, 'Todas'),
-              h('option', { value: 'cron' }, '🤖 Cron (10h)'),
+              h('option', { value: 'cron' }, '🤖 Cron (12h)'),
               h('option', { value: 'manual' }, '👤 Manual')
             )
           ),
@@ -379,6 +392,8 @@
           disabled: page >= totalPaginas || loading,
           className: 'px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm disabled:opacity-50',
         }, 'Próxima →')
+      )
+
       )
     );
   }
