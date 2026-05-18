@@ -463,6 +463,494 @@
         );
     }
 
+    // ==================== VIEW: PERMISSÕES ADM ====================
+    // Redesign da aba Permissões: cards de admin com barra de progresso,
+    // busca, e modal "Replicar permissões" (copia módulos + abas de um
+    // admin para vários de uma vez, gravando direto no banco).
+    function PermissoesADMView(props) {
+        var usuarios = props.usuarios || [];
+        var API_URL = props.API_URL;
+        var fetchAuth = props.fetchAuth;
+        var showToast = props.showToast;
+        var setLoading = props.setLoading;
+        var MODULOS = props.SISTEMA_MODULOS_CONFIG || [];
+        var TOTAL = MODULOS.length;
+
+        var admins = usuarios.filter(function(u) {
+            return u.role === "admin" || u.role === "admin_financeiro";
+        });
+
+        var sPerms   = React.useState({});    var perms = sPerms[0],   setPerms = sPerms[1];
+        var sBusca   = React.useState("");    var busca = sBusca[0],   setBusca = sBusca[1];
+        var sExp     = React.useState(null);  var exp = sExp[0],       setExp = sExp[1];
+        var sExpMod  = React.useState(null);  var expMod = sExpMod[0], setExpMod = sExpMod[1];
+        var sModal   = React.useState(false); var modalOpen = sModal[0], setModalOpen = sModal[1];
+        var sOrigem  = React.useState("");    var origem = sOrigem[0], setOrigem = sOrigem[1];
+        var sAlvos   = React.useState({});    var alvos = sAlvos[0],   setAlvos = sAlvos[1];
+        var sBusy    = React.useState(false); var busy = sBusy[0],     setBusy = sBusy[1];
+
+        // --- Normaliza resposta da API ---
+        function normalizar(lista) {
+            var obj = {};
+            lista.forEach(function(adm) {
+                var mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
+                var tabs = (adm.allowed_tabs && typeof adm.allowed_tabs === "object") ? adm.allowed_tabs : {};
+                var modulosObj = {};
+                MODULOS.forEach(function(m) {
+                    modulosObj[m.id] = mods.length === 0 ? true : mods.includes(m.id);
+                });
+                obj[adm.cod_profissional] = { modulos: modulosObj, abas: tabs };
+            });
+            return obj;
+        }
+
+        // --- Carregar permissões (mount + botão atualizar) ---
+        function carregar(comToast) {
+            setLoading(true);
+            fetchAuth(API_URL + "/admin-permissions")
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(data) {
+                    setPerms(normalizar(data));
+                    if (comToast) showToast("✅ Atualizado!", "success");
+                })
+                .catch(function() { showToast("❌ Erro ao carregar permissões", "error"); })
+                .finally(function() { setLoading(false); });
+        }
+        React.useEffect(function() { carregar(false); }, []);
+
+        // --- Monta payload do PATCH a partir de um objeto de perms ---
+        function payloadDe(cod, fonte) {
+            var pr = (fonte && fonte[cod]) ? fonte[cod] : { modulos: {}, abas: {} };
+            var allowedModules = [];
+            MODULOS.forEach(function(m) {
+                if (pr.modulos && pr.modulos[m.id] === true) allowedModules.push(m.id);
+            });
+            return { allowed_modules: allowedModules, allowed_tabs: pr.abas || {} };
+        }
+        function patchAdmin(cod, fonte) {
+            return fetchAuth(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payloadDe(cod, fonte))
+            }).then(function(res) { return res.ok; }).catch(function() { return false; });
+        }
+
+        // --- Salvar todos ---
+        function salvarTodos() {
+            setLoading(true);
+            var lista = admins.filter(function(a) { return perms[a.codProfissional]; });
+            Promise.all(lista.map(function(a) { return patchAdmin(a.codProfissional, perms); }))
+                .then(function(rs) {
+                    var ok = rs.filter(Boolean).length;
+                    showToast(ok > 0 ? ("✅ " + ok + " admin(s) salvos!") : "⚠️ Nada para salvar",
+                              ok > 0 ? "success" : "warning");
+                })
+                .finally(function() { setLoading(false); });
+        }
+
+        // --- Toggles ---
+        function mutar(fn) {
+            var novo = JSON.parse(JSON.stringify(perms));
+            fn(novo);
+            setPerms(novo);
+        }
+        function garante(obj, cod) {
+            if (!obj[cod]) obj[cod] = { modulos: {}, abas: {} };
+            if (!obj[cod].modulos) obj[cod].modulos = {};
+            if (!obj[cod].abas) obj[cod].abas = {};
+        }
+        function toggleModulo(cod, modId, atual) {
+            mutar(function(n) { garante(n, cod); n[cod].modulos[modId] = !atual; });
+        }
+        function toggleAba(cod, abaKey, permitida) {
+            mutar(function(n) {
+                garante(n, cod);
+                if (permitida) n[cod].abas[abaKey] = false;
+                else delete n[cod].abas[abaKey];
+            });
+        }
+        function marcarModulos(cod, valor) {
+            mutar(function(n) {
+                garante(n, cod);
+                MODULOS.forEach(function(m) { n[cod].modulos[m.id] = valor; });
+            });
+        }
+
+        // --- Replicar (grava direto no banco) ---
+        function abrirReplicar(codOrigem) {
+            setOrigem(codOrigem || "");
+            setAlvos({});
+            setModalOpen(true);
+        }
+        function aplicarReplicar() {
+            if (!origem) { showToast("Escolha o admin de origem", "error"); return; }
+            var origemPerms = perms[origem];
+            if (!origemPerms) { showToast("Permissões da origem não carregadas", "error"); return; }
+            var lista = Object.keys(alvos).filter(function(c) { return alvos[c]; });
+            if (lista.length === 0) { showToast("Selecione ao menos um admin de destino", "error"); return; }
+
+            setBusy(true);
+            var novo = JSON.parse(JSON.stringify(perms));
+            lista.forEach(function(c) {
+                novo[c] = {
+                    modulos: JSON.parse(JSON.stringify(origemPerms.modulos || {})),
+                    abas: JSON.parse(JSON.stringify(origemPerms.abas || {}))
+                };
+            });
+            setPerms(novo);
+            Promise.all(lista.map(function(c) { return patchAdmin(c, novo); }))
+                .then(function(rs) {
+                    var ok = rs.filter(Boolean).length;
+                    setModalOpen(false);
+                    showToast(ok === lista.length
+                        ? ("✅ Replicado para " + ok + " admin(s)!")
+                        : ("⚠️ " + ok + "/" + lista.length + " salvos"),
+                        ok === lista.length ? "success" : "warning");
+                })
+                .finally(function() { setBusy(false); });
+        }
+
+        // --- Métricas de um admin ---
+        function statsDe(cod) {
+            var pr = perms[cod] || { modulos: {}, abas: {} };
+            var mods = pr.modulos || {}, abas = pr.abas || {};
+            var ativos = MODULOS.filter(function(m) { return mods[m.id] === true; }).length;
+            var restr = Object.keys(abas).filter(function(k) { return abas[k] === false; }).length;
+            return { ativos: ativos, restr: restr };
+        }
+
+        // ---- Resumo ----
+        var totalAdmins = admins.length;
+        var acessoTotal = 0, comRestricoes = 0;
+        admins.forEach(function(a) {
+            var st = statsDe(a.codProfissional);
+            if (st.ativos === TOTAL && st.restr === 0) acessoTotal++;
+            else comRestricoes++;
+        });
+
+        function corAvatar(role) { return role === "admin" ? "bg-blue-600" : "bg-green-600"; }
+        function labelRole(role) { return role === "admin" ? "👑 Admin" : "💰 Admin Fin."; }
+
+        function metricCard(label, valor, cor) {
+            return React.createElement("div", { className: "bg-gray-50 rounded-lg p-3" },
+                React.createElement("p", { className: "text-xs text-gray-500" }, label),
+                React.createElement("p", { className: "text-2xl font-bold " + cor }, valor)
+            );
+        }
+
+        // ---- Pílula de toggle (módulo) ----
+        function pilulaModulo(ativo, onClick) {
+            return React.createElement("button", {
+                onClick: onClick,
+                className: "px-3 py-1 rounded-full text-xs font-bold transition-colors flex-shrink-0 " +
+                    (ativo ? "bg-green-100 text-green-700 hover:bg-green-200"
+                           : "bg-red-100 text-red-700 hover:bg-red-200")
+            }, ativo ? "✓ Permitido" : "✗ Bloqueado");
+        }
+
+        // ---- Bloco de módulos de um admin ----
+        function blocoModulos(admin) {
+            var cod = admin.codProfissional;
+            return React.createElement("div", { className: "border-t bg-gray-50 p-3" },
+                // atalhos
+                React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" },
+                    React.createElement("button", {
+                        onClick: function() { marcarModulos(cod, true); },
+                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border bg-white hover:bg-gray-50"
+                    }, "✓ Marcar todos"),
+                    React.createElement("button", {
+                        onClick: function() { marcarModulos(cod, false); },
+                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border bg-white hover:bg-gray-50"
+                    }, "✗ Limpar tudo"),
+                    React.createElement("button", {
+                        onClick: function() { abrirReplicar(cod); },
+                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                    }, "📋 Usar como modelo")
+                ),
+                // lista de módulos
+                React.createElement("div", { className: "space-y-1.5" },
+                    MODULOS.map(function(mod) {
+                        var pr = perms[cod] || { modulos: {}, abas: {} };
+                        var modAtivo = (pr.modulos || {})[mod.id] === true;
+                        var modAbas = mod.abas || [];
+                        var abaKeyBase = mod.id;
+                        var modExpKey = cod + "_" + mod.id;
+                        var isModExp = expMod === modExpKey;
+                        var restrModulo = modAbas.filter(function(aba) {
+                            var k = abaKeyBase + "_" + aba.id.replace(/-/g, "");
+                            return (pr.abas || {})[k] === false;
+                        }).length;
+
+                        return React.createElement("div", {
+                            key: mod.id,
+                            className: "border rounded-lg overflow-hidden bg-white " +
+                                (modAtivo ? "border-green-200" : "border-red-200")
+                        },
+                            React.createElement("div", {
+                                className: "flex items-center gap-2 p-2 " + (modAtivo ? "bg-green-50" : "bg-red-50")
+                            },
+                                React.createElement("div", {
+                                    className: "flex items-center gap-2 flex-1 min-w-0 " + (modAbas.length > 0 ? "cursor-pointer" : ""),
+                                    onClick: function() {
+                                        if (modAbas.length > 0) setExpMod(isModExp ? null : modExpKey);
+                                    }
+                                },
+                                    React.createElement("span", { className: "text-gray-400 w-3 text-center" },
+                                        modAbas.length > 0 ? (isModExp ? "▼" : "▶") : ""),
+                                    React.createElement("span", null, mod.icon),
+                                    React.createElement("span", { className: "font-medium text-sm truncate" }, mod.label),
+                                    modAbas.length > 0 && React.createElement("span", { className: "text-xs text-gray-400 flex-shrink-0" },
+                                        "(" + modAbas.length + " abas" +
+                                        (restrModulo > 0 ? ", " + restrModulo + " restritas" : "") + ")")
+                                ),
+                                pilulaModulo(modAtivo, function() { toggleModulo(cod, mod.id, modAtivo); })
+                            ),
+                            // abas
+                            isModExp && modAbas.length > 0 && React.createElement("div", { className: "border-t bg-gray-50 p-3" },
+                                React.createElement("p", { className: "text-xs text-gray-500 mb-2 font-semibold" }, "📑 Abas do módulo"),
+                                React.createElement("div", { className: "flex flex-wrap gap-2" },
+                                    modAbas.map(function(aba) {
+                                        var k = abaKeyBase + "_" + aba.id.replace(/-/g, "");
+                                        var permitida = (pr.abas || {})[k] !== false;
+                                        return React.createElement("button", {
+                                            key: k,
+                                            onClick: function() { toggleAba(cod, k, permitida); },
+                                            className: "text-xs px-3 py-1.5 rounded-full border font-medium transition-colors " +
+                                                (permitida ? "bg-white border-green-200 text-green-700 hover:bg-green-50"
+                                                           : "bg-red-50 border-red-200 text-red-700 hover:bg-red-100")
+                                        }, (permitida ? "✓ " : "✗ ") + aba.label);
+                                    })
+                                )
+                            )
+                        );
+                    })
+                )
+            );
+        }
+
+        // ---- Card de admin ----
+        function cardAdmin(admin) {
+            var cod = admin.codProfissional;
+            var st = statsDe(cod);
+            var full = st.ativos === TOTAL;
+            var pct = TOTAL > 0 ? Math.round(st.ativos / TOTAL * 100) : 0;
+            var aberto = exp === cod;
+
+            return React.createElement("div", {
+                key: cod,
+                className: "bg-white rounded-xl shadow-sm border overflow-hidden"
+            },
+                React.createElement("div", {
+                    className: "flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors",
+                    onClick: function() { setExp(aberto ? null : cod); }
+                },
+                    React.createElement("div", {
+                        className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 " + corAvatar(admin.role)
+                    }, admin.fullName ? admin.fullName.charAt(0).toUpperCase() : "?"),
+                    React.createElement("div", { className: "min-w-0 flex-1" },
+                        React.createElement("p", { className: "font-semibold truncate" }, admin.fullName),
+                        React.createElement("p", { className: "text-xs text-gray-500" }, labelRole(admin.role))
+                    ),
+                    // barra de progresso de módulos
+                    React.createElement("div", { className: "w-32 flex-shrink-0 hidden sm:block" },
+                        React.createElement("div", { className: "flex justify-between text-xs mb-1" },
+                            React.createElement("span", { className: "text-gray-500" }, "módulos"),
+                            React.createElement("span", { className: "font-semibold " + (full ? "text-green-600" : "text-orange-600") },
+                                st.ativos + "/" + TOTAL)
+                        ),
+                        React.createElement("div", { className: "h-1.5 bg-gray-100 rounded-full overflow-hidden" },
+                            React.createElement("div", {
+                                className: "h-full rounded-full " + (full ? "bg-green-500" : "bg-purple-600"),
+                                style: { width: pct + "%" }
+                            })
+                        )
+                    ),
+                    // chip de restrições
+                    st.restr > 0
+                        ? React.createElement("span", { className: "bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
+                            st.restr + " abas restritas")
+                        : React.createElement("span", { className: "bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
+                            "sem restrição"),
+                    React.createElement("span", { className: "text-gray-400 text-lg flex-shrink-0" }, aberto ? "▼" : "▶")
+                ),
+                aberto && blocoModulos(admin)
+            );
+        }
+
+        // ---- Modal Replicar ----
+        function renderModal() {
+            if (!modalOpen) return null;
+            var alvosAdmins = admins.filter(function(a) { return a.codProfissional !== origem; });
+            var marcados = alvosAdmins.filter(function(a) { return alvos[a.codProfissional]; }).length;
+            var todosMarcados = alvosAdmins.length > 0 && marcados === alvosAdmins.length;
+
+            return React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                onClick: function() { if (!busy) setModalOpen(false); }
+            },
+                React.createElement("div", {
+                    className: "bg-white rounded-xl w-full max-w-md flex flex-col max-h-[90vh]",
+                    onClick: function(e) { e.stopPropagation(); }
+                },
+                    // header
+                    React.createElement("div", { className: "p-5 border-b" },
+                        React.createElement("div", { className: "flex items-center justify-between" },
+                            React.createElement("h3", { className: "text-lg font-bold flex items-center gap-2" },
+                                React.createElement("span", null, "📋"), "Replicar permissões"),
+                            React.createElement("button", {
+                                onClick: function() { if (!busy) setModalOpen(false); },
+                                className: "text-gray-400 hover:text-gray-600 text-xl"
+                            }, "✕")
+                        ),
+                        React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
+                            "Copia os módulos e abas de um admin para vários de uma vez.")
+                    ),
+                    // corpo
+                    React.createElement("div", { className: "p-5 overflow-y-auto space-y-4" },
+                        React.createElement("div", null,
+                            React.createElement("label", { className: "block text-sm font-semibold mb-1" }, "Copiar de"),
+                            React.createElement("select", {
+                                value: origem,
+                                onChange: function(e) { setOrigem(e.target.value); setAlvos({}); },
+                                className: "w-full px-3 py-2 border rounded-lg"
+                            },
+                                React.createElement("option", { value: "" }, "— selecione o admin —"),
+                                admins.map(function(a) {
+                                    var st = statsDe(a.codProfissional);
+                                    return React.createElement("option", { key: a.codProfissional, value: a.codProfissional },
+                                        a.fullName + " (" + st.ativos + "/" + TOTAL + " módulos)");
+                                })
+                            )
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("div", { className: "flex items-center justify-between mb-1" },
+                                React.createElement("label", { className: "text-sm font-semibold" }, "Aplicar em"),
+                                origem && alvosAdmins.length > 0 && React.createElement("button", {
+                                    onClick: function() {
+                                        var novo = {};
+                                        if (!todosMarcados) alvosAdmins.forEach(function(a) { novo[a.codProfissional] = true; });
+                                        setAlvos(novo);
+                                    },
+                                    className: "text-xs text-purple-600 font-semibold hover:underline"
+                                }, todosMarcados ? "Limpar seleção" : "Selecionar todos")
+                            ),
+                            !origem
+                                ? React.createElement("p", { className: "text-sm text-gray-400 py-3 text-center border rounded-lg" },
+                                    "Escolha o admin de origem acima")
+                                : React.createElement("div", { className: "border rounded-lg divide-y max-h-52 overflow-y-auto" },
+                                    alvosAdmins.map(function(a) {
+                                        var marcado = !!alvos[a.codProfissional];
+                                        return React.createElement("label", {
+                                            key: a.codProfissional,
+                                            className: "flex items-center gap-3 p-2.5 cursor-pointer hover:bg-gray-50"
+                                        },
+                                            React.createElement("input", {
+                                                type: "checkbox", checked: marcado,
+                                                onChange: function() {
+                                                    var novo = Object.assign({}, alvos);
+                                                    if (marcado) delete novo[a.codProfissional];
+                                                    else novo[a.codProfissional] = true;
+                                                    setAlvos(novo);
+                                                },
+                                                className: "w-4 h-4 rounded"
+                                            }),
+                                            React.createElement("div", {
+                                                className: "w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold " + corAvatar(a.role)
+                                            }, a.fullName ? a.fullName.charAt(0).toUpperCase() : "?"),
+                                            React.createElement("span", { className: "text-sm flex-1" }, a.fullName),
+                                            React.createElement("span", { className: "text-xs text-gray-400" }, labelRole(a.role))
+                                        );
+                                    })
+                                )
+                        ),
+                        React.createElement("div", { className: "flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-lg p-3" },
+                            React.createElement("span", null, "⚠️"),
+                            React.createElement("p", { className: "text-xs text-amber-800" },
+                                "Os módulos e abas dos admins selecionados serão sobrescritos e salvos imediatamente no banco.")
+                        )
+                    ),
+                    // footer
+                    React.createElement("div", { className: "p-5 border-t flex gap-3 justify-end" },
+                        React.createElement("button", {
+                            onClick: function() { if (!busy) setModalOpen(false); },
+                            disabled: busy,
+                            className: "px-4 py-2 border rounded-lg font-semibold hover:bg-gray-100 disabled:opacity-50"
+                        }, "Cancelar"),
+                        React.createElement("button", {
+                            onClick: aplicarReplicar,
+                            disabled: busy || !origem || marcados === 0,
+                            className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+                        }, busy ? "Aplicando..." : ("Aplicar a " + marcados + " admin" + (marcados === 1 ? "" : "s")))
+                    )
+                )
+            );
+        }
+
+        // ---- Filtragem ----
+        var buscaNorm = busca.toLowerCase().trim();
+        var adminsFiltrados = admins.filter(function(a) {
+            if (!buscaNorm) return true;
+            return (a.fullName || "").toLowerCase().indexOf(buscaNorm) !== -1 ||
+                   String(a.codProfissional || "").toLowerCase().indexOf(buscaNorm) !== -1;
+        });
+
+        return React.createElement("div", null,
+            // header
+            React.createElement("div", { className: "bg-white rounded-xl shadow-sm border p-5 mb-4" },
+                React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-3 mb-4" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-lg font-bold flex items-center gap-2" },
+                            React.createElement("span", null, "🔐"), "Sistema de Permissões"),
+                        React.createElement("p", { className: "text-sm text-gray-500" },
+                            "Clique em um admin para expandir e configurar")
+                    ),
+                    React.createElement("div", { className: "flex gap-2 flex-wrap" },
+                        React.createElement("button", {
+                            onClick: function() { abrirReplicar(""); },
+                            className: "px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 flex items-center gap-1.5"
+                        }, "📋 Replicar permissões"),
+                        React.createElement("button", {
+                            onClick: function() { carregar(true); },
+                            title: "Atualizar",
+                            className: "px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200"
+                        }, "🔄"),
+                        React.createElement("button", {
+                            onClick: salvarTodos,
+                            className: "px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 flex items-center gap-1.5"
+                        }, "💾 Salvar")
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-3 gap-3" },
+                    metricCard("Administradores", totalAdmins, "text-gray-800"),
+                    metricCard("Acesso total", acessoTotal, "text-green-600"),
+                    metricCard("Com restrições", comRestricoes, "text-orange-600")
+                )
+            ),
+            // busca
+            admins.length > 0 && React.createElement("div", { className: "relative mb-4" },
+                React.createElement("input", {
+                    type: "text", value: busca,
+                    onChange: function(e) { setBusca(e.target.value); },
+                    placeholder: "Buscar administrador...",
+                    className: "w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                }),
+                React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" }, "🔍")
+            ),
+            // lista
+            admins.length === 0
+                ? React.createElement("div", { className: "bg-white rounded-xl p-8 text-center text-gray-500" },
+                    React.createElement("span", { className: "text-4xl block mb-2" }, "👤"),
+                    "Nenhum administrador cadastrado")
+                : adminsFiltrados.length === 0
+                    ? React.createElement("div", { className: "bg-white rounded-xl p-8 text-center text-gray-500" },
+                        React.createElement("span", { className: "text-4xl block mb-2" }, "🔍"),
+                        "Nenhum admin encontrado")
+                    : React.createElement("div", { className: "space-y-2" },
+                        adminsFiltrados.map(cardAdmin)),
+            renderModal()
+        );
+    }
+
     // Componente principal do módulo Config
     window.ModuloConfigComponent = function(props) {
         const {
@@ -680,285 +1168,14 @@
             ),
             
             // ==================== TAB PERMISSÕES ADM ====================
-            p.configTab === "permissoes" && verificarPermissaoAba("permissoes") && React.createElement("div", null,
-                // Carregar permissões automaticamente
-                !p.permsLoaded && (function() {
-                    (async function() {
-                        try {
-                            const res = await fetchAuth(API_URL + "/admin-permissions");
-                            if (res.ok) {
-                                const adminsPerms = await res.json();
-                                const permsObj = {};
-                                adminsPerms.forEach(function(adm) {
-                                    const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
-                                    const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
-                                    const modulosObj = {};
-                                    
-                                    // CORREÇÃO: Se não há módulos configurados, marcar como "não configurado"
-                                    // Se há módulos, usar APENAS os que estão na lista
-                                    SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                        if (mods.length === 0) {
-                                            // Sem configuração = acesso total
-                                            modulosObj[mod.id] = true;
-                                        } else {
-                                            // Com configuração = APENAS os listados têm acesso
-                                            modulosObj[mod.id] = mods.includes(mod.id);
-                                        }
-                                    });
-                                    
-                                    permsObj[adm.cod_profissional] = {
-                                        modulos: modulosObj,
-                                        abas: tabs,
-                                        hasConfig: mods.length > 0
-                                    };
-                                });
-                                x(prev => ({...prev, adminPerms: permsObj, permsLoaded: true}));
-                            }
-                        } catch (err) {
-                            console.error("Erro ao carregar permissões:", err);
-                            x(prev => ({...prev, permsLoaded: true}));
-                        }
-                    })();
-                    return null;
-                })(),
-                
-                React.createElement("div", {className: "bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4"},
-                    React.createElement("div", {className: "flex items-center justify-between flex-wrap gap-3"},
-                        React.createElement("div", null,
-                            React.createElement("h2", {className: "text-lg font-bold text-blue-800"}, "🔐 Sistema de Permissões"),
-                            React.createElement("p", {className: "text-blue-600 text-sm"}, "Clique em um admin para expandir e configurar")
-                        ),
-                        React.createElement("div", {className: "flex gap-2"},
-                            React.createElement("button", {
-                                onClick: async function() {
-                                    s(true);
-                                    try {
-                                        const res = await fetchAuth(API_URL + "/admin-permissions");
-                                        if (res.ok) {
-                                            const adminsPerms = await res.json();
-                                            const permsObj = {};
-                                            adminsPerms.forEach(function(adm) {
-                                                const mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
-                                                const tabs = adm.allowed_tabs && typeof adm.allowed_tabs === 'object' ? adm.allowed_tabs : {};
-                                                const modulosObj = {};
-                                                SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                                    if (mods.length === 0) {
-                                                        modulosObj[mod.id] = true;
-                                                    } else {
-                                                        modulosObj[mod.id] = mods.includes(mod.id);
-                                                    }
-                                                });
-                                                permsObj[adm.cod_profissional] = {
-                                                    modulos: modulosObj,
-                                                    abas: tabs,
-                                                    hasConfig: mods.length > 0
-                                                };
-                                            });
-                                            x({...p, adminPerms: permsObj, permsLoaded: true});
-                                            ja("✅ Atualizado!", "success");
-                                        }
-                                    } catch (err) {
-                                        ja("❌ Erro", "error");
-                                    }
-                                    s(false);
-                                },
-                                className: "px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-                            }, "🔄"),
-                            React.createElement("button", {
-                                onClick: async function() {
-                                    s(true);
-                                    const adminsList = A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; });
-                                    let savedCount = 0;
-                                    
-                                    for (let i = 0; i < adminsList.length; i++) {
-                                        const admin = adminsList[i];
-                                        const cod = admin.codProfissional;
-                                        const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : null;
-                                        
-                                        if (!perms) continue;
-                                        
-                                        // CORREÇÃO: Apenas incluir módulos que estão EXPLICITAMENTE true
-                                        const allowedModules = [];
-                                        const mods = perms.modulos || {};
-                                        SISTEMA_MODULOS_CONFIG.forEach(function(mod) {
-                                            if (mods[mod.id] === true) {
-                                                allowedModules.push(mod.id);
-                                            }
-                                        });
-                                        
-                                        const allowedTabs = perms.abas || {};
-                                        
-                                        try {
-                                            const res = await fetchAuth(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
-                                                method: "PATCH",
-                                                headers: {"Content-Type": "application/json"},
-                                                body: JSON.stringify({ allowed_modules: allowedModules, allowed_tabs: allowedTabs })
-                                            });
-                                            if (res.ok) savedCount++;
-                                        } catch (err) {
-                                            console.error("Erro:", err);
-                                        }
-                                    }
-                                    ja(savedCount > 0 ? "✅ Salvo!" : "⚠️ Nada para salvar", savedCount > 0 ? "success" : "warning");
-                                    s(false);
-                                },
-                                className: "px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700"
-                            }, "💾 Salvar")
-                        )
-                    )
-                ),
-                
-                // Lista de admins colapsável
-                A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).length === 0
-                    ? React.createElement("div", {className: "bg-white rounded-xl p-8 text-center text-gray-500"},
-                        React.createElement("span", {className: "text-4xl block mb-2"}, "👤"),
-                        "Nenhum administrador cadastrado"
-                    )
-                    : React.createElement("div", {className: "space-y-2"},
-                        A.filter(function(u) { return u.role === "admin" || u.role === "admin_financeiro"; }).map(function(admin) {
-                            const cod = admin.codProfissional;
-                            const perms = p.adminPerms && p.adminPerms[cod] ? p.adminPerms[cod] : { modulos: {}, abas: {} };
-                            const mods = perms.modulos || {};
-                            const abas = perms.abas || {};
-                            const isExpanded = p.expandedAdmin === cod;
-                            
-                            const modulosConfig = SISTEMA_MODULOS_CONFIG;
-                            const modulosAtivos = modulosConfig.filter(function(m) { return mods[m.id] === true; }).length;
-                            const abasRestritas = Object.keys(abas).filter(function(k) { return abas[k] === false; }).length;
-                            
-                            return React.createElement("div", {
-                                key: cod,
-                                className: "bg-white rounded-xl shadow-sm border overflow-hidden"
-                            },
-                                React.createElement("div", {
-                                    className: "flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors",
-                                    onClick: function() {
-                                        x({...p, expandedAdmin: isExpanded ? null : cod});
-                                    }
-                                },
-                                    React.createElement("div", {className: "flex items-center gap-3"},
-                                        React.createElement("div", {
-                                            className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold " +
-                                                (admin.role === "admin" ? "bg-blue-600" : "bg-green-600")
-                                        }, admin.fullName ? admin.fullName.charAt(0).toUpperCase() : "?"),
-                                        React.createElement("div", null,
-                                            React.createElement("p", {className: "font-semibold"}, admin.fullName),
-                                            React.createElement("p", {className: "text-xs text-gray-500"}, admin.role === "admin" ? "👑 Admin" : "💰 Admin Fin.")
-                                        )
-                                    ),
-                                    React.createElement("div", {className: "flex items-center gap-3"},
-                                        React.createElement("div", {className: "text-right"},
-                                            React.createElement("p", {className: "text-sm font-medium " + (modulosAtivos === SISTEMA_MODULOS_CONFIG.length ? "text-green-600" : "text-orange-600")},
-                                                modulosAtivos + "/" + SISTEMA_MODULOS_CONFIG.length + " módulos"
-                                            ),
-                                            abasRestritas > 0 && React.createElement("p", {className: "text-xs text-red-500"}, abasRestritas + " abas restritas")
-                                        ),
-                                        React.createElement("span", {className: "text-gray-400 text-xl"}, isExpanded ? "▼" : "▶")
-                                    )
-                                ),
-                                
-                                // ==================== SEÇÃO EXPANDIDA COM MÓDULOS E ABAS ====================
-                                isExpanded && React.createElement("div", {className: "border-t p-4 bg-gray-50"},
-                                    React.createElement("div", {className: "space-y-3"},
-                                        modulosConfig.map(function(modConfig) {
-                                            const modAtivo = mods[modConfig.id] === true;
-                                            const modKey = modConfig.id;
-                                            const modAbas = modConfig.abas || [];
-                                            const isModExpanded = p.expandedModulo === cod + "_" + modKey;
-                                            
-                                            // Contar abas restritas deste módulo
-                                            const abasRestritasDoModulo = modAbas.filter(function(aba) {
-                                                const abaKey = modKey + "_" + aba.id.replace(/-/g, "");
-                                                return abas[abaKey] === false;
-                                            }).length;
-                                            
-                                            return React.createElement("div", {
-                                                key: modKey,
-                                                className: "border rounded-lg overflow-hidden bg-white " + (modAtivo ? "border-green-200" : "border-red-200")
-                                            },
-                                                // Header do módulo
-                                                React.createElement("div", {
-                                                    className: "flex items-center justify-between p-2 " + (modAtivo ? "bg-green-50" : "bg-red-50")
-                                                },
-                                                    React.createElement("div", {
-                                                        className: "flex items-center gap-2 flex-1 cursor-pointer",
-                                                        onClick: function() {
-                                                            // Toggle expandir/colapsar módulo para ver abas
-                                                            const expandKey = cod + "_" + modKey;
-                                                            x({...p, expandedModulo: isModExpanded ? null : expandKey});
-                                                        }
-                                                    },
-                                                        React.createElement("span", {className: "text-gray-400"}, isModExpanded && modAbas.length > 0 ? "▼" : modAbas.length > 0 ? "▶" : ""),
-                                                        React.createElement("span", null, modConfig.icon),
-                                                        React.createElement("span", {className: "font-medium text-sm"}, modConfig.label),
-                                                        modAbas.length > 0 && React.createElement("span", {className: "text-xs text-gray-400"}, 
-                                                            "(", modAbas.length, " abas",
-                                                            abasRestritasDoModulo > 0 ? ", " + abasRestritasDoModulo + " restritas" : "",
-                                                            ")"
-                                                        )
-                                                    ),
-                                                    // Toggle do módulo
-                                                    React.createElement("button", {
-                                                        onClick: function(e) {
-                                                            e.stopPropagation();
-                                                            const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
-                                                            if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
-                                                            if (!newPerms[cod].modulos) newPerms[cod].modulos = {};
-                                                            newPerms[cod].modulos[modKey] = !modAtivo;
-                                                            x({...p, adminPerms: newPerms});
-                                                        },
-                                                        className: "px-3 py-1 rounded text-xs font-bold transition-colors " + 
-                                                            (modAtivo ? "bg-green-200 text-green-800 hover:bg-green-300" : "bg-red-200 text-red-800 hover:bg-red-300")
-                                                    }, modAtivo ? "✓ Permitido" : "✗ Bloqueado")
-                                                ),
-                                                
-                                                // ==================== LISTA DE ABAS DO MÓDULO ====================
-                                                isModExpanded && modAbas.length > 0 && React.createElement("div", {
-                                                    className: "border-t bg-gray-50 p-3"
-                                                },
-                                                    React.createElement("p", {className: "text-xs text-gray-500 mb-2 font-semibold"}, "📑 Abas do módulo:"),
-                                                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-2"},
-                                                        modAbas.map(function(aba) {
-                                                            const abaKey = modKey + "_" + aba.id.replace(/-/g, "");
-                                                            const abaPermitida = abas[abaKey] !== false;
-                                                            
-                                                            return React.createElement("div", {
-                                                                key: abaKey,
-                                                                className: "flex items-center justify-between p-2 rounded border text-sm " +
-                                                                    (abaPermitida ? "bg-white border-gray-200" : "bg-red-50 border-red-200")
-                                                            },
-                                                                React.createElement("span", {
-                                                                    className: abaPermitida ? "text-gray-700" : "text-red-700"
-                                                                }, aba.label),
-                                                                React.createElement("button", {
-                                                                    onClick: function() {
-                                                                        const newPerms = JSON.parse(JSON.stringify(p.adminPerms || {}));
-                                                                        if (!newPerms[cod]) newPerms[cod] = { modulos: {}, abas: {} };
-                                                                        if (!newPerms[cod].abas) newPerms[cod].abas = {};
-                                                                        // Toggle: se está permitida (undefined ou true), bloquear (false)
-                                                                        // Se está bloqueada (false), permitir (removendo a chave ou setando true)
-                                                                        if (abaPermitida) {
-                                                                            newPerms[cod].abas[abaKey] = false;
-                                                                        } else {
-                                                                            delete newPerms[cod].abas[abaKey];
-                                                                        }
-                                                                        x({...p, adminPerms: newPerms});
-                                                                    },
-                                                                    className: "w-6 h-6 rounded flex items-center justify-center text-xs font-bold transition-colors " +
-                                                                        (abaPermitida ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200")
-                                                                }, abaPermitida ? "✓" : "✗")
-                                                            );
-                                                        })
-                                                    )
-                                                )
-                                            );
-                                        })
-                                    )
-                                )
-                            );
-                        })
-                    )
-            ),
+            p.configTab === "permissoes" && verificarPermissaoAba("permissoes") && React.createElement(PermissoesADMView, {
+                usuarios: A,
+                API_URL: API_URL,
+                fetchAuth: fetchAuth,
+                showToast: ja,
+                setLoading: s,
+                SISTEMA_MODULOS_CONFIG: SISTEMA_MODULOS_CONFIG
+            }),
             
             // ==================== TAB SISTEMA ====================
             p.configTab === "sistema" && verificarPermissaoAba("sistema") && React.createElement("div", null,
