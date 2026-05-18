@@ -765,12 +765,15 @@
                             })
                         )
                     ),
-                    // chip de restrições
-                    st.restr > 0
+                    // chip de status (verde só em acesso realmente total)
+                    (st.restr > 0
                         ? React.createElement("span", { className: "bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
                             st.restr + " abas restritas")
-                        : React.createElement("span", { className: "bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
-                            "sem restrição"),
+                        : full
+                            ? React.createElement("span", { className: "bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
+                                "acesso total")
+                            : React.createElement("span", { className: "bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
+                                "abas liberadas")),
                     React.createElement("span", { className: "text-gray-400 text-lg flex-shrink-0" }, aberto ? "▼" : "▶")
                 ),
                 aberto && blocoModulos(admin)
