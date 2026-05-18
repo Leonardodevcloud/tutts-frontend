@@ -473,6 +473,9 @@
         var fetchAuth = props.fetchAuth;
         var showToast = props.showToast;
         var setLoading = props.setLoading;
+        var usuarioLogado = props.usuario || {};
+        var recarregar = props.recarregar;
+        var ehMaster = usuarioLogado.role === "admin_master";
         var MODULOS = props.SISTEMA_MODULOS_CONFIG || [];
         var TOTAL = MODULOS.length;
 
@@ -610,6 +613,29 @@
                 .finally(function() { setBusy(false); });
         }
 
+        // --- Excluir admin (somente admin_master) ---
+        function excluirAdmin(admin) {
+            var cod = admin.codProfissional;
+            if (!confirm("⚠️ Excluir o admin \"" + (admin.fullName || cod) + "\"?\n\n" +
+                "A conta será removida. O histórico de auditoria e os registros do sistema são preservados.\n\n" +
+                "Esta ação não pode ser desfeita.")) return;
+            setLoading(true);
+            fetchAuth(API_URL + "/users/" + encodeURIComponent(cod), { method: "DELETE" })
+                .then(function(res) {
+                    if (res.ok) {
+                        showToast("🗑️ Admin excluído!", "success");
+                        setExp(null);
+                        if (recarregar) recarregar();
+                    } else {
+                        return res.json().catch(function() { return {}; }).then(function(e) {
+                            showToast("❌ " + (e.error || "Erro ao excluir"), "error");
+                        });
+                    }
+                })
+                .catch(function() { showToast("❌ Erro ao excluir", "error"); })
+                .finally(function() { setLoading(false); });
+        }
+
         // --- Métricas de um admin ---
         function statsDe(cod) {
             var pr = perms[cod] || { modulos: {}, abas: {} };
@@ -653,7 +679,7 @@
             var cod = admin.codProfissional;
             return React.createElement("div", { className: "border-t bg-gray-50 p-3" },
                 // atalhos
-                React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" },
+                React.createElement("div", { className: "flex flex-wrap gap-2 mb-3 items-center" },
                     React.createElement("button", {
                         onClick: function() { marcarModulos(cod, true); },
                         className: "px-3 py-1.5 text-xs font-semibold rounded-lg border bg-white hover:bg-gray-50"
@@ -665,7 +691,11 @@
                     React.createElement("button", {
                         onClick: function() { abrirReplicar(cod); },
                         className: "px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    }, "📋 Usar como modelo")
+                    }, "📋 Usar como modelo"),
+                    ehMaster && React.createElement("button", {
+                        onClick: function() { excluirAdmin(admin); },
+                        className: "ml-auto px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                    }, "🗑️ Excluir admin")
                 ),
                 // lista de módulos
                 React.createElement("div", { className: "space-y-1.5" },
@@ -1177,6 +1207,8 @@
                 fetchAuth: fetchAuth,
                 showToast: ja,
                 setLoading: s,
+                usuario: l,
+                recarregar: Ia,
                 SISTEMA_MODULOS_CONFIG: SISTEMA_MODULOS_CONFIG
             }),
             
