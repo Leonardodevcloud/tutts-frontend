@@ -2667,16 +2667,8 @@ const hideLoadingScreen = () => {
             titulo: '',
             conteudo: '',
             imagem: null,
-            para_todos: true,
-            setores_destino: []
+            para_todos: true
         }),
-        // Sistema de Setores
-        [setores, setSetores] = useState([]),
-        [setoresLoading, setSetoresLoading] = useState(false),
-        [showSetorModal, setShowSetorModal] = useState(false),
-        [setorEdit, setSetorEdit] = useState(null),
-        [setorForm, setSetorForm] = useState({ nome: '', descricao: '', cor: '#6366f1' }),
-        [setorExpandido, setSetorExpandido] = useState(null), // ID do setor expandido para ver usuários
         // Tutorial do usuário
         [tutorialAtivo, setTutorialAtivo] = useState(false),
         [tutorialPasso, setTutorialPasso] = useState(0),
@@ -5552,14 +5544,7 @@ const hideLoadingScreen = () => {
         const carregarRelatoriosDiarios = async () => {
             setRelatoriosLoading(true);
             try {
-                // Passar setor_id e usuario_id para filtrar relatórios que o usuário pode ver
-                // Admins (sem setor) veem todos, usuários comuns só veem os do seu setor ou para todos
-                const params = new URLSearchParams();
-                if (l?.setor_id) params.append('setor_id', l.setor_id);
-                if (l?.codProfissional) params.append('usuario_id', l.codProfissional);
-                
-                const queryString = params.toString() ? `?${params.toString()}` : '';
-                const res = await fetchAuth(`${API_URL}/relatorios-diarios${queryString}`);
+                const res = await fetchAuth(`${API_URL}/relatorios-diarios`);
                 const data = await res.json();
                 setRelatoriosDiarios(Array.isArray(data) ? data : []);
             } catch (err) { 
@@ -5569,109 +5554,15 @@ const hideLoadingScreen = () => {
             setRelatoriosLoading(false);
         };
         
-        // ===== FUNÇÕES DE SETORES =====
-        const carregarSetores = async () => {
-            try {
-                const res = await fetchAuth(`${API_URL}/setores`);
-                const data = await res.json();
-                setSetores(Array.isArray(data) ? data : []);
-            } catch (err) {
-                console.error('Erro ao carregar setores:', err);
-                setSetores([]);
-            }
-        };
-        
-        const salvarSetor = async () => {
-            if (!setorForm.nome.trim()) {
-                ja('Nome do setor é obrigatório', 'error');
-                return;
-            }
-            
-            setSetoresLoading(true);
-            try {
-                const url = setorEdit 
-                    ? `${API_URL}/setores/${setorEdit.id}`
-                    : `${API_URL}/setores`;
-                const method = setorEdit ? 'PUT' : 'POST';
-                
-                const res = await fetchAuth(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(setorForm)
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) {
-                    throw new Error(data.error || 'Erro ao salvar');
-                }
-                
-                ja(setorEdit ? 'Setor atualizado!' : 'Setor criado!', 'success');
-                setShowSetorModal(false);
-                setSetorEdit(null);
-                setSetorForm({ nome: '', descricao: '', cor: '#6366f1' });
-                carregarSetores();
-            } catch (err) {
-                ja(err.message || 'Erro ao salvar setor', 'error');
-            }
-            setSetoresLoading(false);
-        };
-        
-        const excluirSetor = async (setor) => {
-            if (!confirm(`Excluir o setor "${setor.nome}"?`)) return;
-            
-            try {
-                const res = await fetchAuth(`${API_URL}/setores/${setor.id}`, { method: 'DELETE' });
-                const data = await res.json();
-                
-                if (!res.ok) {
-                    throw new Error(data.error || 'Erro ao excluir');
-                }
-                
-                ja('Setor excluído!', 'success');
-                carregarSetores();
-            } catch (err) {
-                ja(err.message || 'Erro ao excluir setor', 'error');
-            }
-        };
-        
-        const atualizarSetorUsuario = async (codProfissional, setorId) => {
-            try {
-                const res = await fetchAuth(`${API_URL}/users/${codProfissional}/setor`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ setor_id: setorId || null })
-                });
-                
-                if (!res.ok) {
-                    throw new Error('Erro ao atualizar');
-                }
-                
-                ja('Setor do usuário atualizado!', 'success');
-                Ia(); // Recarregar usuários
-            } catch (err) {
-                ja('Erro ao atualizar setor', 'error');
-            }
-        };
-        
-        // Carregar setores quando logar
-        React.useEffect(() => {
-            if (l?.codProfissional) {
-                carregarSetores();
-            }
-        }, [l?.codProfissional]);
-        
         // Carregar relatórios não lidos pelo usuário
         const carregarRelatoriosNaoLidos = async () => {
-            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional, 'setor:', l?.setor_id);
+            console.log('📢 Verificando relatórios não lidos para:', l?.codProfissional);
             if (!l?.codProfissional) {
                 console.log('❌ Sem codProfissional');
                 return;
             }
             try {
-                // Passar setor_id como query param para filtrar por setor
-                const setorParam = l?.setor_id ? `?setor_id=${l.setor_id}` : '';
-                const res = await fetchAuth(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}${setorParam}`);
+                const res = await fetchAuth(`${API_URL}/relatorios-diarios/nao-lidos/${l.codProfissional}`);
                 const data = await res.json();
                 console.log('📢 Resposta do servidor:', data);
                 const naoLidos = Array.isArray(data) ? data : [];
@@ -5890,15 +5781,11 @@ const hideLoadingScreen = () => {
         
         const abrirNovoRelatorio = () => {
             setRelatorioEdit(null);
-            // Por padrão, abre com "Setores específicos" selecionado e "Monitoramento" marcado
-            const setorMonitoramento = setores.find(s => s.nome.toLowerCase() === 'monitoramento');
-            const setoresDefault = setorMonitoramento ? [setorMonitoramento.id] : [];
             setRelatorioForm({
                 titulo: '',
                 conteudo: '',
                 imagem: null,
-                para_todos: false, // Setores específicos por padrão
-                setores_destino: setoresDefault // Monitoramento selecionado por padrão
+                para_todos: true
             });
             setShowRelatorioModal(true);
         };
@@ -5909,8 +5796,7 @@ const hideLoadingScreen = () => {
                 titulo: relatorio.titulo || '',
                 conteudo: relatorio.conteudo || '',
                 imagem: null,
-                para_todos: relatorio.para_todos !== false,
-                setores_destino: relatorio.setores_destino || []
+                para_todos: true
             });
             setShowRelatorioModal(true);
         };
@@ -5924,12 +5810,6 @@ const hideLoadingScreen = () => {
             
             if (!relatorioForm.titulo.trim()) {
                 ja('Preencha o título do relatório', 'error');
-                return false;
-            }
-            
-            // Validar setores se não for para todos
-            if (!relatorioForm.para_todos && (!relatorioForm.setores_destino || relatorioForm.setores_destino.length === 0)) {
-                ja('Selecione pelo menos um setor de destino', 'error');
                 return false;
             }
             
@@ -5960,9 +5840,7 @@ const hideLoadingScreen = () => {
                     usuario_id: l.codProfissional,
                     usuario_nome: l.fullName || l.username,
                     usuario_foto: socialProfile?.profile_photo || '',
-                    imagem_base64: imagem_base64,
-                    para_todos: relatorioForm.para_todos,
-                    setores_destino: relatorioForm.para_todos ? [] : relatorioForm.setores_destino
+                    imagem_base64: imagem_base64
                 };
                 
                 const urlApi = relatorioEdit 
@@ -5980,7 +5858,7 @@ const hideLoadingScreen = () => {
                 ja(relatorioEdit ? '✅ Relatório atualizado!' : '✅ Relatório criado!', 'success');
                 setShowRelatorioModal(false);
                 setRelatorioEdit(null);
-                setRelatorioForm({ titulo: '', conteudo: '', imagem: null, para_todos: true, setores_destino: [] });
+                setRelatorioForm({ titulo: '', conteudo: '', imagem: null, para_todos: true });
                 await carregarRelatoriosDiarios();
             } catch (err) {
                 console.error('Erro ao salvar relatório:', err);
@@ -7008,9 +6886,6 @@ const hideLoadingScreen = () => {
                     codProfissional: e.cod_profissional,
                     fullName: e.full_name,
                     role: e.role,
-                    setor_id: e.setor_id,
-                    setor_nome: e.setor_nome,
-                    setor_cor: e.setor_cor,
                     createdAt: new Date(e.created_at).toLocaleString("pt-BR"),
                     foto: null
                 }));
@@ -16027,8 +15902,8 @@ const hideLoadingScreen = () => {
                     relatoriosDiarios, relatoriosNaoLidos, relatoriosLoading,
                     abrirNovoRelatorio, abrirEditarRelatorio,
                     salvarRelatorio, excluirRelatorio, gerarLinkWaze,
-                    // Regiões e Setores
-                    aa, setores,
+                    // Regiões
+                    aa,
                     // Incentivos Operacionais
                     incentivosData, setIncentivosData, incentivosStats,
                     incentivoModal, setIncentivoModal, incentivoEdit, setIncentivoEdit,
@@ -16328,7 +16203,6 @@ const hideLoadingScreen = () => {
                     estado: p,
                     setEstado: x,
                     usuarios: A,
-                    setores: setores,
                     showToast: ja,
                     setLoading: s,
                     carregarUsuarios: Ia,
@@ -16350,17 +16224,6 @@ const hideLoadingScreen = () => {
                     onLogout: () => o(null),
                     onGoHome: () => he("home"),
                     onNavigate: navegarSidebar,
-                    atualizarSetorUsuario: atualizarSetorUsuario,
-                    setorExpandido: setorExpandido,
-                    setSetorExpandido: setSetorExpandido,
-                    showSetorModal: showSetorModal,
-                    setShowSetorModal: setShowSetorModal,
-                    setorEdit: setorEdit,
-                    setSetorEdit: setSetorEdit,
-                    setorForm: setorForm,
-                    setSetorForm: setSetorForm,
-                    salvarSetor: salvarSetor,
-                    excluirSetor: excluirSetor,
                     toastData: i
                 });
             } else {

@@ -48,8 +48,8 @@
             relatoriosDiarios, relatoriosNaoLidos, relatoriosLoading,
             abrirNovoRelatorio, abrirEditarRelatorio,
             salvarRelatorio, excluirRelatorio, gerarLinkWaze,
-            // Regiões e Setores
-            aa, setores,
+            // Regiões
+            aa,
             // Incentivos Operacionais
             incentivosData, setIncentivosData, incentivosStats,
             incentivoModal, setIncentivoModal, incentivoEdit, setIncentivoEdit,
@@ -1720,73 +1720,6 @@
                         className: "p-4 space-y-4 overflow-y-auto flex-1",
                         onKeyDown: (e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault(); }
                     },
-                        // ===== SELEÇÃO DE DESTINATÁRIOS NO TOPO =====
-                        React.createElement("div", {className: "bg-purple-50 rounded-xl p-4 space-y-3 border-2 border-purple-200"},
-                            React.createElement("label", {className: "block text-sm font-bold text-purple-800"}, "📢 Quem deve ver este relatório?"),
-                            
-                            React.createElement("div", {className: "flex flex-wrap gap-3"},
-                                // Toggle Para Todos
-                                React.createElement("div", {
-                                    className: `flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${relatorioForm.para_todos ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 border hover:border-gray-400'}`,
-                                    onClick: () => setRelatorioForm(prev => ({...prev, para_todos: true, setores_destino: []}))
-                                },
-                                    React.createElement("span", null, "🌐"),
-                                    React.createElement("span", {className: "font-semibold"}, "Todos os usuários")
-                                ),
-                                
-                                // Toggle Por Setores
-                                React.createElement("div", {
-                                    className: `flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${!relatorioForm.para_todos ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 border hover:border-gray-400'}`,
-                                    onClick: () => {
-                                        // Ao clicar em "Setores específicos", já seleciona o setor "Monitoramento" por padrão
-                                        const setorMonitoramento = setores.find(s => s.nome.toLowerCase() === 'monitoramento');
-                                        const setoresDefault = setorMonitoramento ? [setorMonitoramento.id] : [];
-                                        setRelatorioForm(prev => ({...prev, para_todos: false, setores_destino: setoresDefault}));
-                                    }
-                                },
-                                    React.createElement("span", null, "🏢"),
-                                    React.createElement("span", {className: "font-semibold"}, "Setores específicos")
-                                )
-                            ),
-                            
-                            // Lista de Setores (só aparece se não for para todos)
-                            !relatorioForm.para_todos && React.createElement("div", {className: "flex flex-wrap gap-2 mt-2"},
-                                setores.length === 0 
-                                    ? React.createElement("p", {className: "text-sm text-gray-500"}, 
-                                        "Nenhum setor cadastrado."
-                                    )
-                                    : setores.filter(s => s.ativo).map(setor => 
-                                        React.createElement("div", {
-                                            key: setor.id,
-                                            className: `flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all text-sm ${
-                                                relatorioForm.setores_destino?.includes(setor.id) 
-                                                    ? 'text-white shadow-md' 
-                                                    : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-400'
-                                            }`,
-                                            style: relatorioForm.setores_destino?.includes(setor.id) 
-                                                ? { backgroundColor: setor.cor || '#6366f1' } 
-                                                : {},
-                                            onClick: () => {
-                                                setRelatorioForm(prev => {
-                                                    const atual = prev.setores_destino || [];
-                                                    const novo = atual.includes(setor.id)
-                                                        ? atual.filter(id => id !== setor.id)
-                                                        : [...atual, setor.id];
-                                                    return {...prev, setores_destino: novo};
-                                                });
-                                            }
-                                        },
-                                            !relatorioForm.setores_destino?.includes(setor.id) && React.createElement("div", {
-                                                className: "w-3 h-3 rounded-full",
-                                                style: { backgroundColor: setor.cor || '#6366f1' }
-                                            }),
-                                            React.createElement("span", {className: "font-medium"}, setor.nome),
-                                            relatorioForm.setores_destino?.includes(setor.id) && React.createElement("span", null, "✓")
-                                        )
-                                    )
-                            )
-                        ),
-                        
                         // Título
                         React.createElement("div", null,
                             React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Título *"),
