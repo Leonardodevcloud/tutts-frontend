@@ -984,6 +984,366 @@
         );
     }
 
+// ClientesApiAutoLoad definido fora do render - referencia estavel
+    var _ClientesApiAutoLoad = function ClientesApiAutoLoad(innerProps) {
+                var innerP = innerProps.p;
+                var innerX = innerProps.x;
+                var innerJa = innerProps.ja;
+                var innerApiUrl = innerProps.API_URL;
+                var innerGetToken = innerProps.getToken;
+                React.useEffect(function() {
+                    if (!innerP.clientesApiLista) {
+                        fetch(innerApiUrl + "/admin/solicitacao/clientes", {
+                            headers: {"Authorization": "Bearer " + innerGetToken()}
+                        }).then(function(r) { return r.ok ? r.json() : Promise.reject(r); })
+                          .then(function(data) { innerX({...innerP, clientesApiLista: data.clientes || data}); })
+                          .catch(function() { innerJa("Erro ao carregar clientes", "error"); });
+                    }
+                }, [!!innerP.clientesApiLista]);
+                return React.createElement("div", null,
+                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
+                    React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
+                        React.createElement("span", null, "🔗"),
+                        "Clientes API - Solicitação de Serviço"
+                    ),
+                    React.createElement("p", {className: "text-gray-600 text-sm mb-4"}, "Cadastre clientes que podem solicitar corridas via página externa."),
+                    
+                    // Formulário de cadastro
+                    React.createElement("div", {className: "bg-gray-50 rounded-lg p-4 mb-6"},
+                        React.createElement("h3", {className: "font-bold text-gray-700 mb-3"}, "➕ Novo Cliente"),
+                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome *"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.novoClienteApi?.nome || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), nome: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                    placeholder: "Nome do cliente"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
+                                React.createElement("input", {
+                                    type: "email",
+                                    value: p.novoClienteApi?.email || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), email: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                    placeholder: "email@empresa.com"
+                                })
+                            )
+                        ),
+                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
+                                React.createElement("input", {
+                                    type: "password",
+                                    value: p.novoClienteApi?.senha || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), senha: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                    placeholder: "Senha de acesso"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Empresa"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.novoClienteApi?.empresa || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), empresa: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
+                                    placeholder: "Nome da empresa"
+                                })
+                            )
+                        ),
+                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Token API Tutts *"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.novoClienteApi?.tutts_token || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_token: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
+                                    placeholder: "Token fornecido pela Tutts"
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Cliente Tutts *"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: p.novoClienteApi?.tutts_cod_cliente || "",
+                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_cod_cliente: e.target.value}}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
+                                    placeholder: "Código do cliente na Tutts"
+                                })
+                            )
+                        ),
+                        React.createElement("button", {
+                            onClick: async function() {
+                                const c = p.novoClienteApi || {};
+                                if (!c.nome || !c.email || !c.senha || !c.tutts_token || !c.tutts_cod_cliente) {
+                                    ja("Preencha todos os campos obrigatórios", "error");
+                                    return;
+                                }
+                                try {
+                                    const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
+                                        method: "POST",
+                                        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                                        body: JSON.stringify(c)
+                                    });
+                                    const data = await resp.json();
+                                    if (resp.ok) {
+                                        ja("✅ Cliente criado com sucesso!", "success");
+                                        x({...p, novoClienteApi: {}, clientesApiLista: null});
+                                    } else {
+                                        ja(data.error || "Erro ao criar cliente", "error");
+                                    }
+                                } catch (err) {
+                                    ja("Erro de conexão", "error");
+                                }
+                            },
+                            className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                        }, "✅ Cadastrar Cliente")
+                    ),
+                    
+                    // Lista de clientes
+                    React.createElement("div", null,
+                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                            React.createElement("h3", {className: "font-bold text-gray-700"}, "📋 Clientes Cadastrados"),
+                            React.createElement("button", {
+                                onClick: async function() {
+                                    try {
+                                        const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
+                                            headers: {"Authorization": "Bearer " + getToken()}
+                                        });
+                                        const data = await resp.json();
+                                        if (resp.ok) {
+                                            x({...p, clientesApiLista: data.clientes || data});
+                                        }
+                                    } catch (err) {
+                                        ja("Erro ao carregar clientes", "error");
+                                    }
+                                },
+                                className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                            }, "🔄 Carregar")
+                        ),
+                        p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
+                        p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement("div", {className: "space-y-2"},
+                            p.clientesApiLista.map(function(cliente) {
+                                var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
+                                return React.createElement("div", {
+                                    key: cliente.id,
+                                    className: "bg-gray-50 rounded-lg p-3"
+                                },
+                                    React.createElement("div", {className: "flex items-start justify-between gap-2"},
+                                        React.createElement("div", {className: "flex-1 min-w-0"},
+                                            React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
+                                            React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
+                                            React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente),
+                                            cats.length > 0
+                                                ? React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                                    cats.map(function(c) {
+                                                        return React.createElement("span", {
+                                                            key: c.sigla,
+                                                            className: "px-2 py-0.5 rounded-full text-xs font-medium",
+                                                            style: {background: "#EEEDFE", color: "#3C3489", border: "0.5px solid #AFA9EC"}
+                                                        }, c.sigla + " — " + c.nome);
+                                                    })
+                                                  )
+                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada")
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2 flex-shrink-0"},
+                                        React.createElement("span", {
+                                            className: cliente.ativo ? "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" : "px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
+                                        }, cliente.ativo ? "✅ Ativo" : "❌ Inativo"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                if (!confirm("Desativar/ativar este cliente?")) return;
+                                                try {
+                                                    await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
+                                                        method: "PATCH",
+                                                        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                                                        body: JSON.stringify({ativo: !cliente.ativo})
+                                                    });
+                                                    ja("Status alterado!", "success");
+                                                    x({...p, clientesApiLista: null});
+                                                } catch (err) {
+                                                    ja("Erro", "error");
+                                                }
+                                            },
+                                            title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
+                                            className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                                        }, "🔄"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                // Abre modal de edição + carrega lista de grupos pra o select
+                                                var gruposFetched = [];
+                                                try {
+                                                    var respG = await fetch(API_URL + "/admin/grupos-enderecos", { headers: {"Authorization": "Bearer " + getToken()} });
+                                                    if (respG.ok) gruposFetched = await respG.json();
+                                                } catch {}
+                                                x({...p, 
+                                                    editarClienteSolicitacao: {
+                                                        id: cliente.id,
+                                                        nome: cliente.nome || "",
+                                                        email: cliente.email || "",
+                                                        empresa: cliente.empresa || "",
+                                                        grupo_enderecos_id: cliente.grupo_enderecos_id || "",
+                                                        grupos_disponiveis: gruposFetched,
+                                                        nova_senha: "",
+                                                        confirmar_senha: "",
+                                                        mostrar_senha: false,
+                                                        salvando: false,
+                                                        erro: ""
+                                                    }
+                                                });
+                                            },
+                                            title: "Editar cliente (nome, email, empresa, grupo, senha)",
+                                            className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                                        }, "✏️"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
+                                                var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
+                                                var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
+                                                x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
+                                            },
+                                            title: "Configurar modalidades de frete",
+                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                                        }, "🏷️"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
+                                                var total = parseInt(cliente.total_solicitacoes) || 0;
+                                                var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
+                                                    (total > 0
+                                                        ? "Este cliente possui " + total + " solicitação(ões) no histórico.\n" +
+                                                          "A exclusão provavelmente FALHARÁ por referência de chave estrangeira.\n" +
+                                                          "Recomendação: desative em vez de excluir.\n\n" +
+                                                          "Deseja tentar excluir mesmo assim?"
+                                                        : "Nenhuma solicitação no histórico — exclusão segura.\n\n" +
+                                                          "Esta ação é IRREVERSÍVEL e também apagará todos os endereços salvos.\n\n" +
+                                                          "Confirmar exclusão?");
+                                                if (!confirm(msg)) return;
+                                                try {
+                                                    var resp = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id, {
+                                                        method: "DELETE",
+                                                        headers: {"Authorization": "Bearer " + getToken()}
+                                                    });
+                                                    var data = await resp.json().catch(function() { return {}; });
+                                                    if (resp.ok) {
+                                                        ja("🗑️ Cliente excluído com sucesso!", "success");
+                                                        x({...p, clientesApiLista: null});
+                                                    } else {
+                                                        var erro = (data.error || "").toLowerCase();
+                                                        if (erro.indexOf("foreign key") >= 0 || erro.indexOf("violates") >= 0 || erro.indexOf("constraint") >= 0) {
+                                                            ja("❌ Não é possível excluir: cliente possui corridas no histórico. Desative em vez de excluir.", "error");
+                                                        } else {
+                                                            ja("❌ " + (data.error || "Erro ao excluir"), "error");
+                                                        }
+                                                    }
+                                                } catch (err) {
+                                                    ja("❌ Erro de conexão ao excluir", "error");
+                                                }
+                                            },
+                                            title: "Excluir cliente permanentemente",
+                                            className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                        }, "🗑️")
+                                        )
+                                    )
+                                );
+                            })
+                        )
+                    ),
+                    
+                    // ==================== GRUPOS DE ENDEREÇOS COMPARTILHADOS ====================
+                    React.createElement("div", {className: "mt-6 pt-6 border-t"},
+                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
+                            React.createElement("div", null,
+                                React.createElement("h3", {className: "font-bold text-gray-700 flex items-center gap-2"}, "📚 Grupos de Endereços Compartilhados"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Agrupe clientes para que compartilhem o mesmo pool de endereços salvos")
+                            ),
+                            React.createElement("div", {className: "flex gap-2"},
+                                React.createElement("button", {
+                                    onClick: async function() {
+                                        try {
+                                            var resp = await fetch(API_URL + "/admin/grupos-enderecos", {headers: {"Authorization": "Bearer " + getToken()}});
+                                            if (resp.ok) {
+                                                var data = await resp.json();
+                                                x({...p, gruposEnderecosLista: data});
+                                            }
+                                        } catch (err) { ja("Erro ao carregar grupos", "error"); }
+                                    },
+                                    className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                }, "🔄 Carregar"),
+                                React.createElement("button", {
+                                    onClick: function() {
+                                        x({...p, editarGrupoEnderecos: {id: null, nome: "", descricao: "", ativo: true, salvando: false, erro: ""}});
+                                    },
+                                    className: "px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+                                }, "+ Novo Grupo")
+                            )
+                        ),
+                        p.gruposEnderecosLista && p.gruposEnderecosLista.length === 0 && 
+                            React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum grupo cadastrado. Clique em \"+ Novo Grupo\" para criar."),
+                        p.gruposEnderecosLista && p.gruposEnderecosLista.length > 0 && 
+                            React.createElement("div", {className: "space-y-2"},
+                                p.gruposEnderecosLista.map(function(g) {
+                                    return React.createElement("div", {
+                                        key: g.id,
+                                        className: "bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between"
+                                    },
+                                        React.createElement("div", {className: "flex-1"},
+                                            React.createElement("div", {className: "flex items-center gap-2"},
+                                                React.createElement("p", {className: "font-medium text-purple-900"}, g.nome),
+                                                !g.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded"}, "INATIVO")
+                                            ),
+                                            g.descricao && React.createElement("p", {className: "text-xs text-gray-600 mt-0.5"}, g.descricao),
+                                            React.createElement("p", {className: "text-xs text-purple-600 mt-1"},
+                                                "👥 " + (g.total_clientes || 0) + " cliente(s) · 📍 " + (g.total_enderecos || 0) + " endereço(s)"
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2"},
+                                            React.createElement("button", {
+                                                onClick: function() {
+                                                    x({...p, editarGrupoEnderecos: {
+                                                        id: g.id, nome: g.nome || "", descricao: g.descricao || "", ativo: g.ativo, salvando: false, erro: ""
+                                                    }});
+                                                },
+                                                className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                                            }, "✏️ Editar"),
+                                            React.createElement("button", {
+                                                onClick: async function() {
+                                                    var totalC = parseInt(g.total_clientes) || 0;
+                                                    var totalE = parseInt(g.total_enderecos) || 0;
+                                                    var msg = "Excluir grupo \"" + g.nome + "\"?\n\n";
+                                                    if (totalC > 0 || totalE > 0) {
+                                                        msg += "⚠️ Este grupo tem " + totalC + " cliente(s) e " + totalE + " endereço(s).\n";
+                                                        msg += "Os clientes voltarão a ter endereços individuais.\n";
+                                                        msg += "Os endereços continuarão existindo, mas voltam a ser privados de quem os cadastrou.\n\n";
+                                                    }
+                                                    msg += "Confirmar exclusão?";
+                                                    if (!confirm(msg)) return;
+                                                    try {
+                                                        var resp = await fetch(API_URL + "/admin/grupos-enderecos/" + g.id, {
+                                                            method: "DELETE",
+                                                            headers: {"Authorization": "Bearer " + getToken()}
+                                                        });
+                                                        if (resp.ok) {
+                                                            ja("🗑️ Grupo excluído", "success");
+                                                            x({...p, gruposEnderecosLista: null});
+                                                        } else ja("Erro ao excluir grupo", "error");
+                                                    } catch { ja("Erro de conexão", "error"); }
+                                                },
+                                                className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                            }, "🗑️")
+                                        )
+                                    );
+                                })
+                            )
+                    )
+                )
+            );
+        };
+
     // Componente principal do módulo Config
     window.ModuloConfigComponent = function(props) {
         const {
@@ -1263,368 +1623,7 @@
             ),
             
             // ==================== TAB CLIENTES API ====================
-            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement((function ClientesApiAutoLoad(innerProps) {
-                var innerP = innerProps.p;
-                var innerX = innerProps.x;
-                var innerJa = innerProps.ja;
-                var innerApiUrl = innerProps.API_URL;
-                var innerGetToken = innerProps.getToken;
-                React.useEffect(function() {
-                    if (!innerP.clientesApiLista) {
-                        fetch(innerApiUrl + "/admin/solicitacao/clientes", {
-                            headers: {"Authorization": "Bearer " + innerGetToken()}
-                        }).then(function(r) { return r.ok ? r.json() : Promise.reject(r); })
-                          .then(function(data) { innerX({...innerP, clientesApiLista: data.clientes || data}); })
-                          .catch(function() { innerJa("Erro ao carregar clientes", "error"); });
-                    }
-                }, [!!innerP.clientesApiLista]);
-                return React.createElement("div", null,
-                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
-                    React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                        React.createElement("span", null, "🔗"),
-                        "Clientes API - Solicitação de Serviço"
-                    ),
-                    React.createElement("p", {className: "text-gray-600 text-sm mb-4"}, "Cadastre clientes que podem solicitar corridas via página externa."),
-                    
-                    // Formulário de cadastro
-                    React.createElement("div", {className: "bg-gray-50 rounded-lg p-4 mb-6"},
-                        React.createElement("h3", {className: "font-bold text-gray-700 mb-3"}, "➕ Novo Cliente"),
-                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: p.novoClienteApi?.nome || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), nome: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
-                                    placeholder: "Nome do cliente"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Email *"),
-                                React.createElement("input", {
-                                    type: "email",
-                                    value: p.novoClienteApi?.email || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), email: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
-                                    placeholder: "email@empresa.com"
-                                })
-                            )
-                        ),
-                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha *"),
-                                React.createElement("input", {
-                                    type: "password",
-                                    value: p.novoClienteApi?.senha || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), senha: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
-                                    placeholder: "Senha de acesso"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Empresa"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: p.novoClienteApi?.empresa || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), empresa: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm",
-                                    placeholder: "Nome da empresa"
-                                })
-                            )
-                        ),
-                        React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Token API Tutts *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: p.novoClienteApi?.tutts_token || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_token: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
-                                    placeholder: "Token fornecido pela Tutts"
-                                })
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Cliente Tutts *"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: p.novoClienteApi?.tutts_cod_cliente || "",
-                                    onChange: function(e) { x({...p, novoClienteApi: {...(p.novoClienteApi || {}), tutts_cod_cliente: e.target.value}}); },
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm font-mono",
-                                    placeholder: "Código do cliente na Tutts"
-                                })
-                            )
-                        ),
-                        React.createElement("button", {
-                            onClick: async function() {
-                                const c = p.novoClienteApi || {};
-                                if (!c.nome || !c.email || !c.senha || !c.tutts_token || !c.tutts_cod_cliente) {
-                                    ja("Preencha todos os campos obrigatórios", "error");
-                                    return;
-                                }
-                                try {
-                                    const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
-                                        method: "POST",
-                                        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
-                                        body: JSON.stringify(c)
-                                    });
-                                    const data = await resp.json();
-                                    if (resp.ok) {
-                                        ja("✅ Cliente criado com sucesso!", "success");
-                                        x({...p, novoClienteApi: {}, clientesApiLista: null});
-                                    } else {
-                                        ja(data.error || "Erro ao criar cliente", "error");
-                                    }
-                                } catch (err) {
-                                    ja("Erro de conexão", "error");
-                                }
-                            },
-                            className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                        }, "✅ Cadastrar Cliente")
-                    ),
-                    
-                    // Lista de clientes
-                    React.createElement("div", null,
-                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                            React.createElement("h3", {className: "font-bold text-gray-700"}, "📋 Clientes Cadastrados"),
-                            React.createElement("button", {
-                                onClick: async function() {
-                                    try {
-                                        const resp = await fetch(API_URL + "/admin/solicitacao/clientes", {
-                                            headers: {"Authorization": "Bearer " + getToken()}
-                                        });
-                                        const data = await resp.json();
-                                        if (resp.ok) {
-                                            x({...p, clientesApiLista: data.clientes || data});
-                                        }
-                                    } catch (err) {
-                                        ja("Erro ao carregar clientes", "error");
-                                    }
-                                },
-                                className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                            }, "🔄 Carregar")
-                        ),
-                        p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
-                        p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement("div", {className: "space-y-2"},
-                            p.clientesApiLista.map(function(cliente) {
-                                var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
-                                return React.createElement("div", {
-                                    key: cliente.id,
-                                    className: "bg-gray-50 rounded-lg p-3"
-                                },
-                                    React.createElement("div", {className: "flex items-start justify-between gap-2"},
-                                        React.createElement("div", {className: "flex-1 min-w-0"},
-                                            React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
-                                            React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
-                                            React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente),
-                                            cats.length > 0
-                                                ? React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
-                                                    cats.map(function(c) {
-                                                        return React.createElement("span", {
-                                                            key: c.sigla,
-                                                            className: "px-2 py-0.5 rounded-full text-xs font-medium",
-                                                            style: {background: "#EEEDFE", color: "#3C3489", border: "0.5px solid #AFA9EC"}
-                                                        }, c.sigla + " — " + c.nome);
-                                                    })
-                                                  )
-                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada")
-                                        ),
-                                        React.createElement("div", {className: "flex items-center gap-2 flex-shrink-0"},
-                                        React.createElement("span", {
-                                            className: cliente.ativo ? "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" : "px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
-                                        }, cliente.ativo ? "✅ Ativo" : "❌ Inativo"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                if (!confirm("Desativar/ativar este cliente?")) return;
-                                                try {
-                                                    await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
-                                                        method: "PATCH",
-                                                        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
-                                                        body: JSON.stringify({ativo: !cliente.ativo})
-                                                    });
-                                                    ja("Status alterado!", "success");
-                                                    x({...p, clientesApiLista: null});
-                                                } catch (err) {
-                                                    ja("Erro", "error");
-                                                }
-                                            },
-                                            title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
-                                            className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-                                        }, "🔄"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                // Abre modal de edição + carrega lista de grupos pra o select
-                                                var gruposFetched = [];
-                                                try {
-                                                    var respG = await fetch(API_URL + "/admin/grupos-enderecos", { headers: {"Authorization": "Bearer " + getToken()} });
-                                                    if (respG.ok) gruposFetched = await respG.json();
-                                                } catch {}
-                                                x({...p, 
-                                                    editarClienteSolicitacao: {
-                                                        id: cliente.id,
-                                                        nome: cliente.nome || "",
-                                                        email: cliente.email || "",
-                                                        empresa: cliente.empresa || "",
-                                                        grupo_enderecos_id: cliente.grupo_enderecos_id || "",
-                                                        grupos_disponiveis: gruposFetched,
-                                                        nova_senha: "",
-                                                        confirmar_senha: "",
-                                                        mostrar_senha: false,
-                                                        salvando: false,
-                                                        erro: ""
-                                                    }
-                                                });
-                                            },
-                                            title: "Editar cliente (nome, email, empresa, grupo, senha)",
-                                            className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                                        }, "✏️"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                try {
-                                                    var respCats = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias");
-                                                    var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
-                                                    var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
-                                                    x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
-                                                } catch(e) {
-                                                    ja("❌ Erro ao carregar modalidades: " + e.message, "error");
-                                                }
-                                            },
-                                            title: "Configurar modalidades de frete",
-                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
-                                        }, "🏷️"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
-                                                var total = parseInt(cliente.total_solicitacoes) || 0;
-                                                var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
-                                                    (total > 0
-                                                        ? "Este cliente possui " + total + " solicitação(ões) no histórico.\n" +
-                                                          "A exclusão provavelmente FALHARÁ por referência de chave estrangeira.\n" +
-                                                          "Recomendação: desative em vez de excluir.\n\n" +
-                                                          "Deseja tentar excluir mesmo assim?"
-                                                        : "Nenhuma solicitação no histórico — exclusão segura.\n\n" +
-                                                          "Esta ação é IRREVERSÍVEL e também apagará todos os endereços salvos.\n\n" +
-                                                          "Confirmar exclusão?");
-                                                if (!confirm(msg)) return;
-                                                try {
-                                                    var resp = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id, {
-                                                        method: "DELETE",
-                                                        headers: {"Authorization": "Bearer " + getToken()}
-                                                    });
-                                                    var data = await resp.json().catch(function() { return {}; });
-                                                    if (resp.ok) {
-                                                        ja("🗑️ Cliente excluído com sucesso!", "success");
-                                                        x({...p, clientesApiLista: null});
-                                                    } else {
-                                                        var erro = (data.error || "").toLowerCase();
-                                                        if (erro.indexOf("foreign key") >= 0 || erro.indexOf("violates") >= 0 || erro.indexOf("constraint") >= 0) {
-                                                            ja("❌ Não é possível excluir: cliente possui corridas no histórico. Desative em vez de excluir.", "error");
-                                                        } else {
-                                                            ja("❌ " + (data.error || "Erro ao excluir"), "error");
-                                                        }
-                                                    }
-                                                } catch (err) {
-                                                    ja("❌ Erro de conexão ao excluir", "error");
-                                                }
-                                            },
-                                            title: "Excluir cliente permanentemente",
-                                            className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                                        }, "🗑️")
-                                        )
-                                    )
-                                );
-                            })
-                        )
-                    ),
-                    
-                    // ==================== GRUPOS DE ENDEREÇOS COMPARTILHADOS ====================
-                    React.createElement("div", {className: "mt-6 pt-6 border-t"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                            React.createElement("div", null,
-                                React.createElement("h3", {className: "font-bold text-gray-700 flex items-center gap-2"}, "📚 Grupos de Endereços Compartilhados"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Agrupe clientes para que compartilhem o mesmo pool de endereços salvos")
-                            ),
-                            React.createElement("div", {className: "flex gap-2"},
-                                React.createElement("button", {
-                                    onClick: async function() {
-                                        try {
-                                            var resp = await fetch(API_URL + "/admin/grupos-enderecos", {headers: {"Authorization": "Bearer " + getToken()}});
-                                            if (resp.ok) {
-                                                var data = await resp.json();
-                                                x({...p, gruposEnderecosLista: data});
-                                            }
-                                        } catch (err) { ja("Erro ao carregar grupos", "error"); }
-                                    },
-                                    className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                                }, "🔄 Carregar"),
-                                React.createElement("button", {
-                                    onClick: function() {
-                                        x({...p, editarGrupoEnderecos: {id: null, nome: "", descricao: "", ativo: true, salvando: false, erro: ""}});
-                                    },
-                                    className: "px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                                }, "+ Novo Grupo")
-                            )
-                        ),
-                        p.gruposEnderecosLista && p.gruposEnderecosLista.length === 0 && 
-                            React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum grupo cadastrado. Clique em \"+ Novo Grupo\" para criar."),
-                        p.gruposEnderecosLista && p.gruposEnderecosLista.length > 0 && 
-                            React.createElement("div", {className: "space-y-2"},
-                                p.gruposEnderecosLista.map(function(g) {
-                                    return React.createElement("div", {
-                                        key: g.id,
-                                        className: "bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between"
-                                    },
-                                        React.createElement("div", {className: "flex-1"},
-                                            React.createElement("div", {className: "flex items-center gap-2"},
-                                                React.createElement("p", {className: "font-medium text-purple-900"}, g.nome),
-                                                !g.ativo && React.createElement("span", {className: "text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded"}, "INATIVO")
-                                            ),
-                                            g.descricao && React.createElement("p", {className: "text-xs text-gray-600 mt-0.5"}, g.descricao),
-                                            React.createElement("p", {className: "text-xs text-purple-600 mt-1"},
-                                                "👥 " + (g.total_clientes || 0) + " cliente(s) · 📍 " + (g.total_enderecos || 0) + " endereço(s)"
-                                            )
-                                        ),
-                                        React.createElement("div", {className: "flex items-center gap-2"},
-                                            React.createElement("button", {
-                                                onClick: function() {
-                                                    x({...p, editarGrupoEnderecos: {
-                                                        id: g.id, nome: g.nome || "", descricao: g.descricao || "", ativo: g.ativo, salvando: false, erro: ""
-                                                    }});
-                                                },
-                                                className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                                            }, "✏️ Editar"),
-                                            React.createElement("button", {
-                                                onClick: async function() {
-                                                    var totalC = parseInt(g.total_clientes) || 0;
-                                                    var totalE = parseInt(g.total_enderecos) || 0;
-                                                    var msg = "Excluir grupo \"" + g.nome + "\"?\n\n";
-                                                    if (totalC > 0 || totalE > 0) {
-                                                        msg += "⚠️ Este grupo tem " + totalC + " cliente(s) e " + totalE + " endereço(s).\n";
-                                                        msg += "Os clientes voltarão a ter endereços individuais.\n";
-                                                        msg += "Os endereços continuarão existindo, mas voltam a ser privados de quem os cadastrou.\n\n";
-                                                    }
-                                                    msg += "Confirmar exclusão?";
-                                                    if (!confirm(msg)) return;
-                                                    try {
-                                                        var resp = await fetch(API_URL + "/admin/grupos-enderecos/" + g.id, {
-                                                            method: "DELETE",
-                                                            headers: {"Authorization": "Bearer " + getToken()}
-                                                        });
-                                                        if (resp.ok) {
-                                                            ja("🗑️ Grupo excluído", "success");
-                                                            x({...p, gruposEnderecosLista: null});
-                                                        } else ja("Erro ao excluir grupo", "error");
-                                                    } catch { ja("Erro de conexão", "error"); }
-                                                },
-                                                className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                                            }, "🗑️")
-                                        )
-                                    );
-                                })
-                            )
-                    )
-                )
-            );
-        }), {p: p, x: x, ja: ja, API_URL: API_URL, getToken: getToken}),
+            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement(_ClientesApiAutoLoad, {p: p, x: x, ja: ja, API_URL: API_URL, getToken: getToken}),
             
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
