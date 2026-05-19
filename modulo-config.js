@@ -285,6 +285,18 @@
             });
         };
 
+        var abrirCadastroAdmin = function(user) {
+            setEstado({
+                ...estado,
+                cadastroAdminModal: true,
+                cadastroAdminUser: user,
+                cadastroAdminFoto: null,
+                cadastroAdminWhatsapp: user.whatsapp || "",
+                cadastroAdminSalvando: false,
+                cadastroAdminErro: ""
+            });
+        };
+
         var excluir = function(user) {
             var cod = getCod(user);
             if (cod && typeof cod === "string") cod = cod.replace("#", "");
@@ -337,6 +349,11 @@
                         onClick: function() { abrirSenha(user); },
                         className: "flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
                     }, "🔑 Senha"),
+                    user.role === "user" && React.createElement("button", {
+                        onClick: function() { abrirCadastroAdmin(user); },
+                        title: "Preencher foto e WhatsApp pelo admin",
+                        className: "px-3 py-2 rounded-lg text-xs font-semibold transition-colors " + (user.cadastro_completo ? "bg-green-50 text-green-700 hover:bg-green-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100")
+                    }, user.cadastro_completo ? "✅" : "📋"),
                     user.role !== "admin_master" && React.createElement("button", {
                         onClick: function() { excluir(user); },
                         className: "px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
@@ -984,19 +1001,291 @@
         );
     }
 
-// ClientesApiAutoLoad definido fora do render - referencia estavel
-    var _ClientesApiAutoLoad = function ClientesApiAutoLoad(innerProps) {
+    // Componente principal do módulo Config
+    window.ModuloConfigComponent = function(props) {
+        const {
+            usuario,
+            estado,
+            setEstado,
+            usuarios,
+            showToast,
+            setLoading,
+            carregarUsuarios,
+            API_URL,
+            fetchAuth,
+            getToken,
+            SISTEMA_MODULOS_CONFIG,
+            APP_VERSION,
+            VERSION_KEY,
+            HeaderCompacto,
+            Toast,
+            LoadingOverlay,
+            AuditLogs,
+            moduloAtivo,
+            socialProfile,
+            isLoading,
+            lastUpdate,
+            onRefresh,
+            onLogout,
+            onGoHome,
+            onNavigate,
+            toastData
+        } = props;
+
+        const l = usuario;
+        const p = estado;
+        const x = setEstado;
+        const A = usuarios;
+        const s = setLoading;
+        const ja = showToast;
+        const Ia = carregarUsuarios;
+        const Ee = moduloAtivo;
+        const i = toastData;
+        const n = isLoading;
+        const f = isLoading;
+        const E = lastUpdate;
+        const ul = onRefresh;
+        const he = onGoHome;
+
+        // Verificar permissão de aba
+        const verificarPermissaoAba = function(abaId) {
+            if ("admin_master" === l.role) return true;
+            const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
+            if (Object.keys(abas).length === 0) return true;
+            return abas["config_" + abaId] !== false;
+        };
+
+        return React.createElement("div", {
+            className: "min-h-screen bg-gray-100"
+        }, 
+        i && React.createElement(Toast, i), 
+        n && React.createElement(LoadingOverlay, null),
+        
+        // ========== HEADER COM NAVEGAÇÃO - CONFIG ==========
+        React.createElement(HeaderCompacto, {
+            usuario: l,
+            moduloAtivo: Ee,
+            abaAtiva: p.configTab || "usuarios",
+            socialProfile: socialProfile,
+            isLoading: f,
+            lastUpdate: E,
+            onRefresh: ul,
+            onLogout: onLogout,
+            onGoHome: () => he("home"),
+            onNavigate: onNavigate,
+            onChangeTab: (abaId) => x({...p, configTab: abaId})
+        }),
+        
+        // CONTEÚDO DO CONFIG
+        React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+            
+            // ==================== TAB USUÁRIOS ====================
+            (!p.configTab || p.configTab === "usuarios") && verificarPermissaoAba("usuarios") && React.createElement("div", null,
+
+                // ========== SUB-ABAS DE USUÁRIOS ==========
+                React.createElement("div", {className: "flex gap-1 mb-6 border-b border-gray-200"},
+                    [
+                        { id: "lista", label: "👥 Usuários" },
+                        { id: "bloqueadas", label: "🔒 Contas Bloqueadas" }
+                    ].map(function(sub) {
+                        var ativa = (p.usuariosSubTab || "lista") === sub.id;
+                        return React.createElement("button", {
+                            key: sub.id,
+                            onClick: function() { x({...p, usuariosSubTab: sub.id}); },
+                            className: "px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px " +
+                                (ativa
+                                    ? "border-purple-600 text-purple-700"
+                                    : "border-transparent text-gray-500 hover:text-gray-700")
+                        }, sub.label);
+                    })
+                ),
+
+                // ========== SUB-ABA: LISTA DE USUÁRIOS ==========
+                (!p.usuariosSubTab || p.usuariosSubTab === "lista") && React.createElement(React.Fragment, null,
+
+                // Criar usuário
+                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
+                    React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
+                        React.createElement("span", null, "➕"),
+                        "Criar Novo Usuário"
+                    ),
+                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome Completo"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: p.newUserName || "",
+                                onChange: function(e) { x({...p, newUserName: e.target.value}); },
+                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
+                                placeholder: "Ex: João Silva"
+                            })
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Profissional"),
+                            React.createElement("input", {
+                                type: "text",
+                                value: p.newUserCod || "",
+                                onChange: function(e) { x({...p, newUserCod: e.target.value}); },
+                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
+                                placeholder: "Ex: 12345"
+                            })
+                        )
+                    ),
+                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha"),
+                            React.createElement("input", {
+                                type: "password",
+                                value: p.newUserPass || "",
+                                onChange: function(e) { x({...p, newUserPass: e.target.value}); },
+                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
+                                placeholder: "Mín 8 chars (a-z, A-Z, 0-9)"
+                            })
+                        ),
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Tipo de Usuário"),
+                            React.createElement("select", {
+                                value: p.newRole || "user",
+                                onChange: function(e) { x({...p, newRole: e.target.value}); },
+                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            },
+                                React.createElement("option", {value: "user"}, "👤 Usuário (Motoboy)"),
+                                React.createElement("option", {value: "admin"}, "👑 Admin"),
+                                React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro"),
+                                "admin_master" === l.role && React.createElement("option", {value: "admin_master"}, "👑 Master")
+                            )
+                        )
+                    ),
+                    React.createElement("button", {
+                        onClick: async function() {
+                            if (!p.newUserName || !p.newUserCod || !p.newUserPass) {
+                                ja("Preencha todos os campos", "error");
+                                return;
+                            }
+                            if (p.newUserPass.length < 8) {
+                                ja("Senha deve ter no mínimo 8 caracteres com maiúscula, minúscula e número", "error");
+                                return;
+                            }
+                            s(true);
+                            try {
+                                const res = await fetchAuth(API_URL + "/users/register", {
+                                    method: "POST",
+                                    headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({
+                                        codProfissional: p.newUserCod,
+                                        fullName: p.newUserName,
+                                        password: p.newUserPass,
+                                        role: p.newRole || "user"
+                                    })
+                                });
+                                if (res.ok) {
+                                    ja("✅ Usuário criado!", "success");
+                                    x({...p, newUserName: "", newUserCod: "", newUserPass: "", newRole: "user"});
+                                    Ia();
+                                } else {
+                                    const err = await res.json();
+                                    ja(err.error || "Erro ao criar usuário", "error");
+                                }
+                            } catch (err) {
+                                ja("Erro de conexão", "error");
+                            }
+                            s(false);
+                        },
+                        className: "w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
+                    }, "✅ Criar Usuário")
+                ),
+                
+                // Lista de usuários (redesign: cards 4/linha, foto primeiro, paginação)
+                React.createElement(ListaUsuariosView, {
+                    usuarios: A,
+                    estado: p,
+                    setEstado: x,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    showToast: ja,
+                    recarregar: Ia
+                })
+                ),
+
+                // ========== SUB-ABA: CONTAS BLOQUEADAS ==========
+                p.usuariosSubTab === "bloqueadas" && React.createElement(ContasBloqueadasView, {
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    showToast: ja,
+                    estado: p,
+                    setEstado: x
+                })
+            ),
+            
+            // ==================== TAB PERMISSÕES ADM ====================
+            p.configTab === "permissoes" && verificarPermissaoAba("permissoes") && React.createElement(PermissoesADMView, {
+                usuarios: A,
+                API_URL: API_URL,
+                fetchAuth: fetchAuth,
+                showToast: ja,
+                setLoading: s,
+                usuario: l,
+                recarregar: Ia,
+                SISTEMA_MODULOS_CONFIG: SISTEMA_MODULOS_CONFIG
+            }),
+            
+            // ==================== TAB SISTEMA ====================
+            p.configTab === "sistema" && verificarPermissaoAba("sistema") && React.createElement("div", null,
+                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
+                    React.createElement("h2", {className: "text-lg font-bold mb-4"}, "⚡ Informações do Sistema"),
+                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
+                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Versão"),
+                            React.createElement("p", {className: "font-bold text-lg"}, "Sistema Tutts v" + APP_VERSION)
+                        ),
+                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Usuário Logado"),
+                            React.createElement("p", {className: "font-bold text-lg"}, l.fullName)
+                        ),
+                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Total de Usuários"),
+                            React.createElement("p", {className: "font-bold text-lg"}, A.length)
+                        ),
+                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "API Backend"),
+                            React.createElement("p", {className: "font-bold text-lg text-green-600"}, "Online ✓")
+                        )
+                    )
+                ),
+                React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-6"},
+                    React.createElement("h3", {className: "font-bold text-yellow-800 mb-2"}, "⚠️ Zona de Perigo"),
+                    React.createElement("p", {className: "text-yellow-700 text-sm mb-4"}, "Ações irreversíveis. Use com cuidado."),
+                    React.createElement("div", {className: "flex flex-wrap gap-3"},
+                        React.createElement("button", {
+                            onClick: function() { if(confirm("Limpar cache local?")) { localStorage.clear(); sessionStorage.clear(); ja("Cache limpo!", "success"); } },
+                            className: "px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700"
+                        }, "🗑️ Limpar Cache"),
+                        React.createElement("button", {
+                            onClick: function() { 
+                                if(confirm("Forçar atualização do aplicativo? O app será recarregado.")) { 
+                                    localStorage.removeItem(VERSION_KEY);
+                                    if ('caches' in window) {
+                                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                                    }
+                                    if ('serviceWorker' in navigator) {
+                                        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister()));
+                                    }
+                                    setTimeout(() => window.location.reload(true), 500);
+                                } 
+                            },
+                            className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                        }, "🔄 Forçar Atualização")
+                    )
+                )
+            ),
+            
+            // ==================== TAB CLIENTES API ====================
+            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement((function ClientesApiAutoLoad(innerProps) {
                 var innerP = innerProps.p;
                 var innerX = innerProps.x;
                 var innerJa = innerProps.ja;
                 var innerApiUrl = innerProps.API_URL;
                 var innerGetToken = innerProps.getToken;
-                // aliases para o resto do corpo que usa os nomes curtos
-                var p = innerP;
-                var x = innerX;
-                var ja = innerJa;
-                var API_URL = innerApiUrl;
-                var getToken = innerGetToken;
                 React.useEffect(function() {
                     if (!innerP.clientesApiLista) {
                         fetch(innerApiUrl + "/admin/solicitacao/clientes", {
@@ -1348,288 +1637,7 @@
                     )
                 )
             );
-        };
-
-    // Componente principal do módulo Config
-    window.ModuloConfigComponent = function(props) {
-        const {
-            usuario,
-            estado,
-            setEstado,
-            usuarios,
-            showToast,
-            setLoading,
-            carregarUsuarios,
-            API_URL,
-            fetchAuth,
-            getToken,
-            SISTEMA_MODULOS_CONFIG,
-            APP_VERSION,
-            VERSION_KEY,
-            HeaderCompacto,
-            Toast,
-            LoadingOverlay,
-            AuditLogs,
-            moduloAtivo,
-            socialProfile,
-            isLoading,
-            lastUpdate,
-            onRefresh,
-            onLogout,
-            onGoHome,
-            onNavigate,
-            toastData
-        } = props;
-
-        const l = usuario;
-        const p = estado;
-        const x = setEstado;
-        const A = usuarios;
-        const s = setLoading;
-        const ja = showToast;
-        const Ia = carregarUsuarios;
-        const Ee = moduloAtivo;
-        const i = toastData;
-        const n = isLoading;
-        const f = isLoading;
-        const E = lastUpdate;
-        const ul = onRefresh;
-        const he = onGoHome;
-
-        // Verificar permissão de aba
-        const verificarPermissaoAba = function(abaId) {
-            if ("admin_master" === l.role) return true;
-            const abas = l.permissions && l.permissions.abas ? l.permissions.abas : {};
-            if (Object.keys(abas).length === 0) return true;
-            return abas["config_" + abaId] !== false;
-        };
-
-        return React.createElement("div", {
-            className: "min-h-screen bg-gray-100"
-        }, 
-        i && React.createElement(Toast, i), 
-        n && React.createElement(LoadingOverlay, null),
-        
-        // ========== HEADER COM NAVEGAÇÃO - CONFIG ==========
-        React.createElement(HeaderCompacto, {
-            usuario: l,
-            moduloAtivo: Ee,
-            abaAtiva: p.configTab || "usuarios",
-            socialProfile: socialProfile,
-            isLoading: f,
-            lastUpdate: E,
-            onRefresh: ul,
-            onLogout: onLogout,
-            onGoHome: () => he("home"),
-            onNavigate: onNavigate,
-            onChangeTab: (abaId) => x({...p, configTab: abaId})
-        }),
-        
-        // CONTEÚDO DO CONFIG
-        React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
-            
-            // ==================== TAB USUÁRIOS ====================
-            (!p.configTab || p.configTab === "usuarios") && verificarPermissaoAba("usuarios") && React.createElement("div", null,
-
-                // ========== SUB-ABAS DE USUÁRIOS ==========
-                React.createElement("div", {className: "flex gap-1 mb-6 border-b border-gray-200"},
-                    [
-                        { id: "lista", label: "👥 Usuários" },
-                        { id: "bloqueadas", label: "🔒 Contas Bloqueadas" }
-                    ].map(function(sub) {
-                        var ativa = (p.usuariosSubTab || "lista") === sub.id;
-                        return React.createElement("button", {
-                            key: sub.id,
-                            onClick: function() { x({...p, usuariosSubTab: sub.id}); },
-                            className: "px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px " +
-                                (ativa
-                                    ? "border-purple-600 text-purple-700"
-                                    : "border-transparent text-gray-500 hover:text-gray-700")
-                        }, sub.label);
-                    })
-                ),
-
-                // ========== SUB-ABA: LISTA DE USUÁRIOS ==========
-                (!p.usuariosSubTab || p.usuariosSubTab === "lista") && React.createElement(React.Fragment, null,
-
-                // Criar usuário
-                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
-                    React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                        React.createElement("span", null, "➕"),
-                        "Criar Novo Usuário"
-                    ),
-                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome Completo"),
-                            React.createElement("input", {
-                                type: "text",
-                                value: p.newUserName || "",
-                                onChange: function(e) { x({...p, newUserName: e.target.value}); },
-                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                                placeholder: "Ex: João Silva"
-                            })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Código Profissional"),
-                            React.createElement("input", {
-                                type: "text",
-                                value: p.newUserCod || "",
-                                onChange: function(e) { x({...p, newUserCod: e.target.value}); },
-                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                                placeholder: "Ex: 12345"
-                            })
-                        )
-                    ),
-                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Senha"),
-                            React.createElement("input", {
-                                type: "password",
-                                value: p.newUserPass || "",
-                                onChange: function(e) { x({...p, newUserPass: e.target.value}); },
-                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                                placeholder: "Mín 8 chars (a-z, A-Z, 0-9)"
-                            })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Tipo de Usuário"),
-                            React.createElement("select", {
-                                value: p.newRole || "user",
-                                onChange: function(e) { x({...p, newRole: e.target.value}); },
-                                className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            },
-                                React.createElement("option", {value: "user"}, "👤 Usuário (Motoboy)"),
-                                React.createElement("option", {value: "admin"}, "👑 Admin"),
-                                React.createElement("option", {value: "admin_financeiro"}, "💰 Admin Financeiro"),
-                                "admin_master" === l.role && React.createElement("option", {value: "admin_master"}, "👑 Master")
-                            )
-                        )
-                    ),
-                    React.createElement("button", {
-                        onClick: async function() {
-                            if (!p.newUserName || !p.newUserCod || !p.newUserPass) {
-                                ja("Preencha todos os campos", "error");
-                                return;
-                            }
-                            if (p.newUserPass.length < 8) {
-                                ja("Senha deve ter no mínimo 8 caracteres com maiúscula, minúscula e número", "error");
-                                return;
-                            }
-                            s(true);
-                            try {
-                                const res = await fetchAuth(API_URL + "/users/register", {
-                                    method: "POST",
-                                    headers: {"Content-Type": "application/json"},
-                                    body: JSON.stringify({
-                                        codProfissional: p.newUserCod,
-                                        fullName: p.newUserName,
-                                        password: p.newUserPass,
-                                        role: p.newRole || "user"
-                                    })
-                                });
-                                if (res.ok) {
-                                    ja("✅ Usuário criado!", "success");
-                                    x({...p, newUserName: "", newUserCod: "", newUserPass: "", newRole: "user"});
-                                    Ia();
-                                } else {
-                                    const err = await res.json();
-                                    ja(err.error || "Erro ao criar usuário", "error");
-                                }
-                            } catch (err) {
-                                ja("Erro de conexão", "error");
-                            }
-                            s(false);
-                        },
-                        className: "w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
-                    }, "✅ Criar Usuário")
-                ),
-                
-                // Lista de usuários (redesign: cards 4/linha, foto primeiro, paginação)
-                React.createElement(ListaUsuariosView, {
-                    usuarios: A,
-                    estado: p,
-                    setEstado: x,
-                    API_URL: API_URL,
-                    fetchAuth: fetchAuth,
-                    showToast: ja,
-                    recarregar: Ia
-                })
-                ),
-
-                // ========== SUB-ABA: CONTAS BLOQUEADAS ==========
-                p.usuariosSubTab === "bloqueadas" && React.createElement(ContasBloqueadasView, {
-                    API_URL: API_URL,
-                    fetchAuth: fetchAuth,
-                    showToast: ja,
-                    estado: p,
-                    setEstado: x
-                })
-            ),
-            
-            // ==================== TAB PERMISSÕES ADM ====================
-            p.configTab === "permissoes" && verificarPermissaoAba("permissoes") && React.createElement(PermissoesADMView, {
-                usuarios: A,
-                API_URL: API_URL,
-                fetchAuth: fetchAuth,
-                showToast: ja,
-                setLoading: s,
-                usuario: l,
-                recarregar: Ia,
-                SISTEMA_MODULOS_CONFIG: SISTEMA_MODULOS_CONFIG
-            }),
-            
-            // ==================== TAB SISTEMA ====================
-            p.configTab === "sistema" && verificarPermissaoAba("sistema") && React.createElement("div", null,
-                React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
-                    React.createElement("h2", {className: "text-lg font-bold mb-4"}, "⚡ Informações do Sistema"),
-                    React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
-                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Versão"),
-                            React.createElement("p", {className: "font-bold text-lg"}, "Sistema Tutts v" + APP_VERSION)
-                        ),
-                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Usuário Logado"),
-                            React.createElement("p", {className: "font-bold text-lg"}, l.fullName)
-                        ),
-                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "Total de Usuários"),
-                            React.createElement("p", {className: "font-bold text-lg"}, A.length)
-                        ),
-                        React.createElement("div", {className: "bg-gray-50 rounded-lg p-4"},
-                            React.createElement("p", {className: "text-sm text-gray-500"}, "API Backend"),
-                            React.createElement("p", {className: "font-bold text-lg text-green-600"}, "Online ✓")
-                        )
-                    )
-                ),
-                React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-6"},
-                    React.createElement("h3", {className: "font-bold text-yellow-800 mb-2"}, "⚠️ Zona de Perigo"),
-                    React.createElement("p", {className: "text-yellow-700 text-sm mb-4"}, "Ações irreversíveis. Use com cuidado."),
-                    React.createElement("div", {className: "flex flex-wrap gap-3"},
-                        React.createElement("button", {
-                            onClick: function() { if(confirm("Limpar cache local?")) { localStorage.clear(); sessionStorage.clear(); ja("Cache limpo!", "success"); } },
-                            className: "px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700"
-                        }, "🗑️ Limpar Cache"),
-                        React.createElement("button", {
-                            onClick: function() { 
-                                if(confirm("Forçar atualização do aplicativo? O app será recarregado.")) { 
-                                    localStorage.removeItem(VERSION_KEY);
-                                    if ('caches' in window) {
-                                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
-                                    }
-                                    if ('serviceWorker' in navigator) {
-                                        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister()));
-                                    }
-                                    setTimeout(() => window.location.reload(true), 500);
-                                } 
-                            },
-                            className: "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                        }, "🔄 Forçar Atualização")
-                    )
-                )
-            ),
-            
-            // ==================== TAB CLIENTES API ====================
-            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement(_ClientesApiAutoLoad, {p: p, x: x, ja: ja, API_URL: API_URL, getToken: getToken}),
+        }), {p: p, x: x, ja: ja, API_URL: API_URL, getToken: getToken}),
             
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
@@ -2019,6 +2027,107 @@
             })(),
 
             // ==================== MODAL ALTERAR SENHA ====================
+            // Modal — Admin preenche cadastro do motoboy (foto + WhatsApp)
+            p.cadastroAdminModal && p.cadastroAdminUser && (function() {
+                var u = p.cadastroAdminUser;
+                var cod = u.cod_profissional || u.codProfissional || "";
+                var nome = u.full_name || u.fullName || "";
+                var salvar = async function() {
+                    if (!p.cadastroAdminFoto && !p.cadastroAdminWhatsapp) {
+                        x({...p, cadastroAdminErro: "Preencha pelo menos um campo"});
+                        return;
+                    }
+                    x({...p, cadastroAdminSalvando: true, cadastroAdminErro: ""});
+                    try {
+                        var body = {};
+                        if (p.cadastroAdminFoto) body.foto_selfie = p.cadastroAdminFoto;
+                        if (p.cadastroAdminWhatsapp) body.whatsapp = p.cadastroAdminWhatsapp;
+                        var resp = await fetchAuth(API_URL + "/admin/usuarios/" + cod + "/cadastro", {
+                            method: "PATCH",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify(body)
+                        });
+                        var data = await resp.json().catch(function() { return {}; });
+                        if (resp.ok) {
+                            ja(data.mensagem || "✅ Cadastro salvo!", "success");
+                            x({...p, cadastroAdminModal: false, cadastroAdminUser: null});
+                        } else {
+                            x({...p, cadastroAdminSalvando: false, cadastroAdminErro: data.error || "Erro ao salvar"});
+                        }
+                    } catch(e) {
+                        x({...p, cadastroAdminSalvando: false, cadastroAdminErro: "Erro de conexão"});
+                    }
+                };
+                var fechar = function() { if (!p.cadastroAdminSalvando) x({...p, cadastroAdminModal: false}); };
+                var onFoto = function(e) {
+                    var file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function(ev) { x({...p, cadastroAdminFoto: ev.target.result}); };
+                    reader.readAsDataURL(file);
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fechar
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "📋 Cadastro pelo Admin"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, nome, " — COD ", cod)
+                            ),
+                            React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600 text-lg"}, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4 space-y-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-2"}, "📸 Foto do Profissional"),
+                                p.cadastroAdminFoto
+                                    ? React.createElement("div", {className: "relative"},
+                                        React.createElement("img", {src: p.cadastroAdminFoto, className: "w-full h-40 object-cover rounded-xl"}),
+                                        React.createElement("button", {
+                                            onClick: function() { x({...p, cadastroAdminFoto: null}); },
+                                            className: "absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold"
+                                        }, "✕")
+                                      )
+                                    : React.createElement("label", {
+                                        className: "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                                      },
+                                        React.createElement("span", {className: "text-3xl mb-1"}, "📷"),
+                                        React.createElement("span", {className: "text-xs text-gray-500"}, "Clique para selecionar foto"),
+                                        React.createElement("input", {type: "file", accept: "image/*", className: "hidden", onChange: onFoto})
+                                      )
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "📱 WhatsApp"),
+                                React.createElement("input", {
+                                    type: "tel",
+                                    placeholder: "(71) 9 9999-9999",
+                                    value: p.cadastroAdminWhatsapp || "",
+                                    onChange: function(e) { x({...p, cadastroAdminWhatsapp: e.target.value}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                })
+                            ),
+                            p.cadastroAdminErro && React.createElement("p", {className: "text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg"}, "❌ ", p.cadastroAdminErro)
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: fechar,
+                                disabled: p.cadastroAdminSalvando,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: p.cadastroAdminSalvando || (!p.cadastroAdminFoto && !p.cadastroAdminWhatsapp),
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white " + (p.cadastroAdminSalvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700") + " disabled:opacity-50"
+                            }, p.cadastroAdminSalvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
+
             p.senhaModal && p.senhaModalUser && (function() {
                 var senha = p.senhaModalValue || "";
                 var confirmar = p.senhaModalConfirm || "";
