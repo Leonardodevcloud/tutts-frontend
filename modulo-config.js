@@ -1480,10 +1480,14 @@
                                         }, "✏️"),
                                         React.createElement("button", {
                                             onClick: async function() {
-                                                var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
-                                                var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
-                                                var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
-                                                x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
+                                                try {
+                                                    var respCats = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias");
+                                                    var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
+                                                    var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
+                                                    x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
+                                                } catch(e) {
+                                                    ja("❌ Erro ao carregar modalidades: " + e.message, "error");
+                                                }
                                             },
                                             title: "Configurar modalidades de frete",
                                             className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
