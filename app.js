@@ -21349,14 +21349,11 @@ const hideLoadingScreen = () => {
             className: "text-lg font-semibold mb-4"
         }, "Aguardando Validação"), React.createElement("div", {
             className: "mb-4 flex flex-wrap gap-2"
-        }, ["all", "contestacoes", "atrasados", "retorno", "ponto1", "pedagio", "simoesfilho"].map(e => React.createElement("button", {
+        }, ["all", "contestacoes", "atrasados", "retorno", "ponto1", "pedagio", "simoesfilho", "expiradas"].map(e => React.createElement("button", {
             key: e,
-            onClick: () => x({
-                ...p,
-                pendingFilter: e
-            }),
-            className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `⚡ Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`))), React.createElement("div", {
+            onClick: async () => { x({ ...p, pendingFilter: e }); if (e === "expiradas") { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r.ok) { const _d = await _r.json(); x(prev => ({ ...prev, _expiradas: _d.expiradas || [] })); } } catch {} } },
+            className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "expiradas" === e ? "bg-amber-500 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
+        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `⚡ Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`, "expiradas" === e && `⏰ Expiradas (${(p._expiradas||[]).length})`))), React.createElement("div", {
             className: "flex justify-end mb-2"
         }, React.createElement("button", {
             onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
@@ -21403,10 +21400,33 @@ const hideLoadingScreen = () => {
                 try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("🗑️ Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
             },
             className: "text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-semibold shrink-0"
-        }, "🗑️"))))), React.createElement("div", {
+        }, "🗑️"))))), (p.pendingFilter || "all") === "expiradas" && React.createElement("div", { className: "space-y-3 py-2" },
+            (p._expiradas||[]).length === 0
+              ? React.createElement("p", { className: "text-center text-gray-400 py-10 text-sm" }, "Nenhuma solicitação expirada nas últimas 48h")
+              : (p._expiradas||[]).map(ex => React.createElement("div", { key: ex.id, className: "bg-white border rounded-xl p-4" + (ex.liberado_por_admin ? " opacity-60" : "") },
+                  React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-3" },
+                    React.createElement("span", { className: "font-bold text-gray-800 text-sm" }, "OS: " + ex.os),
+                    ex.subcategoria && React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800" }, ex.subcategoria),
+                    React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700" }, "expirada há " + Math.round(ex.horas_atras) + "h"),
+                    ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700" }, "✓ liberada — " + (ex.tipo_liberacao === "contestacao" ? "contestação" : "nova solicitação")),
+                    ex.ja_tem_submission && !ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700" }, "✓ já tem submission")
+                  ),
+                  React.createElement("div", { className: "grid grid-cols-3 gap-3 mb-3" },
+                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "motoboy"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, ex.nome_prof || ex.cod_prof)),
+                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "tentativa"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, new Date(ex.tentativa_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }))),
+                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "OS gerada em"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, ex.data_hora_os ? new Date(ex.data_hora_os).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"))
+                  ),
+                  ex.motivo && React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500 mb-3" }, "Motivo: ", React.createElement("span", { className: "text-gray-800" }, ex.motivo)),
+                  !ex.liberado_por_admin && !ex.ja_tem_submission && React.createElement("div", { className: "flex gap-2 border-t pt-3" },
+                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "nova_solicitacao" }) }); if (_r.ok) { ja("✅ Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-100 text-purple-700 border border-purple-200" }, "🔄 Liberar para nova solicitação"),
+                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "contestacao" }) }); if (_r.ok) { ja("✅ Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200" }, "🛡️ Liberar para contestação")
+                  )
+                ))
+            ), React.createElement("div", {
             className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
         }, j.filter(e => {
             const f = p.pendingFilter || "all";
+            if (f === "expiradas") return false;
             if (f === "contestacoes") return e.contestacao_status === 'aberta';
             const isPendente = "pendente" === e.status;
             const isContestacao = e.contestacao_status === 'aberta';
