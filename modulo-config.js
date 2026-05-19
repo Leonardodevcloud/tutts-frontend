@@ -1263,7 +1263,22 @@
             ),
             
             // ==================== TAB CLIENTES API ====================
-            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement("div", null,
+            p.configTab === "clientes-api" && "admin_master" === l.role && React.createElement((function ClientesApiAutoLoad(innerProps) {
+                var innerP = innerProps.p;
+                var innerX = innerProps.x;
+                var innerJa = innerProps.ja;
+                var innerApiUrl = innerProps.API_URL;
+                var innerGetToken = innerProps.getToken;
+                React.useEffect(function() {
+                    if (!innerP.clientesApiLista) {
+                        fetch(innerApiUrl + "/admin/solicitacao/clientes", {
+                            headers: {"Authorization": "Bearer " + innerGetToken()}
+                        }).then(function(r) { return r.ok ? r.json() : Promise.reject(r); })
+                          .then(function(data) { innerX({...innerP, clientesApiLista: data.clientes || data}); })
+                          .catch(function() { innerJa("Erro ao carregar clientes", "error"); });
+                    }
+                }, [!!innerP.clientesApiLista]);
+                return React.createElement("div", null,
                 React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                     React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
                         React.createElement("span", null, "🔗"),
@@ -1604,7 +1619,8 @@
                             )
                     )
                 )
-            ),
+            );
+        }), {p: p, x: x, ja: ja, API_URL: API_URL, getToken: getToken}),
             
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
