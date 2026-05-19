@@ -417,9 +417,6 @@
             const [modalHorario, setModalHorario] = useState(false);
             const [modalConfirm, setModalConfirm] = useState(null);
             const [tick, setTick] = useState(0);
-            // Filtros do histórico
-            const [histFiltros, setHistFiltros] = useState({ inicio: '', fim: '', motoboy_codigo: '', maquina_id: '' });
-            const [histFiltrosDisp, setHistFiltrosDisp] = useState({ motoboys: [], maquinas: [] });
 
             const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
@@ -464,43 +461,15 @@
 
             const carregarHistoricoLog = useCallback(async () => {
                 try {
-                    // Monta query string com filtros ativos
-                    const params = new URLSearchParams();
-                    if (histFiltros.inicio) params.set('inicio', histFiltros.inicio + ' 00:00:00');
-                    if (histFiltros.fim) params.set('fim', histFiltros.fim + ' 23:59:59');
-                    if (histFiltros.motoboy_codigo) params.set('motoboy_codigo', histFiltros.motoboy_codigo);
-                    if (histFiltros.maquina_id) params.set('maquina_id', histFiltros.maquina_id);
-                    params.set('limit', '200');
-
-                    const [r1, r2] = await Promise.all([
-                        fetch(`${API_URL}/api/maquinas/historico?${params.toString()}`, { headers }),
-                        // Carrega filtros disponíveis (apenas na primeira vez ou se vazio)
-                        histFiltrosDisp.motoboys.length === 0
-                            ? fetch(`${API_URL}/api/maquinas/historico/filtros`, { headers })
-                            : Promise.resolve(null),
-                    ]);
-                    if (r1.ok) {
-                        const d = await r1.json();
+                    const r = await fetch(`${API_URL}/api/maquinas/historico?limit=100`, { headers });
+                    if (r.ok) {
+                        const d = await r.json();
                         setHistorico(d.historico || []);
-                    }
-                    if (r2 && r2.ok) {
-                        const d = await r2.json();
-                        setHistFiltrosDisp({
-                            motoboys: d.motoboys || [],
-                            maquinas: d.maquinas || [],
-                        });
                     }
                 } catch (e) {
                     showToast('Erro ao carregar histórico: ' + e.message, 'error');
                 }
-            }, [token, histFiltros, histFiltrosDisp.motoboys.length]);
-
-            // Limpa todos os filtros do histórico
-            const limparFiltrosHist = () => {
-                setHistFiltros({ inicio: '', fim: '', motoboy_codigo: '', maquina_id: '' });
-            };
-
-            const temFiltroAtivo = !!(histFiltros.inicio || histFiltros.fim || histFiltros.motoboy_codigo || histFiltros.maquina_id);
+            }, [token]);
 
             // Carregar ao montar e ao mudar de sub-tab
             useEffect(() => {
@@ -540,12 +509,7 @@
                     });
                     const data = await r.json();
                     if (!r.ok) throw new Error(data.mensagem || data.error || 'Erro ao despachar');
-                    const obsTxt = data.maquina.observacao ? ` (${data.maquina.observacao})` : '';
-                    showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca}${obsTxt} despachada para ${motoboy?.nome}`, 'success');
-                    // Aviso adicional se o motoboy não foi encontrado no cadastro da Central
-                    if (data.vinculado_central === false && data.aviso_vinculo) {
-                        setTimeout(() => showToast(`⚠️ ${data.aviso_vinculo}`, 'error'), 600);
-                    }
+                    showToast(`✅ ${data.maquina.identificador} ${data.maquina.marca} despachada para ${motoboy?.nome}`, 'success');
                     setMaquinaSel('');
                     setMotoboySel('');
                     await carregarOperacao();
@@ -682,7 +646,7 @@
                             {totalPendentes > 0 && (
                                 <div className="bg-amber-50 border border-amber-300 rounded-md p-2.5 mb-3 flex items-center gap-2 text-xs md:text-sm text-amber-900">
                                     <span className="text-base">🚩</span>
-                                    <span><strong>{totalPendentes}</strong> {totalPendentes === 1 ? 'máquina atrasada' : 'máquinas atrasadas'} — não restituída{totalPendentes === 1 ? '' : 's'} até o horário limite ({fmtHorario(horarioLimite)})</span>
+                                    <span><strong>{totalPendentes}</strong> {totalPendentes === 1 ? 'máquina ainda em campo' : 'máquinas ainda em campo'} após o horário limite ({fmtHorario(horarioLimite)})</span>
                                 </div>
                             )}
 
@@ -693,7 +657,7 @@
                                     <div className="text-xl md:text-2xl font-semibold">{totalCampo}</div>
                                 </div>
                                 <div className={`rounded-md p-3 border ${totalPendentes > 0 ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200'}`}>
-                                    <div className={`text-[10px] md:text-xs uppercase tracking-wide ${totalPendentes > 0 ? 'text-amber-700' : 'text-gray-500'}`}>Atrasadas (após {fmtHorario(horarioLimite)})</div>
+                                    <div className={`text-[10px] md:text-xs uppercase tracking-wide ${totalPendentes > 0 ? 'text-amber-700' : 'text-gray-500'}`}>Pendentes após {fmtHorario(horarioLimite)}</div>
                                     <div className={`text-xl md:text-2xl font-semibold ${totalPendentes > 0 ? 'text-amber-700' : ''}`}>{totalPendentes}</div>
                                 </div>
                                 <div className="bg-white border border-gray-200 rounded-md p-3">
@@ -717,11 +681,7 @@
                                         <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Máquina disponível</label>
                                         <select value={maquinaSel} onChange={e => setMaquinaSel(e.target.value)} className="w-full h-9 px-2 border border-gray-300 rounded-md text-sm bg-white">
                                             <option value="">— selecione —</option>
-                                            {disponiveis.map(m => (
-                                                <option key={m.id} value={m.id}>
-                                                    {m.identificador} {m.marca}{m.observacao ? ` — ${m.observacao}` : ''}
-                                                </option>
-                                            ))}
+                                            {disponiveis.map(m => <option key={m.id} value={m.id}>{m.identificador} {m.marca}</option>)}
                                         </select>
                                     </div>
                                     <button onClick={despachar} disabled={despachando || !maquinaSel || !motoboySel} className="h-9 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-md whitespace-nowrap">
@@ -757,25 +717,15 @@
                                                         {mov.motoboy_nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5 flex-wrap">
-                                                            <span>{mov.motoboy_nome}</span>
-                                                            <span className="text-gray-400">—</span>
-                                                            <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
-                                                            {mov.observacao && (
-                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-normal italic">{mov.observacao}</span>
-                                                            )}
-                                                            {mov.vinculado_central === false && (
-                                                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium uppercase tracking-wide" title="Motoboy não encontrado no cadastro da Central. O bloqueio do saque não vai funcionar pra ele.">
-                                                                    ⚠ sem vínculo
-                                                                </span>
-                                                            )}
+                                                        <div className="text-sm font-medium text-gray-800">
+                                                            {mov.motoboy_nome} — <span className="font-mono text-gray-600">{mov.identificador} {mov.marca}</span>
                                                         </div>
                                                         <div className={`text-xs mt-0.5 ${isPendente ? 'text-amber-700' : 'text-gray-500'}`}>
                                                             🕐 Despachada às {fmtDataHora(mov.despachada_em)} · {fmtMinutos(mov.minutos_em_campo)} em campo
                                                         </div>
                                                     </div>
                                                     {isPendente && (
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-medium uppercase tracking-wide flex items-center gap-1">🚩 Atrasada</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-medium uppercase tracking-wide flex items-center gap-1">🚩 Pendente</span>
                                                     )}
                                                     {!isPendente && (
                                                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium uppercase tracking-wide">No prazo</span>
@@ -851,58 +801,12 @@
                     {/* ─── SUB-TAB: HISTÓRICO ─── */}
                     {subTab === 'historico' && (
                         <>
-                            <div className="bg-white border border-gray-200 rounded-md p-3 mb-3">
-                                <div className="flex items-center justify-between mb-2.5">
-                                    <h3 className="text-xs font-medium text-gray-700 uppercase tracking-wide flex items-center gap-1.5">
-                                        <span>🔍</span>
-                                        Filtros
-                                        {temFiltroAtivo && <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium normal-case tracking-normal">ativos</span>}
-                                    </h3>
-                                    {temFiltroAtivo && (
-                                        <button onClick={limparFiltrosHist} className="text-xs text-gray-500 hover:text-purple-600 underline">
-                                            Limpar tudo
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    <div>
-                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">De</label>
-                                        <input type="date" value={histFiltros.inicio} onChange={e => setHistFiltros(f => ({ ...f, inicio: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Até</label>
-                                        <input type="date" value={histFiltros.fim} onChange={e => setHistFiltros(f => ({ ...f, fim: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Motoboy</label>
-                                        <select value={histFiltros.motoboy_codigo} onChange={e => setHistFiltros(f => ({ ...f, motoboy_codigo: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs bg-white">
-                                            <option value="">Todos</option>
-                                            {histFiltrosDisp.motoboys.map(m => (
-                                                <option key={m.motoboy_codigo} value={m.motoboy_codigo}>{m.motoboy_nome}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">Máquina</label>
-                                        <select value={histFiltros.maquina_id} onChange={e => setHistFiltros(f => ({ ...f, maquina_id: e.target.value }))} className="w-full h-8 px-2 border border-gray-300 rounded-md text-xs bg-white">
-                                            <option value="">Todas</option>
-                                            {histFiltrosDisp.maquinas.map(m => (
-                                                <option key={m.id} value={m.id}>
-                                                    {m.identificador} {m.marca}{m.observacao ? ` — ${m.observacao}` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
                             <p className="text-xs md:text-sm text-gray-600 mb-3">
-                                {historico.length === 0 ? 'Nenhuma movimentação' : `${historico.length} ${historico.length === 1 ? 'movimentação encontrada' : 'movimentações encontradas'}`}
-                                {temFiltroAtivo && ' com os filtros aplicados'}
+                                Últimas {historico.length} movimentações
                             </p>
                             {historico.length === 0 ? (
                                 <div className="bg-white border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500">
-                                    {temFiltroAtivo ? 'Nenhuma movimentação encontrada com esses filtros. Tente outros valores.' : 'Nenhuma movimentação registrada ainda.'}
+                                    Nenhuma movimentação registrada ainda.
                                 </div>
                             ) : (
                                 <div className="bg-white border border-gray-200 rounded-md overflow-x-auto">
@@ -920,10 +824,7 @@
                                             {historico.map(h => (
                                                 <tr key={h.id} className="border-b border-gray-100 last:border-0">
                                                     <td className="px-3 py-2 text-xs whitespace-nowrap">{new Date(h.despachada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                                                    <td className="px-3 py-2 text-xs font-mono">
-                                                        {h.identificador} {h.marca}
-                                                        {h.observacao && <span className="ml-1 text-gray-400 italic font-sans">— {h.observacao}</span>}
-                                                    </td>
+                                                    <td className="px-3 py-2 text-xs font-mono">{h.identificador} {h.marca}</td>
                                                     <td className="px-3 py-2 text-xs">{h.motoboy_nome}</td>
                                                     <td className="px-3 py-2 text-xs text-gray-500 hidden md:table-cell">{fmtMinutos(h.minutos_total)}</td>
                                                     <td className="px-3 py-2 text-xs">
@@ -1120,49 +1021,6 @@
             );
         };
 
-        // ─── Banner promocional: telefone obrigatório / rastreio ─────────────
-        const BannerRastreioPromo = ({ onClose }) => {
-            return (
-                <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-50 px-3 fade-in" style={{ width: '100vw', height: '100vh', top: 0, left: 0, boxSizing: 'border-box' }} onClick={onClose}>
-                    <div onClick={e => e.stopPropagation()} className="bg-white rounded-xl shadow-xl w-full overflow-hidden" style={{ maxWidth: '420px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
-                        <div className="px-6 pt-6 pb-5 text-center relative" style={{ background: '#534AB7' }}>
-                            <button onClick={onClose} aria-label="Fechar" className="absolute text-xl leading-none" style={{ top: '12px', right: '14px', color: '#CECBF6' }}>×</button>
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: '#25D366' }}>
-                                <svg viewBox="0 0 32 32" width="30" height="30" fill="#fff" aria-hidden="true">
-                                    <path d="M16.003 3C9.38 3 4 8.376 4 14.997c0 2.355.683 4.55 1.864 6.405L4 29l7.79-1.82A11.93 11.93 0 0 0 16.003 27C22.626 27 28 21.624 28 14.997 28 8.376 22.626 3 16.003 3zm0 21.85c-1.99 0-3.84-.58-5.4-1.58l-.39-.24-4.62 1.08 1.1-4.5-.26-.41a9.8 9.8 0 0 1-1.52-5.2c0-5.45 4.44-9.88 9.9-9.88 5.45 0 9.88 4.43 9.88 9.88 0 5.46-4.43 9.85-9.89 9.85zm5.43-7.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.07 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>
-                                </svg>
-                            </div>
-                            <div className="inline-block text-[10px] font-medium uppercase px-2.5 py-1 rounded-full mb-2" style={{ background: '#26215C', color: '#AFA9EC', letterSpacing: '0.6px' }}>Novidade</div>
-                            <p className="text-white font-medium m-0" style={{ fontSize: '18px', lineHeight: 1.3 }}>Agora com rastreio em tempo real para o cliente final!</p>
-                        </div>
-                        <div className="px-6 pt-5 pb-6">
-                            <p className="text-sm text-gray-800 leading-relaxed mb-4">
-                                A partir de agora, ao cadastrar uma entrega, é necessário informar o <strong className="font-medium">telefone do cliente</strong>. É rápido e muda tudo na operação:
-                            </p>
-                            {[
-                                { ico: '📍', cor: '#E1F5EE', icoCor: '#0F6E56', tt: 'O cliente acompanha a entrega ao vivo', ds: 'Ele recebe o link de rastreio no WhatsApp e vê a mercadoria chegando.' },
-                                { ico: '📞', cor: '#EEEDFE', icoCor: '#534AB7', tt: 'Menos ligações, menos retrabalho', ds: 'O motoboy fala direto com o cliente quando precisar.' },
-                                { ico: '✅', cor: '#E1F5EE', icoCor: '#0F6E56', tt: 'Entregas mais rápidas e sem erro', ds: 'Contato certo na mão evita endereço errado e viagem perdida.' },
-                            ].map((f, i) => (
-                                <div key={i} className="flex gap-3 mb-3 items-start">
-                                    <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: f.cor }}>
-                                        <span style={{ fontSize: '15px' }}>{f.ico}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] font-medium text-gray-800 m-0">{f.tt}</p>
-                                        <p className="text-xs text-gray-500 leading-snug m-0">{f.ds}</p>
-                                    </div>
-                                </div>
-                            ))}
-                            <button onClick={onClose} className="w-full text-white border-0 rounded-md font-medium mt-2" style={{ background: '#534AB7', height: '42px', fontSize: '14px' }}>
-                                Entendi, vamos lá
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         const Solicitacao = ({ cliente, token, onLogout, showToast }) => {
             const [abaAtiva, setAbaAtiva] = useState('nova');
             const [pontos, setPontos] = useState([]);
@@ -1175,11 +1033,6 @@
             const [abaMobile, setAbaMobile] = useState('form');
             const [pontoEditando, setPontoEditando] = useState(null);
             const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', razao_social: '', numero_nota: '', codigo_finalizar: '', complemento: '' });
-            // Validação de WhatsApp por ponto: { [pontoId]: { estado, numero, motivo } }
-            // estado: 'idle' | 'validando' | 'ok' | 'sem_whatsapp' | 'invalido' | 'indeterminado'
-            const [waValidacao, setWaValidacao] = useState({});
-            // Banner promocional (telefone obrigatório / rastreio)
-            const [bannerRastreio, setBannerRastreio] = useState(false);
             const [corridasAtivas, setCorridasAtivas] = useState([]);
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
@@ -1221,37 +1074,6 @@
             const [posicaoAjustada, setPosicaoAjustada] = useState({ lat: null, lng: null });
             const [enderecoAjustado, setEnderecoAjustado] = useState(null);
             const [buscandoEnderecoReverso, setBuscandoEnderecoReverso] = useState(false);
-
-            // 🚀 BANNER PROMOCIONAL (2026-05): aparece 1x a cada 3h, das 8h às 18h.
-            // Última exibição guardada em localStorage pra sobreviver a refresh.
-            // Modo teste: abrir a página com ?testbanner=1 força o banner na hora,
-            // ignorando horário e localStorage.
-            useEffect(() => {
-                const modoTeste = new URLSearchParams(window.location.search).get('testbanner') === '1';
-                if (modoTeste) {
-                    setBannerRastreio(true);
-                    return;
-                }
-                const checar = () => {
-                    const agora = new Date();
-                    const hora = agora.getHours();
-                    if (hora < 8 || hora >= 18) return; // fora do horário comercial
-                    const ultima = parseInt(localStorage.getItem('tutts_banner_rastreio_ts') || '0', 10);
-                    const TRES_HORAS = 3 * 60 * 60 * 1000;
-                    if (Date.now() - ultima >= TRES_HORAS) {
-                        setBannerRastreio(true);
-                    }
-                };
-                checar();
-                // Re-checa a cada 15min (caso o atendente deixe a aba aberta o dia todo)
-                const iv = setInterval(checar, 15 * 60 * 1000);
-                return () => clearInterval(iv);
-            }, []);
-
-            const fecharBannerRastreio = () => {
-                localStorage.setItem('tutts_banner_rastreio_ts', String(Date.now()));
-                setBannerRastreio(false);
-            };
             
             // NOVO: localização do usuário (geolocation) para centralizar o mapa na região de acesso
             const [localizacaoUsuario, setLocalizacaoUsuario] = useState(null);
@@ -1740,29 +1562,7 @@
                     else showToast(data.error || 'Erro ao cancelar', 'error');
                 } catch (err) { showToast('Erro ao cancelar', 'error'); }
             };
-
-            // 🚀 Reenvio manual do link de rastreio pro WhatsApp do cliente
-            const [enviandoRastreio, setEnviandoRastreio] = useState(false);
-            const enviarRastreioManual = async (corridaId) => {
-                setEnviandoRastreio(true);
-                try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/${corridaId}/enviar-rastreio`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({}),
-                    });
-                    const data = await resp.json();
-                    if (resp.ok) {
-                        showToast('📨 Rastreio enviado pro WhatsApp do cliente!', 'success');
-                    } else {
-                        showToast(data.error || 'Não foi possível enviar o rastreio', 'error');
-                    }
-                } catch (err) {
-                    showToast('Erro ao enviar rastreio', 'error');
-                }
-                setEnviandoRastreio(false);
-            };
-
+            
             const sincronizarStatus = async () => {
                 setSincronizando(true);
                 try {
@@ -2275,55 +2075,6 @@
             };
             
             // Salvar nota rápida
-            // ─── Validação de telefone / WhatsApp ──────────────────────────
-            // Valida formato BR localmente (sem API): DDD válido, 9 dígitos, anti-sequência
-            const DDDS_VALIDOS_FE = new Set([11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99]);
-            const validarFormatoTelefone = (raw) => {
-                let d = String(raw || '').replace(/\D/g, '');
-                if (d.length === 13 && d.startsWith('55')) d = d.slice(2);
-                if (d.length !== 11) return false;
-                if (d[2] !== '9') return false;
-                if (!DDDS_VALIDOS_FE.has(parseInt(d.slice(0, 2), 10))) return false;
-                const cel = d.slice(2);
-                if (/^(\d)\1{8}$/.test(cel)) return false;
-                if (cel === '912345678' || cel === '987654321') return false;
-                return true;
-            };
-
-            // Chamado no onBlur do campo telefone — valida WhatsApp via Evolution
-            const validarWhatsAppPonto = async (pontoId, telefone) => {
-                if (!telefone || !telefone.trim()) {
-                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'idle' } }));
-                    return;
-                }
-                if (!validarFormatoTelefone(telefone)) {
-                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'invalido', motivo: 'Número inválido. Confira o DDD e os 9 dígitos.' } }));
-                    return;
-                }
-                setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'validando' } }));
-                try {
-                    const r = await fetch(`${API_URL}/api/solicitacao/validar-whatsapp`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ telefone }),
-                    });
-                    const d = await r.json();
-                    if (!r.ok) {
-                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: d.error || 'Não foi possível verificar' } }));
-                        return;
-                    }
-                    if (d.tem_whatsapp === true) {
-                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'ok', numero: d.numero } }));
-                    } else if (d.tem_whatsapp === false) {
-                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'sem_whatsapp', motivo: d.motivo || 'Sem WhatsApp neste número' } }));
-                    } else {
-                        setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: d.motivo || 'Não foi possível verificar agora' } }));
-                    }
-                } catch (e) {
-                    setWaValidacao(prev => ({ ...prev, [pontoId]: { estado: 'indeterminado', motivo: 'Erro de conexão ao verificar' } }));
-                }
-            };
-
             const salvarNotaRapida = () => {
                 if (pontoRecemAdicionado && notaRapida.trim()) {
                     setPontos(prev => prev.map(p => 
@@ -2873,18 +2624,6 @@
                                                                     {p.complemento && <div className="text-xs text-blue-700">🏠 {p.complemento}</div>}
                                                                     {p.bairro && <div className="text-xs text-gray-500 break-words">{p.bairro}</div>}
                                                                     {p.numero_nota && <div className="text-xs text-green-600 font-medium">🏷️ Nota: {p.numero_nota}</div>}
-                                                                    {p.telefone && (
-                                                                        <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
-                                                                            <span>📞 {p.telefone}</span>
-                                                                            {(() => {
-                                                                                const v = waValidacao[p.id];
-                                                                                if (v && v.estado === 'ok') return <span className="text-green-600" title="WhatsApp confirmado">✅</span>;
-                                                                                if (v && v.estado === 'sem_whatsapp') return <span className="text-amber-600" title="Sem WhatsApp neste número">⚠️</span>;
-                                                                                if (v && v.estado === 'invalido') return <span className="text-red-500" title="Número inválido">❌</span>;
-                                                                                return null;
-                                                                            })()}
-                                                                        </div>
-                                                                    )}
                                                                     {p.observacao && <div className="text-xs text-orange-600 break-words">📝 {p.observacao}</div>}
                                                                     {p.ajustado_manualmente && <div className="text-xs text-green-600">🎯 Posição ajustada</div>}
                                                                 </div>
@@ -2962,57 +2701,20 @@
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <span className="text-xs font-medium text-green-800">📞 Telefone do cliente <span className="text-red-500">*</span></span>
+                                                                    <span className="text-xs font-medium text-green-800">📞 Telefone do cliente</span>
                                                                     <input 
                                                                         type="tel" 
                                                                         value={p.telefone || ''} 
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value;
-                                                                            setPontos(prev => prev.map(pt => pt.id === p.id ? { ...pt, telefone: val } : pt));
-                                                                            setWaValidacao(prev => ({ ...prev, [p.id]: { estado: 'idle' } }));
-                                                                        }}
-                                                                        onBlur={(e) => validarWhatsAppPonto(p.id, e.target.value)}
+                                                                        onChange={(e) => setPontos(prev => prev.map(pt => pt.id === p.id ? { ...pt, telefone: e.target.value } : pt))}
                                                                         className="w-full px-2 py-1.5 border border-green-300 rounded text-xs outline-none focus:ring-1 focus:ring-green-400 mt-1" 
-                                                                        placeholder="(DDD) 9XXXX-XXXX"
+                                                                        placeholder="(DDD) 9XXXX-XXXX (opcional)"
                                                                     />
-                                                                    {(() => {
-                                                                        const v = waValidacao[p.id];
-                                                                        if (!v || v.estado === 'idle') return null;
-                                                                        if (v.estado === 'validando') return (
-                                                                            <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-                                                                                <span className="inline-block w-3 h-3 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></span>
-                                                                                Verificando WhatsApp...
-                                                                            </p>
-                                                                        );
-                                                                        if (v.estado === 'ok') return (
-                                                                            <p className="text-[11px] text-green-700 mt-1 flex items-center gap-1">
-                                                                                <span>✅</span> WhatsApp confirmado — o cliente vai receber o rastreio
-                                                                            </p>
-                                                                        );
-                                                                        if (v.estado === 'invalido') return (
-                                                                            <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
-                                                                                <span>❌</span> {v.motivo}
-                                                                            </p>
-                                                                        );
-                                                                        if (v.estado === 'sem_whatsapp') return (
-                                                                            <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1">
-                                                                                <span>⚠️</span> {v.motivo} — confira o número
-                                                                            </p>
-                                                                        );
-                                                                        return (
-                                                                            <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
-                                                                                <span>ℹ️</span> {v.motivo}
-                                                                            </p>
-                                                                        );
-                                                                    })()}
                                                                 </div>
                                                                 <div className="flex gap-2 pt-1">
                                                                     <button onClick={() => {
                                                                         const ponto = pontos.find(pt => pt.id === p.id);
                                                                         if (!ponto?.nome_fantasia?.trim()) { showToast('⚠️ Nome fantasia é obrigatório', 'warning'); return; }
                                                                         if (!notaRapida?.trim()) { showToast('⚠️ Nº da NF é obrigatório', 'warning'); return; }
-                                                                        if (!ponto?.telefone?.trim()) { showToast('⚠️ Telefone do cliente é obrigatório', 'warning'); return; }
-                                                                        if (!validarFormatoTelefone(ponto.telefone)) { showToast('⚠️ Telefone inválido — confira o DDD e os 9 dígitos', 'warning'); return; }
                                                                         salvarNotaRapida();
                                                                     }} className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700">✓ Confirmar</button>
                                                                     <button onClick={pularNotaRapida} className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs">Pular</button>
@@ -3277,11 +2979,6 @@
                                                             <a href={detalheCorrida.tutts_url_rastreamento} target="_blank" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
                                                                 🗺️ Rastrear
                                                             </a>
-                                                        )}
-                                                        {detalheCorrida.tutts_url_rastreamento && !['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
-                                                            <button onClick={() => enviarRastreioManual(detalheCorrida.id)} disabled={enviandoRastreio} className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-60 text-center">
-                                                                {enviandoRastreio ? '...' : '📨 Enviar rastreio'}
-                                                            </button>
                                                         )}
                                                         {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
                                                             <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
@@ -4272,11 +3969,6 @@
                     {/* ========== ABA CONTROLE DE MÁQUINAS ========== */}
                     {abaAtiva === 'maquinas' && (
                         <ControleMaquinas cliente={cliente} token={token} showToast={showToast} />
-                    )}
-                    
-                    {/* ========== BANNER PROMOCIONAL RASTREIO ========== */}
-                    {bannerRastreio && (
-                        <BannerRastreioPromo onClose={fecharBannerRastreio} />
                     )}
                     
                     {/* Modal de fotos com zoom */}
