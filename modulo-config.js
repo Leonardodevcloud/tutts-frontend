@@ -991,6 +991,12 @@
                 var innerJa = innerProps.ja;
                 var innerApiUrl = innerProps.API_URL;
                 var innerGetToken = innerProps.getToken;
+                // aliases para o resto do corpo que usa os nomes curtos
+                var p = innerP;
+                var x = innerX;
+                var ja = innerJa;
+                var API_URL = innerApiUrl;
+                var getToken = innerGetToken;
                 React.useEffect(function() {
                     if (!innerP.clientesApiLista) {
                         fetch(innerApiUrl + "/admin/solicitacao/clientes", {
