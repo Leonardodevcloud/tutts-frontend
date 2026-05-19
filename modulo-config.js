@@ -1392,16 +1392,29 @@
                         p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
                         p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement("div", {className: "space-y-2"},
                             p.clientesApiLista.map(function(cliente) {
+                                var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
                                 return React.createElement("div", {
                                     key: cliente.id,
-                                    className: "bg-gray-50 rounded-lg p-3 flex items-center justify-between"
+                                    className: "bg-gray-50 rounded-lg p-3"
                                 },
-                                    React.createElement("div", null,
-                                        React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
-                                        React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
-                                        React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente)
-                                    ),
-                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                    React.createElement("div", {className: "flex items-start justify-between gap-2"},
+                                        React.createElement("div", {className: "flex-1 min-w-0"},
+                                            React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
+                                            React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
+                                            React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente),
+                                            cats.length > 0
+                                                ? React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
+                                                    cats.map(function(c) {
+                                                        return React.createElement("span", {
+                                                            key: c.sigla,
+                                                            className: "px-2 py-0.5 rounded-full text-xs font-medium",
+                                                            style: {background: "#EEEDFE", color: "#3C3489", border: "0.5px solid #AFA9EC"}
+                                                        }, c.sigla + " — " + c.nome);
+                                                    })
+                                                  )
+                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada")
+                                        ),
+                                        React.createElement("div", {className: "flex items-center gap-2 flex-shrink-0"},
                                         React.createElement("span", {
                                             className: cliente.ativo ? "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" : "px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
                                         }, cliente.ativo ? "✅ Ativo" : "❌ Inativo"),
@@ -1452,6 +1465,16 @@
                                         }, "✏️"),
                                         React.createElement("button", {
                                             onClick: async function() {
+                                                var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
+                                                var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
+                                                var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
+                                                x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
+                                            },
+                                            title: "Configurar modalidades de frete",
+                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                                        }, "🏷️"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
                                                 var total = parseInt(cliente.total_solicitacoes) || 0;
                                                 var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
                                                     (total > 0
@@ -1487,6 +1510,7 @@
                                             title: "Excluir cliente permanentemente",
                                             className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
                                         }, "🗑️")
+                                        )
                                     )
                                 );
                             })
@@ -1585,6 +1609,104 @@
             // ==================== TAB AUDITORIA ====================
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
                 React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja }),
+
+
+            // ==================== MODAL CATEGORIAS DE FRETE ====================
+            p.modalCategorias && (function() {
+                var mc = p.modalCategorias;
+                var TODAS_CATS = [
+                    {sigla: "M",  nome: "Motofrete"},
+                    {sigla: "MC", nome: "Motofrete (Expresso)"},
+                    {sigla: "U",  nome: "Carro Utilitário"},
+                    {sigla: "UC", nome: "Carro Utilitário (Expresso)"},
+                    {sigla: "D",  nome: "Tutts Fast"}
+                ];
+                var fecharModal = function() { x({...p, modalCategorias: null}); };
+                var toggleCat = function(sigla) {
+                    var ativas = mc.catsAtivas.slice();
+                    var idx = ativas.indexOf(sigla);
+                    if (idx >= 0) ativas.splice(idx, 1); else ativas.push(sigla);
+                    x({...p, modalCategorias: {...mc, catsAtivas: ativas}});
+                };
+                var salvar = async function() {
+                    x({...p, modalCategorias: {...mc, salvando: true}});
+                    try {
+                        var categorias = TODAS_CATS.filter(function(c) { return mc.catsAtivas.indexOf(c.sigla) >= 0; });
+                        var resp = await fetch(API_URL + "/admin/solicitacao/clientes/" + mc.id + "/categorias", {
+                            method: "PUT",
+                            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
+                            body: JSON.stringify({categorias: categorias})
+                        });
+                        if (resp.ok) {
+                            ja("✅ Categorias salvas!", "success");
+                            x({...p, modalCategorias: null, clientesApiLista: null});
+                        } else {
+                            var err = await resp.json().catch(function() { return {}; });
+                            ja("❌ " + (err.error || "Erro ao salvar"), "error");
+                            x({...p, modalCategorias: {...mc, salvando: false}});
+                        }
+                    } catch (e) {
+                        ja("❌ Erro de conexão", "error");
+                        x({...p, modalCategorias: {...mc, salvando: false}});
+                    }
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fecharModal
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "🏷️ Modalidades de frete"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mc.nome, " — ative só o que este cliente pode solicitar")
+                            ),
+                            React.createElement("button", {onClick: fecharModal, className: "text-gray-400 hover:text-gray-600 text-lg leading-none"}, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4 space-y-2"},
+                            TODAS_CATS.map(function(cat) {
+                                var ativa = mc.catsAtivas.indexOf(cat.sigla) >= 0;
+                                return React.createElement("div", {
+                                    key: cat.sigla,
+                                    className: "flex items-center justify-between p-3 rounded-lg border " + (ativa ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50")
+                                },
+                                    React.createElement("div", {className: "flex items-center gap-3"},
+                                        React.createElement("span", {
+                                            className: "text-xs font-bold px-2 py-0.5 rounded",
+                                            style: ativa ? {background: "#EEEDFE", color: "#3C3489"} : {background: "#e5e7eb", color: "#9ca3af"}
+                                        }, cat.sigla),
+                                        React.createElement("span", {className: "text-sm " + (ativa ? "text-gray-800" : "text-gray-400")}, cat.nome)
+                                    ),
+                                    React.createElement("button", {
+                                        onClick: function() { toggleCat(cat.sigla); },
+                                        className: "relative w-9 h-5 rounded-full transition-colors flex-shrink-0 border-0",
+                                        style: {background: ativa ? "#534AB7" : "#d1d5db"},
+                                        "aria-label": "Toggle " + cat.sigla
+                                    },
+                                        React.createElement("span", {
+                                            className: "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all",
+                                            style: {left: ativa ? "18px" : "2px"}
+                                        })
+                                    )
+                                );
+                            })
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: fecharModal,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: mc.salvando,
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white " + (mc.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
+                            }, mc.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
 
             // ==================== MODAL EDITAR CLIENTE DE SOLICITAÇÃO ====================
             p.editarClienteSolicitacao && (function() {
