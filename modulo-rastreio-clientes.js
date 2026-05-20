@@ -61,6 +61,8 @@
           observacoes: c.observacoes || null,
           ativo: c.ativo !== false,
           termos_filtro: termos ? termos.split('\n').map(s=>s.trim()).filter(Boolean) : null,
+          rastreio_cliente_ativo: c.rastreio_cliente_ativo === true,
+          rastreio_cliente_nome_exibicao: c.rastreio_cliente_nome_exibicao || null,
         });
         if (c.id) await api('/config/'+c.id,{method:'PUT',body});
         else      await api('/config',{method:'POST',body});
@@ -157,7 +159,7 @@
 
       tab==='config' && h('div',null,
         h('div',{style:{marginBottom:16,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
-          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:''})},'+ Novo cadastro'),
+          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:'',rastreio_cliente_ativo:false,rastreio_cliente_nome_exibicao:''})},'+ Novo cadastro'),
           // 2026-05 v3: dica de uso
           h('span',{style:{fontSize:12,color:'#6b7280'}},'Você pode cadastrar o mesmo código várias vezes com grupos e palavras-chave diferentes.')
         ),
@@ -207,6 +209,29 @@
             ),
             h('label',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:16}},
               h('input',{type:'checkbox',checked:editing.ativo!==false,onChange:e=>setEditing({...editing,ativo:e.target.checked})}),
+            ),
+
+            // ── Rastreio direto ao cliente ──
+            h('div',{style:{background:'#f5f3ff',border:'1px solid #ddd6fe',borderRadius:8,padding:12,marginBottom:12}},
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#6d28d9',margin:'0 0 8px 0'}},'📱 Rastreio direto ao cliente'),
+              h('p',{style:{fontSize:12,color:'#6b7280',margin:'0 0 10px 0'}},
+                'Quando ativo, o sistema extrai o telefone da nota fiscal e envia o link de rastreio diretamente ao cliente.'
+              ),
+              h('label',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}},
+                h('input',{type:'checkbox',checked:editing.rastreio_cliente_ativo===true,
+                  onChange:e=>setEditing({...editing,rastreio_cliente_ativo:e.target.checked})}),
+                h('span',{style:{fontSize:13,fontWeight:600}},'Ativar envio ao cliente')
+              ),
+              editing.rastreio_cliente_ativo && h('div',null,
+                h('label',{style:{fontSize:12,color:'#374151',display:'block',marginBottom:4}},'Nome a exibir na saudação (opcional)'),
+                h('input',{type:'text',value:editing.rastreio_cliente_nome_exibicao||'',
+                  onChange:e=>setEditing({...editing,rastreio_cliente_nome_exibicao:e.target.value}),
+                  placeholder:'Ex: Cobra Center — usa o nome do ponto se vazio',
+                  style:{width:'100%',padding:'6px 8px',border:'1px solid #d1d5db',borderRadius:6,fontSize:13,boxSizing:'border-box'}})
+              )
+            ),
+
+            h('div',{style:{marginBottom:8}},
               h('span',null,'Ativo')
             ),
             h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end'}},
