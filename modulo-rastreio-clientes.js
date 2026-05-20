@@ -222,13 +222,7 @@
                   onChange:e=>setEditing({...editing,rastreio_cliente_ativo:e.target.checked})}),
                 h('span',{style:{fontSize:13,fontWeight:600}},'Ativar envio ao cliente')
               ),
-              editing.rastreio_cliente_ativo && h('div',null,
-                h('label',{style:{fontSize:12,color:'#374151',display:'block',marginBottom:4}},'Nome a exibir na saudação (opcional)'),
-                h('input',{type:'text',value:editing.rastreio_cliente_nome_exibicao||'',
-                  onChange:e=>setEditing({...editing,rastreio_cliente_nome_exibicao:e.target.value}),
-                  placeholder:'Ex: Cobra Center — usa o nome do ponto se vazio',
-                  style:{width:'100%',padding:'6px 8px',border:'1px solid #d1d5db',borderRadius:6,fontSize:13,boxSizing:'border-box'}})
-              )
+
             ),
 
             h('div',{style:{marginBottom:8}},
