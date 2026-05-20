@@ -1246,6 +1246,17 @@
                                         }, "🏷️"),
                                         React.createElement("button", {
                                             onClick: async function() {
+                                                try {
+                                                    var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
+                                                    var dp = rp.ok ? await rp.json() : {provedores: ['tutts']};
+                                                    x({...p, modalProvedores: {id: cliente.id, nome: cliente.nome, selecionados: dp.provedores || ['tutts'], salvando: false}});
+                                                } catch(e) { ja("Erro ao carregar provedores", "error"); }
+                                            },
+                                            title: "Configurar provedores logísticos",
+                                            className: "px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs hover:bg-emerald-200"
+                                        }, "🚚"),
+                                        React.createElement("button", {
+                                            onClick: async function() {
                                                 var total = parseInt(cliente.total_solicitacoes) || 0;
                                                 var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
                                                     (total > 0
@@ -1733,17 +1744,7 @@
                                         }, cat.sigla),
                                         React.createElement("span", {className: "text-sm " + (ativa ? "text-gray-800" : "text-gray-400")}, cat.nome)
                                     ),
-                                    React.createElement("button", {
-                                        onClick: async function() {
-                                            try {
-                                                var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
-                                                var dp = rp.ok ? await rp.json() : {provedores: ['tutts']};
-                                                x({...p, modalProvedores: {id: cliente.id, nome: cliente.nome, selecionados: dp.provedores || ['tutts'], salvando: false}});
-                                            } catch(e) { ja("Erro ao carregar provedores", "error"); }
-                                        },
-                                        title: "Configurar provedores logísticos",
-                                        className: "w-9 h-9 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm transition-colors"
-                                    }, "🚚"),
+                                    
                                     React.createElement("button", {
                                         onClick: function() { toggleCat(cat.sigla); },
                                         className: "relative w-9 h-5 rounded-full transition-colors flex-shrink-0 border-0",
