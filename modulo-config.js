@@ -285,6 +285,18 @@
             });
         };
 
+        var abrirCadastroAdmin = function(user) {
+            setEstado({
+                ...estado,
+                cadastroAdminModal: true,
+                cadastroAdminUser: user,
+                cadastroAdminFoto: null,
+                cadastroAdminWhatsapp: user.whatsapp || "",
+                cadastroAdminSalvando: false,
+                cadastroAdminErro: ""
+            });
+        };
+
         var excluir = function(user) {
             var cod = getCod(user);
             if (cod && typeof cod === "string") cod = cod.replace("#", "");
@@ -337,6 +349,11 @@
                         onClick: function() { abrirSenha(user); },
                         className: "flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
                     }, "🔑 Senha"),
+                    user.role === "user" && React.createElement("button", {
+                        onClick: function() { abrirCadastroAdmin(user); },
+                        title: "Preencher foto e WhatsApp pelo admin",
+                        className: "px-3 py-2 rounded-lg text-xs font-semibold transition-colors " + (user.cadastro_completo ? "bg-green-50 text-green-700 hover:bg-green-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100")
+                    }, user.cadastro_completo ? "✅" : "📋"),
                     user.role !== "admin_master" && React.createElement("button", {
                         onClick: function() { excluir(user); },
                         className: "px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
@@ -992,12 +1009,9 @@
                 var innerApiUrl = innerProps.API_URL;
                 var innerGetToken = innerProps.getToken;
                 var innerFetchAuth = innerProps.fetchAuth;
-                // aliases para o resto do corpo que usa os nomes curtos
-                var p = innerP;
-                var x = innerX;
-                var ja = innerJa;
-                var API_URL = innerApiUrl;
-                var getToken = innerGetToken;
+                // aliases
+                var p = innerP; var x = innerX; var ja = innerJa;
+                var API_URL = innerApiUrl; var getToken = innerGetToken;
                 var fetchAuth = innerFetchAuth;
                 React.useEffect(function() {
                     if (!innerP.clientesApiLista) {
@@ -2022,6 +2036,107 @@
             })(),
 
             // ==================== MODAL ALTERAR SENHA ====================
+            // Modal — Admin preenche cadastro do motoboy (foto + WhatsApp)
+            p.cadastroAdminModal && p.cadastroAdminUser && (function() {
+                var u = p.cadastroAdminUser;
+                var cod = u.cod_profissional || u.codProfissional || "";
+                var nome = u.full_name || u.fullName || "";
+                var salvar = async function() {
+                    if (!p.cadastroAdminFoto && !p.cadastroAdminWhatsapp) {
+                        x({...p, cadastroAdminErro: "Preencha pelo menos um campo"});
+                        return;
+                    }
+                    x({...p, cadastroAdminSalvando: true, cadastroAdminErro: ""});
+                    try {
+                        var body = {};
+                        if (p.cadastroAdminFoto) body.foto_selfie = p.cadastroAdminFoto;
+                        if (p.cadastroAdminWhatsapp) body.whatsapp = p.cadastroAdminWhatsapp;
+                        var resp = await fetchAuth(API_URL + "/admin/usuarios/" + cod + "/cadastro", {
+                            method: "PATCH",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify(body)
+                        });
+                        var data = await resp.json().catch(function() { return {}; });
+                        if (resp.ok) {
+                            ja(data.mensagem || "✅ Cadastro salvo!", "success");
+                            x({...p, cadastroAdminModal: false, cadastroAdminUser: null});
+                        } else {
+                            x({...p, cadastroAdminSalvando: false, cadastroAdminErro: data.error || "Erro ao salvar"});
+                        }
+                    } catch(e) {
+                        x({...p, cadastroAdminSalvando: false, cadastroAdminErro: "Erro de conexão"});
+                    }
+                };
+                var fechar = function() { if (!p.cadastroAdminSalvando) x({...p, cadastroAdminModal: false}); };
+                var onFoto = function(e) {
+                    var file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function(ev) { x({...p, cadastroAdminFoto: ev.target.result}); };
+                    reader.readAsDataURL(file);
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fechar
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "📋 Cadastro pelo Admin"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, nome, " — COD ", cod)
+                            ),
+                            React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600 text-lg"}, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4 space-y-4"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-2"}, "📸 Foto do Profissional"),
+                                p.cadastroAdminFoto
+                                    ? React.createElement("div", {className: "relative"},
+                                        React.createElement("img", {src: p.cadastroAdminFoto, className: "w-full h-40 object-cover rounded-xl"}),
+                                        React.createElement("button", {
+                                            onClick: function() { x({...p, cadastroAdminFoto: null}); },
+                                            className: "absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold"
+                                        }, "✕")
+                                      )
+                                    : React.createElement("label", {
+                                        className: "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                                      },
+                                        React.createElement("span", {className: "text-3xl mb-1"}, "📷"),
+                                        React.createElement("span", {className: "text-xs text-gray-500"}, "Clique para selecionar foto"),
+                                        React.createElement("input", {type: "file", accept: "image/*", className: "hidden", onChange: onFoto})
+                                      )
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "📱 WhatsApp"),
+                                React.createElement("input", {
+                                    type: "tel",
+                                    placeholder: "(71) 9 9999-9999",
+                                    value: p.cadastroAdminWhatsapp || "",
+                                    onChange: function(e) { x({...p, cadastroAdminWhatsapp: e.target.value}); },
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                })
+                            ),
+                            p.cadastroAdminErro && React.createElement("p", {className: "text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg"}, "❌ ", p.cadastroAdminErro)
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: fechar,
+                                disabled: p.cadastroAdminSalvando,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: p.cadastroAdminSalvando || (!p.cadastroAdminFoto && !p.cadastroAdminWhatsapp),
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white " + (p.cadastroAdminSalvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700") + " disabled:opacity-50"
+                            }, p.cadastroAdminSalvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
+
             p.senhaModal && p.senhaModalUser && (function() {
                 var senha = p.senhaModalValue || "";
                 var confirmar = p.senhaModalConfirm || "";
