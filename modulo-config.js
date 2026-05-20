@@ -1644,7 +1644,7 @@
                 var TODAS_CATS = [
                     {sigla: "M",  nome: "Motofrete"},
                     {sigla: "MC", nome: "Motofrete (Expresso)"},
-                    {sigla: "C",  nome: "Motofrete C"},
+                    {sigla: "DC", nome: "Motofrete C"},
                     {sigla: "U",  nome: "Carro Utilitário"},
                     {sigla: "UC", nome: "Carro Utilitário (Expresso)"},
                     {sigla: "D",  nome: "Tutts Fast"}
