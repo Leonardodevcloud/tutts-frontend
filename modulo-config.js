@@ -1183,7 +1183,23 @@
                                                         }, c.sigla + " — " + c.nome);
                                                     })
                                                   )
-                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada")
+                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada"),
+                                            (function() {
+                                                var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
+                                                var extras = provs.filter(function(p) { return p !== "tutts"; });
+                                                if (extras.length === 0) return null;
+                                                var INFO = { uber: { label: "Uber Flash", bg: "#1a1a1a", color: "white" }, "99": { label: "99 Moto", bg: "#FFD700", color: "#1a1a1a" } };
+                                                return React.createElement("div", {className: "flex flex-wrap gap-1 mt-1"},
+                                                    extras.map(function(code) {
+                                                        var info = INFO[code] || {label: code, bg: "#888", color: "white"};
+                                                        return React.createElement("span", {
+                                                            key: code,
+                                                            className: "px-2 py-0.5 rounded-full text-xs font-medium",
+                                                            style: {background: info.bg, color: info.color}
+                                                        }, "🚚 " + info.label);
+                                                    })
+                                                );
+                                            })()
                                         ),
                                         React.createElement("div", {className: "flex items-center gap-2 flex-shrink-0"},
                                         React.createElement("span", {
