@@ -285,6 +285,18 @@
             });
         };
 
+        var abrirProvedores = async function(cliente) {
+            try {
+                var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
+                var data = resp.ok ? await resp.json() : { provedores: ['tutts'] };
+                setEstado({...estado, modalProvedores: {
+                    id: cliente.id, nome: cliente.nome,
+                    selecionados: data.provedores || ['tutts'],
+                    salvando: false
+                }});
+            } catch(e) { showToast("Erro ao carregar provedores", "error"); }
+        };
+
         var abrirCadastroAdmin = function(user) {
             setEstado({
                 ...estado,
@@ -1722,6 +1734,17 @@
                                         React.createElement("span", {className: "text-sm " + (ativa ? "text-gray-800" : "text-gray-400")}, cat.nome)
                                     ),
                                     React.createElement("button", {
+                                        onClick: async function() {
+                                            try {
+                                                var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
+                                                var dp = rp.ok ? await rp.json() : {provedores: ['tutts']};
+                                                x({...p, modalProvedores: {id: cliente.id, nome: cliente.nome, selecionados: dp.provedores || ['tutts'], salvando: false}});
+                                            } catch(e) { ja("Erro ao carregar provedores", "error"); }
+                                        },
+                                        title: "Configurar provedores logísticos",
+                                        className: "w-9 h-9 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm transition-colors"
+                                    }, "🚚"),
+                                    React.createElement("button", {
                                         onClick: function() { toggleCat(cat.sigla); },
                                         className: "relative w-9 h-5 rounded-full transition-colors flex-shrink-0 border-0",
                                         style: {background: ativa ? "#534AB7" : "#d1d5db"},
@@ -2036,6 +2059,124 @@
             })(),
 
             // ==================== MODAL ALTERAR SENHA ====================
+
+            // Modal — Provedores logísticos por cliente
+            p.modalProvedores && (function() {
+                var mp = p.modalProvedores;
+                var PROVEDORES = [
+                    {code: "tutts", nome: "Tutts",      desc: "provedor padrão — sempre ativo", fixo: true},
+                    {code: "uber",  nome: "Uber Flash",  desc: "entregas expressas via Uber",    fixo: false},
+                    {code: "99",    nome: "99 Moto",     desc: "entregas via 99",                fixo: false}
+                ];
+                var toggle = function(code) {
+                    if (code === "tutts") return; // não pode desmarcar tutts
+                    var atual = mp.selecionados || ['tutts'];
+                    var novo = atual.includes(code)
+                        ? atual.filter(function(c) { return c !== code; })
+                        : [...atual, code];
+                    if (!novo.includes("tutts")) novo = ["tutts", ...novo];
+                    x({...p, modalProvedores: {...mp, selecionados: novo}});
+                };
+                var salvar = async function() {
+                    x({...p, modalProvedores: {...mp, salvando: true}});
+                    try {
+                        var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/provedores", {
+                            method: "PUT",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify({provedores: mp.selecionados})
+                        });
+                        var data = await resp.json().catch(function() { return {}; });
+                        if (resp.ok) {
+                            ja("✅ Provedores salvos!", "success");
+                            x({...p, modalProvedores: null});
+                        } else {
+                            ja("❌ " + (data.error || "Erro"), "error");
+                            x({...p, modalProvedores: {...mp, salvando: false}});
+                        }
+                    } catch(e) {
+                        ja("Erro de conexão", "error");
+                        x({...p, modalProvedores: {...mp, salvando: false}});
+                    }
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: function() { if (!mp.salvando) x({...p, modalProvedores: null}); }
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-sm",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "🚚 Provedores logísticos"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — ative só os que este cliente pode usar")
+                            ),
+                            React.createElement("button", {
+                                onClick: function() { if (!mp.salvando) x({...p, modalProvedores: null}); },
+                                className: "text-gray-400 hover:text-gray-600 text-lg"
+                            }, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4 space-y-2"},
+                            PROVEDORES.map(function(prov) {
+                                var ativo = (mp.selecionados || ['tutts']).includes(prov.code);
+                                return React.createElement("div", {
+                                    key: prov.code,
+                                    onClick: function() { toggle(prov.code); },
+                                    className: "flex items-center justify-between p-3 border rounded-xl transition-colors " +
+                                        (prov.fixo ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
+                                        ativo ? "bg-purple-50 border-purple-200 cursor-pointer" :
+                                        "bg-gray-50 border-gray-200 cursor-pointer hover:bg-gray-100")
+                                },
+                                    React.createElement("div", {className: "flex items-center gap-3"},
+                                        React.createElement("div", {
+                                            className: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0",
+                                            style: {
+                                                background: prov.code === "tutts" ? "#7c3aed" :
+                                                           prov.code === "uber"  ? "#1a1a1a" : "#FFD700",
+                                                color: prov.code === "99" ? "#1a1a1a" : "white"
+                                            }
+                                        },
+                                            prov.code === "tutts"
+                                                ? React.createElement("img", {
+                                                    src: "https://tutts.com.br/configClientesNovos/sites/tutts/logP.png",
+                                                    style: {width:"100%", height:"100%", objectFit:"cover"},
+                                                    onError: function(e) { e.target.style.display="none"; }
+                                                  })
+                                                : React.createElement("span", null, prov.code === "uber" ? "U" : "99")
+                                        ),
+                                        React.createElement("div", null,
+                                            React.createElement("p", {className: "text-sm font-medium text-gray-800"}, prov.nome),
+                                            React.createElement("p", {className: "text-xs text-gray-500"}, prov.desc)
+                                        )
+                                    ),
+                                    React.createElement("input", {
+                                        type: "checkbox",
+                                        checked: ativo,
+                                        disabled: prov.fixo,
+                                        readOnly: true,
+                                        className: "w-4 h-4",
+                                        style: {accentColor: "#7c3aed"}
+                                    })
+                                );
+                            })
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: function() { if (!mp.salvando) x({...p, modalProvedores: null}); },
+                                disabled: mp.salvando,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: mp.salvando,
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
+                                    (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
+                            }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
+
             // Modal — Admin preenche cadastro do motoboy (foto + WhatsApp)
             p.cadastroAdminModal && p.cadastroAdminUser && (function() {
                 var u = p.cadastroAdminUser;
