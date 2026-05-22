@@ -370,15 +370,34 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
       // Profissional + data
       e("td", { style: tdBordered() },
         e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-          e("div", {
-            style: {
-              width: 28, height: 28, borderRadius: "50%",
-              background: corAvatar(row.cod_prof), color: "white",
-              fontSize: 10, fontWeight: 600,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }
-          }, iniciaisDe(row.profissional)),
+          // 🆕 2026-05: se o backend trouxe `row.foto` (match com users.foto_thumb/selfie),
+          // usa a foto real do motoboy. Caso contrário, mantém o avatar com iniciais
+          // gradient (comportamento original — preservado pra motoboys sem cadastro
+          // ou linhas sem cod_prof na planilha).
+          row.foto
+            ? e("img", {
+                src: row.foto,
+                alt: row.profissional || "",
+                style: {
+                  width: 28, height: 28, borderRadius: "50%",
+                  objectFit: "cover",
+                  flexShrink: 0,
+                  border: "1px solid #E5E7EB",
+                },
+                // Se a imagem falhar (data URL corrompida etc.), some — o React
+                // não tem fallback automático; deixar o alt vazio é o suficiente
+                // pra não mostrar ícone quebrado feio.
+                onError: (ev) => { ev.target.style.display = "none"; }
+              })
+            : e("div", {
+                style: {
+                  width: 28, height: 28, borderRadius: "50%",
+                  background: corAvatar(row.cod_prof), color: "white",
+                  fontSize: 10, fontWeight: 600,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }
+              }, iniciaisDe(row.profissional)),
           e("div", null,
             e("div", { style: { fontWeight: 500, color: "#111827", fontSize: 13, lineHeight: 1.3 } }, row.profissional || "—"),
             e("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#6B7280", marginTop: 1 } },
