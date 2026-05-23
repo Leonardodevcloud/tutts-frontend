@@ -269,7 +269,8 @@
     // RENDER — lista de centrais (quando nenhuma está selecionada)
     // ════════════════════════════════════════════════════════
     if (!centralSelecionada) {
-      return e('div', { className: 'space-y-4 p-2' },
+      return e(React.Fragment, null,
+        e('div', { className: 'space-y-4 p-2' },
         // Header
         e('div', { className: 'flex items-center justify-between gap-3' },
           e('div', null,
@@ -331,6 +332,15 @@
                   )
                 ))
               )
+        ),
+        // 🆕 FIX: modal precisa estar disponível TAMBÉM no early-return da lista,
+        // senão clicar "Nova central auto" muda o state mas nada renderiza.
+        modalCentral && renderModalCentral({
+          dados: modalCentral,
+          onChange: setModalCentral,
+          onSalvar: salvarCentral,
+          onCancelar: () => setModalCentral(null),
+        })
       );
     }
 
