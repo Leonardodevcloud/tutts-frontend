@@ -63,8 +63,9 @@
       setBuscandoEndereco(true);
       try {
         const r = await fetchAuthRef.current(`${apiUrlRef.current}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
-        const d = await r.json();
+        const d = await r.json().catch(() => ({}));
         const resultado = d.results && d.results[0];
+
         if (resultado && resultado.latitude && resultado.longitude) {
           setCoordenadasEncontradas({
             latitude: resultado.latitude,
@@ -76,7 +77,10 @@
         } else {
           setEnderecoValidado(false);
           setCoordenadasEncontradas(null);
-          toast('Endereço não encontrado', 'error');
+          // Se backend retornou erro específico, mostra. Senão, genérico.
+          const msg = d.error || 'Endereço não encontrado · tente incluir rua + número + cidade';
+          console.warn('[FilasAuto] geocode falhou:', { status: r.status, body: d });
+          toast(msg, 'error');
         }
       } catch (e) {
         setEnderecoValidado(false);
