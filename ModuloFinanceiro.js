@@ -3152,179 +3152,250 @@
                 disabled: !p.motivoRejeicaoNovato || c,
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
             }, c ? "..." : "❌ Rejeitar")))), React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl shadow-lg mb-6 text-white overflow-hidden"
-            }, React.createElement("div", {
-                className: "p-4 flex justify-between items-center cursor-pointer hover:bg-white/10 transition",
-                onClick: () => $e(!Fe)
-            }, React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, React.createElement("span", {
-                className: "text-2xl"
-            }, "🎯"), React.createElement("div", null, React.createElement("h2", {
-                className: "text-lg font-bold"
-            }, "Quiz de Procedimentos"), React.createElement("p", {
-                className: "text-purple-200 text-xs"
-            }, "Clique para ", Fe ? "recolher" : "expandir", " configurações"))), React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, React.createElement("span", {
-                className: "px-3 py-1 rounded-full text-xs font-bold " + (fe.ativo ? "bg-green-500" : "bg-red-500")
-            }, fe.ativo ? "✅ ATIVO" : "❌ INATIVO"), React.createElement("span", {
-                className: "text-2xl transition-transform",
-                style: {
-                    transform: Fe ? "rotate(180deg)" : "rotate(0deg)"
-                }
-            }, "▼"))), Fe && React.createElement("div", {
-                className: "p-6 pt-2 border-t border-white/20"
-            }, React.createElement("div", {
-                className: "flex justify-end mb-4"
-            }, React.createElement("button", {
-                onClick: async () => {
-                    const novoFe = { ...fe, ativo: !fe.ativo };
-                    Ne(novoFe);
-                    try {
-                        const resp = await fetchAuth(`${API_URL}/quiz-procedimentos/config`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(novoFe)
-                        });
-                        if (!resp.ok) throw new Error("falha");
-                        ja(novoFe.ativo ? "✅ Quiz ativado!" : "⏸️ Quiz desativado!", "success");
-                    } catch (err) {
-                        Ne(fe);
-                        ja("❌ Erro ao alterar status do quiz", "error");
-                    }
+                className: "bg-white rounded-xl shadow border border-gray-200 overflow-hidden mb-6"
+            },
+                /* Header com toggle de ativo */
+                React.createElement("div", {
+                    className: "p-4 sm:p-5 border-b border-gray-100 cursor-pointer",
+                    onClick: () => $e(!Fe)
                 },
-                className: "px-4 py-2 rounded-lg font-semibold text-sm " + (fe.ativo ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600")
-            }, fe.ativo ? "⏸️ Desativar Quiz" : "▶️ Ativar Quiz")), React.createElement("div", {
-                className: "grid md:grid-cols-2 gap-4 mb-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Título da Promoção"), React.createElement("input", {
-                type: "text",
-                value: fe.titulo,
-                onChange: e => Ne({
-                    ...fe,
-                    titulo: e.target.value
-                }),
-                className: "w-full px-4 py-2 border rounded-lg text-gray-800",
-                placeholder: "Acerte os procedimentos..."
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold mb-1"
-            }, "Valor da Gratuidade (R$)"), React.createElement("input", {
-                type: "number",
-                step: "0.01",
-                value: fe.valor_gratuidade,
-                onChange: e => Ne({
-                    ...fe,
-                    valor_gratuidade: parseFloat(e.target.value) || 0
-                }),
-                className: "w-full px-4 py-2 border rounded-lg text-gray-800"
-            }))), React.createElement("div", {
-                className: "mb-4"
-            }, React.createElement("label", {
-                className: "block text-sm font-semibold mb-2"
-            }, "📸 4 Imagens do Carrossel"), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-3"
-            }, [0, 1, 2, 3].map(e => React.createElement("div", {
-                key: e,
-                className: "relative"
-            }, React.createElement("div", {
-                className: "aspect-video bg-white/20 rounded-lg overflow-hidden border-2 border-dashed border-white/50 flex items-center justify-center"
-            }, fe.imagens[e] ? React.createElement("img", {
-                src: fe.imagens[e],
-                alt: `Imagem ${e+1}`,
-                className: "w-full h-full object-cover"
-            }) : React.createElement("span", {
-                className: "text-white/70 text-sm"
-            }, "Imagem ", e + 1)), React.createElement("input", {
-                type: "file",
-                accept: "image/*",
-                onChange: t => (async (e, t) => {
-                    if (!t) return;
-                    // 🛡️ 2026-04: usa imageUtils pra memory-safe em mobile fraco
-                    try {
-                        const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
-                            ? await window.imageUtils.compressImageSafe(t, { maxWidth: 1280, quality: 0.75 })
-                            : await new Promise((resolve, reject) => {
-                                const a = new FileReader();
-                                a.onload = t => resolve(t.target.result);
-                                a.onerror = reject;
-                                a.readAsDataURL(t);
-                            });
-                        const a = [...fe.imagens];
-                        a[e] = dataUrl;
-                        Ne({ ...fe, imagens: a });
-                    } catch (err) {
-                        console.error('Erro ao processar imagem:', err);
-                    }
-                })(e, t.target.files[0]),
-                className: "absolute inset-0 opacity-0 cursor-pointer"
-            }), fe.imagens[e] && React.createElement("button", {
-                onClick: () => {
-                    const t = [...fe.imagens];
-                    t[e] = null, Ne({
-                        ...fe,
-                        imagens: t
-                    })
-                },
-                className: "absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
-            }, "✕"))))), React.createElement("div", {
-                className: "mb-4"
-            }, React.createElement("label", {
-                className: "block text-sm font-semibold mb-2"
-            }, "❓ 5 Afirmações (CERTO ou ERRADO)"), React.createElement("div", {
-                className: "space-y-3"
-            }, [0, 1, 2, 3, 4].map(e => React.createElement("div", {
-                key: e,
-                className: "flex gap-3 items-center bg-white/10 rounded-lg p-3"
-            }, React.createElement("span", {
-                className: "font-bold text-lg"
-            }, e + 1, "."), React.createElement("input", {
-                type: "text",
-                value: fe.perguntas[e]?.texto || "",
-                onChange: t => {
-                    const a = [...fe.perguntas];
-                    a[e] = {
-                        ...a[e],
-                        texto: t.target.value
-                    }, Ne({
-                        ...fe,
-                        perguntas: a
-                    })
-                },
-                className: "flex-1 px-3 py-2 border rounded-lg text-gray-800",
-                placeholder: `Afirmação ${e+1}...`
-            }), React.createElement("div", {
-                className: "flex gap-2"
-            }, React.createElement("button", {
-                onClick: () => {
-                    const t = [...fe.perguntas];
-                    t[e] = {
-                        ...t[e],
-                        resposta: !0
-                    }, Ne({
-                        ...fe,
-                        perguntas: t
-                    })
-                },
-                className: "px-3 py-2 rounded-lg font-semibold text-sm " + (!0 === fe.perguntas[e]?.resposta ? "bg-green-500" : "bg-white/20 hover:bg-white/30")
-            }, "CERTO"), React.createElement("button", {
-                onClick: () => {
-                    const t = [...fe.perguntas];
-                    t[e] = {
-                        ...t[e],
-                        resposta: !1
-                    }, Ne({
-                        ...fe,
-                        perguntas: t
-                    })
-                },
-                className: "px-3 py-2 rounded-lg font-semibold text-sm " + (!1 === fe.perguntas[e]?.resposta ? "bg-red-500" : "bg-white/20 hover:bg-white/30")
-            }, "ERRADO")))))), React.createElement("button", {
-                onClick: Fl,
-                disabled: c,
-                className: "w-full py-3 bg-white text-purple-700 rounded-lg font-bold hover:bg-purple-50 disabled:opacity-50"
-            }, c ? "Salvando..." : "💾 Salvar Configuração do Quiz"))), React.createElement("div", {
+                    React.createElement("div", { className: "flex items-center justify-between gap-3 flex-wrap" },
+                        React.createElement("div", { className: "flex items-center gap-3" },
+                            React.createElement("span", { className: "text-2xl" }, "🎯"),
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "font-semibold text-gray-800 text-base" }, "Quiz de procedimentos"),
+                                React.createElement("p", { className: "text-xs text-gray-500" }, "Configure imagens, perguntas e prêmio")
+                            )
+                        ),
+                        React.createElement("div", { className: "flex items-center gap-3", onClick: e => e.stopPropagation() },
+                            /* Toggle ativo */
+                            React.createElement("span", { className: "text-xs text-gray-500" }, "Status"),
+                            React.createElement("button", {
+                                onClick: async () => {
+                                    const novoFe = { ...fe, ativo: !fe.ativo };
+                                    Ne(novoFe);
+                                    try {
+                                        const resp = await fetchAuth(`${API_URL}/quiz-procedimentos/config`, {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify(novoFe)
+                                        });
+                                        if (!resp.ok) throw new Error("falha");
+                                        ja(novoFe.ativo ? "✅ Quiz ativado!" : "⏸️ Quiz desativado!", "success");
+                                    } catch (err) {
+                                        Ne(fe);
+                                        ja("❌ Erro ao alterar status do quiz", "error");
+                                    }
+                                },
+                                style: { background: fe.ativo ? "#1D9E75" : "#D3D1C7" },
+                                className: "relative w-9 h-5 rounded-full transition"
+                            },
+                                React.createElement("span", {
+                                    className: "absolute w-4 h-4 bg-white rounded-full transition top-0.5",
+                                    style: { left: fe.ativo ? "calc(100% - 18px)" : "2px" }
+                                })
+                            ),
+                            React.createElement("span", {
+                                className: "text-xs font-semibold",
+                                style: { color: fe.ativo ? "#0F6E56" : "#888780" }
+                            }, fe.ativo ? "Ativo" : "Inativo"),
+                            React.createElement("span", {
+                                className: "text-gray-400 ml-2 text-sm transition-transform",
+                                style: { transform: Fe ? "rotate(180deg)" : "rotate(0deg)" }
+                            }, "▼")
+                        )
+                    )
+                ),
+                /* Corpo expandido */
+                Fe && React.createElement("div", null,
+                    /* KPIs */
+                    React.createElement("div", {
+                        className: "p-4 sm:p-5 grid gap-2.5",
+                        style: { gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }
+                    },
+                        React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2.5" },
+                            React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-1" }, "RESPOSTAS"),
+                            React.createElement("p", { className: "text-xl font-semibold text-gray-800" }, ye.length)
+                        ),
+                        React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2.5" },
+                            React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-1" }, "APROVEITAMENTO"),
+                            React.createElement("p", { className: "text-xl font-semibold text-gray-800" },
+                                ye.length > 0 ? Math.round((ye.filter(e => e.passou).length / ye.length) * 100) + "%" : "0%")
+                        ),
+                        React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2.5" },
+                            React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-1" }, "VALOR DISTRIBUÍDO"),
+                            React.createElement("p", { className: "text-xl font-semibold text-gray-800" },
+                                er(ye.filter(e => e.passou).length * (fe.valor_gratuidade || 0)))
+                        ),
+                        React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2.5" },
+                            React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-1" }, "CONTEMPLADOS"),
+                            React.createElement("p", { className: "text-xl font-semibold text-gray-800" }, ye.filter(e => e.passou).length)
+                        )
+                    ),
+                    /* Configurações básicas */
+                    React.createElement("div", { className: "px-4 sm:px-5 pb-4" },
+                        React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-2" }, "CONFIGURAÇÕES BÁSICAS"),
+                        React.createElement("div", { className: "grid md:grid-cols-3 gap-3" },
+                            React.createElement("div", { className: "md:col-span-2" },
+                                React.createElement("label", { className: "block text-xs text-gray-500 mb-1" }, "Título do quiz"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: fe.titulo,
+                                    onChange: e => Ne({ ...fe, titulo: e.target.value }),
+                                    className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm",
+                                    placeholder: "Acerte os procedimentos..."
+                                })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", { className: "block text-xs text-gray-500 mb-1" }, "Prêmio (R$)"),
+                                React.createElement("input", {
+                                    type: "number",
+                                    step: "0.01",
+                                    value: fe.valor_gratuidade,
+                                    onChange: e => Ne({ ...fe, valor_gratuidade: parseFloat(e.target.value) || 0 }),
+                                    className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                })
+                            )
+                        )
+                    ),
+                    /* Imagens */
+                    React.createElement("div", { className: "px-4 sm:px-5 pb-4" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                            React.createElement("p", { className: "text-[11px] font-semibold text-gray-500" }, "IMAGENS DOS PROCEDIMENTOS"),
+                            React.createElement("span", { className: "text-[11px] text-gray-400" }, "4 slots · clique pra subir")
+                        ),
+                        React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-2" },
+                            [0, 1, 2, 3].map(e => React.createElement("div", { key: e, className: "relative aspect-square" },
+                                React.createElement("div", {
+                                    className: "w-full h-full rounded-lg overflow-hidden flex items-center justify-center " + (fe.imagens[e] ? "bg-gray-100" : "border-2 border-dashed border-gray-300 bg-gray-50")
+                                },
+                                    fe.imagens[e]
+                                        ? React.createElement("img", { src: fe.imagens[e], alt: "Imagem " + (e+1), className: "w-full h-full object-cover" })
+                                        : React.createElement("div", { className: "flex flex-col items-center text-gray-400" },
+                                            React.createElement("span", { className: "text-2xl" }, "+"),
+                                            React.createElement("span", { className: "text-[11px] mt-0.5" }, "Imagem " + (e+1))
+                                          )
+                                ),
+                                /* Badge número */
+                                fe.imagens[e] && React.createElement("span", {
+                                    className: "absolute top-1 left-1 bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                }, e + 1),
+                                /* Botão remover */
+                                fe.imagens[e] && React.createElement("button", {
+                                    onClick: () => {
+                                        const t = [...fe.imagens]; t[e] = null;
+                                        Ne({ ...fe, imagens: t });
+                                    },
+                                    className: "absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-[10px] hover:bg-red-500"
+                                }, "✕"),
+                                React.createElement("input", {
+                                    type: "file",
+                                    accept: "image/*",
+                                    onChange: t => (async (e, t) => {
+                                        if (!t) return;
+                                        try {
+                                            const dataUrl = window.imageUtils && window.imageUtils.compressImageSafe
+                                                ? await window.imageUtils.compressImageSafe(t, { maxWidth: 1280, quality: 0.75 })
+                                                : await new Promise((resolve, reject) => {
+                                                    const a = new FileReader();
+                                                    a.onload = t => resolve(t.target.result);
+                                                    a.onerror = reject;
+                                                    a.readAsDataURL(t);
+                                                });
+                                            const a = [...fe.imagens]; a[e] = dataUrl;
+                                            Ne({ ...fe, imagens: a });
+                                        } catch (err) {
+                                            console.error('Erro ao processar imagem:', err);
+                                        }
+                                    })(e, t.target.files[0]),
+                                    className: "absolute inset-0 opacity-0 cursor-pointer"
+                                })
+                            ))
+                        )
+                    ),
+                    /* Perguntas com dicas embutidas */
+                    React.createElement("div", { className: "px-4 sm:px-5 pb-4" },
+                        React.createElement("p", { className: "text-[11px] font-semibold text-gray-500 mb-2" }, "PERGUNTAS & DICAS EXPLICATIVAS"),
+                        React.createElement("p", { className: "text-[11px] text-gray-400 mb-3" }, "A dica aparece pro motoboy na revisão se ele errar."),
+                        React.createElement("div", { className: "space-y-2.5" },
+                            [0, 1, 2, 3, 4].map(idx => React.createElement("div", {
+                                key: idx,
+                                className: "bg-gray-50 rounded-lg p-3"
+                            },
+                                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                                    React.createElement("span", { className: "text-[11px] font-semibold text-gray-500" }, "PERGUNTA " + (idx + 1)),
+                                    React.createElement("div", { className: "flex gap-1.5" },
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                const a = [...fe.perguntas];
+                                                a[idx] = { ...a[idx], resposta: true };
+                                                Ne({ ...fe, perguntas: a });
+                                            },
+                                            style: !0 === fe.perguntas[idx]?.resposta
+                                                ? { background: "#EAF3DE", color: "#27500A", border: "1px solid #97C459" }
+                                                : { background: "white", color: "#888780", border: "1px solid #D3D1C7" },
+                                            className: "px-2.5 py-1 rounded-md text-[11px] font-semibold"
+                                        }, "Certo"),
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                const a = [...fe.perguntas];
+                                                a[idx] = { ...a[idx], resposta: false };
+                                                Ne({ ...fe, perguntas: a });
+                                            },
+                                            style: !1 === fe.perguntas[idx]?.resposta
+                                                ? { background: "#FCEBEB", color: "#501313", border: "1px solid #F09595" }
+                                                : { background: "white", color: "#888780", border: "1px solid #D3D1C7" },
+                                            className: "px-2.5 py-1 rounded-md text-[11px] font-semibold"
+                                        }, "Errado")
+                                    )
+                                ),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: fe.perguntas[idx]?.texto || "",
+                                    onChange: e => {
+                                        const a = [...fe.perguntas];
+                                        a[idx] = { ...a[idx], texto: e.target.value };
+                                        Ne({ ...fe, perguntas: a });
+                                    },
+                                    className: "w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-2",
+                                    placeholder: "Pergunta " + (idx + 1) + "..."
+                                }),
+                                /* Campo de dica embutido */
+                                React.createElement("div", {
+                                    className: "flex gap-2 items-start px-2 py-2 rounded-md",
+                                    style: { background: "#E6F1FB", borderLeft: "3px solid #185FA5" }
+                                },
+                                    React.createElement("span", { style: { color: "#185FA5" }, className: "mt-0.5" }, "💡"),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: (fe.dicas && fe.dicas[idx]) || "",
+                                        onChange: e => {
+                                            const a = Array.isArray(fe.dicas) ? [...fe.dicas] : ["", "", "", "", ""];
+                                            while (a.length < 5) a.push("");
+                                            a[idx] = e.target.value;
+                                            Ne({ ...fe, dicas: a });
+                                        },
+                                        className: "flex-1 bg-transparent text-xs border-none focus:outline-none p-0",
+                                        style: { color: "#0C447C" },
+                                        placeholder: "Dica explicativa (opcional)"
+                                    })
+                                )
+                            ))
+                        )
+                    ),
+                    /* Footer */
+                    React.createElement("div", {
+                        className: "px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-end"
+                    },
+                        React.createElement("button", {
+                            onClick: Fl,
+                            disabled: c,
+                            style: { background: c ? "#D3D1C7" : "#534AB7" },
+                            className: "text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:cursor-not-allowed"
+                        }, c ? "Salvando..." : "💾 Salvar")
+                    )
+                )
+            ), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-4"

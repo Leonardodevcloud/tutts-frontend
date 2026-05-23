@@ -12873,137 +12873,267 @@ const hideLoadingScreen = () => {
             className: "mt-3 bg-red-100 border border-red-300 rounded-lg p-3"
         }, React.createElement("p", {
             className: "text-red-800 text-sm"
-        }, React.createElement("strong", null, "Motivo:"), " ", e.motivo_rejeicao))))))), "promo-novatos" === p.userTab && React.createElement(React.Fragment, null, fe.ativo && !we && 0 === Ae && React.createElement("div", {
-            className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 text-white"
-        }, React.createElement("div", {
-            className: "text-center"
-        }, React.createElement("div", {
-            className: "text-4xl sm:text-5xl mb-3 sm:mb-4"
-        }, "🎯"), React.createElement("h2", {
-            className: "text-lg sm:text-xl font-bold mb-2"
-        }, fe.titulo), React.createElement("p", {
-            className: "text-purple-200 mb-3 sm:mb-4 text-sm sm:text-base"
-        }, "Responda corretamente e ganhe gratuidade no seu próximo saque!"), React.createElement("div", {
-            className: "bg-white/20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4"
-        }, React.createElement("p", {
-            className: "text-xl sm:text-2xl font-bold text-yellow-300"
-        }, "💰 R$ ", fe.valor_gratuidade.toFixed(2).replace(".", ",")), React.createElement("p", {
-            className: "text-xs sm:text-sm text-purple-200"
-        }, "de gratuidade se acertar tudo!")), React.createElement("button", {
-            onClick: () => {
-                Se(1), Pe(0)
-            },
-            className: "px-6 sm:px-8 py-2.5 sm:py-3 bg-yellow-400 text-purple-900 rounded-lg font-bold text-base sm:text-lg hover:bg-yellow-300 active:scale-95 transition-transform"
-        }, "🚀 Começar Quiz!"))), 1 === Ae && React.createElement("div", {
-            className: "bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6"
-        }, React.createElement("div", {
-            className: "text-center mb-3 sm:mb-4"
-        }, React.createElement("h2", {
-            className: "text-lg sm:text-xl font-bold text-purple-700"
-        }, "📸 Conheça os Procedimentos"), React.createElement("p", {
-            className: "text-gray-500 text-xs sm:text-sm"
-        }, "Veja as imagens com atenção antes de responder"), React.createElement("p", {
-            className: "text-purple-600 font-semibold mt-2 text-sm sm:text-base"
-        }, "Imagem ", ke + 1, " de 4")), React.createElement("div", {
-            className: "relative bg-gray-100 rounded-xl overflow-hidden mb-3 sm:mb-4",
-            style: {
-                minHeight: "200px"
-            }
-        }, fe.imagens[ke] ? React.createElement("img", {
-            src: fe.imagens[ke],
-            alt: `Procedimento ${ke+1}`,
-            className: "w-full h-full object-contain",
-            style: {
-                maxHeight: "300px"
-            }
-        }) : React.createElement("div", {
-            className: "flex items-center justify-center h-48 sm:h-64 text-gray-400"
-        }, React.createElement("p", null, "Imagem não disponível"))), React.createElement("div", {
-            className: "flex justify-center gap-2 mb-3 sm:mb-4"
-        }, [0, 1, 2, 3].map(e => React.createElement("button", {
-            key: e,
-            onClick: () => Pe(e),
-            className: "w-3 h-3 rounded-full transition " + (ke === e ? "bg-purple-600" : "bg-gray-300")
-        }))), React.createElement("div", {
-            className: "flex justify-between gap-2"
-        }, React.createElement("button", {
-            onClick: () => Pe(Math.max(0, ke - 1)),
-            disabled: 0 === ke,
-            className: "px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold disabled:opacity-50 text-sm sm:text-base"
-        }, "← Anterior"), ke < 3 ? React.createElement("button", {
+        }, React.createElement("strong", null, "Motivo:"), " ", e.motivo_rejeicao))))))), "promo-novatos" === p.userTab && React.createElement(React.Fragment, null,
+  /* ════════════ GATE DE ELEGIBILIDADE ════════════
+     Quiz só aparece pra quem é elegível pelas promoções de novatos
+     (região identificada + sem entregas recentes). Mesmo gate da lista
+     de promoções abaixo — antes o quiz aparecia pra qualquer um com
+     fe.ativo=true, ignorando elegibilidade. */
+  fe.ativo && elegibilidadeNovatos.elegivel && !we && 0 === Ae && React.createElement("div", {
+    className: "bg-white rounded-xl shadow-lg overflow-hidden mb-4 sm:mb-6 border border-gray-200"
+  },
+    /* Header roxo com ícone alvo */
+    React.createElement("div", {
+      style: { background: "#534AB7", padding: "28px 20px" },
+      className: "text-white text-center"
+    },
+      React.createElement("div", {
+        className: "w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center",
+        style: { background: "rgba(255,255,255,0.15)" }
+      }, React.createElement("span", { className: "text-3xl" }, "🎯")),
+      React.createElement("p", { className: "text-base sm:text-lg font-semibold mb-1" }, fe.titulo || "Acerte os procedimentos"),
+      React.createElement("p", { className: "text-xs sm:text-sm opacity-85" }, "e ganhe seu próximo saque grátis")
+    ),
+    /* Corpo: prêmio + meta + CTA */
+    React.createElement("div", { className: "p-5" },
+      React.createElement("div", {
+        className: "rounded-lg p-3 sm:p-4 text-center mb-4",
+        style: { background: "#EEEDFE" }
+      },
+        React.createElement("p", { className: "text-[11px] font-semibold mb-1", style: { color: "#534AB7" } }, "PRÊMIO"),
+        React.createElement("p", { className: "text-2xl sm:text-3xl font-semibold", style: { color: "#26215C" } },
+          "R$ ", fe.valor_gratuidade.toFixed(2).replace(".", ",")),
+        React.createElement("p", { className: "text-[11px] mt-1", style: { color: "#534AB7" } }, "de gratuidade no saque")
+      ),
+      React.createElement("div", { className: "grid grid-cols-2 gap-2.5 mb-4" },
+        React.createElement("div", { className: "bg-gray-50 rounded-lg p-3 text-center" },
+          React.createElement("span", { className: "text-lg" }, "📸"),
+          React.createElement("p", { className: "text-[11px] text-gray-500 mt-1" }, "4 imagens")
+        ),
+        React.createElement("div", { className: "bg-gray-50 rounded-lg p-3 text-center" },
+          React.createElement("span", { className: "text-lg" }, "✓"),
+          React.createElement("p", { className: "text-[11px] text-gray-500 mt-1" }, "5 perguntas")
+        )
+      ),
+      React.createElement("button", {
+        onClick: () => { Se(1); Pe(0); De([null, null, null, null, null]); },
+        style: { background: "#534AB7" },
+        className: "w-full text-white py-3 rounded-lg font-semibold text-sm sm:text-base hover:brightness-110 transition active:scale-95"
+      }, "▶ Começar quiz"),
+      React.createElement("p", { className: "text-[11px] text-gray-400 text-center mt-3" }, "Sem tempo limite · pode pausar")
+    )
+  ),
+  /* ══════════ TELA 2 — APRENDER (imagens + dicas) ══════════ */
+  1 === Ae && React.createElement("div", {
+    className: "bg-white rounded-xl shadow-lg overflow-hidden mb-4 sm:mb-6 border border-gray-200"
+  },
+    React.createElement("div", { className: "px-5 py-3 border-b border-gray-100 flex items-center justify-between" },
+      React.createElement("span", { className: "text-xs sm:text-sm text-gray-500" }, "Procedimento ", ke + 1, " de 4"),
+      React.createElement("div", { className: "flex gap-1" },
+        [0, 1, 2, 3].map(i => React.createElement("span", {
+          key: i,
+          className: "h-1 rounded-full transition-all",
+          style: { width: "20px", background: i <= ke ? "#534AB7" : "#D3D1C7" }
+        }))
+      )
+    ),
+    /* Imagem grande */
+    React.createElement("div", { className: "relative bg-gray-50 flex items-center justify-center", style: { aspectRatio: "4/3", minHeight: "240px" } },
+      fe.imagens[ke]
+        ? React.createElement("img", { src: fe.imagens[ke], alt: "Procedimento " + (ke+1), className: "max-w-full max-h-full object-contain" })
+        : React.createElement("div", { className: "text-gray-300 text-5xl" }, "📷")
+    ),
+    /* Dica do procedimento (azul, lateral) */
+    (fe.dicas && fe.dicas[ke]) ? React.createElement("div", {
+      className: "px-4 py-3 flex gap-2",
+      style: { background: "#E6F1FB", borderLeft: "3px solid #185FA5" }
+    },
+      React.createElement("span", { className: "text-base mt-0.5" }, "💡"),
+      React.createElement("div", null,
+        React.createElement("p", { className: "text-xs font-semibold mb-1", style: { color: "#0C447C" } }, "Dica do procedimento"),
+        React.createElement("p", { className: "text-xs leading-relaxed", style: { color: "#185FA5" } }, fe.dicas[ke])
+      )
+    ) : null,
+    /* Botões */
+    React.createElement("div", { className: "px-4 py-3 flex gap-2" },
+      React.createElement("button", {
+        onClick: () => Pe(Math.max(0, ke - 1)),
+        disabled: 0 === ke,
+        className: "flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium disabled:opacity-40"
+      }, "← Anterior"),
+      ke < 3
+        ? React.createElement("button", {
             onClick: () => Pe(ke + 1),
-            className: "px-4 sm:px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 text-sm sm:text-base"
-        }, "Próxima →") : React.createElement("button", {
+            style: { background: "#534AB7" },
+            className: "flex-1 text-white py-2.5 rounded-lg text-sm font-semibold"
+          }, "Próximo →")
+        : React.createElement("button", {
             onClick: () => Se(2),
-            className: "px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 text-sm sm:text-base"
-        }, "✅ Ir para o Quiz!"))), 2 === Ae && React.createElement("div", {
-            className: "bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6"
-        }, React.createElement("div", {
-            className: "text-center mb-4 sm:mb-6"
-        }, React.createElement("h2", {
-            className: "text-lg sm:text-xl font-bold text-purple-700"
-        }, "❓ Responda: CERTO ou ERRADO?"), React.createElement("p", {
-            className: "text-gray-500 text-xs sm:text-sm"
-        }, "Acerte as 5 afirmações para ganhar a gratuidade")), React.createElement("div", {
-            className: "space-y-3 sm:space-y-4 mb-4 sm:mb-6"
-        }, fe.perguntas.map((e, t) => React.createElement("div", {
-            key: t,
-            className: "border-2 rounded-xl p-3 sm:p-4 transition " + (null !== Te[t] ? "border-purple-300 bg-purple-50" : "border-gray-200")
-        }, React.createElement("p", {
-            className: "font-semibold text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base"
-        }, React.createElement("span", {
-            className: "text-purple-600"
-        }, t + 1, "."), " ", e.texto), React.createElement("div", {
-            className: "flex gap-2 sm:gap-3"
-        }, React.createElement("button", {
-            onClick: () => {
-                const e = [...Te];
-                e[t] = !0, De(e)
-            },
-            className: "flex-1 py-2.5 sm:py-3 rounded-lg font-bold text-sm sm:text-lg transition " + (!0 === Te[t] ? "bg-green-500 text-white" : "bg-green-100 text-green-700 hover:bg-green-200")
-        }, "✓ CERTO"), React.createElement("button", {
-            onClick: () => {
-                const e = [...Te];
-                e[t] = !1, De(e)
-            },
-            className: "flex-1 py-2.5 sm:py-3 rounded-lg font-bold text-sm sm:text-lg transition " + (!1 === Te[t] ? "bg-red-500 text-white" : "bg-red-100 text-red-700 hover:bg-red-200")
-        }, "✗ ERRADO"))))), React.createElement("div", {
-            className: "flex flex-col sm:flex-row gap-2 sm:gap-3"
-        }, React.createElement("button", {
-            onClick: () => Se(1),
-            className: "px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold text-sm sm:text-base"
-        }, "← Voltar às imagens"), React.createElement("button", {
-            onClick: $l,
-            disabled: c || Te.some(e => null === e),
-            className: "flex-1 py-2.5 sm:py-3 bg-purple-600 text-white rounded-lg font-bold text-sm sm:text-lg hover:bg-purple-700 disabled:opacity-50"
-        }, c ? "Enviando..." : "🎯 Enviar Respostas")), React.createElement("p", {
-            className: "text-center text-xs text-gray-500 mt-3"
-        }, "⚠️ Você tem apenas UMA chance de responder este quiz!")), 3 === Ae && Le && React.createElement("div", {
-            className: `rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 text-center ${Le.passou?"bg-green-500":"bg-red-500"} text-white`
-        }, React.createElement("div", {
-            className: "text-5xl sm:text-6xl mb-3 sm:mb-4"
-        }, Le.passou ? "🎉" : "😢"), React.createElement("h2", {
-            className: "text-xl sm:text-2xl font-bold mb-2"
-        }, Le.passou ? "Parabéns! Você passou!" : "Que pena! Não foi dessa vez..."), React.createElement("p", {
-            className: "text-base sm:text-lg mb-3 sm:mb-4"
-        }, "Você acertou ", React.createElement("strong", null, Le.acertos), " de ", React.createElement("strong", null, "5"), " perguntas"), Le.passou && React.createElement("div", {
-            className: "bg-white/20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4"
-        }, React.createElement("p", {
-            className: "text-lg sm:text-xl font-bold"
-        }, "💰 R$ ", Le.valor_gratuidade.toFixed(2).replace(".", ",")), React.createElement("p", {
-            className: "text-xs sm:text-sm"
-        }, "foi adicionado às suas gratuidades!")), React.createElement("button", {
-            onClick: () => Se(0),
-            className: "px-6 py-2 bg-white text-gray-800 rounded-lg font-semibold text-sm sm:text-base"
-        }, "Fechar")), fe.ativo && we && 0 === Ae && React.createElement("div", {
-            className: "bg-gray-100 border-2 border-gray-300 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-center"
-        }, React.createElement("div", {
-            className: "text-3xl sm:text-4xl mb-2"
-        }, "✅"), React.createElement("p", {
-            className: "text-gray-600 font-semibold text-sm sm:text-base"
-        }, "Você já participou do Quiz de Procedimentos"), React.createElement("p", {
-            className: "text-gray-500 text-xs sm:text-sm"
-        }, "Esta promoção só pode ser usada uma vez")), React.createElement("hr", {
+            style: { background: "#1D9E75" },
+            className: "flex-1 text-white py-2.5 rounded-lg text-sm font-semibold"
+          }, "✓ Ir para o Quiz!")
+    )
+  ),
+  /* ══════════ TELA 3 — QUIZ ══════════ */
+  2 === Ae && React.createElement("div", {
+    className: "bg-white rounded-xl shadow-lg overflow-hidden mb-4 sm:mb-6 border border-gray-200"
+  },
+    /* Barra de progresso */
+    React.createElement("div", { className: "px-5 py-4 border-b border-gray-100" },
+      React.createElement("div", { className: "flex items-center justify-between mb-2" },
+        React.createElement("span", { className: "text-sm font-semibold text-gray-800" },
+          "Pergunta ", Te.filter(r => r !== null).length || 1, " de 5"),
+        React.createElement("span", { className: "text-xs text-gray-500" },
+          Math.round((Te.filter(r => r !== null).length / 5) * 100), "% concluído")
+      ),
+      React.createElement("div", { className: "h-1 bg-gray-100 rounded-full overflow-hidden" },
+        React.createElement("div", {
+          className: "h-full transition-all",
+          style: { width: ((Te.filter(r => r !== null).length / 5) * 100) + "%", background: "#534AB7" }
+        })
+      )
+    ),
+    /* Lista de perguntas (todas visíveis) */
+    React.createElement("div", { className: "p-5 space-y-4" },
+      fe.perguntas.map((perg, idx) => React.createElement("div", {
+        key: idx,
+        className: "rounded-lg p-4 border transition-all " + (Te[idx] !== null ? "border-purple-200 bg-purple-50/30" : "border-gray-200")
+      },
+        React.createElement("p", { className: "text-sm leading-relaxed mb-3" },
+          React.createElement("span", { className: "font-semibold", style: { color: "#534AB7" } }, (idx + 1) + "."),
+          " ", perg.texto
+        ),
+        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+          React.createElement("button", {
+            onClick: () => { const novo = [...Te]; novo[idx] = true; De(novo); },
+            className: "py-3 rounded-lg font-semibold text-sm transition flex flex-col items-center gap-1 " +
+              (Te[idx] === true
+                ? "text-white"
+                : "text-green-700 hover:bg-green-50"),
+            style: Te[idx] === true ? { background: "#1D9E75" } : { background: "#EAF3DE", border: "1px solid #97C459" }
+          },
+            React.createElement("span", { className: "text-lg" }, "✓"),
+            React.createElement("span", null, "CERTO")
+          ),
+          React.createElement("button", {
+            onClick: () => { const novo = [...Te]; novo[idx] = false; De(novo); },
+            className: "py-3 rounded-lg font-semibold text-sm transition flex flex-col items-center gap-1 " +
+              (Te[idx] === false
+                ? "text-white"
+                : "text-gray-500 hover:bg-gray-50"),
+            style: Te[idx] === false ? { background: "#A32D2D" } : { background: "white", border: "1px solid #B4B2A9" }
+          },
+            React.createElement("span", { className: "text-lg" }, "✗"),
+            React.createElement("span", null, "ERRADO")
+          )
+        )
+      ))
+    ),
+    /* Footer com enviar */
+    React.createElement("div", { className: "px-5 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-100" },
+      React.createElement("button", {
+        onClick: () => Se(1),
+        className: "text-xs text-gray-500 hover:text-gray-700"
+      }, "← Revisar imagens"),
+      React.createElement("button", {
+        onClick: $l,
+        disabled: Te.some(r => r === null),
+        style: { background: Te.some(r => r === null) ? "#D3D1C7" : "#534AB7" },
+        className: "text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:cursor-not-allowed"
+      }, "Enviar respostas")
+    ),
+    React.createElement("div", { className: "px-5 py-2 text-center text-xs text-amber-600 bg-amber-50 border-t border-amber-100" },
+      "⚠️ Você tem apenas UMA chance de responder")
+  ),
+  /* ══════════ TELA 4 — RESULTADO (educativa) ══════════ */
+  3 === Ae && Le && React.createElement("div", {
+    className: "bg-white rounded-xl shadow-lg overflow-hidden mb-4 sm:mb-6 border border-gray-200"
+  },
+    /* Header verde com troféu (quem passou) ou cinza/amarelo (quem não passou) */
+    React.createElement("div", {
+      style: { background: Le.passou ? "#1D9E75" : "#BA7517", padding: "28px 20px" },
+      className: "text-white text-center"
+    },
+      React.createElement("div", {
+        className: "w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center",
+        style: { background: "rgba(255,255,255,0.2)" }
+      }, React.createElement("span", { className: "text-4xl" }, Le.passou ? "🏆" : "📚")),
+      React.createElement("p", { className: "text-lg sm:text-xl font-semibold mb-1" }, Le.passou ? "Parabéns!" : "Quase lá..."),
+      React.createElement("p", { className: "text-sm opacity-90" }, "Você acertou ", Le.acertos, " de 5 perguntas")
+    ),
+    /* Banner do prêmio (só se passou) */
+    Le.passou ? React.createElement("div", {
+      style: { background: "#EAF3DE" },
+      className: "py-4 px-5 text-center"
+    },
+      React.createElement("p", { className: "text-[11px] font-semibold mb-1", style: { color: "#27500A" } }, "CRÉDITO LIBERADO"),
+      React.createElement("p", { className: "text-2xl font-semibold", style: { color: "#173404" } },
+        "+ R$ ", Le.valor_gratuidade.toFixed(2).replace(".", ",")),
+      React.createElement("p", { className: "text-[11px] mt-1", style: { color: "#3B6D11" } }, "aplicado no próximo saque")
+    ) : React.createElement("div", {
+      style: { background: "#FAEEDA" },
+      className: "py-4 px-5 text-center"
+    },
+      React.createElement("p", { className: "text-xs", style: { color: "#854F0B" } },
+        "Acerte as 5 pra ganhar o saque grátis. Confira os erros abaixo e tente entender o procedimento.")
+    ),
+    /* Revisão pergunta-a-pergunta */
+    Le.detalhe_respostas && Le.detalhe_respostas.length > 0 ? React.createElement("div", { className: "p-5" },
+      React.createElement("p", { className: "text-xs font-semibold text-gray-500 mb-3" }, "REVISÃO DAS RESPOSTAS"),
+      React.createElement("div", { className: "space-y-1.5" },
+        Le.detalhe_respostas.map((det, idx) => {
+          const dica = Le.dicas && Le.dicas[idx];
+          return det.correto
+            ? React.createElement("div", {
+                key: idx,
+                style: { background: "#EAF3DE" },
+                className: "flex items-center gap-2 px-3 py-2 rounded-lg"
+              },
+                React.createElement("span", { style: { color: "#27500A" } }, "✓"),
+                React.createElement("span", { className: "text-xs flex-1", style: { color: "#173404" } },
+                  "Pergunta ", idx + 1, " · correto")
+              )
+            : React.createElement("div", {
+                key: idx,
+                style: { background: "#FCEBEB" },
+                className: "flex items-start gap-2 px-3 py-2 rounded-lg"
+              },
+                React.createElement("span", { style: { color: "#A32D2D", marginTop: "2px" } }, "✗"),
+                React.createElement("div", { className: "flex-1" },
+                  React.createElement("p", { className: "text-xs font-semibold", style: { color: "#501313" } },
+                    "Pergunta ", idx + 1, " · errou"),
+                  React.createElement("p", { className: "text-[11px] leading-snug mt-0.5", style: { color: "#791F1F" } },
+                    "A resposta certa é ", React.createElement("strong", null, det.resposta_correta ? "Certo" : "Errado"), ".",
+                    dica ? " " + dica : ""
+                  )
+                )
+              );
+        })
+      )
+    ) : null,
+    React.createElement("div", { className: "px-5 pb-5" },
+      React.createElement("button", {
+        onClick: () => Se(0),
+        className: "w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200"
+      }, "Fechar")
+    )
+  ),
+  /* ══════════ Já respondeu o quiz ══════════ */
+  fe.ativo && we && React.createElement("div", {
+    className: "bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 text-center"
+  },
+    React.createElement("div", { className: "text-3xl mb-1" }, "✓"),
+    React.createElement("p", { className: "text-sm font-semibold text-gray-700" }, "Você já participou do quiz"),
+    React.createElement("p", { className: "text-xs text-gray-500 mt-1" }, "Esta promoção só pode ser usada uma vez")
+  ),
+  /* ══════════ Não elegível: aviso amigável ══════════ */
+  fe.ativo && !elegibilidadeNovatos.elegivel && !elegibilidadeNovatos.carregando ? React.createElement("div", {
+    className: "bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center"
+  },
+    React.createElement("p", { className: "text-sm font-semibold text-amber-800" }, "🎯 Quiz não disponível pra você"),
+    React.createElement("p", { className: "text-xs text-amber-700 mt-1" }, elegibilidadeNovatos.motivo || "Verifique novamente mais tarde.")
+  ) : null,
+  React.createElement("hr", {
             className: "my-4 sm:my-6 border-gray-200"
         }), React.createElement("div", {
             className: "bg-white rounded-xl shadow p-3 sm:p-6 mb-3 sm:mb-6"
