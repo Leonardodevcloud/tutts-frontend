@@ -36,6 +36,12 @@
     const [fotos, setFotos] = React.useState({}); // mapa cod → dataURL
     const [busca, setBusca] = React.useState('');
 
+    // Geocoding (mesmo padrão do filas.js clássico)
+    const [buscandoEndereco, setBuscandoEndereco] = React.useState(false);
+    const [enderecoValidado, setEnderecoValidado] = React.useState(false);
+    const [coordenadasEncontradas, setCoordenadasEncontradas] = React.useState(null);
+    const debounceRef = React.useRef(null);
+
     // Refs estáveis pra props (anti infinite-loop)
     const apiUrlRef = React.useRef(apiUrl);
     const fetchAuthRef = React.useRef(fetchAuth);
@@ -46,6 +52,63 @@
       showToastRef.current = showToast;
     });
     const toast = React.useCallback((m, t) => showToastRef.current && showToastRef.current(m, t), []);
+
+    // Busca endereço via Google Geocoding (mesmo endpoint da fila clássica)
+    const buscarEndereco = React.useCallback(async (endereco) => {
+      if (!endereco || endereco.length < 5) {
+        setEnderecoValidado(false);
+        setCoordenadasEncontradas(null);
+        return;
+      }
+      setBuscandoEndereco(true);
+      try {
+        const r = await fetchAuthRef.current(`${apiUrlRef.current}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
+        const d = await r.json();
+        const resultado = d.results && d.results[0];
+        if (resultado && resultado.latitude && resultado.longitude) {
+          setCoordenadasEncontradas({
+            latitude: resultado.latitude,
+            longitude: resultado.longitude,
+            enderecoFormatado: resultado.endereco || endereco,
+          });
+          setEnderecoValidado(true);
+          toast('📍 Endereço encontrado!', 'success');
+        } else {
+          setEnderecoValidado(false);
+          setCoordenadasEncontradas(null);
+          toast('Endereço não encontrado', 'error');
+        }
+      } catch (e) {
+        setEnderecoValidado(false);
+        setCoordenadasEncontradas(null);
+        toast('Erro ao buscar endereço', 'error');
+      } finally {
+        setBuscandoEndereco(false);
+      }
+    }, [toast]);
+
+    const buscarEnderecoDebounced = React.useCallback((endereco) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => buscarEndereco(endereco), 800);
+    }, [buscarEndereco]);
+
+    // Reseta estado do geocoding quando modal abre/fecha
+    React.useEffect(() => {
+      if (!modalCentral) {
+        setBuscandoEndereco(false);
+        setEnderecoValidado(false);
+        setCoordenadasEncontradas(null);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+      } else if (modalCentral.id && modalCentral.latitude && modalCentral.longitude) {
+        // Editando: marca como já validado
+        setEnderecoValidado(true);
+        setCoordenadasEncontradas({
+          latitude: modalCentral.latitude,
+          longitude: modalCentral.longitude,
+          enderecoFormatado: modalCentral.endereco,
+        });
+      }
+    }, [modalCentral?.id, modalCentral === null]);
 
     // ── Loaders ──────────────────────────────────────────────
     const carregarCentrais = React.useCallback(async () => {
@@ -160,15 +223,27 @@
           toast('Informe o nome da central', 'error');
           return null;
         }
-        if (!dados.latitude || !dados.longitude) {
-          toast('Latitude e longitude são obrigatórios', 'error');
+        if (!dados.endereco || !dados.endereco.trim()) {
+          toast('Informe o endereço da central', 'error');
           return null;
         }
+        if (!enderecoValidado || !coordenadasEncontradas) {
+          toast('Aguarde a validação do endereço (✅) antes de salvar', 'error');
+          return null;
+        }
+
+        // Monta payload com coordenadas do geocoding
+        const payload = {
+          ...dados,
+          latitude: coordenadasEncontradas.latitude,
+          longitude: coordenadasEncontradas.longitude,
+          endereco: coordenadasEncontradas.enderecoFormatado || dados.endereco,
+        };
 
         const ehNova = !dados.id;
         const url = ehNova ? `${apiUrl}/filas/centrais` : `${apiUrl}/filas/centrais/${dados.id}`;
         const method = ehNova ? 'POST' : 'PUT';
-        const r = await fetchAuth(url, { method, body: JSON.stringify(dados) });
+        const r = await fetchAuth(url, { method, body: JSON.stringify(payload) });
         const d = await r.json().catch(() => ({}));
         
         // Erro HTTP (400/500) ou success falso
@@ -387,6 +462,10 @@
           onChange: setModalCentral,
           onSalvar: salvarCentral,
           onCancelar: () => setModalCentral(null),
+          buscarEnderecoDebounced,
+          buscandoEndereco,
+          enderecoValidado,
+          coordenadasEncontradas,
         })
       );
     }
@@ -448,6 +527,10 @@
         onChange: setModalCentral,
         onSalvar: salvarCentral,
         onCancelar: () => setModalCentral(null),
+        buscarEnderecoDebounced,
+        buscandoEndereco,
+        enderecoValidado,
+        coordenadasEncontradas,
       })
     );
   }
@@ -881,8 +964,11 @@
   // Modal de criar/editar central
   // ──────────────────────────────────────────────────────────
   function renderModalCentral(opts) {
-    const { dados, onChange, onSalvar, onCancelar } = opts;
+    const { dados, onChange, onSalvar, onCancelar,
+            buscarEnderecoDebounced, buscandoEndereco, enderecoValidado, coordenadasEncontradas } = opts;
     const setCampo = (k, v) => onChange({ ...dados, [k]: v });
+
+    const podeSalvar = dados.nome && dados.endereco && enderecoValidado && coordenadasEncontradas;
 
     return e('div', {
       className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
@@ -902,19 +988,36 @@
             )
           ),
 
-          labelInput('Nome', dados.nome || '', v => setCampo('nome', v)),
-          labelInput('Endereço', dados.endereco || '', v => setCampo('endereco', v)),
+          // Nome
+          labelInput('Nome *', dados.nome || '', v => setCampo('nome', v)),
 
-          e('div', { className: 'grid grid-cols-3 gap-2' },
-            labelInput('Latitude', dados.latitude || '', v => setCampo('latitude', v)),
-            labelInput('Longitude', dados.longitude || '', v => setCampo('longitude', v)),
-            labelInput('Raio (m)', dados.raio_metros || 900, v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
+          // Endereço com geocoding
+          e('div', null,
+            e('label', { className: 'text-[11px] text-gray-500 block mb-1' }, '📍 Endereço *'),
+            e('div', { className: 'relative' },
+              e('input', {
+                type: 'text',
+                value: dados.endereco || '',
+                placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
+                onChange: ev => {
+                  const v = ev.target.value;
+                  setCampo('endereco', v);
+                  buscarEnderecoDebounced(v);
+                },
+                className: `w-full h-9 px-2 pr-9 text-xs border rounded-md focus:outline-none focus:ring-1 ${enderecoValidado ? 'border-green-500 bg-green-50 focus:ring-green-100' : 'border-gray-300 focus:border-purple-500 focus:ring-purple-100'}`
+              }),
+              e('span', {
+                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-base'
+              }, buscandoEndereco ? '⏳' : enderecoValidado ? '✅' : '🔍')
+            ),
+            enderecoValidado && coordenadasEncontradas && e('p', {
+              className: 'text-[10px] text-green-700 mt-1'
+            }, `📌 ${coordenadasEncontradas.latitude.toFixed(6)}, ${coordenadasEncontradas.longitude.toFixed(6)}`)
           ),
 
-          e('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900' },
-            e('p', { className: 'font-medium mb-1' }, '💡 Como pegar latitude/longitude'),
-            e('p', { className: 'text-purple-700' }, 'Abra o Google Maps no endereço da loja, clique com botão direito → o primeiro número da lista é "latitude, longitude". Copie cada um pro campo certo.')
-          ),
+          // Raio
+          labelInput('Raio (metros)', dados.raio_metros || 900,
+            v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
 
           e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-1' }, 'Validação do agente'),
           e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2' },
@@ -963,7 +1066,7 @@
             }, 'Cancelar'),
             e('button', {
               onClick: () => onSalvar(dados),
-              disabled: !dados.nome || !dados.latitude || !dados.longitude,
+              disabled: !podeSalvar,
               className: 'text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed'
             }, dados.id ? '💾 Salvar' : '🤖 Criar central auto')
           )
