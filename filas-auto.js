@@ -40,6 +40,8 @@
     const [buscandoEndereco, setBuscandoEndereco] = React.useState(false);
     const [enderecoValidado, setEnderecoValidado] = React.useState(false);
     const [coordenadasEncontradas, setCoordenadasEncontradas] = React.useState(null);
+    const [modoManual, setModoManual] = React.useState(false); // fallback quando geocode falha
+    const [geocodeDown, setGeocodeDown] = React.useState(false); // indica que a API quebrou
     const debounceRef = React.useRef(null);
 
     // Refs estáveis pra props (anti infinite-loop)
@@ -64,8 +66,20 @@
       try {
         const r = await fetchAuthRef.current(`${apiUrlRef.current}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
         const d = await r.json().catch(() => ({}));
-        const resultado = d.results && d.results[0];
 
+        // Detectar API quebrada: 500/503 ou REQUEST_DENIED → ativa fallback manual
+        const apiQuebrou = r.status >= 500
+          || (d && typeof d.error === 'string' && /Google|API|REQUEST_DENIED|billing/i.test(d.error));
+        if (apiQuebrou) {
+          console.warn('[FilasAuto] API de geocoding indisponível:', { status: r.status, body: d });
+          setGeocodeDown(true);
+          setEnderecoValidado(false);
+          setCoordenadasEncontradas(null);
+          toast('API de busca indisponível · use o modo manual abaixo', 'error');
+          return;
+        }
+
+        const resultado = d.results && d.results[0];
         if (resultado && resultado.latitude && resultado.longitude) {
           setCoordenadasEncontradas({
             latitude: resultado.latitude,
@@ -73,11 +87,11 @@
             enderecoFormatado: resultado.endereco || endereco,
           });
           setEnderecoValidado(true);
+          setGeocodeDown(false);
           toast('📍 Endereço encontrado!', 'success');
         } else {
           setEnderecoValidado(false);
           setCoordenadasEncontradas(null);
-          // Se backend retornou erro específico, mostra. Senão, genérico.
           const msg = d.error || 'Endereço não encontrado · tente incluir rua + número + cidade';
           console.warn('[FilasAuto] geocode falhou:', { status: r.status, body: d });
           toast(msg, 'error');
@@ -85,7 +99,8 @@
       } catch (e) {
         setEnderecoValidado(false);
         setCoordenadasEncontradas(null);
-        toast('Erro ao buscar endereço', 'error');
+        setGeocodeDown(true);
+        toast('Erro ao buscar endereço · use o modo manual', 'error');
       } finally {
         setBuscandoEndereco(false);
       }
@@ -102,6 +117,8 @@
         setBuscandoEndereco(false);
         setEnderecoValidado(false);
         setCoordenadasEncontradas(null);
+        setModoManual(false);
+        setGeocodeDown(false);
         if (debounceRef.current) clearTimeout(debounceRef.current);
       } else if (modalCentral.id && modalCentral.latitude && modalCentral.longitude) {
         // Editando: marca como já validado
@@ -227,21 +244,43 @@
           toast('Informe o nome da central', 'error');
           return null;
         }
-        if (!dados.endereco || !dados.endereco.trim()) {
-          toast('Informe o endereço da central', 'error');
-          return null;
-        }
-        if (!enderecoValidado || !coordenadasEncontradas) {
-          toast('Aguarde a validação do endereço (✅) antes de salvar', 'error');
-          return null;
+
+        // Determina coordenadas: modo manual usa dados.latitude/longitude direto;
+        // modo geocoding usa coordenadasEncontradas
+        let latFinal, lngFinal, enderecoFinal;
+        if (modoManual) {
+          const lat = parseFloat(dados.latitude);
+          const lng = parseFloat(dados.longitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            toast('Latitude e longitude inválidas', 'error');
+            return null;
+          }
+          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            toast('Coordenadas fora da faixa válida', 'error');
+            return null;
+          }
+          latFinal = lat;
+          lngFinal = lng;
+          enderecoFinal = dados.endereco || null;
+        } else {
+          if (!dados.endereco || !dados.endereco.trim()) {
+            toast('Informe o endereço da central', 'error');
+            return null;
+          }
+          if (!enderecoValidado || !coordenadasEncontradas) {
+            toast('Aguarde a validação do endereço (✅) antes de salvar', 'error');
+            return null;
+          }
+          latFinal = coordenadasEncontradas.latitude;
+          lngFinal = coordenadasEncontradas.longitude;
+          enderecoFinal = coordenadasEncontradas.enderecoFormatado || dados.endereco;
         }
 
-        // Monta payload com coordenadas do geocoding
         const payload = {
           ...dados,
-          latitude: coordenadasEncontradas.latitude,
-          longitude: coordenadasEncontradas.longitude,
-          endereco: coordenadasEncontradas.enderecoFormatado || dados.endereco,
+          latitude: latFinal,
+          longitude: lngFinal,
+          endereco: enderecoFinal,
         };
 
         const ehNova = !dados.id;
@@ -470,6 +509,9 @@
           buscandoEndereco,
           enderecoValidado,
           coordenadasEncontradas,
+          modoManual,
+          setModoManual,
+          geocodeDown,
         })
       );
     }
@@ -509,7 +551,8 @@
       }),
 
       // === ABA CONFIG ===
-      abaAtiva === 'config' && renderConfig({
+      // 🔄 ConfigPanel é componente React (não função imperativa) — isola hooks
+      abaAtiva === 'config' && e(ConfigPanel, {
         central: centralSelecionada,
         salvarCentral,
         excluirCentral,
@@ -535,6 +578,9 @@
         buscandoEndereco,
         enderecoValidado,
         coordenadasEncontradas,
+        modoManual,
+        setModoManual,
+        geocodeDown,
       })
     );
   }
@@ -717,8 +763,14 @@
   // ──────────────────────────────────────────────────────────
   // Configuração da central
   // ──────────────────────────────────────────────────────────
-  function renderConfig(opts) {
-    const { central, salvarCentral, excluirCentral } = opts;
+  // ──────────────────────────────────────────────────────────
+  // ConfigPanel — componente React (não função imperativa!)
+  // 🔄 2026-05-23: era function renderConfig com useState dentro, o que
+  // violava as regras dos hooks (montagem/desmontagem condicional ao trocar
+  // de aba causava React error #310). Agora é componente real, isolando os
+  // hooks no próprio escopo do componente.
+  // ──────────────────────────────────────────────────────────
+  function ConfigPanel({ central, salvarCentral, excluirCentral }) {
     const [dados, setDados] = React.useState({ ...central });
 
     React.useEffect(() => { setDados({ ...central }); }, [central?.id]);
@@ -969,10 +1021,15 @@
   // ──────────────────────────────────────────────────────────
   function renderModalCentral(opts) {
     const { dados, onChange, onSalvar, onCancelar,
-            buscarEnderecoDebounced, buscandoEndereco, enderecoValidado, coordenadasEncontradas } = opts;
+            buscarEnderecoDebounced, buscandoEndereco, enderecoValidado, coordenadasEncontradas,
+            modoManual, setModoManual, geocodeDown } = opts;
     const setCampo = (k, v) => onChange({ ...dados, [k]: v });
 
-    const podeSalvar = dados.nome && dados.endereco && enderecoValidado && coordenadasEncontradas;
+    const podeSalvar = dados.nome && (
+      modoManual
+        ? (dados.latitude && dados.longitude)
+        : (dados.endereco && enderecoValidado && coordenadasEncontradas)
+    );
 
     return e('div', {
       className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
@@ -995,28 +1052,66 @@
           // Nome
           labelInput('Nome *', dados.nome || '', v => setCampo('nome', v)),
 
-          // Endereço com geocoding
-          e('div', null,
-            e('label', { className: 'text-[11px] text-gray-500 block mb-1' }, '📍 Endereço *'),
-            e('div', { className: 'relative' },
-              e('input', {
-                type: 'text',
-                value: dados.endereco || '',
-                placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
-                onChange: ev => {
-                  const v = ev.target.value;
-                  setCampo('endereco', v);
-                  buscarEnderecoDebounced(v);
-                },
-                className: `w-full h-9 px-2 pr-9 text-xs border rounded-md focus:outline-none focus:ring-1 ${enderecoValidado ? 'border-green-500 bg-green-50 focus:ring-green-100' : 'border-gray-300 focus:border-purple-500 focus:ring-purple-100'}`
-              }),
-              e('span', {
-                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-base'
-              }, buscandoEndereco ? '⏳' : enderecoValidado ? '✅' : '🔍')
+          // Aviso quando API caiu
+          geocodeDown && !modoManual && e('div', {
+            className: 'bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs space-y-2'
+          },
+            e('p', { className: 'font-medium text-amber-900' }, '⚠️ Busca automática indisponível'),
+            e('p', { className: 'text-amber-700' },
+              'A API do Google de busca de endereço está fora. Use o modo manual:'),
+            e('button', {
+              onClick: () => setModoManual(true),
+              className: 'px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium'
+            }, '📐 Inserir coordenadas manualmente')
+          ),
+
+          // ── MODO MANUAL (coordenadas) ──
+          modoManual ? e(React.Fragment, null,
+            labelInput('Endereço (opcional)', dados.endereco || '', v => setCampo('endereco', v)),
+            e('div', { className: 'grid grid-cols-2 gap-2' },
+              labelInput('Latitude *', dados.latitude || '',
+                v => setCampo('latitude', v)),
+              labelInput('Longitude *', dados.longitude || '',
+                v => setCampo('longitude', v)),
             ),
-            enderecoValidado && coordenadasEncontradas && e('p', {
-              className: 'text-[10px] text-green-700 mt-1'
-            }, `📌 ${coordenadasEncontradas.latitude.toFixed(6)}, ${coordenadasEncontradas.longitude.toFixed(6)}`)
+            e('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 text-[11px] text-purple-900 space-y-1' },
+              e('p', { className: 'font-medium' }, '💡 Como pegar latitude/longitude'),
+              e('p', { className: 'text-purple-700' },
+                'Abra o Google Maps no local da loja → botão direito no ponto exato → o primeiro número é latitude, o segundo é longitude.'),
+              e('button', {
+                onClick: () => setModoManual(false),
+                className: 'text-purple-700 underline text-[11px] mt-1'
+              }, '← Voltar a buscar por endereço')
+            )
+          ) : e(React.Fragment, null,
+            // ── MODO BUSCA POR ENDEREÇO ──
+            e('div', null,
+              e('label', { className: 'text-[11px] text-gray-500 block mb-1' }, '📍 Endereço *'),
+              e('div', { className: 'relative' },
+                e('input', {
+                  type: 'text',
+                  value: dados.endereco || '',
+                  placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
+                  onChange: ev => {
+                    const v = ev.target.value;
+                    setCampo('endereco', v);
+                    buscarEnderecoDebounced(v);
+                  },
+                  className: `w-full h-9 px-2 pr-9 text-xs border rounded-md focus:outline-none focus:ring-1 ${enderecoValidado ? 'border-green-500 bg-green-50 focus:ring-green-100' : 'border-gray-300 focus:border-purple-500 focus:ring-purple-100'}`
+                }),
+                e('span', {
+                  className: 'absolute right-2 top-1/2 -translate-y-1/2 text-base'
+                }, buscandoEndereco ? '⏳' : enderecoValidado ? '✅' : '🔍')
+              ),
+              enderecoValidado && coordenadasEncontradas && e('p', {
+                className: 'text-[10px] text-green-700 mt-1'
+              }, `📌 ${coordenadasEncontradas.latitude.toFixed(6)}, ${coordenadasEncontradas.longitude.toFixed(6)}`),
+              // Link discreto pra entrar no modo manual mesmo sem erro
+              !geocodeDown && e('button', {
+                onClick: () => setModoManual(true),
+                className: 'text-[10px] text-gray-400 hover:text-purple-600 underline mt-1'
+              }, 'ou inserir coordenadas manualmente')
+            )
           ),
 
           // Raio
