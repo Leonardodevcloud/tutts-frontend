@@ -155,14 +155,36 @@
     // ── Mutators ─────────────────────────────────────────────
     const salvarCentral = async (dados) => {
       try {
+        // Validação client-side
+        if (!dados.nome || !dados.nome.trim()) {
+          toast('Informe o nome da central', 'error');
+          return null;
+        }
+        if (!dados.latitude || !dados.longitude) {
+          toast('Latitude e longitude são obrigatórios', 'error');
+          return null;
+        }
+
         const ehNova = !dados.id;
         const url = ehNova ? `${apiUrl}/filas/centrais` : `${apiUrl}/filas/centrais/${dados.id}`;
         const method = ehNova ? 'POST' : 'PUT';
         const r = await fetchAuth(url, { method, body: JSON.stringify(dados) });
-        const d = await r.json();
-        if (!d.success) { toast(d.error || 'Erro ao salvar', 'error'); return null; }
+        const d = await r.json().catch(() => ({}));
+        
+        // Erro HTTP (400/500) ou success falso
+        if (!r.ok || !d.success) {
+          const msg = d.error || `Erro HTTP ${r.status}`;
+          console.error('[FilasAuto] salvar central falhou:', { status: r.status, body: d });
+          toast('Erro: ' + msg, 'error');
+          return null;
+        }
 
-        const centralId = ehNova ? d.central?.id || d.id : dados.id;
+        const centralId = ehNova ? (d.central?.id || d.id) : dados.id;
+        if (!centralId) {
+          console.error('[FilasAuto] backend retornou success mas sem id:', d);
+          toast('Salvou mas backend não retornou id da central', 'error');
+          return null;
+        }
 
         // Aplica config específica de auto (PATCH)
         const cfgPayload = {
@@ -176,18 +198,25 @@
         const rCfg = await fetchAuth(`${apiUrl}/filas/auto/admin/centrais/${centralId}/config`, {
           method: 'PATCH', body: JSON.stringify(cfgPayload),
         });
-        const dCfg = await rCfg.json();
-        if (!dCfg.success) { toast('Salvou central mas falhou config: ' + (dCfg.error || ''), 'error'); }
+        const dCfg = await rCfg.json().catch(() => ({}));
+        if (!rCfg.ok || !dCfg.success) {
+          console.error('[FilasAuto] PATCH config falhou:', { status: rCfg.status, body: dCfg });
+          toast('Central criada mas config falhou — abra a aba Configuração pra ajustar', 'error');
+          // Mesmo com erro de config, central foi salva — fecha modal e atualiza lista
+        } else {
+          toast(ehNova ? 'Central auto criada!' : 'Atualizada!', 'success');
+        }
 
-        toast(ehNova ? 'Central auto criada!' : 'Atualizada!', 'success');
         setModalCentral(null);
         await carregarCentrais();
-        // Se acabou de criar, seleciona pra mostrar
-        if (ehNova && d.central) setCentralSelecionada({ ...d.central, ...cfgPayload });
+        // Se acabou de criar, seleciona pra mostrar (mescla com config aplicada)
+        if (ehNova && d.central) {
+          setCentralSelecionada({ ...d.central, ...cfgPayload });
+        }
         return centralId;
       } catch (err) {
-        console.error('[FilasAuto] salvarCentral:', err);
-        toast('Erro ao salvar', 'error');
+        console.error('[FilasAuto] salvarCentral exception:', err);
+        toast('Erro de conexão ao salvar', 'error');
         return null;
       }
     };
