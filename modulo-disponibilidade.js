@@ -56,7 +56,43 @@
                             dispData: t,
                             dispLoading: !1,
                             dispLoaded: !0
-                        }))
+                        }));
+
+                        // 🆕 2026-05: Busca fotos via /perfil/fotos (mesmo endpoint usado por
+                        // Config>Usuários e Saques). Esse endpoint já faz lazy thumbnail generation
+                        // a partir de foto_selfie quando foto_thumb é null. Buscamos AQUI depois
+                        // de exibir a tela pra não bloquear o render. Mescla no state quando vier.
+                        try {
+                            const codsUnicos = Array.from(new Set(
+                                (t.linhas || [])
+                                    .map(l => (l.cod_profissional || '').toString().trim())
+                                    .filter(c => /^\d+$/.test(c))
+                            ));
+                            if (codsUnicos.length > 0) {
+                                const mapaFotos = {};
+                                // Lotes de 150 (limite backend = 200)
+                                for (let i = 0; i < codsUnicos.length; i += 150) {
+                                    const lote = codsUnicos.slice(i, i + 150);
+                                    const respFoto = await _fetch(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
+                                    if (respFoto.ok) {
+                                        const dataFoto = await respFoto.json();
+                                        Object.assign(mapaFotos, dataFoto.fotos || {});
+                                    }
+                                }
+                                if (Object.keys(mapaFotos).length > 0) {
+                                    x(prev => {
+                                        const linhas = (prev.dispData?.linhas || []).map(linha => ({
+                                            ...linha,
+                                            foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
+                                        }));
+                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                    });
+                                    console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos carregadas`);
+                                }
+                            }
+                        } catch (errFoto) {
+                            console.warn('[disp] Falha ao carregar fotos (segue sem):', errFoto.message);
+                        }
                     } catch (e) {
                         console.error("Erro ao carregar disponibilidade:", e), ja("Erro ao carregar dados", "error"), x(e => ({
                             ...e,
@@ -267,43 +303,46 @@
             }, c = (t, a, l) => {
                 // Anti-echo: marcar esta linha como editada localmente
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
-                const r = [...e.linhas || []],
-                    o = r.findIndex(e => e.id === t);
-                if (-1 === o) return;
-                // Atualização OTIMISTA IMEDIATA — sem await, sem travar o input
-                r[o] = {
-                    ...r[o],
-                    [a]: l
-                };
-                let s = r[o].nome_profissional;
-                if ("cod_profissional" === a)
-                    if (l && "" !== l.trim()) {
-                        // 🔧 FIX CADASTRO-CRM: Preenchimento IMEDIATO via lookup local
-                        // (planilha pe / users A) como hint rápido para UX — mas o nome
-                        // DEFINITIVO é resolvido no backend (/api/crm/profissionais-cadastro/:cod)
-                        // dentro do debounce abaixo, que tem prioridade sobre isso.
-                        // O lookup local continua aqui só pra evitar "flash" de campo vazio.
-                        if (l.length >= 1) {
-                            const e = pe.find(e => e.codigo === l.toString());
-                            if (e) s = e.nome, r[o].nome_profissional = e.nome;
-                            else {
-                                const e = A.find(e => e.codProfissional?.toLowerCase() === l.toLowerCase());
-                                if (e) {
-                                    s = e.fullName;
-                                    r[o].nome_profissional = e.fullName;
+                // 🆕 2026-05 FIX v2 (stepper "volta ao clicar"):
+                // Removida a derivação de `r` a partir do `e.linhas` capturado em closure
+                // (que ficava stale entre cliques rápidos). Agora TODA a lógica roda DENTRO
+                // do setState callback, garantindo que sempre vemos o estado mais recente.
+                // O `s` (nome resolvido) e ref do array atualizado ficam em variáveis externas
+                // pra o bloco de debounce abaixo poder usar.
+                let s = null;
+                let r = null;
+                let o = -1;
+                x(prev => {
+                    const linhasAtuais = [...(prev.dispData?.linhas || [])];
+                    const idxAtual = linhasAtuais.findIndex(item => item.id === t);
+                    if (idxAtual === -1) return prev;
+                    linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], [a]: l };
+                    s = linhasAtuais[idxAtual].nome_profissional;
+                    // Lookup local de nome (UX hint) quando cod_profissional muda
+                    if (a === "cod_profissional") {
+                        if (l && "" !== l.trim() && l.length >= 1) {
+                            const m1 = pe.find(p => p.codigo === l.toString());
+                            if (m1) {
+                                s = m1.nome;
+                                linhasAtuais[idxAtual].nome_profissional = m1.nome;
+                            } else {
+                                const m2 = A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase());
+                                if (m2) {
+                                    s = m2.fullName;
+                                    linhasAtuais[idxAtual].nome_profissional = m2.fullName;
                                 }
-                                // Não zera mais nome_profissional se lookup local falhou —
-                                // deixa o backend resolver. Evita piscar "vazio → nome".
                             }
+                        } else if (!l || "" === l.trim()) {
+                            s = "";
+                            linhasAtuais[idxAtual].nome_profissional = "";
                         }
-                    } else s = "", r[o].nome_profissional = "";
-                x(t => ({
-                    ...t,
-                    dispData: {
-                        ...e,
-                        linhas: r
                     }
-                }));
+                    r = linhasAtuais;
+                    o = idxAtual;
+                    return { ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } };
+                });
+                // Linha sumiu entre clique e callback (raro): pula debounce
+                if (!r || o === -1) return;
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
@@ -2633,7 +2672,8 @@
                             const stepperConfig = [
                                 { key: "A CONFIRMAR", label: "A confirmar", color: "#888780" },
                                 { key: "A CAMINHO", label: "A caminho", color: "#BA7517" },
-                                { key: "EM LOJA", label: "Em loja", color: "#1D9E75" }
+                                { key: "EM LOJA", label: "Em loja", color: "#1D9E75" },
+                                { key: "FALTANDO", label: "Faltando", color: "#A32D2D" }
                             ];
 
                             const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "?";
@@ -2695,7 +2735,11 @@
                                     React.createElement("div", {
                                         style: { flex: "2", minWidth: "240px", display: "flex" }
                                     }, stepperConfig.map((step, sidx) => {
-                                        const isActive = linha.status === step.key || (linha.status === "CONFIRMADO" && step.key === "A CONFIRMAR");
+                                        const status = linha.status || "A CONFIRMAR";
+                                        // CONFIRMADO mostra "A confirmar" ativo (sub-estado do mesmo passo)
+                                        // SEM CONTATO mostra todos cinza com indicador externo
+                                        const isActive = status === step.key
+                                            || (status === "CONFIRMADO" && step.key === "A CONFIRMAR");
                                         const baseStyle = {
                                             flex: "1",
                                             textAlign: "center",
@@ -2711,7 +2755,13 @@
                                         };
                                         return React.createElement("button", {
                                             key: step.key,
-                                            onClick: () => c(linha.id, "status", step.key),
+                                            onClick: () => {
+                                                if (step.key === "FALTANDO") {
+                                                    x(prev => ({ ...prev, modalFaltando: !0, faltandoLinha: linha, faltandoMotivo: "" }));
+                                                } else {
+                                                    c(linha.id, "status", step.key);
+                                                }
+                                            },
                                             style: baseStyle,
                                             title: "Marcar como " + step.label
                                         }, step.label);
