@@ -1003,6 +1003,32 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     if (loading) return React.createElement('div', { className: 'flex items-center justify-center min-h-[400px]' }, React.createElement('div', { className: 'text-center' }, React.createElement('div', { className: 'w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4' }), React.createElement('p', { className: 'text-gray-600' }, 'Carregando...')));
     if (!minhaCentral) return React.createElement('div', { className: 'min-h-[400px] flex items-center justify-center' }, React.createElement('div', { className: 'text-center bg-white rounded-2xl shadow-lg p-8 max-w-md mx-4' }, React.createElement('span', { className: 'text-6xl block mb-4' }, '🚫'), React.createElement('h2', { className: 'text-xl font-bold text-gray-800 mb-2' }, 'Sem Acesso à Fila'), React.createElement('p', { className: 'text-gray-600' }, 'Você não está vinculado a nenhuma central.')));
 
+    // 🆕 2026-05: Se a central é tipo 'auto', delega pro módulo separado
+    // (filas-auto-motoboy.js). O fluxo de admin acima continua intacto.
+    if (minhaCentral.tipo === 'auto') {
+        if (typeof window.ModuloFilasAutoMotoboy !== 'undefined') {
+            return React.createElement(window.ModuloFilasAutoMotoboy, {
+                usuario: usuario,
+                apiUrl: apiUrl,
+                fetchAuth: fetchAuth,
+                showToast: showToast,
+                minhaCentral: minhaCentral,
+                minhaLocalizacao: minhaLocalizacao,
+                gpsStatus: gpsStatus,
+                solicitarGPS: solicitarGPS,
+                distanciaCentral: distanciaCentral,
+            });
+        } else {
+            return React.createElement('div', { className: 'min-h-[400px] flex items-center justify-center p-4' },
+                React.createElement('div', { className: 'text-center bg-white rounded-2xl shadow-lg p-8 max-w-md' },
+                    React.createElement('span', { className: 'text-4xl block mb-2' }, '⚠️'),
+                    React.createElement('p', { className: 'text-gray-700' }, 'Módulo de fila auto não carregado.'),
+                    React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 'Recarregue a página (Ctrl+F5).')
+                )
+            );
+        }
+    }
+
     const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
     const penalizado = minhaPenalidade?.bloqueado && minhaPenalidade?.minutos_restantes > 0;
 

@@ -1,0 +1,447 @@
+// ============================================================
+// FILAS AUTO-GERENCIÁVEIS — visão MOTOBOY (app)
+// ============================================================
+// Renderizado quando:
+//   - usuário é motoboy (não admin)
+//   - usuário vinculado a central com tipo='auto'
+//
+// Diferenças vs filas.js (fila clássica):
+//   - Motoboy vê TODOS da fila (não só sua posição) com foto/nome
+//   - Indicador do agente Playwright validando
+//   - Sem cooldown 15min após despacho — agente detecta nova corrida e remove
+//   - Bloqueio quando agente detecta corridas ativas
+//
+// Não duplica lógica de GPS: recebe minhaLocalizacao + gpsStatus + solicitarGPS
+// como props, já que o filas.js gerencia geolocalização compartilhada.
+// ============================================================
+
+(function () {
+  const e = React.createElement;
+
+  function ModuloFilasAutoMotoboy(props) {
+    const {
+      usuario, apiUrl, fetchAuth, showToast,
+      minhaCentral,        // { id, central_nome, endereco, latitude, longitude, raio_metros, mostrar_nomes_publicos }
+      minhaLocalizacao,    // { latitude, longitude } | null
+      gpsStatus,           // 'permitido' | 'negado' | 'aguardando'
+      solicitarGPS,        // () => void
+      distanciaCentral,    // number | null
+    } = props;
+
+    // ── Estado ───────────────────────────────────────────────
+    const [minhaPosicao, setMinhaPosicao] = React.useState(null);
+    const [filaPublica, setFilaPublica] = React.useState({ fila: [], total: 0, mostrar_nomes_publicos: true });
+    const [fotos, setFotos] = React.useState({});
+    const [penalidade, setPenalidade] = React.useState(null);
+    const [bloqueioCorrida, setBloqueioCorrida] = React.useState(null); // { corridas: [...] }
+
+    // Refs estáveis pra props (anti infinite-loop em useEffect)
+    const apiUrlRef = React.useRef(apiUrl);
+    const fetchAuthRef = React.useRef(fetchAuth);
+    const showToastRef = React.useRef(showToast);
+    React.useEffect(() => {
+      apiUrlRef.current = apiUrl;
+      fetchAuthRef.current = fetchAuth;
+      showToastRef.current = showToast;
+    });
+    const toast = React.useCallback((m, t) => showToastRef.current && showToastRef.current(m, t), []);
+
+    // ── Loaders ──────────────────────────────────────────────
+    const carregarMinhaPosicao = React.useCallback(async () => {
+      try {
+        const r = await fetchAuthRef.current(`${apiUrlRef.current}/filas/auto/minha-posicao`);
+        const d = await r.json();
+        if (d.success) setMinhaPosicao(d.na_fila ? d : null);
+      } catch (err) { /* segue silencioso no polling */ }
+    }, []);
+
+    const carregarFilaPublica = React.useCallback(async (centralId) => {
+      if (!centralId) return;
+      try {
+        const r = await fetchAuthRef.current(`${apiUrlRef.current}/filas/auto/fila-publica/${centralId}`);
+        const d = await r.json();
+        if (d.success) {
+          setFilaPublica({
+            fila: d.fila || [],
+            total: d.total || 0,
+            mostrar_nomes_publicos: d.mostrar_nomes_publicos !== false,
+          });
+          // Carrega fotos só se for permitido mostrar nomes (caso contrário fotos não vêm)
+          if (d.mostrar_nomes_publicos !== false) {
+            const cods = (d.fila || []).map(p => p.cod_profissional).filter(c => c && /^\d+$/.test(c));
+            if (cods.length > 0) {
+              try {
+                const rf = await fetchAuthRef.current(`${apiUrlRef.current}/perfil/fotos?codigos=${cods.join(',')}`);
+                if (rf.ok) {
+                  const df = await rf.json();
+                  setFotos(prev => ({ ...prev, ...(df.fotos || {}) }));
+                }
+              } catch (errF) { /* segue sem fotos */ }
+            }
+          }
+        }
+      } catch (err) { /* silencioso */ }
+    }, []);
+
+    const carregarPenalidade = React.useCallback(async () => {
+      try {
+        const r = await fetchAuthRef.current(`${apiUrlRef.current}/filas/minha-penalidade`);
+        const d = await r.json();
+        if (d.success && d.bloqueado_ate && new Date(d.bloqueado_ate) > new Date()) {
+          setPenalidade(d);
+        } else {
+          setPenalidade(null);
+        }
+      } catch (err) { /* silencioso */ }
+    }, []);
+
+    // ── Effects ──────────────────────────────────────────────
+    // Polling 5s da posição + fila pública + penalidade
+    React.useEffect(() => {
+      if (!minhaCentral?.id) return;
+      carregarMinhaPosicao();
+      carregarFilaPublica(minhaCentral.id);
+      carregarPenalidade();
+      const i = setInterval(() => {
+        carregarMinhaPosicao();
+        carregarFilaPublica(minhaCentral.id);
+      }, 5000);
+      return () => clearInterval(i);
+    }, [minhaCentral?.id, carregarMinhaPosicao, carregarFilaPublica, carregarPenalidade]);
+
+    // ── Ações ────────────────────────────────────────────────
+    const entrarNaFila = async () => {
+      if (!minhaLocalizacao) {
+        toast('Aguarde GPS', 'error');
+        if (solicitarGPS) solicitarGPS();
+        return;
+      }
+      try {
+        const r = await fetchAuth(`${apiUrl}/filas/auto/entrar`, {
+          method: 'POST',
+          body: JSON.stringify({
+            latitude: minhaLocalizacao.latitude,
+            longitude: minhaLocalizacao.longitude,
+          }),
+        });
+        const d = await r.json();
+        if (d.success) {
+          toast(`Entrou! Posição ${d.posicao}. Agente vai confirmar em segundos.`, 'success');
+          setBloqueioCorrida(null);
+          carregarMinhaPosicao();
+          carregarFilaPublica(minhaCentral.id);
+        } else if (d.error === 'fora_do_raio') {
+          toast(d.mensagem || 'Aproxime-se da central', 'error');
+        } else if (d.error === 'penalidade_ativa') {
+          toast(d.mensagem || 'Aguarde penalidade terminar', 'error');
+          carregarPenalidade();
+        } else if (d.error === 'ja_na_fila') {
+          carregarMinhaPosicao();
+        } else if (d.error === 'sem_vinculo') {
+          toast('Você não está vinculado a nenhuma fila auto', 'error');
+        } else {
+          toast(d.mensagem || d.error || 'Erro ao entrar', 'error');
+        }
+      } catch (err) {
+        console.error('[fila-auto-mb] entrarNaFila:', err);
+        toast('Erro de conexão', 'error');
+      }
+    };
+
+    const sairDaFila = async () => {
+      if (!window.confirm('Sair da fila?\n\nDependendo da configuração, você ficará bloqueado por alguns minutos antes de poder reentrar.')) return;
+      try {
+        const r = await fetchAuth(`${apiUrl}/filas/auto/sair`, { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+          toast(d.mensagem || 'Você saiu da fila', 'success');
+          carregarMinhaPosicao();
+          carregarFilaPublica(minhaCentral.id);
+          carregarPenalidade();
+        } else {
+          toast(d.error || 'Erro', 'error');
+        }
+      } catch (err) { toast('Erro de conexão', 'error'); }
+    };
+
+    // ── Helpers de UI ────────────────────────────────────────
+    function avatar(cod, nome, foto, size) {
+      size = size || 24;
+      const partes = (nome || '').trim().split(/\s+/);
+      const iniciais = partes.length >= 2
+        ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+        : (partes[0] || '?').substring(0, 2).toUpperCase();
+      if (foto) {
+        return e('img', {
+          src: foto, alt: nome || '',
+          style: { width: size + 'px', height: size + 'px', objectFit: 'cover', border: '0.5px solid #E5E7EB' },
+          className: 'rounded-full flex-shrink-0'
+        });
+      }
+      return e('div', {
+        style: { width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.4) + 'px' },
+        className: 'rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-semibold flex-shrink-0'
+      }, iniciais);
+    }
+
+    function tempoDecorrido(iso) {
+      if (!iso) return '—';
+      const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      if (m < 60) return `${m}min`;
+      const h = Math.floor(m / 60);
+      return `${h}h${m % 60}min`;
+    }
+
+    // ════════════════════════════════════════════════════════
+    // RENDER
+    // ════════════════════════════════════════════════════════
+
+    // ── Sem central vinculada ──
+    if (!minhaCentral) {
+      return e('div', { className: 'min-h-[400px] flex items-center justify-center' },
+        e('div', { className: 'text-center bg-white rounded-2xl shadow-lg p-8 max-w-md mx-4' },
+          e('span', { className: 'text-6xl block mb-4' }, '🚫'),
+          e('h2', { className: 'text-xl font-bold text-gray-800 mb-2' }, 'Sem acesso à fila'),
+          e('p', { className: 'text-gray-600' }, 'Você não está vinculado a nenhuma central auto-gerenciável.')
+        )
+      );
+    }
+
+    const naFila = !!minhaPosicao;
+    const penalizado = !!penalidade;
+    const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
+
+    // ── Container principal (mobile-first, simula tela do app) ──
+    return e('div', { className: 'max-w-md mx-auto p-3 space-y-3' },
+
+      // ═══ HEADER ═══
+      e('div', { className: 'bg-purple-600 text-white rounded-2xl p-4 shadow-md' },
+        e('div', { className: 'flex items-center gap-3 mb-2' },
+          e('span', { className: 'text-2xl' }, '🤖'),
+          e('div', { className: 'flex-1 min-w-0' },
+            e('h1', { className: 'text-base font-bold truncate' }, minhaCentral.central_nome),
+            e('p', { className: 'text-purple-200 text-xs flex items-center gap-1' },
+              e('span', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#86EFAC' } }),
+              'Fila auto-gerenciável'
+            )
+          )
+        ),
+        // Status GPS
+        e('div', { className: 'flex items-center gap-2 bg-white/10 rounded-lg p-2 text-xs' },
+          e('span', null, gpsStatus === 'permitido' ? '📍' : '⚠️'),
+          e('div', { className: 'flex-1 min-w-0' },
+            e('p', { className: 'font-medium' },
+              gpsStatus === 'permitido' ? 'GPS ativo' :
+              gpsStatus === 'negado' ? 'GPS bloqueado' : 'Verificando GPS...'
+            ),
+            distanciaCentral !== null && gpsStatus === 'permitido' && e('p', {
+              className: distanciaCentral <= minhaCentral.raio_metros ? 'text-green-200' : 'text-red-200'
+            }, `Você está a ${distanciaCentral}m da central (máx ${minhaCentral.raio_metros}m)`)
+          ),
+          gpsStatus === 'negado' && e('button', {
+            onClick: solicitarGPS,
+            className: 'px-2 py-1 bg-white/20 rounded text-xs'
+          }, 'Permitir')
+        )
+      ),
+
+      // ═══ ESTADO PENALIZADO ═══
+      penalizado && e('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-5 text-center' },
+        e('span', { className: 'text-4xl block mb-2' }, '⏳'),
+        e('h2', { className: 'text-lg font-bold text-red-800' }, 'Você está bloqueado'),
+        e('p', { className: 'text-red-600 text-sm mt-1' },
+          'Pode voltar à fila em alguns minutos.'
+        )
+      ),
+
+      // ═══ ESTADO BLOQUEIO POR CORRIDA ATIVA ═══
+      // (futuro: o backend pode retornar isso ao tentar entrar)
+      !penalizado && bloqueioCorrida && e('div', { className: 'bg-red-50 border border-red-300 rounded-2xl p-4' },
+        e('div', { className: 'text-center mb-3' },
+          e('span', { className: 'text-4xl block mb-2' }, '🛵'),
+          e('h2', { className: 'text-base font-bold text-red-800' }, 'Você tem corridas ativas'),
+          e('p', { className: 'text-xs text-red-700 mt-1' },
+            'Finalize suas entregas antes de voltar pra fila'
+          )
+        ),
+        e('div', { className: 'bg-white rounded-xl p-3 space-y-2' },
+          e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium' },
+            `Corridas em aberto (${bloqueioCorrida.corridas?.length || 0})`
+          ),
+          (bloqueioCorrida.corridas || []).map((c, i) => e('div', {
+            key: i, className: 'flex items-center gap-2 py-1 border-b border-gray-100 last:border-0'
+          },
+            e('span', null, '📦'),
+            e('div', { className: 'flex-1 text-xs' },
+              e('p', { className: 'font-medium text-gray-800' }, `OS ${c.os_numero || '?'}`),
+              e('p', { className: 'text-gray-500 text-[10px]' }, c.status || '—')
+            )
+          ))
+        ),
+        e('button', {
+          onClick: () => { setBloqueioCorrida(null); entrarNaFila(); },
+          className: 'w-full mt-3 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium'
+        }, '🔄 Verificar novamente')
+      ),
+
+      // ═══ ESTADO: JÁ NA FILA ═══
+      !penalizado && !bloqueioCorrida && naFila && renderTelaNaFila({
+        minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido,
+        usuarioCod: usuario?.codProfissional || usuario?.cod_profissional,
+        sairDaFila,
+      }),
+
+      // ═══ ESTADO: PRONTO PARA ENTRAR ═══
+      !penalizado && !bloqueioCorrida && !naFila && renderTelaEntrar({
+        minhaCentral, distanciaCentral, gpsStatus, podeChekin,
+        entrarNaFila, filaPublica,
+      })
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Tela: motoboy DENTRO da fila
+  // ──────────────────────────────────────────────────────────
+  function renderTelaNaFila(opts) {
+    const { minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido, usuarioCod, sairDaFila } = opts;
+    const minutosDecorridos = Math.floor((Date.now() - new Date(minhaPosicao.entrada_fila_at).getTime()) / 60000);
+    const agenteStatus = minhaPosicao.agente_status || 'pendente';
+
+    return e('div', { className: 'space-y-3' },
+      // Cartão grande com a posição
+      e('div', { className: 'bg-purple-50 border border-purple-200 rounded-2xl p-5 text-center' },
+        e('p', { className: 'text-[10px] uppercase tracking-wider text-purple-700 font-semibold' }, 'Sua posição'),
+        e('p', { className: 'text-5xl font-bold text-purple-900 my-2 leading-none' },
+          minhaPosicao.posicao, e('span', { className: 'text-2xl' }, 'º')
+        ),
+        e('p', { className: 'text-xs text-purple-700' },
+          `aguardando há ${minutosDecorridos}min · de ${minhaPosicao.total_fila} na fila`
+        ),
+        // Status do agente
+        agenteStatus === 'pendente' && e('p', {
+          className: 'mt-2 text-[10px] text-amber-700 bg-amber-100 inline-block px-2 py-1 rounded'
+        }, '🤖 agente verificando...'),
+        agenteStatus === 'validado' && e('p', {
+          className: 'mt-2 text-[10px] text-green-700 bg-green-100 inline-block px-2 py-1 rounded'
+        }, '✓ validado pelo agente'),
+        agenteStatus === 'reprovado' && e('p', {
+          className: 'mt-2 text-[10px] text-red-700 bg-red-100 inline-block px-2 py-1 rounded'
+        }, '⚠️ agente detectou corrida ativa')
+      ),
+
+      // Lista pública da fila
+      e('div', null,
+        e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium mb-2 px-1' },
+          `Fila completa · ${filaPublica.total} motoboy${filaPublica.total === 1 ? '' : 's'}`
+        ),
+        e('div', { className: 'bg-gray-50 rounded-xl p-1.5 space-y-1' },
+          (filaPublica.fila || []).map(p => {
+            const ehVoce = String(p.cod_profissional) === String(usuarioCod);
+            return e('div', {
+              key: p.cod_profissional,
+              className: ehVoce
+                ? 'flex items-center gap-2 p-2 bg-purple-100 border border-purple-300 rounded-lg'
+                : 'flex items-center gap-2 p-2 bg-white rounded-lg'
+            },
+              // Pos
+              e('span', {
+                className: ehVoce
+                  ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[11px] font-bold flex-shrink-0'
+                  : 'w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[11px] font-medium flex-shrink-0'
+              }, p.posicao),
+              // Avatar
+              avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 24),
+              // Nome
+              e('span', {
+                className: ehVoce
+                  ? 'flex-1 text-xs font-semibold text-purple-900 truncate'
+                  : 'flex-1 text-xs text-gray-800 truncate'
+              },
+                ehVoce ? 'Você' : (p.nome_profissional || '—')
+              ),
+              // Tempo
+              e('span', {
+                className: 'text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded'
+              }, tempoDecorrido(p.entrada_fila_at))
+            );
+          })
+        )
+      ),
+
+      // Info do agente
+      e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2' },
+        e('span', { className: 'text-base' }, '🤖'),
+        e('div', null,
+          e('p', { className: 'text-xs font-medium text-amber-900' }, 'Agente monitorando'),
+          e('p', { className: 'text-[11px] text-amber-700 mt-0.5 leading-snug' },
+            'Se você pegar uma corrida no sistema, o agente vai te tirar da fila automaticamente.'
+          )
+        )
+      ),
+
+      // Botão sair
+      e('button', {
+        onClick: sairDaFila,
+        className: 'w-full py-3 bg-white border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50'
+      }, 'Sair da fila')
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Tela: motoboy NA SALA DE ESPERA (pronto pra entrar)
+  // ──────────────────────────────────────────────────────────
+  function renderTelaEntrar(opts) {
+    const { minhaCentral, distanciaCentral, gpsStatus, podeChekin, entrarNaFila, filaPublica } = opts;
+
+    return e('div', { className: 'space-y-3' },
+      // KPI compacto: quantos na fila agora
+      e('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 text-center' },
+        e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium' }, 'Fila no momento'),
+        e('p', { className: 'text-3xl font-bold text-gray-800 mt-1' }, filaPublica.total || 0,
+          e('span', { className: 'text-sm text-gray-400 font-normal' }, ' motoboy', filaPublica.total === 1 ? '' : 's')
+        )
+      ),
+
+      // Status pronto/não pronto
+      podeChekin
+        ? e('div', { className: 'bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-2' },
+            e('span', { className: 'text-xl' }, '✅'),
+            e('div', { className: 'flex-1' },
+              e('p', { className: 'text-sm font-medium text-green-900' }, 'GPS confirmado'),
+              e('p', { className: 'text-[11px] text-green-700' }, 'Pronto pra entrar na fila')
+            )
+          )
+        : e('div', { className: 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center gap-2' },
+            e('span', { className: 'text-xl' }, '📍'),
+            e('div', { className: 'flex-1' },
+              e('p', { className: 'text-sm font-medium text-amber-900' },
+                gpsStatus !== 'permitido' ? 'Aguardando GPS' : 'Você está muito longe'
+              ),
+              e('p', { className: 'text-[11px] text-amber-700' },
+                gpsStatus !== 'permitido'
+                  ? 'Permita acesso à localização'
+                  : `${distanciaCentral}m da central (máx ${minhaCentral.raio_metros}m)`
+              )
+            )
+          ),
+
+      // Botão grande de entrar
+      e('button', {
+        onClick: entrarNaFila,
+        disabled: !podeChekin,
+        className: podeChekin
+          ? 'w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-base font-semibold transition-colors'
+          : 'w-full py-4 bg-gray-200 text-gray-400 rounded-xl text-base font-semibold cursor-not-allowed'
+      }, '🚀 Entrar na fila'),
+
+      e('p', { className: 'text-center text-[10px] text-gray-400 leading-relaxed px-4' },
+        'Ao entrar, o agente vai verificar no sistema se você não tem corridas ativas. Se tiver, te tira da fila automaticamente.'
+      )
+    );
+  }
+
+  window.ModuloFilasAutoMotoboy = ModuloFilasAutoMotoboy;
+  console.log('✅ ModuloFilasAutoMotoboy carregado');
+})();
