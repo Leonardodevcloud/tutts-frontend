@@ -58,37 +58,27 @@
                             dispLoaded: !0
                         }));
 
-                        // 🆕 2026-05: Busca fotos via /perfil/fotos (mesmo endpoint usado por
-                        // Config>Usuários e Saques). Esse endpoint já faz lazy thumbnail generation
-                        // a partir de foto_selfie quando foto_thumb é null. Buscamos AQUI depois
-                        // de exibir a tela pra não bloquear o render. Mescla no state quando vier.
+                        // 🆕 2026-05 v2: Usa window.FotosMotoboy (helper global com cache compartilhado)
                         try {
-                            const codsUnicos = Array.from(new Set(
-                                (t.linhas || [])
+                            if (window.FotosMotoboy) {
+                                const cods = (t.linhas || [])
                                     .map(l => (l.cod_profissional || '').toString().trim())
-                                    .filter(c => /^\d+$/.test(c))
-                            ));
-                            if (codsUnicos.length > 0) {
-                                const mapaFotos = {};
-                                // Lotes de 150 (limite backend = 200)
-                                for (let i = 0; i < codsUnicos.length; i += 150) {
-                                    const lote = codsUnicos.slice(i, i + 150);
-                                    const respFoto = await _fetch(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
-                                    if (respFoto.ok) {
-                                        const dataFoto = await respFoto.json();
-                                        Object.assign(mapaFotos, dataFoto.fotos || {});
+                                    .filter(c => /^\d+$/.test(c));
+                                if (cods.length > 0) {
+                                    const mapaFotos = await window.FotosMotoboy.carregar(cods, fetchAuth, API_URL);
+                                    if (mapaFotos && Object.keys(mapaFotos).length > 0) {
+                                        x(prev => {
+                                            const linhas = (prev.dispData?.linhas || []).map(linha => ({
+                                                ...linha,
+                                                foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
+                                            }));
+                                            return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                        });
+                                        console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos carregadas via FotosMotoboy`);
                                     }
                                 }
-                                if (Object.keys(mapaFotos).length > 0) {
-                                    x(prev => {
-                                        const linhas = (prev.dispData?.linhas || []).map(linha => ({
-                                            ...linha,
-                                            foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
-                                        }));
-                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
-                                    });
-                                    console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos carregadas`);
-                                }
+                            } else {
+                                console.warn('[disp] window.FotosMotoboy não disponível');
                             }
                         } catch (errFoto) {
                             console.warn('[disp] Falha ao carregar fotos (segue sem):', errFoto.message);
@@ -2374,86 +2364,123 @@
             }, "Limpar Linhas")))), "principal" === t && React.createElement("div", {
                 className: "space-y-4"
             }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-3"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center flex-wrap gap-3"
-            }, React.createElement("div", {
-                className: "flex items-center gap-3"
-            }, React.createElement("h2", {
-                className: "text-lg font-bold text-gray-800"
-            }, "📅 Disponibilidade"), React.createElement("div", {
-                className: "flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200"
-            }, React.createElement("span", {
-                className: "text-sm font-semibold text-purple-700"
-            }, "Data:"), React.createElement("input", {
-                type: "date",
-                value: p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
-                onChange: e => x({
-                    ...p,
-                    dispDataPlanilha: e.target.value
-                }),
-                className: "px-2 py-1 border border-purple-300 rounded text-sm font-semibold text-purple-800 bg-white"
-            })), React.createElement("div", {
-                className: "flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200"
-            }, React.createElement("span", {
-                className: "text-blue-500"
-            }, "🔍"), React.createElement("input", {
-                type: "text",
-                placeholder: "Buscar código ou nome...",
-                value: p.buscaEntregador || "",
-                onChange: e => x({
-                    ...p,
-                    buscaEntregador: e.target.value
-                }),
-                className: "px-2 py-1 border border-blue-300 rounded text-sm bg-white w-48"
-            }), p.buscaEntregador && React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    buscaEntregador: ""
-                }),
-                className: "text-blue-400 hover:text-blue-600"
-            }, "×"))), React.createElement("div", {
-                className: "flex gap-2"
-            }, React.createElement("button", {
-                onClick: r,
-                className: "px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 text-sm"
-            }, "🔄 Atualizar"), React.createElement("button", {
-                onClick: async () => {
-                    const e = p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
-                        t = new Date(e + "T12:00:00").toLocaleDateString("pt-BR");
-                    if (window.confirm(`⚠️ ATENÇÃO!\n\n📅 Data da planilha: ${t}\n\nIsso irá:\n• Salvar a planilha atual no Espelho (${t})\n• Registrar motoboys EM LOJA e SEM CONTATO\n• Remover motoboys com 3+ dias SEM CONTATO\n• Resetar todos os status para "A CONFIRMAR"\n• Limpar todas as observações\n• Converter linhas de reposição em excedentes\n\n✅ Os códigos e nomes serão MANTIDOS!\n\nDeseja continuar?`)) try {
-                        x(e => ({
-                            ...e,
-                            dispLoading: !0
-                        }));
-                        const a = await _fetch(`${API_URL}/disponibilidade/resetar`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    data_planilha: e
-                                })
-                            }),
-                            l = await a.json();
-                        if (l.success) {
-                            let e = `✅ Status resetado! Espelho salvo em ${t}`;
-                            l.em_loja_registrados > 0 && (e += `\n🏪 ${l.em_loja_registrados} motoboy(s) EM LOJA registrado(s)`), l.sem_contato_registrados > 0 && (e += `\n📵 ${l.sem_contato_registrados} motoboy(s) SEM CONTATO registrado(s)`), l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0 && (e += "\n\n🚫 REMOVIDOS POR 3 DIAS SEM CONTATO:", l.removidos_por_sem_contato.forEach(t => {
-                                e += `\n• ${t.cod} - ${t.nome}`
-                            })), ja(e, "success"), l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0 && setTimeout(() => {
-                                alert(`🚫 MOTOBOYS REMOVIDOS POR 3 DIAS SEM CONTATO:\n\n${l.removidos_por_sem_contato.map(e=>`${e.cod} - ${e.nome}`).join("\n")}`)
-                            }, 500)
-                        } else ja("Erro ao resetar", "error");
-                        r()
-                    } catch (e) {
-                        console.error("Erro ao resetar:", e), ja("Erro ao resetar", "error"), x(e => ({
-                            ...e,
-                            dispLoading: !1
-                        }))
+                className: "bg-white rounded-xl border border-gray-200 overflow-hidden"
+            },
+                React.createElement("div", {
+                    style: {
+                        padding: "14px 18px",
+                        borderBottom: "0.5px solid #E5E7EB",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        flexWrap: "wrap"
                     }
                 },
-                className: "px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 flex items-center gap-1 text-sm"
-            }, "🔄 Resetar Status"))), p.buscaEntregador && p.buscaEntregador.length >= 2 && React.createElement("div", {
+                    React.createElement("div", {
+                        style: { display: "flex", alignItems: "center", gap: "10px", flex: "1", minWidth: "200px" }
+                    },
+                        React.createElement("div", {
+                            style: {
+                                width: "36px", height: "36px", borderRadius: "8px",
+                                background: "#EEEDFE", display: "flex",
+                                alignItems: "center", justifyContent: "center"
+                            }
+                        }, React.createElement("i", { className: "ti ti-calendar-event", style: { fontSize: "18px", color: "#534AB7" }, "aria-hidden": "true" })),
+                        React.createElement("div", null,
+                            React.createElement("p", { style: { margin: 0, fontWeight: "500", fontSize: "15px" } }, "Disponibilidade"),
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6B7280" } },
+                                React.createElement("span", {
+                                    style: {
+                                        display: "inline-block", width: "6px", height: "6px",
+                                        background: "#1D9E75", borderRadius: "50%",
+                                        marginRight: "4px", verticalAlign: "middle"
+                                    }
+                                }),
+                                "Sincronização em tempo real"
+                            )
+                        )
+                    ),
+                    React.createElement("div", {
+                        style: {
+                            display: "flex", alignItems: "center", gap: "6px",
+                            background: "#F1EFE8", padding: "4px 10px", borderRadius: "8px"
+                        }
+                    },
+                        React.createElement("i", { className: "ti ti-calendar", style: { fontSize: "13px", color: "#5F5E5A" }, "aria-hidden": "true" }),
+                        React.createElement("input", {
+                            type: "date",
+                            value: p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
+                            onChange: e => x({ ...p, dispDataPlanilha: e.target.value }),
+                            style: { width: "120px", height: "28px", fontSize: "12px", border: "none", background: "transparent", padding: 0 }
+                        })
+                    ),
+                    React.createElement("div", {
+                        style: {
+                            display: "flex", alignItems: "center", gap: "4px",
+                            flex: "1", minWidth: "180px", maxWidth: "280px",
+                            border: "0.5px solid #E5E7EB", padding: "0 10px",
+                            borderRadius: "8px", background: "white"
+                        }
+                    },
+                        React.createElement("i", { className: "ti ti-search", style: { fontSize: "13px", color: "#9CA3AF" }, "aria-hidden": "true" }),
+                        React.createElement("input", {
+                            type: "text",
+                            placeholder: "Buscar código ou nome...",
+                            value: p.buscaEntregador || "",
+                            onChange: e => x({ ...p, buscaEntregador: e.target.value }),
+                            style: { flex: 1, height: "28px", fontSize: "12px", border: "none", background: "transparent", padding: 0, outline: "none" }
+                        }),
+                        p.buscaEntregador && React.createElement("button", {
+                            onClick: () => x({ ...p, buscaEntregador: "" }),
+                            style: { background: "none", border: "none", padding: 0, color: "#9CA3AF", cursor: "pointer" },
+                            "aria-label": "Limpar busca"
+                        }, React.createElement("i", { className: "ti ti-x", style: { fontSize: "12px" }, "aria-hidden": "true" }))
+                    ),
+                    React.createElement("div", { style: { display: "flex", gap: "6px" } },
+                        React.createElement("button", {
+                            onClick: r,
+                            style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
+                        },
+                            React.createElement("i", { className: "ti ti-refresh", style: { fontSize: "13px" }, "aria-hidden": "true" }),
+                            React.createElement("span", null, "Atualizar")
+                        ),
+                        React.createElement("button", {
+                            onClick: async () => {
+                                const dataEsc = p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
+                                    dataFmt = new Date(dataEsc + "T12:00:00").toLocaleDateString("pt-BR");
+                                if (!window.confirm("Resetar disponibilidade do dia " + dataFmt + "?\n\n• Salva espelho do dia\n• Remove motoboys com 3+ dias SEM CONTATO\n• Reseta status para A CONFIRMAR\n• Limpa observações\n• Converte reposição em excedente")) return;
+                                try {
+                                    x(es => ({ ...es, dispLoading: !0 }));
+                                    const a = await _fetch(`${API_URL}/disponibilidade/resetar`, {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ data_planilha: dataEsc })
+                                        }),
+                                        l = await a.json();
+                                    if (l.success) {
+                                        let msg = "✅ Status resetado! Espelho salvo em " + dataFmt;
+                                        if (l.em_loja_registrados > 0) msg += " | " + l.em_loja_registrados + " em loja";
+                                        if (l.sem_contato_registrados > 0) msg += " | " + l.sem_contato_registrados + " sem contato";
+                                        ja(msg, "success");
+                                        if (l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0) {
+                                            setTimeout(() => alert("🚫 Removidos por 3 dias SEM CONTATO:\n\n" + l.removidos_por_sem_contato.map(rm => rm.cod + " - " + rm.nome).join("\n")), 500);
+                                        }
+                                    } else ja("Erro ao resetar", "error");
+                                    r();
+                                } catch (err) {
+                                    console.error("Erro ao resetar:", err);
+                                    ja("Erro ao resetar", "error");
+                                    x(es => ({ ...es, dispLoading: !1 }));
+                                }
+                            },
+                            style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
+                        },
+                            React.createElement("i", { className: "ti ti-rotate-clockwise-2", style: { fontSize: "13px", color: "#BA7517" }, "aria-hidden": "true" }),
+                            React.createElement("span", null, "Resetar")
+                        )
+                    )
+                )
+            , p.buscaEntregador && p.buscaEntregador.length >= 2 && React.createElement("div", {
                 className: "mt-3 p-3 bg-blue-50 rounded-lg"
             }, React.createElement("p", {
                 className: "text-xs font-semibold text-blue-700 mb-2"
@@ -2673,7 +2700,8 @@
                                 { key: "A CONFIRMAR", label: "A confirmar", color: "#888780" },
                                 { key: "A CAMINHO", label: "A caminho", color: "#BA7517" },
                                 { key: "EM LOJA", label: "Em loja", color: "#1D9E75" },
-                                { key: "FALTANDO", label: "Faltando", color: "#A32D2D" }
+                                { key: "FALTANDO", label: "Faltando", color: "#A32D2D" },
+                                { key: "SEM CONTATO", label: "Sem contato", color: "#5F5E5A" }
                             ];
 
                             const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "?";
@@ -2788,25 +2816,15 @@
                                     React.createElement("div", { style: { width: "28px", display: "flex", justifyContent: "center" } },
                                         React.createElement("button", {
                                             onClick: () => {
-                                                const opcoes = ["FALTANDO", "SEM CONTATO", "CONFIRMADO"];
-                                                const escolha = window.prompt("Outros status:\n\n1 - FALTANDO\n2 - SEM CONTATO\n3 - CONFIRMADO\n4 - REMOVER LINHA\n\nDigite o número:");
-                                                if (escolha === "4") {
-                                                    if (window.confirm("Remover esta linha?")) {
-                                                        _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" })
-                                                            .then(resp => resp.ok ? r() : ja("Erro ao remover", "error"));
-                                                    }
-                                                } else if (escolha === "1") {
-                                                    x(t => ({ ...t, modalFaltando: !0, faltandoLinha: linha, faltandoMotivo: "" }));
-                                                } else if (escolha === "2") {
-                                                    c(linha.id, "status", "SEM CONTATO");
-                                                } else if (escolha === "3") {
-                                                    c(linha.id, "status", "CONFIRMADO");
+                                                if (window.confirm("Remover esta linha?")) {
+                                                    _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" })
+                                                        .then(resp => resp.ok ? r() : ja("Erro ao remover", "error"));
                                                 }
                                             },
-                                            className: "w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded",
-                                            title: "Mais ações",
-                                            "aria-label": "Mais ações"
-                                        }, React.createElement("i", { className: "ti ti-dots", style: { fontSize: "14px" }, "aria-hidden": "true" }))
+                                            className: "w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
+                                            title: "Remover linha",
+                                            "aria-label": "Remover linha"
+                                        }, React.createElement("i", { className: "ti ti-x", style: { fontSize: "14px" }, "aria-hidden": "true" }))
                                     )
                                 )
                             );
