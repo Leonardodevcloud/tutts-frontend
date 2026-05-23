@@ -798,7 +798,103 @@
                 },
                 className: "px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px]",
                 title: "Copiar link público (somente leitura)"
-            }, "🔗 Link Público"))), React.createElement("div", {
+            }, "🔗 Link Público"))),
+            (() => {
+                const linhasAll = e.linhas || [];
+                const titulares = linhasAll.filter(l => !l.is_excedente && !l.is_reposicao);
+                const emLoja = titulares.filter(l => l.status === "EM LOJA").length;
+                const semContato = linhasAll.filter(l => l.status === "SEM CONTATO").length;
+                const totalT = titulares.length;
+                const percGeral = totalT > 0 ? Math.round((emLoja / totalT) * 100) : 0;
+                const lojasCriticas = (e.lojas || []).filter(loja => {
+                    const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
+                    const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
+                    const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
+                    return lojaTit.length > 0 && (lojaEmLoja / lojaTit.length) < 0.5;
+                });
+                return React.createElement("div", { style: { padding: "12px" } },
+                    React.createElement("div", {
+                        style: {
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                            gap: "10px",
+                            marginBottom: "12px"
+                        }
+                    },
+                        React.createElement("div", { style: { background: "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6b7280", fontWeight: "500" } }, "EM OPERAÇÃO"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500" } },
+                                emLoja, React.createElement("span", { style: { fontSize: "13px", color: "#9ca3af", fontWeight: "400" } }, "/" + totalT))
+                        ),
+                        React.createElement("div", { style: { background: "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6b7280", fontWeight: "500" } }, "% GERAL"),
+                            React.createElement("p", {
+                                style: {
+                                    margin: "2px 0 0", fontSize: "22px", fontWeight: "500",
+                                    color: percGeral >= 80 ? "#0F6E56" : (percGeral >= 50 ? "#854F0B" : "#A32D2D")
+                                }
+                            }, percGeral + "%")
+                        ),
+                        React.createElement("div", { style: { background: semContato > 0 ? "#FAEEDA" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: semContato > 0 ? "#854F0B" : "#6b7280", fontWeight: "500" } }, "SEM CONTATO"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: semContato > 0 ? "#633806" : "#1f2937" } }, semContato)
+                        ),
+                        React.createElement("div", { style: { background: lojasCriticas.length > 0 ? "#FCEBEB" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojasCriticas.length > 0 ? "#791F1F" : "#6b7280", fontWeight: "500" } }, "LOJAS CRÍTICAS"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: lojasCriticas.length > 0 ? "#501313" : "#1f2937" } }, lojasCriticas.length)
+                        )
+                    ),
+                    lojasCriticas.length > 0 && React.createElement("div", { style: { marginBottom: "12px" } },
+                        React.createElement("p", {
+                            style: {
+                                margin: "0 0 8px",
+                                fontSize: "11px",
+                                color: "#6b7280",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.3px",
+                                fontWeight: "500",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px"
+                            }
+                        }, "⚠️ Atenção · ", lojasCriticas.length, " loja(s) abaixo de 50%"),
+                        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } },
+                            lojasCriticas.slice(0, 5).map(loja => {
+                                const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
+                                const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
+                                const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
+                                const lojaPerc = lojaTit.length > 0 ? Math.round((lojaEmLoja / lojaTit.length) * 100) : 0;
+                                const regiaoLoja = (e.regioes || []).find(r => r.id === loja.regiao_id);
+                                return React.createElement("div", {
+                                    key: loja.id,
+                                    onClick: () => x({ ...p, dispRegiaoAtiva: loja.regiao_id, dispSubTab: "principal", dispLojasAbertas: [loja.id] }),
+                                    style: {
+                                        display: "flex", alignItems: "center", gap: "10px",
+                                        padding: "10px 12px",
+                                        background: lojaPerc < 33 ? "#FCEBEB" : "#FAEEDA",
+                                        borderRadius: "8px",
+                                        borderLeft: "3px solid " + (lojaPerc < 33 ? "#A32D2D" : "#BA7517"),
+                                        cursor: "pointer"
+                                    },
+                                    title: "Clique para ir ao painel desta loja"
+                                },
+                                    React.createElement("span", { style: { fontFamily: "monospace", fontSize: "11px", color: lojaPerc < 33 ? "#791F1F" : "#854F0B", fontWeight: "500", width: "50px" } }, loja.codigo),
+                                    React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                                        React.createElement("p", { style: { margin: 0, fontSize: "13px", color: lojaPerc < 33 ? "#501313" : "#633806", fontWeight: "500" } }, loja.nome),
+                                        React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojaPerc < 33 ? "#791F1F" : "#854F0B" } }, regiaoLoja ? regiaoLoja.nome : "")
+                                    ),
+                                    React.createElement("div", { style: { display: "flex", gap: "4px", fontSize: "11px" } },
+                                        React.createElement("span", { style: { padding: "2px 7px", background: lojaPerc < 33 ? "#F09595" : "#FAC775", color: lojaPerc < 33 ? "#501313" : "#633806", borderRadius: "4px" } }, lojaEmLoja + " em loja"),
+                                        React.createElement("span", { style: { padding: "2px 7px", background: "white", color: lojaPerc < 33 ? "#501313" : "#854F0B", borderRadius: "4px", border: "0.5px solid " + (lojaPerc < 33 ? "#F09595" : "#FAC775") } }, lojaTit.length + " ideal")
+                                    ),
+                                    React.createElement("span", { style: { fontSize: "18px", fontWeight: "500", color: lojaPerc < 33 ? "#501313" : "#633806" } }, lojaPerc + "%")
+                                );
+                            })
+                        )
+                    )
+                );
+            })(),
+            React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 id: "panorama-table",
@@ -2519,126 +2615,153 @@
                         className: "px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded font-semibold hover:bg-red-200 transition-colors",
                         title: "Adicionar 1 excedente"
                     }, "➕ Excedente"))), l && React.createElement("div", {
-                        className: "border-t",
+                        className: "border-t bg-white",
                         "data-loja-id": t.id
-                    }, React.createElement("table", {
-                        className: "w-full text-xs"
-                    }, React.createElement("thead", {
-                        className: "bg-gray-50"
-                    }, React.createElement("tr", null, React.createElement("th", {
-                        className: "w-1"
-                    }), React.createElement("th", {
-                        className: "px-2 py-1 text-center w-20"
-                    }, "COD"), React.createElement("th", {
-                        className: "px-2 py-1 text-left"
-                    }, "ENTREGADOR"), React.createElement("th", {
-                        className: "px-2 py-1 text-center w-36"
-                    }, "STATUS"), React.createElement("th", {
-                        className: "px-2 py-1 text-left"
-                    }, "OBS"), React.createElement("th", {
-                        className: "px-1 py-1 text-center w-6"
-                    }))), React.createElement("tbody", null, [...a].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0).map((e, a) => React.createElement("tr", {
-                        key: e.id,
-                        className: `border-t ${e.is_reposicao?"bg-blue-50/50":e.is_excedente?"bg-red-50/50":""} ${e.is_excedente||e.is_reposicao||!m[e.status]?"":m[e.status]} hover:bg-gray-50`
-                    }, React.createElement("td", {
-                        className: "w-1 " + (e.is_reposicao ? "bg-blue-400" : e.is_excedente ? "bg-red-400" : "")
-                    }), React.createElement("td", {
-                        className: "px-1 py-0.5"
-                    }, React.createElement("input", {
-                        type: "text",
-                        value: e.cod_profissional || "",
-                        onChange: t => c(e.id, "cod_profissional", t.target.value),
-                        onKeyDown: e => {
-                            if ("ArrowDown" === e.key || "ArrowUp" === e.key) {
-                                e.preventDefault();
-                                const a = document.querySelectorAll(`[data-loja-id="${t.id}"] input[data-cod-input]`),
-                                    l = Array.from(a).findIndex(t => t === e.target);
-                                let r = "ArrowDown" === e.key ? l + 1 : l - 1;
-                                r >= 0 && r < a.length && (a[r].focus(), a[r].select())
-                            }
-                            if ("Enter" === e.key) {
-                                e.preventDefault();
-                                const a = document.querySelectorAll(`[data-loja-id="${t.id}"] input[data-cod-input]`),
-                                    l = Array.from(a).findIndex(t => t === e.target);
-                                l + 1 < a.length && (a[l + 1].focus(), a[l + 1].select())
-                            }
-                        },
-                        "data-cod-input": e.id,
-                        placeholder: "...",
-                        className: "w-full px-1 py-0.5 border border-gray-200 rounded text-center font-mono text-xs " + (e.is_reposicao ? "bg-blue-50/50" : e.is_excedente ? "bg-red-50/50" : "bg-white")
-                    })), React.createElement("td", {
-                        className: "px-1 py-0.5"
-                    }, React.createElement("div", {
-                        className: "flex items-center gap-1"
-                    }, e.is_reposicao && React.createElement("span", {
-                        className: "text-[9px] text-blue-400 italic"
-                    }, "reposição"), e.is_excedente && React.createElement("span", {
-                        className: "text-[9px] text-red-400 italic"
-                    }, "excedente"), React.createElement("span", {
-                        className: "text-xs " + (e.nome_profissional ? "text-gray-800" : "text-gray-400 italic")
-                    }, e.nome_profissional || (e.is_reposicao || e.is_excedente ? "" : "-")))), React.createElement("td", {
-                        className: "px-1 py-0.5"
-                    }, React.createElement("select", {
-                        value: e.status || "A CONFIRMAR",
-                        onChange: t => {
-                            "FALTANDO" === t.target.value ? (e => {
-                                x(t => ({
-                                    ...t,
-                                    modalFaltando: !0,
-                                    faltandoLinha: e,
-                                    faltandoMotivo: ""
-                                }))
-                            })(e) : c(e.id, "status", t.target.value)
-                        },
-                        className: `w-full px-1 py-0.5 border border-gray-200 rounded text-xs font-semibold ${n[e.status]||""}`,
-                        title: e.status_alterado_por ? `${e.status_alterado_por} — ${e.status_alterado_em ? new Date(e.status_alterado_em).toLocaleString("pt-BR") : ""}` : ""
-                    }, React.createElement("option", {
-                        value: "A CONFIRMAR"
-                    }, "A CONFIRMAR"), React.createElement("option", {
-                        value: "CONFIRMADO"
-                    }, "CONFIRMADO"), React.createElement("option", {
-                        value: "A CAMINHO"
-                    }, "A CAMINHO"), React.createElement("option", {
-                        value: "EM LOJA"
-                    }, "EM LOJA"), React.createElement("option", {
-                        value: "FALTANDO"
-                    }, "FALTANDO"), React.createElement("option", {
-                        value: "SEM CONTATO"
-                    }, "SEM CONTATO"))), React.createElement("td", {
-                        className: "px-1 py-0.5"
-                    }, React.createElement("div", {
-                        className: "relative"
-                    }, React.createElement("input", {
-                        type: "text",
-                        value: e.observacao || "",
-                        onChange: t => c(e.id, "observacao", t.target.value),
-                        placeholder: "...",
-                        title: e.observacao_criada_por ? `📝 ${e.observacao_criada_por} - ${e.observacao_criada_em ? new Date(e.observacao_criada_em).toLocaleString("pt-BR") : ""}` : "Adicionar observação",
-                        className: "w-full px-1 py-0.5 border border-gray-200 rounded text-xs " + (e.is_excedente ? "bg-red-50/50" : e.is_reposicao ? "bg-blue-50/50" : "bg-white") + (e.observacao_criada_por ? " border-purple-300" : "")
-                    }), e.observacao && e.observacao_criada_por && React.createElement("span", {
-                        className: "absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full",
-                        title: `Por: ${e.observacao_criada_por}`
-                    }))), React.createElement("td", {
-                        className: "px-1 py-0.5 text-center"
-                    }, React.createElement("button", {
-                        onClick: () => (async e => {
-                            try {
-                                const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${e}`, {
-                                    method: "DELETE"
-                                });
-                                if (!resp.ok) {
-                                    const data = await resp.json().catch(() => ({}));
-                                    ja(data.error || "Erro ao remover linha", "error");
-                                    return;
-                                }
-                                r()
-                            } catch (e) {
-                                ja("Erro ao remover linha", "error")
-                            }
-                        })(e.id),
-                        className: "text-red-400 hover:text-red-600 text-xs",
-                        title: "Remover"
-                    }, "×"))))))))
+                    },
+                        React.createElement("div", { className: "px-4 py-2.5 text-[11px] uppercase tracking-wide font-semibold text-gray-500 flex gap-3" },
+                            React.createElement("span", { style: { width: "60px" } }, "Cód"),
+                            React.createElement("span", { style: { flex: "1.4", minWidth: "120px" } }, "Entregador"),
+                            React.createElement("span", { style: { flex: "2", minWidth: "240px", textAlign: "center" } }, "Status (clique pra avançar)"),
+                            React.createElement("span", { style: { flex: "1.6", minWidth: "140px" } }, "Observação"),
+                            React.createElement("span", { style: { width: "28px" } })
+                        ),
+                        [...a].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0).map((linha, idx, arr) => {
+                            const isFirstExcedente = linha.is_excedente && (idx === 0 || !arr[idx - 1].is_excedente);
+                            const ehDestaque = linha.is_reposicao || linha.is_excedente;
+                            const rowBgTint = ehDestaque ? "rgba(250, 238, 218, 0.3)" : (linha.status === "FALTANDO" ? "rgba(252, 235, 235, 0.5)" : "white");
+
+                            const stepperConfig = [
+                                { key: "A CONFIRMAR", label: "A confirmar", color: "#888780" },
+                                { key: "A CAMINHO", label: "A caminho", color: "#BA7517" },
+                                { key: "EM LOJA", label: "Em loja", color: "#1D9E75" }
+                            ];
+
+                            const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "?";
+
+                            const obsText = linha.observacao || "";
+                            const chips = [];
+                            const dataMatch = obsText.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?/);
+                            if (dataMatch) chips.push({ icon: "calendar-event", text: dataMatch[0], tone: "warn" });
+                            const horaMatch = obsText.match(/(\d{1,2})(?::?(\d{2}))?\s?h\b/i);
+                            if (horaMatch) chips.push({ icon: "clock", text: horaMatch[0].toLowerCase(), tone: "info" });
+                            const semContatoChip = linha.status === "SEM CONTATO";
+                            if (semContatoChip) chips.push({ icon: "phone-off", text: "sem contato", tone: "danger" });
+
+                            return React.createElement(React.Fragment, { key: linha.id },
+                                isFirstExcedente && React.createElement("div", {
+                                    className: "px-4 py-2 mt-1 text-[11px] uppercase tracking-wide font-semibold text-gray-500 bg-amber-50 border-t border-amber-200 flex justify-between items-center"
+                                },
+                                    React.createElement("span", null, "Excedentes · ", arr.filter(x => x.is_excedente).length),
+                                    React.createElement("button", {
+                                        onClick: () => s(t.id, 1, true),
+                                        className: "text-[11px] px-2 py-0.5 bg-white border border-amber-300 text-amber-700 rounded hover:bg-amber-100"
+                                    }, "+ Adicionar")
+                                ),
+                                React.createElement("div", {
+                                    className: "px-4 py-2 flex items-center gap-3 border-t border-gray-100",
+                                    style: { background: rowBgTint }
+                                },
+                                    React.createElement("input", {
+                                        type: "text",
+                                        value: linha.cod_profissional || "",
+                                        onChange: e => c(linha.id, "cod_profissional", e.target.value),
+                                        "data-cod-input": linha.id,
+                                        placeholder: "—",
+                                        className: "px-1.5 py-1 border border-gray-200 rounded text-center font-mono text-[11px] bg-white",
+                                        style: { width: "60px" }
+                                    }),
+                                    React.createElement("div", { style: { flex: "1.4", minWidth: "120px", display: "flex", alignItems: "center", gap: "8px" } },
+                                        linha.foto
+                                            ? React.createElement("img", {
+                                                src: linha.foto,
+                                                alt: linha.nome_profissional || "",
+                                                className: "rounded-full object-cover flex-shrink-0",
+                                                style: { width: "28px", height: "28px", border: "1px solid #e5e7eb" }
+                                            })
+                                            : React.createElement("div", {
+                                                className: "rounded-full flex items-center justify-center flex-shrink-0",
+                                                style: {
+                                                    width: "28px", height: "28px",
+                                                    background: linha.nome_profissional ? "#EEEDFE" : "#F1EFE8",
+                                                    color: linha.nome_profissional ? "#534AB7" : "#888780",
+                                                    fontSize: "10px", fontWeight: "500"
+                                                }
+                                            }, initials),
+                                        React.createElement("span", {
+                                            className: "text-[12px] truncate",
+                                            style: { color: linha.nome_profissional ? "#1f2937" : "#9ca3af", fontStyle: linha.nome_profissional ? "normal" : "italic" }
+                                        }, linha.nome_profissional || (linha.is_reposicao || linha.is_excedente ? "—" : "Vazio"))
+                                    ),
+                                    React.createElement("div", {
+                                        style: { flex: "2", minWidth: "240px", display: "flex" }
+                                    }, stepperConfig.map((step, sidx) => {
+                                        const isActive = linha.status === step.key || (linha.status === "CONFIRMADO" && step.key === "A CONFIRMAR");
+                                        const baseStyle = {
+                                            flex: "1",
+                                            textAlign: "center",
+                                            padding: "6px 4px",
+                                            fontSize: "11px",
+                                            fontWeight: "500",
+                                            cursor: "pointer",
+                                            border: "0.5px solid #e5e7eb",
+                                            borderRadius: sidx === 0 ? "6px 0 0 6px" : (sidx === stepperConfig.length - 1 ? "0 6px 6px 0" : "0"),
+                                            background: isActive ? step.color : "white",
+                                            color: isActive ? "white" : "#6b7280",
+                                            borderColor: isActive ? step.color : "#e5e7eb"
+                                        };
+                                        return React.createElement("button", {
+                                            key: step.key,
+                                            onClick: () => c(linha.id, "status", step.key),
+                                            style: baseStyle,
+                                            title: "Marcar como " + step.label
+                                        }, step.label);
+                                    })),
+                                    React.createElement("div", { style: { flex: "1.6", minWidth: "140px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" } },
+                                        chips.length > 0 && chips.map((chip, ci) => React.createElement("span", {
+                                            key: ci,
+                                            className: "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                            style: {
+                                                background: chip.tone === "warn" ? "#FAEEDA" : (chip.tone === "info" ? "#E6F1FB" : (chip.tone === "danger" ? "#FCEBEB" : "#F1EFE8")),
+                                                color: chip.tone === "warn" ? "#854F0B" : (chip.tone === "info" ? "#185FA5" : (chip.tone === "danger" ? "#791F1F" : "#444441"))
+                                            }
+                                        }, React.createElement("i", { className: "ti ti-" + chip.icon, style: { fontSize: "11px" }, "aria-hidden": "true" }), chip.text)),
+                                        React.createElement("input", {
+                                            type: "text",
+                                            value: linha.observacao || "",
+                                            onChange: e => c(linha.id, "observacao", e.target.value),
+                                            placeholder: chips.length > 0 ? "" : "obs...",
+                                            title: linha.observacao_criada_por ? "📝 " + linha.observacao_criada_por : "",
+                                            className: "flex-1 min-w-0 px-1.5 py-0.5 border border-gray-200 rounded text-[11px] bg-white",
+                                            style: { minWidth: "60px" }
+                                        })
+                                    ),
+                                    React.createElement("div", { style: { width: "28px", display: "flex", justifyContent: "center" } },
+                                        React.createElement("button", {
+                                            onClick: () => {
+                                                const opcoes = ["FALTANDO", "SEM CONTATO", "CONFIRMADO"];
+                                                const escolha = window.prompt("Outros status:\n\n1 - FALTANDO\n2 - SEM CONTATO\n3 - CONFIRMADO\n4 - REMOVER LINHA\n\nDigite o número:");
+                                                if (escolha === "4") {
+                                                    if (window.confirm("Remover esta linha?")) {
+                                                        _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" })
+                                                            .then(resp => resp.ok ? r() : ja("Erro ao remover", "error"));
+                                                    }
+                                                } else if (escolha === "1") {
+                                                    x(t => ({ ...t, modalFaltando: !0, faltandoLinha: linha, faltandoMotivo: "" }));
+                                                } else if (escolha === "2") {
+                                                    c(linha.id, "status", "SEM CONTATO");
+                                                } else if (escolha === "3") {
+                                                    c(linha.id, "status", "CONFIRMADO");
+                                                }
+                                            },
+                                            className: "w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded",
+                                            title: "Mais ações",
+                                            "aria-label": "Mais ações"
+                                        }, React.createElement("i", { className: "ti ti-dots", style: { fontSize: "14px" }, "aria-hidden": "true" }))
+                                    )
+                                )
+                            );
+                        })
+                    ))
                 }), React.createElement("div", {
                     className: "flex gap-2 pt-2"
                 }, React.createElement("button", {
