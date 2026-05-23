@@ -111,9 +111,27 @@
     const carregarProfissionais = React.useCallback(async () => {
       try {
         const r = await fetchAuthRef.current(`${apiUrlRef.current}/crm/profissionais-cadastro`);
+        if (!r.ok) {
+          console.warn('[FilasAuto] /crm/profissionais-cadastro retornou', r.status);
+          return;
+        }
         const d = await r.json();
-        if (d.success) setProfissionais(d.profissionais || []);
-      } catch (err) { console.error('[FilasAuto] carregarProfissionais:', err); }
+        // Endpoint retorna {data: [{codigo, nome, telefone, ...}]} — mesmo formato
+        // usado pela fila clássica (filas.js carregarProfissionais). Normaliza pros
+        // campos que o resto do componente espera.
+        const lista = Array.isArray(d?.data) ? d.data : [];
+        const normalizada = lista
+          .filter(p => p && p.codigo)
+          .map(p => ({
+            cod_profissional: String(p.codigo).trim(),
+            nome_profissional: p.nome || `#${p.codigo}`,
+            telefone: p.telefone || '',
+          }))
+          .sort((a, b) => (a.nome_profissional || '').localeCompare(b.nome_profissional || '', 'pt-BR'));
+        setProfissionais(normalizada);
+      } catch (err) {
+        console.error('[FilasAuto] carregarProfissionais:', err?.message || err);
+      }
     }, []);
 
     // ── Effects ──────────────────────────────────────────────
