@@ -58,27 +58,42 @@
                             dispLoaded: !0
                         }));
 
-                        // 🆕 2026-05 v2: Usa window.FotosMotoboy (helper global com cache compartilhado)
+                        // 🆕 2026-05 v3: fetch direto pra /perfil/fotos (mesmo padrão de Saques no app.js e Filas)
+                        // Antes usava window.FotosMotoboy mas o helper tinha quirks de cache.
+                        // Esse padrão é mais simples e provadamente funciona em Saques.
                         try {
-                            if (window.FotosMotoboy) {
-                                const cods = (t.linhas || [])
+                            const codsUnicos = Array.from(new Set(
+                                (t.linhas || [])
                                     .map(l => (l.cod_profissional || '').toString().trim())
-                                    .filter(c => /^\d+$/.test(c));
-                                if (cods.length > 0) {
-                                    const mapaFotos = await window.FotosMotoboy.carregar(cods, fetchAuth, API_URL);
-                                    if (mapaFotos && Object.keys(mapaFotos).length > 0) {
-                                        x(prev => {
-                                            const linhas = (prev.dispData?.linhas || []).map(linha => ({
-                                                ...linha,
-                                                foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
-                                            }));
-                                            return { ...prev, dispData: { ...prev.dispData, linhas } };
-                                        });
-                                        console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos carregadas via FotosMotoboy`);
+                                    .filter(c => /^\d+$/.test(c))
+                            ));
+                            console.log(`📸 [disp] buscando fotos de ${codsUnicos.length} motoboys...`);
+                            if (codsUnicos.length > 0) {
+                                const mapaFotos = {};
+                                for (let i = 0; i < codsUnicos.length; i += 150) {
+                                    const lote = codsUnicos.slice(i, i + 150);
+                                    try {
+                                        const rf = await fetchAuth(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
+                                        if (rf.ok) {
+                                            const df = await rf.json();
+                                            Object.assign(mapaFotos, df.fotos || {});
+                                        } else {
+                                            console.warn(`[disp] /perfil/fotos retornou ${rf.status}`);
+                                        }
+                                    } catch (errLote) {
+                                        console.warn(`[disp] lote ${i} falhou:`, errLote.message);
                                     }
                                 }
-                            } else {
-                                console.warn('[disp] window.FotosMotoboy não disponível');
+                                console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos recebidas do backend`);
+                                if (Object.keys(mapaFotos).length > 0) {
+                                    x(prev => {
+                                        const linhas = (prev.dispData?.linhas || []).map(linha => ({
+                                            ...linha,
+                                            foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
+                                        }));
+                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
+                                    });
+                                }
                             }
                         } catch (errFoto) {
                             console.warn('[disp] Falha ao carregar fotos (segue sem):', errFoto.message);
@@ -2385,7 +2400,7 @@
                                 background: "#EEEDFE", display: "flex",
                                 alignItems: "center", justifyContent: "center"
                             }
-                        }, React.createElement("i", { className: "ti ti-calendar-event", style: { fontSize: "18px", color: "#534AB7" }, "aria-hidden": "true" })),
+                        }, React.createElement("span", { style: { fontSize: "20px" } }, "📅")),
                         React.createElement("div", null,
                             React.createElement("p", { style: { margin: 0, fontWeight: "500", fontSize: "15px" } }, "Disponibilidade"),
                             React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6B7280" } },
@@ -2406,7 +2421,6 @@
                             background: "#F1EFE8", padding: "4px 10px", borderRadius: "8px"
                         }
                     },
-                        React.createElement("i", { className: "ti ti-calendar", style: { fontSize: "13px", color: "#5F5E5A" }, "aria-hidden": "true" }),
                         React.createElement("input", {
                             type: "date",
                             value: p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
@@ -2422,7 +2436,7 @@
                             borderRadius: "8px", background: "white"
                         }
                     },
-                        React.createElement("i", { className: "ti ti-search", style: { fontSize: "13px", color: "#9CA3AF" }, "aria-hidden": "true" }),
+                        React.createElement("span", { style: { fontSize: "12px" } }, "🔍"),
                         React.createElement("input", {
                             type: "text",
                             placeholder: "Buscar código ou nome...",
@@ -2434,14 +2448,14 @@
                             onClick: () => x({ ...p, buscaEntregador: "" }),
                             style: { background: "none", border: "none", padding: 0, color: "#9CA3AF", cursor: "pointer" },
                             "aria-label": "Limpar busca"
-                        }, React.createElement("i", { className: "ti ti-x", style: { fontSize: "12px" }, "aria-hidden": "true" }))
+                        }, React.createElement("span", { style: { fontSize: "14px", color: "#9CA3AF" } }, "×"))
                     ),
                     React.createElement("div", { style: { display: "flex", gap: "6px" } },
                         React.createElement("button", {
                             onClick: r,
                             style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
                         },
-                            React.createElement("i", { className: "ti ti-refresh", style: { fontSize: "13px" }, "aria-hidden": "true" }),
+                            React.createElement("span", { style: { fontSize: "13px" } }, "🔄"),
                             React.createElement("span", null, "Atualizar")
                         ),
                         React.createElement("button", {
@@ -2475,7 +2489,7 @@
                             },
                             style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
                         },
-                            React.createElement("i", { className: "ti ti-rotate-clockwise-2", style: { fontSize: "13px", color: "#BA7517" }, "aria-hidden": "true" }),
+                            React.createElement("span", { style: { fontSize: "13px", color: "#BA7517" } }, "↺"),
                             React.createElement("span", null, "Resetar")
                         )
                     )
@@ -2613,22 +2627,59 @@
                 }),
                 className: "mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold"
             }, "⚙️ Configurar Estrutura")) : React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "flex flex-wrap gap-2"
+                style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "6px" }
             }, (e.regioes || []).map(t => {
                 const a = (e.lojas || []).filter(e => e.regiao_id === t.id),
                     l = (e.linhas || []).filter(e => a.some(t => t.id === e.loja_id)),
                     r = l.filter(e => "EM LOJA" === e.status).length,
-                    o = l.filter(e => !e.is_excedente && !e.is_reposicao).length;
+                    o = l.filter(e => !e.is_excedente && !e.is_reposicao).length,
+                    isAtiva = p.dispRegiaoAtiva === t.id;
+                // Semáforo: verde >=100%, amarelo 50-99%, vermelho <50%
+                const pct = o > 0 ? (r / o) * 100 : 0;
+                let semaforoColor, semaforoBg, semaforoText, badgeBg, badgeText;
+                if (pct >= 100) {
+                    semaforoColor = "#97C459"; semaforoBg = "white"; semaforoText = "#173404";
+                    badgeBg = "#EAF3DE"; badgeText = "#27500A";
+                } else if (pct >= 50) {
+                    semaforoColor = "#EF9F27"; semaforoBg = "white"; semaforoText = "#633806";
+                    badgeBg = "#FAEEDA"; badgeText = "#633806";
+                } else {
+                    semaforoColor = "#F09595"; semaforoBg = "white"; semaforoText = "#501313";
+                    badgeBg = "#FCEBEB"; badgeText = "#501313";
+                }
+                // Se está ativa, fica roxo
+                if (isAtiva) {
+                    semaforoColor = "#534AB7"; semaforoBg = "#EEEDFE"; semaforoText = "#26215C";
+                    badgeBg = "white"; badgeText = "#3C3489";
+                }
                 return React.createElement("button", {
                     key: t.id,
                     onClick: () => x({
                         ...p,
                         dispRegiaoAtiva: p.dispRegiaoAtiva === t.id ? null : t.id
                     }),
-                    className: "px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-2 text-sm " + (p.dispRegiaoAtiva === t.id ? "bg-purple-600 text-white shadow-lg" : "bg-white text-gray-700 border hover:bg-purple-50 hover:border-purple-300")
-                }, "📍 ", t.nome, React.createElement("span", {
-                    className: "text-xs px-2 py-0.5 rounded-full font-bold " + (p.dispRegiaoAtiva === t.id ? "bg-white/20 text-white" : r >= o && o > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600")
-                }, r, "/", o))
+                    style: {
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 10px",
+                        background: semaforoBg,
+                        border: "0.5px solid " + semaforoColor,
+                        borderLeft: "3px solid " + semaforoColor,
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.15s"
+                    }
+                },
+                    React.createElement("span", { style: { fontSize: "14px" } }, "📍"),
+                    React.createElement("span", {
+                        style: { flex: "1", fontSize: "12px", fontWeight: "500", color: semaforoText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+                    }, t.nome),
+                    React.createElement("span", {
+                        style: { fontSize: "11px", fontWeight: "500", color: badgeText, background: badgeBg, padding: "2px 6px", borderRadius: "4px", flexShrink: 0 }
+                    }, r + "/" + o)
+                );
             })), p.dispRegiaoAtiva && (() => {
                 const t = (e.regioes || []).find(e => e.id === p.dispRegiaoAtiva);
                 if (!t) return null;
@@ -2686,8 +2737,8 @@
                     },
                         React.createElement("div", { className: "px-4 py-2.5 text-[11px] uppercase tracking-wide font-semibold text-gray-500 flex gap-3" },
                             React.createElement("span", { style: { width: "60px" } }, "Cód"),
-                            React.createElement("span", { style: { flex: "1.4", minWidth: "120px" } }, "Entregador"),
-                            React.createElement("span", { style: { flex: "2", minWidth: "240px", textAlign: "center" } }, "Status (clique pra avançar)"),
+                            React.createElement("span", { style: { flex: "1.2", minWidth: "120px" } }, "Entregador"),
+                            React.createElement("span", { style: { flex: "2.4", minWidth: "260px", textAlign: "center" } }, "Status (clique pra avançar)"),
                             React.createElement("span", { style: { flex: "1.6", minWidth: "140px" } }, "Observação"),
                             React.createElement("span", { style: { width: "28px" } })
                         ),
@@ -2709,11 +2760,11 @@
                             const obsText = linha.observacao || "";
                             const chips = [];
                             const dataMatch = obsText.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?/);
-                            if (dataMatch) chips.push({ icon: "calendar-event", text: dataMatch[0], tone: "warn" });
+                            if (dataMatch) chips.push({ icon: "📅", text: dataMatch[0], tone: "warn" });
                             const horaMatch = obsText.match(/(\d{1,2})(?::?(\d{2}))?\s?h\b/i);
-                            if (horaMatch) chips.push({ icon: "clock", text: horaMatch[0].toLowerCase(), tone: "info" });
+                            if (horaMatch) chips.push({ icon: "🕐", text: horaMatch[0].toLowerCase(), tone: "info" });
                             const semContatoChip = linha.status === "SEM CONTATO";
-                            if (semContatoChip) chips.push({ icon: "phone-off", text: "sem contato", tone: "danger" });
+                            if (semContatoChip) chips.push({ icon: "📵", text: "sem contato", tone: "danger" });
 
                             return React.createElement(React.Fragment, { key: linha.id },
                                 isFirstExcedente && React.createElement("div", {
@@ -2738,7 +2789,7 @@
                                         className: "px-1.5 py-1 border border-gray-200 rounded text-center font-mono text-[11px] bg-white",
                                         style: { width: "60px" }
                                     }),
-                                    React.createElement("div", { style: { flex: "1.4", minWidth: "120px", display: "flex", alignItems: "center", gap: "8px" } },
+                                    React.createElement("div", { style: { flex: "1.2", minWidth: "120px", display: "flex", alignItems: "center", gap: "8px" } },
                                         linha.foto
                                             ? React.createElement("img", {
                                                 src: linha.foto,
@@ -2761,7 +2812,7 @@
                                         }, linha.nome_profissional || (linha.is_reposicao || linha.is_excedente ? "—" : "Vazio"))
                                     ),
                                     React.createElement("div", {
-                                        style: { flex: "2", minWidth: "240px", display: "flex" }
+                                        style: { flex: "2.4", minWidth: "260px", display: "flex" }
                                     }, stepperConfig.map((step, sidx) => {
                                         const status = linha.status || "A CONFIRMAR";
                                         // CONFIRMADO mostra "A confirmar" ativo (sub-estado do mesmo passo)
@@ -2802,7 +2853,7 @@
                                                 background: chip.tone === "warn" ? "#FAEEDA" : (chip.tone === "info" ? "#E6F1FB" : (chip.tone === "danger" ? "#FCEBEB" : "#F1EFE8")),
                                                 color: chip.tone === "warn" ? "#854F0B" : (chip.tone === "info" ? "#185FA5" : (chip.tone === "danger" ? "#791F1F" : "#444441"))
                                             }
-                                        }, React.createElement("i", { className: "ti ti-" + chip.icon, style: { fontSize: "11px" }, "aria-hidden": "true" }), chip.text)),
+                                        }, React.createElement("span", { style: { fontSize: "11px" } }, chip.icon), chip.text)),
                                         React.createElement("input", {
                                             type: "text",
                                             value: linha.observacao || "",
@@ -2824,7 +2875,7 @@
                                             className: "w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
                                             title: "Remover linha",
                                             "aria-label": "Remover linha"
-                                        }, React.createElement("i", { className: "ti ti-x", style: { fontSize: "14px" }, "aria-hidden": "true" }))
+                                        }, React.createElement("span", { style: { fontSize: "16px" } }, "×"))
                                     )
                                 )
                             );
@@ -2846,28 +2897,45 @@
                     className: "px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
                 }, "📁 Recolher Todas")))
             })(), !p.dispRegiaoAtiva && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-8 text-center"
-            }, React.createElement("p", {
-                className: "text-gray-500"
-            }, "👆 Selecione uma região acima para ver as lojas"))), (e.regioes || []).length > 0 && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-3"
-            }, React.createElement("h4", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, "📊 Legenda"), React.createElement("div", {
-                className: "flex flex-wrap gap-2 text-xs"
-            }, React.createElement("span", {
-                className: "px-2 py-1 bg-yellow-100 text-yellow-800 rounded font-semibold"
-            }, "A CONFIRMAR"), React.createElement("span", {
-                className: "px-2 py-1 bg-green-100 text-green-800 rounded font-semibold"
-            }, "CONFIRMADO"), React.createElement("span", {
-                className: "px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold"
-            }, "EM LOJA"), React.createElement("span", {
-                className: "px-2 py-1 bg-red-100 text-red-800 rounded font-semibold"
-            }, "FALTANDO"), React.createElement("span", {
-                className: "px-2 py-1 bg-red-50 text-red-700 rounded font-semibold border-l-4 border-red-400"
-            }, "EXCEDENTE"), React.createElement("span", {
-                className: "px-2 py-1 bg-blue-50 text-blue-700 rounded font-semibold border-l-4 border-blue-400"
-            }, "REPOSIÇÃO")))), "faltosos" === t && React.createElement("div", {
+                style: {
+                    background: "#F9FAFB",
+                    border: "0.5px dashed #D1D5DB",
+                    borderRadius: "12px",
+                    padding: "32px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px"
+                }
+            },
+                React.createElement("div", {
+                    style: {
+                        width: "44px", height: "44px", borderRadius: "50%",
+                        background: "white", border: "0.5px solid #E5E7EB",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "22px"
+                    }
+                }, "🗺️"),
+                React.createElement("div", { style: { textAlign: "center" } },
+                    React.createElement("p", {
+                        style: { margin: 0, fontSize: "14px", fontWeight: "500", color: "#1F2937" }
+                    }, "Selecione uma região acima"),
+                    React.createElement("p", {
+                        style: { margin: "2px 0 0", fontSize: "12px", color: "#6B7280" }
+                    }, "As lojas e motoboys da região aparecem aqui")
+                )
+            )), (e.regioes || []).length > 0 && React.createElement("div", {
+                style: { padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", fontSize: "10px" }
+            },
+                React.createElement("span", { style: { color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.3px", marginRight: "4px" } }, "Legenda:"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#FEF3C7", color: "#92400E", borderRadius: "3px", fontWeight: "500" } }, "A confirmar"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#D1FAE5", color: "#065F46", borderRadius: "3px", fontWeight: "500" } }, "Confirmado"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#DBEAFE", color: "#1E40AF", borderRadius: "3px", fontWeight: "500" } }, "Em loja"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#FEE2E2", color: "#991B1B", borderRadius: "3px", fontWeight: "500" } }, "Faltando"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#F3F4F6", color: "#374151", borderRadius: "3px", fontWeight: "500" } }, "Sem contato"),
+                React.createElement("span", { style: { color: "#D1D5DB", margin: "0 4px" } }, "|"),
+                React.createElement("span", { style: { color: "#9CA3AF" } }, "Fundo amarelo = excedente · Fundo azul = reposição")
+            )), "faltosos" === t && React.createElement("div", {
                 className: "space-y-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4"
