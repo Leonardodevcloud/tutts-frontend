@@ -326,8 +326,8 @@
                     // Lookup local de nome (UX hint) quando cod_profissional muda
                     if (a === "cod_profissional") {
                         if (l && "" !== l.trim() && l.length >= 1) {
-                            // 🔧 v7 (2026-05-24): SÓ faz lookup local com cod >= 3 dígitos.
-                            // Evita matches enganosos durante a digitação.
+                            // 🔧 v8 (2026-05-24): SÓ faz lookup local com cod >= 3 dígitos.
+                            // Evita matches enganosos com cod parcial.
                             const codTrim = l.toString().trim();
                             if (codTrim.length >= 3) {
                                 const codNorm = codTrim.toLowerCase();
@@ -346,7 +346,7 @@
                         } else if (!l || "" === l.trim()) {
                             s = "";
                             linhasAtuais[idxAtual].nome_profissional = "";
-                            // 🔧 v7: limpa também a foto quando o cod é apagado
+                            // 🔧 v8: limpa foto quando o cod é apagado
                             linhasAtuais[idxAtual].foto = null;
                         }
                     }
@@ -361,14 +361,14 @@
                 clearTimeout(window[debounceKey]);
                 window[debounceKey] = setTimeout(async () => {
                     try {
-                        // 🔧 v7 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
+                        // 🔧 v8 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
                         const codTrimDeb = (l || '').toString().trim();
                         if ("cod_profissional" === a && codTrimDeb.length >= 3) {
-                            // 🔧 v7: buscar FOTO do motoboy junto com nome (fire-and-forget)
+                            // 🔧 v8: buscar FOTO do motoboy (fire-and-forget)
                             (async () => {
                                 try {
                                     if (!/^\d+$/.test(codTrimDeb)) return;
-                                    if (r[o] && r[o].foto) return; // já tem
+                                    if (r[o] && r[o].foto) return;
                                     const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codTrimDeb)}`);
                                     if (!fotoResp.ok) return;
                                     const fotoData = await fotoResp.json();
@@ -490,7 +490,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 500)  // 🔧 v7 (2026-05-24): 600ms → 500ms — garante PUT antes de refresh
+                }, 300)  // 🔧 v8 (2026-05-24): 600ms → 300ms — bem mais resistente a refresh rápido
             }, s = async (e, t, a = !1) => {
                 // Optimistic update: faz o POST, pega as linhas reais de volta (com ID real do banco)
                 // e insere direto no estado local. Não chama r() — assim não há refetch nem flash da tela.
@@ -2816,20 +2816,6 @@
                                         type: "text",
                                         value: linha.cod_profissional || "",
                                         onChange: e => c(linha.id, "cod_profissional", e.target.value),
-                                        // 🔧 v7 (2026-05-24): onBlur força flush imediato do debounce
-                                        // (Tab, clique fora) — garante que o PUT salve antes de o usuário
-                                        // dar refresh/logout/navegar.
-                                        onBlur: e => {
-                                            const dbKey = 'dispDebounce_' + linha.id + '_cod_profissional';
-                                            if (window[dbKey]) {
-                                                clearTimeout(window[dbKey]);
-                                                // Re-aciona o salvamento imediatamente (debounce key vira 0ms)
-                                                window[dbKey] = setTimeout(() => {
-                                                    // dispara um onChange sintético com o valor atual pra reusar o fluxo
-                                                    c(linha.id, "cod_profissional", e.target.value);
-                                                }, 0);
-                                            }
-                                        },
                                         "data-cod-input": linha.id,
                                         placeholder: "—",
                                         className: "px-1.5 py-1 border border-gray-200 rounded text-center font-mono text-[11px] bg-white",
