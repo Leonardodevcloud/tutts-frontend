@@ -4,7 +4,7 @@
 
 (function() {
     'use strict';
-    console.log('%c📦 MODULO-DISPONIBILIDADE v16_SYNC_HANDLER CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
+    console.log('%c📦 MODULO-DISPONIBILIDADE CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -52,7 +52,6 @@
                         const e = await _fetch(`${API_URL}/disponibilidade`);
                         if (!e.ok) throw new Error("Erro ao carregar");
                         const t = await e.json();
-                        console.warn('[DISPv14] GET /disponibilidade ok | linhas=' + (t.linhas || []).length + ' | com_foto=' + (t.linhas || []).filter(l => l.foto).length);
                         x(e => ({
                             ...e,
                             dispData: t,
@@ -284,18 +283,13 @@
                 // antes do debounce → PUT nunca rodava.
                 // SOLUÇÃO: lê estado SÍNCRONO via _dispStateRef.current (sempre fresco).
                 // Toda lógica roda FORA do setState. setState só aplica o resultado.
-                console.warn('[DISPv16.c.1] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '" | pe?=' + (typeof pe !== 'undefined') + ' A?=' + (typeof A !== 'undefined'));
-                console.log('🔍 [disp.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
 
                 // 1) LÊ estado SÍNCRONO via ref (não depende de setState callback)
                 const estadoAtual = _dispStateRef.current;
                 const linhasOrig = estadoAtual?.dispData?.linhas || [];
                 const idxAtual = linhasOrig.findIndex(item => item.id === t);
-                console.warn('[DISPv16.c.2] estado lido | idxAtual=' + idxAtual + ' total_linhas=' + linhasOrig.length);
-
                 if (idxAtual === -1) {
-                    console.warn('[DISPv16.c.2.ABORT] linha id=' + t + ' NAO encontrada — handler abortando');
                     return;
                 }
 
@@ -320,7 +314,6 @@
                                 }
                             }
                         } catch (errLookup) {
-                            console.warn('[DISPv16.c.LOOKUP_ERR] ' + errLookup.message);
                         }
                     } else if (!l || "" === l.trim()) {
                         s = "";
@@ -332,21 +325,15 @@
                 try {
                     x(prev => ({ ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } }));
                 } catch (errSetState) {
-                    console.error('[DISPv16.c.SETSTATE_ERR]', errSetState.message);
                 }
 
                 // 4) r e o já estão setados — segue pro debounce SEM depender do setState callback
                 const r = linhasAtuais;
                 const o = idxAtual;
-                console.warn('[DISPv16.c.3] r/o prontos | r=set(' + r.length + ') o=' + o + ' s="' + s + '"');
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
-                console.warn('[DISPv14.c] debounce agendado key=' + debounceKey + ' valor="' + l + '"');
-                console.log('🔍 [disp.c] debounce agendado key=' + debounceKey + ' valor="' + l + '"');
                 window[debounceKey] = setTimeout(async () => {
-                    console.warn('[DISPv14.debounce] DISPAROU key=' + debounceKey + ' valor="' + l + '"');
-                    console.log('🔍 [disp.debounce] DISPAROU key=' + debounceKey + ' valor="' + l + '"');
                     try {
                         // Verificar restrição apenas para cod_profissional com valor
                         if ("cod_profissional" === a && l && "" !== l.trim()) {
@@ -432,8 +419,6 @@
                             observacao_usuario: usuarioLogado?.fullName || "Sistema",
                             status_usuario: usuarioLogado?.fullName || "Sistema"
                         };
-                        console.warn('[DISPv14.PUT] enviando id=' + t + ' body=' + JSON.stringify(putBody));
-                        console.log('💾 [disp.PUT] enviando linha', t, putBody);
                         const putResp = await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
                             headers: {
@@ -441,13 +426,9 @@
                             },
                             body: JSON.stringify(putBody)
                         });
-                        console.warn('[DISPv14.PUT] resposta status=' + putResp.status + ' ok=' + putResp.ok);
-                        console.log('💾 [disp.PUT] resposta', putResp.status, putResp.ok ? '✓' : '✗');
                         if (putResp && putResp.ok) {
                             try {
                                 const linhaAtualizada = await putResp.json();
-                                console.warn('[DISPv14.PUT] SALVO id=' + linhaAtualizada?.id + ' cod=' + linhaAtualizada?.cod_profissional + ' foto=' + (linhaAtualizada?.foto ? 'sim(' + linhaAtualizada.foto.length + 'b)' : 'null'));
-                                console.log('💾 [disp.PUT] linha salva no banco:', linhaAtualizada);
                                 if (linhaAtualizada && linhaAtualizada.id) {
                                     _dispLocalEdits.current[linhaAtualizada.id] = Date.now();
                                     // 🔧 v14: backend já devolve `foto` na linha (LEFT JOIN com users).
@@ -460,14 +441,11 @@
                                     });
                                 }
                             } catch(parseErr) {
-                                console.error('💾 [disp.PUT] erro ao parsear resposta:', parseErr);
                             }
                         } else {
                             // 🔧 v11: PUT falhou — tenta extrair mensagem de erro do backend
                             let detalhe = '';
                             try { detalhe = await putResp.text(); } catch(_) {}
-                            console.warn('[DISPv14.PUT] FALHOU status=' + putResp.status + ' detalhe=' + detalhe);
-                            console.error('💾 [disp.PUT] FALHOU! status=' + putResp.status, detalhe);
                             if (typeof ja === 'function') {
                                 ja(`Erro ao salvar linha (${putResp.status})`, 'error');
                             }
