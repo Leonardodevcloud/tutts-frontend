@@ -326,28 +326,20 @@
                     // Lookup local de nome (UX hint) quando cod_profissional muda
                     if (a === "cod_profissional") {
                         if (l && "" !== l.trim() && l.length >= 1) {
-                            // 🔧 v8 (2026-05-24): SÓ faz lookup local com cod >= 3 dígitos.
-                            // Evita matches enganosos com cod parcial.
-                            const codTrim = l.toString().trim();
-                            if (codTrim.length >= 3) {
-                                const codNorm = codTrim.toLowerCase();
-                                const m1 = pe.find(p => (p.codigo || '').toString().trim().toLowerCase() === codNorm);
-                                if (m1) {
-                                    s = m1.nome;
-                                    linhasAtuais[idxAtual].nome_profissional = m1.nome;
-                                } else {
-                                    const m2 = A.find(u => (u.codProfissional || '').toString().trim().toLowerCase() === codNorm);
-                                    if (m2) {
-                                        s = m2.fullName;
-                                        linhasAtuais[idxAtual].nome_profissional = m2.fullName;
-                                    }
+                            const m1 = pe.find(p => p.codigo === l.toString());
+                            if (m1) {
+                                s = m1.nome;
+                                linhasAtuais[idxAtual].nome_profissional = m1.nome;
+                            } else {
+                                const m2 = A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase());
+                                if (m2) {
+                                    s = m2.fullName;
+                                    linhasAtuais[idxAtual].nome_profissional = m2.fullName;
                                 }
                             }
                         } else if (!l || "" === l.trim()) {
                             s = "";
                             linhasAtuais[idxAtual].nome_profissional = "";
-                            // 🔧 v8: limpa foto quando o cod é apagado
-                            linhasAtuais[idxAtual].foto = null;
                         }
                     }
                     r = linhasAtuais;
@@ -361,32 +353,8 @@
                 clearTimeout(window[debounceKey]);
                 window[debounceKey] = setTimeout(async () => {
                     try {
-                        // 🔧 v8 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
-                        const codTrimDeb = (l || '').toString().trim();
-                        if ("cod_profissional" === a && codTrimDeb.length >= 3) {
-                            // 🔧 v8: buscar FOTO do motoboy (fire-and-forget)
-                            (async () => {
-                                try {
-                                    if (!/^\d+$/.test(codTrimDeb)) return;
-                                    if (r[o] && r[o].foto) return;
-                                    const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codTrimDeb)}`);
-                                    if (!fotoResp.ok) return;
-                                    const fotoData = await fotoResp.json();
-                                    const fotoUrl = fotoData?.fotos?.[codTrimDeb];
-                                    if (!fotoUrl) return;
-                                    x(prev => {
-                                        const linhas = [...(prev.dispData?.linhas || [])];
-                                        const idx = linhas.findIndex(e => e.id === t);
-                                        if (idx !== -1 && (linhas[idx].cod_profissional || '').toString().trim() === codTrimDeb) {
-                                            linhas[idx] = { ...linhas[idx], foto: fotoUrl };
-                                        }
-                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
-                                    });
-                                } catch (errFoto) {
-                                    console.warn('[disponibilidade] busca foto falhou:', errFoto.message);
-                                }
-                            })();
-                            
+                        // Verificar restrição apenas para cod_profissional com valor
+                        if ("cod_profissional" === a && l && "" !== l.trim()) {
                             // 🔧 FIX CADASTRO-CRM: resolve nome definitivo via backend.
                             // Fonte de verdade = crm_leads_capturados (aba Cadastro do CRM),
                             // com cadeia de fallback: CRM → planilha → disponibilidade → users.
@@ -490,7 +458,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 300)  // 🔧 v8 (2026-05-24): 600ms → 300ms — bem mais resistente a refresh rápido
+                }, 600)
             }, s = async (e, t, a = !1) => {
                 // Optimistic update: faz o POST, pega as linhas reais de volta (com ID real do banco)
                 // e insere direto no estado local. Não chama r() — assim não há refetch nem flash da tela.
