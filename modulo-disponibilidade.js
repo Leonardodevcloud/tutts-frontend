@@ -4,7 +4,7 @@
 
 (function() {
     'use strict';
-    console.log('%c📦 MODULO-DISPONIBILIDADE v12_DEBUG_FULL CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
+    console.log('%c📦 MODULO-DISPONIBILIDADE v14_BACKEND_FOTO_JOIN CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -52,53 +52,18 @@
                         const e = await _fetch(`${API_URL}/disponibilidade`);
                         if (!e.ok) throw new Error("Erro ao carregar");
                         const t = await e.json();
+                        console.warn('[DISPv14] GET /disponibilidade ok | linhas=' + (t.linhas || []).length + ' | com_foto=' + (t.linhas || []).filter(l => l.foto).length);
                         x(e => ({
                             ...e,
                             dispData: t,
                             dispLoading: !1,
                             dispLoaded: !0
                         }));
-
-                        // 🆕 2026-05 v3: fetch direto pra /perfil/fotos (mesmo padrão de Saques no app.js e Filas)
-                        // Antes usava window.FotosMotoboy mas o helper tinha quirks de cache.
-                        // Esse padrão é mais simples e provadamente funciona em Saques.
-                        try {
-                            const codsUnicos = Array.from(new Set(
-                                (t.linhas || [])
-                                    .map(l => (l.cod_profissional || '').toString().trim())
-                                    .filter(c => /^\d+$/.test(c))
-                            ));
-                            console.log(`📸 [disp] buscando fotos de ${codsUnicos.length} motoboys...`);
-                            if (codsUnicos.length > 0) {
-                                const mapaFotos = {};
-                                for (let i = 0; i < codsUnicos.length; i += 150) {
-                                    const lote = codsUnicos.slice(i, i + 150);
-                                    try {
-                                        const rf = await fetchAuth(`${API_URL}/perfil/fotos?codigos=${lote.join(',')}`);
-                                        if (rf.ok) {
-                                            const df = await rf.json();
-                                            Object.assign(mapaFotos, df.fotos || {});
-                                        } else {
-                                            console.warn(`[disp] /perfil/fotos retornou ${rf.status}`);
-                                        }
-                                    } catch (errLote) {
-                                        console.warn(`[disp] lote ${i} falhou:`, errLote.message);
-                                    }
-                                }
-                                console.log(`📸 [disp] ${Object.keys(mapaFotos).length} fotos recebidas do backend`);
-                                if (Object.keys(mapaFotos).length > 0) {
-                                    x(prev => {
-                                        const linhas = (prev.dispData?.linhas || []).map(linha => ({
-                                            ...linha,
-                                            foto: mapaFotos[(linha.cod_profissional || '').toString().trim()] || linha.foto || null
-                                        }));
-                                        return { ...prev, dispData: { ...prev.dispData, linhas } };
-                                    });
-                                }
-                            }
-                        } catch (errFoto) {
-                            console.warn('[disp] Falha ao carregar fotos (segue sem):', errFoto.message);
-                        }
+                        // 🔧 v14 (2026-05-25): NÃO precisa mais buscar /perfil/fotos.
+                        // O backend faz LEFT JOIN com users e devolve `foto` em cada linha
+                        // (COALESCE foto_thumb → foto_selfie). Mesmo padrão do BI Garantido.
+                        // Toda linha que vem do backend (GET, PUT response, broadcast WS)
+                        // já carrega o campo `foto` preenchido (ou null se motoboy não tem foto).
                     } catch (e) {
                         console.error("Erro ao carregar disponibilidade:", e), ja("Erro ao carregar dados", "error"), x(e => ({
                             ...e,
@@ -307,7 +272,9 @@
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
             }, c = (t, a, l) => {
-                // 🔧 v12 (2026-05-24): LOGS pra rastrear se chega aqui
+                // 🔧 v14 (2026-05-25): LOG DUPLO usando console.warn (nível maior que log,
+                // não filtrado por "Default levels"). Garante visibilidade mesmo com filtro.
+                console.warn('[DISPv14.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
                 console.log('🔍 [disp.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
                 // Anti-echo: marcar esta linha como editada localmente
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
@@ -354,8 +321,10 @@
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
+                console.warn('[DISPv14.c] debounce agendado key=' + debounceKey + ' valor="' + l + '"');
                 console.log('🔍 [disp.c] debounce agendado key=' + debounceKey + ' valor="' + l + '"');
                 window[debounceKey] = setTimeout(async () => {
+                    console.warn('[DISPv14.debounce] DISPAROU key=' + debounceKey + ' valor="' + l + '"');
                     console.log('🔍 [disp.debounce] DISPAROU key=' + debounceKey + ' valor="' + l + '"');
                     try {
                         // Verificar restrição apenas para cod_profissional com valor
@@ -442,6 +411,7 @@
                             observacao_usuario: usuarioLogado?.fullName || "Sistema",
                             status_usuario: usuarioLogado?.fullName || "Sistema"
                         };
+                        console.warn('[DISPv14.PUT] enviando id=' + t + ' body=' + JSON.stringify(putBody));
                         console.log('💾 [disp.PUT] enviando linha', t, putBody);
                         const putResp = await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
@@ -450,50 +420,23 @@
                             },
                             body: JSON.stringify(putBody)
                         });
+                        console.warn('[DISPv14.PUT] resposta status=' + putResp.status + ' ok=' + putResp.ok);
                         console.log('💾 [disp.PUT] resposta', putResp.status, putResp.ok ? '✓' : '✗');
                         if (putResp && putResp.ok) {
                             try {
                                 const linhaAtualizada = await putResp.json();
+                                console.warn('[DISPv14.PUT] SALVO id=' + linhaAtualizada?.id + ' cod=' + linhaAtualizada?.cod_profissional + ' foto=' + (linhaAtualizada?.foto ? 'sim(' + linhaAtualizada.foto.length + 'b)' : 'null'));
                                 console.log('💾 [disp.PUT] linha salva no banco:', linhaAtualizada);
                                 if (linhaAtualizada && linhaAtualizada.id) {
                                     _dispLocalEdits.current[linhaAtualizada.id] = Date.now();
+                                    // 🔧 v14: backend já devolve `foto` na linha (LEFT JOIN com users).
+                                    // O merge abaixo já leva a foto automaticamente — não precisa mais
+                                    // do fire-and-forget /perfil/fotos que existia em v11/v12/v13.
                                     _dispSetStateRef.current(function(prev) {
                                         var dd = prev.dispData;
                                         if (!dd || !dd.linhas) return prev;
                                         return Object.assign({}, prev, { dispData: Object.assign({}, dd, { linhas: dd.linhas.map(function(li) { return li.id === linhaAtualizada.id ? Object.assign({}, li, linhaAtualizada) : li; }) }) });
                                     });
-                                    // 🔧 v11: BUSCAR FOTO depois de salvar com sucesso (fire-and-forget)
-                                    // Antes a foto só vinha no load inicial — agora também ao digitar cod novo.
-                                    if (linhaAtualizada.cod_profissional && /^\d+$/.test(String(linhaAtualizada.cod_profissional).trim())) {
-                                        const codFoto = String(linhaAtualizada.cod_profissional).trim();
-                                        (async () => {
-                                            try {
-                                                const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codFoto)}`);
-                                                if (!fotoResp.ok) {
-                                                    console.warn('📸 [disp] /perfil/fotos retornou', fotoResp.status);
-                                                    return;
-                                                }
-                                                const fotoData = await fotoResp.json();
-                                                const fotoUrl = fotoData?.fotos?.[codFoto];
-                                                if (!fotoUrl) {
-                                                    console.log('📸 [disp] motoboy', codFoto, 'não tem foto cadastrada');
-                                                    return;
-                                                }
-                                                console.log('📸 [disp] foto recebida para', codFoto);
-                                                _dispSetStateRef.current(function(prev) {
-                                                    var dd = prev.dispData;
-                                                    if (!dd || !dd.linhas) return prev;
-                                                    return Object.assign({}, prev, { dispData: Object.assign({}, dd, { linhas: dd.linhas.map(function(li) {
-                                                        if (li.id !== linhaAtualizada.id) return li;
-                                                        if ((li.cod_profissional || '').toString().trim() !== codFoto) return li;
-                                                        return Object.assign({}, li, { foto: fotoUrl });
-                                                    }) }) });
-                                                });
-                                            } catch (errFoto) {
-                                                console.warn('📸 [disp] erro ao buscar foto:', errFoto.message);
-                                            }
-                                        })();
-                                    }
                                 }
                             } catch(parseErr) {
                                 console.error('💾 [disp.PUT] erro ao parsear resposta:', parseErr);
@@ -502,6 +445,7 @@
                             // 🔧 v11: PUT falhou — tenta extrair mensagem de erro do backend
                             let detalhe = '';
                             try { detalhe = await putResp.text(); } catch(_) {}
+                            console.warn('[DISPv14.PUT] FALHOU status=' + putResp.status + ' detalhe=' + detalhe);
                             console.error('💾 [disp.PUT] FALHOU! status=' + putResp.status, detalhe);
                             if (typeof ja === 'function') {
                                 ja(`Erro ao salvar linha (${putResp.status})`, 'error');
