@@ -163,6 +163,7 @@
             alertas: d.alertas || [],
             bloqueados: d.bloqueados || [],
             kpis: d.kpis || {},
+            total_sem_disponibilidade: d.total_sem_disponibilidade || 0,  // 🆕 2026-05-24
           });
           // Carrega fotos dos motoboys (inclui em_rota)
           const cods = [...new Set([
@@ -727,6 +728,7 @@
     const alertas = filaCompleta.alertas || [];
     const bloqueados = filaCompleta.bloqueados || [];
     const kpis = filaCompleta.kpis || {};
+    const totalSemDisp = filaCompleta.total_sem_disponibilidade || 0;  // 🆕 2026-05-24
 
     // Card de motoboy aguardando — com drag-and-drop (igual fila clássica)
     const renderCardAguardando = (p, i) => {
@@ -770,6 +772,16 @@
               ? e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700' }, '× reprovado')
               : e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800' }, 'verificando')
         ),
+        // 🆕 2026-05-24: aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
+        // Força admin a alocar (caso contrário ele não vai aparecer nos relatórios/dashboards do dia)
+        !p.disponibilidade_alocado && e('div', {
+          className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
+          title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
+        },
+          e('span', { className: 'text-base' }, '⚠️'),
+          e('span', { className: 'text-xs font-semibold text-red-700' }, 'Sem Disponibilidade'),
+          e('span', { className: 'text-[10px] text-red-600 ml-auto' }, 'Aloque na escala'),
+        ),
         // Linha 2: ação remover (mantida)
         e('div', { className: 'flex justify-end' },
           e('button', {
@@ -790,8 +802,8 @@
         }, '➕ ', e('span', { className: 'hidden sm:inline' }, 'Colocar na fila'))
       ),
 
-      // === KPIs (3 cards padrão clássica: Aguardando, Em Rota, Alertas +90min) ===
-      e('div', { className: 'grid grid-cols-3 gap-2' },
+      // === KPIs (3 cards padrão clássica: Aguardando, Em Rota, Alertas +90min + 4º Sem Disp. quando houver) ===
+      e('div', { className: `grid gap-2 ${totalSemDisp > 0 ? 'grid-cols-4' : 'grid-cols-3'}` },
         e('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
           e('div', { className: 'text-xs text-gray-500 mb-1' }, 'Aguardando'),
           e('div', { className: 'text-2xl font-semibold text-blue-700' }, kpis.total_aguardando || 0)
@@ -803,6 +815,14 @@
         e('div', { className: `bg-white border rounded-xl p-3 ${alertas.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}` },
           e('div', { className: 'text-xs text-gray-500 mb-1' }, 'Alertas +90min'),
           e('div', { className: `text-2xl font-semibold ${alertas.length > 0 ? 'text-red-700' : 'text-gray-400'}` }, alertas.length)
+        ),
+        // 🆕 2026-05-24: KPI de motoboys na fila SEM alocação na disponibilidade
+        totalSemDisp > 0 && e('div', {
+          className: 'bg-red-50 border border-red-300 rounded-xl p-3',
+          title: 'Motoboys aguardando na fila mas sem linha em disponibilidade. Aloque-os na escala para que apareçam nos relatórios.'
+        },
+          e('div', { className: 'text-xs text-red-700 mb-1 font-medium' }, '⚠️ Sem Disp.'),
+          e('div', { className: 'text-2xl font-semibold text-red-700' }, totalSemDisp)
         )
       ),
 

@@ -412,6 +412,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         p.primeira_nota_at && React.createElement('span', { className: 'text-xs font-mono text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full' }, `⏱${formatarCronometro(p.primeira_nota_at)}`)
                     )
                 ),
+                // 🆕 2026-05-24: aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
+                // Força admin a alocar (caso contrário ele não vai aparecer nos relatórios/dashboards do dia)
+                !p.disponibilidade_alocado && React.createElement('div', {
+                    className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
+                    title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
+                },
+                    React.createElement('span', { className: 'text-base' }, '⚠️'),
+                    React.createElement('span', { className: 'text-xs font-semibold text-red-700' }, 'Sem Disponibilidade'),
+                    React.createElement('span', { className: 'text-[10px] text-red-600 ml-auto' }, 'Aloque na escala'),
+                ),
                 // LINHA 2 (opcional): bairros tagueados — chips removíveis individual + add + editar + limpar
                 p.bairros && p.bairros.length > 0 && React.createElement('div', {
                     className: 'flex flex-wrap gap-1.5 items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 mb-2'
@@ -655,8 +665,8 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
             React.createElement('div', null,
                     // MONITORAMENTO
                     abaInterna === 'monitoramento' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
-                        // 🚀 Status row: 3 cards principais + linha de contexto Vinculados
-                        React.createElement('div', { className: 'grid grid-cols-3 gap-2' },
+                        // 🚀 Status row: 3 cards principais (+ 4º quando há motoboys sem alocação na disponibilidade)
+                        React.createElement('div', { className: `grid gap-2 ${(filaAtual.total_sem_disponibilidade || 0) > 0 ? 'grid-cols-4' : 'grid-cols-3'}` },
                             React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
                                 React.createElement('div', { className: 'text-xs text-gray-500 mb-1' }, 'Aguardando'),
                                 React.createElement('div', { className: 'text-2xl font-semibold text-blue-700' }, filaAtual.total_aguardando || 0)
@@ -668,6 +678,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                             React.createElement('div', { className: `bg-white border rounded-xl p-3 ${filaAtual.alertas?.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}` },
                                 React.createElement('div', { className: 'text-xs text-gray-500 mb-1' }, 'Alertas +90min'),
                                 React.createElement('div', { className: `text-2xl font-semibold ${filaAtual.alertas?.length > 0 ? 'text-red-700' : 'text-gray-400'}` }, filaAtual.alertas?.length || 0)
+                            ),
+                            // 🆕 2026-05-24: KPI de motoboys na fila SEM alocação na disponibilidade
+                            (filaAtual.total_sem_disponibilidade || 0) > 0 && React.createElement('div', {
+                                className: 'bg-red-50 border border-red-300 rounded-xl p-3',
+                                title: 'Motoboys aguardando na fila mas sem linha em disponibilidade. Aloque-os na escala para que apareçam nos relatórios.'
+                            },
+                                React.createElement('div', { className: 'text-xs text-red-700 mb-1 font-medium' }, '⚠️ Sem Disp.'),
+                                React.createElement('div', { className: 'text-2xl font-semibold text-red-700' }, filaAtual.total_sem_disponibilidade || 0)
                             )
                         ),
                         React.createElement('div', { className: 'text-xs text-gray-400 text-right -mt-2' },
