@@ -4,7 +4,7 @@
 
 (function() {
     'use strict';
-    console.log('%c📦 MODULO-DISPONIBILIDADE v14_BACKEND_FOTO_JOIN CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
+    console.log('%c📦 MODULO-DISPONIBILIDADE v15_HOTFIX_HANDLER CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -272,9 +272,12 @@
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
             }, c = (t, a, l) => {
-                // 🔧 v14 (2026-05-25): LOG DUPLO usando console.warn (nível maior que log,
-                // não filtrado por "Default levels"). Garante visibilidade mesmo com filtro.
-                console.warn('[DISPv14.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
+                // 🔧 v15 (2026-05-25 HOTFIX): handler reescrito pra ser RESILIENTE.
+                // Causa raiz identificada: setState callback antigo jogava exception
+                // silenciosa quando pe/A vinham undefined (lookup pe.find), e o React
+                // engolia, deixando r/o sem set, fazendo o handler retornar antes do PUT.
+                // Solução: r/o setados PRIMEIRO, lookup local virou defensive + try/catch.
+                console.warn('[DISPv15.c.1] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '" | pe?=' + (typeof pe !== 'undefined') + ' A?=' + (typeof A !== 'undefined'));
                 console.log('🔍 [disp.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
                 // Anti-echo: marcar esta linha como editada localmente
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
@@ -287,37 +290,58 @@
                 let s = null;
                 let r = null;
                 let o = -1;
-                x(prev => {
-                    const linhasAtuais = [...(prev.dispData?.linhas || [])];
-                    const idxAtual = linhasAtuais.findIndex(item => item.id === t);
-                    if (idxAtual === -1) return prev;
-                    linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], [a]: l };
-                    s = linhasAtuais[idxAtual].nome_profissional;
-                    // Lookup local de nome (UX hint) quando cod_profissional muda
-                    if (a === "cod_profissional") {
-                        if (l && "" !== l.trim() && l.length >= 1) {
-                            const m1 = pe.find(p => p.codigo === l.toString());
-                            if (m1) {
-                                s = m1.nome;
-                                linhasAtuais[idxAtual].nome_profissional = m1.nome;
-                            } else {
-                                const m2 = A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase());
-                                if (m2) {
-                                    s = m2.fullName;
-                                    linhasAtuais[idxAtual].nome_profissional = m2.fullName;
-                                }
-                            }
-                        } else if (!l || "" === l.trim()) {
-                            s = "";
-                            linhasAtuais[idxAtual].nome_profissional = "";
+                // 🔧 v15: try/catch externo pra LOGAR qualquer exception do React
+                try {
+                    x(prev => {
+                        const linhasAtuais = [...(prev.dispData?.linhas || [])];
+                        const idxAtual = linhasAtuais.findIndex(item => item.id === t);
+                        console.warn('[DISPv15.c.2] setState | idxAtual=' + idxAtual + ' total_linhas=' + linhasAtuais.length);
+                        if (idxAtual === -1) {
+                            console.warn('[DISPv15.c.2.ABORT] linha id=' + t + ' NAO encontrada em prev.dispData.linhas — abortando setState');
+                            return prev;
                         }
-                    }
-                    r = linhasAtuais;
-                    o = idxAtual;
-                    return { ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } };
-                });
+                        // 🔧 v15 CORE FIX: setar r/o IMEDIATAMENTE, antes de qualquer
+                        // operação que possa jogar exception. Antes ficavam no FIM e
+                        // não eram setados se algo entre o início e o return quebrasse.
+                        linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], [a]: l };
+                        r = linhasAtuais;
+                        o = idxAtual;
+                        s = linhasAtuais[idxAtual].nome_profissional;
+                        // Lookup local de nome (UX hint) quando cod_profissional muda
+                        // 🔧 v15: DEFENSIVE — pe ou A podem vir undefined em algumas renderizações
+                        if (a === "cod_profissional") {
+                            if (l && "" !== l.trim() && l.length >= 1) {
+                                try {
+                                    const m1 = (pe && typeof pe.find === 'function') ? pe.find(p => p.codigo === l.toString()) : null;
+                                    if (m1) {
+                                        s = m1.nome;
+                                        linhasAtuais[idxAtual].nome_profissional = m1.nome;
+                                    } else {
+                                        const m2 = (A && typeof A.find === 'function') ? A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase()) : null;
+                                        if (m2) {
+                                            s = m2.fullName;
+                                            linhasAtuais[idxAtual].nome_profissional = m2.fullName;
+                                        }
+                                    }
+                                } catch (errLookup) {
+                                    console.warn('[DISPv15.c.2.LOOKUP_ERR] ' + errLookup.message + ' | pe=' + typeof pe + ' A=' + typeof A);
+                                }
+                            } else if (!l || "" === l.trim()) {
+                                s = "";
+                                linhasAtuais[idxAtual].nome_profissional = "";
+                            }
+                        }
+                        return { ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } };
+                    });
+                } catch (errSetState) {
+                    console.error('[DISPv15.c.SETSTATE_ERR]', errSetState.message, errSetState.stack);
+                }
+                console.warn('[DISPv15.c.3] após setState | r=' + (r ? 'set(' + r.length + ')' : 'NULL') + ' o=' + o + ' s="' + s + '"');
                 // Linha sumiu entre clique e callback (raro): pula debounce
-                if (!r || o === -1) return;
+                if (!r || o === -1) {
+                    console.warn('[DISPv15.c.3.ABORT] r=null OU o=-1 — handler retornando sem agendar debounce');
+                    return;
+                }
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
