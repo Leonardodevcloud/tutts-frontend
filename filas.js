@@ -412,9 +412,10 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         p.primeira_nota_at && React.createElement('span', { className: 'text-xs font-mono text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full' }, `⏱${formatarCronometro(p.primeira_nota_at)}`)
                     )
                 ),
-                // 🆕 2026-05-24: aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
+                // 🆕 2026-05-24 (v4): aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
                 // Força admin a alocar (caso contrário ele não vai aparecer nos relatórios/dashboards do dia)
-                !p.disponibilidade_alocado && React.createElement('div', {
+                // 🔧 v4: comparação === false explícita pra não disparar quando backend está desatualizado (undefined)
+                p.disponibilidade_alocado === false && React.createElement('div', {
                     className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
                     title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
                 },

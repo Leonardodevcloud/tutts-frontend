@@ -772,9 +772,10 @@
               ? e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700' }, '× reprovado')
               : e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800' }, 'verificando')
         ),
-        // 🆕 2026-05-24: aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
+        // 🆕 2026-05-24 (v4): aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
         // Força admin a alocar (caso contrário ele não vai aparecer nos relatórios/dashboards do dia)
-        !p.disponibilidade_alocado && e('div', {
+        // 🔧 v4: comparação === false explícita pra não disparar quando backend está desatualizado (undefined)
+        p.disponibilidade_alocado === false && e('div', {
           className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
           title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
         },
