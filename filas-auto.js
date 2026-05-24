@@ -27,7 +27,7 @@
     const [loading, setLoading] = React.useState(true);
     const [centralSelecionada, setCentralSelecionada] = React.useState(null);
     const [abaAtiva, setAbaAtiva] = React.useState('monitor'); // 'monitor' | 'config' | 'vinculos' | 'logs'
-    const [filaCompleta, setFilaCompleta] = React.useState({ fila: [], bloqueados: [], kpis: {} });
+    const [filaCompleta, setFilaCompleta] = React.useState({ fila: [], em_rota: [], alertas: [], bloqueados: [], kpis: {} });
     const [logs, setLogs] = React.useState([]);
     const [vinculos, setVinculos] = React.useState([]);
     const [profissionais, setProfissionais] = React.useState([]);
@@ -156,10 +156,18 @@
         const r = await fetchAuthRef.current(`${apiUrlRef.current}/filas/auto/admin/fila-completa/${centralId}`);
         const d = await r.json();
         if (d.success) {
-          setFilaCompleta({ fila: d.fila || [], bloqueados: d.bloqueados || [], kpis: d.kpis || {} });
-          // Carrega fotos dos motoboys
+          // 🔄 2026-05-24: salvar também em_rota e alertas (faltava no state!)
+          setFilaCompleta({
+            fila: d.fila || [],
+            em_rota: d.em_rota || [],
+            alertas: d.alertas || [],
+            bloqueados: d.bloqueados || [],
+            kpis: d.kpis || {},
+          });
+          // Carrega fotos dos motoboys (inclui em_rota)
           const cods = [...new Set([
             ...(d.fila || []).map(p => p.cod_profissional),
+            ...(d.em_rota || []).map(p => p.cod_profissional),
             ...(d.bloqueados || []).map(p => p.cod_profissional),
           ].filter(c => c && /^\d+$/.test(c)))];
           if (cods.length > 0) {
