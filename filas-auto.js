@@ -27,7 +27,7 @@
     const [loading, setLoading] = React.useState(true);
     const [centralSelecionada, setCentralSelecionada] = React.useState(null);
     const [abaAtiva, setAbaAtiva] = React.useState('monitor'); // 'monitor' | 'config' | 'vinculos' | 'logs'
-    const [filaCompleta, setFilaCompleta] = React.useState({ fila: [], em_rota: [], alertas: [], bloqueados: [], kpis: {} });
+    const [filaCompleta, setFilaCompleta] = React.useState({ fila: [], bloqueados: [], kpis: {} });
     const [logs, setLogs] = React.useState([]);
     const [vinculos, setVinculos] = React.useState([]);
     const [profissionais, setProfissionais] = React.useState([]);
@@ -156,18 +156,10 @@
         const r = await fetchAuthRef.current(`${apiUrlRef.current}/filas/auto/admin/fila-completa/${centralId}`);
         const d = await r.json();
         if (d.success) {
-          // 🔄 2026-05-24: salvar também em_rota e alertas (faltava no state!)
-          setFilaCompleta({
-            fila: d.fila || [],
-            em_rota: d.em_rota || [],
-            alertas: d.alertas || [],
-            bloqueados: d.bloqueados || [],
-            kpis: d.kpis || {},
-          });
-          // Carrega fotos dos motoboys (inclui em_rota)
+          setFilaCompleta({ fila: d.fila || [], bloqueados: d.bloqueados || [], kpis: d.kpis || {} });
+          // Carrega fotos dos motoboys
           const cods = [...new Set([
             ...(d.fila || []).map(p => p.cod_profissional),
-            ...(d.em_rota || []).map(p => p.cod_profissional),
             ...(d.bloqueados || []).map(p => p.cod_profissional),
           ].filter(c => c && /^\d+$/.test(c)))];
           if (cods.length > 0) {
@@ -462,6 +454,16 @@
     // ════════════════════════════════════════════════════════
     if (!centralSelecionada) {
       return e(React.Fragment, null,
+        // 🆕 2026-05-24: CSS pra animações (stagger + zoom-fade + hover)
+        e('style', null, `
+          @keyframes filaCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes filaCardZoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.03); } }
+          @keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+          .fila-card { opacity: 0; animation: filaCardIn 280ms ease forwards; transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
+          .fila-card:hover { border-color: rgba(0,0,0,0.18); transform: translateY(-1px); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+          .fila-card:active { transform: scale(0.985); }
+          .fila-card.is-clicked { animation: filaCardZoomOut 280ms ease forwards; pointer-events: none; }
+        `),
         e('div', { className: 'space-y-4 p-2' },
         // Header
         e('div', { className: 'flex items-center justify-between gap-3' },
@@ -499,30 +501,63 @@
                 e('p', { className: 'text-gray-700 font-medium' }, 'Nenhuma central auto-gerenciável ainda'),
                 e('p', { className: 'text-gray-500 text-sm mt-1' }, 'Clique em "Nova central auto" pra começar'),
               )
-            : e('div', { className: 'grid md:grid-cols-2 lg:grid-cols-3 gap-3' },
-                centrais.map(c => e('div', {
-                  key: c.id,
-                  className: `bg-white border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer ${c.ativa ? 'border-gray-200' : 'border-red-200 opacity-60'}`,
-                  onClick: () => setCentralSelecionada(c)
-                },
-                  e('div', { className: 'flex items-start justify-between mb-2' },
-                    e('div', null,
-                      e('p', { className: 'font-semibold text-gray-800 flex items-center gap-2' },
-                        e('span', null, '📍'),
-                        c.nome
+            : e('div', {
+                className: 'fila-card-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+              },
+                centrais.map((c, idx) => {
+                  const corBarra = !c.ativa ? '#B4B2A9' : '#534AB7'; // roxa pra auto, cinza pra inativa
+                  return e('div', {
+                    key: c.id,
+                    id: `fila-card-${c.id}`,
+                    className: `fila-card bg-white border ${c.ativa ? 'border-gray-200' : 'border-gray-200 opacity-55'}`,
+                    style: {
+                      borderRadius: '12px',
+                      padding: '14px 16px 14px 12px',
+                      display: 'flex',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      animationDelay: `${Math.min(idx * 35, 350)}ms`
+                    },
+                    onClick: (ev) => {
+                      const card = ev.currentTarget;
+                      card.classList.add('is-clicked');
+                      window.__tuttsFilaShared = { nome: c.nome, ehAuto: true, ativa: c.ativa };
+                      setTimeout(() => setCentralSelecionada(c), 280);
+                    }
+                  },
+                    // Barra lateral roxa (auto)
+                    e('div', { style: { width: '3px', background: corBarra, borderRadius: '999px', flexShrink: 0 } }),
+                    // Conteúdo
+                    e('div', { style: { flex: 1, minWidth: 0 } },
+                      // Header (nome + endereço + badge)
+                      e('div', {
+                        style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }
+                      },
+                        e('div', { style: { minWidth: 0 } },
+                          e('p', { style: { fontSize: '14px', fontWeight: 500, margin: '0 0 2px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, c.nome),
+                          e('p', { style: { fontSize: '11px', color: '#6B7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+                            `${c.endereco || 'Sem endereço'} · ${c.total_vinculados || 0} vinculado${(c.total_vinculados || 0) === 1 ? '' : 's'}`
+                          )
+                        ),
+                        !c.ativa
+                          ? e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#FCEBEB', color: '#791F1F', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
+                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#EEEDFE', color: '#3C3489', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, '🤖 Auto')
                       ),
-                      e('p', { className: 'text-xs text-gray-500 mt-1' }, c.endereco || '—')
-                    ),
-                    e('span', {
-                      className: `text-[10px] px-2 py-0.5 rounded font-medium ${c.validacao_agente_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`
-                    }, c.validacao_agente_ativa ? '🤖 agente ativo' : 'agente desligado')
-                  ),
-                  e('div', { className: 'flex gap-3 text-xs text-gray-500 mt-3' },
-                    e('span', null, '📏 ', c.raio_metros, 'm'),
-                    e('span', null, '⏱️ ', c.varredura_intervalo_seg || 30, 's'),
-                    c.remover_ao_pegar_corrida && e('span', null, '🚫 auto-remove'),
-                  )
-                ))
+                      // Stats
+                      e('div', { style: { display: 'flex', gap: '18px' } },
+                        e('div', null,
+                          e('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Na fila'),
+                          e('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.na_fila || 0)
+                        ),
+                        e('div', { style: { width: '0.5px', background: 'rgba(0,0,0,0.08)' } }),
+                        e('div', null,
+                          e('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Em rota'),
+                          e('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.em_rota || 0)
+                        )
+                      )
+                    )
+                  );
+                })
               )
         ),
         // 🆕 FIX: modal precisa estar disponível TAMBÉM no early-return da lista,
@@ -546,7 +581,9 @@
     // ════════════════════════════════════════════════════════
     // RENDER — central selecionada (tabs)
     // ════════════════════════════════════════════════════════
-    return e('div', { className: 'space-y-3' },
+    return e('div', { className: 'space-y-3', style: { animation: 'filaTelaZoomIn 280ms ease' } },
+      // CSS pra animação de entrada (caso o usuário entre direto na tela)
+      e('style', null, `@keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }`),
       // Header com voltar
       e('div', { className: 'flex items-center gap-2' },
         e('button', {

@@ -36,6 +36,8 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const [regioes, setRegioes] = React.useState([]);
     const [novaRegiaoInput, setNovaRegiaoInput] = React.useState('');
     const [penalidades, setPenalidades] = React.useState([]);
+    // 🆕 2026-05-24: aba interna isolada (a aba externa do app.js agora é só "tradicionais"/"auto")
+    const [abaInterna, setAbaInterna] = React.useState('monitoramento');
     const [minhaPenalidade, setMinhaPenalidade] = React.useState(null);
     const [modalSaida, setModalSaida] = React.useState(false);
     // 🆕 2026-05: estados do modal de punição manual (admin)
@@ -346,7 +348,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     React.useEffect(() => { if(!isAdmin||!centralSelecionada)return; carregarFila(centralSelecionada.id); carregarVinculos(centralSelecionada.id); carregarBairrosConfig(centralSelecionada.id); carregarRegioes(centralSelecionada.id); carregarPenalidades(centralSelecionada.id); const i=setInterval(()=>{carregarFila(centralSelecionada.id);carregarPenalidades(centralSelecionada.id);},5000); return()=>clearInterval(i); }, [centralSelecionada]);
     React.useEffect(() => { if(!isAdmin||centralSelecionada)return; const i=setInterval(()=>carregarCentrais(),8000); return()=>clearInterval(i); }, [centralSelecionada]);
     React.useEffect(() => { if(isAdmin||!minhaCentral)return; carregarMinhaPosicao(); buscarNotificacao(); const i=setInterval(()=>{carregarMinhaPosicao();solicitarGPS();buscarNotificacao();carregarMinhaPenalidade();},5000); return()=>clearInterval(i); }, [minhaCentral]);
-    React.useEffect(() => { if(abaAtiva==='relatorios'&&centralSelecionada){ carregarEstatisticas(centralSelecionada.id); carregarHistorico(centralSelecionada.id); } }, [abaAtiva,centralSelecionada,filtroData]);
+    React.useEffect(() => { if(abaInterna==='relatorios'&&centralSelecionada){ carregarEstatisticas(centralSelecionada.id); carregarHistorico(centralSelecionada.id); } }, [abaInterna,centralSelecionada,filtroData]);
     React.useEffect(() => { if(minhaLocalizacao&&minhaCentral?.latitude&&minhaCentral?.longitude){ setDistanciaCentral(Math.round(calcularDistanciaHaversine(minhaLocalizacao.latitude,minhaLocalizacao.longitude,parseFloat(minhaCentral.latitude),parseFloat(minhaCentral.longitude)))); } }, [minhaLocalizacao,minhaCentral]);
     React.useEffect(() => { if(modalCentral){ if(modalCentral.id){ setEnderecoValidado(true); setCoordenadasEncontradas({latitude:modalCentral.latitude,longitude:modalCentral.longitude,enderecoFormatado:modalCentral.endereco}); }else{ setEnderecoValidado(false); setCoordenadasEncontradas(null); } } }, [modalCentral]);
 
@@ -470,44 +472,118 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
 
         // HOME - Grid de centrais (quando nenhuma selecionada)
         if (!centralSelecionada) {
-            return React.createElement('div', { className: 'space-y-6' },
-                React.createElement('div', { className: 'bg-white rounded-xl shadow p-4' },
-                    React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-4' },
-                        React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('span', { className: 'text-2xl' }, '📋'), React.createElement('div', null, React.createElement('h1', { className: 'text-xl font-bold text-gray-800' }, 'Filas de Entrega'), React.createElement('p', { className: 'text-sm text-gray-500' }, 'Selecione uma fila para gerenciar'))),
-                        React.createElement('button', { onClick: () => setModalCentral({}), className: 'px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700' }, '➕ Nova Fila')
-                    )
-                ),
-                centrais.length === 0 ? React.createElement('div', { className: 'text-center py-16 text-gray-500' }, React.createElement('span', { className: 'text-6xl block mb-4' }, '📭'), React.createElement('p', { className: 'text-lg' }, 'Nenhuma fila cadastrada ainda')) :
-                React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' },
-                    centrais.map(c => React.createElement('div', {
-                        key: c.id,
-                        onClick: () => setCentralSelecionada(c),
-                        className: `bg-white rounded-2xl shadow-lg border-2 hover:shadow-xl transition-all cursor-pointer overflow-hidden ${c.ativa ? 'border-purple-200 hover:border-purple-400' : 'border-gray-200 opacity-60'}`
-                    },
-                        React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white' },
-                            React.createElement('h3', { className: 'text-lg font-bold' }, c.nome),
-                            React.createElement('p', { className: 'text-purple-200 text-xs truncate' }, c.endereco || 'Sem endereço')
+            // 🆕 2026-05-24: Redesign minimalista com barra lateral + zoom-fade + stagger + shared element
+            return React.createElement(React.Fragment, null,
+                // CSS embutido pra animações (só uma vez)
+                React.createElement('style', null, `
+                    @keyframes filaCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+                    @keyframes filaCardZoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.03); } }
+                    @keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+                    .fila-card-grid { animation: none; }
+                    .fila-card { opacity: 0; animation: filaCardIn 280ms ease forwards; transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
+                    .fila-card:hover { border-color: rgba(0,0,0,0.18); transform: translateY(-1px); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+                    .fila-card:active { transform: scale(0.985); }
+                    .fila-card.is-clicked { animation: filaCardZoomOut 280ms ease forwards; pointer-events: none; }
+                `),
+                React.createElement('div', { className: 'space-y-6' },
+                    // Header limpo (sem o card antigo)
+                    React.createElement('div', { className: 'flex items-center justify-between' },
+                        React.createElement('div', null,
+                            React.createElement('h1', { className: 'text-xl font-semibold text-gray-900' }, 'Filas de entrega'),
+                            React.createElement('p', { className: 'text-sm text-gray-500 mt-0.5' }, 'Clique em uma central para gerenciar')
                         ),
-                        React.createElement('div', { className: 'p-4' },
-                            React.createElement('div', { className: 'flex gap-3 mb-3' },
-                                React.createElement('div', { className: 'flex-1 bg-blue-50 rounded-xl p-3 text-center' },
-                                    React.createElement('p', { className: 'text-2xl font-bold text-blue-700' }, c.na_fila || 0),
-                                    React.createElement('p', { className: 'text-xs text-blue-600 font-medium' }, 'Na Fila')
-                                ),
-                                React.createElement('div', { className: 'flex-1 bg-green-50 rounded-xl p-3 text-center' },
-                                    React.createElement('p', { className: 'text-2xl font-bold text-green-700' }, c.em_rota || 0),
-                                    React.createElement('p', { className: 'text-xs text-green-600 font-medium' }, 'Em Rota')
-                                )
-                            ),
-                            React.createElement('div', { className: 'flex items-center justify-between' },
-                                React.createElement('span', { className: 'text-xs text-gray-500' }, `👥 ${c.total_vinculados || 0} vinculados`),
-                                React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${c.ativa ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` }, c.ativa ? '🟢 Ativa' : '🔴 Inativa')
-                            )
+                        React.createElement('button', {
+                            onClick: () => setModalCentral({}),
+                            className: 'px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5'
+                        }, '➕ ', React.createElement('span', null, 'Nova fila'))
+                    ),
+
+                    centrais.length === 0
+                        ? React.createElement('div', { className: 'text-center py-16' },
+                            React.createElement('span', { className: 'text-5xl block mb-3' }, '📭'),
+                            React.createElement('p', { className: 'text-gray-500' }, 'Nenhuma fila cadastrada ainda')
                         )
-                    ))
-                ),
-                // Modal criar central (precisa estar aqui também)
-                modalCentral && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
+                        : React.createElement('div', {
+                            className: 'fila-card-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+                        },
+                            centrais.map((c, idx) => {
+                                const ehAuto = c.tipo === 'auto';
+                                const corBarra = !c.ativa ? '#B4B2A9' : (ehAuto ? '#534AB7' : '#888780');
+                                const cardId = `fila-card-${c.id}`;
+                                return React.createElement('div', {
+                                    key: c.id,
+                                    id: cardId,
+                                    className: `fila-card bg-white border ${c.ativa ? 'border-gray-200' : 'border-gray-200 opacity-55'}`,
+                                    style: {
+                                        borderRadius: '12px',
+                                        padding: '14px 16px 14px 12px',
+                                        display: 'flex',
+                                        gap: '12px',
+                                        cursor: 'pointer',
+                                        animationDelay: `${Math.min(idx * 35, 350)}ms`
+                                    },
+                                    onClick: (ev) => {
+                                        // Zoom-fade: marca o card pra animar e troca a tela depois
+                                        const card = ev.currentTarget;
+                                        card.classList.add('is-clicked');
+                                        // Guarda info pra shared element migrar pro header
+                                        window.__tuttsFilaShared = {
+                                            nome: c.nome,
+                                            ehAuto,
+                                            ativa: c.ativa,
+                                        };
+                                        setTimeout(() => setCentralSelecionada(c), 280);
+                                    }
+                                },
+                                    // Barra lateral (cinza pra manual, roxa pra auto, vermelha pra inativa)
+                                    React.createElement('div', {
+                                        style: { width: '3px', background: corBarra, borderRadius: '999px', flexShrink: 0 }
+                                    }),
+                                    // Conteúdo
+                                    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                        // Header (nome + endereço + badge)
+                                        React.createElement('div', {
+                                            style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }
+                                        },
+                                            React.createElement('div', { style: { minWidth: 0 } },
+                                                React.createElement('p', {
+                                                    style: { fontSize: '14px', fontWeight: 500, margin: '0 0 2px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+                                                }, c.nome),
+                                                React.createElement('p', {
+                                                    style: { fontSize: '11px', color: '#6B7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+                                                }, `${c.endereco || 'Sem endereço'} · ${c.total_vinculados || 0} vinculado${(c.total_vinculados || 0) === 1 ? '' : 's'}`)
+                                            ),
+                                            // Badge — inativa > tipo
+                                            !c.ativa
+                                                ? React.createElement('span', {
+                                                    style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#FCEBEB', color: '#791F1F', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
+                                                }, 'Inativa')
+                                                : ehAuto
+                                                    ? React.createElement('span', {
+                                                        style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#EEEDFE', color: '#3C3489', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
+                                                    }, '🤖 Auto')
+                                                    : React.createElement('span', {
+                                                        style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#F1EFE8', color: '#5F5E5A', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
+                                                    }, '👥 Manual')
+                                        ),
+                                        // Stats (Na fila | Em rota)
+                                        React.createElement('div', { style: { display: 'flex', gap: '18px' } },
+                                            React.createElement('div', null,
+                                                React.createElement('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Na fila'),
+                                                React.createElement('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.na_fila || 0)
+                                            ),
+                                            React.createElement('div', { style: { width: '0.5px', background: 'rgba(0,0,0,0.08)' } }),
+                                            React.createElement('div', null,
+                                                React.createElement('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Em rota'),
+                                                React.createElement('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.em_rota || 0)
+                                            )
+                                        )
+                                    )
+                                );
+                            })
+                        ),
+                    // Modal criar central (precisa estar aqui também)
+                    modalCentral && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
                     React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' },
                         React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-2xl text-white' }, React.createElement('h2', { className: 'text-xl font-bold' }, '➕ Nova Fila')),
                         React.createElement('form', { className: 'p-6 space-y-4', onSubmit: (e) => { e.preventDefault(); if (!enderecoValidado) { showToast('Busque o endereço primeiro', 'error'); return; } const fd = new FormData(e.target); salvarCentral({ nome: fd.get('nome'), endereco: coordenadasEncontradas?.enderecoFormatado || fd.get('endereco'), latitude: coordenadasEncontradas?.latitude, longitude: coordenadasEncontradas?.longitude, raio_metros: parseInt(fd.get('raio_metros')) }); } },
@@ -519,12 +595,30 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         )
                     )
                 )
+                ) // fecha o div space-y-6 wrapper do Fragment
             );
         }
 
         // DETALHE DA CENTRAL SELECIONADA
-        return React.createElement('div', { className: 'space-y-4' },
-            // 🚀 2026-05: Header compactado — voltar + nome/endereço + ações primárias
+        // 🆕 2026-05-24: tela entra com zoom-in + fade (shared element via badge no header)
+        const ehAutoCentral = centralSelecionada.tipo === 'auto';
+        const badgeCentral = !centralSelecionada.ativa
+            ? React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#FCEBEB', color: '#791F1F', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
+            : ehAutoCentral
+                ? React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#EEEDFE', color: '#3C3489', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, '🤖 Auto')
+                : React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#F1EFE8', color: '#5F5E5A', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, '👥 Manual');
+
+        return React.createElement('div', {
+            className: 'space-y-4',
+            style: {
+                animation: 'filaTelaZoomIn 280ms ease',
+            }
+        },
+            // CSS pra animação de entrada
+            React.createElement('style', null, `
+                @keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+            `),
+            // 🚀 2026-05: Header compactado — voltar + nome/endereço + badge (shared) + ações primárias
             React.createElement('div', { className: 'flex items-center justify-between gap-3' },
                 React.createElement('div', { className: 'flex items-center gap-2 min-w-0 flex-1' },
                     React.createElement('button', {
@@ -532,9 +626,12 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         className: 'w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-lg flex-shrink-0',
                         title: 'Voltar pra lista de centrais'
                     }, '←'),
-                    React.createElement('div', { className: 'min-w-0' },
-                        React.createElement('h1', { className: 'text-base font-semibold text-gray-900 truncate' }, centralSelecionada.nome),
-                        React.createElement('p', { className: 'text-xs text-gray-500 truncate' }, centralSelecionada.endereco || '—')
+                    React.createElement('div', { className: 'min-w-0 flex items-center gap-2' },
+                        React.createElement('div', { className: 'min-w-0' },
+                            React.createElement('h1', { className: 'text-base font-semibold text-gray-900 truncate' }, centralSelecionada.nome),
+                            React.createElement('p', { className: 'text-xs text-gray-500 truncate' }, centralSelecionada.endereco || '—')
+                        ),
+                        badgeCentral
                     )
                 ),
                 React.createElement('div', { className: 'flex gap-2 flex-shrink-0' },
@@ -549,15 +646,15 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
             React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
                 ['monitoramento', 'vinculos', 'penalidades', 'relatorios', 'config'].map(aba => React.createElement('button', {
                     key: aba,
-                    onClick: () => onChangeTab(aba),
-                    className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
+                    onClick: () => setAbaInterna(aba),
+                    className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${abaInterna === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
                 }, aba === 'monitoramento' ? 'Monitor' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? 'Penalidades' : aba === 'relatorios' ? 'Relatórios' : 'Config'))
             ),
 
             // Container das abas (sem card duplo — abas são autocontidas agora)
             React.createElement('div', null,
                     // MONITORAMENTO
-                    abaAtiva === 'monitoramento' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
+                    abaInterna === 'monitoramento' && centralSelecionada && React.createElement('div', { className: 'space-y-4' },
                         // 🚀 Status row: 3 cards principais + linha de contexto Vinculados
                         React.createElement('div', { className: 'grid grid-cols-3 gap-2' },
                             React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
@@ -624,7 +721,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         )
                     ),
                     // PENALIDADES
-                    abaAtiva === 'penalidades' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
+                    abaInterna === 'penalidades' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
                         // Header com título + botão de aplicar punição manual
                         React.createElement('div', { className: 'flex items-center justify-between' },
                             React.createElement('h3', { className: 'font-bold text-lg' }, '🚫 Penalidades Ativas'),
@@ -669,7 +766,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         }))
                     ),
                     // VINCULOS
-                    abaAtiva === 'vinculos' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
+                    abaInterna === 'vinculos' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
                         React.createElement('div', { className: 'flex justify-between items-center' }, React.createElement('h3', { className: 'font-bold text-lg' }, `Profissionais vinculados à ${centralSelecionada.nome}`), React.createElement('button', { onClick: () => setModalVinculo(true), className: 'px-4 py-2 bg-purple-600 text-white rounded-lg' }, '➕ Vincular')),
                         React.createElement('div', { className: 'bg-white rounded-lg border overflow-hidden' },
                             React.createElement('table', { className: 'w-full' },
@@ -679,14 +776,14 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         )
                     ),
                     // RELATORIOS
-                    abaAtiva === 'relatorios' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
+                    abaInterna === 'relatorios' && centralSelecionada && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
                         React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('label', { className: 'font-medium' }, 'Data:'), React.createElement('input', { type: 'date', value: filtroData, onChange: (e) => setFiltroData(e.target.value), className: 'px-3 py-2 border rounded-lg' }), React.createElement('button', { onClick: () => { carregarEstatisticas(centralSelecionada.id); carregarHistorico(centralSelecionada.id); }, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg' }, '🔍 Filtrar')),
                         estatisticas && React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' }, React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('p', { className: 'text-sm text-gray-600' }, 'Total de Saídas'), React.createElement('p', { className: 'text-3xl font-bold text-purple-600' }, estatisticas.total_saidas)), React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('p', { className: 'text-sm text-gray-600' }, 'Tempo Médio Espera'), React.createElement('p', { className: 'text-3xl font-bold text-blue-600' }, `${estatisticas.tempo_medio_espera} min`))),
                         estatisticas?.ranking?.length > 0 && React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🏆 Ranking'), React.createElement('div', { className: 'space-y-2' }, estatisticas.ranking.map((p, i) => React.createElement('div', { key: p.cod_profissional, className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg' }, React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('span', { className: 'text-xl' }, i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`), React.createElement('span', { className: 'font-medium' }, p.nome_profissional)), React.createElement('span', { className: 'font-bold text-purple-600' }, `${p.total_saidas} saídas`))))),
                         React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '📋 Histórico'), React.createElement('div', { className: 'overflow-x-auto' }, React.createElement('table', { className: 'w-full' }, React.createElement('thead', { className: 'bg-gray-50' }, React.createElement('tr', null, React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Hora'), React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Profissional'), React.createElement('th', { className: 'px-3 py-2 text-center text-xs font-medium text-gray-500' }, 'Ação'), React.createElement('th', { className: 'px-3 py-2 text-right text-xs font-medium text-gray-500' }, 'Tempo'))), React.createElement('tbody', { className: 'divide-y' }, historico.map((h, i) => React.createElement('tr', { key: i, className: 'hover:bg-gray-50' }, React.createElement('td', { className: 'px-3 py-2 text-sm' }, formatarHora(h.created_at)), React.createElement('td', { className: 'px-3 py-2 text-sm font-medium' }, h.nome_profissional), React.createElement('td', { className: 'px-3 py-2 text-center' }, React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${h.acao === 'entrada' ? 'bg-blue-100 text-blue-700' : h.acao === 'enviado_rota' ? 'bg-green-100 text-green-700' : h.acao === 'penalidade_anulada' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}` }, h.acao === 'entrada' ? '📥 Entrada' : h.acao === 'enviado_rota' ? '🚀 Enviado' : h.acao === 'retorno' || h.acao === 'retorno_prioridade' ? '🔄 Retorno' : h.acao === 'removido' ? '❌ Removido' : h.acao === 'reordenado' ? '↕️ Reordenado' : h.acao === 'penalidade_anulada' ? '✅ Penalidade anulada' : '👋 Saiu')), React.createElement('td', { className: 'px-3 py-2 text-right text-sm text-gray-500' }, h.tempo_espera_minutos ? `${h.tempo_espera_minutos} min espera` : h.tempo_rota_minutos ? `${h.tempo_rota_minutos} min rota` : '-')))))))
                     ),
                     // CONFIG (com Regiões)
-                    abaAtiva === 'config' && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
+                    abaInterna === 'config' && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
                         React.createElement('h3', { className: 'font-bold text-lg' }, 'Centrais Cadastradas'),
                         React.createElement('div', { className: 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' }, centrais.map(c => React.createElement('div', { key: c.id, className: `bg-white rounded-xl p-4 shadow border ${c.ativa ? 'border-green-200' : 'border-red-200 opacity-60'}` },
                             React.createElement('div', { className: 'flex justify-between items-start mb-3' }, React.createElement('div', null, React.createElement('h4', { className: 'font-bold text-gray-800' }, c.nome), React.createElement('p', { className: 'text-sm text-gray-500' }, c.endereco)), React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${c.ativa ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` }, c.ativa ? 'Ativa' : 'Inativa')),

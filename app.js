@@ -558,7 +558,7 @@ const SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "tarefas", label: "Tarefas"}, {id: "metricas", label: "Métricas"}]
     },
     { id: "filas", label: "Filas", icon: "👥",
-      abas: [{id: "monitoramento", label: "Monitoramento"}, {id: "vinculos", label: "Vínculos"}, {id: "relatorios", label: "Relatórios"}, {id: "config", label: "Configurações"}, {id: "auto", label: "🤖 Auto-gerenciáveis"}]
+      abas: [{id: "tradicionais", label: "Filas tradicionais"}, {id: "auto", label: "🤖 Auto-gerenciáveis"}]
     },
     { id: "social", label: "Social", icon: "💜",
       abas: [{id: "perfil", label: "Meu Perfil"}, {id: "comunidade", label: "Comunidade"}, {id: "mensagens", label: "Mensagens"}]
@@ -2450,7 +2450,7 @@ const hideLoadingScreen = () => {
         [prazoProfConfigOS, setPrazoProfConfigOS] = useState([]), // Configurações de prazo prof para aba OS
         [wa, _a] = useState(!1), [todoGrupos, setTodoGrupos] = useState([]), [todoTarefas, setTodoTarefas] = useState([]), [todoGrupoAtivo, setTodoGrupoAtivo] = useState(null), [todoMetricas, setTodoMetricas] = useState(null), [todoTab, setTodoTab] = useState(() => { try { return localStorage.getItem("tutts_tab_todo") || "tarefas"; } catch(e) { return "tarefas"; } }), [todoFiltroStatus, setTodoFiltroStatus] = useState("todas"), [todoModal, setTodoModal] = useState(null), [todoLoading, setTodoLoading] = useState(false), [todoAdmins, setTodoAdmins] = useState([]),
         // Estado do módulo de Filas
-        [filasTab, setFilasTab] = useState(() => { try { return localStorage.getItem("tutts_tab_filas") || "monitoramento"; } catch(e) { return "monitoramento"; } }),
+        [filasTab, setFilasTab] = useState(() => { try { const t = localStorage.getItem("tutts_tab_filas"); /* 🆕 migra dos valores antigos pro novo */ return (t === 'monitoramento' || t === 'vinculos' || t === 'relatorios' || t === 'config' || t === 'penalidades') ? 'tradicionais' : (t || 'tradicionais'); } catch(e) { return "tradicionais"; } }),
         [perfTab, setPerfTab] = useState(() => { try { return localStorage.getItem("tutts_tab_perf") || "dashboard"; } catch(e) { return "dashboard"; } }),
         // Novos estados para TODO melhorado
         [todoMeuDia, setTodoMeuDia] = useState([]),
@@ -9721,7 +9721,7 @@ const hideLoadingScreen = () => {
                                 usuario: l,
                                 apiUrl: API_URL,
                                 showToast: ja,
-                                abaAtiva: "monitoramento",
+                                abaAtiva: "tradicionais",
                                 onChangeTab: () => {},
                                 fetchAuth: fetchAuth
                             })
