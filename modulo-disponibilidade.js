@@ -4,6 +4,7 @@
 
 (function() {
     'use strict';
+    console.log('%c📦 MODULO-DISPONIBILIDADE v12_DEBUG_FULL CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -306,6 +307,8 @@
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
             }, c = (t, a, l) => {
+                // 🔧 v12 (2026-05-24): LOGS pra rastrear se chega aqui
+                console.log('🔍 [disp.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
                 // Anti-echo: marcar esta linha como editada localmente
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
                 // 🆕 2026-05 FIX v2 (stepper "volta ao clicar"):
@@ -351,7 +354,9 @@
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
+                console.log('🔍 [disp.c] debounce agendado key=' + debounceKey + ' valor="' + l + '"');
                 window[debounceKey] = setTimeout(async () => {
+                    console.log('🔍 [disp.debounce] DISPAROU key=' + debounceKey + ' valor="' + l + '"');
                     try {
                         // Verificar restrição apenas para cod_profissional com valor
                         if ("cod_profissional" === a && l && "" !== l.trim()) {
