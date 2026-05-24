@@ -4,7 +4,7 @@
 
 (function() {
     'use strict';
-    console.log('%c📦 MODULO-DISPONIBILIDADE v15_HOTFIX_HANDLER CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
+    console.log('%c📦 MODULO-DISPONIBILIDADE v16_SYNC_HANDLER CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -81,6 +81,12 @@
             const _dispWsAuthFailed = React.useRef(false);
             // Anti-echo: linhas editadas localmente nos últimos 2s são ignoradas via WS
             const _dispLocalEdits = React.useRef({});
+            // 🔧 v16 (2026-05-25): ref pro state atual — usado pra ler estado SÍNCRONO
+            // dentro do handler `c`. Em React 18 (concurrent mode), o callback de
+            // setState pode rodar ASSÍNCRONO, fazendo r/o ficarem null quando o
+            // handler verifica logo depois. Solução: ler via ref que está sempre fresca.
+            const _dispStateRef = React.useRef(p);
+            _dispStateRef.current = p;
             // Refs estáveis (evita stale closure)
             const _dispReloadRef = React.useRef(r);
             _dispReloadRef.current = r;
@@ -272,76 +278,67 @@
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
             }, c = (t, a, l) => {
-                // 🔧 v15 (2026-05-25 HOTFIX): handler reescrito pra ser RESILIENTE.
-                // Causa raiz identificada: setState callback antigo jogava exception
-                // silenciosa quando pe/A vinham undefined (lookup pe.find), e o React
-                // engolia, deixando r/o sem set, fazendo o handler retornar antes do PUT.
-                // Solução: r/o setados PRIMEIRO, lookup local virou defensive + try/catch.
-                console.warn('[DISPv15.c.1] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '" | pe?=' + (typeof pe !== 'undefined') + ' A?=' + (typeof A !== 'undefined'));
+                // 🔧 v16 (2026-05-25): FIX DEFINITIVO. Causa raiz identificada via logs v15:
+                // o callback de x(prev => ...) é ASSÍNCRONO no React 18 (concurrent mode),
+                // então r/o ficavam null quando o handler verificava logo depois → abort
+                // antes do debounce → PUT nunca rodava.
+                // SOLUÇÃO: lê estado SÍNCRONO via _dispStateRef.current (sempre fresco).
+                // Toda lógica roda FORA do setState. setState só aplica o resultado.
+                console.warn('[DISPv16.c.1] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '" | pe?=' + (typeof pe !== 'undefined') + ' A?=' + (typeof A !== 'undefined'));
                 console.log('🔍 [disp.c] CHAMADO id=' + t + ' campo=' + a + ' valor="' + l + '"');
-                // Anti-echo: marcar esta linha como editada localmente
                 if (window._dispMarkLocalEdit) window._dispMarkLocalEdit(t);
-                // 🆕 2026-05 FIX v2 (stepper "volta ao clicar"):
-                // Removida a derivação de `r` a partir do `e.linhas` capturado em closure
-                // (que ficava stale entre cliques rápidos). Agora TODA a lógica roda DENTRO
-                // do setState callback, garantindo que sempre vemos o estado mais recente.
-                // O `s` (nome resolvido) e ref do array atualizado ficam em variáveis externas
-                // pra o bloco de debounce abaixo poder usar.
-                let s = null;
-                let r = null;
-                let o = -1;
-                // 🔧 v15: try/catch externo pra LOGAR qualquer exception do React
-                try {
-                    x(prev => {
-                        const linhasAtuais = [...(prev.dispData?.linhas || [])];
-                        const idxAtual = linhasAtuais.findIndex(item => item.id === t);
-                        console.warn('[DISPv15.c.2] setState | idxAtual=' + idxAtual + ' total_linhas=' + linhasAtuais.length);
-                        if (idxAtual === -1) {
-                            console.warn('[DISPv15.c.2.ABORT] linha id=' + t + ' NAO encontrada em prev.dispData.linhas — abortando setState');
-                            return prev;
-                        }
-                        // 🔧 v15 CORE FIX: setar r/o IMEDIATAMENTE, antes de qualquer
-                        // operação que possa jogar exception. Antes ficavam no FIM e
-                        // não eram setados se algo entre o início e o return quebrasse.
-                        linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], [a]: l };
-                        r = linhasAtuais;
-                        o = idxAtual;
-                        s = linhasAtuais[idxAtual].nome_profissional;
-                        // Lookup local de nome (UX hint) quando cod_profissional muda
-                        // 🔧 v15: DEFENSIVE — pe ou A podem vir undefined em algumas renderizações
-                        if (a === "cod_profissional") {
-                            if (l && "" !== l.trim() && l.length >= 1) {
-                                try {
-                                    const m1 = (pe && typeof pe.find === 'function') ? pe.find(p => p.codigo === l.toString()) : null;
-                                    if (m1) {
-                                        s = m1.nome;
-                                        linhasAtuais[idxAtual].nome_profissional = m1.nome;
-                                    } else {
-                                        const m2 = (A && typeof A.find === 'function') ? A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase()) : null;
-                                        if (m2) {
-                                            s = m2.fullName;
-                                            linhasAtuais[idxAtual].nome_profissional = m2.fullName;
-                                        }
-                                    }
-                                } catch (errLookup) {
-                                    console.warn('[DISPv15.c.2.LOOKUP_ERR] ' + errLookup.message + ' | pe=' + typeof pe + ' A=' + typeof A);
-                                }
-                            } else if (!l || "" === l.trim()) {
-                                s = "";
-                                linhasAtuais[idxAtual].nome_profissional = "";
-                            }
-                        }
-                        return { ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } };
-                    });
-                } catch (errSetState) {
-                    console.error('[DISPv15.c.SETSTATE_ERR]', errSetState.message, errSetState.stack);
-                }
-                console.warn('[DISPv15.c.3] após setState | r=' + (r ? 'set(' + r.length + ')' : 'NULL') + ' o=' + o + ' s="' + s + '"');
-                // Linha sumiu entre clique e callback (raro): pula debounce
-                if (!r || o === -1) {
-                    console.warn('[DISPv15.c.3.ABORT] r=null OU o=-1 — handler retornando sem agendar debounce');
+
+                // 1) LÊ estado SÍNCRONO via ref (não depende de setState callback)
+                const estadoAtual = _dispStateRef.current;
+                const linhasOrig = estadoAtual?.dispData?.linhas || [];
+                const idxAtual = linhasOrig.findIndex(item => item.id === t);
+                console.warn('[DISPv16.c.2] estado lido | idxAtual=' + idxAtual + ' total_linhas=' + linhasOrig.length);
+
+                if (idxAtual === -1) {
+                    console.warn('[DISPv16.c.2.ABORT] linha id=' + t + ' NAO encontrada — handler abortando');
                     return;
                 }
+
+                // 2) Calcula nova linha SÍNCRONO (cópia, não muta original)
+                const linhasAtuais = [...linhasOrig];
+                linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], [a]: l };
+                let s = linhasAtuais[idxAtual].nome_profissional;
+
+                // Lookup local de nome (UX hint) — defensive em pe/A
+                if (a === "cod_profissional") {
+                    if (l && "" !== l.trim() && l.length >= 1) {
+                        try {
+                            const m1 = (pe && typeof pe.find === 'function') ? pe.find(p => p.codigo === l.toString()) : null;
+                            if (m1) {
+                                s = m1.nome;
+                                linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], nome_profissional: m1.nome };
+                            } else {
+                                const m2 = (A && typeof A.find === 'function') ? A.find(u => u.codProfissional?.toLowerCase() === l.toLowerCase()) : null;
+                                if (m2) {
+                                    s = m2.fullName;
+                                    linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], nome_profissional: m2.fullName };
+                                }
+                            }
+                        } catch (errLookup) {
+                            console.warn('[DISPv16.c.LOOKUP_ERR] ' + errLookup.message);
+                        }
+                    } else if (!l || "" === l.trim()) {
+                        s = "";
+                        linhasAtuais[idxAtual] = { ...linhasAtuais[idxAtual], nome_profissional: "" };
+                    }
+                }
+
+                // 3) APLICA setState (só pra refletir na UI — não usamos o callback pra lógica)
+                try {
+                    x(prev => ({ ...prev, dispData: { ...prev.dispData, linhas: linhasAtuais } }));
+                } catch (errSetState) {
+                    console.error('[DISPv16.c.SETSTATE_ERR]', errSetState.message);
+                }
+
+                // 4) r e o já estão setados — segue pro debounce SEM depender do setState callback
+                const r = linhasAtuais;
+                const o = idxAtual;
+                console.warn('[DISPv16.c.3] r/o prontos | r=set(' + r.length + ') o=' + o + ' s="' + s + '"');
                 // Debounce: verificar restrição + buscar nome no CRM + salvar no backend
                 const debounceKey = 'dispDebounce_' + t + '_' + a;
                 clearTimeout(window[debounceKey]);
