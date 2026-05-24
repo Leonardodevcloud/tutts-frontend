@@ -1,11 +1,9 @@
 // ==================== MÓDULO DISPONIBILIDADE ====================
 // Arquivo: modulo-disponibilidade.js
 // Conteúdo do módulo Disponibilidade - Carregado dinamicamente
-// 🔧 v10 (2026-05-24): IDÊNTICO ao original. Se você ver este log, browser baixou a versão certa.
 
 (function() {
     'use strict';
-    console.log('📦 [disponibilidade] modulo-disponibilidade.js v10_ORIGINAL_RESTORED carregado');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -430,23 +428,28 @@
                             }
                         }
                         const usuarioLogado = JSON.parse(sessionStorage.getItem("tutts_user") || "{}");
+                        // 🔧 v11 (2026-05-24): LOGS EXPLÍCITOS pra debug
+                        const putBody = {
+                            cod_profissional: r[o].cod_profissional || null,
+                            nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
+                            status: r[o].status,
+                            observacao: r[o].observacao,
+                            observacao_usuario: usuarioLogado?.fullName || "Sistema",
+                            status_usuario: usuarioLogado?.fullName || "Sistema"
+                        };
+                        console.log('💾 [disp.PUT] enviando linha', t, putBody);
                         const putResp = await _fetch(`${API_URL}/disponibilidade/linhas/${t}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json"
                             },
-                            body: JSON.stringify({
-                                cod_profissional: r[o].cod_profissional || null,
-                                nome_profissional: "cod_profissional" === a ? s || null : r[o].nome_profissional || null,
-                                status: r[o].status,
-                                observacao: r[o].observacao,
-                                observacao_usuario: usuarioLogado?.fullName || "Sistema",
-                                status_usuario: usuarioLogado?.fullName || "Sistema"
-                            })
+                            body: JSON.stringify(putBody)
                         });
+                        console.log('💾 [disp.PUT] resposta', putResp.status, putResp.ok ? '✓' : '✗');
                         if (putResp && putResp.ok) {
                             try {
                                 const linhaAtualizada = await putResp.json();
+                                console.log('💾 [disp.PUT] linha salva no banco:', linhaAtualizada);
                                 if (linhaAtualizada && linhaAtualizada.id) {
                                     _dispLocalEdits.current[linhaAtualizada.id] = Date.now();
                                     _dispSetStateRef.current(function(prev) {
@@ -454,11 +457,56 @@
                                         if (!dd || !dd.linhas) return prev;
                                         return Object.assign({}, prev, { dispData: Object.assign({}, dd, { linhas: dd.linhas.map(function(li) { return li.id === linhaAtualizada.id ? Object.assign({}, li, linhaAtualizada) : li; }) }) });
                                     });
+                                    // 🔧 v11: BUSCAR FOTO depois de salvar com sucesso (fire-and-forget)
+                                    // Antes a foto só vinha no load inicial — agora também ao digitar cod novo.
+                                    if (linhaAtualizada.cod_profissional && /^\d+$/.test(String(linhaAtualizada.cod_profissional).trim())) {
+                                        const codFoto = String(linhaAtualizada.cod_profissional).trim();
+                                        (async () => {
+                                            try {
+                                                const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codFoto)}`);
+                                                if (!fotoResp.ok) {
+                                                    console.warn('📸 [disp] /perfil/fotos retornou', fotoResp.status);
+                                                    return;
+                                                }
+                                                const fotoData = await fotoResp.json();
+                                                const fotoUrl = fotoData?.fotos?.[codFoto];
+                                                if (!fotoUrl) {
+                                                    console.log('📸 [disp] motoboy', codFoto, 'não tem foto cadastrada');
+                                                    return;
+                                                }
+                                                console.log('📸 [disp] foto recebida para', codFoto);
+                                                _dispSetStateRef.current(function(prev) {
+                                                    var dd = prev.dispData;
+                                                    if (!dd || !dd.linhas) return prev;
+                                                    return Object.assign({}, prev, { dispData: Object.assign({}, dd, { linhas: dd.linhas.map(function(li) {
+                                                        if (li.id !== linhaAtualizada.id) return li;
+                                                        if ((li.cod_profissional || '').toString().trim() !== codFoto) return li;
+                                                        return Object.assign({}, li, { foto: fotoUrl });
+                                                    }) }) });
+                                                });
+                                            } catch (errFoto) {
+                                                console.warn('📸 [disp] erro ao buscar foto:', errFoto.message);
+                                            }
+                                        })();
+                                    }
                                 }
-                            } catch(parseErr) {}
+                            } catch(parseErr) {
+                                console.error('💾 [disp.PUT] erro ao parsear resposta:', parseErr);
+                            }
+                        } else {
+                            // 🔧 v11: PUT falhou — tenta extrair mensagem de erro do backend
+                            let detalhe = '';
+                            try { detalhe = await putResp.text(); } catch(_) {}
+                            console.error('💾 [disp.PUT] FALHOU! status=' + putResp.status, detalhe);
+                            if (typeof ja === 'function') {
+                                ja(`Erro ao salvar linha (${putResp.status})`, 'error');
+                            }
                         }
                     } catch (e) {
-                        console.error("Erro ao salvar linha:", e)
+                        console.error("Erro ao salvar linha:", e);
+                        if (typeof ja === 'function') {
+                            ja('Erro ao salvar linha: ' + e.message, 'error');
+                        }
                     }
                 }, 600)
             }, s = async (e, t, a = !1) => {
