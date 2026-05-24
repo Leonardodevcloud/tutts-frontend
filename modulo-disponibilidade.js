@@ -326,49 +326,31 @@
                     // Lookup local de nome (UX hint) quando cod_profissional muda
                     if (a === "cod_profissional") {
                         if (l && "" !== l.trim() && l.length >= 1) {
-                            // 🔧 v5 (2026-05-24): cod normalizado pra todos os lookups (case+trim)
-                            const codNorm = l.toString().trim().toLowerCase();
-                            
-                            // 🔧 v5: CROSS-LINHA lookup PRIMEIRO — se outra linha da mesma tela
-                            // já tem esse cod com nome+foto, reaproveita imediatamente (UX instantâneo).
-                            // Resolve o caso clássico: motoboy já está em outra linha (ex: excedente)
-                            // e o admin tenta colocar o mesmo cod numa linha titular vazia.
-                            const outraLinha = linhasAtuais.find(li => 
-                                li.id !== t && 
-                                li.cod_profissional && 
-                                li.cod_profissional.toString().trim().toLowerCase() === codNorm &&
-                                (li.nome_profissional || li.foto)
-                            );
-                            if (outraLinha) {
-                                if (outraLinha.nome_profissional && !s) {
-                                    s = outraLinha.nome_profissional;
-                                    linhasAtuais[idxAtual].nome_profissional = outraLinha.nome_profissional;
-                                }
-                                if (outraLinha.foto) {
-                                    linhasAtuais[idxAtual].foto = outraLinha.foto;
-                                }
-                            }
-                            
-                            // Lookup local 1: pe (profissionais) — agora case-insensitive + trim
-                            if (!s) {
+                            // 🔧 v6 (2026-05-24): SÓ faz lookup local quando o cod tem >= 3 dígitos.
+                            // Evita matches enganosos durante a digitação (ex: digita "1", "18", "189"
+                            // antes de "18903" — antes do v6, qualquer prefix que casasse com algum
+                            // cod no cache local virava match instantâneo).
+                            const codTrim = l.toString().trim();
+                            if (codTrim.length >= 3) {
+                                const codNorm = codTrim.toLowerCase();
+                                // Lookup local: pe (profissionais) — case-insensitive + trim em ambos
                                 const m1 = pe.find(p => (p.codigo || '').toString().trim().toLowerCase() === codNorm);
                                 if (m1) {
                                     s = m1.nome;
                                     linhasAtuais[idxAtual].nome_profissional = m1.nome;
-                                }
-                            }
-                            // Lookup local 2: A (users) — já era case-insensitive, agora também TRIM
-                            if (!s) {
-                                const m2 = A.find(u => (u.codProfissional || '').toString().trim().toLowerCase() === codNorm);
-                                if (m2) {
-                                    s = m2.fullName;
-                                    linhasAtuais[idxAtual].nome_profissional = m2.fullName;
+                                } else {
+                                    // Lookup local: A (users)
+                                    const m2 = A.find(u => (u.codProfissional || '').toString().trim().toLowerCase() === codNorm);
+                                    if (m2) {
+                                        s = m2.fullName;
+                                        linhasAtuais[idxAtual].nome_profissional = m2.fullName;
+                                    }
                                 }
                             }
                         } else if (!l || "" === l.trim()) {
                             s = "";
                             linhasAtuais[idxAtual].nome_profissional = "";
-                            // 🔧 v5: limpa foto também quando o cod é apagado
+                            // 🔧 v6: limpa também a foto quando o cod é apagado
                             linhasAtuais[idxAtual].foto = null;
                         }
                     }
@@ -383,28 +365,28 @@
                 clearTimeout(window[debounceKey]);
                 window[debounceKey] = setTimeout(async () => {
                     try {
-                        // Verificar restrição apenas para cod_profissional com valor
-                        if ("cod_profissional" === a && l && "" !== l.trim()) {
-                            // 🔧 v5 (2026-05-24): buscar FOTO do motoboy se ainda não tem.
-                            // Cross-linha cache já preencheu se motoboy já existia na tela —
-                            // este fetch cobre o caso "cod novo, nunca visto na tela".
+                        // 🔧 v6 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
+                        // Evita lookups com cod parcial caso o user pause entre dígitos.
+                        const codTrimDeb = (l || '').toString().trim();
+                        if ("cod_profissional" === a && codTrimDeb.length >= 3) {
+                            // 🔧 v6: buscar FOTO do motoboy junto com nome.
                             // Fire-and-forget: não bloqueia o resto do fluxo.
+                            // Só executa se o cod ATUAL da linha ainda é o mesmo do timer
+                            // (proteção contra race condition se user editar de novo).
                             (async () => {
                                 try {
-                                    const codFoto = (l || '').toString().trim();
-                                    if (!codFoto || !/^\d+$/.test(codFoto)) return;
-                                    // Não fetch de novo se já tem foto
-                                    if (r[o] && r[o].foto) return;
-                                    const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codFoto)}`);
+                                    if (!/^\d+$/.test(codTrimDeb)) return;
+                                    if (r[o] && r[o].foto) return; // já tem
+                                    const fotoResp = await _fetch(`${API_URL}/perfil/fotos?codigos=${encodeURIComponent(codTrimDeb)}`);
                                     if (!fotoResp.ok) return;
                                     const fotoData = await fotoResp.json();
-                                    const fotoUrl = fotoData?.fotos?.[codFoto];
+                                    const fotoUrl = fotoData?.fotos?.[codTrimDeb];
                                     if (!fotoUrl) return;
                                     x(prev => {
                                         const linhas = [...(prev.dispData?.linhas || [])];
                                         const idx = linhas.findIndex(e => e.id === t);
                                         // Só atualiza se o cod ainda for o mesmo (user pode ter mudado)
-                                        if (idx !== -1 && (linhas[idx].cod_profissional || '').toString().trim() === codFoto) {
+                                        if (idx !== -1 && (linhas[idx].cod_profissional || '').toString().trim() === codTrimDeb) {
                                             linhas[idx] = { ...linhas[idx], foto: fotoUrl };
                                         }
                                         return { ...prev, dispData: { ...prev.dispData, linhas } };
@@ -517,7 +499,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 600)
+                }, 1000)  // 🔧 v6 (2026-05-24): 600ms → 1000ms — dá mais tempo pro user terminar de digitar
             }, s = async (e, t, a = !1) => {
                 // Optimistic update: faz o POST, pega as linhas reais de volta (com ID real do banco)
                 // e insere direto no estado local. Não chama r() — assim não há refetch nem flash da tela.
