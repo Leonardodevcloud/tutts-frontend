@@ -326,20 +326,16 @@
                     // Lookup local de nome (UX hint) quando cod_profissional muda
                     if (a === "cod_profissional") {
                         if (l && "" !== l.trim() && l.length >= 1) {
-                            // 🔧 v6 (2026-05-24): SÓ faz lookup local quando o cod tem >= 3 dígitos.
-                            // Evita matches enganosos durante a digitação (ex: digita "1", "18", "189"
-                            // antes de "18903" — antes do v6, qualquer prefix que casasse com algum
-                            // cod no cache local virava match instantâneo).
+                            // 🔧 v7 (2026-05-24): SÓ faz lookup local com cod >= 3 dígitos.
+                            // Evita matches enganosos durante a digitação.
                             const codTrim = l.toString().trim();
                             if (codTrim.length >= 3) {
                                 const codNorm = codTrim.toLowerCase();
-                                // Lookup local: pe (profissionais) — case-insensitive + trim em ambos
                                 const m1 = pe.find(p => (p.codigo || '').toString().trim().toLowerCase() === codNorm);
                                 if (m1) {
                                     s = m1.nome;
                                     linhasAtuais[idxAtual].nome_profissional = m1.nome;
                                 } else {
-                                    // Lookup local: A (users)
                                     const m2 = A.find(u => (u.codProfissional || '').toString().trim().toLowerCase() === codNorm);
                                     if (m2) {
                                         s = m2.fullName;
@@ -350,7 +346,7 @@
                         } else if (!l || "" === l.trim()) {
                             s = "";
                             linhasAtuais[idxAtual].nome_profissional = "";
-                            // 🔧 v6: limpa também a foto quando o cod é apagado
+                            // 🔧 v7: limpa também a foto quando o cod é apagado
                             linhasAtuais[idxAtual].foto = null;
                         }
                     }
@@ -365,14 +361,10 @@
                 clearTimeout(window[debounceKey]);
                 window[debounceKey] = setTimeout(async () => {
                     try {
-                        // 🔧 v6 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
-                        // Evita lookups com cod parcial caso o user pause entre dígitos.
+                        // 🔧 v7 (2026-05-24): só dispara busca remota com cod >= 3 dígitos.
                         const codTrimDeb = (l || '').toString().trim();
                         if ("cod_profissional" === a && codTrimDeb.length >= 3) {
-                            // 🔧 v6: buscar FOTO do motoboy junto com nome.
-                            // Fire-and-forget: não bloqueia o resto do fluxo.
-                            // Só executa se o cod ATUAL da linha ainda é o mesmo do timer
-                            // (proteção contra race condition se user editar de novo).
+                            // 🔧 v7: buscar FOTO do motoboy junto com nome (fire-and-forget)
                             (async () => {
                                 try {
                                     if (!/^\d+$/.test(codTrimDeb)) return;
@@ -385,7 +377,6 @@
                                     x(prev => {
                                         const linhas = [...(prev.dispData?.linhas || [])];
                                         const idx = linhas.findIndex(e => e.id === t);
-                                        // Só atualiza se o cod ainda for o mesmo (user pode ter mudado)
                                         if (idx !== -1 && (linhas[idx].cod_profissional || '').toString().trim() === codTrimDeb) {
                                             linhas[idx] = { ...linhas[idx], foto: fotoUrl };
                                         }
@@ -499,7 +490,7 @@
                     } catch (e) {
                         console.error("Erro ao salvar linha:", e)
                     }
-                }, 1000)  // 🔧 v6 (2026-05-24): 600ms → 1000ms — dá mais tempo pro user terminar de digitar
+                }, 500)  // 🔧 v7 (2026-05-24): 600ms → 500ms — garante PUT antes de refresh
             }, s = async (e, t, a = !1) => {
                 // Optimistic update: faz o POST, pega as linhas reais de volta (com ID real do banco)
                 // e insere direto no estado local. Não chama r() — assim não há refetch nem flash da tela.
@@ -2825,6 +2816,20 @@
                                         type: "text",
                                         value: linha.cod_profissional || "",
                                         onChange: e => c(linha.id, "cod_profissional", e.target.value),
+                                        // 🔧 v7 (2026-05-24): onBlur força flush imediato do debounce
+                                        // (Tab, clique fora) — garante que o PUT salve antes de o usuário
+                                        // dar refresh/logout/navegar.
+                                        onBlur: e => {
+                                            const dbKey = 'dispDebounce_' + linha.id + '_cod_profissional';
+                                            if (window[dbKey]) {
+                                                clearTimeout(window[dbKey]);
+                                                // Re-aciona o salvamento imediatamente (debounce key vira 0ms)
+                                                window[dbKey] = setTimeout(() => {
+                                                    // dispara um onChange sintético com o valor atual pra reusar o fluxo
+                                                    c(linha.id, "cod_profissional", e.target.value);
+                                                }, 0);
+                                            }
+                                        },
                                         "data-cod-input": linha.id,
                                         placeholder: "—",
                                         className: "px-1.5 py-1 border border-gray-200 rounded text-center font-mono text-[11px] bg-white",
