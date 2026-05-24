@@ -3668,14 +3668,18 @@ const hideLoadingScreen = () => {
                     const r = await fetchAuth(API_URL + "/filas/minha-central");
                     if (!r.ok) {
                         window._tuttsFilaVinculado = false;
+                        window._tuttsFilaCentralTipo = null;
                         _setFilaTick(t => (t + 1) % 1000000);
                         return;
                     }
                     const d = await r.json();
                     window._tuttsFilaVinculado = !!(d && d.success && d.vinculado);
+                    // 🆕 2026-05-24: guarda tipo da central pra home distinguir fila clássica vs auto
+                    window._tuttsFilaCentralTipo = (d && d.central && d.central.tipo) || null;
                     _setFilaTick(t => (t + 1) % 1000000);
                 } catch (e) {
                     window._tuttsFilaVinculado = false;
+                    window._tuttsFilaCentralTipo = null;
                 }
             };
 
@@ -10649,6 +10653,32 @@ const hideLoadingScreen = () => {
 
                 // CASO C: em rota (despachado)
                 if (fila.status === "em_rota") {
+                    // 🆕 2026-05-24: fila auto-gerenciável não tem "notas liberadas" — usa card genérico
+                    const ehFilaAuto = window._tuttsFilaCentralTipo === 'auto';
+
+                    if (ehFilaAuto) {
+                        return React.createElement("div", {
+                            className: "w-full rounded-2xl p-4 mb-4 text-white",
+                            style: { backgroundColor: "#185FA5" }
+                        },
+                            React.createElement("div", { className: "flex justify-between items-start" },
+                                React.createElement("div", null,
+                                    React.createElement("div", { className: "text-[10px] uppercase tracking-wider opacity-80 font-semibold" }, "Você está despachado"),
+                                    React.createElement("div", { className: "text-2xl font-bold mt-1" }, "Em rota agora")
+                                ),
+                                React.createElement("span", {
+                                    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                    style: { backgroundColor: "rgba(255,255,255,0.22)" }
+                                }, "⏱ Ao vivo")
+                            ),
+                            React.createElement("button", {
+                                onClick: abrirFila,
+                                className: "w-full bg-white text-sm font-semibold py-2 rounded-lg mt-3",
+                                style: { color: "#0C447C" }
+                            }, "Ver fila completa")
+                        );
+                    }
+
                     const qtd = parseInt(fila.notas_liberadas) || 0;
                     const bairrosRaw = Array.isArray(fila.bairros) ? fila.bairros : [];
                     // Agrupa por bairro (case-insensitive, trim)

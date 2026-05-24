@@ -34,6 +34,8 @@
     const [fotos, setFotos] = React.useState({});
     const [penalidade, setPenalidade] = React.useState(null);
     const [bloqueioCorrida, setBloqueioCorrida] = React.useState(null); // { corridas: [...] }
+    // 🆕 2026-05-24: modal de bloqueio quando tenta voltar antes do cooldown 30min
+    const [modalCooldown, setModalCooldown] = React.useState(null); // { minutos_restantes } | null
 
     // Refs estáveis pra props (anti infinite-loop em useEffect)
     const apiUrlRef = React.useRef(apiUrl);
@@ -130,6 +132,9 @@
           setBloqueioCorrida(null);
           carregarMinhaPosicao();
           carregarFilaPublica(minhaCentral.id);
+        } else if (d.error === 'cooldown_despacho') {
+          // 🆕 2026-05-24: em vez de toast vermelho, abre modal com explicação
+          setModalCooldown({ minutos_restantes: d.minutos_restantes || 30 });
         } else if (d.error === 'fora_do_raio') {
           toast(d.mensagem || 'Aproxime-se da central', 'error');
         } else if (d.error === 'penalidade_ativa') {
@@ -286,8 +291,15 @@
         }, '🔄 Verificar novamente')
       ),
 
-      // ═══ ESTADO: JÁ NA FILA ═══
-      !penalizado && !bloqueioCorrida && naFila && renderTelaNaFila({
+      // ═══ ESTADO: EM ROTA (despachado pelo agente) ═══
+      // 🆕 2026-05-24: tela igual fila clássica — card verde 🏍️ + msg de cooldown
+      // ou botão de retorno quando o cooldown 30min expirou.
+      !penalizado && !bloqueioCorrida && naFila && minhaPosicao.status === 'em_rota' && renderTelaEmRota({
+        minhaPosicao, entrarNaFila, podeChekin,
+      }),
+
+      // ═══ ESTADO: JÁ NA FILA (aguardando) ═══
+      !penalizado && !bloqueioCorrida && naFila && minhaPosicao.status !== 'em_rota' && renderTelaNaFila({
         minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido,
         usuarioCod: usuario?.codProfissional || usuario?.cod_profissional,
         sairDaFila,
@@ -297,6 +309,12 @@
       !penalizado && !bloqueioCorrida && !naFila && renderTelaEntrar({
         minhaCentral, distanciaCentral, gpsStatus, podeChekin,
         entrarNaFila, filaPublica,
+      }),
+
+      // ═══ MODAL: bloqueio por cooldown (tentou voltar antes dos 30min) ═══
+      modalCooldown && renderModalCooldown({
+        minutos_restantes: modalCooldown.minutos_restantes,
+        onFechar: () => setModalCooldown(null),
       })
     );
   }
@@ -438,6 +456,93 @@
 
       e('p', { className: 'text-center text-[10px] text-gray-400 leading-relaxed px-4' },
         'Ao entrar, o agente vai verificar no sistema se você não tem corridas ativas. Se tiver, te tira da fila automaticamente.'
+      )
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Tela: motoboy EM ROTA (despachado pelo agente)
+  // 🆕 2026-05-24: mesmo padrão visual da fila clássica
+  // - Card verde com 🏍️
+  // - Durante cooldown: mensagem laranja
+  // - Após cooldown: mensagem verde + botão de retorno
+  // ──────────────────────────────────────────────────────────
+  function renderTelaEmRota(opts) {
+    const { minhaPosicao, entrarNaFila, podeChekin } = opts;
+    const cooldownAtivo = (minhaPosicao.cooldown_restante || 0) > 0;
+    const minutosRestantes = minhaPosicao.cooldown_restante || 0;
+
+    return e('div', { className: 'border-2 rounded-2xl p-6 bg-green-50 border-green-300' },
+      // Cabeçalho 🏍️ + título
+      e('div', { className: 'flex items-center gap-4 mb-4' },
+        e('span', { className: 'text-5xl' }, '🏍️'),
+        e('div', null,
+          e('h2', { className: 'text-xl font-bold text-green-800' }, 'Você está em rota!'),
+          e('p', { className: 'text-green-600 text-sm' },
+            cooldownAtivo ? 'Aguarde para voltar à fila' : 'Pronto para voltar'
+          )
+        )
+      ),
+
+      // Bloco da mensagem (laranja durante cooldown, verde quando pode voltar)
+      cooldownAtivo
+        ? e('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-4' },
+            e('p', { className: 'text-sm text-orange-800 leading-relaxed' },
+              '🤖 O agente detectou corridas ativas no seu nome. Você saiu da fila automaticamente. Finalize as entregas e poderá voltar em ',
+              e('strong', null, `${minutosRestantes} ${minutosRestantes === 1 ? 'minuto' : 'minutos'}`),
+              '.'
+            )
+          )
+        : e(React.Fragment, null,
+            e('div', { className: 'bg-green-100 border border-green-300 rounded-xl p-4 mb-4' },
+              e('p', { className: 'text-sm text-green-800 leading-relaxed' },
+                '✅ Se finalizou suas entregas, retorne para a fila quando estiver próximo da central.'
+              )
+            ),
+            e('button', {
+              onClick: entrarNaFila,
+              disabled: !podeChekin,
+              className: `w-full py-4 rounded-xl font-bold text-lg ${!podeChekin ? 'bg-gray-300 text-gray-500' : 'bg-green-600 text-white hover:bg-green-700'}`,
+            }, '🔄 Retornar para a fila')
+          )
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Modal: bloqueio por cooldown (substitui toast)
+  // 🆕 2026-05-24: aparece quando motoboy clica "voltar" antes dos 30min
+  // ──────────────────────────────────────────────────────────
+  function renderModalCooldown(opts) {
+    const { minutos_restantes, onFechar } = opts;
+    return e('div', {
+      className: 'fixed inset-0 z-50 flex items-center justify-center p-4',
+      style: { background: 'rgba(0,0,0,0.45)' },
+      onClick: onFechar,
+    },
+      e('div', {
+        className: 'bg-white rounded-2xl p-5 max-w-sm w-full',
+        onClick: (ev) => ev.stopPropagation(),
+      },
+        e('div', { className: 'text-center mb-4' },
+          e('span', { className: 'text-5xl block mb-2' }, '⏳'),
+          e('h3', { className: 'text-lg font-bold text-gray-800 mb-2' }, 'Calma aí!'),
+          e('p', { className: 'text-sm text-gray-600 leading-relaxed' },
+            'Você foi despachado há pouco. Finalize sua corrida e conseguirá entrar na fila novamente em ',
+            e('strong', { className: 'text-orange-700' },
+              `${minutos_restantes} ${minutos_restantes === 1 ? 'minuto' : 'minutos'}`
+            ),
+            '.'
+          )
+        ),
+        e('div', { className: 'bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4' },
+          e('p', { className: 'text-xs text-orange-800 leading-relaxed' },
+            '💡 Esse tempo serve pra você ter chance de finalizar a corrida e não furar a fila dos outros motoboys.'
+          )
+        ),
+        e('button', {
+          onClick: onFechar,
+          className: 'w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold',
+        }, 'Entendi')
       )
     );
   }
