@@ -1,9 +1,11 @@
 // ==================== MÓDULO DISPONIBILIDADE ====================
 // Arquivo: modulo-disponibilidade.js
 // Conteúdo do módulo Disponibilidade - Carregado dinamicamente
+// 🔧 v10 (2026-05-24): IDÊNTICO ao original. Se você ver este log, browser baixou a versão certa.
 
 (function() {
     'use strict';
+    console.log('📦 [disponibilidade] modulo-disponibilidade.js v10_ORIGINAL_RESTORED carregado');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
