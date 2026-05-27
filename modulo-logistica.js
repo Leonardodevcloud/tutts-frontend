@@ -689,6 +689,12 @@
                 : 'border-gray-100 text-gray-300 cursor-not-allowed'
             }`,
           }, 'Tracking'),
+          // Badge de código de coleta — visível no card para acesso rápido
+          e.pickup_code && h('span', {
+            title: `Código de coleta: ${e.pickup_code}`,
+            className: 'text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded font-mono font-semibold cursor-default border border-amber-200',
+            onClick: () => navigator.clipboard?.writeText(e.pickup_code),
+          }, `🔑 ${e.pickup_code}`),
           onVerDetalhes && h('button', {
             onClick: () => onVerDetalhes(e),
             className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700',
@@ -1687,6 +1693,71 @@
               e.erro_ultimo && h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3' },
                 h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold mb-1' }, '⚠ Último erro'),
                 h('div', { className: 'text-sm text-red-800 font-mono break-words' }, e.erro_ultimo)
+              ),
+
+              // ── Códigos de verificação (coleta + entrega) ───────────────────────
+              (e.pickup_code || e.dropoff_code) &&
+              h('div', { className: 'border border-gray-200 rounded-xl overflow-hidden' },
+                h('div', { className: 'bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
+                  h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔑 Códigos de verificação'),
+                  h('span', { className: 'text-xs text-gray-400' }, 'Apresente ao entregador / destinatário'),
+                ),
+                h('div', { className: 'p-4 space-y-3' },
+
+                  // Código de COLETA
+                  e.pickup_code && h('div', { className: 'flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3' },
+                    h('div', null,
+                      h('div', { className: 'text-xs uppercase tracking-wider text-amber-700 font-semibold mb-1' }, '📦 Código de coleta'),
+                      h('div', { className: 'text-xs text-amber-600 mb-1' }, 'Atendente da loja informa ao motoboy ao entregar o pacote'),
+                      h('div', { className: 'text-2xl font-bold tracking-widest text-amber-800 font-mono' }, e.pickup_code),
+                    ),
+                    h('div', { className: 'flex flex-col gap-1.5 ml-4' },
+                      h('button', {
+                        onClick: () => navigator.clipboard?.writeText(e.pickup_code).then(() => showToast('Código copiado', 'success')),
+                        className: 'text-xs px-2.5 py-1.5 border border-amber-200 rounded-md hover:bg-amber-100 text-amber-700',
+                      }, 'Copiar'),
+                      h('button', {
+                        onClick: async () => {
+                          try {
+                            const r = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/reenviar-codigo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'coleta' }) });
+                            const j = await r.json();
+                            showToast(j.ok ? 'WhatsApp enviado para a loja!' : `Não enviado: ${j.motivo || j.error}`, j.ok ? 'success' : 'error');
+                          } catch (_) { showToast('Erro ao enviar', 'error'); }
+                        },
+                        className: 'text-xs px-2.5 py-1.5 border border-amber-200 rounded-md hover:bg-amber-100 text-amber-700',
+                      }, '📲 Reenviar WPP'),
+                    ),
+                  ),
+
+                  // Código de ENTREGA
+                  e.dropoff_code && h('div', { className: 'flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-3' },
+                    h('div', null,
+                      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-1' }, '📍 Código de entrega'),
+                      h('div', { className: 'text-xs text-purple-600 mb-1' },
+                        e.codigo_wpp_enviado
+                          ? '✓ WhatsApp enviado ao destinatário'
+                          : '⚠ WhatsApp ainda não enviado ao destinatário'
+                      ),
+                      h('div', { className: 'text-2xl font-bold tracking-widest text-purple-800 font-mono' }, e.dropoff_code),
+                    ),
+                    h('div', { className: 'flex flex-col gap-1.5 ml-4' },
+                      h('button', {
+                        onClick: () => navigator.clipboard?.writeText(e.dropoff_code).then(() => showToast('Código copiado', 'success')),
+                        className: 'text-xs px-2.5 py-1.5 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-700',
+                      }, 'Copiar'),
+                      h('button', {
+                        onClick: async () => {
+                          try {
+                            const r = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/reenviar-codigo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'entrega' }) });
+                            const j = await r.json();
+                            showToast(j.ok ? 'WhatsApp enviado ao destinatário!' : `Não enviado: ${j.motivo || j.error}`, j.ok ? 'success' : 'error');
+                          } catch (_) { showToast('Erro ao enviar', 'error'); }
+                        },
+                        className: 'text-xs px-2.5 py-1.5 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-700',
+                      }, '📲 Reenviar WPP'),
+                    ),
+                  ),
+                ),
               ),
 
               // ── Comprovante de entrega (Uber, pós DELIVERED) ──────────────────
