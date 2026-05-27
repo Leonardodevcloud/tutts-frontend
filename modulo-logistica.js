@@ -1252,6 +1252,8 @@
         data: detalhesAberto,
         onClose: fecharDetalhes,
         showToast,
+        fetchAuth,
+        API_URL,
       }),
 
       // ── Modal de redespacho ──
@@ -1526,9 +1528,41 @@
   // ════════════════════════════════════════════════════════
   // MODAL: Detalhes de uma entrega
   // ════════════════════════════════════════════════════════
-  function ModalDetalhesEntrega({ data, onClose, showToast }) {
+  function ModalDetalhesEntrega({ data, onClose, showToast, fetchAuth, API_URL }) {
     const { entrega: e, tracking, webhooks, loading } = data;
     const [showDebug, setShowDebug] = useState(false);
+    const [comprovante, setComprovante] = useState(null);      // proof_of_delivery
+    const [loadingComprovante, setLoadingComprovante] = useState(false);
+    const [erroComprovante, setErroComprovante] = useState(null);
+
+    // Carrega comprovante de entrega (só Uber + DELIVERED)
+    async function carregarComprovante() {
+      setLoadingComprovante(true);
+      setErroComprovante(null);
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/comprovante`);
+        const json = await res.json();
+        if (json.success) {
+          setComprovante(json.comprovante);
+        } else {
+          setErroComprovante(json.detalhe || json.error || 'Comprovante não disponível');
+        }
+      } catch (err) {
+        setErroComprovante('Erro ao buscar comprovante');
+      } finally {
+        setLoadingComprovante(false);
+      }
+    }
+
+    // Monta src de imagem a partir do campo do comprovante Uber
+    // Uber retorna: { document: { type, base64_contents }, signature: { type, base64_contents }, pictures: [...] }
+    function imgSrc(campo) {
+      if (!campo) return null;
+      const tipo = campo.type || 'image/jpeg';
+      const b64  = campo.base64_contents || campo.data || null;
+      if (!b64) return null;
+      return `data:${tipo};base64,${b64}`;
+    }
 
     function copiarDeliveryId() {
       if (!e.uber_delivery_id) return;
@@ -1653,6 +1687,121 @@
               e.erro_ultimo && h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3' },
                 h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold mb-1' }, '⚠ Último erro'),
                 h('div', { className: 'text-sm text-red-800 font-mono break-words' }, e.erro_ultimo)
+              ),
+
+              // ── Comprovante de entrega (Uber, pós DELIVERED) ──────────────────
+              (e.provider_code === 'uber' && (e.status_canonico === 'DELIVERED' || e.status_uber === 'delivered')) &&
+              h('div', { className: 'border border-gray-200 rounded-xl overflow-hidden' },
+
+                // Header do bloco
+                h('div', { className: 'bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
+                  h('div', { className: 'flex items-center gap-2' },
+                    h('span', { className: 'text-sm font-semibold text-gray-700' }, '📸 Comprovante de entrega'),
+                    h('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full' }, 'Uber Direct'),
+                  ),
+                  !comprovante && !loadingComprovante && h('button', {
+                    onClick: carregarComprovante,
+                    className: 'text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold',
+                  }, 'Carregar comprovante'),
+                ),
+
+                h('div', { className: 'p-4' },
+
+                  // Loading
+                  loadingComprovante && h('div', { className: 'flex items-center justify-center gap-2 py-6 text-gray-500 text-sm' },
+                    h('div', { className: 'w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }),
+                    'Buscando comprovante na Uber...'
+                  ),
+
+                  // Erro
+                  erroComprovante && !loadingComprovante && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800' },
+                    h('div', { className: 'font-semibold mb-1' }, 'Comprovante não disponível'),
+                    erroComprovante,
+                  ),
+
+                  // Comprovante carregado
+                  comprovante && !loadingComprovante && h('div', { className: 'space-y-4' },
+
+                    // Foto(s) da entrega
+                    (function() {
+                      const fotos = [];
+                      // Campo principal: document
+                      const srcDoc = imgSrc(comprovante.document);
+                      if (srcDoc) fotos.push({ src: srcDoc, label: 'Foto do local de entrega' });
+                      // Campo pictures (array)
+                      if (Array.isArray(comprovante.pictures)) {
+                        comprovante.pictures.forEach((p, i) => {
+                          const s = imgSrc(p.document || p);
+                          if (s) fotos.push({ src: s, label: `Foto ${i + 2}` });
+                        });
+                      }
+                      if (fotos.length === 0) return null;
+                      return h('div', null,
+                        h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' },
+                          `📷 ${fotos.length === 1 ? 'Foto da entrega' : `Fotos (${fotos.length})`}`),
+                        h('div', { className: `grid gap-2 ${fotos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}` },
+                          fotos.map(({ src, label }, i) =>
+                            h('div', { key: i },
+                              h('img', {
+                                src,
+                                alt: label,
+                                className: 'w-full rounded-lg border border-gray-200 object-cover max-h-64',
+                                onError: (ev) => {
+                                  ev.target.parentElement.innerHTML = '<div class="text-xs text-gray-400 text-center py-6 border border-gray-200 rounded-lg">Imagem não disponível</div>';
+                                },
+                              }),
+                              h('div', { className: 'text-[11px] text-gray-400 mt-1 text-center' }, label),
+                            )
+                          )
+                        )
+                      );
+                    })(),
+
+                    // Assinatura
+                    (function() {
+                      const srcSig = imgSrc(comprovante.signature);
+                      if (!srcSig) return null;
+                      return h('div', null,
+                        h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, '✍ Assinatura do recebedor'),
+                        h('div', { className: 'bg-gray-50 rounded-lg border border-gray-200 p-3 flex justify-center' },
+                          h('img', {
+                            src: srcSig,
+                            alt: 'Assinatura',
+                            className: 'max-h-24 object-contain',
+                            style: { filter: 'invert(0)' },
+                          })
+                        )
+                      );
+                    })(),
+
+                    // Rodapé com botão de download
+                    h('div', { className: 'flex items-center justify-between pt-2 border-t border-gray-100' },
+                      h('div', { className: 'text-xs text-gray-400' },
+                        e.finalizado_at ? `Entrega concluída em ${fmtDT(e.finalizado_at)}` : 'Entrega concluída'
+                      ),
+                      h('button', {
+                        onClick: () => {
+                          const dataStr = JSON.stringify(comprovante, null, 2);
+                          const blob = new Blob([dataStr], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `comprovante-OS${e.codigo_os}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        },
+                        className: 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 text-gray-600',
+                      }, '⬇ Baixar dados brutos'),
+                    ),
+                  ),
+
+                  // Estado inicial — antes de clicar em "Carregar"
+                  !comprovante && !loadingComprovante && !erroComprovante &&
+                  h('div', { className: 'text-center py-5 text-gray-400 text-sm' },
+                    h('div', { className: 'text-2xl mb-2' }, '📄'),
+                    'Clique em "Carregar comprovante" para buscar a foto e assinatura coletadas pelo entregador da Uber.'
+                  ),
+                ),
               ),
 
               // Timestamps
