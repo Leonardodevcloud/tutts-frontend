@@ -568,7 +568,7 @@ const SISTEMA_MODULOS_CONFIG = [
     },
     { id: "coleta", label: "Consultar Endereços", icon: "🗺️", abas: [] },
     { id: "config", label: "Configurações", icon: "🔧",
-      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}]
+      abas: [{id: "usuarios", label: "Usuários"}, {id: "permissoes", label: "Permissões ADM"}, {id: "clientes-api", label: "Clientes API"}, {id: "auditoria", label: "Auditoria"}, {id: "sistema", label: "Sistema"}, {id: "saude-sistema", label: "🏥 Saúde do Sistema"}]
     },
     { id: "crm-whatsapp", label: "CRM WhatsApp", icon: "💬", abas: [] },
     { id: "agente", label: "Agente RPA", icon: "🤖",

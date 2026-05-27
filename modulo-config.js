@@ -1699,6 +1699,16 @@
             p.configTab === "auditoria" && ("admin_master" === l.role || "admin" === l.role) && 
                 React.createElement(AuditLogs, { apiUrl: API_URL, showToast: ja }),
 
+            // ==================== TAB SAÚDE DO SISTEMA ====================
+            // 🆕 v4 (2026-05-26): monitor de agentes RPA + botão de restart
+            p.configTab === "saude-sistema" && "admin_master" === l.role && 
+                React.createElement(window.SaudeSistemaView, { 
+                    apiUrl: API_URL, 
+                    fetchAuth: fetchAuth, 
+                    showToast: ja, 
+                    usuario: l 
+                }),
+
 
             // ==================== MODAL CATEGORIAS DE FRETE ====================
             p.modalCategorias && (function() {
