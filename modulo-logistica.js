@@ -1950,42 +1950,41 @@
   // ════════════════════════════════════════════════════════
   // ════════════════════════════════════════════════════════
   // ════════════════════════════════════════════════════════
-  // CardGuardrailGlobal — padrão global de margem do hub.
+  // CardGuardrailGlobal — precificação por distância (tabela global configurável).
   // Piso de margem aplicado pelo despacho automático quando a OS
   // não casa com uma regra de cliente que defina margem própria.
   // global = default: a regra do cliente, quando configurada,
   // sobrescreve este padrão.
   // ════════════════════════════════════════════════════════
   function CardGuardrailGlobal({ API_URL, fetchAuth, showToast }) {
-    const [cfg, setCfg] = useState(null);
+    const { useState, useEffect, useCallback } = React;
+    const [cfg, setCfg]         = useState(null);
     const [salvando, setSalvando] = useState(false);
+    const [simKm, setSimKm]     = useState(8);
 
     const carregar = useCallback(async () => {
       try {
-        const res = await fetchAuth(`${API_URL}/logistics/config-global`);
+        const res  = await fetchAuth(`${API_URL}/logistics/config-global`);
         const json = await res.json();
         if (json && json.success && json.config) {
           setCfg({
-            margem_global_ativa: !!json.config.margem_global_ativa,
-            margem_global_minima_rs: json.config.margem_global_minima_rs != null
-              ? String(json.config.margem_global_minima_rs) : '',
-            margem_global_minima_pct: json.config.margem_global_minima_pct != null
-              ? String(json.config.margem_global_minima_pct) : '',
-            tabela_preco_ativa: !!json.config.tabela_preco_ativa,
-            preco_valor_fixo: json.config.preco_valor_fixo != null ? String(json.config.preco_valor_fixo) : '',
-            preco_km_base: json.config.preco_km_base != null ? String(json.config.preco_km_base) : '',
+            tabela_preco_ativa:       !!json.config.tabela_preco_ativa,
+            preco_valor_fixo:         json.config.preco_valor_fixo != null ? String(json.config.preco_valor_fixo) : '',
+            preco_km_base:            json.config.preco_km_base != null ? String(json.config.preco_km_base) : '',
             preco_valor_km_adicional: json.config.preco_valor_km_adicional != null ? String(json.config.preco_valor_km_adicional) : '',
           });
         } else {
-          setCfg({ margem_global_ativa: false, margem_global_minima_rs: '', margem_global_minima_pct: '', tabela_preco_ativa: false, preco_valor_fixo: '', preco_km_base: '', preco_valor_km_adicional: '' });
+          setCfg({ tabela_preco_ativa: false, preco_valor_fixo: '', preco_km_base: '', preco_valor_km_adicional: '' });
         }
       } catch {
-        showToast('Erro ao carregar padrão global de margem', 'error');
-        setCfg({ margem_global_ativa: false, margem_global_minima_rs: '', margem_global_minima_pct: '', tabela_preco_ativa: false, preco_valor_fixo: '', preco_km_base: '', preco_valor_km_adicional: '' });
+        showToast('Erro ao carregar configuração de preço', 'error');
+        setCfg({ tabela_preco_ativa: false, preco_valor_fixo: '', preco_km_base: '', preco_valor_km_adicional: '' });
       }
     }, [fetchAuth, API_URL]);
 
     useEffect(() => { carregar(); }, [carregar]);
+
+    function up(k, v) { setCfg(prev => ({ ...prev, [k]: v })); }
 
     async function salvar() {
       setSalvando(true);
@@ -1994,158 +1993,147 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            margem_global_ativa: cfg.margem_global_ativa,
-            margem_global_minima_rs: cfg.margem_global_minima_rs === '' ? null : Number(cfg.margem_global_minima_rs),
-            margem_global_minima_pct: cfg.margem_global_minima_pct === '' ? null : Number(cfg.margem_global_minima_pct),
-            tabela_preco_ativa: cfg.tabela_preco_ativa,
-            preco_valor_fixo: cfg.preco_valor_fixo === '' ? null : Number(cfg.preco_valor_fixo),
-            preco_km_base: cfg.preco_km_base === '' ? null : Number(cfg.preco_km_base),
-            preco_valor_km_adicional: cfg.preco_valor_km_adicional === '' ? null : Number(cfg.preco_valor_km_adicional),
+            tabela_preco_ativa:       cfg.tabela_preco_ativa,
+            preco_valor_fixo:         cfg.preco_valor_fixo         === '' ? null : Number(cfg.preco_valor_fixo),
+            preco_km_base:            cfg.preco_km_base             === '' ? null : Number(cfg.preco_km_base),
+            preco_valor_km_adicional: cfg.preco_valor_km_adicional  === '' ? null : Number(cfg.preco_valor_km_adicional),
           }),
         });
         const json = await res.json();
-        if (res.ok && json && json.success) {
-          showToast('Padrão global de margem salvo', 'success');
+        if (res.ok && json.success) {
+          showToast('Tabela de preço salva', 'success');
+          carregar();
         } else {
-          showToast((json && json.error) || 'Erro ao salvar padrão global', 'error');
+          showToast((json && json.error) || 'Erro ao salvar', 'error');
         }
-      } catch {
-        showToast('Erro de rede ao salvar padrão global', 'error');
-      } finally {
-        setSalvando(false);
-      }
+      } catch { showToast('Erro de rede ao salvar', 'error'); }
+      finally  { setSalvando(false); }
     }
 
     if (!cfg) {
-      return h('div', { className: 'bg-white rounded-xl border shadow-sm p-4 flex items-center justify-center' },
-        h('div', { className: 'animate-spin w-6 h-6 border-4 border-purple-500 border-t-transparent rounded-full' }));
+      return h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-center' },
+        h('div', { className: 'animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full' })
+      );
     }
 
-    const up = (k, v) => setCfg(c => ({ ...c, [k]: v }));
-    const ativa = cfg.margem_global_ativa;
+    // Cálculo do simulador — reativo aos campos da configuração
+    const vf  = parseFloat(cfg.preco_valor_fixo)         || 0;
+    const kb  = parseFloat(cfg.preco_km_base)             || 0;
+    const vkm = parseFloat(cfg.preco_valor_km_adicional)  || 0;
+    const excedente    = Math.max(0, simKm - kb);
+    const totalSim     = Math.round((vf + excedente * vkm) * 100) / 100;
+    const tabelaOk     = vf > 0 && kb > 0 && vkm > 0;
+    const ativa        = cfg.tabela_preco_ativa;
 
-    return h('div', { className: `bg-white rounded-xl border-2 shadow-sm overflow-hidden ${ativa ? 'border-purple-300' : 'border-gray-200'}` },
-      // Header do card
-      h('div', { className: 'flex items-center justify-between gap-3 p-4 border-b border-gray-100' },
+    return h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
+
+      // ── Header ──
+      h('div', { className: 'flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100' },
         h('div', null,
           h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-lg' }, '🛡️'),
-            h('span', { className: 'font-bold text-gray-800' }, 'Padrão global de margem'),
+            h('span', { className: 'text-base' }, '📏'),
+            h('span', { className: 'font-semibold text-gray-800 text-sm' }, 'Precificação por distância'),
             ativa
-              ? h('span', { className: 'text-[10px] font-semibold px-2 py-0.5 rounded-md bg-green-100 text-green-700' }, 'ATIVO')
-              : h('span', { className: 'text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-500' }, 'DESATIVADO')
+              ? h('span', { className: 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700' }, 'ATIVA')
+              : h('span', { className: 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500' }, 'DESATIVADA'),
           ),
           h('p', { className: 'text-xs text-gray-500 mt-1' },
-            'Piso de margem do despacho automático. Vale pra qualquer OS cuja regra de cliente não defina margem própria.')
+            'Valor fixo até a distância base + R$/km excedente. Sobrescrito por cliente nas Regras abaixo.')
         ),
-        // Toggle ativo
         h('button', {
-          onClick: () => up('margem_global_ativa', !ativa),
+          onClick: () => up('tabela_preco_ativa', !ativa),
           className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${ativa ? 'bg-purple-600' : 'bg-gray-300'}`,
-          title: ativa ? 'Desativar padrão global' : 'Ativar padrão global',
-        }, h('span', {
-          className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${ativa ? 'right-0.5' : 'left-0.5'}`,
-        }))
-      ),
-      // Corpo
-      h('div', { className: 'p-4' },
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
-          h('div', null,
-            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Margem mínima (R$)'),
-            h('input', {
-              type: 'number', step: '0.01', min: '0',
-              value: cfg.margem_global_minima_rs,
-              disabled: !ativa,
-              onChange: e => up('margem_global_minima_rs', e.target.value),
-              placeholder: 'ex: 5,00',
-              className: `w-full px-3 py-2 border rounded-lg text-sm ${ativa ? 'border-gray-300' : 'border-gray-200 bg-gray-50 text-gray-400'}`,
-            }),
-            h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'cliente paga − custo do provedor')
-          ),
-          h('div', null,
-            h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, 'Margem mínima (%)'),
-            h('input', {
-              type: 'number', step: '0.1', min: '0',
-              value: cfg.margem_global_minima_pct,
-              disabled: !ativa,
-              onChange: e => up('margem_global_minima_pct', e.target.value),
-              placeholder: 'ex: 15',
-              className: `w-full px-3 py-2 border rounded-lg text-sm ${ativa ? 'border-gray-300' : 'border-gray-200 bg-gray-50 text-gray-400'}`,
-            }),
-            h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'margem ÷ valor cobrado do cliente')
-          )
-        ),
-        h('div', { className: 'flex items-center gap-2 mt-3 p-2.5 bg-blue-50 rounded-lg' },
-          h('span', { className: 'text-sm' }, 'ℹ️'),
-          h('p', { className: 'text-[11px] text-blue-700' },
-            'Deixe um campo em branco pra não aplicar aquele critério. ',
-            'Quando uma regra de cliente abaixo define a própria margem, ela substitui este padrão para aquele cliente.')
-        ),
-        h('div', { className: 'flex justify-end mt-3' },
-          h('button', {
-            onClick: salvar,
-            disabled: salvando,
-            className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-50',
-          }, salvando ? 'Salvando...' : 'Salvar padrão global')
-        )
+        }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${ativa ? 'right-0.5' : 'left-0.5'}` }))
       ),
 
-      // ── Tabela de precificação por distância ──────────────────────────────
-      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('div', { className: 'flex items-center justify-between mb-3' },
-          h('div', null,
-            h('h3', { className: 'text-base font-semibold text-gray-800' }, '📏 Precificação por distância'),
-            h('p', { className: 'text-xs text-gray-500 mt-0.5' },
-              'Valor fixo até a distância base + R$/km excedente. Pode ser sobrescrito por cliente em cada Regra.'),
-          ),
-          h('label', { className: 'flex items-center gap-2 cursor-pointer', onClick: () => up('tabela_preco_ativa', !cfg.tabela_preco_ativa) },
-            h('span', { className: `text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.tabela_preco_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}` },
-              cfg.tabela_preco_ativa ? 'ATIVA' : 'DESATIVADA'),
-            h('div', { className: `relative inline-flex h-6 w-11 rounded-full transition-colors ${cfg.tabela_preco_ativa ? 'bg-purple-600' : 'bg-gray-300'}` },
-              h('span', { className: `inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ml-0.5 ${cfg.tabela_preco_ativa ? 'translate-x-5' : 'translate-x-0'}` })
-            )
-          ),
-        ),
-        h('div', { className: 'grid grid-cols-3 gap-4 mb-3' },
+      h('div', { className: 'p-5 space-y-5' },
+
+        // ── Campos de configuração ──
+        h('div', { className: 'grid grid-cols-3 gap-4' },
           h('div', null,
             h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor fixo (R$)'),
-            h('input', { type: 'number', step: '0.50', min: '0', value: cfg.preco_valor_fixo,
-              onChange: e => up('preco_valor_fixo', e.target.value), placeholder: 'ex: 15,00',
-              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
+            h('input', {
+              type: 'number', step: '0.50', min: '0',
+              value: cfg.preco_valor_fixo,
+              onChange: e => up('preco_valor_fixo', e.target.value),
+              placeholder: 'ex: 11,90',
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500',
+            }),
             h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'cobrado até a distância base'),
           ),
           h('div', null,
             h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Distância base (km)'),
-            h('input', { type: 'number', step: '0.5', min: '1', value: cfg.preco_km_base,
-              onChange: e => up('preco_km_base', e.target.value), placeholder: 'ex: 5',
-              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
+            h('input', {
+              type: 'number', step: '0.5', min: '1',
+              value: cfg.preco_km_base,
+              onChange: e => up('preco_km_base', e.target.value),
+              placeholder: 'ex: 2',
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500',
+            }),
             h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'km incluídos no valor fixo'),
           ),
           h('div', null,
             h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Por km adicional (R$)'),
-            h('input', { type: 'number', step: '0.10', min: '0', value: cfg.preco_valor_km_adicional,
-              onChange: e => up('preco_valor_km_adicional', e.target.value), placeholder: 'ex: 2,50',
-              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
+            h('input', {
+              type: 'number', step: '0.10', min: '0',
+              value: cfg.preco_valor_km_adicional,
+              onChange: e => up('preco_valor_km_adicional', e.target.value),
+              placeholder: 'ex: 1,90',
+              className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500',
+            }),
             h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'a partir do km excedente'),
           ),
         ),
-        cfg.preco_valor_fixo && cfg.preco_km_base && cfg.preco_valor_km_adicional &&
-        h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 mb-3 text-xs text-purple-700' },
-          `Fórmula: R$ ${cfg.preco_valor_fixo} até ${cfg.preco_km_base} km + R$ ${cfg.preco_valor_km_adicional}/km adicional`
+
+        // ── Simulador interativo ──
+        tabelaOk && h('div', { className: 'bg-gray-50 rounded-xl border border-gray-200 p-4' },
+          h('div', { className: 'flex items-center gap-2 mb-3' },
+            h('span', { className: 'text-xs font-semibold text-gray-600 uppercase' }, '🧮 Simulador'),
+          ),
+          // Slider de distância
+          h('div', { className: 'flex items-center gap-3 mb-4' },
+            h('span', { className: 'text-xs text-gray-500 whitespace-nowrap' }, 'Distância:'),
+            h('input', {
+              type: 'range', min: '1', max: '30', step: '1',
+              value: simKm,
+              onChange: e => setSimKm(parseInt(e.target.value, 10)),
+              style: { flex: 1 },
+            }),
+            h('span', { className: 'text-sm font-semibold text-gray-800 min-w-[52px] text-right' }, `${simKm} km`),
+          ),
+          // Resultado
+          h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-1.5' },
+            h('div', { className: 'flex justify-between items-center' },
+              h('span', { className: 'text-xs text-purple-700' }, `Valor fixo (até ${kb} km)`),
+              h('span', { className: 'text-xs font-semibold text-purple-800' },
+                `R$ ${vf.toFixed(2).replace('.', ',')}`)
+            ),
+            excedente > 0 && h('div', { className: 'flex justify-between items-center' },
+              h('span', { className: 'text-xs text-purple-700' },
+                `+ ${excedente} km adicionais × R$ ${vkm.toFixed(2).replace('.', ',')}`),
+              h('span', { className: 'text-xs font-semibold text-purple-800' },
+                `R$ ${(excedente * vkm).toFixed(2).replace('.', ',')}`)
+            ),
+            h('div', { className: 'flex justify-between items-center pt-1.5 border-t border-purple-200 mt-1' },
+              h('span', { className: 'text-xs font-semibold text-purple-900' }, 'Total cobrado do cliente'),
+              h('span', { className: 'text-base font-bold text-purple-900' },
+                `R$ ${totalSim.toFixed(2).replace('.', ',')}`)
+            ),
+          ),
         ),
-        h('div', { className: 'flex justify-end' },
+
+        // ── Botão salvar ──
+        h('div', { className: 'flex justify-end pt-1' },
           h('button', {
             onClick: salvar, disabled: salvando,
-            className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-50',
+            className: 'px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-50',
           }, salvando ? 'Salvando...' : 'Salvar tabela de preço'),
         ),
-      )
+      ),
     );
   }
 
-  // ════════════════════════════════════════════════════════
-  // ABA: REGRAS DE CLIENTE (opt-in por cliente + região)
-  // ════════════════════════════════════════════════════════
+
   function TabRegras({ API_URL, fetchAuth, showToast }) {
     const [regras, setRegras] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -2174,8 +2162,6 @@
         horario_fim: '',
         valor_minimo: '',
         valor_maximo: '',
-        margem_minima_aceita: '',
-        margem_pct_minima: '',
         preco_valor_fixo: '',
         preco_km_base: '',
         preco_valor_km_adicional: '',
@@ -2194,12 +2180,9 @@
         horario_fim: r.horario_fim || '',
         valor_minimo: r.valor_minimo || '',
         valor_maximo: r.valor_maximo || '',
-        margem_minima_aceita: r.margem_minima_aceita ?? '',
-        margem_pct_minima: r.margem_pct_minima ?? '',
         preco_valor_fixo: r.preco_valor_fixo ?? '',
         preco_km_base: r.preco_km_base ?? '',
         preco_valor_km_adicional: r.preco_valor_km_adicional ?? '',
-        margem_pct_minima: r.margem_pct_minima ?? '',
       });
     }
 
@@ -2222,8 +2205,6 @@
         horario_fim: editando.horario_fim || null,
         valor_minimo: editando.valor_minimo === '' ? null : parseFloat(editando.valor_minimo),
         valor_maximo: editando.valor_maximo === '' ? null : parseFloat(editando.valor_maximo),
-        margem_minima_aceita: editando.margem_minima_aceita === '' ? null : parseFloat(editando.margem_minima_aceita),
-        margem_pct_minima: editando.margem_pct_minima === '' ? null : parseFloat(editando.margem_pct_minima),
         preco_valor_fixo: editando.preco_valor_fixo === '' ? null : parseFloat(editando.preco_valor_fixo || ''),
         preco_km_base: editando.preco_km_base === '' ? null : parseFloat(editando.preco_km_base || ''),
         preco_valor_km_adicional: editando.preco_valor_km_adicional === '' ? null : parseFloat(editando.preco_valor_km_adicional || ''),
@@ -2412,36 +2393,6 @@
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor máximo (R$)'),
                 h('input', { type: 'number', step: '0.01', value: editando.valor_maximo || '', onChange: e => up('valor_maximo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
-            ),
-
-            // ── Filtros de margem (Opção C) ──
-            h('div', { className: 'pt-3 border-t border-gray-100' },
-              h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, '💰 Filtro de margem'),
-              h('div', { className: 'grid grid-cols-2 gap-3' },
-                h('div', null,
-                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Margem mínima (R$)'),
-                  h('input', {
-                    type: 'number', step: '0.01',
-                    value: editando.margem_minima_aceita ?? '',
-                    onChange: e => up('margem_minima_aceita', e.target.value),
-                    placeholder: 'deixe vazio',
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
-                  })
-                ),
-                h('div', null,
-                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Margem mínima (%)'),
-                  h('input', {
-                    type: 'number', step: '0.1',
-                    value: editando.margem_pct_minima ?? '',
-                    onChange: e => up('margem_pct_minima', e.target.value),
-                    placeholder: 'deixe vazio',
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
-                  })
-                ),
-              ),
-              h('p', { className: 'text-xs text-gray-500 mt-2' },
-                '⚠ OSs com margem (valor cliente − custo do provedor) abaixo desses limites NÃO serão despachadas automaticamente. ',
-                'Se ambos forem definidos, a OS precisa passar nos dois. Deixe vazio pra desativar o filtro.')
             ),
 
             // Tabela de preço por distância — override do cliente
