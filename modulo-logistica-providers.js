@@ -63,8 +63,25 @@
           { key: 'client_id',     label: 'Client ID',     secret: false },
           { key: 'client_secret', label: 'Client Secret', secret: true },
           { key: 'customer_id',   label: 'Customer ID',   secret: false },
-          // webhook_secret é coluna top-level (HMAC) — não vai dentro de config
           { key: 'webhook_secret', label: 'Webhook Secret (HMAC)', secret: true, topLevel: true },
+        ]},
+        { titulo: '📞 Contato', campos: [
+          { key: 'telefone_suporte', label: 'Telefone de suporte (fallback)',
+            hint: 'Usado quando o ponto de coleta/entrega não tem telefone cadastrado. Formato: 5571999999999' },
+        ]},
+        { titulo: '🔑 Verificação de coleta e entrega', campos: [
+          { key: 'verificacao_coleta_habilitada',  label: 'Habilitar código de coleta',  type: 'boolean',
+            hint: 'Motoboy precisa informar o código ao atendente antes de pegar o pacote. Código enviado por WhatsApp à loja.' },
+          { key: 'verificacao_entrega_habilitada', label: 'Habilitar verificação de entrega', type: 'boolean',
+            hint: 'Exige confirmação do destinatário no momento da entrega.' },
+          { key: 'verificacao_entrega_tipo', label: 'Tipo de verificação de entrega',
+            hint: 'codigo = PIN enviado ao destinatário via WhatsApp. assinatura = assinatura digital no app do motoboy (padrão).' },
+        ]},
+        { titulo: '📸 Comprovante de entrega', campos: [
+          { key: 'proof_of_delivery_habilitado', label: 'Coletar comprovante de entrega (foto/assinatura)', type: 'boolean',
+            hint: 'Após entrega concluída, busca automaticamente na Uber Direct a foto e assinatura do recebedor.' },
+          { key: 'manifest_total_value_centavos', label: 'Valor declarado da mercadoria (centavos)',
+            hint: 'Valor em centavos. Ex: 10000 = R$ 100,00. Padrão: 10000.' },
         ]},
       ],
     },
