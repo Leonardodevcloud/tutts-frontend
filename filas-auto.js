@@ -48,6 +48,7 @@
     const [modoManual, setModoManual] = React.useState(false); // fallback quando geocode falha
     const [geocodeDown, setGeocodeDown] = React.useState(false); // indica que a API quebrou
     const debounceRef = React.useRef(null);
+    const centralSelecionadaRef = React.useRef(null);  // sempre fresca pra usar no WS callback
 
     // Refs estáveis pra props (anti infinite-loop)
     const apiUrlRef = React.useRef(apiUrl);
@@ -158,7 +159,14 @@
       try {
         const r = await fetchAuth(`${apiUrl}/filas/penalidades/${centralId}`);
         const d = await r.json();
-        if (d.success) setPenalidades(d.penalidades || []);
+        if (d.success) {
+          // Merge: só atualiza se mudou (evita flash desnecessário)
+          setPenalidades(prev => {
+            const next = d.penalidades || [];
+            if (JSON.stringify(prev.map(p=>p.id)) === JSON.stringify(next.map(p=>p.id))) return prev;
+            return next;
+          });
+        }
       } catch (err) { console.error('[FilasAuto] carregarPenalidades:', err); }
       finally { setLoadingPenal(false); }
     }, [fetchAuth, apiUrl]);
@@ -174,6 +182,9 @@
         const d = await r.json();
         if (d.success) {
           showToast('Punição removida!', 'success');
+          // Remove localmente imediato — sem esperar o reload
+          setPenalidades(prev => prev.filter(x => x.cod_profissional !== penalidade.cod_profissional));
+          // Sync com servidor em background
           carregarPenalidades(centralSelecionada?.id);
         } else {
           showToast(d.error || 'Erro ao anular', 'error');
@@ -188,13 +199,19 @@
         const d = await r.json();
         if (d.success) {
           // 🔄 2026-05-24: salvar também em_rota e alertas (estavam faltando)
-          setFilaCompleta({
-            fila: d.fila || [],
-            em_rota: d.em_rota || [],
-            alertas: d.alertas || [],
-            bloqueados: d.bloqueados || [],
-            kpis: d.kpis || {},
-            total_sem_disponibilidade: d.total_sem_disponibilidade || 0,  // 🆕 2026-05-24
+          // Merge em vez de substituição — evita re-render completo (flash)
+          setFilaCompleta(prev => {
+            const next = {
+              fila: d.fila || [],
+              em_rota: d.em_rota || [],
+              alertas: d.alertas || [],
+              bloqueados: d.bloqueados || [],
+              kpis: d.kpis || {},
+              total_sem_disponibilidade: d.total_sem_disponibilidade || 0,
+            };
+            // Só atualiza se algo mudou (shallow compare por JSON)
+            if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+            return next;
           });
           // Carrega fotos dos motoboys (inclui em_rota)
           const cods = [...new Set([
@@ -282,6 +299,46 @@
       }, 5000);
       return () => clearInterval(i);
     }, [centralSelecionada, abaAtiva, carregarFilaCompleta, carregarLogs, carregarVinculos]);
+
+    // Sync ref (sem dep circular)
+    React.useEffect(() => { centralSelecionadaRef.current = centralSelecionada; }, [centralSelecionada]);
+
+    // WS: ouvir FILA_PENALIDADE_NOVA em tempo real (mesmo canal /ws/disponibilidade)
+    React.useEffect(() => {
+      if (!isAdmin || !apiUrl) return;
+      const token = window._authToken || document.cookie.split('; ').find(r => r.startsWith('accessToken='))?.split('=')[1];
+      if (!token) return;
+      let ws, pingId, reconnectId;
+      function conectar() {
+        try {
+          ws = new WebSocket(apiUrl.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '') + '/ws/disponibilidade');
+          ws.onopen = () => ws.send(JSON.stringify({ type: 'AUTH', token }));
+          ws.onmessage = (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.event === 'FILA_PENALIDADE_NOVA' && msg.data) {
+                const p = msg.data;
+                if (String(p.central_id) === String(centralSelecionadaRef.current?.id)) {
+                  setPenalidades(prev => {
+                    if (prev.some(x => x.cod_profissional === p.cod_profissional)) return prev;
+                    return [{ ...p, created_at: new Date().toISOString() }, ...prev];
+                  });
+                }
+              }
+            } catch (_) {}
+          };
+          ws.onclose = () => { if (!reconnectId) reconnectId = setTimeout(() => { reconnectId = null; conectar(); }, 5000); };
+          ws.onerror = () => {};
+          pingId = setInterval(() => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'PING' })); }, 30000);
+        } catch (_) {}
+      }
+      conectar();
+      return () => {
+        clearInterval(pingId);
+        clearTimeout(reconnectId);
+        if (ws) { ws.onclose = null; ws.close(); }
+      };
+    }, [isAdmin, apiUrl]);
 
     // ── Mutators ─────────────────────────────────────────────
     const salvarCentral = async (dados) => {
