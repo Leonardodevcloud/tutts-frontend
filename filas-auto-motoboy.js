@@ -37,6 +37,8 @@
     // 🆕 2026-05-24: modal de bloqueio quando tenta voltar antes do cooldown 30min
     const [modalCooldown, setModalCooldown] = React.useState(null); // { minutos_restantes } | null
     const [modalSaida, setModalSaida] = React.useState(false);
+    const [barreiraHorario, setBarreiraHorario] = React.useState(null); // { nome, horario_corte }
+    let req_nome_profissional = '';
     const [textoConfirmSaida, setTextoConfirmSaida] = React.useState('');
 
     // Refs estáveis pra props (anti infinite-loop em useEffect)
@@ -121,6 +123,7 @@
         return;
       }
       try {
+        req_nome_profissional = usuario?.nome || '';
         const r = await fetchAuth(`${apiUrl}/filas/auto/entrar`, {
           method: 'POST',
           body: JSON.stringify({
@@ -134,6 +137,11 @@
           setBloqueioCorrida(null);
           carregarMinhaPosicao();
           carregarFilaPublica(minhaCentral.id);
+        } else if (d.error === 'barreira_horario') {
+          setBarreiraHorario({
+            nome: usuario?.nome || '',
+            horario_corte: d.horario_corte || '',
+          });
         } else if (d.error === 'cooldown_despacho') {
           // 🆕 2026-05-24: em vez de toast vermelho, abre modal com explicação
           setModalCooldown({ minutos_restantes: d.minutos_restantes || 30 });
@@ -317,6 +325,7 @@
       !penalizado && !bloqueioCorrida && naFila && minhaPosicao.status !== 'em_rota' && renderTelaNaFila({
         minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido,
         usuarioCod: usuario?.codProfissional || usuario?.cod_profissional,
+        barreiraHorario, setBarreiraHorario,
         sairDaFila: abrirModalSaida,
         modalSaida, setModalSaida,
         textoConfirmSaida, setTextoConfirmSaida,
@@ -343,7 +352,8 @@
   function renderTelaNaFila(opts) {
     const { minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido, usuarioCod,
             sairDaFila, modalSaida, setModalSaida, textoConfirmSaida,
-            setTextoConfirmSaida, confirmarSaida } = opts;
+            setTextoConfirmSaida, confirmarSaida,
+            barreiraHorario, setBarreiraHorario } = opts;
     const minutosDecorridos = Math.floor((Date.now() - new Date(minhaPosicao.entrada_fila_at).getTime()) / 60000);
     const agenteStatus = minhaPosicao.agente_status || 'pendente';
 
@@ -416,6 +426,48 @@
           e('p', { className: 'text-[11px] text-amber-700 mt-0.5 leading-snug' },
             'Se você pegar uma corrida no sistema, o agente vai te tirar da fila automaticamente.'
           )
+        )
+      ),
+
+      // ── Tela fullscreen: barreira de horário ──────────────────
+      barreiraHorario && e('div', {
+        className: 'fixed inset-0 z-50 flex flex-col items-center justify-center p-6',
+        style: { background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)' }
+      },
+        e('div', { className: 'max-w-sm w-full text-center space-y-6' },
+          // Ícone
+          e('div', { className: 'flex justify-center' },
+            e('div', { className: 'w-24 h-24 rounded-full bg-white/10 flex items-center justify-center' },
+              e('span', { className: 'text-5xl' }, '🚧')
+            )
+          ),
+          // Saudação
+          e('div', null,
+            e('h1', { className: 'text-2xl font-bold text-white mb-1' },
+              `Bom dia${barreiraHorario.nome ? ', ' + barreiraHorario.nome.split(' ')[0] : ''}!`
+            ),
+            e('div', { className: 'h-px bg-white/20 my-4' })
+          ),
+          // Mensagem principal
+          e('div', { className: 'bg-white/10 rounded-2xl p-5 backdrop-blur-sm border border-white/20' },
+            e('p', { className: 'text-white text-base leading-relaxed' },
+              'Você está acessando a fila muito tempo após o início da operação acordada. ',
+              'Neste momento, todas as vagas estão preenchidas e ',
+              e('strong', null, 'não será possível acessar.')
+            ),
+            e('p', { className: 'text-purple-200 text-sm mt-3 leading-relaxed' },
+              'Entre em contato com o suporte para regularizar sua situação.'
+            )
+          ),
+          // Horário de corte
+          barreiraHorario.horario_corte && e('div', { className: 'text-purple-300 text-sm' },
+            `Horário de ingresso encerrado após ${barreiraHorario.horario_corte}`
+          ),
+          // Botão fechar
+          e('button', {
+            onClick: () => setBarreiraHorario(null),
+            className: 'w-full py-3 bg-white/15 hover:bg-white/25 text-white rounded-xl font-medium transition-colors border border-white/20 text-sm'
+          }, 'Fechar')
         )
       ),
 

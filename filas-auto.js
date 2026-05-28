@@ -416,6 +416,8 @@
           remover_ao_pegar_corrida: dados.remover_ao_pegar_corrida,
           mostrar_nomes_publicos: dados.mostrar_nomes_publicos,
           penalidade_min: dados.penalidade_min,
+          barreira_horario_ativa: dados.barreira_horario_ativa,
+          barreira_horario_corte: dados.barreira_horario_corte,
         };
         const rCfg = await fetchAuth(`${apiUrl}/filas/auto/admin/centrais/${centralId}/config`, {
           method: 'PATCH', body: JSON.stringify(cfgPayload),
@@ -768,18 +770,24 @@
                   ? `${Math.floor(restMin/60)}h ${restMin%60 > 0 ? restMin%60+'min' : ''}`.trim()
                   : `${restMin} min`;
                 const ehManual = p.tipo === 'manual';
+                const ehBarreira = p.tipo === 'barreira_horario';
+                const badgeClass = ehManual ? 'bg-purple-100 text-purple-700'
+                  : ehBarreira ? 'bg-orange-100 text-orange-700'
+                  : 'bg-red-100 text-red-700';
+                const badgeLabel = ehManual ? 'manual' : ehBarreira ? '⏰ horário' : 'automática';
+                const subLabel = ehManual
+                  ? `Aplicada por ${p.aplicado_por_nome || 'admin'}`
+                  : ehBarreira
+                    ? (p.motivo_admin || 'Acesso após horário de corte')
+                    : `${p.saidas_hoje || 0} saída(s) hoje`;
                 return e('div', { key: p.id, className: 'bg-white border border-red-200 rounded-xl p-4' },
                   e('div', { className: 'flex items-start justify-between gap-3 mb-3' },
                     e('div', { className: 'flex-1 min-w-0' },
                       e('div', { className: 'flex items-center gap-2 mb-0.5' },
                         e('p', { className: 'font-bold text-gray-800 truncate' }, p.nome_profissional || `#${p.cod_profissional}`),
-                        e('span', { className: `text-[10px] font-semibold px-1.5 py-0.5 rounded ${ehManual ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}` },
-                          ehManual ? 'manual' : 'automática')
+                        e('span', { className: `text-[10px] font-semibold px-1.5 py-0.5 rounded ${badgeClass}` }, badgeLabel)
                       ),
-                      e('p', { className: 'text-xs text-gray-500' },
-                        ehManual
-                          ? `Aplicada por ${p.aplicado_por_nome || 'admin'}`
-                          : `${p.saidas_hoje || 0} saída(s) hoje`)
+                      e('p', { className: 'text-xs text-gray-500' }, subLabel)
                     ),
                     e('button', {
                       onClick: () => anularPenalidade(p),
@@ -1241,6 +1249,31 @@
             e('option', { value: 5 }, '5 minutos'),
             e('option', { value: 10 }, '10 minutos'),
             e('option', { value: 30 }, '30 minutos'),
+          )
+        )
+      ),
+
+      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-2' }, '⏰ Barreira de horário de ingresso'),
+      e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3' },
+        toggle('Ativar barreira de horário',
+          'Bloqueia motoboys que tentam entrar na fila pela 1ª vez no dia após o horário configurado',
+          dados.barreira_horario_ativa || false,
+          v => setCampo('barreira_horario_ativa', v)),
+        dados.barreira_horario_ativa && e('div', { className: 'flex items-center justify-between py-1 border-t border-gray-200 pt-2' },
+          e('div', null,
+            e('p', { className: 'text-xs font-medium text-gray-800' }, 'Horário de corte'),
+            e('p', { className: 'text-[11px] text-gray-500' }, 'Após este horário, 1º ingresso do dia é bloqueado')
+          ),
+          e('input', {
+            type: 'time',
+            value: dados.barreira_horario_corte ? dados.barreira_horario_corte.slice(0,5) : '08:00',
+            onChange: ev => setCampo('barreira_horario_corte', ev.target.value + ':00'),
+            className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white font-mono'
+          })
+        ),
+        dados.barreira_horario_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' },
+          e('p', { className: 'text-[11px] text-amber-700 leading-relaxed' },
+            '⚠️ Motoboys bloqueados pela barreira aparecem na aba Punidos. Você pode liberar manualmente um a um se necessário.'
           )
         )
       ),
