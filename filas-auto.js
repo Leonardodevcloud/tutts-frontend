@@ -26,7 +26,9 @@
     const [centrais, setCentrais] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [centralSelecionada, setCentralSelecionada] = React.useState(null);
-    const [abaAtiva, setAbaAtiva] = React.useState('monitor'); // 'monitor' | 'config' | 'vinculos' | 'logs'
+    const [abaAtiva, setAbaAtiva] = React.useState('monitor'); // 'monitor' | 'config' | 'vinculos' | 'logs' | 'penalidades'
+    const [penalidades, setPenalidades] = React.useState([]);
+    const [loadingPenal, setLoadingPenal] = React.useState(false);
     const [filaCompleta, setFilaCompleta] = React.useState({ fila: [], em_rota: [], alertas: [], bloqueados: [], kpis: {} });
     const [logs, setLogs] = React.useState([]);
     const [vinculos, setVinculos] = React.useState([]);
@@ -150,6 +152,35 @@
       }
     }, []);
 
+    const carregarPenalidades = React.useCallback(async (centralId) => {
+      if (!centralId) return;
+      setLoadingPenal(true);
+      try {
+        const r = await fetchAuth(`${apiUrl}/filas/penalidades/${centralId}`);
+        const d = await r.json();
+        if (d.success) setPenalidades(d.penalidades || []);
+      } catch (err) { console.error('[FilasAuto] carregarPenalidades:', err); }
+      finally { setLoadingPenal(false); }
+    }, [fetchAuth, apiUrl]);
+
+    const anularPenalidade = React.useCallback(async (penalidade) => {
+      if (!window.confirm(`Anular punição de ${penalidade.nome_profissional || penalidade.cod_profissional}?`)) return;
+      try {
+        const r = await fetchAuth(`${apiUrl}/filas/anular-penalidade`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cod_profissional: penalidade.cod_profissional, central_id: penalidade.central_id }),
+        });
+        const d = await r.json();
+        if (d.success) {
+          showToast('Punição removida!', 'success');
+          carregarPenalidades(centralSelecionada?.id);
+        } else {
+          showToast(d.error || 'Erro ao anular', 'error');
+        }
+      } catch (err) { showToast('Erro de conexão', 'error'); }
+    }, [fetchAuth, apiUrl, centralSelecionada, carregarPenalidades]);
+
     const carregarFilaCompleta = React.useCallback(async (centralId) => {
       if (!centralId) return;
       try {
@@ -240,6 +271,10 @@
       carregarVinculos(centralSelecionada.id);
       // Polling 5s no monitor + logs (configuração não muda sozinha)
       const i = setInterval(() => {
+        if (abaAtiva === 'penalidades') {
+          carregarPenalidades(centralSelecionada.id);
+          return;
+        }
         if (abaAtiva === 'monitor' || abaAtiva === 'logs') {
           carregarFilaCompleta(centralSelecionada.id);
           carregarLogs(centralSelecionada.id);
@@ -610,11 +645,11 @@
 
       // Tabs
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
-        ['monitor', 'config', 'vinculos', 'logs'].map(aba => e('button', {
+        ['monitor', 'config', 'vinculos', 'penalidades', 'logs'].map(aba => e('button', {
           key: aba,
           onClick: () => setAbaAtiva(aba),
           className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : 'Logs do agente'))
+        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `🚫 Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : 'Logs do agente'))
       ),
 
       // === ABA MONITOR ===
@@ -643,6 +678,71 @@
       }),
 
       // === ABA LOGS ===
+      abaAtiva === 'penalidades' && e('div', { className: 'space-y-3' },
+        // Header
+        e('div', { className: 'flex items-center justify-between' },
+          e('h3', { className: 'font-semibold text-gray-800' }, '🚫 Motoboys punidos'),
+          e('button', {
+            onClick: () => carregarPenalidades(centralSelecionada.id),
+            className: 'text-xs px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600'
+          }, loadingPenal ? '⏳ Carregando...' : '🔄 Atualizar')
+        ),
+        // Info
+        e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800' },
+          'Punições são aplicadas automaticamente quando o motoboy sai da fila voluntariamente. ',
+          'Só remova se houver motivo legítimo (ex: emergência).'
+        ),
+        // Lista
+        loadingPenal
+          ? e('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...')
+          : penalidades.length === 0
+            ? e('div', { className: 'text-center py-10 text-gray-400' },
+                e('span', { className: 'text-4xl block mb-2' }, '✅'),
+                e('p', { className: 'text-sm' }, 'Nenhum motoboy punido no momento')
+              )
+            : e('div', { className: 'space-y-2' }, penalidades.map(p => {
+                const dt = new Date(p.bloqueado_ate);
+                const agora = new Date();
+                const totalMs = dt - new Date(p.created_at);
+                const restMs  = dt - agora;
+                const pct = Math.max(0, Math.min(100, 100 - (restMs / totalMs * 100)));
+                const restMin = Math.ceil(restMs / 60000);
+                const restLabel = restMin >= 60
+                  ? `${Math.floor(restMin/60)}h ${restMin%60 > 0 ? restMin%60+'min' : ''}`.trim()
+                  : `${restMin} min`;
+                const ehManual = p.tipo === 'manual';
+                return e('div', { key: p.id, className: 'bg-white border border-red-200 rounded-xl p-4' },
+                  e('div', { className: 'flex items-start justify-between gap-3 mb-3' },
+                    e('div', { className: 'flex-1 min-w-0' },
+                      e('div', { className: 'flex items-center gap-2 mb-0.5' },
+                        e('p', { className: 'font-bold text-gray-800 truncate' }, p.nome_profissional || `#${p.cod_profissional}`),
+                        e('span', { className: `text-[10px] font-semibold px-1.5 py-0.5 rounded ${ehManual ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}` },
+                          ehManual ? 'manual' : 'automática')
+                      ),
+                      e('p', { className: 'text-xs text-gray-500' },
+                        ehManual
+                          ? `Aplicada por ${p.aplicado_por_nome || 'admin'}`
+                          : `${p.saidas_hoje || 0} saída(s) hoje`)
+                    ),
+                    e('button', {
+                      onClick: () => anularPenalidade(p),
+                      className: 'flex-shrink-0 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700'
+                    }, '✅ Remover punição')
+                  ),
+                  // Barra de progresso do tempo restante
+                  e('div', { className: 'mb-1.5' },
+                    e('div', { className: 'flex justify-between text-[11px] text-gray-500 mb-1' },
+                      e('span', null, '⏳ Tempo restante'),
+                      e('span', { className: 'font-medium text-red-600' }, restLabel)
+                    ),
+                    e('div', { className: 'h-1.5 bg-red-100 rounded-full overflow-hidden' },
+                      e('div', { className: 'h-full bg-red-400 rounded-full transition-all', style: { width: pct + '%' } })
+                    )
+                  ),
+                  p.motivo_admin && e('p', { className: 'text-xs text-gray-500 mt-1.5 italic' }, `Motivo: ${p.motivo_admin}`)
+                );
+              }))
+      ),
       abaAtiva === 'logs' && renderLogs({ logs }),
 
       // Modal de nova/editar central

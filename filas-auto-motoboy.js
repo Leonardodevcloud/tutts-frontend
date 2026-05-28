@@ -36,6 +36,8 @@
     const [bloqueioCorrida, setBloqueioCorrida] = React.useState(null); // { corridas: [...] }
     // 🆕 2026-05-24: modal de bloqueio quando tenta voltar antes do cooldown 30min
     const [modalCooldown, setModalCooldown] = React.useState(null); // { minutos_restantes } | null
+    const [modalSaida, setModalSaida] = React.useState(false);
+    const [textoConfirmSaida, setTextoConfirmSaida] = React.useState('');
 
     // Refs estáveis pra props (anti infinite-loop em useEffect)
     const apiUrlRef = React.useRef(apiUrl);
@@ -153,13 +155,23 @@
       }
     };
 
-    const sairDaFila = async () => {
-      if (!window.confirm('Sair da fila?\n\nDependendo da configuração, você ficará bloqueado por alguns minutos antes de poder reentrar.')) return;
+    const abrirModalSaida = () => {
+      setTextoConfirmSaida('');
+      setModalSaida(true);
+    };
+
+    const confirmarSaida = async () => {
+      if (textoConfirmSaida.trim().toUpperCase() !== 'SAIR') {
+        toast('Digite SAIR para confirmar', 'error');
+        return;
+      }
+      setModalSaida(false);
+      setTextoConfirmSaida('');
       try {
         const r = await fetchAuth(`${apiUrl}/filas/auto/sair`, { method: 'POST' });
         const d = await r.json();
         if (d.success) {
-          toast(d.mensagem || 'Você saiu da fila', 'success');
+          toast(d.mensagem || 'Você saiu da fila', 'warning');
           carregarMinhaPosicao();
           carregarFilaPublica(minhaCentral.id);
           carregarPenalidade();
@@ -168,6 +180,9 @@
         }
       } catch (err) { toast('Erro de conexão', 'error'); }
     };
+
+    // Mantido por compatibilidade com código legado que chama sairDaFila diretamente
+    const sairDaFila = abrirModalSaida;
 
     // ── Helpers de UI ────────────────────────────────────────
     function avatar(cod, nome, foto, size) {
@@ -302,7 +317,10 @@
       !penalizado && !bloqueioCorrida && naFila && minhaPosicao.status !== 'em_rota' && renderTelaNaFila({
         minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido,
         usuarioCod: usuario?.codProfissional || usuario?.cod_profissional,
-        sairDaFila,
+        sairDaFila: abrirModalSaida,
+        modalSaida, setModalSaida,
+        textoConfirmSaida, setTextoConfirmSaida,
+        confirmarSaida,
       }),
 
       // ═══ ESTADO: PRONTO PARA ENTRAR ═══
@@ -323,7 +341,9 @@
   // Tela: motoboy DENTRO da fila
   // ──────────────────────────────────────────────────────────
   function renderTelaNaFila(opts) {
-    const { minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido, usuarioCod, sairDaFila } = opts;
+    const { minhaPosicao, filaPublica, fotos, avatar, tempoDecorrido, usuarioCod,
+            sairDaFila, modalSaida, setModalSaida, textoConfirmSaida,
+            setTextoConfirmSaida, confirmarSaida } = opts;
     const minutosDecorridos = Math.floor((Date.now() - new Date(minhaPosicao.entrada_fila_at).getTime()) / 60000);
     const agenteStatus = minhaPosicao.agente_status || 'pendente';
 
@@ -395,6 +415,64 @@
           e('p', { className: 'text-xs font-medium text-amber-900' }, 'Agente monitorando'),
           e('p', { className: 'text-[11px] text-amber-700 mt-0.5 leading-snug' },
             'Se você pegar uma corrida no sistema, o agente vai te tirar da fila automaticamente.'
+          )
+        )
+      ),
+
+      // Modal confirmação de saída
+      modalSaida && e('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4' },
+        e('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden' },
+          // Header vermelho
+          e('div', { className: 'bg-red-600 px-5 py-4 text-white text-center' },
+            e('span', { className: 'text-4xl block mb-1' }, '🚫'),
+            e('h2', { className: 'text-lg font-bold' }, 'Sair da fila?'),
+            e('p', { className: 'text-red-200 text-xs mt-1' }, 'Esta ação não pode ser desfeita')
+          ),
+          e('div', { className: 'p-5 space-y-4' },
+            // Aviso de punição
+            e('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-4' },
+              e('p', { className: 'text-sm font-bold text-red-800 mb-2 text-center' }, '⚠️ Você será bloqueado'),
+              e('p', { className: 'text-sm text-red-700 text-center leading-relaxed' },
+                'Ao sair voluntariamente, você ',
+                e('strong', null, 'não poderá reentrar na fila'),
+                ' pelo período de punição configurado.'
+              )
+            ),
+            // Campo de confirmação
+            e('div', null,
+              e('p', { className: 'text-sm text-gray-600 text-center mb-2' },
+                'Para confirmar, digite ',
+                e('strong', { className: 'text-red-700 font-mono tracking-widest' }, 'SAIR'),
+                ' abaixo:'
+              ),
+              e('input', {
+                type: 'text',
+                value: textoConfirmSaida,
+                onChange: ev => setTextoConfirmSaida(ev.target.value),
+                onKeyDown: ev => { if (ev.key === 'Enter') confirmarSaida(); },
+                placeholder: 'Digite SAIR',
+                autoFocus: true,
+                className: 'w-full text-center text-xl font-bold tracking-widest border-2 rounded-xl py-3 px-4 focus:outline-none ' +
+                  (textoConfirmSaida.trim().toUpperCase() === 'SAIR'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-gray-300 text-gray-700')
+              })
+            ),
+            // Botões
+            e('div', { className: 'flex gap-3' },
+              e('button', {
+                onClick: () => { setModalSaida(false); setTextoConfirmSaida(''); },
+                className: 'flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-300'
+              }, 'Cancelar'),
+              e('button', {
+                onClick: confirmarSaida,
+                disabled: textoConfirmSaida.trim().toUpperCase() !== 'SAIR',
+                className: 'flex-1 py-3 rounded-xl font-bold text-sm ' +
+                  (textoConfirmSaida.trim().toUpperCase() === 'SAIR'
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-gray-300 text-gray-400 cursor-not-allowed')
+              }, 'Confirmar saída')
+            )
           )
         )
       ),
