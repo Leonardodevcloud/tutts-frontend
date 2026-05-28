@@ -605,11 +605,15 @@
   function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
     const e = entrega;
 
-    const valorCliente   = parseFloat(e.valor_servico || 0);
-    const valorProfMapp  = parseFloat(e.valor_profissional || 0);
-    const valorUber      = parseFloat(e.valor_uber || 0);
-    const margem         = valorCliente - valorUber;
-    const margemPositiva = margem >= 0;
+    const valorUber           = parseFloat(e.valor_uber || e.valor_provider || 0);
+    const valorHub            = parseFloat(e.valor_servico || 0);   // preço calculado pelo hub (km)
+    const margemHub           = Math.round((valorHub - valorUber) * 100) / 100;
+    const margemHubPct        = valorUber > 0 ? Math.round((margemHub / valorUber) * 1000) / 10 : null;
+    const margemPos           = margemHub >= 0;
+    // Valores originais (audit — usados só se precisar)
+    const valorClienteOriginal = parseFloat(e.valor_servico_mapp_original || e.valor_servico || 0);
+    const valorProfOriginal    = parseFloat(e.valor_profissional_mapp_original || e.valor_profissional || 0);
+
     const prov           = provedorInfo(e);
 
     const podeCancelar = !['delivered', 'cancelado', 'canceled', 'fallback_fila'].includes(e.status_uber);
@@ -723,27 +727,24 @@
         ),
       ),
 
-      // ── 4 cards de valores: cliente Mapp / prof Mapp / provedor / margem ──
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
-          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorCliente))
-        ),
-        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Profissional Mapp'),
-          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorProfMapp))
-        ),
+      // ── 3 cards operacionais: custo provedor / preço hub / margem ──
+      h('div', { className: 'grid grid-cols-3 gap-2' },
         h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
           h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
-          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber))
+          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber)),
+          e.distancia_km && h('div', { className: 'text-[10px] text-gray-400 mt-0.5' },
+            `${parseFloat(e.distancia_km).toFixed(1)} km`)
         ),
-        h('div', {
-          className: `rounded-lg px-3 py-2.5 ${margemPositiva ? 'bg-green-50' : 'bg-red-50'}`,
-        },
-          h('div', { className: `text-[11px] mb-0.5 ${margemPositiva ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
-          h('div', {
-            className: `text-base font-semibold ${margemPositiva ? 'text-green-800' : 'text-red-800'}`,
-          }, `${margemPositiva ? '+ ' : '− '}${fmtMoney(Math.abs(margem))}`)
+        h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
+          h('div', { className: 'text-[11px] text-purple-600 mb-0.5' }, 'Valor pela regra (km)'),
+          h('div', { className: 'text-base font-semibold text-purple-800' }, fmtMoney(valorHub))
+        ),
+        h('div', { className: `rounded-lg px-3 py-2.5 ${margemPos ? 'bg-green-50' : 'bg-red-50'}` },
+          h('div', { className: `text-[11px] mb-0.5 ${margemPos ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
+          h('div', { className: `text-base font-semibold ${margemPos ? 'text-green-800' : 'text-red-800'}` },
+            `${margemPos ? '+ ' : '− '}${fmtMoney(Math.abs(margemHub))}`),
+          margemHubPct !== null && h('div', { className: `text-[10px] mt-0.5 ${margemPos ? 'text-green-600' : 'text-red-600'}` },
+            `${margemPos ? '+' : ''}${margemHubPct.toFixed(1)}%`)
         ),
       ),
 
@@ -1621,33 +1622,25 @@
                 ),
               ),
 
-              // Valores e margem
-              h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-                h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                  h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Cliente paga'),
-                  h('div', { className: 'text-base font-semibold' }, fmtMoney(parseFloat(e.valor_servico || 0)))
-                ),
-                h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                  h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Profissional Mapp'),
-                  h('div', { className: 'text-base font-semibold' }, fmtMoney(parseFloat(e.valor_profissional || 0)))
-                ),
+              // ── 3 cards operacionais no modal ──
+              h('div', { className: 'grid grid-cols-3 gap-2' },
                 h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
                   h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
-                  h('div', { className: 'text-base font-semibold' }, fmtMoney(parseFloat(e.valor_uber || 0)))
+                  h('div', { className: 'text-base font-semibold' }, fmtMoney(valorUber)),
+                  e.distancia_km && h('div', { className: 'text-[10px] text-gray-400 mt-0.5' },
+                    `${parseFloat(e.distancia_km).toFixed(1)} km`)
                 ),
-                e.distancia_km && h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
-                  h('div', { className: 'text-[11px] text-purple-600 mb-0.5' }, 'Distância da rota'),
-                  h('div', { className: 'text-base font-semibold text-purple-800' }, `${parseFloat(e.distancia_km).toFixed(1)} km`)
+                h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
+                  h('div', { className: 'text-[11px] text-purple-600 mb-0.5' }, 'Valor pela regra (km)'),
+                  h('div', { className: 'text-base font-semibold text-purple-800' }, fmtMoney(valorHub))
                 ),
-                (function () {
-                  const m = parseFloat(e.valor_servico || 0) - parseFloat(e.valor_uber || 0);
-                  const pos = m >= 0;
-                  return h('div', { className: `rounded-lg px-3 py-2.5 ${pos ? 'bg-green-50' : 'bg-red-50'}` },
-                    h('div', { className: `text-[11px] mb-0.5 ${pos ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
-                    h('div', { className: `text-base font-semibold ${pos ? 'text-green-800' : 'text-red-800'}` },
-                      `${pos ? '+ ' : '− '}${fmtMoney(Math.abs(m))}`)
-                  );
-                })(),
+                h('div', { className: `rounded-lg px-3 py-2.5 ${margemPos ? 'bg-green-50' : 'bg-red-50'}` },
+                  h('div', { className: `text-[11px] mb-0.5 ${margemPos ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
+                  h('div', { className: `text-base font-semibold ${margemPos ? 'text-green-800' : 'text-red-800'}` },
+                    `${margemPos ? '+ ' : '− '}${fmtMoney(Math.abs(margemHub))}`),
+                  margemHubPct !== null && h('div', { className: `text-[10px] mt-0.5 ${margemPos ? 'text-green-600' : 'text-red-600'}` },
+                    `${margemPos ? '+' : ''}${margemHubPct.toFixed(1)}%`)
+                ),
               ),
 
               // Entregador completo
@@ -2094,7 +2087,7 @@
           h('div', { className: 'flex items-center gap-3 mb-4' },
             h('span', { className: 'text-xs text-gray-500 whitespace-nowrap' }, 'Distância:'),
             h('input', {
-              type: 'range', min: '1', max: '30', step: '1',
+              type: 'range', min: '1', max: '60', step: '1',
               value: simKm,
               onChange: e => setSimKm(parseInt(e.target.value, 10)),
               style: { flex: 1 },
