@@ -724,7 +724,16 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                                     : React.createElement('div', { className: 'space-y-2' }, filaAtual.em_rota.map(p => React.createElement('div', { key: p.cod_profissional, className: `border rounded-lg p-3 ${p.minutos_em_rota > 90 ? 'border-red-300 bg-red-50' : p.corrida_unica ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'} flex flex-col gap-2` },
                                         React.createElement('div', { className: 'flex items-center justify-between' },
                                             React.createElement('div', { className: 'flex items-center gap-3' },
-                                                React.createElement('span', { className: 'text-2xl' }, p.corrida_unica ? '👑' : '🏍️'),
+                                                // Avatar: foto ou iniciais (mesmo padrão da fila de espera)
+                                                p.foto
+                                                    ? React.createElement('img', {
+                                                        src: p.foto,
+                                                        alt: p.nome_profissional || '',
+                                                        className: 'w-8 h-8 rounded-full object-cover border-2 border-green-200 flex-shrink-0'
+                                                    })
+                                                    : React.createElement('div', {
+                                                        className: 'w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ' + (p.corrida_unica ? 'bg-yellow-100' : 'bg-green-100')
+                                                    }, p.corrida_unica ? '👑' : '🏍️'),
                                                 React.createElement('div', null,
                                                     React.createElement('p', { className: 'font-medium text-sm' }, p.nome_profissional),
                                                     React.createElement('p', { className: `text-xs ${p.minutos_em_rota > 90 ? 'text-red-600 font-bold' : 'text-gray-500'}` }, `⏱️ ${formatarTempo(p.minutos_em_rota)} em rota`, p.corrida_unica && ' • Corrida Única')
