@@ -316,6 +316,10 @@
     const [resultado, setResultado] = useState(null);
     const [filtroDE, setFiltroDE]   = useState('');
     const [filtroATE, setFiltroATE] = useState('');
+    const [cfEmail, setCfEmail]     = useState('contato@tutts.com.br');
+    const [cfSenha, setCfSenha]     = useState('Confirma@2026');
+    const [cfCnpj, setCfCnpj]       = useState('');
+    const [semConfig, setSemConfig] = useState(false);
     const POR_PAG = 25;
 
     useEffect(() => { carregarVinculos(); }, []);
@@ -336,6 +340,9 @@
         const body = {};
         if (filtroDE) body.de = filtroDE.replace('T',' ');
         if (filtroATE) body.ate = filtroATE.replace('T',' ');
+        // Passa credenciais direto se não tiver cliente configurado
+        if (cfEmail && cfSenha) { body.cf_email = cfEmail; body.cf_senha = cfSenha; }
+        if (cfCnpj) body.cnpj_transportadora = cfCnpj;
 
         const r = await fetchAuth(API_URL+'/confirmafacil/buscar-nfs', {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -345,9 +352,11 @@
         setResultado(d);
         if (d.ok) {
           const total = d.resultados?.reduce((s,r)=>s+(r.nfs?.length||0),0)||0;
-          showToast(`🔍 Encontradas ${total} NF(s) no CF`,'success');
+          showToast('🔍 Encontradas '+total+' NF(s) no CF','success');
+          setSemConfig(false);
         } else {
           showToast(d.mensagem||'Erro ao buscar','error');
+          if (d.mensagem?.includes('configurado')) setSemConfig(true);
         }
       } catch(e) { showToast('Erro: '+e.message,'error'); }
       finally { setTestando(false); }
@@ -387,6 +396,20 @@
               onChange:e=>setFiltroATE(e.target.value),
               className:'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
             })
+          ),
+          semConfig && h('div',{className:'flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs w-full'},
+            h('p',{className:'font-medium text-amber-800 mb-1'},'⚙️ Nenhum cliente configurado — informe as credenciais para testar:'),
+            h('div',{className:'flex flex-wrap gap-2'},
+              h('input',{type:'email',placeholder:'Email CF',value:cfEmail,
+                onChange:e=>setCfEmail(e.target.value),
+                className:'border border-amber-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none w-56'}),
+              h('input',{type:'password',placeholder:'Senha CF',value:cfSenha,
+                onChange:e=>setCfSenha(e.target.value),
+                className:'border border-amber-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none w-44'}),
+              h('input',{type:'text',placeholder:'CNPJ Transportadora (opcional)',value:cfCnpj,
+                onChange:e=>setCfCnpj(e.target.value),
+                className:'border border-amber-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none w-56'})
+            )
           ),
           h('button',{
             onClick:buscarNoCF, disabled:testando,
