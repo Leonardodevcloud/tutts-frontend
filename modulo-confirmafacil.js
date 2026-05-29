@@ -129,8 +129,41 @@
               h(Campo,{label:'CEP',valor:end.cep,mono:true}),
               h(Campo,{label:'Cidade',valor:end.cidade}),
               h(Campo,{label:'UF',valor:end.uf}),
-              h(Campo,{label:'Latitude',valor:end.latitude,mono:true}),
-              h(Campo,{label:'Longitude',valor:end.longitude,mono:true}),
+              h(Campo,{label:'Latitude',valor:end.latitude||'não informado pelo embarcador'}),
+              h(Campo,{label:'Longitude',valor:end.longitude||'não informado pelo embarcador'}),
+            )
+          ),
+
+          // Trecho
+          nf.trecho?.length > 0 && h(Sec,{titulo:'🗺️ Trecho de Entrega'},
+            h('div',{className:'space-y-3'},
+              nf.trecho.map((t,i)=>
+                h('div',{key:i,className:'bg-gray-50 rounded-xl p-3'},
+                  h('p',{className:'text-xs font-semibold text-gray-500 mb-2'},'Trecho '+(t.ordem||i+1)),
+                  h(Grid,null,
+                    h(Campo,{label:'Origem',valor:[t.enderecoOrigem?.logradouro,t.enderecoOrigem?.numero,t.enderecoOrigem?.cidade,t.enderecoOrigem?.uf].filter(Boolean).join(', ')}),
+                    h(Campo,{label:'Destino',valor:[t.enderecoDestino?.logradouro,t.enderecoDestino?.numero,t.enderecoDestino?.cidade,t.enderecoDestino?.uf].filter(Boolean).join(', ')}),
+                    h(Campo,{label:'CEP Destino',valor:t.enderecoDestino?.cep,mono:true}),
+                    h(Campo,{label:'Previsão',valor:fmtD(t.dataPrevisao)}),
+                  )
+                )
+              )
+            )
+          ),
+
+          // Status adicional + Link rastreamento
+          h(Sec,{titulo:'📊 Status e Rastreamento'},
+            h(Grid,null,
+              h(Campo,{label:'Status Nota',valor:nf.statusNota}),
+              h(Campo,{label:'Status Comercial',valor:nf.statusNotaComercial}),
+              h(Campo,{label:'Status Trecho',valor:Array.isArray(nf.statusTrecho)?nf.statusTrecho.join(', '):nf.statusTrecho}),
+              h(Campo,{label:'Rastron',valor:nf.rastronStatus}),
+            ),
+            nf.linkExterno && h('div',{className:'mt-3'},
+              h('a',{
+                href:nf.linkExterno, target:'_blank', rel:'noopener noreferrer',
+                className:'inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700',
+              },'🔗 Abrir rastreamento público →')
             )
           ),
 
