@@ -581,6 +581,7 @@ const SISTEMA_MODULOS_CONFIG = [
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"📊 Dashboard"},{id:"busca",label:"🔍 Busca"},{id:"config",label:"⚙️ Configurações"},{id:"jobs",label:"🗂️ Jobs"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"provedores",label:"🔌 Provedores"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
+    { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
 ];
 
@@ -16073,6 +16074,25 @@ const hideLoadingScreen = () => {
                 );
             }
         }
+        // ========== MÓDULO CONFIRMA FÁCIL ==========
+        if ((l?.role === "admin" || l?.role === "admin_master") && "confirmafacil" === Ee) {
+            if (typeof window.ModuloConfirmaFacil !== 'undefined') {
+                return React.createElement(window.ModuloConfirmaFacil, {
+                    usuario: l,
+                    API_URL: API_URL,
+                    fetchAuth: fetchAuth,
+                    showToast: ja,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo ConfirmaFácil...")
+                    )
+                );
+            }
+        }
+
         if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master")) {
             if (typeof window.ModuloBiMonitoramento !== "undefined") {
                 return React.createElement(window.ModuloBiMonitoramento, {
