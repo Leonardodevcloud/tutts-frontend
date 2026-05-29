@@ -9,7 +9,14 @@
   const h = React.createElement;
 
   // ─── helpers ──────────────────────────────────────────────────
-  const fmt  = v => v || '—';
+  const fmt = v => {
+    if (v == null || v === '') return '—';
+    if (typeof v === 'object') {
+      // Tenta extrair campo legível comum
+      return v.nome || v.numero || v.descricao || v.id || JSON.stringify(v).slice(0,80);
+    }
+    return String(v);
+  };
   const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR') : '—'; } catch(_) { return d; } };
   const fmtCNPJ = v => {
     if (!v) return ''; const n = v.replace(/\D/g,'');
@@ -44,11 +51,15 @@
         children
       );
 
-    const Campo = ({label, valor, mono}) =>
-      h('div',{className:'mb-1.5'},
+    const Campo = ({label, valor, mono}) => {
+      const safe = typeof valor === 'object' && valor !== null
+        ? (valor.nome||valor.numero||valor.descricao||valor.id||JSON.stringify(valor).slice(0,80))
+        : valor;
+      return h('div',{className:'mb-1.5'},
         h('span',{className:'text-xs text-gray-400 block'},label),
-        h('span',{className:`text-sm text-gray-800 ${mono?'font-mono':''}`},fmt(valor))
+        h('span',{className:'text-sm text-gray-800 '+(mono?'font-mono':'')},fmt(safe))
       );
+    };
 
     const Grid = ({children}) => h('div',{className:'grid grid-cols-2 gap-x-6 gap-y-1'},children);
 
@@ -84,7 +95,7 @@
               h(Campo,{label:'Valor',valor:fmtMoeda(emb.valor)}),
               h(Campo,{label:'Peso Bruto',valor:emb.pesoBruto!=null?emb.pesoBruto+' kg':'—'}),
               h(Campo,{label:'Qtd Volumes',valor:emb.quantidadeVolumes}),
-              h(Campo,{label:'Romaneio',valor:emb.romaneio?.numero||emb.romaneio}),
+              h(Campo,{label:'Romaneio',valor:emb.romaneio?.numero||emb.romaneio?.id||''}),
               h(Campo,{label:'Data Emissão',valor:fmtD(emb.dataEmissao)}),
               h(Campo,{label:'Data Embarque',valor:fmtD(emb.dataEmbarque)}),
               h(Campo,{label:'Previsão',valor:fmtD(emb.dataPrevisao)}),
@@ -134,7 +145,7 @@
           // Última ocorrência
           ultimaOc && h(Sec,{titulo:'🔔 Última Ocorrência'},
             h(Grid,null,
-              h(Campo,{label:'Tipo',valor:ultimaOc.tipoOcorrencia?.nome||ultimaOc.tipoOcorrencia}),
+              h(Campo,{label:'Tipo',valor:ultimaOc.tipoOcorrencia?.nome||ultimaOc.tipoOcorrencia?.descricao||''}),
               h(Campo,{label:'Data',valor:fmtD(ultimaOc.data||ultimaOc.dataCriacao)}),
               h(Campo,{label:'Comentário',valor:ultimaOc.comentario}),
               h(Campo,{label:'Origem',valor:ultimaOc.origem}),
@@ -151,7 +162,7 @@
                   h('span',{className:'text-gray-400 shrink-0'},fmtD(oc.data||oc.dataCriacao)),
                   h('div',null,
                     h('p',{className:'font-medium text-gray-700'},
-                      oc.tipoOcorrencia?.nome||oc.tipoOcorrencia||'—'),
+                      oc.tipoOcorrencia?.nome||oc.tipoOcorrencia?.descricao||String(oc.tipoOcorrencia||'—')),
                     oc.comentario && h('p',{className:'text-gray-500 mt-0.5'},oc.comentario)
                   )
                 )
