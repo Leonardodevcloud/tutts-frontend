@@ -371,13 +371,25 @@
             toast('Informe o endereço da central', 'error');
             return null;
           }
-          if (!enderecoValidado || !coordenadasEncontradas) {
+          // fix (2026-05-28): ao editar central existente, se o endereço não mudou
+          // em relação ao salvo no banco, usa as coordenadas já existentes sem exigir
+          // revalidação — evita bloquear save de toggles/configs quando geocode falha.
+          const enderecoNaoMudou = dados.id && modalCentral &&
+            modalCentral.latitude && modalCentral.longitude &&
+            (dados.endereco || '').trim() === (modalCentral.endereco || '').trim();
+
+          if (enderecoNaoMudou) {
+            latFinal = modalCentral.latitude;
+            lngFinal = modalCentral.longitude;
+            enderecoFinal = dados.endereco;
+          } else if (!enderecoValidado || !coordenadasEncontradas) {
             toast('Aguarde a validação do endereço (✅) antes de salvar', 'error');
             return null;
+          } else {
+            latFinal = coordenadasEncontradas.latitude;
+            lngFinal = coordenadasEncontradas.longitude;
+            enderecoFinal = coordenadasEncontradas.enderecoFormatado || dados.endereco;
           }
-          latFinal = coordenadasEncontradas.latitude;
-          lngFinal = coordenadasEncontradas.longitude;
-          enderecoFinal = coordenadasEncontradas.enderecoFormatado || dados.endereco;
         }
 
         const payload = {
