@@ -371,19 +371,19 @@
             toast('Informe o endereço da central', 'error');
             return null;
           }
-          // fix (2026-05-28): ao editar central existente, se o endereço não mudou
-          // em relação ao salvo no banco, usa as coordenadas já existentes sem exigir
-          // revalidação — evita bloquear save de toggles/configs quando geocode falha.
-          const enderecoNaoMudou = dados.id && modalCentral &&
-            modalCentral.latitude && modalCentral.longitude &&
-            (dados.endereco || '').trim() === (modalCentral.endereco || '').trim();
+          // fix v2 (2026-05-28): salvarCentral é chamado de dois lugares:
+          //   1. Modal de criação (renderModalCentral) — usa geocoding, sem coords em dados
+          //   2. ConfigPanel (aba Configuração) — já tem lat/lng em dados direto
+          // Se dados.id + dados.latitude + dados.longitude existem: é edição de central
+          // existente — usa coords de dados sem exigir geocoding/revalidação.
+          const temCoordsExistentes = dados.id && dados.latitude && dados.longitude;
 
-          if (enderecoNaoMudou) {
-            latFinal = modalCentral.latitude;
-            lngFinal = modalCentral.longitude;
+          if (temCoordsExistentes) {
+            latFinal = parseFloat(dados.latitude);
+            lngFinal = parseFloat(dados.longitude);
             enderecoFinal = dados.endereco;
           } else if (!enderecoValidado || !coordenadasEncontradas) {
-            toast('Aguarde a validação do endereço (✅) antes de salvar', 'error');
+            toast('Aguarde a validação do endereço antes de salvar', 'error');
             return null;
           } else {
             latFinal = coordenadasEncontradas.latitude;
