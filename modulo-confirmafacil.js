@@ -34,8 +34,28 @@
   }
 
   // ─── Modal de detalhe de NF ────────────────────────────────────
-  function ModalDetalheNF({ nf, onFechar }) {
+  function ModalDetalheNF({ nf, onFechar, clientes, fetchAuth, API_URL, showToast }) {
     if (!nf) return null;
+    const [clienteSel, setClienteSel] = React.useState('');
+    const [criando, setCriando]       = React.useState(false);
+    const [resultado, setResultado]   = React.useState(null);
+
+    async function criarCorrida() {
+      if (!clienteSel) { showToast('Selecione o cliente para criar a corrida','error'); return; }
+      if (!confirm('Criar corrida real para NF '+nf.numero+'?')) return;
+      setCriando(true); setResultado(null);
+      try {
+        const r = await fetchAuth(API_URL+'/confirmafacil/criar-corrida', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ nf, cliente_id: Number(clienteSel) }),
+        });
+        const d = await r.json();
+        setResultado(d);
+        if (d.ok) showToast('✅ OS '+d.os_numero+' criada!','success');
+        else showToast('❌ '+(d.mensagem||'Erro'),'error');
+      } catch(e) { showToast('Erro: '+e.message,'error'); }
+      finally { setCriando(false); }
+    }
     const emb  = nf.embarque || nf;
     const dest = nf.destinatario || {};
     const end  = dest.endereco || nf.endereco || {};
@@ -78,9 +98,31 @@
               nf.idEmbarque && h(Badge,{txt:'ID '+nf.idEmbarque,cor:'purple'})
             )
           ),
-          h('button',{onClick:onFechar,className:'text-gray-400 hover:text-gray-700 text-2xl leading-none'},'×')
+          h('div',{className:'flex items-center gap-2'},
+            // Seletor de cliente + botão criar corrida
+            h('select',{
+              value:clienteSel, onChange:e=>setClienteSel(e.target.value),
+              className:'border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400',
+            },
+              h('option',{value:''},'Selecione cliente...'),
+              (clientes||[]).map(c=>h('option',{key:c.id,value:c.id},c.nome||c.empresa||c.email))
+            ),
+            h('button',{
+              onClick:criarCorrida, disabled:criando||!clienteSel,
+              className:'px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap',
+            }, criando?'⏳ Criando...':'🚀 Criar Corrida'),
+            h('button',{onClick:onFechar,className:'text-gray-400 hover:text-gray-700 text-2xl leading-none ml-1'},'×')
+          )
         ),
 
+        resultado && h('div',{
+          className:'mx-5 mt-4 p-3 rounded-xl text-sm font-medium '+(resultado.ok
+            ?'bg-green-50 border border-green-200 text-green-800'
+            :'bg-red-50 border border-red-100 text-red-700')},
+          resultado.ok
+            ? '✅ Corrida criada! OS: '+resultado.os_numero+' | ID: '+resultado.solicitacao_id
+            : '❌ '+resultado.mensagem
+        ),
         h('div',{className:'p-5 space-y-4'},
 
           // Embarque
@@ -237,7 +279,12 @@
     const POR_PAG_CF   = 50;
     const POR_PAG_VINC = 25;
 
-    useEffect(() => { carregarVinculos(); }, []);
+    const [clientes, setClientes] = useState([]);
+    useEffect(() => {
+      carregarVinculos();
+      fetchAuth(API_URL+'/admin/solicitacao/clientes')
+        .then(r=>r.json()).then(d=>setClientes(d.clientes||d||[])).catch(()=>{});
+    }, []);
 
     async function carregarVinculos() {
       setLoadingVinc(true);
@@ -500,7 +547,7 @@
       ),
 
       // Modal detalhe
-      nfDetalhe && h(ModalDetalheNF,{nf:nfDetalhe,onFechar:()=>setNfDetalhe(null)})
+      nfDetalhe && h(ModalDetalheNF,{nf:nfDetalhe,onFechar:()=>setNfDetalhe(null),clientes,fetchAuth,API_URL,showToast})
     );
   }
 
