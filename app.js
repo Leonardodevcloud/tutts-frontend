@@ -483,6 +483,9 @@ function hasModuleAccess(user, moduleId) {
     
     // Admin normal - verificar permissões
     if (user.role === "admin") {
+        // Módulos sempre liberados para admin independente de permissões
+        if (["roadmap", "confirmafacil"].includes(moduleId)) return true;
+
         // Se não tem permissões configuradas, dar acesso a tudo
         if (!user.permissions) return true;
         
