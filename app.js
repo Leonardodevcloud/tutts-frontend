@@ -16079,21 +16079,36 @@ const hideLoadingScreen = () => {
         }
         // ========== MÓDULO CONFIRMA FÁCIL ==========
         if ((l?.role === "admin" || l?.role === "admin_master") && "confirmafacil" === Ee) {
-            if (typeof window.ModuloConfirmaFacil !== 'undefined') {
-                return React.createElement(window.ModuloConfirmaFacil, {
+            return React.createElement("div", { className: "min-h-screen bg-gray-50" },
+                i && React.createElement(Toast, i),
+                n && React.createElement(LoadingOverlay, null),
+                React.createElement(HeaderCompacto, {
                     usuario: l,
-                    API_URL: API_URL,
-                    fetchAuth: fetchAuth,
-                    showToast: ja,
-                });
-            } else {
-                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
-                    React.createElement("div", { className: "text-center" },
-                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
-                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo ConfirmaFácil...")
+                    moduloAtivo: Ee,
+                    abaAtiva: "",
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: ul,
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: () => {}
+                }),
+                typeof window.ModuloConfirmaFacil !== 'undefined'
+                    ? React.createElement(window.ModuloConfirmaFacil, {
+                        usuario: l,
+                        API_URL: API_URL,
+                        fetchAuth: fetchAuth,
+                        showToast: ja,
+                    })
+                    : React.createElement("div", { className: "flex items-center justify-center h-64" },
+                        React.createElement("div", { className: "text-center" },
+                            React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                            React.createElement("p", { className: "text-gray-600" }, "Carregando módulo ConfirmaFácil...")
+                        )
                     )
-                );
-            }
+            );
         }
 
         if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master")) {
