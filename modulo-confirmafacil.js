@@ -635,12 +635,74 @@
     );
   }
 
+
+  // ─── Select de centro de custo (busca da API BI) ───────────────
+  function SelectCentroCusto({ clienteId, value, onChange, fetchAuth, API_URL }) {
+    const [opcoes, setOpcoes] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
+    const [digitando, setDigitando] = React.useState(false);
+
+    React.useEffect(() => {
+      if (!clienteId) return;
+      // Buscar cod_cliente Tutts do clienteId interno
+      setLoading(true);
+      fetchAuth(API_URL+'/admin/solicitacao/clientes')
+        .then(r=>r.json())
+        .then(d => {
+          const cli = (d.clientes||d||[]).find(c=>c.id===clienteId||c.id===Number(clienteId));
+          const codCliente = cli?.tutts_codigo_cliente || cli?.cod_cliente || clienteId;
+          return fetchAuth(API_URL+'/bi/centros-custo/'+codCliente);
+        })
+        .then(r=>r.json())
+        .then(d => {
+          const lista = Array.isArray(d) ? d : [];
+          setOpcoes(lista.map(o=>o.centro_custo||o).filter(Boolean));
+        })
+        .catch(()=>{})
+        .finally(()=>setLoading(false));
+    }, [clienteId]);
+
+    if (digitando) {
+      return h('div',{className:'flex gap-2'},
+        h('input',{
+          type:'text', value:value,
+          onChange:e=>onChange(e.target.value),
+          placeholder:'Digite o centro de custo...',
+          className:'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono',
+          autoFocus:true,
+        }),
+        h('button',{
+          type:'button', onClick:()=>setDigitando(false),
+          className:'text-xs px-3 py-2 border border-gray-200 rounded-lg hover:border-purple-300 text-gray-500',
+        },'lista')
+      );
+    }
+
+    return h('div',{className:'flex gap-2'},
+      h('select',{
+        value:value||'',
+        onChange:e=>onChange(e.target.value),
+        disabled:loading,
+        className:'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono bg-white',
+      },
+        h('option',{value:''},loading?'Carregando...':'Selecione o centro de custo...'),
+        opcoes.map(o=>h('option',{key:o,value:o},o))
+      ),
+      h('button',{
+        type:'button', onClick:()=>setDigitando(true),
+        className:'text-xs px-3 py-2 border border-gray-200 rounded-lg hover:border-purple-300 text-gray-500',
+        title:'Digitar manualmente',
+      },'✏️')
+    );
+  }
+
   // ─── MODAL EMBARCADOR ──────────────────────────────────────────
   function ModalEmbarcador({ clienteId, embarcador, onSalvar, onFechar, fetchAuth, API_URL, showToast }) {
     const [form, setForm] = useState({
       cnpj_embarcador:'',nome_embarcador:'',coleta_rua:'',coleta_numero:'',
       coleta_bairro:'',coleta_cidade:'',coleta_uf:'',coleta_cep:'',
       coleta_lat:'',coleta_lng:'',coleta_nome_fantasia:'',coleta_telefone:'',
+      centro_custo_mapp:'',
       ...embarcador,
     });
     const [salvando, setSalvando] = useState(false);
@@ -681,6 +743,22 @@
           inp('Cidade *','coleta_cidade'),inp('UF *','coleta_uf',{ph:'SP'}),
           inp('CEP','coleta_cep'),inp('Telefone','coleta_telefone'),
           inp('Latitude','coleta_lat'),inp('Longitude','coleta_lng'),
+          h('div',{className:'col-span-2'},
+            h('div',{className:'border-t border-gray-100 pt-3 mt-1'},
+              h('p',{className:'text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1'},'Mapp')
+            )
+          ),
+          h('div',{className:'col-span-2'},
+            h('label',{className:'block text-xs font-medium text-gray-600 mb-1'},
+              'Centro de custo Mapp',
+              h('span',{className:'text-gray-400 font-normal ml-1'},'— identifica esta filial nas corridas criadas')
+            ),
+            h(SelectCentroCusto,{
+              clienteId, value:form.centro_custo_mapp,
+              onChange:v=>set('centro_custo_mapp',v),
+              fetchAuth, API_URL
+            })
+          ),
         ),
         h('div',{className:'flex justify-end gap-3 p-5 border-t border-gray-100'},
           h('button',{onClick:onFechar,className:'px-4 py-2 text-sm text-gray-600'},'Cancelar'),
@@ -782,7 +860,10 @@
                   h('div',null,
                     h('p',{className:'font-medium text-sm text-gray-800'},emb.nome_embarcador||fmtCNPJ(emb.cnpj_embarcador)),
                     h('p',{className:'text-xs text-gray-500'},fmtCNPJ(emb.cnpj_embarcador)),
-                    h('p',{className:'text-xs text-gray-600 mt-1'},'📍 '+([emb.coleta_nome_fantasia,emb.coleta_rua,emb.coleta_numero,emb.coleta_cidade,emb.coleta_uf].filter(Boolean).join(', ')||'—'))
+                    h('p',{className:'text-xs text-gray-600 mt-0.5'},'📍 '+([emb.coleta_nome_fantasia,emb.coleta_rua,emb.coleta_numero,emb.coleta_cidade,emb.coleta_uf].filter(Boolean).join(', ')||'—')),
+                    emb.centro_custo_mapp && h('p',{className:'text-xs mt-0.5'},
+                      h('span',{className:'bg-purple-50 text-purple-700 font-mono px-2 py-0.5 rounded text-xs'},emb.centro_custo_mapp)
+                    )
                   ),
                   h('div',{className:'flex gap-2'},
                     h('button',{onClick:()=>setModalEmb(emb),className:'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300'},'✏️'),
