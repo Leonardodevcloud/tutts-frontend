@@ -20922,6 +20922,23 @@ const hideLoadingScreen = () => {
                         )
                     ),
 
+
+                    // ConfirmaFácil — integração NFs e rastreamento — só admin
+                    (l.role === "admin" || l.role === "admin_master") &&
+                    React.createElement("div", {
+                        onClick: () => he("confirmafacil"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                    },
+                        React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-6"},
+                            React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
+                                React.createElement("span", {className: "text-3xl"}, "🔗")
+                            ),
+                            React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "ConfirmaFácil"),
+                            React.createElement("p", {className: "text-sm text-gray-500"}, "Integração NFs e rastreamento de entregas")
+                        )
+                    ),
+
                     // Coleta de Endereços (colaborativa — motoboys cadastram, IA valida)
                     hasModuleAccess(l, "coleta") &&
                     React.createElement("div", {
