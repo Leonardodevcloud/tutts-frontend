@@ -318,10 +318,10 @@
           body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
         });
         const d = await r.json();
-        setLogsVinc(prev => ({...prev, [solicitacaoId]: d.logs||[]}));
-        if (d.logs?.[0]?.sucesso) showToast('✅ CF recebeu a ocorrência!','success');
-        else if (d.logs?.[0]) showToast('❌ CF rejeitou: '+(d.logs[0].erro_msg||'sem detalhe'),'error');
-        else showToast(d.mensagem||'Sem resposta do CF','error');
+        // Guardar resultado completo para mostrar diagnóstico
+        setLogsVinc(prev => ({...prev, [solicitacaoId]: { logs: d.logs||[], mensagem: d.mensagem, ok: d.ok }}));
+        if (d.ok) showToast('✅ CF recebeu a ocorrência!','success');
+        else showToast('⚠️ '+d.mensagem,'error');
       } catch(e) { showToast('Erro: '+e.message,'error'); }
       finally { setTestando3(null); }
     }
@@ -600,9 +600,14 @@
                                 disabled:testando3===v.solicitacao_id,
                                 className:'text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap',
                               }, testando3===v.solicitacao_id?'⏳':'🔔 Testar CF'),
-                              logsVinc[v.solicitacao_id]?.map((log,i)=>
-                                h('div',{key:i,className:'text-xs px-2 py-1 rounded '+(log.sucesso?'bg-green-100 text-green-800':'bg-red-100 text-red-700')},
-                                  log.sucesso?'✅ OK':'❌ '+(log.erro_msg||'erro')
+                              logsVinc[v.solicitacao_id] && h('div',{className:'mt-1 text-xs max-w-xs'},
+                                !logsVinc[v.solicitacao_id].ok && logsVinc[v.solicitacao_id].mensagem &&
+                                  h('p',{className:'bg-amber-50 border border-amber-200 text-amber-800 px-2 py-1 rounded text-xs leading-tight'},
+                                    logsVinc[v.solicitacao_id].mensagem),
+                                (logsVinc[v.solicitacao_id].logs||[]).map((log,i)=>
+                                  h('div',{key:i,className:'px-2 py-1 rounded mt-1 '+(log.sucesso?'bg-green-100 text-green-800':'bg-red-100 text-red-700')},
+                                    log.sucesso?'✅ CF recebeu! NF: '+log.numero_nf:'❌ '+(log.erro_msg||'erro')
+                                  )
                                 )
                               )
                             )
