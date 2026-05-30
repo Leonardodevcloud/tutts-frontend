@@ -307,8 +307,24 @@
   function AbaNFs({ fetchAuth, API_URL, showToast }) {
     const [vinculos, setVinculos]   = useState([]);
     const [loadingVinc, setLoadingVinc] = useState(false);
-    const [testando3, setTestando3] = useState(null); // id da solicitacao sendo testada
-    const [logsVinc, setLogsVinc]   = useState({});   // { solicitacao_id: [logs] }
+    const [testando3, setTestando3] = useState(null);
+    const [logsVinc, setLogsVinc]   = useState({});
+
+    async function testarVinculo(solicitacaoId) {
+      setTestando3(solicitacaoId);
+      try {
+        const r = await fetchAuth(API_URL+'/confirmafacil/testar-ocorrencia', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
+        });
+        const d = await r.json();
+        setLogsVinc(prev => ({...prev, [solicitacaoId]: d.logs||[]}));
+        if (d.logs?.[0]?.sucesso) showToast('✅ CF recebeu a ocorrência!','success');
+        else if (d.logs?.[0]) showToast('❌ CF rejeitou: '+(d.logs[0].erro_msg||'sem detalhe'),'error');
+        else showToast(d.mensagem||'Sem resposta do CF','error');
+      } catch(e) { showToast('Erro: '+e.message,'error'); }
+      finally { setTestando3(null); }
+    }
     const [buscaVinc, setBuscaVinc] = useState('');
     const [paginaVinc, setPaginaVinc] = useState(0);
 
