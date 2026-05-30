@@ -307,6 +307,8 @@
   function AbaNFs({ fetchAuth, API_URL, showToast }) {
     const [vinculos, setVinculos]   = useState([]);
     const [loadingVinc, setLoadingVinc] = useState(false);
+    const [testando3, setTestando3] = useState(null); // id da solicitacao sendo testada
+    const [logsVinc, setLogsVinc]   = useState({});   // { solicitacao_id: [logs] }
     const [buscaVinc, setBuscaVinc] = useState('');
     const [paginaVinc, setPaginaVinc] = useState(0);
 
@@ -553,7 +555,7 @@
                   h('table',{className:'w-full text-sm'},
                     h('thead',null,
                       h('tr',{className:'bg-gray-50 border-b border-gray-100'},
-                        ['Cliente','ID Embarque','NF','Série','CNPJ Emb.','OS Tutts','Status','Recebido em'].map(col=>
+                        ['Cliente','ID Embarque','NF','Série','CNPJ Emb.','OS Tutts','Status','Recebido em',''].map(col=>
                           h('th',{key:col,className:'px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide'},col)
                         )
                       )
@@ -574,7 +576,21 @@
                           ),
                           h('td',{className:'px-3 py-2.5'},
                             h('span',{className:'text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'},v.status||'enviado')),
-                          h('td',{className:'px-3 py-2.5 text-xs text-gray-500'},fmtD(v.criado_em))
+                          h('td',{className:'px-3 py-2.5 text-xs text-gray-500'},fmtD(v.criado_em)),
+                          h('td',{className:'px-3 py-2.5'},
+                            v.solicitacao_id && h('div',{className:'space-y-1'},
+                              h('button',{
+                                onClick:()=>testarVinculo(v.solicitacao_id),
+                                disabled:testando3===v.solicitacao_id,
+                                className:'text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap',
+                              }, testando3===v.solicitacao_id?'⏳':'🔔 Testar CF'),
+                              logsVinc[v.solicitacao_id]?.map((log,i)=>
+                                h('div',{key:i,className:'text-xs px-2 py-1 rounded '+(log.sucesso?'bg-green-100 text-green-800':'bg-red-100 text-red-700')},
+                                  log.sucesso?'✅ OK':'❌ '+(log.erro_msg||'erro')
+                                )
+                              )
+                            )
+                          )
                         )
                       )
                     )
