@@ -40,6 +40,8 @@
     const [criando, setCriando]       = React.useState(false);
     const [resultado, setResultado]   = React.useState(null);
 
+    const [testando2, setTestando2] = React.useState(false);
+
     async function criarCorrida() {
       if (!clienteSel) { showToast('Selecione o cliente para criar a corrida','error'); return; }
       if (!confirm('Criar corrida real para NF '+nf.numero+'?')) return;
@@ -55,6 +57,30 @@
         else showToast('❌ '+(d.mensagem||'Erro'),'error');
       } catch(e) { showToast('Erro: '+e.message,'error'); }
       finally { setCriando(false); }
+    }
+
+    async function testarOcorrencia() {
+      if (!resultado?.solicitacao_id) { showToast('Crie a corrida primeiro','error'); return; }
+      setTestando2(true);
+      try {
+        const r = await fetchAuth(API_URL+'/confirmafacil/testar-ocorrencia', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ solicitacao_id: resultado.solicitacao_id, status: 'finalizado_ponto' }),
+        });
+        const d = await r.json();
+        if (d.logs?.length > 0) {
+          const log = d.logs[0];
+          if (log.sucesso) {
+            showToast('✅ CF recebeu a ocorrência! NF: '+log.numero_nf+' | Cod: '+log.cod_ocorrencia,'success');
+          } else {
+            showToast('❌ CF rejeitou: '+(log.erro_msg||'sem detalhe'),'error');
+          }
+        } else {
+          showToast(d.mensagem||'Sem log','error');
+        }
+        setResultado(prev => ({...prev, logs: d.logs, log_mensagem: d.mensagem}));
+      } catch(e) { showToast('Erro: '+e.message,'error'); }
+      finally { setTestando2(false); }
     }
     const emb  = nf.embarque || nf;
     const dest = nf.destinatario || {};
@@ -115,13 +141,34 @@
           )
         ),
 
-        resultado && h('div',{
-          className:'mx-5 mt-4 p-3 rounded-xl text-sm font-medium '+(resultado.ok
-            ?'bg-green-50 border border-green-200 text-green-800'
-            :'bg-red-50 border border-red-100 text-red-700')},
-          resultado.ok
-            ? '✅ Corrida criada! OS: '+resultado.os_numero+' | ID: '+resultado.solicitacao_id
-            : '❌ '+resultado.mensagem
+        resultado && h('div',{className:'mx-5 mt-4 space-y-2'},
+          h('div',{
+            className:'p-3 rounded-xl text-sm font-medium '+(resultado.ok
+              ?'bg-green-50 border border-green-200 text-green-800'
+              :'bg-red-50 border border-red-100 text-red-700')},
+            resultado.ok
+              ? '✅ Corrida criada! OS: '+resultado.os_numero+' | ID: '+resultado.solicitacao_id
+              : '❌ '+resultado.mensagem
+          ),
+          resultado.ok && h('div',{className:'flex items-center gap-3 flex-wrap'},
+            h('p',{className:'text-xs text-gray-500'},'Agora teste se o CF vai receber corretamente:'),
+            h('button',{
+              onClick:testarOcorrencia, disabled:testando2,
+              className:'px-4 py-2 bg-green-600 text-white text-xs font-medium rounded-xl hover:bg-green-700 disabled:opacity-50',
+            }, testando2?'⏳ Testando...':'🔔 Testar envio ao CF (simular entrega)'),
+          ),
+          resultado.logs && h('div',{className:'space-y-1'},
+            resultado.logs.map((log,i)=>
+              h('div',{key:i,className:'flex items-center gap-2 p-2 rounded-lg text-xs '+(log.sucesso?'bg-green-50 text-green-800':'bg-red-50 text-red-700')},
+                h('span',null,log.sucesso?'✅':'❌'),
+                h('span',{className:'font-medium'},'NF '+log.numero_nf),
+                h('span',null,'Cod: '+(log.cod_ocorrencia||'—')),
+                log.sucesso
+                  ? h('span',{className:'text-green-600 font-medium'},'CF recebeu!')
+                  : h('span',{className:'text-red-600'},'Erro: '+(log.erro_msg||'—'))
+              )
+            )
+          )
         ),
         h('div',{className:'p-5 space-y-4'},
 
