@@ -234,7 +234,17 @@
     const [total, setTotal]         = useState(0);
     const [loading, setLoading]     = useState(false);
     const [pagina, setPagina]       = useState(0);
-    const [osAberta, setOsAberta]   = useState(null);
+    const [osAberta, setOsAberta]     = useState(null);
+    const [nfParaCriar, setNfParaCriar] = useState(null);
+    const [clientesCorrida, setClientesCorrida] = useState([]);
+    const [clienteSelCorrida, setClienteSelCorrida] = useState('');
+    const [criandoCorrida, setCriandoCorrida] = useState(false);
+
+    useEffect(() => {
+      if (!nfParaCriar) return;
+      fetchAuth(API_URL + '/admin/solicitacao/clientes')
+        .then(r => r.json()).then(d => setClientesCorrida(d.clientes || d || [])).catch(() => {});
+    }, [nfParaCriar]);
     const [embarcadores, setEmbs]   = useState([]);
 
     // Filtros
@@ -400,9 +410,9 @@
                                 title: 'Ver detalhes da corrida',
                               }, '🔍 ' + v.tutts_os_numero)
                             : h('button', {
-                                onClick: () => showToast('Use o botão Criar Corrida no detalhe da NF', 'error'),
-                                className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer',
-                              }, '+ Criar corrida')
+                                onClick: () => setNfParaCriar(v),
+                                className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-medium',
+                              }, '🚀 Criar corrida')
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.vinculado_em
@@ -424,6 +434,72 @@
               className: 'px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40' }, '← Ant'),
             h('button', { onClick: () => carregar(pagina + 1), disabled: pagina >= pagTotal - 1,
               className: 'px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40' }, 'Próx →')
+          )
+        )
+      ),
+
+      // Modal criar corrida
+      nfParaCriar && h('div', {
+        className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4',
+        onClick: e => e.target === e.currentTarget && setNfParaCriar(null),
+      },
+        h('div', { className: 'bg-white rounded-2xl shadow-xl w-full max-w-md p-6' },
+          h('div', { className: 'flex items-center justify-between mb-4' },
+            h('div', null,
+              h('h3', { className: 'text-base font-semibold text-gray-900' }, '🚀 Criar Corrida'),
+              h('p', { className: 'text-sm text-gray-500' }, 'NF ' + nfParaCriar.numero_nf + ' · ' + (nfParaCriar.nome_embarcador || ''))
+            ),
+            h('button', { onClick: () => setNfParaCriar(null), className: 'text-gray-400 hover:text-gray-700 text-2xl leading-none' }, '×')
+          ),
+          h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' }, 'Cliente'),
+          h('select', {
+            value: clienteSelCorrida,
+            onChange: e => setClienteSelCorrida(e.target.value),
+            className: 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400',
+          },
+            h('option', { value: '' }, 'Selecione o cliente...'),
+            clientesCorrida.map(c => h('option', { key: c.id, value: c.id }, c.nome || c.empresa))
+          ),
+          h('div', { className: 'bg-gray-50 rounded-xl p-3 text-xs text-gray-500 mb-4 space-y-1' },
+            h('p', null, '📍 Coleta: ' + (nfParaCriar.nome_embarcador || nfParaCriar.cnpj_embarcador)),
+            h('p', null, '📦 Entrega: ' + nfParaCriar.destinatario_nome),
+            h('p', null, '🏙️ ' + [nfParaCriar.destinatario_cidade, nfParaCriar.destinatario_uf].filter(Boolean).join(' / ')),
+            nfParaCriar.centro_custo_mapp && h('p', null, '💼 Centro de custo: ' + nfParaCriar.centro_custo_mapp)
+          ),
+          h('div', { className: 'flex gap-3' },
+            h('button', { onClick: () => setNfParaCriar(null), className: 'flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50' }, 'Cancelar'),
+            h('button', {
+              disabled: !clienteSelCorrida || criandoCorrida,
+              onClick: async () => {
+                if (!clienteSelCorrida) { showToast('Selecione o cliente', 'error'); return; }
+                setCriandoCorrida(true);
+                try {
+                  // Buscar NF completa do CF para ter todos os campos
+                  const r = await fetchAuth(API_URL + '/confirmafacil/buscar-nfs', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cf_email: 'contato@tutts.com.br', cf_senha: 'Confirma@2026' }),
+                  });
+                  const d = await r.json();
+                  const nfCompleta = d.resultados?.[0]?.nfs?.find(n => String(n.idEmbarque) === String(nfParaCriar.id_embarque));
+
+                  const r2 = await fetchAuth(API_URL + '/confirmafacil/criar-corrida', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nf: nfCompleta || nfParaCriar, cliente_id: Number(clienteSelCorrida) }),
+                  });
+                  const d2 = await r2.json();
+                  if (d2.ok) {
+                    showToast('✅ OS ' + d2.os_numero + ' criada!', 'success');
+                    setNfParaCriar(null);
+                    setClienteSelCorrida('');
+                    carregar(pagina);
+                  } else {
+                    showToast('❌ ' + (d2.mensagem || 'Erro'), 'error');
+                  }
+                } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+                finally { setCriandoCorrida(false); }
+              },
+              className: 'flex-1 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 font-medium',
+            }, criandoCorrida ? '⏳ Criando...' : '🚀 Criar Corrida')
           )
         )
       ),
