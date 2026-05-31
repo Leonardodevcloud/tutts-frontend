@@ -644,20 +644,10 @@
 
     React.useEffect(() => {
       if (!clienteId) return;
-      // Buscar cod_cliente Tutts do clienteId interno
       setLoading(true);
-      fetchAuth(API_URL+'/admin/solicitacao/clientes')
+      fetchAuth(API_URL+'/confirmafacil/centros-custo/'+clienteId)
         .then(r=>r.json())
-        .then(d => {
-          const cli = (d.clientes||d||[]).find(c=>c.id===clienteId||c.id===Number(clienteId));
-          const codCliente = cli?.tutts_codigo_cliente || cli?.cod_cliente || clienteId;
-          return fetchAuth(API_URL+'/bi/centros-custo/'+codCliente);
-        })
-        .then(r=>r.json())
-        .then(d => {
-          const lista = Array.isArray(d) ? d : [];
-          setOpcoes(lista.map(o=>o.centro_custo||o).filter(Boolean));
-        })
+        .then(d => setOpcoes(d.centros||[]))
         .catch(()=>{})
         .finally(()=>setLoading(false));
     }, [clienteId]);
