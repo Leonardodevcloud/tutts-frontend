@@ -675,23 +675,39 @@
 
   // ─── MODAL EMBARCADOR ──────────────────────────────────────────
   function ModalEmbarcador({ clienteId, embarcador, onSalvar, onFechar, fetchAuth, API_URL, showToast }) {
+    // Montar endereco_texto a partir dos campos separados (ao carregar embarcador existente)
+    const enderecoTextoInicial = embarcador
+      ? [embarcador.coleta_rua, embarcador.coleta_numero, embarcador.coleta_bairro,
+         embarcador.coleta_cidade, embarcador.coleta_uf, embarcador.coleta_cep]
+          .filter(Boolean).join(', ')
+      : '';
+
     const [form, setForm] = useState({
-      cnpj_embarcador:'',nome_embarcador:'',coleta_rua:'',coleta_numero:'',
-      coleta_bairro:'',coleta_cidade:'',coleta_uf:'',coleta_cep:'',
-      coleta_lat:'',coleta_lng:'',coleta_nome_fantasia:'',coleta_telefone:'',
-      centro_custo_mapp:'',
-      ...embarcador,
+      cnpj_embarcador: embarcador?.cnpj_embarcador || '',
+      nome_embarcador: embarcador?.nome_embarcador || '',
+      endereco_texto:  enderecoTextoInicial,
+      coleta_lat:      embarcador?.coleta_lat || '',
+      coleta_lng:      embarcador?.coleta_lng || '',
+      centro_custo_mapp: embarcador?.centro_custo_mapp || '',
     });
     const [salvando, setSalvando] = useState(false);
     const set = (k,v) => setForm(f=>({...f,[k]:v}));
     async function salvar() {
-      if (!form.cnpj_embarcador||!form.coleta_cidade||!form.coleta_uf) {
-        showToast('CNPJ, cidade e UF são obrigatórios','error'); return; }
+      if (!form.cnpj_embarcador||!form.endereco_texto) {
+        showToast('CNPJ e endereço de coleta são obrigatórios','error'); return; }
       setSalvando(true);
       try {
         const r = await fetchAuth(API_URL+'/confirmafacil/embarcadores',{
           method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({cliente_id:clienteId,...form})});
+          body:JSON.stringify({
+            cliente_id:      clienteId,
+            cnpj_embarcador: form.cnpj_embarcador,
+            nome_embarcador: form.nome_embarcador,
+            endereco_texto:  form.endereco_texto,
+            coleta_lat:      form.coleta_lat,
+            coleta_lng:      form.coleta_lng,
+            centro_custo_mapp: form.centro_custo_mapp,
+          })})};
         const d = await r.json();
         d.ok ? (showToast('✅ Salvo!','success'),onSalvar()) : showToast(d.error||'Erro','error');
       } catch(_){showToast('Erro','error');}
@@ -713,13 +729,35 @@
         h('div',{className:'p-5 grid grid-cols-2 gap-4'},
           inp('CNPJ Embarcador *','cnpj_embarcador',{full:true,ph:'00.000.000/0000-00'}),
           inp('Nome Embarcador','nome_embarcador',{full:true}),
-          h('div',{className:'col-span-2'},h('p',{className:'text-xs font-semibold text-purple-700 uppercase tracking-wide mt-1 mb-1'},'📍 Endereço de Coleta')),
-          inp('Nome Fantasia','coleta_nome_fantasia',{full:true}),
-          inp('Rua','coleta_rua',{full:true}),
-          inp('Número','coleta_numero'),inp('Bairro','coleta_bairro'),
-          inp('Cidade *','coleta_cidade'),inp('UF *','coleta_uf',{ph:'SP'}),
-          inp('CEP','coleta_cep'),inp('Telefone','coleta_telefone'),
-          inp('Latitude','coleta_lat'),inp('Longitude','coleta_lng'),
+          h('div',{className:'col-span-2'},
+            h('div',{className:'border-t border-gray-100 pt-3 mt-1'},
+              h('p',{className:'text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1'},'📍 Endereço de Coleta')
+            )
+          ),
+          h('div',{className:'col-span-2'},
+            h('label',{className:'block text-xs font-medium text-gray-600 mb-1'},
+              'Endereço completo',
+              h('span',{className:'text-gray-400 font-normal ml-1'},'— rua, número, bairro, cidade, UF')
+            ),
+            h('input',{
+              type:'text', value:form.endereco_texto||'',
+              onChange:e=>set('endereco_texto',e.target.value),
+              placeholder:'Ex: Rodovia BA-262, 262, Vitória da Conquista, BA',
+              className:'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
+            })
+          ),
+          h('div',{className:'col-span-1'},
+            h('label',{className:'block text-xs font-medium text-gray-600 mb-1'},'Latitude ',h('span',{className:'text-gray-400'},'(opcional)')),
+            h('input',{type:'text',value:form.coleta_lat||'',onChange:e=>set('coleta_lat',e.target.value),
+              placeholder:'-12.9877',
+              className:'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono'})
+          ),
+          h('div',{className:'col-span-1'},
+            h('label',{className:'block text-xs font-medium text-gray-600 mb-1'},'Longitude ',h('span',{className:'text-gray-400'},'(opcional)')),
+            h('input',{type:'text',value:form.coleta_lng||'',onChange:e=>set('coleta_lng',e.target.value),
+              placeholder:'-38.4647',
+              className:'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono'})
+          ),
           h('div',{className:'col-span-2'},
             h('div',{className:'border-t border-gray-100 pt-3 mt-1'},
               h('p',{className:'text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1'},'Mapp')
