@@ -14,17 +14,29 @@
   const fmt = v => v || '—';
 
   // ─── Badges ─────────────────────────────────────────────────
+  const STATUS_CF_MAP = {
+    'A_EMBARCAR':     ['bg-amber-100 text-amber-800',  '📦 A embarcar'],
+    'EM_TRANSITO':    ['bg-blue-100 text-blue-800',    '🚚 Em trânsito'],
+    'ENTREGUE':       ['bg-green-100 text-green-800',  '✅ Entregue'],
+    'REENTREGA':      ['bg-orange-100 text-orange-800','🔄 Reentrega'],
+    'DEVOLVIDO':      ['bg-red-100 text-red-800',      '↩️ Devolvido'],
+    'CANCELADO':      ['bg-red-100 text-red-800',      '❌ Cancelado'],
+    'DESCONHECIDO':   ['bg-gray-100 text-gray-600',    '❓ Desconhecido'],
+  };
+
+  function BadgeStatusCF({ status }) {
+    const [cls, label] = STATUS_CF_MAP[status] || ['bg-gray-100 text-gray-600', status || '—'];
+    return h('span', { className: 'text-xs font-medium px-2 py-0.5 rounded-full ' + cls }, label);
+  }
+
   function BadgeStatus({ status }) {
     const m = {
-      'A_EMBARCAR':  ['bg-amber-100 text-amber-800',  'A embarcar'],
-      'EM_TRANSITO': ['bg-blue-100 text-blue-800',    'Em trânsito'],
-      'ENTREGUE':    ['bg-green-100 text-green-800',  'Entregue'],
-      'enviado':     ['bg-blue-100 text-blue-800',    'Enviado'],
-      'finalizado':  ['bg-green-100 text-green-800',  'Finalizado'],
-      'cancelado':   ['bg-red-100 text-red-800',      'Cancelado'],
+      'enviado':    ['bg-blue-100 text-blue-800',  '📤 Enviado'],
+      'finalizado': ['bg-green-100 text-green-800','✅ Finalizado'],
+      'cancelado':  ['bg-red-100 text-red-800',    '❌ Cancelado'],
     };
     const [cls, label] = m[status] || ['bg-gray-100 text-gray-600', status || '—'];
-    return h('span', { className: `text-xs font-medium px-2 py-0.5 rounded-full ${cls}` }, label);
+    return h('span', { className: 'text-xs font-medium px-2 py-0.5 rounded-full ' + cls }, label);
   }
 
   // ─── Drawer de detalhes da OS ────────────────────────────────
@@ -355,25 +367,34 @@
                           h('p', { className: 'text-xs text-gray-400 font-mono' }, fmtCNPJ(v.cnpj_embarcador))
                         ),
                         h('td', { className: 'px-3 py-3' },
-                          h('p', { className: 'text-xs text-gray-600' }, v.cliente_nome || '—'),
-                          v.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono' }, v.centro_custo_mapp)
+                          h('p', { className: 'text-xs font-medium text-gray-700' }, v.destinatario_nome || v.cliente_nome || '—'),
+                          (v.destinatario_cidade||v.destinatario_uf) && h('p', { className: 'text-xs text-gray-400' },
+                            [v.destinatario_cidade, v.destinatario_uf].filter(Boolean).join(' / ')),
+                          v.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono block mt-0.5' }, v.centro_custo_mapp)
                         ),
-                        h('td', { className: 'px-3 py-3' },
-                          v.ultimo_cf_sucesso
-                            ? h('span', { className: 'text-xs bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full' }, '✅ Cod. ' + v.ultimo_cod_cf)
-                            : v.solicitacao_id
-                              ? h('span', { className: 'text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full' }, '⏳ Pendente')
-                              : h('span', { className: 'text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full' }, '— Sem corrida')
+                        h('td', { className: 'px-3 py-3 space-y-1' },
+                          h(BadgeStatusCF, { status: v.status_cf }),
+                          v.dias_atraso > 0 && h('span', { className: 'text-xs text-red-500 font-medium block' }, v.dias_atraso + 'd atraso'),
+                          v.ultimo_cf_sucesso && h('span', { className: 'text-xs text-green-600 block' }, '✓ CF notificado')
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.tutts_os_numero
                             ? h('button', {
                                 onClick: () => setOsAberta(v.solicitacao_id),
-                                className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer underline',
-                              }, v.tutts_os_numero)
-                            : h('span', { className: 'text-xs text-gray-400' }, '—')
+                                className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-semibold',
+                                title: 'Ver detalhes da corrida',
+                              }, '🔍 ' + v.tutts_os_numero)
+                            : h('button', {
+                                onClick: () => showToast('Use o botão Criar Corrida no detalhe da NF', 'error'),
+                                className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer',
+                              }, '+ Criar corrida')
                         ),
-                        h('td', { className: 'px-3 py-3 text-xs text-gray-500' }, fmtDt(v.criado_em))
+                        h('td', { className: 'px-3 py-3' },
+                          v.vinculado_em
+                            ? h('p', { className: 'text-xs text-gray-500' }, 'Vinc: ' + fmtDt(v.vinculado_em))
+                            : h('p', { className: 'text-xs text-gray-400' }, '—'),
+                          v.data_previsao && h('p', { className: 'text-xs text-gray-400' }, 'Prev: ' + fmtDt(v.data_previsao))
+                        )
                       )
                     )
                   )
