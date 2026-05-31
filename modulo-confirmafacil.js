@@ -707,7 +707,7 @@
             coleta_lat:      form.coleta_lat,
             coleta_lng:      form.coleta_lng,
             centro_custo_mapp: form.centro_custo_mapp,
-          })})};
+          })});
         const d = await r.json();
         d.ok ? (showToast('✅ Salvo!','success'),onSalvar()) : showToast(d.error||'Erro','error');
       } catch(_){showToast('Erro','error');}
