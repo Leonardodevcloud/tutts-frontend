@@ -221,7 +221,7 @@
 
     // Carregar embarcadores p/ filtro
     useEffect(() => {
-      fetchAuth(API_URL + '/confirmafacil/embarcadores/all')
+      fetchAuth(API_URL + '/confirmafacil/embarcadores-todos')
         .then(r => r.json()).then(d => setEmbs(d.embarcadores || [])).catch(() => {});
       carregar(0);
     }, []);
