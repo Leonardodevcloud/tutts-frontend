@@ -640,7 +640,6 @@
   function SelectCentroCusto({ clienteId, value, onChange, fetchAuth, API_URL }) {
     const [opcoes, setOpcoes] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
-    const [digitando, setDigitando] = React.useState(false);
 
     React.useEffect(() => {
       if (!clienteId) return;
@@ -652,38 +651,26 @@
         .finally(()=>setLoading(false));
     }, [clienteId]);
 
-    if (digitando) {
-      return h('div',{className:'flex gap-2'},
-        h('input',{
-          type:'text', value:value,
-          onChange:e=>onChange(e.target.value),
-          placeholder:'Digite o centro de custo...',
-          className:'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono',
-          autoFocus:true,
-        }),
-        h('button',{
-          type:'button', onClick:()=>setDigitando(false),
-          className:'text-xs px-3 py-2 border border-gray-200 rounded-lg hover:border-purple-300 text-gray-500',
-        },'lista')
+    // Com opções do BI: mostra select + input para digitação manual
+    if (opcoes.length > 0) {
+      return h('select',{
+        value:value||'',
+        onChange:e=>onChange(e.target.value),
+        className:'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono bg-white',
+      },
+        h('option',{value:''},'Selecione o centro de custo...'),
+        opcoes.map(o=>h('option',{key:o,value:o},o))
       );
     }
 
-    return h('div',{className:'flex gap-2'},
-      h('select',{
-        value:value||'',
-        onChange:e=>onChange(e.target.value),
-        disabled:loading,
-        className:'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono bg-white',
-      },
-        h('option',{value:''},loading?'Carregando...':'Selecione o centro de custo...'),
-        opcoes.map(o=>h('option',{key:o,value:o},o))
-      ),
-      h('button',{
-        type:'button', onClick:()=>setDigitando(true),
-        className:'text-xs px-3 py-2 border border-gray-200 rounded-lg hover:border-purple-300 text-gray-500',
-        title:'Digitar manualmente',
-      },'✏️')
-    );
+    // Fallback: input manual (sem dados no BI ou carregando)
+    return h('input',{
+      type:'text', value:value||'',
+      onChange:e=>onChange(e.target.value),
+      placeholder: loading ? 'Carregando...' : 'Ex: Pellegrino, BR Autoparts Maceió...',
+      disabled: loading,
+      className:'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono',
+    });
   }
 
   // ─── MODAL EMBARCADOR ──────────────────────────────────────────
