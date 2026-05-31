@@ -97,19 +97,25 @@
                 ),
 
                 // Fotos do protocolo
-                dados.fotos?.length > 0 && h('div', null,
+                h('div', null,
                   h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2' }, '📸 Fotos do protocolo'),
-                  h('div', { className: 'grid grid-cols-3 gap-2' },
-                    dados.fotos.map((url, i) =>
-                      h('div', {
-                        key: i,
-                        onClick: () => setFotoAtiva(url),
-                        className: 'aspect-square rounded-xl border border-gray-100 overflow-hidden cursor-pointer bg-gray-50 hover:border-purple-300 transition-colors',
-                      },
-                        h('img', { src: url, alt: 'Foto ' + (i + 1), className: 'w-full h-full object-cover' })
+                  dados.fotos?.length > 0
+                    ? h('div', { className: 'grid grid-cols-3 gap-2' },
+                        dados.fotos.map((url, i) =>
+                          h('div', {
+                            key: i,
+                            onClick: () => setFotoAtiva(url),
+                            className: 'aspect-square rounded-xl border border-gray-100 overflow-hidden cursor-pointer bg-gray-50 hover:border-purple-300 transition-colors',
+                          },
+                            h('img', { src: url, alt: 'Foto ' + (i + 1), className: 'w-full h-full object-cover' })
+                          )
+                        )
                       )
-                    )
-                  )
+                    : h('div', { className: 'bg-gray-50 rounded-xl p-4 text-center border border-dashed border-gray-200' },
+                        h('p', { className: 'text-2xl mb-1' }, '📷'),
+                        h('p', { className: 'text-xs font-medium text-gray-500' }, 'Nenhuma foto ainda'),
+                        h('p', { className: 'text-xs text-gray-400 mt-0.5' }, 'As fotos aparecem quando o motoboy finalizar a entrega no app')
+                      )
                 ),
 
                 // Recebedor
@@ -176,26 +182,35 @@
               ),
 
         // Footer
-        !loading && dados && h('div', { className: 'p-3 border-t border-gray-100 bg-gray-50 flex gap-2' },
-          dados.sc?.tutts_url_rastreamento && h('a', {
-            href: dados.sc.tutts_url_rastreamento, target: '_blank', rel: 'noopener noreferrer',
-            className: 'flex-1 text-center text-xs py-2 border border-gray-200 rounded-xl hover:border-purple-300 text-gray-600',
-          }, '🗺️ Rastrear'),
-          h('button', {
-            onClick: () => {
-              fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
-              }).then(r => r.json()).then(d => {
-                if (d.ok) showToast('✅ CF recebeu!', 'success');
-                else showToast('❌ ' + d.mensagem, 'error');
-                // Recarregar
-                fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId)
-                  .then(r => r.json()).then(setDados);
-              });
-            },
-            className: 'flex-1 text-xs py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700',
-          }, '🔔 Testar CF')
+        !loading && dados && h('div', { className: 'p-3 border-t border-gray-100 bg-gray-50 space-y-2' },
+          // Link para corrida no módulo Solicitações
+          dados.sc && h('div', { className: 'flex gap-2' },
+            dados.sc.tutts_url_rastreamento && h('a', {
+              href: dados.sc.tutts_url_rastreamento, target: '_blank', rel: 'noopener noreferrer',
+              className: 'flex-1 text-center text-xs py-2 border border-gray-200 rounded-xl hover:border-purple-300 text-gray-600',
+            }, '🗺️ Rastrear no mapa'),
+            dados.sc.tutts_os_numero && h('a', {
+              href: 'https://tutts.com.br/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
+              target: '_blank', rel: 'noopener noreferrer',
+              className: 'flex-1 text-center text-xs py-2 border border-purple-200 rounded-xl hover:border-purple-400 text-purple-700 bg-purple-50',
+            }, '🔗 Ver na Mapp')
+          ),
+          h('div', { className: 'flex gap-2' },
+            h('button', {
+              onClick: () => {
+                fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
+                }).then(r => r.json()).then(d => {
+                  if (d.ok) showToast('✅ CF recebeu!', 'success');
+                  else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
+                  fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId)
+                    .then(r => r.json()).then(setDados);
+                });
+              },
+              className: 'flex-1 text-xs py-2 bg-green-600 text-white rounded-xl hover:bg-green-700',
+            }, '🔔 Testar envio CF')
+          )
         )
       ),
 
