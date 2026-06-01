@@ -37,6 +37,7 @@
     // 🆕 2026-05-24: modal de bloqueio quando tenta voltar antes do cooldown 30min
     const [modalCooldown, setModalCooldown] = React.useState(null); // { minutos_restantes } | null
     const [modalSaida, setModalSaida] = React.useState(false);
+    const [garantidoAviso, setGarantidoAviso] = React.useState(null);
     const [barreiraHorario, setBarreiraHorario] = React.useState(null); // { nome, horario_corte }
     let req_nome_profissional = '';
     const [textoConfirmSaida, setTextoConfirmSaida] = React.useState('');
@@ -135,6 +136,7 @@
         if (d.success) {
           toast(`Entrou! Posição ${d.posicao}. Agente vai confirmar em segundos.`, 'success');
           setBloqueioCorrida(null);
+          if (d.garantido && d.garantido.primeiro_do_dia && d.garantido.atrasado) { setGarantidoAviso(d.garantido); }
           carregarMinhaPosicao();
           carregarFilaPublica(minhaCentral.id);
         } else if (d.error === 'barreira_horario') {
@@ -342,7 +344,25 @@
       modalCooldown && renderModalCooldown({
         minutos_restantes: modalCooldown.minutos_restantes,
         onFechar: () => setModalCooldown(null),
-      })
+      }),
+
+      garantidoAviso && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
+        e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
+          e('div', { className: 'text-center mb-4' },
+            e('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, '⏰')),
+            e('h2', { className: 'text-lg font-bold text-amber-800 mb-1' }, 'Garantia ajustada')
+          ),
+          e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
+            e('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
+              `Prezado ${usuario?.nome || ''}, você está ingressando pela primeira vez na fila após o horário de início combinado (${garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
+          ),
+          e('div', { className: 'bg-white border-2 border-amber-300 rounded-xl p-4 mb-4 text-center' },
+            e('p', { className: 'text-xs text-amber-700 mb-1' }, 'Sua garantia hoje'),
+            e('p', { className: 'text-3xl font-bold text-amber-800' }, `R$ ${Number(garantidoAviso.valor_garantido).toFixed(2).replace('.', ',')}`)
+          ),
+          e('button', { onClick: () => setGarantidoAviso(null), className: 'w-full py-3 bg-amber-600 text-white rounded-xl font-bold text-lg hover:bg-amber-700' }, '✅ Entendi')
+        )
+      )
     );
   }
 

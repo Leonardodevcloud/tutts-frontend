@@ -40,6 +40,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const [abaInterna, setAbaInterna] = React.useState('monitoramento');
     const [minhaPenalidade, setMinhaPenalidade] = React.useState(null);
     const [modalSaida, setModalSaida] = React.useState(false);
+    const [garantidoAviso, setGarantidoAviso] = React.useState(null);
     // 🆕 2026-05: estados do modal de punição manual (admin)
     const [modalPunir, setModalPunir] = React.useState(false);
     const [punirCod, setPunirCod] = React.useState('');
@@ -338,7 +339,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const reordenarFila = async (cod, novaPosicao) => { if(!centralSelecionada)return; try{ const r=await fetchAuth(`${apiUrl}/filas/reordenar`,{method:'POST',body:JSON.stringify({central_id:centralSelecionada.id,cod_profissional:cod,nova_posicao:novaPosicao})}); const d=await r.json(); if(d.success){ showToast(`Movido: ${d.posicao_anterior}º → ${d.posicao_nova}º`,'success'); carregarFila(centralSelecionada.id); } }catch(e){ showToast('Erro','error'); } };
 
     // AÇÕES USER
-    const entrarNaFila = async () => { desbloquearAudio(); if(!minhaLocalizacao){ showToast('Aguarde GPS','error'); solicitarGPS(); return; } try{ const r=await fetchAuth(`${apiUrl}/filas/entrar`,{method:'POST',body:JSON.stringify({latitude:minhaLocalizacao.latitude,longitude:minhaLocalizacao.longitude})}); const d=await r.json(); if(d.success){ showToast(d.prioridade ? `👑 Retornou com prioridade! Posição: ${d.posicao}` : `Entrou! Posição: ${d.posicao}`,'success'); carregarMinhaPosicao(); }else{ showToast(d.mensagem||d.error||'Erro','error'); } }catch(e){ showToast('Erro','error'); } };
+    const entrarNaFila = async () => { desbloquearAudio(); if(!minhaLocalizacao){ showToast('Aguarde GPS','error'); solicitarGPS(); return; } try{ const r=await fetchAuth(`${apiUrl}/filas/entrar`,{method:'POST',body:JSON.stringify({latitude:minhaLocalizacao.latitude,longitude:minhaLocalizacao.longitude})}); const d=await r.json(); if(d.success){ showToast(d.prioridade ? `👑 Retornou com prioridade! Posição: ${d.posicao}` : `Entrou! Posição: ${d.posicao}`,'success'); if(d.garantido && d.garantido.primeiro_do_dia && d.garantido.atrasado){ setGarantidoAviso(d.garantido); } carregarMinhaPosicao(); }else{ showToast(d.mensagem||d.error||'Erro','error'); } }catch(e){ showToast('Erro','error'); } };
     const sairDaFila = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/sair`,{method:'POST'}); const d=await r.json(); if(d.success){ setModalSaida(false); const pen=d.penalidade; if(pen) showToast(`Saiu da fila. Bloqueado por ${pen.minutos_bloqueio} min.`,'warning'); else showToast('Saiu!','success'); carregarMinhaPosicao(); carregarMinhaPenalidade(); } }catch(e){ showToast('Erro','error'); } };
     const buscarNotificacao = async () => { try{ const r=await fetchAuth(`${apiUrl}/filas/minha-notificacao`); const d=await r.json(); if(d.success && d.tem_notificacao){ const notif=d.notificacao; const notifKey=notif.created_at||notif.id; if(notifKey!==ultimaNotifRef.current){ ultimaNotifRef.current=notifKey; setNotificacao(notif); setMostrarNotificacao(true); dispararAlerta(notif); } }else{ ultimaNotifRef.current=null; } }catch(e){} };
     const marcarNotificacaoLida = async () => { desbloquearAudio(); try{ await fetchAuth(`${apiUrl}/filas/notificacao-lida`,{method:'POST'}); setMostrarNotificacao(false); setNotificacao(null); }catch(e){} };
@@ -655,11 +656,11 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
 
             // 🚀 2026-05: Tabs como pílulas dentro de container branco
             React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
-                ['monitoramento', 'vinculos', 'penalidades', 'relatorios', 'config'].map(aba => React.createElement('button', {
+                ['monitoramento', 'vinculos', 'penalidades', 'relatorios', 'garantido', 'config'].map(aba => React.createElement('button', {
                     key: aba,
                     onClick: () => setAbaInterna(aba),
                     className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${abaInterna === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-                }, aba === 'monitoramento' ? 'Monitor' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? 'Penalidades' : aba === 'relatorios' ? 'Relatórios' : 'Config'))
+                }, aba === 'monitoramento' ? 'Monitor' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? 'Penalidades' : aba === 'relatorios' ? 'Relatórios' : aba === 'garantido' ? '🛡️ Garantido' : 'Config'))
             ),
 
             // Container das abas (sem card duplo — abas são autocontidas agora)
@@ -810,6 +811,10 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         estatisticas?.ranking?.length > 0 && React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🏆 Ranking'), React.createElement('div', { className: 'space-y-2' }, estatisticas.ranking.map((p, i) => React.createElement('div', { key: p.cod_profissional, className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg' }, React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('span', { className: 'text-xl' }, i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`), React.createElement('span', { className: 'font-medium' }, p.nome_profissional)), React.createElement('span', { className: 'font-bold text-purple-600' }, `${p.total_saidas} saídas`))))),
                         React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow border' }, React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '📋 Histórico'), React.createElement('div', { className: 'overflow-x-auto' }, React.createElement('table', { className: 'w-full' }, React.createElement('thead', { className: 'bg-gray-50' }, React.createElement('tr', null, React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Hora'), React.createElement('th', { className: 'px-3 py-2 text-left text-xs font-medium text-gray-500' }, 'Profissional'), React.createElement('th', { className: 'px-3 py-2 text-center text-xs font-medium text-gray-500' }, 'Ação'), React.createElement('th', { className: 'px-3 py-2 text-right text-xs font-medium text-gray-500' }, 'Tempo'))), React.createElement('tbody', { className: 'divide-y' }, historico.map((h, i) => React.createElement('tr', { key: i, className: 'hover:bg-gray-50' }, React.createElement('td', { className: 'px-3 py-2 text-sm' }, formatarHora(h.created_at)), React.createElement('td', { className: 'px-3 py-2 text-sm font-medium' }, h.nome_profissional), React.createElement('td', { className: 'px-3 py-2 text-center' }, React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${h.acao === 'entrada' ? 'bg-blue-100 text-blue-700' : h.acao === 'enviado_rota' ? 'bg-green-100 text-green-700' : h.acao === 'penalidade_anulada' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}` }, h.acao === 'entrada' ? '📥 Entrada' : h.acao === 'enviado_rota' ? '🚀 Enviado' : h.acao === 'retorno' || h.acao === 'retorno_prioridade' ? '🔄 Retorno' : h.acao === 'removido' ? '❌ Removido' : h.acao === 'reordenado' ? '↕️ Reordenado' : h.acao === 'penalidade_anulada' ? '✅ Penalidade anulada' : '👋 Saiu')), React.createElement('td', { className: 'px-3 py-2 text-right text-sm text-gray-500' }, h.tempo_espera_minutos ? `${h.tempo_espera_minutos} min espera` : h.tempo_rota_minutos ? `${h.tempo_rota_minutos} min rota` : '-')))))))
                     ),
+                    // GARANTIDO (painel proprio, auto-contido)
+                    abaInterna === 'garantido' && centralSelecionada && (typeof window.ModuloGarantidoAdmin !== 'undefined'
+                        ? React.createElement(window.ModuloGarantidoAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
+                        : React.createElement('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar o Garantido.')),
                     // CONFIG (com Regiões)
                     abaInterna === 'config' && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-6' },
                         React.createElement('h3', { className: 'font-bold text-lg' }, 'Centrais Cadastradas'),
@@ -1192,6 +1197,23 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
             )
         ),
         // MODAL CONFIRMAÇÃO SAÍDA (com penalidade)
+        garantidoAviso && React.createElement('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
+            React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (e) => e.stopPropagation() },
+                React.createElement('div', { className: 'text-center mb-4' },
+                    React.createElement('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, React.createElement('span', { className: 'text-4xl' }, '⏰')),
+                    React.createElement('h2', { className: 'text-lg font-bold text-amber-800 mb-1' }, 'Garantia ajustada')
+                ),
+                React.createElement('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
+                    React.createElement('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
+                        `Prezado ${usuario?.nome || usuario?.full_name || ''}, você está ingressando pela primeira vez na fila após o horário de início combinado (${garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
+                ),
+                React.createElement('div', { className: 'bg-white border-2 border-amber-300 rounded-xl p-4 mb-4 text-center' },
+                    React.createElement('p', { className: 'text-xs text-amber-700 mb-1' }, 'Sua garantia hoje'),
+                    React.createElement('p', { className: 'text-3xl font-bold text-amber-800' }, `R$ ${Number(garantidoAviso.valor_garantido).toFixed(2).replace('.', ',')}`)
+                ),
+                React.createElement('button', { onClick: () => setGarantidoAviso(null), className: 'w-full py-3 bg-amber-600 text-white rounded-xl font-bold text-lg hover:bg-amber-700' }, '✅ Entendi')
+            )
+        ),
         modalSaida && React.createElement('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4' },
             React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full' },
                 React.createElement('div', { className: 'text-center mb-4' }, React.createElement('span', { className: 'text-5xl block mb-3' }, '⚠️'), React.createElement('h2', { className: 'text-xl font-bold text-red-800 mb-2' }, 'Atenção!')),

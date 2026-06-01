@@ -716,11 +716,11 @@
 
       // Tabs
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
-        ['monitor', 'config', 'vinculos', 'penalidades', 'logs'].map(aba => e('button', {
+        ['monitor', 'config', 'vinculos', 'penalidades', 'garantido', 'logs'].map(aba => e('button', {
           key: aba,
           onClick: () => setAbaAtiva(aba),
           className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `🚫 Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : 'Logs do agente'))
+        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `🚫 Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : aba === 'garantido' ? '🛡️ Garantido' : 'Logs do agente'))
       ),
 
       // === ABA MONITOR ===
@@ -821,6 +821,10 @@
               }))
       ),
       abaAtiva === 'logs' && renderLogs({ logs }),
+
+      abaAtiva === 'garantido' && centralSelecionada && (typeof window.ModuloGarantidoAdmin !== 'undefined'
+        ? e(window.ModuloGarantidoAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
+        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar o Garantido.')),
 
       // Modal de nova/editar central
       modalCentral && renderModalCentral({
