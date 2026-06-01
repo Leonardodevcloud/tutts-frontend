@@ -254,7 +254,7 @@
     const [statusFiltro, setStatus] = useState('');
     const [corridaFiltro, setCorrida] = useState('');
     const [busca, setBusca]         = useState('');
-    const POR_PAG = 50;
+    const POR_PAG = 100;
 
     // Carregar embarcadores p/ filtro
     useEffect(() => {
