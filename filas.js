@@ -869,12 +869,23 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
             modalCentral && React.createElement('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
                 React.createElement('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' },
                     React.createElement('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-2xl text-white' }, React.createElement('h2', { className: 'text-xl font-bold' }, modalCentral.id ? '✏️ Editar Central' : '➕ Nova Central')),
-                    React.createElement('form', { className: 'p-6 space-y-4', onSubmit: (e) => { e.preventDefault(); if (!enderecoValidado && !modalCentral.id) { showToast('Busque o endereço primeiro', 'error'); return; } const fd = new FormData(e.target); salvarCentral({ id: modalCentral.id, nome: fd.get('nome'), endereco: coordenadasEncontradas?.enderecoFormatado || fd.get('endereco'), latitude: coordenadasEncontradas?.latitude || modalCentral.latitude, longitude: coordenadasEncontradas?.longitude || modalCentral.longitude, raio_metros: parseInt(fd.get('raio_metros')), ativa: fd.get('ativa') === 'on' }); } },
+                    React.createElement('form', { className: 'p-6 space-y-4', onSubmit: (e) => { e.preventDefault(); if (!enderecoValidado && !modalCentral.id) { showToast('Busque o endereço primeiro', 'error'); return; } const fd = new FormData(e.target); salvarCentral({ id: modalCentral.id, nome: fd.get('nome'), endereco: coordenadasEncontradas?.enderecoFormatado || fd.get('endereco'), latitude: coordenadasEncontradas?.latitude || modalCentral.latitude, longitude: coordenadasEncontradas?.longitude || modalCentral.longitude, raio_metros: parseInt(fd.get('raio_metros')), ativa: fd.get('ativa') === 'on', abertura_horario_ativa: fd.get('abertura_horario_ativa') === 'on', abertura_horario: fd.get('abertura_horario') || null }); } },
                         React.createElement('div', null, React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Nome *'), React.createElement('input', { name: 'nome', defaultValue: modalCentral.nome || '', required: true, className: 'w-full px-3 py-2 border rounded-lg' })),
                         React.createElement('div', null, React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📍 Endereço *'), React.createElement('div', { className: 'relative' }, React.createElement('input', { name: 'endereco', defaultValue: modalCentral.endereco || '', required: true, className: `w-full px-3 py-2 border rounded-lg pr-10 ${enderecoValidado ? 'border-green-500 bg-green-50' : ''}`, onChange: (e) => buscarEnderecoDebounced(e.target.value) }), React.createElement('span', { className: 'absolute right-3 top-2.5 text-xl' }, buscandoEndereco ? '⏳' : enderecoValidado ? '✅' : '🔍'))),
                         coordenadasEncontradas && React.createElement('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-3' }, React.createElement('p', { className: 'text-sm text-green-800' }, `✅ ${coordenadasEncontradas.latitude?.toFixed?.(6)}, ${coordenadasEncontradas.longitude?.toFixed?.(6)}`)),
                         React.createElement('div', null, React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Raio (metros)'), React.createElement('input', { name: 'raio_metros', type: 'number', defaultValue: modalCentral.raio_metros || 900, required: true, className: 'w-full px-3 py-2 border rounded-lg' })),
                         modalCentral.id && React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('input', { name: 'ativa', type: 'checkbox', defaultChecked: modalCentral.ativa !== false, className: 'w-4 h-4' }), React.createElement('label', { className: 'text-sm font-medium text-gray-700' }, 'Central ativa')),
+                        modalCentral.id && React.createElement('div', { className: 'border-t border-gray-200 pt-4 mt-2 bg-amber-50 -mx-2 px-4 py-3 rounded-xl' },
+                            React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
+                                React.createElement('input', { name: 'abertura_horario_ativa', type: 'checkbox', defaultChecked: modalCentral.abertura_horario_ativa === true, className: 'w-4 h-4' }),
+                                React.createElement('label', { className: 'text-sm font-bold text-amber-800' }, '⏰ Travar horário de abertura')
+                            ),
+                            React.createElement('p', { className: 'text-xs text-amber-700 mb-3 leading-relaxed' }, 'Bloqueia a entrada na fila antes do horário. A fila só libera para todos os motoboys a partir do horário definido.'),
+                            React.createElement('div', { className: 'flex items-center gap-2' },
+                                React.createElement('label', { className: 'text-sm font-medium text-amber-800' }, 'Liberar a partir de:'),
+                                React.createElement('input', { name: 'abertura_horario', type: 'time', defaultValue: (modalCentral.abertura_horario ? String(modalCentral.abertura_horario).slice(0, 5) : '07:30'), className: 'px-3 py-2 border border-amber-300 rounded-lg bg-white' })
+                            )
+                        ),
                         React.createElement('div', { className: 'flex gap-3 pt-4' }, React.createElement('button', { type: 'button', onClick: () => { setModalCentral(null); setEnderecoValidado(false); setCoordenadasEncontradas(null); }, className: 'flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium' }, 'Cancelar'), React.createElement('button', { type: 'submit', disabled: !enderecoValidado && !modalCentral.id, className: `flex-1 px-4 py-2 rounded-lg font-medium ${(!enderecoValidado && !modalCentral.id) ? 'bg-gray-300 text-gray-500' : 'bg-purple-600 text-white hover:bg-purple-700'}` }, '💾 Salvar'))
                     )
                 )
@@ -1157,6 +1168,20 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
     const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
     const penalizado = minhaPenalidade?.bloqueado && minhaPenalidade?.minutos_restantes > 0;
 
+    // 🆕 2026-05-31: trava de horário de abertura (mesma regra do backend, fuso America/Bahia).
+    // Recalculado a cada render (polling de 5s), independente do relógio do celular.
+    const _calcAbertura = () => {
+        if (!minhaCentral?.abertura_horario_ativa || !minhaCentral?.abertura_horario) return { travado: false, abertura: null, faltamMin: 0 };
+        const abertura = String(minhaCentral.abertura_horario).slice(0, 5);
+        const [hA, mA] = abertura.split(':').map(Number);
+        const agoraBahia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bahia' }));
+        const minutosAgora = agoraBahia.getHours() * 60 + agoraBahia.getMinutes();
+        const minutosAbertura = hA * 60 + mA;
+        return { travado: minutosAgora < minutosAbertura, abertura, faltamMin: Math.max(0, minutosAbertura - minutosAgora) };
+    };
+    const _ab = _calcAbertura();
+    const travadoPorHorario = _ab.travado;
+
     return React.createElement('div', { className: 'max-w-lg mx-auto p-4 space-y-6' },
         // POPUP NOTIFICAÇÃO
         mostrarNotificacao && notificacao && React.createElement('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => { marcarNotificacaoLida(); } },
@@ -1191,16 +1216,28 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                 gpsStatus === 'negado' && React.createElement('button', { onClick: solicitarGPS, className: 'px-2 py-1 bg-white/20 rounded-lg text-xs' }, 'Tentar')
             )
         ),
+        // 🆕 2026-05-31: TRAVA DE HORÁRIO DE ABERTURA (prioridade máxima sobre o resto)
+        travadoPorHorario && React.createElement('div', { className: 'bg-amber-50 border-2 border-amber-300 rounded-2xl p-7 text-center' },
+            React.createElement('div', { className: 'w-20 h-20 rounded-full bg-amber-200 flex items-center justify-center mx-auto mb-4' }, React.createElement('span', { className: 'text-5xl' }, '⏰')),
+            React.createElement('h2', { className: 'text-xl font-bold text-amber-800 mb-2' }, 'Fila ainda não liberada'),
+            React.createElement('p', { className: 'text-amber-700 text-sm mb-4 leading-relaxed' }, `A fila será liberada para todos os motoboys a partir das ${_ab.abertura}.`),
+            React.createElement('div', { className: 'inline-flex items-center gap-2 bg-white border border-amber-300 rounded-full px-5 py-2 mb-1' },
+                React.createElement('span', { className: 'text-lg' }, '⏳'),
+                React.createElement('span', { className: 'text-sm text-amber-700' }, 'Abre em'),
+                React.createElement('span', { className: 'text-base font-bold text-amber-800' }, _ab.faltamMin >= 60 ? `${Math.floor(_ab.faltamMin / 60)}h ${String(_ab.faltamMin % 60).padStart(2, '0')}min` : `${_ab.faltamMin} min`)
+            ),
+            React.createElement('p', { className: 'text-xs text-amber-600 mt-3' }, '🔒 O botão de entrar é liberado automaticamente no horário.')
+        ),
         // PENALIDADE ATIVA
-        penalizado && React.createElement('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-6 text-center' },
+        !travadoPorHorario && penalizado && React.createElement('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-6 text-center' },
             React.createElement('span', { className: 'text-5xl block mb-4' }, '🚫'),
             React.createElement('h2', { className: 'text-lg font-bold text-red-800 mb-2' }, 'Bloqueado'),
             React.createElement('p', { className: 'text-red-600 mb-2' }, `Você saiu voluntariamente da fila e está bloqueado por mais ${minhaPenalidade.minutos_restantes} minuto(s).`),
             React.createElement('p', { className: 'text-xs text-red-500' }, `Saídas hoje: ${minhaPenalidade.saidas_hoje}`)
         ),
         // GPS NEGADO
-        !penalizado && gpsStatus === 'negado' ? React.createElement('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-6 text-center' }, React.createElement('span', { className: 'text-5xl block mb-4' }, '📍'), React.createElement('h2', { className: 'text-lg font-bold text-red-800 mb-2' }, 'GPS Necessário'), React.createElement('p', { className: 'text-red-600 mb-4' }, 'Permita acesso à localização.'), React.createElement('button', { onClick: solicitarGPS, className: 'px-6 py-3 bg-red-600 text-white rounded-xl font-bold' }, '🔓 Permitir')) :
-        !penalizado && React.createElement(React.Fragment, null,
+        !travadoPorHorario && !penalizado && gpsStatus === 'negado' ? React.createElement('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-6 text-center' }, React.createElement('span', { className: 'text-5xl block mb-4' }, '📍'), React.createElement('h2', { className: 'text-lg font-bold text-red-800 mb-2' }, 'GPS Necessário'), React.createElement('p', { className: 'text-red-600 mb-4' }, 'Permita acesso à localização.'), React.createElement('button', { onClick: solicitarGPS, className: 'px-6 py-3 bg-red-600 text-white rounded-xl font-bold' }, '🔓 Permitir')) :
+        !travadoPorHorario && !penalizado && React.createElement(React.Fragment, null,
             // EM ROTA
             minhaPosicao?.status === 'em_rota' && React.createElement('div', { className: `border-2 rounded-2xl p-6 ${minhaPosicao.corrida_unica ? 'bg-yellow-50 border-yellow-300' : 'bg-green-50 border-green-300'}` },
                 React.createElement('div', { className: 'flex items-center gap-4 mb-4' }, React.createElement('span', { className: 'text-5xl' }, minhaPosicao.corrida_unica ? '👑' : '🏍️'), React.createElement('div', null, React.createElement('h2', { className: `text-xl font-bold ${minhaPosicao.corrida_unica ? 'text-yellow-800' : 'text-green-800'}` }, minhaPosicao.corrida_unica ? 'Corrida Única!' : 'Você está em Rota!'), React.createElement('p', { className: minhaPosicao.corrida_unica ? 'text-yellow-600' : 'text-green-600' }, `⏱️ ${formatarTempo(minhaPosicao.minutos_em_rota)} em serviço`))),
