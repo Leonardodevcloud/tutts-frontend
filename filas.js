@@ -1205,7 +1205,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                 ),
                 React.createElement('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
                     React.createElement('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
-                        `Prezado ${usuario?.nome || usuario?.full_name || ''}, você está ingressando pela primeira vez na fila após o horário de início combinado (${garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
+                        `Prezado ${usuario?.nome || usuario?.full_name || ''}, você está ingressando pela primeira vez na fila após o horário combinado (${garantidoAviso.hora_desconto || garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
                 ),
                 React.createElement('div', { className: 'bg-white border-2 border-amber-300 rounded-xl p-4 mb-4 text-center' },
                     React.createElement('p', { className: 'text-xs text-amber-700 mb-1' }, 'Sua garantia hoje'),

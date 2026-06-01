@@ -354,7 +354,7 @@
           ),
           e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
             e('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
-              `Prezado ${usuario?.nome || ''}, você está ingressando pela primeira vez na fila após o horário de início combinado (${garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
+              `Prezado ${usuario?.nome || ''}, você está ingressando pela primeira vez na fila após o horário combinado (${garantidoAviso.hora_desconto || garantidoAviso.hora_inicio}). Sua garantia será ajustada proporcionalmente ao seu horário de ingresso.`)
           ),
           e('div', { className: 'bg-white border-2 border-amber-300 rounded-xl p-4 mb-4 text-center' },
             e('p', { className: 'text-xs text-amber-700 mb-1' }, 'Sua garantia hoje'),

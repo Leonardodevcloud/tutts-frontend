@@ -79,6 +79,7 @@
             garantido_valor_padrao: parseValor(novo.garantido_valor_padrao),
             garantido_hora_inicio: novo.garantido_hora_inicio,
             garantido_hora_fim: novo.garantido_hora_fim,
+            garantido_hora_tolerancia: novo.garantido_hora_tolerancia || null,
           }),
         });
         const d = await r.json();
@@ -136,6 +137,15 @@
             e('input', { type: 'time', defaultValue: cfg.garantido_hora_inicio, onBlur: (ev) => salvarConfig({ garantido_hora_inicio: ev.target.value }), className: 'w-full px-3 py-2 border rounded-lg' })),
           e('div', null, e('label', { className: 'block text-xs text-gray-500 mb-1' }, 'Fim da operação'),
             e('input', { type: 'time', defaultValue: cfg.garantido_hora_fim, onBlur: (ev) => salvarConfig({ garantido_hora_fim: ev.target.value }), className: 'w-full px-3 py-2 border rounded-lg' }))
+        ),
+        e('div', { className: 'mt-3' },
+          e('label', { className: 'block text-xs text-gray-500 mb-1' }, 'Margem de tolerância — só começa a descontar a partir de (opcional)'),
+          e('div', { className: 'flex items-center gap-2' },
+            e('input', { type: 'time', defaultValue: cfg.garantido_hora_tolerancia || '', key: cfg.garantido_hora_tolerancia || 'none', onBlur: (ev) => salvarConfig({ garantido_hora_tolerancia: ev.target.value }), className: 'px-3 py-2 border rounded-lg' }),
+            (cfg.garantido_hora_tolerancia
+              ? e('button', { onClick: () => salvarConfig({ garantido_hora_tolerancia: '' }), className: 'text-xs text-gray-500 underline' }, 'remover margem')
+              : e('span', { className: 'text-xs text-gray-400' }, 'sem margem: desconta a partir do início'))
+          )
         ),
         e('div', { className: 'mt-3 bg-amber-50 rounded-lg p-3 text-xs text-amber-700 leading-relaxed' },
           'Quem ingressar depois do início tem a garantia reduzida proporcionalmente; após o fim, fica zero. A regra vale para todos — o que muda por motoboy é só o valor base.')
