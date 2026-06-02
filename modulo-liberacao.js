@@ -245,6 +245,14 @@
           )
         ),
 
+        h('div', { className: 'bg-amber-50 border border-amber-300 p-3 rounded-lg flex items-start gap-2' },
+          h('span', { className: 'text-lg leading-none' }, '⚠️'),
+          h('p', { className: 'text-xs text-amber-800 leading-relaxed' },
+            h('span', { className: 'font-bold' }, 'Atenção: libera apenas o Ponto 1 (coleta).'),
+            ' Os demais pontos da OS (Ponto 2 em diante) não são liberados por aqui.'
+          )
+        ),
+
         h('div', null,
           h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Número da OS *'),
           h('input', {
