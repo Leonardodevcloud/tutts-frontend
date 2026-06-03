@@ -234,6 +234,10 @@
     const [total, setTotal]         = useState(0);
     const [loading, setLoading]     = useState(false);
     const [pagina, setPagina]       = useState(0);
+    const [contadores, setContadores] = useState({});
+    const [totalComOS, setTotalComOS] = useState(0);
+    const [totalSemOS, setTotalSemOS] = useState(0);
+    const [totalCFOk, setTotalCFOk]   = useState(0);
     const [osAberta, setOsAberta]     = useState(null);
     const [nfParaCriar, setNfParaCriar] = useState(null);
     const [clientesCorrida, setClientesCorrida] = useState([]);
@@ -280,15 +284,16 @@
         const d = await r.json();
         setNfs(d.nfs || []);
         setTotal(d.total || 0);
+        setContadores(d.contadores || {});
+        setTotalComOS(d.totalComOS || 0);
+        setTotalSemOS(d.totalSemOS || 0);
+        setTotalCFOk(d.totalCFOk || 0);
         setPagina(pg);
       } catch (_) { showToast('Erro ao carregar NFs', 'error'); }
       finally { setLoading(false); }
     }
 
-    // Contadores
-    const totalComOS = nfs.filter(n => n.solicitacao_id).length;
-    const totalSemOS = nfs.filter(n => !n.solicitacao_id).length;
-    const totalCFOk  = nfs.filter(n => n.ultimo_cf_sucesso).length;
+    // Contadores vêm do backend (sobre todos os resultados, não só a página atual)
 
     const pagTotal = Math.ceil(total / POR_PAG);
 
@@ -356,10 +361,10 @@
       h('div', { className: 'grid grid-cols-6 gap-3' },
         [
           { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
-          { label: 'A embarcar', val: nfs.filter(n=>n.status_cf==='A_EMBARCAR').length + (total > nfs.length ? '...' : ''), bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
-          { label: 'Em trânsito', val: nfs.filter(n=>n.status_cf==='EM_TRANSITO').length, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'EM_TRANSITO' },
-          { label: 'Entregue', val: nfs.filter(n=>n.status_cf==='ENTREGUE').length, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
-          { label: 'Reentrega', val: nfs.filter(n=>n.status_cf==='REENTREGA').length, bg: 'bg-orange-50', txt: 'text-orange-800', icon: '🔄', filter: 'REENTREGA' },
+          { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
+          { label: 'Em trânsito', val: contadores['EM_TRANSITO'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'EM_TRANSITO' },
+          { label: 'Entregue', val: contadores['ENTREGUE'] || 0, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
+          { label: 'Reentrega', val: contadores['REENTREGA'] || 0, bg: 'bg-orange-50', txt: 'text-orange-800', icon: '🔄', filter: 'REENTREGA' },
           { label: 'Sem corrida', val: totalSemOS, bg: 'bg-red-50', txt: 'text-red-800', icon: '⚠️', filter: null },
         ].map(({ label, val, bg, txt, icon, filter }) =>
           h('div', {
