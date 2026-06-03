@@ -272,24 +272,20 @@
       try {
         await fetchAuth(API_URL + '/confirmafacil/sincronizar', { method: 'POST',
           headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-        showToast('🔄 Sincronização iniciada — aguarde alguns minutos', 'success');
-        // Aguarda 5s e recarrega
-        setTimeout(() => carregar(0), 5000);
+        showToast('🔄 Sincronização iniciada — aguarde 2-3 minutos e clique em Buscar', 'success');
       } catch(_) { showToast('Erro ao sincronizar', 'error'); }
       finally { setSinc(false); }
     }
 
     async function carregar(pg = 0) {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: pg, size: POR_PAG,
-        de: de + 'T00:00:00',
-        ate: ate + 'T23:59:59',
-        ...(embCnpj && { embarcador_cnpj: embCnpj }),
-        ...(corridaFiltro && { tem_corrida: corridaFiltro }),
-        ...(busca && { busca }),
-        ...(statusCF && { status_cf: statusCF }),
-      });
+      const params = new URLSearchParams({ page: pg, size: POR_PAG });
+      if (de)            params.set('de',  de  + 'T00:00:00');
+      if (ate)           params.set('ate', ate + 'T23:59:59');
+      if (embCnpj)       params.set('embarcador_cnpj', embCnpj);
+      if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
+      if (busca)         params.set('busca', busca);
+      if (statusCF)      params.set('status_cf', statusCF);
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/nfs-lista?' + params);
         const d = await r.json();
