@@ -528,17 +528,9 @@
                 if (!clienteSelCorrida) { showToast('Selecione o cliente', 'error'); return; }
                 setCriandoCorrida(true);
                 try {
-                  // Buscar NF completa do CF para ter todos os campos
-                  const r = await fetchAuth(API_URL + '/confirmafacil/buscar-nfs', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cf_email: 'contato@tutts.com.br', cf_senha: 'Confirma@2026' }),
-                  });
-                  const d = await r.json();
-                  const nfCompleta = d.resultados?.[0]?.nfs?.find(n => String(n.idEmbarque) === String(nfParaCriar.id_embarque));
-
                   const r2 = await fetchAuth(API_URL + '/confirmafacil/criar-corrida', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nf: nfCompleta || nfParaCriar, cliente_id: Number(clienteSelCorrida) }),
+                    body: JSON.stringify({ nf: nfParaCriar, cliente_id: Number(clienteSelCorrida) }),
                   });
                   const d2 = await r2.json();
                   if (d2.ok) {
