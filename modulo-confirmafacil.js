@@ -226,10 +226,6 @@
 
   // ─── ABA NFs RECEBIDAS ───────────────────────────────────────
   function AbaNFs({ fetchAuth, API_URL, showToast }) {
-    const hoje = new Date();
-    const h7 = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fmtInput = d => d.toISOString().split('T')[0];
-
     const [nfs, setNfs]             = useState([]);
     const [total, setTotal]         = useState(0);
     const [loading, setLoading]     = useState(false);
@@ -255,8 +251,8 @@
     const [embarcadores, setEmbs]   = useState([]);
 
     // Filtros
-    const [de, setDe]               = useState(fmtInput(h7));
-    const [ate, setAte]             = useState(fmtInput(hoje));
+    const [de, setDe]               = useState('');
+    const [ate, setAte]             = useState('');
     const [embCnpj, setEmbCnpj]    = useState('');
     const [statusFiltro, setStatus] = useState('');
     const [corridaFiltro, setCorrida] = useState('');
