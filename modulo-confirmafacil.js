@@ -370,7 +370,15 @@
           h('button', {
             onClick: () => carregar(0), disabled: loading,
             className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50',
-          }, loading ? '⏳' : '🔍 Buscar')
+          }, loading ? '⏳' : '🔍 Buscar'),
+          h('div', { className: 'flex flex-col items-end gap-1' },
+            h('button', {
+              onClick: sincronizar, disabled: sincronizando,
+              className: 'px-4 py-2 border border-purple-300 text-purple-700 text-sm font-medium rounded-xl hover:bg-purple-50 disabled:opacity-50',
+            }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar'),
+            ultimaSync && h('p', { className: 'text-xs text-gray-400' },
+              'Sync: ' + fmtD(ultimaSync))
+          )
         )
       ),
 
@@ -795,16 +803,6 @@
         h('div', null,
           h('h1', { className: 'text-xl font-bold text-gray-900' }, '🔗 ConfirmaFácil'),
           h('p', { className: 'text-sm text-gray-500 mt-0.5' }, 'Integração de NFs e rastreamento de entregas')
-        ),
-        aba === 'nfs' && h('div', { className: 'flex items-center gap-3' },
-          ultimaSync && h('div', { className: 'text-right' },
-            h('p', { className: 'text-xs text-gray-400' }, 'Cache: ' + totalCache + ' NFs'),
-            h('p', { className: 'text-xs text-gray-400' }, 'Sync: ' + fmtD(ultimaSync))
-          ),
-          h('button', {
-            onClick: sincronizar, disabled: sincronizando,
-            className: 'flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50',
-          }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar CF')
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
