@@ -55,12 +55,21 @@
         .finally(() => setLoading(false));
     }, [solicitacaoId]);
 
-    const trilhaIcones = {
-      'finalizado_ponto': ['✅', 'bg-green-100 text-green-700'],
-      'coletado':         ['📦', 'bg-amber-100 text-amber-700'],
-      'chegou':           ['📍', 'bg-blue-100 text-blue-700'],
-      'default':          ['🔔', 'bg-gray-100 text-gray-600'],
+    const TRILHA_MAP = {
+      'finalizado_ponto': { icon:'✅', bg:'bg-green-100 text-green-700',  label:'Entregue no ponto' },
+      'finalizado':       { icon:'🏁', bg:'bg-green-100 text-green-700',  label:'OS finalizada' },
+      'coletado':         { icon:'📦', bg:'bg-amber-100 text-amber-700',  label:'Coletado' },
+      'chegou':           { icon:'📍', bg:'bg-blue-100 text-blue-700',    label:'Chegou ao local' },
+      'ausente':          { icon:'🚪', bg:'bg-orange-100 text-orange-700',label:'Destinatário ausente' },
+      'fechado':          { icon:'🔒', bg:'bg-orange-100 text-orange-700',label:'Estabelecimento fechado' },
+      'recusou':          { icon:'❌', bg:'bg-red-100 text-red-700',      label:'Recusou receber' },
+      'nao_entregue':     { icon:'↩️', bg:'bg-red-100 text-red-700',      label:'Não entregue' },
+      'retorno':          { icon:'🔄', bg:'bg-purple-100 text-purple-700',label:'Retorno' },
+      'em_andamento':     { icon:'🚚', bg:'bg-blue-100 text-blue-700',    label:'Em andamento' },
+      'aceito':           { icon:'👤', bg:'bg-gray-100 text-gray-600',    label:'OS aceita pelo motoboy' },
+      'cancelado':        { icon:'🚫', bg:'bg-red-100 text-red-700',      label:'Cancelado' },
     };
+    const getTrilha = s => TRILHA_MAP[s] || { icon:'🔔', bg:'bg-gray-100 text-gray-600', label: s || '—' };
 
     return h('div', {
       className: 'fixed inset-0 z-50 flex',
