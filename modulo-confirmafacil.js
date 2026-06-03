@@ -164,12 +164,12 @@
                     h('div', { className: 'absolute left-[11px] top-1 bottom-1 w-px bg-gray-200' }),
                     h('div', { className: 'space-y-4' },
                       dados.trilha.map((t, i) => {
-                        const [icon, cls] = trilhaIcones[t.status_tutts] || trilhaIcones.default;
+                        const tr = getTrilha(t.status_tutts);
                         return h('div', { key: i, className: 'flex gap-3 relative' },
-                          h('div', { className: `w-6 h-6 rounded-full ${cls} flex items-center justify-center text-xs flex-shrink-0 z-10` }, icon),
+                          h('div', { className: 'w-6 h-6 rounded-full ' + tr.bg + ' flex items-center justify-center text-xs flex-shrink-0 z-10' }, tr.icon),
                           h('div', { className: 'flex-1 pb-1' },
                             h('div', { className: 'flex items-baseline justify-between' },
-                              h('p', { className: 'text-sm font-medium text-gray-800' }, t.status_tutts || '—'),
+                              h('p', { className: 'text-sm font-medium text-gray-800' }, tr.label),
                               h('p', { className: 'text-xs text-gray-400' }, fmtD(t.criado_em))
                             ),
                             t.sucesso
