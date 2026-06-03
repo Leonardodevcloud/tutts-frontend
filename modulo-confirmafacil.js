@@ -427,7 +427,7 @@
                 h('table', { className: 'w-full text-sm' },
                   h('thead', null,
                     h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
-                      ['NF / Série', 'Embarcador', 'Destinatário', 'Status CF', 'OS Tutts', 'Recebido em'].map(col =>
+                      ['NF / Série', 'Emissão', 'Embarcador', 'Destinatário', 'Status CF', 'OS Tutts'].map(col =>
                         h('th', { key: col, className: 'px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide' }, col)
                       )
                     )
@@ -438,6 +438,13 @@
                         h('td', { className: 'px-3 py-3' },
                           h('p', { className: 'font-semibold text-gray-900' }, v.numero_nf || '—'),
                           h('p', { className: 'text-xs text-gray-400' }, 'Série ' + (v.serie_nf || '—'))
+                        ),
+                        h('td', { className: 'px-3 py-3' },
+                          v.data_emissao
+                            ? h('p', { className: 'text-xs text-gray-600' }, fmtDt(v.data_emissao))
+                            : h('p', { className: 'text-xs text-gray-400' }, '—'),
+                          v.data_previsao && h('p', { className: 'text-xs text-gray-400' },
+                            'Prev: ' + fmtDt(v.data_previsao))
                         ),
                         h('td', { className: 'px-3 py-3' },
                           h('p', { className: 'font-medium text-gray-800 text-xs' }, v.nome_embarcador || '—'),
@@ -466,12 +473,7 @@
                                 className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-medium',
                               }, '🚀 Criar corrida')
                         ),
-                        h('td', { className: 'px-3 py-3' },
-                          v.vinculado_em
-                            ? h('p', { className: 'text-xs text-gray-500' }, 'Vinc: ' + fmtDt(v.vinculado_em))
-                            : h('p', { className: 'text-xs text-gray-400' }, '—'),
-                          v.data_previsao && h('p', { className: 'text-xs text-gray-400' }, 'Prev: ' + fmtDt(v.data_previsao))
-                        )
+
                       )
                     )
                   )
