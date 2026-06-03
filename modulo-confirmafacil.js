@@ -441,10 +441,10 @@
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.data_emissao
-                            ? h('p', { className: 'text-xs text-gray-600' }, fmtDt(v.data_emissao))
+                            ? h('p', { className: 'text-xs text-gray-600' }, fmtD(v.data_emissao))
                             : h('p', { className: 'text-xs text-gray-400' }, '—'),
                           v.data_previsao && h('p', { className: 'text-xs text-gray-400' },
-                            'Prev: ' + fmtDt(v.data_previsao))
+                            'Prev: ' + fmtD(v.data_previsao))
                         ),
                         h('td', { className: 'px-3 py-3' },
                           h('p', { className: 'font-medium text-gray-800 text-xs' }, v.nome_embarcador || '—'),
