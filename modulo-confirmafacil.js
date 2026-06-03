@@ -234,7 +234,10 @@
     const [total, setTotal]         = useState(0);
     const [loading, setLoading]     = useState(false);
     const [pagina, setPagina]       = useState(0);
-    const [contadores, setContadores] = useState({});
+    const [contadores, setContadores]   = useState({});
+    const [ultimaSync, setUltimaSync]   = useState(null);
+    const [totalCache, setTotalCache]   = useState(0);
+    const [sincronizando, setSinc]      = useState(false);
     const [totalComOS, setTotalComOS] = useState(0);
     const [totalSemOS, setTotalSemOS] = useState(0);
     const [totalCFOk, setTotalCFOk]   = useState(0);
@@ -268,6 +271,18 @@
       carregar(0);
     }, []);
 
+    async function sincronizar() {
+      setSinc(true);
+      try {
+        await fetchAuth(API_URL + '/confirmafacil/sincronizar', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        showToast('🔄 Sincronização iniciada — aguarde alguns minutos', 'success');
+        // Aguarda 5s e recarrega
+        setTimeout(() => carregar(0), 5000);
+      } catch(_) { showToast('Erro ao sincronizar', 'error'); }
+      finally { setSinc(false); }
+    }
+
     async function carregar(pg = 0) {
       setLoading(true);
       const params = new URLSearchParams({
@@ -288,6 +303,8 @@
         setTotalComOS(d.totalComOS || 0);
         setTotalSemOS(d.totalSemOS || 0);
         setTotalCFOk(d.totalCFOk || 0);
+        if (d.ultima_sync) setUltimaSync(d.ultima_sync);
+        if (d.total_cache) setTotalCache(d.total_cache);
         setPagina(pg);
       } catch (_) { showToast('Erro ao carregar NFs', 'error'); }
       finally { setLoading(false); }
@@ -778,6 +795,16 @@
         h('div', null,
           h('h1', { className: 'text-xl font-bold text-gray-900' }, '🔗 ConfirmaFácil'),
           h('p', { className: 'text-sm text-gray-500 mt-0.5' }, 'Integração de NFs e rastreamento de entregas')
+        ),
+        aba === 'nfs' && h('div', { className: 'flex items-center gap-3' },
+          ultimaSync && h('div', { className: 'text-right' },
+            h('p', { className: 'text-xs text-gray-400' }, 'Cache: ' + totalCache + ' NFs'),
+            h('p', { className: 'text-xs text-gray-400' }, 'Sync: ' + fmtD(ultimaSync))
+          ),
+          h('button', {
+            onClick: sincronizar, disabled: sincronizando,
+            className: 'flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50',
+          }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar CF')
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
