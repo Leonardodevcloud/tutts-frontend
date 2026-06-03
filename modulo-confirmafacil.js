@@ -254,6 +254,7 @@
     const [statusFiltro, setStatus] = useState('');
     const [corridaFiltro, setCorrida] = useState('');
     const [busca, setBusca]         = useState('');
+    const [statusCF, setStatusCF]   = useState('');
     const POR_PAG = 100;
 
     // Carregar embarcadores p/ filtro
@@ -272,6 +273,7 @@
         ...(embCnpj && { embarcador_cnpj: embCnpj }),
         ...(corridaFiltro && { tem_corrida: corridaFiltro }),
         ...(busca && { busca }),
+        ...(statusCF && { status_cf: statusCF }),
       });
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/nfs-lista?' + params);
@@ -323,6 +325,19 @@
               h('option', { value: 'nao' }, 'Sem corrida')
             )
           ),
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' }, 'Status CF'),
+            h('select', { value: statusCF, onChange: e => setStatusCF(e.target.value),
+              className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+              h('option', { value: '' }, 'Todos'),
+              h('option', { value: 'A_EMBARCAR' }, '📦 A embarcar'),
+              h('option', { value: 'EM_TRANSITO' }, '🚚 Em trânsito'),
+              h('option', { value: 'ENTREGUE' }, '✅ Entregue'),
+              h('option', { value: 'REENTREGA' }, '🔄 Reentrega'),
+              h('option', { value: 'DEVOLVIDO' }, '↩️ Devolvido'),
+              h('option', { value: 'CANCELADO' }, '❌ Cancelado'),
+            )
+          ),
           h('div', { className: 'flex-1 min-w-[200px]' },
             h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' }, 'Buscar'),
             h('input', { type: 'text', placeholder: 'NF, OS, CNPJ...', value: busca,
@@ -337,17 +352,23 @@
         )
       ),
 
-      // Cards resumo
-      h('div', { className: 'grid grid-cols-4 gap-3' },
+      // Cards KPI por status
+      h('div', { className: 'grid grid-cols-6 gap-3' },
         [
-          { label: 'NFs vinculadas', val: total, bg: 'bg-gray-50', txt: 'text-gray-800' },
-          { label: 'Com corrida', val: totalComOS, bg: 'bg-purple-50', txt: 'text-purple-800' },
-          { label: 'CF confirmou', val: totalCFOk, bg: 'bg-green-50', txt: 'text-green-800' },
-          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-amber-50', txt: 'text-amber-800' },
-        ].map(({ label, val, bg, txt }) =>
-          h('div', { key: label, className: `${bg} rounded-2xl p-4` },
-            h('p', { className: 'text-xs text-gray-500 mb-1' }, label),
-            h('p', { className: `text-2xl font-semibold ${txt}` }, val)
+          { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
+          { label: 'A embarcar', val: nfs.filter(n=>n.status_cf==='A_EMBARCAR').length + (total > nfs.length ? '...' : ''), bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
+          { label: 'Em trânsito', val: nfs.filter(n=>n.status_cf==='EM_TRANSITO').length, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'EM_TRANSITO' },
+          { label: 'Entregue', val: nfs.filter(n=>n.status_cf==='ENTREGUE').length, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
+          { label: 'Reentrega', val: nfs.filter(n=>n.status_cf==='REENTREGA').length, bg: 'bg-orange-50', txt: 'text-orange-800', icon: '🔄', filter: 'REENTREGA' },
+          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-red-50', txt: 'text-red-800', icon: '⚠️', filter: null },
+        ].map(({ label, val, bg, txt, icon, filter }) =>
+          h('div', {
+            key: label,
+            onClick: filter !== null ? () => { setStatusCF(filter); carregar(0); } : undefined,
+            className: `${bg} rounded-2xl p-3 ${filter !== null ? 'cursor-pointer hover:opacity-80' : ''} ${statusCF === filter && filter !== null ? 'ring-2 ring-purple-400' : ''}`,
+          },
+            h('p', { className: 'text-xs text-gray-500 mb-1' }, icon + ' ' + label),
+            h('p', { className: `text-xl font-semibold ${txt}` }, val)
           )
         )
       ),
