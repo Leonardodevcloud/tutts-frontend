@@ -8,8 +8,8 @@
   const { useState, useEffect, useCallback } = React;
   const h = React.createElement;
 
-  const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR') : '—'; } catch (_) { return d || '—'; } };
-  const fmtDt = d => { try { return d ? new Date(d).toLocaleDateString('pt-BR') : '—'; } catch (_) { return d || '—'; } };
+  const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
+  const fmtDt = d => { try { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
   const fmtCNPJ = v => { if (!v) return ''; const n = v.replace(/\D/g, ''); return n.length === 14 ? n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : v; };
   const fmt = v => v || '—';
 
@@ -330,6 +330,20 @@
 
     return h('div', { className: 'space-y-4' },
 
+      // Acoes (sincronizar / reprocessar) - separadas dos filtros
+      h('div', { className: 'flex items-center justify-end gap-2 flex-wrap' },
+        ultimaSync && h('span', { className: 'text-xs text-gray-400 mr-1' }, 'Última sync: ' + fmtD(ultimaSync)),
+        h('button', {
+          onClick: sincronizar, disabled: sincronizando,
+          className: 'px-4 py-2 border border-purple-300 text-purple-700 text-sm font-medium rounded-xl hover:bg-purple-50 disabled:opacity-50',
+        }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar'),
+        h('button', {
+          onClick: reprocessar, disabled: reprocessando,
+          className: 'px-4 py-2 border border-amber-300 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-50 disabled:opacity-50',
+          title: 'Limpa o backoff e dispara o ciclo agora — reprocessa as notas recusadas (ex.: faltava modalidade)'
+        }, reprocessando ? '⏳ Reprocessando...' : '♻️ Reprocessar barradas')
+      ),
+
       // Filtros
       h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-4' },
         h('div', { className: 'flex flex-wrap gap-3 items-end' },
@@ -384,20 +398,7 @@
           h('button', {
             onClick: () => carregar(0), disabled: loading,
             className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50',
-          }, loading ? '⏳' : '🔍 Buscar'),
-          h('div', { className: 'flex flex-col items-end gap-1' },
-            h('button', {
-              onClick: sincronizar, disabled: sincronizando,
-              className: 'px-4 py-2 border border-purple-300 text-purple-700 text-sm font-medium rounded-xl hover:bg-purple-50 disabled:opacity-50',
-            }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar'),
-            h('button', {
-              onClick: reprocessar, disabled: reprocessando,
-              className: 'px-4 py-2 border border-amber-300 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-50 disabled:opacity-50',
-              title: 'Limpa o backoff e dispara o ciclo agora — reprocessa as notas que foram recusadas (ex.: faltava modalidade)'
-            }, reprocessando ? '⏳ Reprocessando...' : '♻️ Reprocessar barradas'),
-            ultimaSync && h('p', { className: 'text-xs text-gray-400' },
-              'Sync: ' + fmtD(ultimaSync))
-          )
+          }, loading ? '⏳' : '🔍 Buscar')
         )
       ),
 
