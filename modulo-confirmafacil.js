@@ -199,7 +199,7 @@
               className: 'flex-1 text-center text-xs py-2 border border-gray-200 rounded-xl hover:border-purple-300 text-gray-600',
             }, '🗺️ Rastrear no mapa'),
             dados.sc.tutts_os_numero && h('a', {
-              href: 'https://tutts.com.br/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
+              href: 'https://tutts.com.br/expresso/expressoat/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
               target: '_blank', rel: 'noopener noreferrer',
               className: 'flex-1 text-center text-xs py-2 border border-purple-200 rounded-xl hover:border-purple-400 text-purple-700 bg-purple-50',
             }, '🔗 Ver na Mapp')
@@ -207,18 +207,19 @@
           h('div', { className: 'flex gap-2' },
             h('button', {
               onClick: () => {
+                if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
                 fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
                 }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast('✅ CF recebeu!', 'success');
+                  if (d.ok) showToast('✅ Finalizado enviado ao CF', 'success');
                   else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
                   fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId)
                     .then(r => r.json()).then(setDados);
                 });
               },
               className: 'flex-1 text-xs py-2 bg-green-600 text-white rounded-xl hover:bg-green-700',
-            }, '🔔 Testar envio CF')
+            }, '✅ Finalizar no CF')
           )
         )
       ),
