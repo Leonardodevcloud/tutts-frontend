@@ -300,15 +300,16 @@
       finally { setReproc(false); }
     }
 
-    async function carregar(pg = 0) {
+    async function carregar(pg = 0, statusOverride) {
       setLoading(true);
+      const sCF = statusOverride !== undefined ? statusOverride : statusCF;
       const params = new URLSearchParams({ page: pg, size: POR_PAG });
       if (de)            params.set('de',  de  + 'T00:00:00');
       if (ate)           params.set('ate', ate + 'T23:59:59');
       if (embCnpj)       params.set('embarcador_cnpj', embCnpj);
       if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
       if (busca)         params.set('busca', busca);
-      if (statusCF)      params.set('status_cf', statusCF);
+      if (sCF)           params.set('status_cf', sCF);
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/nfs-lista?' + params);
         const d = await r.json();
@@ -415,7 +416,7 @@
         ].map(({ label, val, bg, txt, icon, filter }) =>
           h('div', {
             key: label,
-            onClick: filter !== null ? () => { setStatusCF(filter); carregar(0); } : undefined,
+            onClick: filter !== null ? () => { setStatusCF(filter); carregar(0, filter); } : undefined,
             className: `${bg} rounded-2xl p-3 ${filter !== null ? 'cursor-pointer hover:opacity-80' : ''} ${statusCF === filter && filter !== null ? 'ring-2 ring-purple-400' : ''}`,
           },
             h('p', { className: 'text-xs text-gray-500 mb-1' }, icon + ' ' + label),
