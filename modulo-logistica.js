@@ -315,6 +315,31 @@
     const wsRef = useRef(null);
     const mapRef = useRef(null);
     const markerRef = useRef(null);
+    const [mapsPronto, setMapsPronto] = useState(!!(window.google && window.google.maps));
+
+    // Carrega o Google Maps JS dinamicamente (chave vem do backend via /logistics/maps-key).
+    // O index.html do app principal NAO injeta o Maps — sem isto o mapa de tracking fica
+    // em branco mesmo com posicao chegando. Mesmo padrao do solicitacao.html.
+    useEffect(() => {
+      if (window.google && window.google.maps) { setMapsPronto(true); return; }
+      const jaInjetado = document.querySelector('script[data-tutts-maps-loader]');
+      if (jaInjetado) { jaInjetado.addEventListener('load', () => setMapsPronto(true)); return; }
+      (async () => {
+        try {
+          const resp = await fetchAuth(`${API_URL}/logistics/maps-key`);
+          if (!resp.ok) { console.error('Falha ao obter chave do Google Maps:', resp.status); return; }
+          const { key } = await resp.json();
+          if (!key) return;
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places,geometry&v=weekly`;
+          script.async = true; script.defer = true;
+          script.setAttribute('data-tutts-maps-loader', '1');
+          script.onload = () => setMapsPronto(true);
+          script.onerror = () => console.error('Erro ao carregar Google Maps JS — verifique a chave');
+          document.head.appendChild(script);
+        } catch (err) { console.error('Erro no loader do Google Maps:', err); }
+      })();
+    }, []);
 
     const carregarAtivas = useCallback(async () => {
       try {
@@ -380,7 +405,7 @@
           map: mapRef.current, label: 'E', title: 'Entrega',
         });
       }
-    }, [selecionada]);
+    }, [selecionada, mapsPronto]);
 
     // Atualizar marcador do entregador
     useEffect(() => {
