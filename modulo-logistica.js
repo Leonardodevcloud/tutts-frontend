@@ -962,10 +962,17 @@
           return;
         }
 
+        // Prefill do telefone do destinatario (vem da OS; pode vir vazio -> admin digita).
+        let _telPrefill = '';
+        for (const r of resultados) {
+          const c0 = (r.cotacoes || []).find(x => x.available && x.telefone_entrega);
+          if (c0) { _telPrefill = c0.telefone_entrega; break; }
+        }
         setCotacaoModal({
           state: 'ok', codigoOS: codigoOSNum,
           porProvider,
           selecionado: { veiculo: 'motorcycle' }, // veículo escolhido (provider é por botão)
+          telefone: _telPrefill,
           error: null,
         });
       } catch (err) {
@@ -995,6 +1002,8 @@
       const bloco = cotacaoModal.porProvider?.[providerCode];
       const cot = bloco?.cotacoes?.find(c => c.vehicle_type === veiculo && c.available);
       if (!cot) { showToast('Sem cotação válida pra esse provedor/veículo', 'error'); return; }
+      const _telDigitos = (cotacaoModal.telefone || '').replace(/\D/g, '');
+      if (_telDigitos.length < 10) { showToast('Informe o telefone do cliente (com DDD) antes de despachar', 'error'); return; }
       if (Date.now() > cot.expires_at) {
         showToast('Cotação expirada — cote novamente', 'error');
         return;
@@ -1010,6 +1019,7 @@
             providerCode,
             vehicleType: veiculo,
             quoteId: cot.quote_id,
+            telefoneEntrega: cotacaoModal.telefone || '',
           }),
         });
         const json = await res.json();
@@ -1392,10 +1402,16 @@
         const mmss = `${Math.floor(segRestantes / 60)}:${String(segRestantes % 60).padStart(2, '0')}`;
 
         // Endereços (de qualquer cotação disponível).
-        let endColeta = '—', endEntrega = '—';
+        let endColeta = '—', endEntrega = '—', obsOS = '', kmRota = null;
         for (const b of blocos) {
           const c = (b.cotacoes || []).find(x => x.available);
-          if (c) { endColeta = c.endereco_coleta || '—'; endEntrega = c.endereco_entrega || '—'; break; }
+          if (c) {
+            endColeta = c.endereco_coleta || '—';
+            endEntrega = c.endereco_entrega || '—';
+            obsOS = c.observacao || '';
+            kmRota = (c.distancia_km != null) ? parseFloat(c.distancia_km) : null;
+            break;
+          }
         }
 
         // Card de um provider.
@@ -1464,8 +1480,15 @@
             h('div', { className: 'border-b border-gray-200 px-5 py-4 flex items-start justify-between' },
               h('div', null,
                 h('h3', { className: 'text-base font-bold text-gray-800' }, `Cotar OS ${m.codigoOS}`),
-                h('p', { className: 'text-xs text-gray-500 mt-0.5' },
-                  m.state === 'ok' ? `${endColeta} → ${endEntrega}` : 'comparando provedores'),
+                m.state === 'ok'
+                  ? h('div', { className: 'mt-1 space-y-0.5' },
+                      h('p', { className: 'text-xs text-gray-600' },
+                        h('span', { className: 'font-semibold text-gray-500' }, '📍 Coleta: '), endColeta),
+                      h('p', { className: 'text-xs text-gray-600' },
+                        h('span', { className: 'font-semibold text-purple-600' }, '🎯 Entrega: '), endEntrega),
+                      (kmRota != null) && h('p', { className: 'text-[11px] text-gray-400' },
+                        `Distância da rota: ${kmRota.toFixed(1)} km`))
+                  : h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'comparando provedores'),
               ),
               h('button', {
                 onClick: fecharCotacaoModal,
@@ -1504,6 +1527,25 @@
                     className: `text-[11px] ${expirou ? 'text-red-600 font-medium' : 'text-gray-500'}`,
                   }, expirou ? 'cotação expirada' : `expira em ${mmss}`),
                 ),
+
+                // Observacao da OS (read-only) — e o que o motoboy ve no app do provedor.
+                obsOS && h('div', { className: 'mb-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' },
+                  h('div', { className: 'text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-0.5' }, '📝 Observação (vai pro motoboy)'),
+                  h('div', { className: 'text-xs text-gray-700 leading-relaxed' }, obsOS)),
+
+                // Telefone do cliente — prefill da OS, editavel, obrigatorio.
+                h('div', { className: 'mb-4' },
+                  h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
+                    '📱 Telefone do cliente (recebe o código por WhatsApp)'),
+                  h('input', {
+                    type: 'tel',
+                    value: m.telefone || '',
+                    onChange: (ev) => setCotacaoModal(prev => ({ ...prev, telefone: ev.target.value })),
+                    placeholder: 'Ex: 71993908345',
+                    className: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
+                  }),
+                  h('p', { className: 'text-[10px] text-gray-400 mt-1' },
+                    'Obrigatório. O código de entrega da 99 será enviado para este número.')),
 
                 // Cards lado a lado
                 h('div', {
