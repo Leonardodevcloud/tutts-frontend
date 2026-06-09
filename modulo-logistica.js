@@ -641,7 +641,10 @@
 
     const prov           = provedorInfo(e);
 
-    const podeCancelar = !['delivered', 'cancelado', 'canceled', 'fallback_fila'].includes(e.status_uber);
+    const TERMINAIS_CANON = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
+    const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
+    const podeCancelar = !TERMINAIS_CANON.includes(e.status_canonico)
+      && !TERMINAIS_NATIVE.includes(e.status_uber);
     const temEntregador = !!e.entregador_nome;
 
     const duracao = calcularDuracao(e.created_at, e.finalizado_at);
@@ -1613,6 +1616,13 @@
   // ════════════════════════════════════════════════════════
   function ModalDetalhesEntrega({ data, onClose, showToast, fetchAuth, API_URL }) {
     const { entrega: e, tracking, webhooks, loading } = data;
+    // Valores p/ os cards do modal (mesma logica do CardEntrega — antes ausentes
+    // neste escopo, o que quebrava o modal com ReferenceError: valorUber).
+    const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
+    const valorHub     = parseFloat(e.valor_servico || 0);
+    const margemHub    = Math.round((valorHub - valorUber) * 100) / 100;
+    const margemHubPct = valorUber > 0 ? Math.round((margemHub / valorUber) * 1000) / 10 : null;
+    const margemPos    = margemHub >= 0;
     const [showDebug, setShowDebug] = useState(false);
     const [comprovante, setComprovante] = useState(null);      // proof_of_delivery
     const [loadingComprovante, setLoadingComprovante] = useState(false);
