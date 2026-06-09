@@ -996,11 +996,19 @@
           const c0 = (r.cotacoes || []).find(x => x.available && x.telefone_entrega);
           if (c0) { _telPrefill = c0.telefone_entrega; break; }
         }
+        // Prefill dos nomes (remetente/cliente) — vem da OS; pode vir vazio.
+        let _nomeRemPrefill = '', _nomeCliPrefill = '';
+        for (const r of resultados) {
+          const cN = (r.cotacoes || []).find(x => x.available);
+          if (cN) { _nomeRemPrefill = cN.nome_coleta || ''; _nomeCliPrefill = cN.nome_entrega || ''; break; }
+        }
         setCotacaoModal({
           state: 'ok', codigoOS: codigoOSNum,
           porProvider,
           selecionado: { veiculo: 'motorcycle' }, // veículo escolhido (provider é por botão)
           telefone: _telPrefill,
+          nomeRemetente: _nomeRemPrefill,
+          nomeCliente: _nomeCliPrefill,
           error: null,
         });
       } catch (err) {
@@ -1048,6 +1056,8 @@
             vehicleType: veiculo,
             quoteId: cot.quote_id,
             telefoneEntrega: cotacaoModal.telefone || '',
+            nomeRemetente: cotacaoModal.nomeRemetente || '',
+            nomeCliente: cotacaoModal.nomeCliente || '',
           }),
         });
         const json = await res.json();
@@ -1583,6 +1593,30 @@
                   }),
                   h('p', { className: 'text-[10px] text-gray-400 mt-1' },
                     'Obrigatório. O código de entrega da 99 será enviado para este número.')),
+
+                // Nome do remetente (loja/coleta) e do cliente final — prefill da OS,
+                // editaveis. Viram o remetente e o cliente que o motoboy ve no app.
+                h('div', { className: 'grid grid-cols-2 gap-2 mb-4' },
+                  h('div', {},
+                    h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
+                      '🏪 Nome do remetente (loja)'),
+                    h('input', {
+                      type: 'text',
+                      value: m.nomeRemetente || '',
+                      onChange: (ev) => setCotacaoModal(prev => ({ ...prev, nomeRemetente: ev.target.value })),
+                      placeholder: 'Ex: Loja Centro',
+                      className: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
+                    })),
+                  h('div', {},
+                    h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
+                      '🎯 Nome do cliente final'),
+                    h('input', {
+                      type: 'text',
+                      value: m.nomeCliente || '',
+                      onChange: (ev) => setCotacaoModal(prev => ({ ...prev, nomeCliente: ev.target.value })),
+                      placeholder: 'Ex: Oficina JF',
+                      className: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400',
+                    }))),
 
                 // Cards lado a lado
                 h('div', {
