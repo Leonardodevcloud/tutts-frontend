@@ -1074,7 +1074,16 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ motivo: 'Cancelamento manual' })
         });
-        if (res.ok) { showToast('Entrega cancelada', 'success'); carregar(); }
+        if (res.ok) {
+          let info = {};
+          try { info = await res.json(); } catch (_e) {}
+          if (info.providerCancelado === false) {
+            showToast('Cancelado no painel, mas a 99 NAO confirmou: ' + (info.providerCancelMsg || 'cancele manualmente no app da 99'), 'error');
+          } else {
+            showToast('Entrega cancelada', 'success');
+          }
+          carregar();
+        }
       } catch { showToast('Erro ao cancelar', 'error'); }
     }
 
