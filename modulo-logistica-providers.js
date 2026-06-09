@@ -32,8 +32,12 @@
           { key: 'client_secret', label: 'Client Secret', secret: true,  hint: 'client_secret da 99Entrega' },
         ]},
         { titulo: '📦 Padrões do pacote', campos: [
-          { key: 'package_type',   label: 'Tipo do pacote',  secret: false, hint: 'ex: documents, food, parcel' },
-          { key: 'package_weight', label: 'Peso do pacote',  secret: false, hint: 'ex: 1kg, 3kg, 5kg' },
+          { key: 'package_type',   label: 'Tipo do pacote',  type: 'select',
+            options: ['groceries', 'food', 'documents', 'apparel', 'medication', 'electronics', 'others'],
+            hint: 'enum fixo da 99 — autopecas nao existe; use "others"' },
+          { key: 'package_weight', label: 'Peso do pacote',  type: 'select',
+            options: ['1kg', '5kg', '10kg', '20kg', '30kg'],
+            hint: 'enum fixo da 99 — ate 25kg: use "30kg"' },
         ]},
         { titulo: '📞 Contato', campos: [
           { key: 'telefone_suporte', label: 'Telefone de suporte', secret: false,
@@ -436,6 +440,21 @@
         })
       );
 
+    // Campo select — enum fechado (ex: package_type/package_weight da 99).
+    const SelectField = (campo) =>
+      e('div', { className: 'mb-3', key: campo.key },
+        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
+        e('select', {
+          value: form.config[campo.key] || '',
+          onChange: ev => updateConfig(campo.key, ev.target.value),
+          className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+        },
+          e('option', { value: '' }, '— selecione —'),
+          (campo.options || []).map(opt => e('option', { key: opt, value: opt }, opt))
+        ),
+        campo.hint && e('p', { className: 'text-[11px] text-gray-400 mt-1' }, campo.hint)
+      );
+
     // Campo de segredo — backend nunca devolve o valor; só a flag _setado.
     // topLevel lê a flag de provider.{key}_setado; config lê de config.{key}_setado.
     const SecretField = (campo) => {
@@ -486,6 +505,7 @@
           e('div', { className: 'text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2' }, grupo.titulo),
           grupo.campos.map(campo =>
             campo.type === 'boolean' ? BooleanField(campo)
+              : campo.type === 'select' ? SelectField(campo)
               : campo.secret ? SecretField(campo)
               : Field(campo))
         )
