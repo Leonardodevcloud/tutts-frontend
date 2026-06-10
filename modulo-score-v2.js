@@ -33,6 +33,7 @@
                     [
                         { id: 'configuracoes', label: '⚙️ Configurações' },
                         { id: 'motoboys', label: '👥 Motoboys por Categoria' },
+                        { id: 'ranking', label: '📅 Ranking Anterior' },
                         { id: 'sorteios', label: '🎲 Sorteios' },
                     ].map(t => h('button', {
                         key: t.id,
@@ -44,6 +45,7 @@
             ),
             tab === 'configuracoes' && h(AbaConfiguracoes, { fetchApi, showToast }),
             tab === 'motoboys' && h(AbaMotoboys, { fetchApi, showToast }),
+            tab === 'ranking' && h(AbaRanking, { fetchApi, showToast }),
             tab === 'sorteios' && h(AbaSorteios, { fetchApi, showToast })
         );
     };
@@ -745,10 +747,104 @@
     // ============================================================
     // ABA SORTEIOS
     // ============================================================
+    // ============================================================
+    // ABA RANKING ANTERIOR (colocação congelada do mês)
+    // ============================================================
+    function AbaRanking({ fetchApi, showToast }) {
+        // mês default = mês anterior
+        const hoje = new Date();
+        const mAnt = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+        const mesDefault = mAnt.getFullYear() + '-' + String(mAnt.getMonth() + 1).padStart(2, '0');
+
+        const [mes, setMes] = useState(mesDefault);
+        const [mesBusca, setMesBusca] = useState(mesDefault);
+        const [ranking, setRanking] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [regiaoFiltro, setRegiaoFiltro] = useState('');
+        const [erro, setErro] = useState('');
+
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+        const carregar = useCallback(async (m) => {
+            if (!/^\d{4}-\d{2}$/.test(m)) { showToastRef.current('⚠️ Mês no formato YYYY-MM', 'warning'); return; }
+            setLoading(true); setErro('');
+            try {
+                const data = await fetchApiRef.current('/score-v2/admin/ranking/' + m);
+                const lista = (data && data.ranking) || [];
+                setRanking(lista);
+                setMesBusca(m);
+                if (lista.length === 0) {
+                    setErro('Nenhuma colocação congelada para ' + m + '. O congelamento começou em junho/2026 — meses anteriores não têm registro.');
+                }
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); setRanking([]); }
+            finally { setLoading(false); }
+        }, []);
+
+        useEffect(() => { carregar(mesDefault); }, [carregar]);
+
+        const regioes = Array.from(new Set(ranking.map(r => r.regiao))).sort();
+        const filtrado = regiaoFiltro ? ranking.filter(r => r.regiao === regiaoFiltro) : ranking;
+        const porRegiao = {};
+        filtrado.forEach(r => { (porRegiao[r.regiao] = porRegiao[r.regiao] || []).push(r); });
+
+        const catBadge = (nivel) => h('span', {
+            className: 'px-2 py-0.5 rounded text-xs font-bold ' +
+                (nivel === 3 ? 'bg-yellow-100 text-yellow-800' : nivel === 2 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600')
+        }, nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze');
+        const medalha = (pos) => pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : ('' + pos);
+
+        return h('div', null,
+            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
+                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, '📅 Classificação congelada no fechamento do mês. Disponível a partir de junho/2026.'),
+                h('div', { className: 'flex gap-2 items-end flex-wrap' },
+                    h('div', null,
+                        h('label', { className: 'text-xs text-purple-700 block' }, 'Mês (período)'),
+                        h('input', { type: 'month', value: mes, onChange: e => setMes(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' })
+                    ),
+                    h('button', { onClick: () => carregar(mes), className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, '🔍 Buscar'),
+                    regioes.length > 0 && h('div', null,
+                        h('label', { className: 'text-xs text-purple-700 block' }, 'Região'),
+                        h('select', { value: regiaoFiltro, onChange: e => setRegiaoFiltro(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' },
+                            h('option', { value: '' }, 'Todas'),
+                            regioes.map(rg => h('option', { key: rg, value: rg }, rg))
+                        )
+                    )
+                )
+            ),
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            erro ? h('div', { className: 'text-center py-12 text-gray-400 text-sm px-4' }, erro) :
+            Object.keys(porRegiao).length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Sem dados.') :
+            h('div', null, Object.entries(porRegiao).map(([regiao, lista]) =>
+                h('div', { key: regiao, className: 'bg-white rounded-lg border border-gray-200 overflow-x-auto mb-4' },
+                    h('div', { className: 'px-3 py-2 bg-gray-50 border-b font-bold text-sm text-gray-700' }, '📍 ' + regiao + ' — ' + mesBusca + ' (' + lista.length + ' motoboys)'),
+                    h('table', { className: 'w-full text-sm' },
+                        h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
+                            h('tr', null, ['#', 'Motoboy', 'Categoria', 'Entregas', '% Prazo'].map((c, i) =>
+                                h('th', { key: i, className: 'px-3 py-2 text-left text-xs font-medium text-gray-600' }, c)))
+                        ),
+                        h('tbody', null, lista.map(r => h('tr', { key: r.cod_prof, className: 'border-b border-gray-100' },
+                            h('td', { className: 'px-3 py-2 font-bold' }, medalha(r.posicao)),
+                            h('td', { className: 'px-3 py-2' }, r.nome_prof || r.cod_prof),
+                            h('td', { className: 'px-3 py-2' }, catBadge(r.nivel)),
+                            h('td', { className: 'px-3 py-2 text-gray-600' }, r.entregas),
+                            h('td', { className: 'px-3 py-2 text-gray-600' }, (Number(r.pct_prazo) || 0).toFixed(1) + '%')
+                        )))
+                    )
+                )
+            ))
+        );
+    }
+
     function AbaSorteios({ fetchApi, showToast }) {
         const [sorteios, setSorteios] = useState([]);
         const [loading, setLoading] = useState(true);
         const [mesManual, setMesManual] = useState('');
+        const [expandido, setExpandido] = useState(null);
+        const [participantes, setParticipantes] = useState([]);
+        const [loadingPart, setLoadingPart] = useState(false);
 
         // 🔧 FIX loop: refs estáveis
         const fetchApiRef = useRef(fetchApi);
@@ -779,6 +875,16 @@
             } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
         };
 
+        const togglePart = async (id) => {
+            if (expandido === id) { setExpandido(null); return; }
+            setExpandido(id); setParticipantes([]); setLoadingPart(true);
+            try {
+                const data = await fetchApiRef.current('/score-v2/admin/sorteios/' + id + '/participantes');
+                setParticipantes((data && data.participantes) || []);
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            finally { setLoadingPart(false); }
+        };
+
         return h('div', null,
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
                 h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, '🤖 Sorteio automático: dia 1 de cada mês 00:05 (sorteia o mês anterior)'),
@@ -801,16 +907,30 @@
                             )
                         )
                     ),
-                    h('tbody', null, sorteios.map(s => h('tr', { key: s.id, className: 'border-b border-gray-100' },
-                        h('td', { className: 'px-3 py-2 font-medium' }, s.mes_referencia),
-                        h('td', { className: 'px-3 py-2' }, s.regiao),
-                        h('td', { className: 'px-3 py-2' },
-                            h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
+                    h('tbody', null, sorteios.map(s => h(React.Fragment, { key: s.id },
+                        h('tr', { className: 'border-b border-gray-100 cursor-pointer hover:bg-purple-50', onClick: () => togglePart(s.id), title: 'Ver participantes' },
+                            h('td', { className: 'px-3 py-2 font-medium' }, s.mes_referencia),
+                            h('td', { className: 'px-3 py-2' }, s.regiao),
+                            h('td', { className: 'px-3 py-2' },
+                                h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
+                            ),
+                            h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '🏆 ' + (s.vencedor_nome || s.vencedor_cod_prof)),
+                            h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
+                            h('td', { className: 'px-3 py-2 text-gray-600' }, (expandido === s.id ? '▾ ' : '▸ ') + s.total_participantes),
+                            h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(s.sorteado_em))
                         ),
-                        h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '🏆 ' + (s.vencedor_nome || s.vencedor_cod_prof)),
-                        h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
-                        h('td', { className: 'px-3 py-2 text-gray-600' }, s.total_participantes),
-                        h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(s.sorteado_em))
+                        expandido === s.id && h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
+                            h('td', { colSpan: 7, className: 'px-3 py-2' },
+                                loadingPart ? h('span', { className: 'text-xs text-gray-500' }, '⏳ Carregando participantes...') :
+                                participantes.length === 0 ? h('span', { className: 'text-xs text-gray-400' }, 'Nenhum participante registrado (sorteios anteriores a junho/2026 não têm a lista).') :
+                                h('div', null,
+                                    h('p', { className: 'text-xs font-bold text-gray-600 mb-1' }, 'Participantes (' + participantes.length + '):'),
+                                    h('div', { className: 'flex flex-wrap gap-1' }, participantes.map(p =>
+                                        h('span', { key: p.cod_prof, className: 'px-2 py-0.5 rounded text-xs ' + (p.foi_vencedor ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-700') }, (p.foi_vencedor ? '🏆 ' : '') + (p.nome_prof || p.cod_prof))
+                                    ))
+                                )
+                            )
+                        )
                     )))
                 )
             )
