@@ -20,6 +20,28 @@
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   }
 
+  // 🆕 2026-06: badge do codigo (coleta/entrega) da 99/Uber.
+  // - codigo presente: mostra destacado e copia ao clicar.
+  // - codigo ausente: mostra "aguardando" (a 99 gera apos o despacho, via poller;
+  //   se a verificacao estiver desligada no provedor, fica sem codigo mesmo).
+  function CodigoBadge(label, codigo) {
+    if (codigo) {
+      return h('div', {
+        onClick: () => { try { navigator.clipboard.writeText(String(codigo)); } catch (_) {} },
+        title: 'Clique para copiar',
+        className: 'mt-1.5 inline-flex items-center gap-1.5 cursor-pointer bg-purple-50 border border-purple-200 rounded-lg px-2 py-1'
+      },
+        h('span', { className: 'text-[10px] uppercase tracking-wider text-purple-500 font-semibold' }, label),
+        h('span', { className: 'text-sm font-bold tracking-widest text-purple-800' }, String(codigo)),
+        h('span', { className: 'text-[10px] text-purple-400' }, '📋')
+      );
+    }
+    return h('div', { className: 'mt-1.5 inline-flex items-center gap-1 text-[11px] text-gray-400' },
+      h('span', null, label + ': '),
+      h('span', { className: 'italic' }, 'aguardando provedor')
+    );
+  }
+
   // Labels de status. Duas famílias de chave:
   //  - LEGADAS (snake_case): formato antigo da Uber (enviado_uber, pickup...).
   //  - CANÔNICAS (UPPER): o enum do hub multi-provider (DISPATCHED, PICKED_UP...).
@@ -747,11 +769,13 @@
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
-          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_coleta || '—')
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_coleta || '—'),
+          CodigoBadge('Código de coleta', e.pickup_code)
         ),
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
-          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—')
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—'),
+          CodigoBadge('Código de entrega', e.dropoff_code)
         ),
       ),
 
