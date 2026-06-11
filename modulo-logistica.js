@@ -760,8 +760,18 @@
         h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
           h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
           h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber)),
-          e.distancia_km && h('div', { className: 'text-[10px] text-gray-400 mt-0.5' },
-            `${parseFloat(e.distancia_km).toFixed(1)} km`)
+          e.distancia_km && h('div', {
+              className: 'text-[10px] mt-0.5 ' + (e.distancia_origem === 'haversine' ? 'text-amber-500' : 'text-gray-400'),
+              title: e.distancia_origem === 'haversine'
+                ? 'Distância estimada em linha reta (o provedor não retornou a rota)'
+                : e.distancia_origem === 'provider'
+                  ? 'Distância da rota retornada pelo provedor'
+                  : ''
+            },
+            `📏 ${parseFloat(e.distancia_km).toFixed(1)} km` +
+            (e.distancia_origem === 'haversine' ? ' · estimado (linha reta)'
+              : e.distancia_origem === 'provider' ? ' · do provedor'
+              : ''))
         ),
         h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
           h('div', { className: 'text-[11px] text-purple-600 mb-0.5' }, 'Valor pela regra (km)'),
