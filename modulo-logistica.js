@@ -1941,7 +1941,7 @@
               ),
 
               // ── Comprovante de entrega (Uber + 99Entrega, pós DELIVERED) ──────
-              ((e.provider_code === 'uber' || e.provider_code === 'noventanove') && (e.status_canonico === 'DELIVERED' || e.status_uber === 'delivered')) &&
+              ((e.provider_code === 'uber' || e.provider_code === 'noventanove') && (['PICKED_UP','DROPOFF_EN_ROUTE','ARRIVED_DROPOFF','DELIVERED'].includes(e.status_canonico) || e.status_uber === 'delivered')) &&
               h('div', { className: 'border border-gray-200 rounded-xl overflow-hidden' },
 
                 // Header do bloco
