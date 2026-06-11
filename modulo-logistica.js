@@ -1741,10 +1741,17 @@
     // Uber retorna: { document: { type, base64_contents }, signature: { type, base64_contents }, pictures: [...] }
     function imgSrc(campo) {
       if (!campo) return null;
+      // 99Entrega: a foto vem como URL direta (string http...).
+      if (typeof campo === 'string') {
+        return /^https?:\/\//i.test(campo) ? campo : null;
+      }
+      // Uber: base64 dentro de { type, base64_contents }.
       const tipo = campo.type || 'image/jpeg';
       const b64  = campo.base64_contents || campo.data || null;
-      if (!b64) return null;
-      return `data:${tipo};base64,${b64}`;
+      if (b64) return `data:${tipo};base64,${b64}`;
+      // fallback: objeto com url
+      if (campo.url && /^https?:\/\//i.test(campo.url)) return campo.url;
+      return null;
     }
 
     function copiarDeliveryId() {
@@ -1933,15 +1940,15 @@
                 ),
               ),
 
-              // ── Comprovante de entrega (Uber, pós DELIVERED) ──────────────────
-              (e.provider_code === 'uber' && (e.status_canonico === 'DELIVERED' || e.status_uber === 'delivered')) &&
+              // ── Comprovante de entrega (Uber + 99Entrega, pós DELIVERED) ──────
+              ((e.provider_code === 'uber' || e.provider_code === 'noventanove') && (e.status_canonico === 'DELIVERED' || e.status_uber === 'delivered')) &&
               h('div', { className: 'border border-gray-200 rounded-xl overflow-hidden' },
 
                 // Header do bloco
                 h('div', { className: 'bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
                   h('div', { className: 'flex items-center gap-2' },
                     h('span', { className: 'text-sm font-semibold text-gray-700' }, '📸 Comprovante de entrega'),
-                    h('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full' }, 'Uber Direct'),
+                    h('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full' }, e.provider_code === 'noventanove' ? '99Entrega' : 'Uber Direct'),
                   ),
                   !comprovante && !loadingComprovante && h('button', {
                     onClick: carregarComprovante,
@@ -1969,14 +1976,30 @@
                     // Foto(s) da entrega
                     (function() {
                       const fotos = [];
-                      // Campo principal: document
+                      // Campo principal: document (Uber)
                       const srcDoc = imgSrc(comprovante.document);
                       if (srcDoc) fotos.push({ src: srcDoc, label: 'Foto do local de entrega' });
-                      // Campo pictures (array)
+                      // Campo pictures (array, Uber)
                       if (Array.isArray(comprovante.pictures)) {
                         comprovante.pictures.forEach((p, i) => {
                           const s = imgSrc(p.document || p);
                           if (s) fotos.push({ src: s, label: `Foto ${i + 2}` });
+                        });
+                      }
+                      // 🆕 99Entrega: arrays de URL por tipo (entrega/coleta/devolucao)
+                      (comprovante.fotos_entrega || []).forEach((u, i) => {
+                        const s = imgSrc(u); if (s) fotos.push({ src: s, label: `Entrega ${i + 1}` });
+                      });
+                      (comprovante.fotos_coleta || []).forEach((u, i) => {
+                        const s = imgSrc(u); if (s) fotos.push({ src: s, label: `Coleta ${i + 1}` });
+                      });
+                      (comprovante.fotos_devolucao || []).forEach((u, i) => {
+                        const s = imgSrc(u); if (s) fotos.push({ src: s, label: `Devolucao ${i + 1}` });
+                      });
+                      // fallback generico: comprovante.fotos[]
+                      if (fotos.length === 0 && Array.isArray(comprovante.fotos)) {
+                        comprovante.fotos.forEach((u, i) => {
+                          const s = imgSrc(u); if (s) fotos.push({ src: s, label: `Foto ${i + 1}` });
                         });
                       }
                       if (fotos.length === 0) return null;
