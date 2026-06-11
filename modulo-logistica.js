@@ -759,7 +759,7 @@
             className: 'text-xs px-3 py-1.5 border border-amber-200 text-amber-700 rounded-lg hover:bg-amber-50',
           }, 'Editar endereço'),
           podeCancelar && h('button', {
-            onClick: () => onCancelar(e.id),
+            onClick: () => onCancelar(e),
             className: 'text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50',
           }, 'Cancelar'),
         )
@@ -1114,8 +1114,35 @@
       setCotacaoModal(null);
     }
 
-    async function cancelarEntrega(id) {
-      if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
+    async function cancelarEntrega(entregaOuId) {
+      // Aceita a entrega inteira (novo) ou so o id (compat). Precisamos do
+      // status pra avisar quando a corrida JA tem entregador — nesse caso a 99
+      // recusa o cancelamento e voce continua sendo cobrado.
+      const entregaObj = (entregaOuId && typeof entregaOuId === 'object') ? entregaOuId : null;
+      const id = entregaObj ? entregaObj.id : entregaOuId;
+      const st = entregaObj ? entregaObj.status_canonico : null;
+
+      // Status em que a corrida JA tem entregador atribuido/coletando.
+      const COM_ENTREGADOR = [
+        'COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP',
+        'PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'
+      ];
+      const jaColetou = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st);
+
+      if (st && COM_ENTREGADOR.includes(st)) {
+        const aviso = jaColetou
+          ? 'ATENCAO: o entregador da 99 JA COLETOU o pacote.\n\n' +
+            'A 99 NAO vai cancelar nesse estado e a entrega sera concluida e COBRADA.\n' +
+            'Cancelar aqui so marca como cancelado no seu painel — a corrida continua viva na 99.\n\n' +
+            'Tem certeza que quer cancelar mesmo assim?'
+          : 'ATENCAO: esta corrida JA TEM ENTREGADOR atribuido na 99.\n\n' +
+            'A 99 provavelmente NAO vai cancelar e voce pode ser cobrado.\n' +
+            'Cancelar aqui marca como cancelado no seu painel, mas confirme no app da 99.\n\n' +
+            'Tem certeza que quer cancelar mesmo assim?';
+        if (!confirm(aviso)) return;
+      } else {
+        if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
+      }
       try {
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${id}/cancel`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
