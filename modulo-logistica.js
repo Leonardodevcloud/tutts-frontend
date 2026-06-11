@@ -1115,30 +1115,25 @@
     }
 
     async function cancelarEntrega(entregaOuId) {
-      // Aceita a entrega inteira (novo) ou so o id (compat). Precisamos do
-      // status pra avisar quando a corrida JA tem entregador — nesse caso a 99
-      // recusa o cancelamento e voce continua sendo cobrado.
+      // Aceita a entrega inteira (novo) ou so o id (compat).
       const entregaObj = (entregaOuId && typeof entregaOuId === 'object') ? entregaOuId : null;
       const id = entregaObj ? entregaObj.id : entregaOuId;
       const st = entregaObj ? entregaObj.status_canonico : null;
 
-      // Status em que a corrida JA tem entregador atribuido/coletando.
-      const COM_ENTREGADOR = [
-        'COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP',
-        'PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'
-      ];
-      const jaColetou = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st);
+      // Doc oficial da 99 (Cancel Order): "If the courier has picked up the
+      // package, order cancellation is not supported." A fronteira e a COLETA,
+      // nao o aceite — depois que aceita (waiting/COURIER_ASSIGNED) e antes de
+      // coletar, a 99 AINDA cancela. So a partir de PICKED_UP (delivering) e que
+      // a 99 recusa e a corrida fica viva sendo cobrada.
+      const JA_COLETOU = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'];
 
-      if (st && COM_ENTREGADOR.includes(st)) {
-        const aviso = jaColetou
-          ? 'ATENCAO: o entregador da 99 JA COLETOU o pacote.\n\n' +
-            'A 99 NAO vai cancelar nesse estado e a entrega sera concluida e COBRADA.\n' +
-            'Cancelar aqui so marca como cancelado no seu painel — a corrida continua viva na 99.\n\n' +
-            'Tem certeza que quer cancelar mesmo assim?'
-          : 'ATENCAO: esta corrida JA TEM ENTREGADOR atribuido na 99.\n\n' +
-            'A 99 provavelmente NAO vai cancelar e voce pode ser cobrado.\n' +
-            'Cancelar aqui marca como cancelado no seu painel, mas confirme no app da 99.\n\n' +
-            'Tem certeza que quer cancelar mesmo assim?';
+      if (st && JA_COLETOU.includes(st)) {
+        const aviso =
+          'ATENCAO: o entregador da 99 JA COLETOU o pacote.\n\n' +
+          'A 99 NAO permite cancelar depois da coleta (regra deles) — a entrega\n' +
+          'sera concluida e COBRADA. Cancelar aqui so marca como cancelado no seu\n' +
+          'painel; a corrida continua viva na 99.\n\n' +
+          'Tem certeza que quer cancelar mesmo assim?';
         if (!confirm(aviso)) return;
       } else {
         if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
