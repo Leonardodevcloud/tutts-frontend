@@ -735,10 +735,10 @@
         h('div', { className: 'flex gap-2 flex-shrink-0 flex-wrap justify-end' },
           onVerTracking && h('button', {
             onClick: () => onVerTracking(e),
-            disabled: !e.tracking_url,
-            title: e.tracking_url ? 'Abrir rastreio no provedor' : 'Sem URL de rastreio',
+            disabled: !(e.rastreio_token || e.tracking_url),
+            title: e.rastreio_token ? 'Abrir rastreio Tutts' : (e.tracking_url ? 'Abrir rastreio no provedor' : 'Rastreio ainda nao disponivel'),
             className: `text-xs px-3 py-1.5 border rounded-lg ${
-              e.tracking_url
+              (e.rastreio_token || e.tracking_url)
                 ? 'border-gray-200 hover:bg-gray-50 text-gray-700'
                 : 'border-gray-100 text-gray-300 cursor-not-allowed'
             }`,
@@ -1208,11 +1208,18 @@
     // Tracking: abre a página oficial de rastreio do provedor em nova aba.
     // O tracking_url vem da resposta do Create Delivery e é salvo no banco no despacho.
     function abrirTracking(e) {
-      if (!e.tracking_url) {
-        showToast('Sem URL de rastreio (entrega antiga sem tracking_url salvo)', 'error');
+      // Prioriza a pagina de rastreio da Central (Tutts). Cai pro link do
+      // provedor so em entregas antigas sem token. Sem nenhum dos dois = ainda
+      // nao ha rastreio (entregador nao aceitou).
+      if (e.rastreio_token) {
+        window.open('https://centraltutts.online/r/' + e.rastreio_token, '_blank', 'noopener,noreferrer');
         return;
       }
-      window.open(e.tracking_url, '_blank', 'noopener,noreferrer');
+      if (e.tracking_url) {
+        window.open(e.tracking_url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      showToast('Rastreio ainda nao disponivel (aguardando o entregador aceitar)', 'error');
     }
 
     // Detalhes: abre modal com tracking points + webhooks + info completa
