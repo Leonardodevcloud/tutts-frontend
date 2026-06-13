@@ -12050,8 +12050,10 @@ const hideLoadingScreen = () => {
                 limitesSaque.ciclo && React.createElement("p", {
                     style: { fontSize: "11px", color: "#999", marginTop: "12px", marginBottom: 0 }
                 }, "📅 Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " · reseta toda terça"),
-                // Botão de solicitar mais limite (preserva lógica existente)
-                (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0) && !limitesSaque.solicitacao_pendente && React.createElement("button", {
+                // Botão de solicitar mais limite — aparece quando o disponivel fica
+                // ABAIXO do saque minimo (R$ 15), nao so quando zera. Uma sobra tipo
+                // R$ 0,20 nao da pra sacar (minimo 15), entao o motoboy precisa poder pedir.
+                (limitesSaque.diario.disponivel < 15 || limitesSaque.semanal.disponivel < 15) && !limitesSaque.solicitacao_pendente && React.createElement("button", {
                     onClick: async () => {
                         setSolicitandoLimite(true);
                         try {
