@@ -61,8 +61,8 @@
         </div>
       </div>
       <div class="sec" style="border-bottom:none">
-        <div class="addr"><div class="pin" style="color:#54168a">&#9679;</div><div><div class="lbl">coleta</div><div style="font-size:13px" id="aColeta">-</div></div></div>
-        <div class="addr"><div class="pin" style="color:#f5921e">&#9660;</div><div><div class="lbl">entrega</div><div style="font-size:13px" id="aEntrega">-</div></div></div>
+        <div class="addr"><div class="pin">&#127978;</div><div><div class="lbl">coleta</div><div style="font-size:13px" id="aColeta">-</div></div></div>
+        <div class="addr"><div class="pin">&#128205;</div><div><div class="lbl">entrega</div><div style="font-size:13px" id="aEntrega">-</div></div></div>
       </div>
     </div>
 
@@ -81,7 +81,8 @@
   var map,mCourier,mPickup,mDrop,pollTimer,lastTs;
 
   function icon(color,glyph){return L.divIcon({className:'',html:'<div style="background:'+color+';width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:13px">'+glyph+'</span></div>',iconSize:[30,30],iconAnchor:[15,28]});}
-  function dotIcon(){return L.divIcon({className:'',html:'<div style="position:relative"><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#7c3aed;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
+  function motoIcon(){return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-20px;top:-20px;width:40px;height:40px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #7c3aed;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px">\uD83D\uDEF5</div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
+  function emojiMarker(e,size){var s=size||28;return L.divIcon({className:'',html:'<div style="font-size:'+s+'px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4)">'+e+'</div>',iconSize:[s,s],iconAnchor:[s/2,s]});}
 
   function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);}
 
@@ -106,7 +107,10 @@
 
     if(d.entregador&&d.entregador.nome){
       var n=d.entregador.nome.trim().split(' ');
-      document.getElementById('cav').textContent=((n[0]||'')[0]||'')+((n[1]||'')[0]||'');
+      var ini=((n[0]||'')[0]||'')+((n[1]||'')[0]||'');
+      var cav=document.getElementById('cav');
+      if(d.entregador.foto){cav.innerHTML='<img src="'+d.entregador.foto+'" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentNode.textContent=&quot;'+ini+'&quot;">';}
+      else{cav.textContent=ini;}
       document.getElementById('cname').textContent=d.entregador.nome;
       var v=[];if(d.entregador.veiculo)v.push(d.entregador.veiculo);if(d.entregador.placa)v.push('placa '+d.entregador.placa);
       document.getElementById('cveic').textContent=v.length?v.join(' - '):'moto';
@@ -120,9 +124,9 @@
     var center=cour||pickup||drop||[-12.97,-38.48];
     if(!map)initMap(center);
 
-    if(pickup){if(!mPickup)mPickup=L.marker(pickup,{icon:icon('#54168a','&#9679;')}).addTo(map);else mPickup.setLatLng(pickup);}
-    if(drop){if(!mDrop)mDrop=L.marker(drop,{icon:icon('#f5921e','&#9660;')}).addTo(map);else mDrop.setLatLng(drop);}
-    if(cour){if(!mCourier)mCourier=L.marker(cour,{icon:dotIcon(),zIndexOffset:1000}).addTo(map);else mCourier.setLatLng(cour);}
+    if(pickup){if(!mPickup)mPickup=L.marker(pickup,{icon:emojiMarker('\uD83C\uDFEA',26)}).addTo(map);else mPickup.setLatLng(pickup);}
+    if(drop){if(!mDrop)mDrop=L.marker(drop,{icon:emojiMarker('\uD83D\uDCCD',30)}).addTo(map);else mDrop.setLatLng(drop);}
+    if(cour){if(!mCourier)mCourier=L.marker(cour,{icon:motoIcon(),zIndexOffset:1000}).addTo(map);else mCourier.setLatLng(cour);}
 
     var pts=[];if(cour)pts.push(cour);if(drop)pts.push(drop);if(!cour&&pickup)pts.push(pickup);
     if(pts.length>1)map.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)map.setView(pts[0],15);
