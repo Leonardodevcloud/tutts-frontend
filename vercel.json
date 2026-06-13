@@ -4,6 +4,7 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
+    { "source": "/r/(.*)", "destination": "/rastreio.html" },
     { "source": "/((?!.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.json|.*\\.ico|sw\\.js|manifest\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [

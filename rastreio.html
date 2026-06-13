@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#54168a" />
+  <title>Rastreamento Tutts</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2354168a'/><text y='.92em' x='8' font-size='62' font-style='italic' font-family='Trebuchet MS' fill='white'>t</text></svg>" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#eef0f3;color:#1f2430;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:480px;margin:0 auto;min-height:100vh;background:#fff;display:flex;flex-direction:column}
+    .hd{background:#54168a;color:#fff;padding:16px 18px}
+    .hd .logo{display:flex;align-items:center;gap:10px}
+    .status{margin-top:13px;display:flex;align-items:center;gap:9px;font-size:16px;font-weight:600}
+    .dot{width:9px;height:9px;border-radius:50%;background:#f5921e;display:inline-block}
+    .eta{font-size:12.5px;color:#e6d8f5;margin-top:4px;padding-left:18px}
+    #map{width:100%;height:300px;background:#dde2e8}
+    .sec{padding:15px 18px;border-bottom:1px solid #f0f0f4}
+    .lbl{font-size:11px;color:#9aa0aa;text-transform:lowercase}
+    .courier{display:flex;align-items:center;gap:12px}
+    .av{width:46px;height:46px;border-radius:50%;background:#eee9fb;color:#7c3aed;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+    .tl-item{display:flex;align-items:center;gap:11px;padding:4px 0;font-size:13.5px}
+    .tl-ic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0}
+    .addr{display:flex;gap:10px;align-items:flex-start;margin-top:11px}
+    .pin{width:22px;text-align:center;font-size:17px;flex-shrink:0}
+    .ft{text-align:center;padding:13px;font-size:11px;color:#9b8fc4;background:#faf7fd;margin-top:auto}
+    .upd{font-size:11px;color:#8b929c;text-align:center;padding:9px}
+    .msg{padding:60px 24px;text-align:center;color:#6b7280}
+    .leaflet-control-attribution{font-size:9px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hd">
+      <div class="logo">
+        <svg viewBox="0 0 132 60" style="height:40px;width:auto" aria-label="Tutts">
+          <text x="2" y="36" font-family="Trebuchet MS, Verdana, sans-serif" font-size="36" font-style="italic" font-weight="700" fill="#fff" letter-spacing="-1.5">tutts</text>
+          <path d="M5,50 C34,61 72,60 99,47" fill="none" stroke="#f5921e" stroke-width="8" stroke-linecap="round"/>
+          <path d="M90,40 L120,37 L101,59 Z" fill="#f5921e"/>
+        </svg>
+        <span style="margin-left:auto;font-size:11px;background:rgba(255,255,255,.16);padding:4px 10px;border-radius:20px">acompanhe</span>
+      </div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Carregando...</span></div>
+      <div class="eta" id="eta"></div>
+    </div>
+
+    <div id="content" style="display:none">
+      <div id="map"></div>
+      <div class="upd" id="upd"></div>
+      <div class="sec"><div id="timeline"></div></div>
+      <div class="sec">
+        <div class="courier">
+          <div class="av" id="cav">--</div>
+          <div style="flex:1">
+            <div style="font-size:14.5px;font-weight:600" id="cname">aguardando entregador</div>
+            <div style="font-size:12.5px;color:#6b7280" id="cveic">sera definido ao aceitar</div>
+          </div>
+        </div>
+      </div>
+      <div class="sec" style="border-bottom:none">
+        <div class="addr"><div class="pin" style="color:#54168a">&#9679;</div><div><div class="lbl">coleta</div><div style="font-size:13px" id="aColeta">-</div></div></div>
+        <div class="addr"><div class="pin" style="color:#f5921e">&#9660;</div><div><div class="lbl">entrega</div><div style="font-size:13px" id="aEntrega">-</div></div></div>
+      </div>
+    </div>
+
+    <div id="notfound" class="msg" style="display:none">
+      Rastreamento nao encontrado ou expirado.<br/>Verifique o link recebido.
+    </div>
+
+    <div class="ft">rastreamento <b style="color:#54168a">tutts</b> <b style="color:#f5921e">logistica</b></div>
+  </div>
+
+<script>
+(function(){
+  var API='https://tutts-backend-production.up.railway.app';
+  var token=location.pathname.replace(/^\/r\//,'').replace(/\/+$/,'').split('/').pop();
+  var STEPS=['Pedido despachado','Entregador a caminho','Saiu para entrega','Entregue'];
+  var map,mCourier,mPickup,mDrop,pollTimer,lastTs;
+
+  function icon(color,glyph){return L.divIcon({className:'',html:'<div style="background:'+color+';width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:13px">'+glyph+'</span></div>',iconSize:[30,30],iconAnchor:[15,28]});}
+  function dotIcon(){return L.divIcon({className:'',html:'<div style="position:relative"><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#7c3aed;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
+
+  function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);}
+
+  function timeline(etapa){
+    var h='';
+    for(var i=0;i<STEPS.length;i++){
+      var done=i<etapa,cur=i===etapa;
+      var col=(done||cur)?(etapa===3&&cur?'#1d9e75':'#54168a'):'#d2d6dd';
+      var gly=done?'&#10003;':(cur?'&#9679;':'');
+      h+='<div class="tl-item"><div class="tl-ic" style="background:'+col+'">'+gly+'</div><span style="color:'+((done||cur)?'#1f2430':'#aeb4be')+';font-weight:'+(cur?600:400)+'">'+STEPS[i]+'</span></div>';
+    }
+    document.getElementById('timeline').innerHTML=h;
+  }
+
+  function render(d){
+    document.getElementById('content').style.display='block';
+    document.getElementById('statusText').textContent=d.status_label||'Em andamento';
+    var fin=d.finalizado;
+    document.getElementById('dot').style.background=(d.status==='DELIVERED')?'#1d9e75':(d.status==='CANCELED'||d.status==='RETURNED')?'#e24b4a':'#f5921e';
+    document.getElementById('eta').textContent=fin?'':(d.eta_minutos?('chega em ~'+d.eta_minutos+' min'):'acompanhe em tempo real');
+    timeline(d.etapa>=0?d.etapa:0);
+
+    if(d.entregador&&d.entregador.nome){
+      var n=d.entregador.nome.trim().split(' ');
+      document.getElementById('cav').textContent=((n[0]||'')[0]||'')+((n[1]||'')[0]||'');
+      document.getElementById('cname').textContent=d.entregador.nome;
+      var v=[];if(d.entregador.veiculo)v.push(d.entregador.veiculo);if(d.entregador.placa)v.push('placa '+d.entregador.placa);
+      document.getElementById('cveic').textContent=v.length?v.join(' - '):'moto';
+    }
+    document.getElementById('aColeta').textContent=d.coleta.endereco||'-';
+    document.getElementById('aEntrega').textContent=(d.entrega.nome?d.entrega.nome+' - ':'')+(d.entrega.endereco||'-');
+
+    var pickup=(d.coleta.lat!=null)?[d.coleta.lat,d.coleta.lng]:null;
+    var drop=(d.entrega.lat!=null)?[d.entrega.lat,d.entrega.lng]:null;
+    var cour=(d.posicao)?[d.posicao.lat,d.posicao.lng]:null;
+    var center=cour||pickup||drop||[-12.97,-38.48];
+    if(!map)initMap(center);
+
+    if(pickup){if(!mPickup)mPickup=L.marker(pickup,{icon:icon('#54168a','&#9679;')}).addTo(map);else mPickup.setLatLng(pickup);}
+    if(drop){if(!mDrop)mDrop=L.marker(drop,{icon:icon('#f5921e','&#9660;')}).addTo(map);else mDrop.setLatLng(drop);}
+    if(cour){if(!mCourier)mCourier=L.marker(cour,{icon:dotIcon(),zIndexOffset:1000}).addTo(map);else mCourier.setLatLng(cour);}
+
+    var pts=[];if(cour)pts.push(cour);if(drop)pts.push(drop);if(!cour&&pickup)pts.push(pickup);
+    if(pts.length>1)map.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)map.setView(pts[0],15);
+
+    lastTs=Date.now();tickUpd();
+    if(fin&&pollTimer){clearInterval(pollTimer);pollTimer=null;document.getElementById('upd').textContent='entrega finalizada';}
+  }
+
+  function tickUpd(){if(!lastTs)return;var s=Math.round((Date.now()-lastTs)/1000);document.getElementById('upd').textContent='atualizado ha '+(s<5?'instantes':s+'s')+' - atualiza a cada 30s';}
+
+  function load(){
+    fetch(API+'/api/logistics/rastreio/'+encodeURIComponent(token))
+      .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+      .then(render)
+      .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponivel';document.getElementById('dot').style.background='#e24b4a';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
+  }
+
+  if(!token||token.length<8){document.getElementById('statusText').textContent='Link invalido';document.getElementById('notfound').style.display='block';}
+  else{load();pollTimer=setInterval(load,30000);setInterval(tickUpd,1000);}
+})();
+</script>
+</body>
+</html>
