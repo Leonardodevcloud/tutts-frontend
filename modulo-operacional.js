@@ -339,10 +339,18 @@
                                 nome_cliente: '',
                                 endereco: '',
                                 modelo: 'nuvem',
+                                tipo_veiculo: '',
+                                modalidade: '',
                                 quantidade_motos: 1,
                                 obrigatoriedade_bau: false,
                                 possui_garantido: false,
                                 valor_garantido: '',
+                                salario: '',
+                                horario_inicio: '08:00',
+                                horario_fim: '18:00',
+                                escala_obs: '',
+                                beneficios: {},
+                                _step: 1,
                                 data_inicio: '',
                                 observacoes: '',
                                 faixas_km: [
@@ -440,7 +448,7 @@
                                                     (op.modelo === 'nuvem' ? 'bg-blue-100 text-blue-700' : 
                                                      op.modelo === 'dedicado' ? 'bg-purple-100 text-purple-700' : 
                                                      'bg-yellow-100 text-yellow-700')
-                                                }, op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'),
+                                                }, op.modalidade === 'hub' ? '🌐 Hub' : op.modalidade === 'hibrida' ? '🔀 Híbrida' : op.modalidade === 'clt' ? '🪪 CLT' : op.modalidade === 'dedicado' ? '🎯 Dedicado' : op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'),
                                                 React.createElement("span", {
                                                     className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
                                                     (op.status === 'ativo' ? 'bg-green-100 text-green-700' : 
@@ -501,10 +509,18 @@
                                                         nome_cliente: op.nome_cliente || '',
                                                         endereco: op.endereco || '',
                                                         modelo: op.modelo || 'nuvem',
+                                                        tipo_veiculo: op.tipo_veiculo || 'moto',
+                                                        modalidade: op.modalidade || 'dedicado',
                                                         quantidade_motos: op.quantidade_motos || 1,
                                                         obrigatoriedade_bau: op.obrigatoriedade_bau || false,
                                                         possui_garantido: op.possui_garantido || false,
                                                         valor_garantido: op.valor_garantido || '',
+                                                        salario: op.salario || '',
+                                                        horario_inicio: op.horario_inicio || '08:00',
+                                                        horario_fim: op.horario_fim || '18:00',
+                                                        escala_obs: op.escala_obs || '',
+                                                        beneficios: op.beneficios || {},
+                                                        _step: 2,
                                                         data_inicio: op.data_inicio?.split('T')[0] || '',
                                                         observacoes: op.observacoes || '',
                                                         faixas_km: op.faixas_km && op.faixas_km.length > 0 ? op.faixas_km : [
@@ -642,237 +658,291 @@
                 )
             ),
             // ==================== MODAL NOVA OPERAÇÃO ====================
-            operacaoModal && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"},
-                React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto"},
-                    // Header do Modal
-                    React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white sticky top-0 z-10"},
-                        React.createElement("div", {className: "flex justify-between items-center"},
-                            React.createElement("div", null,
-                                React.createElement("h2", {className: "text-xl font-bold"}, operacaoEdit ? "✏️ Editar Operação" : "➕ Nova Operação"),
-                                React.createElement("p", {className: "text-teal-100 text-sm"}, "Preencha os dados da operação")
-                            ),
-                            React.createElement("button", {
-                                onClick: () => setOperacaoModal(false),
-                                className: "text-white/80 hover:text-white text-2xl"
-                            }, "✕")
+            operacaoModal && (function() {
+                var step = operacaoForm._step || 1;
+                var isClt = operacaoForm.modalidade === 'clt';
+                var isCarro = operacaoForm.tipo_veiculo === 'carro';
+                var isHub = operacaoForm.modalidade === 'hub';
+                var SUG = { dedicado: 5, hub: 10, hibrida: 8, clt: 1 };
+                var VEH = { moto: 'Moto', carro: 'Carro utilitário' };
+                var MOD = { dedicado: 'Dedicado', hub: 'Hub', hibrida: 'Híbrida', clt: 'CLT' };
+                var bens = operacaoForm.beneficios || {};
+                var podeAvancar = operacaoForm.tipo_veiculo && operacaoForm.modalidade && (isHub || operacaoForm.quantidade_motos);
+                var BENS = [
+                    { k: 'va', i: '🛒', t: 'Vale alimentação' },
+                    { k: 'vr', i: '🍽️', t: 'Vale refeição' },
+                    { k: 'comb', i: '⛽', t: 'Auxílio combustível' },
+                    { k: 'vt', i: '🚌', t: 'Vale transporte' },
+                    { k: 'net', i: '📶', t: 'Bônus internet' }
+                ];
+                var toggleBen = function(k) {
+                    setOperacaoForm(function(fm) {
+                        var b = Object.assign({}, fm.beneficios || {});
+                        var cur = b[k] || {};
+                        b[k] = Object.assign({}, cur, { on: !cur.on });
+                        return Object.assign({}, fm, { beneficios: b });
+                    });
+                };
+                var setBenField = function(k, field, val) {
+                    setOperacaoForm(function(fm) {
+                        var b = Object.assign({}, fm.beneficios || {});
+                        var cur = Object.assign({}, b[k] || {});
+                        cur[field] = val;
+                        b[k] = cur;
+                        return Object.assign({}, fm, { beneficios: b });
+                    });
+                };
+                var selVeic = function(v) {
+                    setOperacaoForm(function(fm) {
+                        var patch = { tipo_veiculo: v };
+                        if (v === 'carro') patch.obrigatoriedade_bau = false;
+                        return Object.assign({}, fm, patch);
+                    });
+                };
+                var selMod = function(m) {
+                    setOperacaoForm(function(fm) {
+                        return Object.assign({}, fm, { modalidade: m, quantidade_motos: SUG[m] || 1 });
+                    });
+                };
+                var choiceCard = function(opts) {
+                    return React.createElement("button", {
+                        type: "button",
+                        onClick: opts.onClick,
+                        className: "relative text-left rounded-2xl border-2 p-4 transition-all " +
+                            (opts.sel ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 bg-white hover:border-violet-300") +
+                            (opts.col ? " flex flex-col gap-2" : " flex items-center gap-3")
+                    },
+                        opts.sel && React.createElement("span", { className: "absolute top-2 right-2 w-6 h-6 rounded-lg bg-violet-600 text-white grid place-items-center text-sm" }, "✓"),
+                        React.createElement("span", { className: "w-12 h-12 rounded-xl grid place-items-center text-2xl flex-none " + (opts.sel ? "bg-white" : "bg-violet-50") }, opts.emoji),
+                        React.createElement("span", { className: "block" },
+                            React.createElement("span", { className: "block font-bold text-gray-800 text-sm" }, opts.titulo),
+                            React.createElement("span", { className: "block text-xs text-gray-500 mt-0.5" }, opts.desc),
+                            opts.badge && React.createElement("span", { className: "inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full " + opts.badgeClass }, opts.badge)
                         )
-                    ),
-                    // Conteúdo do Modal
-                    React.createElement("div", {className: "p-6 space-y-6"},
-                        // Seção: Dados Básicos
-                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "📋 Dados Básicos"),
-                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4"},
-                                // Região
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Região *"),
-                                    React.createElement("input", {
-                                        type: "text",
-                                        value: operacaoForm.regiao,
-                                        onChange: e => setOperacaoForm(f => ({...f, regiao: e.target.value})),
-                                        placeholder: "Ex: Brasília, Goiânia, São Paulo...",
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                    })
+                    );
+                };
+
+                return React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" },
+                    React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto" },
+                        React.createElement("div", { className: "bg-gradient-to-r from-violet-600 to-violet-700 p-6 text-white sticky top-0 z-10" },
+                            React.createElement("div", { className: "flex justify-between items-center" },
+                                React.createElement("div", { className: "flex items-center gap-3" },
+                                    React.createElement("div", { className: "w-11 h-11 rounded-xl bg-white/15 grid place-items-center text-xl" }, operacaoEdit ? "✏️" : "➕"),
+                                    React.createElement("div", null,
+                                        React.createElement("h2", { className: "text-xl font-bold" }, operacaoEdit ? "Editar Operação" : "Nova Operação"),
+                                        React.createElement("p", { className: "text-violet-100 text-sm" }, step === 1 ? "Escolha o tipo de veículo e a modalidade" : (isClt ? "Contratação CLT — remuneração e benefícios" : "Preencha os dados da operação"))
+                                    )
                                 ),
-                                // Nome do Cliente
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Nome do Cliente *"),
-                                    React.createElement("input", {
-                                        type: "text",
-                                        value: operacaoForm.nome_cliente,
-                                        onChange: e => setOperacaoForm(f => ({...f, nome_cliente: e.target.value})),
-                                        placeholder: "Nome da empresa/loja",
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                    })
+                                React.createElement("button", { onClick: () => setOperacaoModal(false), className: "text-white/80 hover:text-white text-2xl" }, "✕")
+                            ),
+                            React.createElement("div", { className: "flex gap-2 mt-4" },
+                                React.createElement("div", { className: "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl " + (step === 1 ? "bg-white text-violet-700" : "bg-white/10") },
+                                    React.createElement("span", { className: "w-6 h-6 rounded-lg grid place-items-center text-xs font-bold " + (step === 1 ? "bg-violet-600 text-white" : "bg-emerald-500 text-white") }, step === 1 ? "1" : "✓"),
+                                    React.createElement("span", { className: "text-sm font-semibold" }, "Veículo & Modalidade")
                                 ),
-                                // Endereço (colspan 2)
-                                React.createElement("div", {className: "md:col-span-2"},
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Endereço *"),
-                                    React.createElement("input", {
-                                        type: "text",
-                                        value: operacaoForm.endereco,
-                                        onChange: e => setOperacaoForm(f => ({...f, endereco: e.target.value})),
-                                        placeholder: "Endereço completo da operação",
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                    })
+                                React.createElement("div", { className: "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl " + (step === 2 ? "bg-white text-violet-700" : "bg-white/10") },
+                                    React.createElement("span", { className: "w-6 h-6 rounded-lg grid place-items-center text-xs font-bold " + (step === 2 ? "bg-violet-600 text-white" : "bg-white/20") }, "2"),
+                                    React.createElement("span", { className: "text-sm font-semibold" }, "Detalhes da operação")
                                 )
                             )
                         ),
-                        
-                        // Seção: Configurações
-                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "⚙️ Configurações"),
-                            React.createElement("div", {className: "grid md:grid-cols-3 gap-4"},
-                                // Modelo
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Modelo *"),
-                                    React.createElement("select", {
-                                        value: operacaoForm.modelo,
-                                        onChange: e => setOperacaoForm(f => ({...f, modelo: e.target.value})),
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 bg-white"
-                                    },
-                                        React.createElement("option", {value: "nuvem"}, "☁️ Nuvem"),
-                                        React.createElement("option", {value: "dedicado"}, "🎯 Dedicado"),
-                                        React.createElement("option", {value: "flash"}, "⚡ Flash")
-                                    )
-                                ),
-                                // Quantidade de Motos
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Quantidade de Motos *"),
-                                    React.createElement("input", {
-                                        type: "number",
-                                        min: "1",
-                                        value: operacaoForm.quantidade_motos,
-                                        onChange: e => setOperacaoForm(f => ({...f, quantidade_motos: parseInt(e.target.value) || 1})),
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                                    })
-                                ),
-                                // Data de Início
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "Data de Início *"),
-                                    React.createElement("input", {
-                                        type: "date",
-                                        value: operacaoForm.data_inicio,
-                                        onChange: e => setOperacaoForm(f => ({...f, data_inicio: e.target.value})),
-                                        className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                                    })
+                        React.createElement("div", { className: "p-6 space-y-6" },
+                          step === 1 && React.createElement("div", { className: "space-y-6" },
+                            React.createElement("div", null,
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🚦 Tipo de veículo ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'moto', onClick: () => selVeic('moto'), emoji: "🏍️", titulo: "Moto", desc: "Entregas urbanas, leve e ágil" }),
+                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'carro', onClick: () => selVeic('carro'), emoji: "🚐", titulo: "Carro utilitário", desc: "Cargas maiores e volumosas" })
                                 )
                             ),
-                            // Checkboxes
-                            React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mt-4"},
-                                // Obrigatoriedade de Baú
-                                React.createElement("label", {className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50"},
-                                    React.createElement("input", {
-                                        type: "checkbox",
-                                        checked: operacaoForm.obrigatoriedade_bau,
-                                        onChange: e => setOperacaoForm(f => ({...f, obrigatoriedade_bau: e.target.checked})),
-                                        className: "w-5 h-5 rounded text-teal-600"
-                                    }),
-                                    React.createElement("div", null,
-                                        React.createElement("span", {className: "font-semibold text-gray-700"}, "📦 Obrigatoriedade de Baú"),
-                                        React.createElement("p", {className: "text-sm text-gray-500"}, "Motoboy precisa ter baú?")
-                                    )
-                                ),
-                                // Garantido
-                                React.createElement("label", {className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50"},
-                                    React.createElement("input", {
-                                        type: "checkbox",
-                                        checked: operacaoForm.possui_garantido,
-                                        onChange: e => setOperacaoForm(f => ({...f, possui_garantido: e.target.checked, valor_garantido: e.target.checked ? operacaoForm.valor_garantido : ''})),
-                                        className: "w-5 h-5 rounded text-teal-600"
-                                    }),
-                                    React.createElement("div", null,
-                                        React.createElement("span", {className: "font-semibold text-gray-700"}, "💰 Possui Garantido"),
-                                        React.createElement("p", {className: "text-sm text-gray-500"}, "Loja paga garantido?")
-                                    )
+                            React.createElement("div", null,
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🧩 Modalidade ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'dedicado', onClick: () => selMod('dedicado'), emoji: "🎯", titulo: "Dedicado", desc: "Frota fixa para um cliente", badge: "exclusivo", badgeClass: "bg-indigo-100 text-indigo-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hub', onClick: () => selMod('hub'), emoji: "🌐", titulo: "Hub", desc: "Pool compartilhado por região", badge: "compartilhado", badgeClass: "bg-teal-100 text-teal-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hibrida', onClick: () => selMod('hibrida'), emoji: "🔀", titulo: "Híbrida", desc: "Dedicado + Hub no mesmo contrato", badge: "dedicado + hub", badgeClass: "bg-fuchsia-100 text-fuchsia-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'clt', onClick: () => selMod('clt'), emoji: "🪪", titulo: "CLT", desc: "Carteira assinada, salário fixo", badge: "contratação", badgeClass: "bg-amber-100 text-amber-700" })
                                 )
                             ),
-                            // Campo de Valor Garantido (aparece se possui_garantido)
-                            operacaoForm.possui_garantido && React.createElement("div", {className: "mt-4"},
-                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "💰 Valor do Garantido (R$)"),
-                                React.createElement("input", {
-                                    type: "number",
-                                    step: "0.01",
-                                    min: "0",
-                                    value: operacaoForm.valor_garantido,
-                                    onChange: e => setOperacaoForm(f => ({...f, valor_garantido: e.target.value})),
-                                    placeholder: "0.00",
-                                    className: "w-full md:w-1/3 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                                })
+                            (operacaoForm.modalidade && !isHub) && React.createElement("div", null,
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🔢 Quantidade " + (isClt ? "de vagas CLT" : "de veículos") + " ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("div", { className: "bg-violet-50 border-2 border-dashed border-violet-200 rounded-2xl p-4 flex items-center gap-4 flex-wrap" },
+                                    React.createElement("div", null,
+                                        React.createElement("p", { className: "font-bold text-gray-800 text-sm" }, isClt ? "Quantas vagas CLT nessa operação?" : "Quantos veículos nessa operação?"),
+                                        React.createElement("span", { className: "inline-block mt-1 text-xs text-violet-700 bg-white border border-violet-100 px-2.5 py-1 rounded-full font-semibold" }, "sugestão: " + (SUG[operacaoForm.modalidade] || 1))
+                                    ),
+                                    React.createElement("div", { className: "ml-auto flex items-center border-2 border-gray-200 rounded-xl overflow-hidden bg-white" },
+                                        React.createElement("button", { type: "button", onClick: () => setOperacaoForm(f => ({ ...f, quantidade_motos: Math.max(1, (parseInt(f.quantidade_motos) || 1) - 1) })), className: "w-11 h-11 text-violet-700 text-xl hover:bg-violet-50" }, "−"),
+                                        React.createElement("input", { type: "number", min: "1", value: operacaoForm.quantidade_motos, onChange: e => setOperacaoForm(f => ({ ...f, quantidade_motos: parseInt(e.target.value) || 1 })), className: "w-16 h-11 text-center text-lg font-bold border-x border-gray-200 focus:outline-none" }),
+                                        React.createElement("button", { type: "button", onClick: () => setOperacaoForm(f => ({ ...f, quantidade_motos: (parseInt(f.quantidade_motos) || 0) + 1 })), className: "w-11 h-11 text-violet-700 text-xl hover:bg-violet-50" }, "+")
+                                    )
+                                )
                             )
-                        ),
-                        
-                        // Seção: Faixas de KM
-                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "💰 Valores Pagos aos Motoboys por Faixa de KM"),
-                            React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Preencha os valores de cada faixa de quilometragem"),
-                            React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-3"},
-                                operacaoForm.faixas_km.map((faixa, idx) => 
-                                    React.createElement("div", {key: idx, className: "bg-white p-3 rounded-xl border"},
-                                        React.createElement("p", {className: "text-xs font-semibold text-gray-600 mb-2 text-center"}, 
-                                            faixa.km_inicio, " km à ", faixa.km_fim, " km"
-                                        ),
-                                        React.createElement("div", {className: "relative"},
-                                            React.createElement("span", {className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"}, "R$"),
-                                            React.createElement("input", {
-                                                type: "number",
-                                                step: "0.01",
-                                                min: "0",
-                                                value: faixa.valor_motoboy || '',
-                                                onChange: e => {
-                                                    const novasFaixas = [...operacaoForm.faixas_km];
-                                                    novasFaixas[idx].valor_motoboy = e.target.value;
-                                                    setOperacaoForm(f => ({...f, faixas_km: novasFaixas}));
-                                                },
-                                                placeholder: "0.00",
-                                                className: "w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 text-center"
-                                            })
+                          ),
+                          step === 2 && React.createElement("div", { className: "space-y-6" },
+                            React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
+                                React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                                    React.createElement("h3", { className: "font-semibold text-gray-800 flex items-center gap-2" }, "📋 Dados Básicos"),
+                                    React.createElement("span", { className: "text-xs text-gray-500" }, (VEH[operacaoForm.tipo_veiculo] || '—') + " · " + (MOD[operacaoForm.modalidade] || '—') + (isHub ? "" : " · " + (operacaoForm.quantidade_motos || 0) + (isClt ? " vaga(s)" : " veículo(s)")))
+                                ),
+                                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Região *"),
+                                        React.createElement("input", { type: "text", value: operacaoForm.regiao, onChange: e => setOperacaoForm(f => ({ ...f, regiao: e.target.value })), placeholder: "Ex: Brasília, Goiânia, São Paulo...", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Nome do Cliente *"),
+                                        React.createElement("input", { type: "text", value: operacaoForm.nome_cliente, onChange: e => setOperacaoForm(f => ({ ...f, nome_cliente: e.target.value })), placeholder: "Nome da empresa/loja", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    ),
+                                    React.createElement("div", { className: "md:col-span-2" },
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Endereço *"),
+                                        React.createElement("input", { type: "text", value: operacaoForm.endereco, onChange: e => setOperacaoForm(f => ({ ...f, endereco: e.target.value })), placeholder: "Endereço completo da operação", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    )
+                                )
+                            ),
+                            React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "⚙️ Configurações"),
+                                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Data de Início *"),
+                                        React.createElement("input", { type: "date", value: operacaoForm.data_inicio, onChange: e => setOperacaoForm(f => ({ ...f, data_inicio: e.target.value })), className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    )
+                                ),
+                                React.createElement("div", { className: "grid md:grid-cols-2 gap-4 mt-4" },
+                                    !isCarro && React.createElement("label", { className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50" },
+                                        React.createElement("input", { type: "checkbox", checked: operacaoForm.obrigatoriedade_bau, onChange: e => setOperacaoForm(f => ({ ...f, obrigatoriedade_bau: e.target.checked })), className: "w-5 h-5 rounded text-violet-600" }),
+                                        React.createElement("div", null,
+                                            React.createElement("span", { className: "font-semibold text-gray-700" }, "📦 Obrigatoriedade de Baú"),
+                                            React.createElement("p", { className: "text-sm text-gray-500" }, "Veículo precisa ter baú?")
+                                        )
+                                    ),
+                                    !isClt && React.createElement("label", { className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50" },
+                                        React.createElement("input", { type: "checkbox", checked: operacaoForm.possui_garantido, onChange: e => setOperacaoForm(f => ({ ...f, possui_garantido: e.target.checked, valor_garantido: e.target.checked ? operacaoForm.valor_garantido : '' })), className: "w-5 h-5 rounded text-violet-600" }),
+                                        React.createElement("div", null,
+                                            React.createElement("span", { className: "font-semibold text-gray-700" }, "💰 Possui Garantido"),
+                                            React.createElement("p", { className: "text-sm text-gray-500" }, "Loja paga garantido?")
                                         )
                                     )
+                                ),
+                                (!isClt && operacaoForm.possui_garantido) && React.createElement("div", { className: "mt-4" },
+                                    React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "💰 Valor do Garantido (R$)"),
+                                    React.createElement("input", { type: "number", step: "0.01", min: "0", value: operacaoForm.valor_garantido, onChange: e => setOperacaoForm(f => ({ ...f, valor_garantido: e.target.value })), placeholder: "0.00", className: "w-full md:w-1/3 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
                                 )
+                            ),
+                            !isClt && React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "💰 Valores Pagos por Faixa de KM"),
+                                React.createElement("p", { className: "text-sm text-gray-500 mb-4" }, "Preencha os valores de cada faixa de quilometragem"),
+                                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-5 gap-3" },
+                                    operacaoForm.faixas_km.map(function(faixa, idx) {
+                                        return React.createElement("div", { key: idx, className: "bg-white p-3 rounded-xl border" },
+                                            React.createElement("p", { className: "text-xs font-semibold text-gray-600 mb-2 text-center" }, faixa.km_inicio + " km à " + faixa.km_fim + " km"),
+                                            React.createElement("div", { className: "relative" },
+                                                React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" }, "R$"),
+                                                React.createElement("input", { type: "number", step: "0.01", min: "0", value: faixa.valor_motoboy || '', onChange: function(e) { var nf = operacaoForm.faixas_km.slice(); nf[idx] = Object.assign({}, nf[idx], { valor_motoboy: e.target.value }); setOperacaoForm(f => ({ ...f, faixas_km: nf })); }, placeholder: "0.00", className: "w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 text-center" })
+                                            )
+                                        );
+                                    })
+                                )
+                            ),
+                            isClt && React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "🪪 Remuneração CLT"),
+                                React.createElement("div", { className: "grid md:grid-cols-3 gap-4" },
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Salário base (R$) *"),
+                                        React.createElement("input", { type: "number", step: "0.01", min: "0", value: operacaoForm.salario, onChange: e => setOperacaoForm(f => ({ ...f, salario: e.target.value })), placeholder: "0.00", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Início da jornada *"),
+                                        React.createElement("input", { type: "time", value: operacaoForm.horario_inicio, onChange: e => setOperacaoForm(f => ({ ...f, horario_inicio: e.target.value })), className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Fim da jornada *"),
+                                        React.createElement("input", { type: "time", value: operacaoForm.horario_fim, onChange: e => setOperacaoForm(f => ({ ...f, horario_fim: e.target.value })), className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                    )
+                                ),
+                                React.createElement("div", { className: "mt-4" },
+                                    React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Escala / observação de horário"),
+                                    React.createElement("input", { type: "text", value: operacaoForm.escala_obs, onChange: e => setOperacaoForm(f => ({ ...f, escala_obs: e.target.value })), placeholder: "Ex.: 6x1, seg a sáb, 1h de almoço", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                ),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mt-6 mb-2 flex items-center gap-2" }, "🎁 Benefícios"),
+                                React.createElement("p", { className: "text-sm text-gray-500 mb-3" }, "Ative e informe o valor de cada um"),
+                                React.createElement("div", { className: "space-y-2" },
+                                    BENS.map(function(b) {
+                                        var on = !!(bens[b.k] && bens[b.k].on);
+                                        return React.createElement("div", { key: b.k, className: "rounded-xl border-2 bg-white overflow-hidden " + (on ? "border-violet-500" : "border-gray-200") },
+                                            React.createElement("div", { onClick: function() { toggleBen(b.k); }, className: "flex items-center gap-3 px-4 py-3 cursor-pointer " + (on ? "bg-violet-50" : "") },
+                                                React.createElement("span", { className: "w-10 h-6 rounded-full relative transition-all flex-none " + (on ? "bg-violet-600" : "bg-gray-300") },
+                                                    React.createElement("span", { className: "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all " + (on ? "left-[18px]" : "left-0.5") })
+                                                ),
+                                                React.createElement("span", { className: "text-lg" }, b.i),
+                                                React.createElement("span", { className: "font-semibold text-gray-700 text-sm" }, b.t)
+                                            ),
+                                            on && React.createElement("div", { className: "px-4 pb-4 pt-1" },
+                                                React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "Valor mensal (R$)"),
+                                                React.createElement("input", { type: "number", step: "0.01", min: "0", value: (bens[b.k] && bens[b.k].valor) || '', onChange: function(e) { setBenField(b.k, 'valor', e.target.value); }, placeholder: "0.00", className: "w-full md:w-1/3 px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                            )
+                                        );
+                                    }),
+                                    (function() {
+                                        var on = !!(bens.outros && bens.outros.on);
+                                        return React.createElement("div", { className: "rounded-xl border-2 bg-white overflow-hidden " + (on ? "border-violet-500" : "border-gray-200") },
+                                            React.createElement("div", { onClick: function() { toggleBen('outros'); }, className: "flex items-center gap-3 px-4 py-3 cursor-pointer " + (on ? "bg-violet-50" : "") },
+                                                React.createElement("span", { className: "w-10 h-6 rounded-full relative transition-all flex-none " + (on ? "bg-violet-600" : "bg-gray-300") },
+                                                    React.createElement("span", { className: "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all " + (on ? "left-[18px]" : "left-0.5") })
+                                                ),
+                                                React.createElement("span", { className: "text-lg" }, "➕"),
+                                                React.createElement("span", { className: "font-semibold text-gray-700 text-sm" }, "Outros bônus")
+                                            ),
+                                            on && React.createElement("div", { className: "px-4 pb-4 pt-1 grid md:grid-cols-2 gap-3" },
+                                                React.createElement("div", null,
+                                                    React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "Descrição"),
+                                                    React.createElement("input", { type: "text", value: (bens.outros && bens.outros.desc) || '', onChange: function(e) { setBenField('outros', 'desc', e.target.value); }, placeholder: "Ex.: bônus produtividade, prêmio assiduidade...", className: "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                                ),
+                                                React.createElement("div", null,
+                                                    React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "Valor mensal (R$)"),
+                                                    React.createElement("input", { type: "number", step: "0.01", min: "0", value: (bens.outros && bens.outros.valor) || '', onChange: function(e) { setBenField('outros', 'valor', e.target.value); }, placeholder: "0.00", className: "w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-violet-500" })
+                                                )
+                                            )
+                                        );
+                                    })()
+                                )
+                            ),
+                            React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "📝 Observações"),
+                                React.createElement("textarea", { value: operacaoForm.observacoes, onChange: e => setOperacaoForm(f => ({ ...f, observacoes: e.target.value })), placeholder: "Informações adicionais sobre a operação...", rows: 3, className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
                             )
+                          )
                         ),
-                        
-                        // Seção: Observações
-                        React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
-                            React.createElement("h3", {className: "font-semibold text-gray-800 mb-4 flex items-center gap-2"}, "📝 Observações"),
-                            React.createElement("textarea", {
-                                value: operacaoForm.observacoes,
-                                onChange: e => setOperacaoForm(f => ({...f, observacoes: e.target.value})),
-                                placeholder: "Informações adicionais sobre a operação...",
-                                rows: 3,
-                                className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
-                            })
-                        ),
-                        
-                        // Botões
-                        React.createElement("div", {className: "flex gap-3 pt-4"},
-                            React.createElement("button", {
-                                onClick: () => setOperacaoModal(false),
-                                className: "flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300"
-                            }, "Cancelar"),
-                            React.createElement("button", {
-                                onClick: async () => {
-                                    // Validações
-                                    if (!operacaoForm.regiao || !operacaoForm.nome_cliente || !operacaoForm.endereco || !operacaoForm.data_inicio) {
-                                        ja('❌ Preencha todos os campos obrigatórios!', 'error');
-                                        return;
-                                    }
-                                    
-                                    s(true);
-                                    try {
-                                        const url = operacaoEdit 
-                                            ? `${API_URL}/operacoes/${operacaoEdit.id}`
-                                            : `${API_URL}/operacoes`;
-                                        
-                                        const response = await fetchAuth(url, {
-                                            method: operacaoEdit ? 'PUT' : 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                ...operacaoForm,
-                                                criado_por: l.fullName
-                                            })
-                                        });
-                                        
-                                        if (response.ok) {
-                                            ja(operacaoEdit ? '✅ Operação atualizada!' : '✅ Operação criada!', 'success');
-                                            setOperacaoModal(false);
-                                            carregarOperacoes();
-                                            if (notificarOperacaoSalva) notificarOperacaoSalva(); // Notificar calendário de incentivos
-                                        } else {
-                                            throw new Error('Erro ao salvar');
-                                        }
-                                    } catch (error) {
-                                        ja('❌ Erro ao salvar operação', 'error');
-                                    }
-                                    s(false);
-                                },
-                                className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
-                            }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
+                        React.createElement("div", { className: "flex items-center gap-3 p-6 border-t bg-gray-50 sticky bottom-0" },
+                            step === 1
+                                ? React.createElement("button", { onClick: () => setOperacaoModal(false), className: "px-6 py-3 bg-white border text-gray-700 rounded-xl font-semibold hover:bg-gray-100" }, "Cancelar")
+                                : React.createElement("button", { onClick: () => setOperacaoForm(f => ({ ...f, _step: 1 })), className: "px-6 py-3 bg-white border text-gray-700 rounded-xl font-semibold hover:bg-gray-100" }, "← Voltar"),
+                            React.createElement("div", { className: "flex-1 text-sm text-gray-500" }, step === 1 ? (podeAvancar ? ((VEH[operacaoForm.tipo_veiculo]) + " · " + (MOD[operacaoForm.modalidade])) : "Selecione veículo e modalidade") : "Passo 2 de 2"),
+                            step === 1
+                                ? React.createElement("button", { disabled: !podeAvancar, onClick: () => setOperacaoForm(f => ({ ...f, _step: 2 })), className: "px-6 py-3 rounded-xl font-semibold text-white " + (podeAvancar ? "bg-violet-600 hover:bg-violet-700" : "bg-violet-300 cursor-not-allowed") }, "Continuar →")
+                                : React.createElement("button", {
+                                    onClick: async () => {
+                                        if (!operacaoForm.regiao || !operacaoForm.nome_cliente || !operacaoForm.endereco || !operacaoForm.data_inicio) { ja('❌ Preencha todos os campos obrigatórios!', 'error'); return; }
+                                        if (isClt && !operacaoForm.salario) { ja('❌ Informe o salário base da operação CLT!', 'error'); return; }
+                                        s(true);
+                                        try {
+                                            const url = operacaoEdit ? `${API_URL}/operacoes/${operacaoEdit.id}` : `${API_URL}/operacoes`;
+                                            const response = await fetchAuth(url, { method: operacaoEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...operacaoForm, criado_por: l.fullName }) });
+                                            if (response.ok) {
+                                                ja(operacaoEdit ? '✅ Operação atualizada!' : '✅ Operação criada!', 'success');
+                                                setOperacaoModal(false);
+                                                carregarOperacoes();
+                                                if (notificarOperacaoSalva) notificarOperacaoSalva();
+                                            } else { throw new Error('Erro ao salvar'); }
+                                        } catch (error) { ja('❌ Erro ao salvar operação', 'error'); }
+                                        s(false);
+                                    },
+                                    className: "px-6 py-3 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-700"
+                                  }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
                         )
                     )
-                )
-            ),
+                );
+            })(),
             // ==================== CONTEÚDO RECRUTAMENTO ====================
             p.opTab === "recrutamento" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 React.createElement("div", {className: "space-y-6"},
@@ -2170,7 +2240,7 @@
                                                             ),
                                                             React.createElement("div", {className: "mt-2 pt-2 border-t border-purple-200 flex gap-4 text-xs"},
                                                                 React.createElement("span", {className: "text-purple-700"}, "Modelo: ", 
-                                                                    item.modelo === 'nuvem' ? '☁️ Nuvem' : item.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'
+                                                                    item.modalidade === 'hub' ? '🌐 Hub' : item.modalidade === 'hibrida' ? '🔀 Híbrida' : item.modalidade === 'clt' ? '🪪 CLT' : item.modalidade === 'dedicado' ? '🎯 Dedicado' : item.modelo === 'nuvem' ? '☁️ Nuvem' : item.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'
                                                                 ),
                                                                 item.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, "📦 Baú obrigatório")
                                                             )

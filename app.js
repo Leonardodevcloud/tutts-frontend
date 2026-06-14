@@ -2614,10 +2614,18 @@ const hideLoadingScreen = () => {
             nome_cliente: '',
             endereco: '',
             modelo: 'nuvem',
+            tipo_veiculo: '',
+            modalidade: '',
             quantidade_motos: 1,
             obrigatoriedade_bau: false,
             possui_garantido: false,
             valor_garantido: '',
+            salario: '',
+            horario_inicio: '08:00',
+            horario_fim: '18:00',
+            escala_obs: '',
+            beneficios: {},
+            _step: 1,
             data_inicio: '',
             observacoes: '',
             faixas_km: [
@@ -6256,6 +6264,15 @@ const hideLoadingScreen = () => {
                 carregarOperacoes(); // Carregar operações para exibir no calendário
             }
         }, [p.opTab, l, operacoesRefreshKey]); // Adicionar refreshKey para reagir a novas operações
+
+        // 🔧 FIX: carregar operações ao entrar na aba "Novas Operações"
+        // (antes a lista só carregava na aba incentivos, então operações recém
+        // criadas / existentes não apareciam ao abrir esta aba).
+        useEffect(() => {
+            if (p.opTab === 'novas-operacoes' && l) {
+                carregarOperacoes();
+            }
+        }, [p.opTab, l, operacoesRefreshKey]);
         
         const loadTodoGrupos = async () => {
             try {
