@@ -62,6 +62,7 @@
           ativo: c.ativo !== false,
           termos_filtro: termos ? termos.split('\n').map(s=>s.trim()).filter(Boolean) : null,
           rastreio_cliente_ativo: c.rastreio_cliente_ativo === true,
+          usa_hub: c.usa_hub === true,
           rastreio_cliente_nome_exibicao: c.rastreio_cliente_nome_exibicao || null,
         });
         if (c.id) await api('/config/'+c.id,{method:'PUT',body});
@@ -159,7 +160,7 @@
 
       tab==='config' && h('div',null,
         h('div',{style:{marginBottom:16,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
-          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:'',rastreio_cliente_ativo:false,rastreio_cliente_nome_exibicao:''})},'+ Novo cadastro'),
+          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:'',rastreio_cliente_ativo:false,rastreio_cliente_nome_exibicao:'',usa_hub:false})},'+ Novo cadastro'),
           // 2026-05 v3: dica de uso
           h('span',{style:{fontSize:12,color:'#6b7280'}},'Você pode cadastrar o mesmo código várias vezes com grupos e palavras-chave diferentes.')
         ),
@@ -221,6 +222,11 @@
                 h('input',{type:'checkbox',checked:editing.rastreio_cliente_ativo===true,
                   onChange:e=>setEditing({...editing,rastreio_cliente_ativo:e.target.checked})}),
                 h('span',{style:{fontSize:13,fontWeight:600}},'Ativar envio ao cliente')
+              ),
+              h('label',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}},
+                h('input',{type:'checkbox',checked:editing.usa_hub===true,
+                  onChange:e=>setEditing({...editing,usa_hub:e.target.checked})}),
+                h('span',{style:{fontSize:13,fontWeight:600}},'Despachado pelo Hub (rastreio Tutts)')
               ),
 
             ),
