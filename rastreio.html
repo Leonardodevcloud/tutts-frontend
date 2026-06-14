@@ -57,6 +57,7 @@
             <div style="font-size:14.5px;font-weight:600" id="cname">aguardando entregador</div>
             <div style="font-size:12.5px;color:#6b7280" id="cveic">sera definido ao aceitar</div>
           </div>
+          <a id="ccall" href="#" style="display:none;align-items:center;gap:6px;background:#54168a;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:8px 14px;border-radius:20px;white-space:nowrap">&#128222; Ligar</a>
         </div>
       </div>
       <div class="sec" style="border-bottom:none">
@@ -113,6 +114,8 @@
       document.getElementById('cname').textContent=d.entregador.nome;
       var v=[];if(d.entregador.veiculo)v.push(d.entregador.veiculo);if(d.entregador.placa)v.push('placa '+d.entregador.placa);
       document.getElementById('cveic').textContent=v.length?v.join(' - '):'moto';
+      var cc=document.getElementById('ccall');
+      if(cc){if(d.entregador.telefone){cc.href='tel:'+String(d.entregador.telefone).replace(/[^0-9+]/g,'');cc.style.display='flex';}else{cc.style.display='none';}}
     }
     document.getElementById('aColeta').textContent=d.coleta.endereco||'-';
     document.getElementById('aEntrega').textContent=(d.entrega.nome?d.entrega.nome+' - ':'')+(d.entrega.endereco||'-');
