@@ -2168,6 +2168,7 @@
         if (json && json.success && json.config) {
           setCfg({
             tabela_preco_ativa:       !!json.config.tabela_preco_ativa,
+            alterar_valor_mapp_ativo: json.config.alterar_valor_mapp_ativo !== false,
             preco_valor_fixo:         json.config.preco_valor_fixo != null ? String(json.config.preco_valor_fixo) : '',
             preco_km_base:            json.config.preco_km_base != null ? String(json.config.preco_km_base) : '',
             preco_valor_km_adicional: json.config.preco_valor_km_adicional != null ? String(json.config.preco_valor_km_adicional) : '',
@@ -2193,6 +2194,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tabela_preco_ativa:       cfg.tabela_preco_ativa,
+            alterar_valor_mapp_ativo: cfg.alterar_valor_mapp_ativo !== false,
             preco_valor_fixo:         cfg.preco_valor_fixo         === '' ? null : Number(cfg.preco_valor_fixo),
             preco_km_base:            cfg.preco_km_base             === '' ? null : Number(cfg.preco_km_base),
             preco_valor_km_adicional: cfg.preco_valor_km_adicional  === '' ? null : Number(cfg.preco_valor_km_adicional),
@@ -2246,6 +2248,19 @@
       ),
 
       h('div', { className: 'p-5 space-y-5' },
+
+        // ── Toggle: muda o valor do cliente na Mapp ──
+        h('div', { className: 'flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100' },
+          h('div', null,
+            h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Alterar valor do cliente na Mapp'),
+            h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+              'Quando ligado, o Hub envia o valor recalculado pra Mapp. Desligado, o valor na Mapp nao e alterado.')
+          ),
+          h('button', {
+            onClick: () => up('alterar_valor_mapp_ativo', cfg.alterar_valor_mapp_ativo === false),
+            className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${cfg.alterar_valor_mapp_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
+          }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${cfg.alterar_valor_mapp_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
+        ),
 
         // ── Campos de configuração ──
         h('div', { className: 'grid grid-cols-3 gap-4' },
