@@ -2373,6 +2373,9 @@
     function editarRegra(r) {
       setEditando({
         ...r,
+        // usar_uber nao e coluna real — deriva de providers_preferidos pro checkbox
+        // refletir certo e NAO zerar os providers ao salvar.
+        usar_uber: (r.providers_preferidos || []).includes('uber'),
         // Compat: regras antigas só tinham cliente_nome (que era o trecho).
         // Se trecho_endereco estiver vazio, preenche com cliente_nome pra não perder o match.
         trecho_endereco: r.trecho_endereco || r.cliente_nome || '',
@@ -2495,8 +2498,8 @@
                   h('td', { className: 'px-4 py-3' },
                     h('button', {
                       onClick: () => toggleAtivo(r),
-                      className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo && r.usar_uber ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
-                    }, r.ativo && r.usar_uber ? '● Ativa' : '○ Inativa')),
+                      className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
+                    }, r.ativo ? '● Ativa' : '○ Inativa')),
                   h('td', { className: 'px-4 py-3' },
                     h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome)),
                   h('td', { className: 'px-4 py-3 text-xs' },
