@@ -25,6 +25,7 @@
             operacaoSubTab, setOperacaoSubTab, carregarOperacoes, notificarOperacaoSalva,
             gerarRelatorioOperacao, calcularContadorRegressivo,
             checklistMotos, setChecklistMotos,
+            operacaoExpandida, setOperacaoExpandida,
             // Recrutamento
             recrutamentoModal, setRecrutamentoModal,
             recrutamentoEdit, setRecrutamentoEdit,
@@ -368,139 +369,114 @@
                             }); 
                             setOperacaoModal(true); 
                         },
-                        className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
+                        className: "px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 flex items-center gap-2 shadow-lg"
                     }, "➕ Nova Operação")
                 ),
                 
-                // Cards de estatísticas
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-teal-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Total"),
-                        React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, operacoesData?.length || 0)
+                // KPIs (faixa compacta)
+                React.createElement("div", {className: "bg-white rounded-2xl shadow-sm border border-gray-100 flex divide-x divide-gray-100 overflow-hidden"},
+                    React.createElement("div", {className: "flex-1 p-4"},
+                        React.createElement("p", {className: "text-[11px] font-semibold uppercase tracking-wide text-gray-400"}, "Total"),
+                        React.createElement("p", {className: "text-2xl font-bold text-gray-800"}, operacoesData?.length || 0)
                     ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-orange-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Em Execução"),
-                        React.createElement("p", {className: "text-2xl font-bold text-orange-600"}, operacoesData?.filter(o => o.status !== 'concluido').length || 0)
+                    React.createElement("div", {className: "flex-1 p-4"},
+                        React.createElement("p", {className: "text-[11px] font-semibold uppercase tracking-wide text-gray-400"}, "Em execução"),
+                        React.createElement("p", {className: "text-2xl font-bold text-amber-600"}, operacoesData?.filter(o => o.status !== 'concluido').length || 0)
                     ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-green-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Concluídas"),
+                    React.createElement("div", {className: "flex-1 p-4"},
+                        React.createElement("p", {className: "text-[11px] font-semibold uppercase tracking-wide text-gray-400"}, "Concluídas"),
                         React.createElement("p", {className: "text-2xl font-bold text-green-600"}, operacoesData?.filter(o => o.status === 'concluido').length || 0)
                     ),
-                    React.createElement("div", {className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500"},
-                        React.createElement("p", {className: "text-sm text-gray-500"}, "Motos Totais"),
-                        React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, operacoesData?.reduce((acc, o) => acc + (o.quantidade_motos || 0), 0) || 0)
+                    React.createElement("div", {className: "flex-1 p-4"},
+                        React.createElement("p", {className: "text-[11px] font-semibold uppercase tracking-wide text-gray-400"}, "Veículos totais"),
+                        React.createElement("p", {className: "text-2xl font-bold text-violet-600"}, operacoesData?.reduce((acc, o) => acc + (o.quantidade_motos || 0), 0) || 0)
                     )
                 ),
-                
-                // Sub-abas: Em Execução / Concluídas
-                React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
-                    // Tabs
-                    React.createElement("div", {className: "flex border-b"},
+
+                // Tabs + lista
+                React.createElement("div", null,
+                    React.createElement("div", {className: "flex gap-6 border-b border-gray-200 mb-4"},
                         React.createElement("button", {
                             onClick: () => setOperacaoSubTab('execucao'),
-                            className: "flex-1 px-6 py-4 text-center font-semibold transition-all " + 
-                                (operacaoSubTab === 'execucao' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-500' : 'text-gray-500 hover:bg-gray-50')
-                        }, "🚀 Em Execução (", operacoesData?.filter(o => o.status !== 'concluido').length || 0, ")"),
+                            className: "relative pb-3 pt-1 text-sm font-semibold transition-colors " +
+                                (operacaoSubTab === 'execucao' ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600')
+                        },
+                            "🚀 Em execução",
+                            React.createElement("span", {className: "ml-2 px-2 py-0.5 rounded-full text-xs " + (operacaoSubTab === 'execucao' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500')}, operacoesData?.filter(o => o.status !== 'concluido').length || 0),
+                            operacaoSubTab === 'execucao' && React.createElement("span", {className: "absolute left-0 right-0 -bottom-px h-0.5 bg-violet-600 rounded"})
+                        ),
                         React.createElement("button", {
                             onClick: () => setOperacaoSubTab('concluidas'),
-                            className: "flex-1 px-6 py-4 text-center font-semibold transition-all " + 
-                                (operacaoSubTab === 'concluidas' ? 'bg-green-50 text-green-700 border-b-2 border-green-500' : 'text-gray-500 hover:bg-gray-50')
-                        }, "✅ Concluídas (", operacoesData?.filter(o => o.status === 'concluido').length || 0, ")")
+                            className: "relative pb-3 pt-1 text-sm font-semibold transition-colors " +
+                                (operacaoSubTab === 'concluidas' ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600')
+                        },
+                            "✅ Concluídas",
+                            React.createElement("span", {className: "ml-2 px-2 py-0.5 rounded-full text-xs " + (operacaoSubTab === 'concluidas' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500')}, operacoesData?.filter(o => o.status === 'concluido').length || 0),
+                            operacaoSubTab === 'concluidas' && React.createElement("span", {className: "absolute left-0 right-0 -bottom-px h-0.5 bg-violet-600 rounded"})
+                        )
                     ),
-                    
-                    // Lista de operações filtrada
+
                     (function() {
-                        const operacoesFiltradas = operacaoSubTab === 'execucao' 
+                        const operacoesFiltradas = operacaoSubTab === 'execucao'
                             ? operacoesData?.filter(o => o.status !== 'concluido') || []
                             : operacoesData?.filter(o => o.status === 'concluido') || [];
-                        
+
                         if (operacoesFiltradas.length === 0) {
-                            return React.createElement("div", {className: "p-12 text-center"},
-                                React.createElement("span", {className: "text-6xl block mb-4"}, operacaoSubTab === 'execucao' ? "📭" : "🎉"),
-                                React.createElement("p", {className: "text-gray-500 text-lg"}, 
-                                    operacaoSubTab === 'execucao' ? "Nenhuma operação em execução" : "Nenhuma operação concluída ainda"
-                                ),
-                                React.createElement("p", {className: "text-gray-400 text-sm"}, 
-                                    operacaoSubTab === 'execucao' ? "Clique em \"Nova Operação\" para começar" : "As operações concluídas aparecerão aqui"
-                                )
+                            return React.createElement("div", {className: "bg-white rounded-2xl border border-gray-100 p-12 text-center"},
+                                React.createElement("span", {className: "text-5xl block mb-3"}, operacaoSubTab === 'execucao' ? "📭" : "🎉"),
+                                React.createElement("p", {className: "text-gray-500"}, operacaoSubTab === 'execucao' ? "Nenhuma operação em execução" : "Nenhuma operação concluída ainda"),
+                                React.createElement("p", {className: "text-gray-400 text-sm mt-1"}, operacaoSubTab === 'execucao' ? "Clique em \"Nova Operação\" para começar" : "As operações concluídas aparecerão aqui")
                             );
                         }
-                        
-                        return React.createElement("div", {className: "divide-y"},
+
+                        return React.createElement("div", {className: "space-y-2.5"},
                             operacoesFiltradas.map(op => {
                                 const contador = calcularContadorRegressivo(op.data_inicio);
                                 const checklist = checklistMotos[op.id] || {};
                                 const motosEncontradas = Object.values(checklist).filter(v => v).length;
                                 const todasMotosEncontradas = motosEncontradas === op.quantidade_motos;
-                                
+                                const aberto = operacaoExpandida === op.id;
+                                const modChip = op.modalidade === 'hub' ? ['bg-teal-50 text-teal-700', '🌐 Hub']
+                                    : op.modalidade === 'hibrida' ? ['bg-fuchsia-50 text-fuchsia-700', '🔀 Híbrida']
+                                    : op.modalidade === 'clt' ? ['bg-amber-50 text-amber-700', '🪪 CLT']
+                                    : op.modalidade === 'dedicado' ? ['bg-violet-50 text-violet-700', '🎯 Dedicado']
+                                    : op.modelo === 'nuvem' ? ['bg-blue-50 text-blue-700', '☁️ Nuvem']
+                                    : op.modelo === 'dedicado' ? ['bg-violet-50 text-violet-700', '🎯 Dedicado']
+                                    : ['bg-gray-100 text-gray-600', '⚡ Flash'];
+                                const dotCls = op.status === 'ativo' ? 'bg-green-500 ring-green-100'
+                                    : op.status === 'concluido' ? 'bg-blue-500 ring-blue-100'
+                                    : op.status === 'pausado' ? 'bg-amber-500 ring-amber-100'
+                                    : 'bg-gray-400 ring-gray-100';
+                                const cdCls = contador.status === 'iniciado' ? 'bg-blue-50 text-blue-700'
+                                    : (contador.status === 'hoje' || contador.status === 'amanha') ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-gray-100 text-gray-600';
+                                const veicEmoji = op.tipo_veiculo === 'carro' ? '🚐' : '🏍️';
+                                const veicLabel = op.tipo_veiculo === 'carro' ? 'veículo' : 'moto';
+                                const dataFmt = op.data_inicio ? new Date(op.data_inicio.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+
                                 return React.createElement("div", {
                                     key: op.id,
-                                    className: "p-6 hover:bg-gray-50 transition-colors"
+                                    className: "bg-white rounded-2xl border transition-all " + (aberto ? 'border-violet-200 shadow-md' : 'border-gray-100 shadow-sm hover:border-gray-200')
                                 },
-                                    React.createElement("div", {className: "flex flex-col lg:flex-row lg:items-start justify-between gap-4"},
-                                        // Info principal
-                                        React.createElement("div", {className: "flex-1"},
-                                            // Nome e badges
-                                            React.createElement("div", {className: "flex flex-wrap items-center gap-3 mb-2"},
-                                                React.createElement("h4", {className: "text-lg font-bold text-gray-800"}, op.nome_cliente),
-                                                React.createElement("span", {
-                                                    className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
-                                                    (op.modelo === 'nuvem' ? 'bg-blue-100 text-blue-700' : 
-                                                     op.modelo === 'dedicado' ? 'bg-purple-100 text-purple-700' : 
-                                                     'bg-yellow-100 text-yellow-700')
-                                                }, op.modalidade === 'hub' ? '🌐 Hub' : op.modalidade === 'hibrida' ? '🔀 Híbrida' : op.modalidade === 'clt' ? '🪪 CLT' : op.modalidade === 'dedicado' ? '🎯 Dedicado' : op.modelo === 'nuvem' ? '☁️ Nuvem' : op.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'),
-                                                React.createElement("span", {
-                                                    className: "px-2 py-0.5 rounded-full text-xs font-semibold " + 
-                                                    (op.status === 'ativo' ? 'bg-green-100 text-green-700' : 
-                                                     op.status === 'concluido' ? 'bg-blue-100 text-blue-700' :
-                                                     op.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : 
-                                                     'bg-gray-100 text-gray-600')
-                                                }, op.status === 'ativo' ? '✅ Ativo' : op.status === 'concluido' ? '✔️ Concluído' : op.status === 'pausado' ? '⏸️ Pausado' : '❌ ' + op.status)
+                                    React.createElement("div", {
+                                        onClick: () => setOperacaoExpandida(prev => prev === op.id ? null : op.id),
+                                        className: "flex items-center gap-3.5 p-4 cursor-pointer"
+                                    },
+                                        React.createElement("span", {className: "w-2.5 h-2.5 rounded-full ring-4 flex-none " + dotCls}),
+                                        React.createElement("div", {className: "flex-1 min-w-0"},
+                                            React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
+                                                React.createElement("span", {className: "font-bold text-gray-800"}, op.nome_cliente),
+                                                React.createElement("span", {className: "text-[11px] font-bold px-2 py-0.5 rounded-full " + modChip[0]}, modChip[1])
                                             ),
-                                            // Informações
-                                            React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600"},
+                                            React.createElement("div", {className: "flex items-center gap-x-4 gap-y-1 flex-wrap mt-1 text-xs text-gray-500"},
                                                 React.createElement("span", null, "📍 ", op.regiao),
-                                                React.createElement("span", null, "📌 ", op.endereco?.substring(0, 40), op.endereco?.length > 40 ? '...' : ''),
-                                                React.createElement("span", null, "🏍️ ", op.quantidade_motos, " moto(s)"),
-                                                op.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, "📦 Baú obrigatório"),
-                                                op.possui_garantido && React.createElement("span", {className: "text-green-600"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
-                                            ),
-                                            // DATA DE INÍCIO DESTACADA COM CONTADOR
-                                            React.createElement("div", {
-                                                className: "mt-3 inline-flex items-center gap-3 px-4 py-2 rounded-lg " +
-                                                (contador.status === 'hoje' ? 'bg-green-100 border-2 border-green-400' :
-                                                 contador.status === 'amanha' ? 'bg-yellow-100 border-2 border-yellow-400' :
-                                                 contador.status === 'proximo' ? 'bg-orange-100 border-2 border-orange-300' :
-                                                 contador.status === 'iniciado' ? 'bg-blue-100 border-2 border-blue-300' :
-                                                 'bg-gray-100 border border-gray-300')
-                                            },
-                                                React.createElement("span", {className: "text-lg"}, "📅"),
-                                                React.createElement("div", null,
-                                                    React.createElement("p", {className: "text-xs text-gray-500 font-medium"}, "Data de Início"),
-                                                    React.createElement("p", {className: "font-bold text-gray-800"}, 
-                                                        new Date(op.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
-                                                    )
-                                                ),
-                                                React.createElement("span", {
-                                                    className: "px-3 py-1 rounded-full text-sm font-bold " +
-                                                    (contador.status === 'hoje' ? 'bg-green-500 text-white' :
-                                                     contador.status === 'amanha' ? 'bg-yellow-500 text-white' :
-                                                     contador.status === 'proximo' ? 'bg-orange-500 text-white' :
-                                                     contador.status === 'iniciado' ? 'bg-blue-500 text-white' :
-                                                     'bg-gray-500 text-white')
-                                                }, contador.texto)
-                                            ),
-                                            // Criado por
-                                            React.createElement("p", {className: "text-xs text-gray-400 mt-2"}, 
-                                                "Criado por: ", op.criado_por || '-'
+                                                React.createElement("span", null, veicEmoji, " ", op.quantidade_motos, " ", veicLabel, op.quantidade_motos > 1 ? "s" : ""),
+                                                React.createElement("span", null, "🗓️ ", dataFmt),
+                                                React.createElement("span", {className: "px-2 py-0.5 rounded-md text-[11px] font-bold " + cdCls}, contador.texto)
                                             )
                                         ),
-                                        // Ações
-                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                            React.createElement("button", {
-                                                onClick: () => gerarRelatorioOperacao(op),
-                                                className: "px-4 py-2 bg-teal-100 text-teal-700 rounded-lg font-semibold hover:bg-teal-200 text-sm"
-                                            }, "📄 Word"),
+                                        React.createElement("div", {onClick: e => e.stopPropagation(), className: "flex items-center gap-1.5 flex-none"},
+                                            React.createElement("button", {onClick: () => gerarRelatorioOperacao(op), title: "Relatório Word", className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"}, "📄"),
                                             React.createElement("button", {
                                                 onClick: () => {
                                                     setOperacaoEdit(op);
@@ -538,8 +514,9 @@
                                                     });
                                                     setOperacaoModal(true);
                                                 },
-                                                className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 text-sm"
-                                            }, "✏️ Editar"),
+                                                title: "Editar",
+                                                className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
+                                            }, "✏️"),
                                             op.status !== 'concluido' && React.createElement("button", {
                                                 onClick: async () => {
                                                     const novoStatus = op.status === 'ativo' ? 'pausado' : 'ativo';
@@ -552,8 +529,8 @@
                                                     if (notificarOperacaoSalva) notificarOperacaoSalva();
                                                     ja(novoStatus === 'ativo' ? '✅ Operação ativada!' : '⏸️ Operação pausada!', 'success');
                                                 },
-                                                className: "px-4 py-2 rounded-lg font-semibold text-sm " + 
-                                                    (op.status === 'ativo' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200')
+                                                title: op.status === 'ativo' ? 'Pausar' : 'Ativar',
+                                                className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
                                             }, op.status === 'ativo' ? '⏸️' : '▶️'),
                                             React.createElement("button", {
                                                 onClick: async () => {
@@ -564,91 +541,72 @@
                                                         ja('🗑️ Operação excluída!', 'success');
                                                     }
                                                 },
-                                                className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 text-sm"
+                                                title: "Excluir",
+                                                className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-sm"
                                             }, "🗑️")
-                                        )
-                                    ),
-                                    
-                                    // OBSERVAÇÕES (sempre visível se existir)
-                                    op.observacoes && React.createElement("div", {className: "mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"},
-                                        React.createElement("p", {className: "text-sm font-semibold text-yellow-800 mb-1"}, "📝 Observações:"),
-                                        React.createElement("p", {className: "text-sm text-yellow-900"}, op.observacoes)
-                                    ),
-                                    
-                                    // Faixas de KM
-                                    op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", {className: "mt-4 pt-4 border-t"},
-                                        React.createElement("p", {className: "text-sm font-semibold text-gray-700 mb-2"}, "💰 Valores por Faixa de KM:"),
-                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                            op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) => 
-                                                React.createElement("span", {
-                                                    key: idx,
-                                                    className: "px-3 py-1 bg-teal-50 text-teal-700 rounded-lg text-sm"
-                                                }, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
-                                            )
-                                        )
-                                    ),
-                                    
-                                    // Checklist de Motos (só para não concluídas)
-                                    op.status !== 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t"},
-                                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                                            React.createElement("p", {className: "text-sm font-semibold text-gray-700 flex items-center gap-2"}, 
-                                                "🏍️ Checklist de Motos",
-                                                React.createElement("span", {
-                                                    className: "px-2 py-0.5 rounded-full text-xs font-semibold " +
-                                                    (todasMotosEncontradas ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
-                                                }, motosEncontradas, "/", op.quantidade_motos)
-                                            ),
-                                            todasMotosEncontradas && React.createElement("span", {className: "text-green-600 text-sm font-semibold"}, "✅ Completo!")
                                         ),
-                                        React.createElement("div", {className: "flex flex-wrap gap-2"},
-                                            Array.from({length: op.quantidade_motos}, (_, i) => 
-                                                React.createElement("label", {
-                                                    key: i,
-                                                    className: "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all text-sm " +
-                                                    (checklist[i] ? 'bg-green-100 border border-green-400' : 'bg-gray-100 border border-gray-300 hover:border-gray-400')
-                                                },
-                                                    React.createElement("input", {
-                                                        type: "checkbox",
-                                                        checked: checklist[i] || false,
-                                                        onChange: (e) => {
-                                                            setChecklistMotos(prev => ({
-                                                                ...prev,
-                                                                [op.id]: {
-                                                                    ...prev[op.id],
-                                                                    [i]: e.target.checked
-                                                                }
-                                                            }));
-                                                        },
-                                                        className: "w-4 h-4 rounded text-green-600"
-                                                    }),
-                                                    React.createElement("span", {className: checklist[i] ? 'text-green-700 font-semibold' : 'text-gray-600'}, "Moto ", i + 1)
+                                        React.createElement("span", {className: "text-gray-300 text-xs transition-transform flex-none " + (aberto ? 'rotate-180' : '')}, "▼")
+                                    ),
+                                    aberto && React.createElement("div", {className: "px-4 pb-4 border-t border-gray-100 pt-3 space-y-3"},
+                                        React.createElement("div", null,
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, "📍 Endereço"),
+                                            React.createElement("p", {className: "text-sm text-gray-700"}, op.endereco || '-')
+                                        ),
+                                        op.observacoes && React.createElement("div", null,
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, "📝 Observações"),
+                                            React.createElement("p", {className: "text-sm text-gray-700"}, op.observacoes)
+                                        ),
+                                        (op.obrigatoriedade_bau || op.possui_garantido) && React.createElement("div", {className: "flex flex-wrap gap-2 text-xs"},
+                                            op.obrigatoriedade_bau && React.createElement("span", {className: "px-2 py-1 bg-orange-50 text-orange-700 rounded-md font-semibold"}, "📦 Baú obrigatório"),
+                                            op.possui_garantido && React.createElement("span", {className: "px-2 py-1 bg-green-50 text-green-700 rounded-md font-semibold"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
+                                        ),
+                                        op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", null,
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1"}, "💰 Valores por faixa de KM"),
+                                            React.createElement("div", {className: "flex flex-wrap gap-1.5"},
+                                                op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) =>
+                                                    React.createElement("span", {key: idx, className: "px-2.5 py-1 bg-gray-50 text-gray-600 rounded-md text-xs"}, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
                                                 )
                                             )
-                                        )
-                                    ),
-                                    
-                                    // Botão Demanda Concluída (só para não concluídas)
-                                    op.status !== 'concluido' && React.createElement("div", {className: "mt-4 pt-4 border-t flex justify-end"},
-                                        React.createElement("button", {
-                                            onClick: async () => {
-                                                if (!todasMotosEncontradas) {
-                                                    if (!confirm(`⚠️ Apenas ${motosEncontradas} de ${op.quantidade_motos} motos foram confirmadas.\n\nDeseja concluir mesmo assim?`)) {
-                                                        return;
+                                        ),
+                                        op.status !== 'concluido' && React.createElement("div", null,
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1"}, veicEmoji, " Checklist de veículos  ", motosEncontradas, "/", op.quantidade_motos),
+                                            React.createElement("div", {className: "flex flex-wrap gap-2"},
+                                                Array.from({length: op.quantidade_motos}, (_, i) =>
+                                                    React.createElement("label", {key: i, className: "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-xs font-semibold border " + (checklist[i] ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300')},
+                                                        React.createElement("input", {
+                                                            type: "checkbox",
+                                                            checked: checklist[i] || false,
+                                                            onChange: (e) => setChecklistMotos(prev => ({...prev, [op.id]: {...prev[op.id], [i]: e.target.checked}})),
+                                                            className: "w-3.5 h-3.5 rounded text-green-600"
+                                                        }),
+                                                        (op.tipo_veiculo === 'carro' ? 'Veículo ' : 'Moto '), i + 1
+                                                    )
+                                                )
+                                            )
+                                        ),
+                                        React.createElement("div", {className: "flex items-center justify-between gap-3 flex-wrap pt-1"},
+                                            React.createElement("span", {className: "text-xs text-gray-400"}, "Criado por ", op.criado_por || '-'),
+                                            op.status !== 'concluido' && React.createElement("button", {
+                                                onClick: async () => {
+                                                    if (!todasMotosEncontradas) {
+                                                        if (!confirm(`⚠️ Apenas ${motosEncontradas} de ${op.quantidade_motos} veículos foram confirmados.\n\nDeseja concluir mesmo assim?`)) {
+                                                            return;
+                                                        }
                                                     }
-                                                }
-                                                if (confirm(`✅ Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
-                                                    await fetchAuth(`${API_URL}/operacoes/${op.id}`, {
-                                                        method: 'PUT',
-                                                        headers: {'Content-Type': 'application/json'},
-                                                        body: JSON.stringify({ status: 'concluido' })
-                                                    });
-                                                    carregarOperacoes();
-                                                    if (notificarOperacaoSalva) notificarOperacaoSalva();
-                                                    ja('🎉 Demanda concluída com sucesso!', 'success');
-                                                }
-                                            },
-                                            className: "px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 shadow flex items-center gap-2"
-                                        }, "✅ Demanda Concluída")
+                                                    if (confirm(`✅ Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
+                                                        await fetchAuth(`${API_URL}/operacoes/${op.id}`, {
+                                                            method: 'PUT',
+                                                            headers: {'Content-Type': 'application/json'},
+                                                            body: JSON.stringify({ status: 'concluido' })
+                                                        });
+                                                        carregarOperacoes();
+                                                        if (notificarOperacaoSalva) notificarOperacaoSalva();
+                                                        ja('🎉 Demanda concluída com sucesso!', 'success');
+                                                    }
+                                                },
+                                                className: "px-4 py-2 rounded-lg text-sm font-bold border border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                                            }, "✅ Marcar como concluída")
+                                        )
                                     )
                                 );
                             })
@@ -722,8 +680,8 @@
                     );
                 };
 
-                return React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" },
-                    React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto" },
+                return React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-start md:items-center justify-center z-50 p-3 md:p-6 overflow-y-auto" },
+                    React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[94vh] overflow-y-auto my-auto" },
                         React.createElement("div", { className: "bg-gradient-to-r from-violet-600 to-violet-700 p-6 text-white sticky top-0 z-10" },
                             React.createElement("div", { className: "flex justify-between items-center" },
                                 React.createElement("div", { className: "flex items-center gap-3" },

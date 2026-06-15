@@ -6256,6 +6256,12 @@ const hideLoadingScreen = () => {
             }
         }, [p.opTab, l]);
         
+        // 🔧 Trava o scroll do fundo enquanto o modal de operação está aberto
+        useEffect(() => {
+            document.body.style.overflow = operacaoModal ? 'hidden' : '';
+            return () => { document.body.style.overflow = ''; };
+        }, [operacaoModal]);
+
         // useEffect para carregar incentivos quando entrar na aba
         useEffect(() => {
             if (p.opTab === 'incentivos' && l && (l.role === 'admin_master' || l.role === 'admin')) {
@@ -15950,6 +15956,7 @@ const hideLoadingScreen = () => {
                     operacaoSubTab, setOperacaoSubTab, carregarOperacoes, notificarOperacaoSalva,
                     gerarRelatorioOperacao, calcularContadorRegressivo,
                     checklistMotos, setChecklistMotos,
+                    operacaoExpandida, setOperacaoExpandida,
                     // Recrutamento
                     recrutamentoModal, setRecrutamentoModal,
                     recrutamentoEdit, setRecrutamentoEdit,
