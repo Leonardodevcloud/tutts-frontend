@@ -30,6 +30,14 @@
     .upd{font-size:11px;color:#8b929c;text-align:center;padding:9px}
     .msg{padding:60px 24px;text-align:center;color:#6b7280}
     .leaflet-control-attribution{font-size:9px}
+    @media (min-width:820px){
+      body{padding:30px 16px}
+      .wrap{max-width:1000px;min-height:0;border-radius:18px;overflow:hidden;box-shadow:0 12px 44px rgba(84,22,138,.14)}
+      #content{display:flex;align-items:stretch}
+      #map{flex:1.15;height:auto;min-height:540px}
+      .panel{flex:1;max-width:480px;min-width:360px;display:flex;flex-direction:column}
+      .panel .sec:last-child{border-bottom:none}
+    }
   </style>
 </head>
 <body>
@@ -48,6 +56,7 @@
 
     <div id="content" style="display:none">
       <div id="map"></div>
+      <div class="panel">
       <div class="upd" id="upd"></div>
       <div class="sec"><div id="timeline"></div></div>
       <div class="sec">
@@ -64,6 +73,7 @@
       <div class="sec" style="border-bottom:none">
         <div class="addr"><div class="pin">&#127978;</div><div><div class="lbl" style="font-weight:700;color:#374151">Coleta</div><div style="font-size:13px" id="aColeta">-</div></div></div>
         <div class="addr"><div class="pin">&#128205;</div><div><div class="lbl" style="font-weight:700;color:#374151">Entrega</div><div style="font-size:13px" id="aEntrega">-</div></div></div>
+      </div>
       </div>
     </div>
 
@@ -85,7 +95,8 @@
   function motoIcon(){return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-20px;top:-20px;width:40px;height:40px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #7c3aed;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px">\uD83D\uDEF5</div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
   function emojiMarker(e,size){var s=size||28;return L.divIcon({className:'',html:'<div style="font-size:'+s+'px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4)">'+e+'</div>',iconSize:[s,s],iconAnchor:[s/2,s]});}
 
-  function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);}
+  function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);setTimeout(function(){try{map.invalidateSize()}catch(e){}},200);}
+  window.addEventListener('resize',function(){if(map){try{map.invalidateSize()}catch(e){}}});
 
   function timeline(etapa){
     var h='';
