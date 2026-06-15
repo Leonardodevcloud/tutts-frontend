@@ -2155,6 +2155,83 @@
   // global = default: a regra do cliente, quando configurada,
   // sobrescreve este padrão.
   // ════════════════════════════════════════════════════════
+  // ──────────────────────────────────────────────────────────────────────
+  // Liga/desliga o despacho automatico (PollingWorker) pela tela.
+  // Estado em logistics_worker_state via /logistics/worker-state.
+  // ──────────────────────────────────────────────────────────────────────
+  function CardWorkerControl({ API_URL, fetchAuth, showToast }) {
+    const [estado, setEstado] = useState(null);
+    const [salvando, setSalvando] = useState(false);
+    const apiRef = useRef(API_URL);
+    const fetchRef = useRef(fetchAuth);
+    const toastRef = useRef(showToast);
+    useEffect(() => { apiRef.current = API_URL; fetchRef.current = fetchAuth; toastRef.current = showToast; });
+
+    const carregar = useCallback(async () => {
+      try {
+        const res = await fetchRef.current(`${apiRef.current}/logistics/worker-state`);
+        const json = await res.json();
+        if (json && json.success) setEstado(json.estado);
+      } catch (e) { /* silencioso */ }
+    }, []);
+
+    useEffect(() => {
+      carregar();
+      const t = setInterval(carregar, 20000);
+      return () => clearInterval(t);
+    }, [carregar]);
+
+    async function setLigado(ligar) {
+      setSalvando(true);
+      try {
+        const res = await fetchRef.current(`${apiRef.current}/logistics/worker-state`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ativo: ligar, auto_despacho: ligar }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          setEstado(json.estado);
+          toastRef.current(ligar ? 'Despacho automatico LIGADO' : 'Despacho automatico desligado', ligar ? 'success' : 'info');
+        } else {
+          toastRef.current((json && json.error) || 'Erro ao alterar o worker', 'error');
+        }
+      } catch (e) { toastRef.current('Erro de rede', 'error'); }
+      finally { setSalvando(false); }
+    }
+
+    const ligado = !!(estado && estado.ativo && estado.auto_despacho);
+    const ultimoCiclo = (estado && estado.ultimo_ciclo_em)
+      ? new Date(estado.ultimo_ciclo_em).toLocaleString('pt-BR')
+      : '\u2014';
+
+    return h('div', { className: `rounded-xl border p-5 mb-4 ${ligado ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}` },
+      h('div', { className: 'flex items-center justify-between gap-4' },
+        h('div', null,
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: 'text-lg' }, ligado ? '\uD83D\uDFE2' : '\u26AA'),
+            h('span', { className: 'font-bold text-gray-800' }, 'Despacho automatico'),
+            h('span', { className: `text-[10px] font-semibold px-2 py-0.5 rounded-full ${ligado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}` }, ligado ? 'LIGADO' : 'DESLIGADO')
+          ),
+          h('p', { className: 'text-xs text-gray-500 mt-1' },
+            ligado
+              ? 'O worker esta varrendo a Mapp e despachando as OS que casam com as regras ativas.'
+              : 'O worker esta parado \u2014 nenhuma OS e despachada automaticamente.'),
+          h('p', { className: 'text-[11px] text-gray-400 mt-1' }, `Ultimo ciclo: ${ultimoCiclo}`)
+        ),
+        h('button', {
+          onClick: () => setLigado(!ligado),
+          disabled: salvando || !estado,
+          className: `relative w-14 h-7 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${ligado ? 'bg-green-600' : 'bg-gray-300'}`,
+        }, h('span', { className: `absolute top-0.5 w-6 h-6 rounded-full bg-white transition-all ${ligado ? 'right-0.5' : 'left-0.5'}` }))
+      ),
+      ligado
+        ? h('p', { className: 'text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3' },
+            '\u26A0\uFE0F Ligado: cada OS que casar com uma regra e despachada de verdade na 99/Uber (gera custo).')
+        : null
+    );
+  }
+
   function CardGuardrailGlobal({ API_URL, fetchAuth, showToast }) {
     const { useState, useEffect, useCallback } = React;
     const [cfg, setCfg]         = useState(null);
@@ -2474,6 +2551,7 @@
       ),
 
       // Padrão global de margem — piso do despacho automático
+      h(CardWorkerControl, { API_URL, fetchAuth, showToast }),
       h(CardGuardrailGlobal, { API_URL, fetchAuth, showToast }),
 
       // Lista de regras
