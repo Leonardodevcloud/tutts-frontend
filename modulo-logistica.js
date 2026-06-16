@@ -901,6 +901,7 @@
   // TEMPO / TRILHA — indicador de coleta nos cards + trilha no detalhe
   // ════════════════════════════════════════════════════════
   const SLA_COLETA_MIN = 15;  // limite global despacho→coleta (min). Acima disso = atrasado.
+  const SLA_LOCALIZAR_MIN = 10;  // limite (min) p/ localizar entregador (estágio 1).
 
   // Tabela "Prazo Padrão" (faixas km → minutos) carregada de GET /bi/prazo-padrao.
   // Cache em escopo de módulo, compartilhada por todos os cards.
@@ -968,17 +969,37 @@
       return { label: 'devolução', texto: '↩ devolvido', cls: 'bg-amber-50 text-amber-700' };
     }
 
-    // ATIVA (pré-coleta ou em rota) → tempo corrido desde a criação vs SLA
+    // cor por (decorrido, limite) com faixa curta de atenção (3 min antes)
+    const _corLim = (mm, lim) => {
+      if (lim == null || mm == null) return 'bg-green-50 text-green-700';
+      if (mm > lim) return 'bg-red-50 text-red-700';
+      if (mm >= lim - 3) return 'bg-amber-50 text-amber-700';
+      return 'bg-green-50 text-green-700';
+    };
+
+    // EM ROTA (já coletou) → tempo desde a criação vs SLA por distância
     const emRota = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st) || !!e.coletado_at;
-    const m = _minsEntre(e.created_at, Date.now());
-    const atrasado = (prazo != null && m != null) ? m > prazo : false;
-    const perto    = (prazo != null && m != null) ? (m >= prazo - 10 && m <= prazo) : false;
-    const cls = atrasado ? 'bg-red-50 text-red-700' : (perto ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700');
-    const lbl = emRota ? 'em rota de entrega'
-              : (!e.entregador_nome || ['DISPATCHED', 'PENDING', 'QUOTED'].includes(st)) ? 'aguardando entregador'
-              : 'aguardando coleta';
-    const icone = emRota ? '🛵 ' : '⏱ ';
-    return { label: lbl, texto: icone + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
+    if (emRota) {
+      const m = _minsEntre(e.created_at, Date.now());
+      const atrasado = prazo != null && m != null && m > prazo;
+      const perto    = prazo != null && m != null && m >= prazo - 10 && m <= prazo;
+      const cls = atrasado ? 'bg-red-50 text-red-700' : (perto ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700');
+      return { label: 'em rota de entrega', texto: '🛵 ' + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
+    }
+
+    // ESTÁGIO 2 — entregador atribuído → coleta: limite desde a ATRIBUIÇÃO
+    const atribuido = !!e.entregador_nome || ['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP'].includes(st);
+    if (atribuido) {
+      const base = _tsValido(e.atribuido_at) || _tsValido(e.created_at);
+      const m = _minsEntre(base, Date.now());
+      const atrasado = m != null && m > SLA_COLETA_MIN;
+      return { label: 'aguardando coleta', texto: '⏱ ' + (m != null ? _fmtDur(m) : '—') + ' / ' + _fmtDur(SLA_COLETA_MIN) + (atrasado ? ' · atrasado' : ''), cls: _corLim(m, SLA_COLETA_MIN) };
+    }
+
+    // ESTÁGIO 1 — procurando entregador: limite desde a CRIAÇÃO
+    const mLoc = _minsEntre(e.created_at, Date.now());
+    const atrasadoLoc = mLoc != null && mLoc > SLA_LOCALIZAR_MIN;
+    return { label: 'aguardando entregador', texto: '⏱ ' + (mLoc != null ? _fmtDur(mLoc) : '—') + ' / ' + _fmtDur(SLA_LOCALIZAR_MIN) + (atrasadoLoc ? ' · atrasado' : ''), cls: _corLim(mLoc, SLA_LOCALIZAR_MIN) };
   }
   // Extrai o payload de um evento (JSONB pode vir como objeto ou string).
   function _payloadEvt(w) {
