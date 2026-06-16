@@ -902,6 +902,26 @@
   // ════════════════════════════════════════════════════════
   const SLA_COLETA_MIN = 15;  // limite global despacho→coleta (min). Acima disso = atrasado.
 
+  // Tabela "Prazo Padrão" (faixas km → minutos) carregada de GET /bi/prazo-padrao.
+  // Cache em escopo de módulo, compartilhada por todos os cards.
+  let _prazoFaixas = null;
+  function setPrazoFaixas(fx) { _prazoFaixas = Array.isArray(fx) ? fx : null; }
+  // Prazo total (min) para uma distância, conforme a tabela; fallback na fórmula.
+  function prazoPorKm(km) {
+    if (km == null || isNaN(km)) return null;
+    const fx = _prazoFaixas;
+    if (Array.isArray(fx) && fx.length) {
+      for (const f of fx) {
+        const lo = Number(f.km_min) || 0;
+        const hi = (f.km_max == null || f.km_max === '') ? Infinity : Number(f.km_max);
+        if (km >= lo && km < hi) return Number(f.prazo_minutos) || null;
+      }
+      const ult = fx[fx.length - 1];
+      if (ult && Number(ult.prazo_minutos)) return Number(ult.prazo_minutos);
+    }
+    return 60 + Math.max(0, Math.ceil((km - 10) / 5)) * 15;
+  }
+
   function _tsValido(x) { const t = x ? new Date(x).getTime() : NaN; return isNaN(t) ? null : t; }
   function _minsEntre(a, b) {
     const d1 = _tsValido(a), d2 = _tsValido(b);
@@ -929,23 +949,37 @@
   function indicadorTempo(e) {
     const st = e && e.status_canonico;
     if (['CANCELED', 'FAILED', 'FALLBACK_QUEUE'].includes(st)) return null;
-    if (e.coletado_at) {
-      const m = _minsEntre(e.created_at, e.coletado_at);
-      if (e.entregue_at || st === 'DELIVERED') {
-        const tot = _minsEntre(e.created_at, e.entregue_at || e.finalizado_at);
-        return { label: 'tempo total', texto: '✓ ' + (tot != null ? _fmtDur(tot) : '—'), cls: 'bg-gray-50 text-gray-500' };
-      }
-      return { label: 'coletou em', texto: '🛵 ' + (m != null ? _fmtDur(m) : '—'), cls: _clsFaixa(m) };
-    }
-    // ainda não coletou — se já finalizou sem coletado_at (entrega antiga), não mostra faixa
-    if (st === 'DELIVERED' || st === 'RETURNED') return null;
-    const m = _minsEntre(e.created_at, Date.now());
-    const lbl = (st === 'DISPATCHED' || st === 'PENDING' || st === 'QUOTED' || !e.entregador_nome)
-      ? 'aguardando entregador' : 'aguardando coleta';
-    const atrasado = m != null && m > SLA_COLETA_MIN;
-    return { label: lbl, texto: '⏱ ' + (m != null ? _fmtDur(m) : '—') + (atrasado ? ' · atrasado' : ''), cls: _clsFaixa(m) };
-  }
 
+    const km      = e.distancia_km != null ? parseFloat(e.distancia_km) : null;
+    const prazo   = prazoPorKm(km);                       // SLA total (min) por distância
+    const metaTxt = prazo != null ? ' / ' + _fmtDur(prazo) : '';
+
+    // ENTREGUE → tempo total (desde a criação) vs SLA da tabela
+    if (st === 'DELIVERED') {
+      const fim = _tsValido(e.entregue_at) || _tsValido(e.finalizado_at);
+      const tot = fim != null ? _minsEntre(e.created_at, fim) : null;
+      if (tot == null) return { label: 'entregue', texto: '✓ concluída', cls: 'bg-gray-50 text-gray-500' };
+      const dentro = (prazo != null) ? tot <= prazo : null;
+      const cls = dentro == null ? 'bg-gray-50 text-gray-500' : (dentro ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
+      const suf = dentro == null ? '' : (dentro ? ' · no prazo' : ' · fora do prazo');
+      return { label: 'tempo total', texto: '✓ ' + (_fmtDur(tot) || '—') + metaTxt + suf, cls };
+    }
+    if (st === 'RETURNED') {
+      return { label: 'devolução', texto: '↩ devolvido', cls: 'bg-amber-50 text-amber-700' };
+    }
+
+    // ATIVA (pré-coleta ou em rota) → tempo corrido desde a criação vs SLA
+    const emRota = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st) || !!e.coletado_at;
+    const m = _minsEntre(e.created_at, Date.now());
+    const atrasado = (prazo != null && m != null) ? m > prazo : false;
+    const perto    = (prazo != null && m != null) ? (m >= prazo - 10 && m <= prazo) : false;
+    const cls = atrasado ? 'bg-red-50 text-red-700' : (perto ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700');
+    const lbl = emRota ? 'em rota de entrega'
+              : (!e.entregador_nome || ['DISPATCHED', 'PENDING', 'QUOTED'].includes(st)) ? 'aguardando entregador'
+              : 'aguardando coleta';
+    const icone = emRota ? '🛵 ' : '⏱ ';
+    return { label: lbl, texto: icone + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
+  }
   // Extrai o payload de um evento (JSONB pode vir como objeto ou string).
   function _payloadEvt(w) {
     let p = w && w.payload;
@@ -1235,6 +1269,18 @@
     // tick de 1 min — mantém o indicador de tempo ("atrasado") atualizado sem refetch
     const [, setTickTempo] = useState(0);
     useEffect(() => { const _id = setInterval(() => setTickTempo(t => t + 1), 60000); return () => clearInterval(_id); }, []);
+    // carrega a tabela de Prazo Padrão (km → min) uma vez, p/ o SLA dos cards
+    const [, setPrazoTick] = useState(0);
+    useEffect(() => {
+      (async () => {
+        try {
+          const r = await fetchAuth(`${API_URL}/bi/prazo-padrao`);
+          const j = await r.json();
+          const fx = Array.isArray(j) ? j : (j && j.faixas ? j.faixas : null);
+          if (fx && fx.length) { setPrazoFaixas(fx); setPrazoTick(t => t + 1); }
+        } catch (_) {}
+      })();
+    }, []);
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
