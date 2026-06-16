@@ -898,6 +898,125 @@
   }
 
   // ════════════════════════════════════════════════════════
+  // TEMPO / TRILHA — indicador de coleta nos cards + trilha no detalhe
+  // ════════════════════════════════════════════════════════
+  const SLA_COLETA_MIN = 15;  // limite global despacho→coleta (min). Acima disso = atrasado.
+
+  function _tsValido(x) { const t = x ? new Date(x).getTime() : NaN; return isNaN(t) ? null : t; }
+  function _minsEntre(a, b) {
+    const d1 = _tsValido(a), d2 = _tsValido(b);
+    if (d1 == null || d2 == null) return null;
+    return Math.max(0, Math.round((d2 - d1) / 60000));
+  }
+  function _fmtHora(ts) {
+    try { return new Date(ts).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    catch (_) { return '—'; }
+  }
+  function _fmtDur(min) {
+    if (min == null) return null;
+    if (min < 60) return min + ' min';
+    const hh = Math.floor(min / 60), mm = min % 60;
+    return hh + 'h' + (mm ? ' ' + mm + 'min' : '');
+  }
+  function _clsFaixa(min) {
+    if (min == null) return 'bg-gray-50 text-gray-500';
+    if (min > SLA_COLETA_MIN) return 'bg-red-50 text-red-700';
+    if (min >= SLA_COLETA_MIN - 5) return 'bg-amber-50 text-amber-700';
+    return 'bg-green-50 text-green-700';
+  }
+
+  // Indicador de tempo do card. Retorna { label, texto, cls } ou null.
+  function indicadorTempo(e) {
+    const st = e && e.status_canonico;
+    if (['CANCELED', 'FAILED', 'FALLBACK_QUEUE'].includes(st)) return null;
+    if (e.coletado_at) {
+      const m = _minsEntre(e.created_at, e.coletado_at);
+      if (e.entregue_at || st === 'DELIVERED') {
+        const tot = _minsEntre(e.created_at, e.entregue_at || e.finalizado_at);
+        return { label: 'tempo total', texto: '✓ ' + (tot != null ? _fmtDur(tot) : '—'), cls: 'bg-gray-50 text-gray-500' };
+      }
+      return { label: 'coletou em', texto: '🛵 ' + (m != null ? _fmtDur(m) : '—'), cls: _clsFaixa(m) };
+    }
+    // ainda não coletou — se já finalizou sem coletado_at (entrega antiga), não mostra faixa
+    if (st === 'DELIVERED' || st === 'RETURNED') return null;
+    const m = _minsEntre(e.created_at, Date.now());
+    const lbl = (st === 'DISPATCHED' || st === 'PENDING' || st === 'QUOTED' || !e.entregador_nome)
+      ? 'aguardando entregador' : 'aguardando coleta';
+    const atrasado = m != null && m > SLA_COLETA_MIN;
+    return { label: lbl, texto: '⏱ ' + (m != null ? _fmtDur(m) : '—') + (atrasado ? ' · atrasado' : ''), cls: _clsFaixa(m) };
+  }
+
+  // Extrai o payload de um evento (JSONB pode vir como objeto ou string).
+  function _payloadEvt(w) {
+    let p = w && w.payload;
+    if (typeof p === 'string') { try { p = JSON.parse(p); } catch (_) { p = null; } }
+    return p || null;
+  }
+
+  // Trilha da entrega: Criação → Coleta → (Devolução) → Entrega, com duração
+  // por estágio, trocas de entregador (payload.reatribuicao) e devolução.
+  function TrilhaEntrega({ entrega: e, webhooks }) {
+    const evs = Array.isArray(webhooks) ? webhooks : [];
+    const primeiroEvento = (canon) => {
+      const arr = evs.filter(w => String(w.status_canonico || '').toUpperCase() === canon)
+                     .map(w => _tsValido(w.created_at)).filter(x => x != null);
+      return arr.length ? Math.min.apply(null, arr) : null;
+    };
+    const trocas = evs.map(w => {
+      const p = _payloadEvt(w);
+      if (!p || p.reatribuicao !== true) return null;
+      return { ts: _tsValido(w.created_at), idAnterior: p.id_anterior };
+    }).filter(x => x && x.ts != null);
+
+    const tCriacao = _tsValido(e.created_at);
+    const tColeta  = _tsValido(e.coletado_at) || primeiroEvento('PICKED_UP');
+    const tRetorno = primeiroEvento('RETURNED');
+    const tEntrega = _tsValido(e.entregue_at) || primeiroEvento('DELIVERED')
+                   || (e.status_canonico === 'DELIVERED' ? _tsValido(e.finalizado_at) : null);
+    const houveDevol = tRetorno != null || e.status_canonico === 'RETURNED';
+
+    const marcos = [];
+    if (tCriacao != null) marcos.push({ k: 'criacao', titulo: 'Criação / Despacho', ts: tCriacao, node: 'done' });
+    if (tColeta  != null) marcos.push({ k: 'coleta',  titulo: 'Coleta',             ts: tColeta,  node: 'done' });
+    if (tRetorno != null) marcos.push({ k: 'devol',   titulo: 'Devolução iniciada', ts: tRetorno, node: 'warn', nota: 'Item retornando ao remetente (sendback)' });
+    if (tEntrega != null) marcos.push({ k: 'entrega', titulo: houveDevol ? 'Devolução concluída' : 'Entrega', ts: tEntrega, node: 'done' });
+    marcos.sort((a, b) => a.ts - b.ts);
+    if (marcos.length === 0) return null;
+
+    const totalMin = marcos.length >= 2 ? Math.round((marcos[marcos.length - 1].ts - marcos[0].ts) / 60000) : null;
+
+    return h('div', { className: 'pt-3 border-t border-gray-100' },
+      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-3' }, '🧭 Trilha da entrega'),
+      h('div', { className: 'pl-1' },
+        marcos.map((m, i) => {
+          const prox = marcos[i + 1];
+          const durMin = prox ? Math.round((prox.ts - m.ts) / 60000) : null;
+          const trocasAqui = trocas.filter(t => t.ts >= m.ts && (!prox || t.ts < prox.ts));
+          const dotCls = m.node === 'warn' ? 'border-amber-500 bg-amber-500' : 'border-purple-600 bg-purple-600';
+          const durLate = m.k === 'criacao' && durMin != null && durMin > SLA_COLETA_MIN;
+          return h('div', { key: i, className: 'flex gap-3' },
+            h('div', { className: 'flex flex-col items-center flex-shrink-0' },
+              h('span', { className: `w-3 h-3 rounded-full border-2 ${dotCls}` }),
+              prox && h('span', { className: 'w-0.5 flex-1 bg-gray-200 my-1', style: { minHeight: '22px' } }),
+            ),
+            h('div', { className: 'flex-1 pb-3' },
+              h('div', { className: 'text-[13px] font-bold text-gray-800' }, m.titulo),
+              h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, _fmtHora(m.ts)),
+              m.nota && h('div', { className: 'text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1 inline-block' }, '↩ ' + m.nota),
+              trocasAqui.map((t, j) => h('div', { key: 'tr' + j, className: 'text-[11px] text-purple-700 bg-purple-50 rounded-md px-2 py-1 mt-1' },
+                '🔄 Troca de entregador · ' + _fmtHora(t.ts) + (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))),
+              durMin != null && h('div', { className: `text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded ${durLate ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}` },
+                (m.k === 'criacao' ? (_fmtDur(durMin) + ' até a coleta') : (_fmtDur(durMin) + ' até ' + prox.titulo.toLowerCase())) + (durLate ? ' · acima do SLA' : '')),
+            ),
+          );
+        }),
+      ),
+      totalMin != null && h('div', { className: 'flex justify-between items-center pt-2 mt-1 border-t border-gray-100 text-[12px] font-bold text-gray-700' },
+        h('span', null, 'Tempo total'), h('span', null, _fmtDur(totalMin) || '—')),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
   // KANBAN — visão por status (reusa helpers e a mesma lógica do CardEntrega)
   // ════════════════════════════════════════════════════════
   const KANBAN_COLS = [
@@ -934,6 +1053,7 @@
     const margemPos    = margemHub >= 0;
     const temCusto     = valorUber > 0;
     const prov         = provedorInfo(e);
+    const ind          = indicadorTempo(e);
 
     const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
@@ -970,6 +1090,11 @@
       // cliente
       h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
         'Cliente: ', e.cliente_nome_regra || 'Manual / sem regra'),
+      // faixa de tempo — indicador de coleta / atrasado
+      ind && h('div', { className: `flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 ${ind.cls}` },
+        h('span', { className: 'text-[9px] uppercase tracking-wider font-semibold opacity-70' }, ind.label),
+        h('span', { className: 'ml-auto text-[11px] font-bold' }, ind.texto),
+      ),
       // rota
       h('div', { className: 'px-3 py-2.5 border-b border-gray-100 space-y-1.5' },
         h('div', { className: 'flex gap-2' },
@@ -1107,6 +1232,9 @@
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
     const [dataFiltro, setDataFiltro] = useState(dataLocalBRT(new Date())); // YYYY-MM-DD em BRT; padrao = hoje
+    // tick de 1 min — mantém o indicador de tempo ("atrasado") atualizado sem refetch
+    const [, setTickTempo] = useState(0);
+    useEffect(() => { const _id = setInterval(() => setTickTempo(t => t + 1), 60000); return () => clearInterval(_id); }, []);
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
@@ -2340,6 +2468,9 @@
               ),
 
               // ── 🔧 Dados técnicos (colapsável) ──
+              // 🆕 Trilha da entrega (criação → coleta → entrega + troca de moto / devolução)
+              h(TrilhaEntrega, { entrega: e, webhooks: webhooks }),
+
               // Pra debug. Mostra tracking points brutos + webhooks recebidos.
               // Quase nunca é necessário no dia-a-dia, mas é vital quando algo dá errado.
               ((tracking && tracking.length > 0) || (webhooks && webhooks.length > 0)) && h('div', { className: 'pt-3 border-t border-gray-100' },
