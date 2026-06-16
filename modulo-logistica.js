@@ -231,7 +231,7 @@
         h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
           h('div', { className: 'flex items-center gap-2 mb-1' },
             h('h3', { className: 'text-base font-bold text-gray-800' }, '⏱️ Desempenho de tempo'),
-            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, 'média'),
+            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, `média · ${ni(data.n_trilha)} c/ trilha`),
           ),
           h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, da criação à entrega (inclui em andamento).'),
           h('div', { className: 'flex h-9 rounded-xl overflow-hidden mb-4' },
@@ -264,7 +264,7 @@
           const off = CIRC * (1 - pct / 100);
           return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
             h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, '🎯 SLA / Prazo'),
-            h('p', { className: 'text-xs text-gray-500 mb-3' }, 'Entregues dentro do prazo da distância.'),
+            h('p', { className: 'text-xs text-gray-500 mb-3' }, `No prazo da distância · ${sla ? sla.total_avaliado : 0} entregas avaliadas.`),
             h('div', { className: 'flex flex-col items-center' },
               h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
                 h('svg', { width: 140, height: 140, viewBox: '0 0 140 140' },
