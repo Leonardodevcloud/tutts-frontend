@@ -890,6 +890,13 @@
     );
   }
 
+  // Data local (YYYY-MM-DD) de um timestamp, no fuso de Brasília.
+  function dataLocalBRT(ts) {
+    const d = ts instanceof Date ? ts : new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  }
+
   // ════════════════════════════════════════════════════════
   // KANBAN — visão por status (reusa helpers e a mesma lógica do CardEntrega)
   // ════════════════════════════════════════════════════════
@@ -1038,11 +1045,35 @@
 
   // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
   function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+    // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
+    const boardRef = useRef(null);
+    useEffect(() => {
+      const el = boardRef.current;
+      if (!el) return;
+      let down = false, startX = 0, startScroll = 0;
+      const onDown = (ev) => {
+        if (ev.button !== 0) return;
+        if (ev.target.closest('button, a, input, textarea, select')) return; // não atrapalha os botões
+        down = true; startX = ev.pageX; startScroll = el.scrollLeft;
+        el.classList.add('cursor-grabbing');
+      };
+      const onMove = (ev) => { if (down) el.scrollLeft = startScroll - (ev.pageX - startX); };
+      const onUp = () => { down = false; el.classList.remove('cursor-grabbing'); };
+      el.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      return () => {
+        el.removeEventListener('mousedown', onDown);
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+    }, []);
+
     const grupos = {};
     KANBAN_COLS.forEach(c => { grupos[c.id] = []; });
     (entregas || []).forEach(e => { (grupos[colunaDoStatus(e)] || grupos.aguard).push(e); });
 
-    return h('div', { className: 'flex gap-4 overflow-x-auto pb-3 items-start' },
+    return h('div', { ref: boardRef, className: 'flex gap-4 overflow-x-auto pb-3 items-start cursor-grab select-none' },
       KANBAN_COLS.map(col => {
         const itens = grupos[col.id] || [];
         return h('div', { key: col.id, className: 'flex-shrink-0 w-[330px]' },
@@ -1074,7 +1105,8 @@
     const [busca, setBusca] = useState('');
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
-    const [viewMode, setViewMode] = useState('lista');         // lista | kanban
+    const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
+    const [dataFiltro, setDataFiltro] = useState(dataLocalBRT(new Date())); // YYYY-MM-DD em BRT; padrao = hoje
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
@@ -1335,6 +1367,11 @@
     const entregasFiltradas = useMemo(() => {
       let lista = entregas;
 
+      // Filtro de data (despacho) — comparado em BRT. Vazio = todas as datas.
+      if (dataFiltro) {
+        lista = lista.filter(e => dataLocalBRT(e.created_at) === dataFiltro);
+      }
+
       // Busca por código OS
       if (busca.trim()) {
         const q = busca.trim().toLowerCase();
@@ -1366,7 +1403,7 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro]);
 
     // Resumo — total de margem da lista filtrada
     const resumo = useMemo(() => {
@@ -1477,10 +1514,6 @@
           )
         ),
         h('div', { className: 'flex gap-2 flex-wrap items-center' },
-          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
-            h('button', { onClick: () => setViewMode('lista'),  className: `px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'lista'  ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, 'Lista'),
-            h('button', { onClick: () => setViewMode('kanban'), className: `px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'kanban' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, 'Kanban'),
-          ),
           h('button', {
             onClick: despacharOS,
             className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
@@ -1501,6 +1534,25 @@
           placeholder: '🔍 Buscar OS, endereço, entregador...',
           className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
         }),
+        h('div', { className: 'flex items-center gap-1.5' },
+          h('input', {
+            type: 'date',
+            value: dataFiltro,
+            onChange: e => setDataFiltro(e.target.value),
+            title: 'Filtrar por data de despacho',
+            className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
+          }),
+          h('button', {
+            onClick: () => setDataFiltro(dataLocalBRT(new Date())),
+            title: 'Voltar para hoje',
+            className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50',
+          }, 'Hoje'),
+          dataFiltro && h('button', {
+            onClick: () => setDataFiltro(''),
+            title: 'Ver todas as datas',
+            className: 'px-2 py-2 text-gray-400 hover:text-gray-600 text-sm',
+          }, '✕'),
+        ),
         h('select', {
           value: filtroStatus,
           onChange: e => setFiltroStatus(e.target.value),
