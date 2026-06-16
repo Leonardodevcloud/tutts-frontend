@@ -891,6 +891,180 @@
   }
 
   // ════════════════════════════════════════════════════════
+  // KANBAN — visão por status (reusa helpers e a mesma lógica do CardEntrega)
+  // ════════════════════════════════════════════════════════
+  const KANBAN_COLS = [
+    { id: 'aguard',   nome: 'Aguardando entregador', dot: 'bg-purple-500', cnt: 'bg-purple-500' },
+    { id: 'coleta',   nome: 'Aguardando coleta',     dot: 'bg-blue-500',   cnt: 'bg-blue-500' },
+    { id: 'coletou',  nome: 'Coletou',               dot: 'bg-amber-500',  cnt: 'bg-amber-500' },
+    { id: 'entregue', nome: 'Entregue',              dot: 'bg-green-500',  cnt: 'bg-green-500' },
+    { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500' },
+    { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400' },
+    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
+  ];
+
+  // Mapeia uma entrega pra uma das 7 colunas, a partir do status canônico
+  // (com rede de segurança no status nativo/legado).
+  function colunaDoStatus(e) {
+    const c = String((e && e.status_canonico) || '').toUpperCase();
+    const n = String((e && e.status_uber) || '').toLowerCase();
+    if (c === 'DELIVERED' || ['delivered', 'entregue', 'completed', 'finalizado', 'concluido'].includes(n)) return 'entregue';
+    if (c === 'RETURNED' || ['sendback', 'sendbackcompleted', 'devolucao', 'devolvido'].includes(n)) return 'devol';
+    if (c === 'CANCELED' || ['canceled', 'cancelado'].includes(n)) return 'cancel';
+    if (c === 'FAILED' || c === 'FALLBACK_QUEUE' || ['erro', 'fallback_fila'].includes(n)) return 'falha';
+    if (['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(c) || ['pickup_complete', 'dropoff'].includes(n)) return 'coletou';
+    if (['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP'].includes(c) || ['entregador_atribuido', 'pickup', 'waiting'].includes(n)) return 'coleta';
+    return 'aguard';
+  }
+
+  // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
+  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+    const e = entrega;
+    const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
+    const valorHub     = parseFloat(e.valor_servico || 0);
+    const margemHub    = Math.round((valorHub - valorUber) * 100) / 100;
+    const margemHubPct = valorUber > 0 ? Math.round((margemHub / valorUber) * 1000) / 10 : null;
+    const margemPos    = margemHub >= 0;
+    const temCusto     = valorUber > 0;
+    const prov         = provedorInfo(e);
+
+    const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
+    const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
+    const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber);
+    const temEntregador = !!e.entregador_nome;
+
+    function copiarTel() {
+      if (!e.entregador_telefone) { showToast && showToast('Sem telefone do entregador', 'error'); return; }
+      try { navigator.clipboard.writeText(e.entregador_telefone); showToast && showToast('Telefone copiado', 'success'); }
+      catch (_) { showToast && showToast('Não foi possível copiar', 'error'); }
+    }
+    function ligar() {
+      if (!e.entregador_telefone) { showToast && showToast('Sem telefone do entregador', 'error'); return; }
+      if (isMobile()) { window.location.href = `tel:${e.entregador_telefone}`; }
+      else { copiarTel(); showToast && showToast('Desktop: número copiado, ligue do seu celular', 'info'); }
+    }
+    function msgSemEntregador() {
+      const st = e.status_canonico;
+      if (st === 'DELIVERED') return 'Entrega concluída.';
+      if (st === 'CANCELED' || st === 'FAILED' || st === 'RETURNED' || st === 'FALLBACK_QUEUE') return 'Encerrada sem entregador.';
+      if (['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP', 'PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st))
+        return 'Em andamento — entregador não informado.';
+      return 'Aguardando atribuição…';
+    }
+
+    return h('div', { className: 'bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden' },
+      // cabeçalho
+      h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
+        h('span', { className: 'text-sm font-bold text-gray-800' }, `OS ${e.codigo_os}`),
+        h(Badge, { entrega: e }),
+        h('span', { className: 'ml-auto inline-flex items-center gap-1 text-[10px] text-gray-500 font-medium flex-shrink-0' },
+          h(ProviderLogo, { code: prov.code, size: 15 }), prov.nome),
+      ),
+      // cliente
+      h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
+        'Cliente: ', e.cliente_nome_regra || 'Manual / sem regra'),
+      // rota
+      h('div', { className: 'px-3 py-2.5 border-b border-gray-100 space-y-1.5' },
+        h('div', { className: 'flex gap-2' },
+          h('span', { className: 'w-2 h-2 rounded-full bg-amber-500 mt-1 flex-shrink-0' }),
+          h('div', { className: 'min-w-0 flex-1' },
+            h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Coleta'),
+            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_coleta || '—'),
+            CodigoBadge('Código de coleta', e.pickup_code),
+          )),
+        h('div', { className: 'flex gap-2' },
+          h('span', { className: 'w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0' }),
+          h('div', { className: 'min-w-0 flex-1' },
+            h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
+            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
+            CodigoBadge('Código de entrega', e.dropoff_code),
+          )),
+      ),
+      // financeiro (custo / valor / margem)
+      h('div', { className: 'grid grid-cols-3 border-b border-gray-100 bg-gray-50' },
+        h('div', { className: 'px-2.5 py-2 border-r border-gray-100' },
+          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Custo prov.'),
+          h('div', { className: 'text-xs font-bold text-gray-800 mt-0.5' }, temCusto ? fmtMoney(valorUber) : '—'),
+          temCusto && e.distancia_km && h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, `🏍️ ${parseFloat(e.distancia_km).toFixed(1)} km`),
+        ),
+        h('div', { className: 'px-2.5 py-2 border-r border-gray-100' },
+          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Valor regra'),
+          h('div', { className: 'text-xs font-bold text-gray-800 mt-0.5' }, fmtMoney(valorHub)),
+          h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, 'por km'),
+        ),
+        h('div', { className: 'px-2.5 py-2' },
+          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Margem'),
+          temCusto
+            ? h('div', { className: `text-xs font-bold mt-0.5 ${margemPos ? 'text-green-700' : 'text-red-600'}` }, `${margemPos ? '+ ' : '− '}${fmtMoney(Math.abs(margemHub))}`)
+            : h('div', { className: 'text-xs font-bold text-gray-300 mt-0.5' }, '—'),
+          (temCusto && margemHubPct !== null) && h('div', { className: `text-[9px] mt-0.5 ${margemPos ? 'text-green-600' : 'text-red-500'}` }, `${margemPos ? '+' : ''}${margemHubPct.toFixed(1)}%`),
+        ),
+      ),
+      // entregador
+      temEntregador
+        ? h('div', { className: 'flex items-center gap-2 px-3 py-2.5 border-b border-gray-100' },
+            e.entregador_foto
+              ? h('img', { src: e.entregador_foto, alt: e.entregador_nome, className: 'w-7 h-7 rounded-full object-cover flex-shrink-0 bg-purple-100',
+                  onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; } })
+              : null,
+            h('div', { className: 'w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[10px] text-purple-700 flex-shrink-0', style: e.entregador_foto ? { display: 'none' } : {} }, iniciaisDoNome(e.entregador_nome)),
+            h('div', { className: 'flex-1 min-w-0' },
+              h('div', { className: 'text-xs font-semibold text-gray-800 truncate' }, e.entregador_nome),
+              h('div', { className: 'text-[10px] text-gray-400 truncate' }, fmtTelefoneBR(e.entregador_telefone) || '—'),
+            ),
+            e.entregador_telefone && h('div', { className: 'flex gap-1 flex-shrink-0' },
+              h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
+              h('button', { onClick: ligar, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Ligar'),
+            ),
+          )
+        : h('div', { className: `px-3 py-2 border-b border-gray-100 text-[11px] text-center ${(coluna.id === 'falha' || coluna.id === 'cancel') ? 'text-red-600 bg-red-50' : 'text-gray-400 italic'}` },
+            msgSemEntregador()),
+      // rodapé (hora despachada)
+      h('div', { className: 'px-3 pt-2 pb-1 text-[10px] text-gray-400' },
+        '🕐 Despachada ', fmtDT(e.created_at)),
+      // ações
+      h('div', { className: 'flex gap-1.5 px-2.5 pb-2.5 pt-1' },
+        h('button', {
+          onClick: () => onVerTracking && onVerTracking(e),
+          disabled: !(e.rastreio_token || e.tracking_url),
+          className: `flex-1 text-[11px] font-semibold py-1.5 rounded-lg border ${(e.rastreio_token || e.tracking_url) ? 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100' : 'border-gray-100 text-gray-300 cursor-not-allowed'}`,
+        }, 'Tracking'),
+        h('button', { onClick: () => onVerDetalhes && onVerDetalhes(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Detalhes'),
+        podeCancelar && onRedespachar && h('button', { onClick: () => onRedespachar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50' }, 'Editar'),
+        podeCancelar && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'),
+      ),
+    );
+  }
+
+  // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
+  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+    const grupos = {};
+    KANBAN_COLS.forEach(c => { grupos[c.id] = []; });
+    (entregas || []).forEach(e => { (grupos[colunaDoStatus(e)] || grupos.aguard).push(e); });
+
+    return h('div', { className: 'flex gap-4 overflow-x-auto pb-3 items-start' },
+      KANBAN_COLS.map(col => {
+        const itens = grupos[col.id] || [];
+        return h('div', { key: col.id, className: 'flex-shrink-0 w-[330px]' },
+          h('div', { className: 'flex items-center gap-2 px-1 pb-3' },
+            h('span', { className: `w-2 h-2 rounded-full ${col.dot}` }),
+            h('span', { className: 'text-[11px] font-bold uppercase tracking-wider text-gray-500' }, col.nome),
+            h('span', { className: `ml-auto text-[11px] font-bold text-white ${col.cnt} rounded-full px-2 py-0.5 min-w-[20px] text-center opacity-90` }, String(itens.length)),
+          ),
+          h('div', { className: 'space-y-3' },
+            itens.length
+              ? itens.map(e => h(CardKanban, {
+                  key: e.id, entrega: e, coluna: col,
+                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast,
+                }))
+              : h('div', { className: 'text-[11px] text-gray-300 text-center py-4 border border-dashed border-gray-200 rounded-xl' }, 'Nenhuma entrega')
+          )
+        );
+      })
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
   // ABA: ENTREGAS — listagem em cards
   // ════════════════════════════════════════════════════════
   function TabEntregas({ API_URL, fetchAuth, showToast }) {
@@ -900,6 +1074,7 @@
     const [busca, setBusca] = useState('');
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
+    const [viewMode, setViewMode] = useState('lista');         // lista | kanban
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
@@ -1286,7 +1461,7 @@
       }
     }
 
-    return h('div', { className: 'max-w-6xl mx-auto p-4 space-y-4' },
+    return h('div', { className: (viewMode === 'kanban' ? 'max-w-full' : 'max-w-6xl') + ' mx-auto p-4 space-y-4' },
 
       // ── Header ──
       h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
@@ -1301,7 +1476,11 @@
             resumo.negativas > 0 && h('span', { className: 'text-red-600 ml-2' }, `· ${resumo.negativas} no prejuízo`),
           )
         ),
-        h('div', { className: 'flex gap-2 flex-wrap' },
+        h('div', { className: 'flex gap-2 flex-wrap items-center' },
+          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
+            h('button', { onClick: () => setViewMode('lista'),  className: `px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'lista'  ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, 'Lista'),
+            h('button', { onClick: () => setViewMode('kanban'), className: `px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'kanban' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, 'Kanban'),
+          ),
           h('button', {
             onClick: despacharOS,
             className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
@@ -1358,7 +1537,16 @@
         ? h('div', { className: 'text-center py-12' },
             h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
           )
-        : entregasFiltradas.length === 0
+        : viewMode === 'kanban'
+          ? h(KanbanEntregas, {
+              entregas: entregasFiltradas,
+              onCancelar: cancelarEntrega,
+              onVerTracking: abrirTracking,
+              onVerDetalhes: abrirDetalhes,
+              onRedespachar: abrirRedespacho,
+              showToast,
+            })
+          : entregasFiltradas.length === 0
           ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' },
               'Nenhuma entrega encontrada com esses filtros'
             )
