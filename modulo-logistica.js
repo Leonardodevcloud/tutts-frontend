@@ -129,201 +129,236 @@
   // ════════════════════════════════════════════════════════
   function TabDashboard({ API_URL, fetchAuth, showToast }) {
     const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    // Margem por cliente
+    const [sla, setSla] = useState(null);
     const [margemData, setMargemData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [margemLoading, setMargemLoading] = useState(false);
-    const [periodo, setPeriodo] = useState('7d'); // 1d | 7d | 30d
+    const [periodo, setPeriodo] = useState('7d');           // 1d | 7d | 30d | custom
+
+    const hojeBRT   = () => dataLocalBRT(new Date());
+    const diasAtras = (nd) => dataLocalBRT(new Date(Date.now() - nd * 86400000));
+    const [deCustom, setDeCustom]   = useState(diasAtras(7));
+    const [ateCustom, setAteCustom] = useState(hojeBRT());
+
+    const range = periodo === 'custom' ? { de: deCustom, ate: ateCustom }
+      : periodo === '1d'  ? { de: hojeBRT(),    ate: hojeBRT() }
+      : periodo === '30d' ? { de: diasAtras(29), ate: hojeBRT() }
+      :                     { de: diasAtras(6),  ate: hojeBRT() };
+    const de = range.de, ate = range.ate;
 
     const carregar = useCallback(async () => {
       setLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/logistics/dashboard/metricas`);
+        const res = await fetchAuth(`${API_URL}/logistics/dashboard/metricas?data_inicio=${de}&data_fim=${ate}`);
         const json = await res.json();
         setData(json.metricas || {});
+        setSla(json.sla || null);
       } catch { showToast('Erro ao carregar métricas', 'error'); }
       finally { setLoading(false); }
-    }, [fetchAuth, API_URL]);
+    }, [fetchAuth, API_URL, de, ate]);
 
     const carregarMargem = useCallback(async () => {
       setMargemLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/logistics/dashboard/margem-clientes?periodo=${periodo}`);
+        const res = await fetchAuth(`${API_URL}/logistics/dashboard/margem-clientes?periodo=custom&inicio=${de}&fim=${ate}`);
         const json = await res.json();
         if (json.success) setMargemData(json);
         else showToast(json.error || 'Erro ao carregar margem', 'error');
       } catch { showToast('Erro de rede ao carregar margem', 'error'); }
       finally { setMargemLoading(false); }
-    }, [fetchAuth, API_URL, periodo]);
+    }, [fetchAuth, API_URL, de, ate]);
 
-    useEffect(() => { carregar(); }, []);
+    useEffect(() => { carregar(); }, [carregar]);
     useEffect(() => { carregarMargem(); }, [carregarMargem]);
 
     if (loading || !data) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
     );
 
-    const kpis = [
-      { label: 'Total entregas', value: data.total || 0, icon: '📦', bg: 'bg-purple-50', tc: 'text-purple-600' },
-      { label: 'Entregues', value: data.entregues || 0, icon: '✅', bg: 'bg-green-50', tc: 'text-green-600' },
-      { label: 'Em andamento', value: data.em_andamento || 0, icon: '🛵', bg: 'bg-blue-50', tc: 'text-blue-600' },
-      { label: 'Cancelados', value: data.cancelados || 0, icon: '❌', bg: 'bg-red-50', tc: 'text-red-600' },
-      { label: 'Fallback p/ fila', value: data.fallback || 0, icon: '↩️', bg: 'bg-yellow-50', tc: 'text-yellow-600' },
-      { label: 'Custo total provedores', value: fmtMoney(parseFloat(data.custo_total_uber || 0)), icon: '💰', bg: 'bg-emerald-50', tc: 'text-emerald-600', small: true },
-      { label: 'Valor médio', value: fmtMoney(parseFloat(data.valor_medio_uber || 0)), icon: '📊', bg: 'bg-indigo-50', tc: 'text-indigo-600', small: true },
-      { label: 'ETA médio', value: `${Math.round(parseFloat(data.eta_medio || 0))} min`, icon: '⏱️', bg: 'bg-pink-50', tc: 'text-pink-600' },
-    ];
+    const ni = (x) => parseInt(x || 0, 10);
+    const fmtMin = (m) => {
+      const v = parseFloat(m);
+      if (m == null || m === '' || isNaN(v)) return '—';
+      const r = Math.round(v);
+      return r < 60 ? r + ' min' : Math.floor(r / 60) + 'h' + (r % 60 ? ' ' + (r % 60) + 'min' : '');
+    };
 
-    // Cálculos pro gráfico CSS-only (margem por dia)
-    const porDia = margemData?.por_dia || [];
-    const valoresDia = porDia.map(d => parseFloat(d.margem || 0));
-    const maxAbs = Math.max(1, ...valoresDia.map(v => Math.abs(v))); // evita div-zero
+    const total = ni(data.total), entregues = ni(data.entregues), emand = ni(data.em_andamento), cancel = ni(data.cancelados);
+    const tLoc = data.t_localizacao_min, tCol = data.t_coleta_min, tRota = data.t_rota_min, tTot = data.t_total_min;
+    const somaEst = Math.max(1, (parseFloat(tLoc) || 0) + (parseFloat(tCol) || 0) + (parseFloat(tRota) || 0));
+    const pctNP = (sla && sla.pct_no_prazo != null) ? sla.pct_no_prazo : null;
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-6' },
-      h('div', { className: 'flex items-center justify-between' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard do Hub'),
-        h('button', {
-          onClick: () => { carregar(); carregarMargem(); },
-          className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700'
-        }, '🔄 Atualizar')
-      ),
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
-        kpis.map(k => h('div', { key: k.label, className: `${k.bg} rounded-xl border border-gray-100 shadow-sm p-4` },
-          h('div', { className: 'flex items-center gap-2 mb-2' },
-            h('span', { className: 'text-xl' }, k.icon),
-            h('span', { className: 'text-xs font-semibold text-gray-500 uppercase' }, k.label)
+    const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
+
+    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
+      // HEADER
+      h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+        h('div', null,
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard do Hub'),
+          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Operação, tempo e SLA'),
+        ),
+        h('div', { className: 'flex items-center gap-2 flex-wrap' },
+          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
+            pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
+              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
           ),
-          h('p', { className: `${k.small ? 'text-lg' : 'text-3xl'} font-bold ${k.tc}` }, k.value)
-        ))
+          periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
+            h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+            h('span', { className: 'text-gray-400 text-xs' }, 'até'),
+            h('input', { type: 'date', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+          ),
+          h('button', { onClick: () => { carregar(); carregarMargem(); }, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳ Atualizar'),
+        ),
       ),
 
-      // ════════════════════════════════════════════════════════
-      // SEÇÃO: MARGEM POR CLIENTE
-      // ════════════════════════════════════════════════════════
-      h('div', { className: 'bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4' },
-        // Header com filtro de período
-        h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
-          h('div', null,
-            h('h3', { className: 'text-lg font-bold text-gray-800' }, '💼 Margem por cliente'),
-            h('p', { className: 'text-xs text-gray-500 mt-1' },
-              'Quanto cada cliente está rendendo (ou custando) quando despachado pelo hub. ',
-              h('span', { className: 'text-gray-400' }, 'Margem = valor cliente Mapp − custo do provedor.'))
+      // KPIs
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
+        [
+          { lbl: 'Total de entregas', val: total, ico: '📦', chip: 'bg-purple-50 text-purple-600', foot: null },
+          { lbl: 'Entregues', val: entregues, ico: '✅', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total` : null },
+          { lbl: 'Em andamento', val: emand, ico: '🛵', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
+          { lbl: 'Cancelados', val: cancel, ico: '✖', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback` : null },
+        ].map(k => h('div', { key: k.lbl, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4' },
+          h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center text-lg mb-3 ${k.chip}` }, k.ico),
+          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, k.lbl),
+          h('div', { className: 'text-3xl font-extrabold text-gray-800 mt-1 leading-none' }, k.val),
+          k.foot && h('div', { className: 'text-[11px] text-gray-500 mt-2' }, k.foot),
+        )),
+      ),
+
+      // TEMPO + SLA
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-3' },
+        h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
+          h('div', { className: 'flex items-center gap-2 mb-1' },
+            h('h3', { className: 'text-base font-bold text-gray-800' }, '⏱️ Desempenho de tempo'),
+            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, 'média'),
           ),
-          h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-1' },
-            ['1d', '7d', '30d'].map(p => h('button', {
-              key: p,
-              onClick: () => setPeriodo(p),
-              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${
-                periodo === p ? 'bg-white text-purple-700 shadow' : 'text-gray-600 hover:text-gray-800'
-              }`,
-            }, p === '1d' ? 'Hoje' : p === '7d' ? '7 dias' : '30 dias'))
+          h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, da criação à entrega (inclui em andamento).'),
+          h('div', { className: 'flex h-9 rounded-xl overflow-hidden mb-4' },
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tLoc) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#a78bfa,#8b5cf6)', minWidth: '44px' } }, fmtMin(tLoc)),
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tCol) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#f6a94a,#f5921e)', minWidth: '44px' } }, fmtMin(tCol)),
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tRota) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#34c77b,#15a05a)', minWidth: '44px' } }, fmtMin(tRota)),
+          ),
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
+            [
+              { c: '#8b5cf6', l: 'Localização', v: fmtMin(tLoc), d: 'criação → entregador' },
+              { c: '#f5921e', l: 'Coleta', v: fmtMin(tCol), d: 'atribuição → coleta' },
+              { c: '#15a05a', l: 'Entrega', v: fmtMin(tRota), d: 'coleta → entrega' },
+            ].map(t => h('div', { key: t.l, className: 'border border-gray-200 rounded-xl p-3' },
+              h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' },
+                h('span', { className: 'inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle', style: { background: t.c } }), t.l),
+              h('div', { className: 'text-lg font-extrabold text-gray-800 mt-0.5' }, t.v),
+              h('div', { className: 'text-[10px] text-gray-400' }, t.d),
+            )).concat([
+              h('div', { key: 'total', className: 'border rounded-xl p-3', style: { background: '#faf7ff', borderColor: '#e9defd' } },
+                h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-purple-600' }, 'Tempo total'),
+                h('div', { className: 'text-lg font-extrabold text-purple-700 mt-0.5' }, fmtMin(tTot)),
+                h('div', { className: 'text-[10px] text-purple-400' }, 'criação → entrega'),
+              ),
+            ]),
           ),
         ),
+        (function () {
+          const pct = pctNP != null ? pctNP : 0;
+          const R = 54, CIRC = 2 * Math.PI * R;
+          const off = CIRC * (1 - pct / 100);
+          return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
+            h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, '🎯 SLA / Prazo'),
+            h('p', { className: 'text-xs text-gray-500 mb-3' }, 'Entregues dentro do prazo da distância.'),
+            h('div', { className: 'flex flex-col items-center' },
+              h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
+                h('svg', { width: 140, height: 140, viewBox: '0 0 140 140' },
+                  h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#fdecec', strokeWidth: 14 }),
+                  pctNP != null && h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#15a05a', strokeWidth: 14, strokeLinecap: 'round', strokeDasharray: CIRC, strokeDashoffset: off, transform: 'rotate(-90 70 70)' }),
+                ),
+                h('div', { className: 'absolute inset-0 flex flex-col items-center justify-center' },
+                  h('div', { className: 'text-2xl font-extrabold text-green-600' }, pctNP != null ? `${pctNP.toFixed(0)}%` : '—'),
+                  h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' }, 'no prazo'),
+                ),
+              ),
+              h('div', { className: 'grid grid-cols-2 gap-2 w-full mt-3' },
+                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'No prazo'), h('div', { className: 'text-lg font-extrabold text-gray-800' }, sla ? sla.no_prazo : 0)),
+                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Fora do prazo'), h('div', { className: 'text-lg font-extrabold text-red-600' }, sla ? sla.fora : 0)),
+                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Atraso médio'), h('div', { className: 'text-lg font-extrabold text-amber-600' }, (sla && sla.fora) ? '+' + fmtMin(sla.atraso_medio_min) : '—')),
+                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'ETA prov.'), h('div', { className: 'text-lg font-extrabold text-gray-800' }, `${Math.round(parseFloat(data.eta_medio || 0))} min`)),
+              ),
+            ),
+          );
+        })(),
+      ),
 
+      // FINANCEIRO
+      h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100' },
+        [
+          { l: 'Receita (cliente)', v: fmtMoney(parseFloat(data.receita_total || 0)), c: 'text-gray-800' },
+          { l: 'Custo provedores', v: fmtMoney(parseFloat(data.custo_total_uber || 0)), c: 'text-gray-800' },
+          { l: 'Margem total', v: (parseFloat(data.margem_total || 0) >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(parseFloat(data.margem_total || 0))), c: parseFloat(data.margem_total || 0) >= 0 ? 'text-green-600' : 'text-red-600' },
+          { l: 'Valor médio', v: fmtMoney(parseFloat(data.valor_medio_uber || 0)), c: 'text-gray-800' },
+        ].map(f => h('div', { key: f.l, className: 'p-4' },
+          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, f.l),
+          h('div', { className: `text-xl font-extrabold mt-1 ${f.c}` }, f.v),
+        )),
+      ),
+
+      // MARGEM POR CLIENTE
+      h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4' },
+        h('div', null,
+          h('h3', { className: 'text-base font-bold text-gray-800' }, '💼 Margem por cliente'),
+          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Margem = valor cliente − custo do provedor.'),
+        ),
         margemLoading
-          ? h('div', { className: 'text-center py-12' },
-              h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
-          : !margemData || margemData.por_cliente.length === 0
-            ? h('div', { className: 'text-center py-12 text-gray-400' },
-                h('p', { className: 'font-semibold' }, 'Nenhuma entrega no período'),
-                h('p', { className: 'text-xs mt-1' }, 'Ajuste o filtro de período ou despache OSs pra ver os dados aqui.'))
-            : [
-                // Totais gerais
-                h('div', { key: 'totais', className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Entregas'),
-                    h('div', { className: 'text-base font-semibold text-gray-800' }, margemData.totais.qtd_total || 0)
-                  ),
-                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Receita'),
-                    h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.receita || 0)))
-                  ),
-                  h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-                    h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
-                    h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(parseFloat(margemData.totais.custo || 0)))
-                  ),
-                  (function () {
-                    const m = parseFloat(margemData.totais.margem || 0);
-                    const pos = m >= 0;
-                    return h('div', { className: `rounded-lg px-3 py-2.5 ${pos ? 'bg-green-50' : 'bg-red-50'}` },
-                      h('div', { className: `text-[11px] mb-0.5 ${pos ? 'text-green-700' : 'text-red-700'}` }, 'Margem total'),
-                      h('div', { className: `text-base font-semibold ${pos ? 'text-green-800' : 'text-red-800'}` },
-                        `${pos ? '+ ' : '− '}${fmtMoney(Math.abs(m))}`)
-                    );
-                  })(),
-                ),
-
-                // Mini-gráfico: margem por dia (CSS only, sem libs)
-                porDia.length > 0 && h('div', { key: 'chart', className: 'pt-2' },
-                  h('div', { className: 'text-xs text-gray-500 mb-2' }, `Margem por dia (${porDia.length} dia${porDia.length !== 1 ? 's' : ''})`),
-                  h('div', { className: 'flex items-end gap-1 h-32 border-b border-gray-200' },
-                    porDia.map((d, i) => {
-                      const v = parseFloat(d.margem || 0);
-                      const pos = v >= 0;
-                      const pct = (Math.abs(v) / maxAbs) * 100;
-                      // Barras positivas crescem pra cima, negativas pra baixo
-                      return h('div', {
-                        key: i,
-                        className: 'flex-1 flex flex-col justify-end items-center group relative',
-                        title: `${new Date(d.dia).toLocaleDateString('pt-BR')}: ${pos ? '+' : '−'} ${fmtMoney(Math.abs(v))} (${d.qtd} entrega${d.qtd != 1 ? 's' : ''})`,
-                      },
-                        h('div', {
-                          className: `w-full ${pos ? 'bg-green-400 hover:bg-green-500' : 'bg-red-400 hover:bg-red-500'} rounded-t transition-all`,
-                          style: { height: `${Math.max(2, pct)}%` },
-                        }),
-                      );
-                    })
-                  ),
-                  h('div', { className: 'flex justify-between text-[10px] text-gray-400 mt-1' },
-                    porDia.length > 0 && h('span', null, new Date(porDia[0].dia).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
-                    porDia.length > 1 && h('span', null, new Date(porDia[porDia.length - 1].dia).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
-                  )
-                ),
-
-                // Tabela por cliente
-                h('div', { key: 'tabela', className: 'overflow-x-auto' },
+          ? h('div', { className: 'text-center py-10' }, h('div', { className: 'animate-spin w-7 h-7 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+          : (!margemData || !margemData.por_cliente || margemData.por_cliente.length === 0)
+            ? h('div', { className: 'text-center py-10 text-gray-400' }, h('p', { className: 'font-semibold' }, 'Nenhuma entrega no período'))
+            : h('div', null,
+                (margemData.por_dia && margemData.por_dia.length > 0) && (function () {
+                  const porDia = margemData.por_dia;
+                  const maxAbs = Math.max(1, ...porDia.map(d => Math.abs(parseFloat(d.margem || 0))));
+                  return h('div', { className: 'mb-4' },
+                    h('div', { className: 'text-xs text-gray-500 mb-2' }, `Margem por dia (${porDia.length} dia${porDia.length !== 1 ? 's' : ''})`),
+                    h('div', { className: 'flex items-end gap-1 h-24 border-b border-gray-200' },
+                      porDia.map((d, i) => {
+                        const v = parseFloat(d.margem || 0), pos = v >= 0, pc = (Math.abs(v) / maxAbs) * 100;
+                        return h('div', { key: i, className: 'flex-1 flex flex-col justify-end', title: `${new Date(d.dia).toLocaleDateString('pt-BR')}: ${pos ? '+' : '−'} ${fmtMoney(Math.abs(v))}` },
+                          h('div', { className: `w-full rounded-t ${pos ? 'bg-green-400' : 'bg-red-400'}`, style: { height: `${Math.max(2, pc)}%` } }));
+                      }),
+                    ),
+                  );
+                })(),
+                h('div', { className: 'overflow-x-auto' },
                   h('table', { className: 'w-full text-sm' },
-                    h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
+                    h('thead', { className: 'text-[10px] uppercase text-gray-400 border-b border-gray-200' },
                       h('tr', null,
-                        h('th', { className: 'px-3 py-2 text-left' }, 'Cliente'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Qtd'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Receita'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Custo do provedor'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Margem'),
-                        h('th', { className: 'px-3 py-2 text-right' }, 'Margem méd.'),
-                        h('th', { className: 'px-3 py-2 text-right' }, '%'),
-                        h('th', { className: 'px-3 py-2 text-right' }, '% Cancel.'),
+                        h('th', { className: 'px-2 py-2 text-left' }, 'Cliente'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Qtd'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Receita'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Custo'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Margem'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Méd. coleta'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'No prazo'),
+                        h('th', { className: 'px-2 py-2 text-right' }, '% Cancel.'),
                       )),
                     h('tbody', null,
                       margemData.por_cliente.map((c, i) => {
-                        const m = parseFloat(c.margem_total || 0);
-                        const pos = m >= 0;
-                        return h('tr', {
-                          key: i,
-                          className: `border-t hover:bg-gray-50 ${m < 0 ? 'bg-red-50/40' : ''}`,
-                        },
-                          h('td', { className: 'px-3 py-2' },
-                            h('div', { className: 'font-semibold text-gray-800' }, c.cliente),
-                            !c.regra_id && h('div', { className: 'text-[10px] text-gray-400' }, 'Sem regra cadastrada'),
-                          ),
-                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, c.qtd),
-                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
-                          h('td', { className: 'px-3 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
-                          h('td', { className: `px-3 py-2 text-right font-semibold ${pos ? 'text-green-700' : 'text-red-700'}` },
-                            `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
-                          h('td', { className: 'px-3 py-2 text-right text-gray-600' },
-                            `${parseFloat(c.margem_media || 0) >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(parseFloat(c.margem_media || 0)))}`),
-                          h('td', { className: `px-3 py-2 text-right font-semibold ${pos ? 'text-green-600' : 'text-red-600'}` },
-                            `${parseFloat(c.margem_pct || 0).toFixed(1)}%`),
-                          h('td', { className: 'px-3 py-2 text-right text-gray-600' },
-                            `${parseFloat(c.taxa_cancelamento || 0).toFixed(0)}%`),
+                        const m = parseFloat(c.margem_total || 0), pos = m >= 0, np = c.pct_no_prazo;
+                        return h('tr', { key: i, className: `border-b border-gray-50 hover:bg-gray-50 ${m < 0 ? 'bg-red-50/40' : ''}` },
+                          h('td', { className: 'px-2 py-2' }, h('div', { className: 'font-semibold text-gray-800' }, c.cliente), !c.regra_id && h('div', { className: 'text-[10px] text-gray-400' }, 'Sem regra')),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, c.qtd),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
+                          h('td', { className: `px-2 py-2 text-right font-semibold ${pos ? 'text-green-700' : 'text-red-700'}` }, `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-600' }, fmtMin(c.medio_coleta_min)),
+                          h('td', { className: 'px-2 py-2 text-right' }, np == null
+                            ? h('span', { className: 'text-gray-300' }, '—')
+                            : h('span', { className: `inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${np >= 80 ? 'bg-green-50 text-green-700' : np >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}` }, `${np.toFixed(0)}%`)),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-600' }, `${parseFloat(c.taxa_cancelamento || 0).toFixed(0)}%`),
                         );
                       })
-                    )
-                  )
+                    ),
+                  ),
                 ),
-              ]
-      )
+              ),
+      ),
     );
   }
 
