@@ -1311,23 +1311,23 @@
     // Mini-modal pra pedir código da OS (substitui prompt() nativo do navegador)
     const [pedirCodigoModal, setPedirCodigoModal] = useState(null); // null | {valor: string}
 
-    const carregar = useCallback(async () => {
-      setLoading(true);
+    const carregar = useCallback(async (silencioso) => {
+      if (!silencioso) setLoading(true);
       try {
         const url = `${API_URL}/logistics/deliveries${filtroStatus ? `?status=${filtroStatus}` : ''}`;
         const res = await fetchAuth(url);
         const json = await res.json();
         setEntregas(json.entregas || []);
-      } catch { showToast('Erro ao carregar entregas', 'error'); }
-      finally { setLoading(false); }
+      } catch { if (!silencioso) showToast('Erro ao carregar entregas', 'error'); }
+      finally { if (!silencioso) setLoading(false); }
     }, [fetchAuth, API_URL, filtroStatus]);
 
     // Carga inicial + auto-refresh a cada 30s — mantém os status em dia
     // sem o operador precisar recarregar a tela na mão (o poller/webhook
     // atualizam o backend; a tela acompanha sozinha).
     useEffect(() => {
-      carregar();
-      const i = setInterval(carregar, 30000);
+      carregar();                                       // 1a carga: com spinner
+      const i = setInterval(() => carregar(true), 30000); // refresh silencioso (sem piscar a tela)
       return () => clearInterval(i);
     }, [carregar]);
 
@@ -1780,7 +1780,7 @@
       ),
 
       // ── Lista de cards ──
-      loading
+      (loading && entregas.length === 0)
         ? h('div', { className: 'text-center py-12' },
             h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
           )
