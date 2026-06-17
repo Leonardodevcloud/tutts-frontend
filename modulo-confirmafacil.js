@@ -13,6 +13,61 @@
   const fmtCNPJ = v => { if (!v) return ''; const n = v.replace(/\D/g, ''); return n.length === 14 ? n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : v; };
   const fmt = v => v || '—';
 
+  // ─── SLA ConfirmaFácil (2h, BRT, regra das 16:30) ───────────
+  const SLA_TZ = 'America/Sao_Paulo';
+  function calcSla(corridaCriadaEm, statusCf) {
+    if (!corridaCriadaEm) return null;
+    const criado = new Date(corridaCriadaEm);
+    if (isNaN(criado.getTime())) return null;
+    const partes = {};
+    new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(criado).forEach(p => { partes[p.type] = p.value; });
+    const Y = +partes.year, Mo = +partes.month, D = +partes.day, H = +partes.hour, Mi = +partes.minute;
+    // BRT = UTC-3 (sem horário de verão): parede BRT -> instante UTC
+    const brtParaInstante = (y, mo, d, hh, mm) => Date.UTC(y, mo - 1, d, hh + 3, mm, 0);
+    let inicioMs;
+    if (H * 60 + Mi > 16 * 60 + 30) inicioMs = brtParaInstante(Y, Mo, D, 8, 0) + 24 * 3600 * 1000; // 08:00 do dia seguinte
+    else inicioMs = criado.getTime();
+    const deadlineMs = inicioMs + 2 * 3600 * 1000;
+    const entregue = ['ENTREGUE', 'CANCELADO', 'DEVOLVIDO'].includes(statusCf);
+    const agora = Date.now();
+    let status;
+    if (entregue) status = 'entregue';
+    else if (agora < inicioMs) status = 'agendado';
+    else {
+      const rem = deadlineMs - agora;
+      if (rem <= 0) status = 'estourado';
+      else if (rem <= 15 * 60000) status = 'iminente';
+      else if (rem <= 30 * 60000) status = 'atencao';
+      else status = 'no_prazo';
+    }
+    return { status, inicioMs, deadlineMs, rem: deadlineMs - agora };
+  }
+  const fmtRemSla = ms => { if (ms < 0) ms = 0; const t = Math.floor(ms / 60000), hh = Math.floor(t / 60), mm = t % 60; return hh > 0 ? hh + 'h' + String(mm).padStart(2, '0') : mm + 'min'; };
+  const hmBRT = ms => new Intl.DateTimeFormat('pt-BR', { timeZone: SLA_TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+  const SLA_VIS = {
+    no_prazo:  ['bg-green-50 text-green-700', false],
+    atencao:   ['bg-amber-50 text-amber-700', false],
+    iminente:  ['bg-orange-50 text-orange-700', true],
+    estourado: ['bg-red-600 text-white', true],
+    agendado:  ['bg-blue-50 text-blue-700', false],
+    entregue:  ['bg-gray-100 text-gray-500', false],
+  };
+  function slaChipEl(v) {
+    const s = calcSla(v.corrida_criada_em, v.status_cf);
+    if (!s) return null;
+    if (s.status === 'entregue') return null; // SLA encerrado: não polui a lista
+    const [cls, pulse] = SLA_VIS[s.status] || ['bg-gray-100 text-gray-500', false];
+    let txt, sub;
+    if (s.status === 'agendado') { txt = '🕗 ' + hmBRT(s.inicioMs); sub = 'vence ' + hmBRT(s.deadlineMs); }
+    else if (s.status === 'estourado') { txt = '+' + fmtRemSla(-s.rem); sub = 'estourado · venceu ' + hmBRT(s.deadlineMs); }
+    else { txt = fmtRemSla(s.rem); sub = 'vence ' + hmBRT(s.deadlineMs) + (s.status === 'atencao' ? ' · atenção' : s.status === 'iminente' ? ' · iminente' : ''); }
+    return h('div', { className: 'mt-1' },
+      h('span', { className: 'inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ' + cls + (pulse ? ' animate-pulse' : '') }, txt),
+      sub && h('span', { className: 'block text-[10px] text-gray-400 mt-0.5' }, sub)
+    );
+  }
+
   // ─── Badges ─────────────────────────────────────────────────
   const STATUS_CF_MAP = {
     'A_EMBARCAR':     ['bg-amber-100 text-amber-800',  '📦 A embarcar'],
@@ -269,7 +324,15 @@
     const [corridaFiltro, setCorrida] = useState('');
     const [busca, setBusca]         = useState('');
     const [statusCF, setStatusCF]   = useState('');
+    const [slaFiltro, setSlaFiltro] = useState('');
+    const [, setSlaTick]            = useState(0);
     const POR_PAG = 100;
+
+    // Atualiza os chips de SLA periodicamente (sem refazer fetch)
+    useEffect(() => {
+      const id = setInterval(() => setSlaTick(t => t + 1), 30000);
+      return () => clearInterval(id);
+    }, []);
 
     // Carregar embarcadores p/ filtro
     useEffect(() => {
@@ -310,6 +373,7 @@
       if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
       if (busca)         params.set('busca', busca);
       if (sCF)           params.set('status_cf', sCF);
+      if (slaFiltro)     params.set('sla', slaFiltro);
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/nfs-lista?' + params);
         const d = await r.json();
@@ -388,6 +452,18 @@
               h('option', { value: 'REENTREGA' }, '🔄 Reentrega'),
               h('option', { value: 'DEVOLVIDO' }, '↩️ Devolvido'),
               h('option', { value: 'CANCELADO' }, '❌ Cancelado'),
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' }, 'SLA'),
+            h('select', { value: slaFiltro, onChange: e => setSlaFiltro(e.target.value),
+              className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+              h('option', { value: '' }, 'Todos'),
+              h('option', { value: 'no_prazo' }, '🟢 No prazo'),
+              h('option', { value: 'atencao' }, '🟡 Atenção (≤30m)'),
+              h('option', { value: 'iminente' }, '🟠 Iminente (≤15m)'),
+              h('option', { value: 'estourado' }, '🔴 Estourado'),
+              h('option', { value: 'agendado' }, '🕗 Agendado')
             )
           ),
           h('div', { className: 'flex-1 min-w-[200px]' },
@@ -484,11 +560,14 @@
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.tutts_os_numero
-                            ? h('button', {
-                                onClick: () => setOsAberta(v.solicitacao_id),
-                                className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-semibold',
-                                title: 'Ver detalhes da corrida',
-                              }, '🔍 ' + v.tutts_os_numero)
+                            ? h('div', null,
+                                h('button', {
+                                  onClick: () => setOsAberta(v.solicitacao_id),
+                                  className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-semibold',
+                                  title: 'Ver detalhes da corrida',
+                                }, '🔍 ' + v.tutts_os_numero),
+                                slaChipEl(v)
+                              )
                             : h('button', {
                                 onClick: () => setNfParaCriar(v),
                                 className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-medium',
