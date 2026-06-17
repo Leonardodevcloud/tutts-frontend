@@ -106,6 +106,17 @@
     return { label: legado || '—', cor: 'bg-gray-100 text-gray-700' };
   }
 
+  // true quando a entrega ainda esta PROCURANDO entregador (nenhum motoboy
+  // valido associado). Evita mostrar motoboy/faixa de coleta com dados
+  // antigos quando a corrida volta a buscar (ex.: motoboy cancelou).
+  function estaProcurando(e) {
+    const c = String((e && e.status_canonico) || '').toUpperCase();
+    if (['PENDING', 'QUOTED', 'DISPATCHED'].includes(c)) return true;
+    const n = String((e && e.status_uber) || '').toLowerCase();
+    if (!c && ['finding', 'pending', 'created'].includes(n)) return true;
+    return false;
+  }
+
   // Status oferecidos no dropdown de filtro — só os canônicos, na ordem do
   // ciclo de vida da entrega.
   const STATUS_FILTRO_OPCOES = [
@@ -702,7 +713,7 @@
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
     const podeCancelar = !TERMINAIS_CANON.includes(e.status_canonico)
       && !TERMINAIS_NATIVE.includes(e.status_uber);
-    const temEntregador = !!e.entregador_nome;
+    const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     const duracao = calcularDuracao(e.created_at, e.finalizado_at);
 
@@ -1023,7 +1034,7 @@
     }
 
     // ESTÁGIO 2 — entregador atribuído → coleta: limite desde a ATRIBUIÇÃO
-    const atribuido = !!e.entregador_nome || ['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP'].includes(st);
+    const atribuido = !estaProcurando(e) && (!!e.entregador_nome || ['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP'].includes(st));
     if (atribuido) {
       const base = _tsValido(e.atribuido_at) || _tsValido(e.created_at);
       const m = _minsEntre(base, Date.now());
@@ -1148,7 +1159,7 @@
     const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
     const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber);
-    const temEntregador = !!e.entregador_nome;
+    const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     function copiarTel() {
       if (!e.entregador_telefone) { showToast && showToast('Sem telefone do entregador', 'error'); return; }
