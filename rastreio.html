@@ -88,11 +88,11 @@
 (function(){
   var API='https://tutts-backend-production.up.railway.app';
   var token=location.pathname.replace(/^\/r\//,'').replace(/\/+$/,'').split('/').pop();
-  var STEPS=['Pedido despachado','Entregador a caminho','Saiu para entrega','Entregue'];
+  var STEPS=['Pedido despachado','Entregador em processo de coleta','Saiu para entrega','Entregue'];
   var map,mCourier,mPickup,mDrop,pollTimer,lastTs;
 
   function icon(color,glyph){return L.divIcon({className:'',html:'<div style="background:'+color+';width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:13px">'+glyph+'</span></div>',iconSize:[30,30],iconAnchor:[15,28]});}
-  function motoIcon(){return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-20px;top:-20px;width:40px;height:40px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #7c3aed;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px">\uD83D\uDEF5</div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
+  function motoIcon(foto){var base='<div style="width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #7c3aed;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px">\uD83D\uDEF5</div>';var img=foto?'<img src="'+foto+'" alt="" style="position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #7c3aed;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.3)" onerror="this.style.display=\'none\'">':'';return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-20px;top:-20px;width:40px;height:40px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px">'+base+img+'</div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
   function emojiMarker(e,size){var s=size||28;return L.divIcon({className:'',html:'<div style="font-size:'+s+'px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4)">'+e+'</div>',iconSize:[s,s],iconAnchor:[s/2,s]});}
 
   function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);setTimeout(function(){try{map.invalidateSize()}catch(e){}},200);}
@@ -142,7 +142,7 @@
 
     if(pickup){if(!mPickup)mPickup=L.marker(pickup,{icon:emojiMarker('\uD83C\uDFEA',26)}).addTo(map);else mPickup.setLatLng(pickup);}
     if(drop){if(!mDrop)mDrop=L.marker(drop,{icon:emojiMarker('\uD83D\uDCCD',30)}).addTo(map);else mDrop.setLatLng(drop);}
-    if(cour){if(!mCourier)mCourier=L.marker(cour,{icon:motoIcon(),zIndexOffset:1000}).addTo(map);else mCourier.setLatLng(cour);}
+    if(cour){var _fc=(d.entregador&&d.entregador.foto)||null;if(!mCourier)mCourier=L.marker(cour,{icon:motoIcon(_fc),zIndexOffset:1000}).addTo(map);else{mCourier.setLatLng(cour);mCourier.setIcon(motoIcon(_fc));}}
 
     var pts=[];if(cour)pts.push(cour);if(drop)pts.push(drop);if(!cour&&pickup)pts.push(pickup);
     if(pts.length>1)map.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)map.setView(pts[0],15);
