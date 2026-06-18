@@ -1102,6 +1102,7 @@
             const [dadosNovoEndereco, setDadosNovoEndereco] = useState(null); // endereço selecionado do Google
             const [apelidoNovo, setApelidoNovo] = useState('');
             const [complementoNovo, setComplementoNovo] = useState('');
+            const [telefoneNovo, setTelefoneNovo] = useState('');
             const [numeroManualNovo, setNumeroManualNovo] = useState('');
             const [aguardandoNumeroNovo, setAguardandoNumeroNovo] = useState(false);
             const [salvandoNovoEndereco, setSalvandoNovoEndereco] = useState(false);
@@ -1385,6 +1386,7 @@
                 setDadosNovoEndereco(null);
                 setApelidoNovo('');
                 setComplementoNovo('');
+                setTelefoneNovo('');
                 setNumeroManualNovo('');
                 setAguardandoNumeroNovo(false);
             };
@@ -1460,7 +1462,8 @@
                             uf: getS('administrative_area_level_1'),
                             cep: get('postal_code'),
                             latitude: posicaoAjustadaNovo.lat || dadosNovoEndereco.latitude,
-                            longitude: posicaoAjustadaNovo.lng || dadosNovoEndereco.longitude
+                            longitude: posicaoAjustadaNovo.lng || dadosNovoEndereco.longitude,
+                            telefone_padrao: telefoneNovo.trim() || null
                         })
                     });
                     if (resp.ok) {
@@ -1834,7 +1837,8 @@
                             cep: p.cep,
                             latitude: p.latitude,
                             longitude: p.longitude,
-                            endereco_completo: p.endereco_completo
+                            endereco_completo: p.endereco_completo,
+                            telefone_padrao: p.telefone || null
                         })
                     });
                     
@@ -3688,6 +3692,17 @@
                                                     style={{ textTransform: 'uppercase' }}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-purple-400 outline-none" 
                                                     placeholder="QUADRA, LOTE, APTO, BLOCO..."
+                                                />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="text-xs text-gray-600 font-medium">📞 Telefone</label>
+                                                <input 
+                                                    type="tel" 
+                                                    value={telefoneNovo} 
+                                                    onChange={(e) => setTelefoneNovo(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 focus:ring-2 focus:ring-purple-400 outline-none" 
+                                                    placeholder="(DDD) 90000-0000"
                                                 />
                                             </div>
                                             
