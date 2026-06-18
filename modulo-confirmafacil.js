@@ -904,6 +904,15 @@
     useEffect(() => { carregar(); const id = setInterval(carregar, 60000); return () => clearInterval(id); }, []);
     useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(id); }, []);
 
+    async function testarAlerta() {
+      try {
+        const r = await fetchAuth(API_URL + '/confirmafacil/sla-teste', { method: 'POST' });
+        const j = await r.json().catch(() => ({}));
+        if (j && j.enviado) { if (showToast) showToast('Mensagem de teste enviada ao grupo ✅', 'sucesso'); }
+        else if (showToast) showToast('Não enviou: ' + ((j && j.motivo) || 'erro') + (j && j.status ? ' (' + j.status + ')' : ''), 'erro');
+      } catch (e) { if (showToast) showToast('Erro ao enviar teste', 'erro'); }
+    }
+
     if (loading && !data) return h('div', { className: 'text-center text-gray-400 py-12' }, 'Carregando painel de SLA…');
     const filiais = (data && data.filiais) || [];
     const riscos  = (data && data.riscos)  || [];
@@ -968,7 +977,10 @@
     );
 
     return h('div', { className: 'space-y-1' },
-      h('div', { className: 'text-[11px] text-gray-400 mb-2' }, 'Meta diária por filial · risco a ≤15 min · alerta automático no WhatsApp'),
+      h('div', { className: 'flex items-center justify-between mb-2' },
+        h('div', { className: 'text-[11px] text-gray-400' }, 'Meta diária por filial · risco a ≤15 min · alerta automático no WhatsApp'),
+        h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
+      ),
       painel, lista
     );
   }
