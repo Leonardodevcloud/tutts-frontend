@@ -886,6 +886,93 @@
     );
   }
 
+  // ─── ABA: RISCO DE SLA (painel por filial + lista de risco) ──
+  function AbaRiscoSLA({ fetchAuth, API_URL, showToast }) {
+    const [data, setData]       = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [, setTick]           = useState(0);
+
+    async function carregar() {
+      try {
+        const r = await fetchAuth(API_URL + '/confirmafacil/sla-painel');
+        const j = await r.json();
+        setData(j);
+      } catch (e) {
+        if (showToast) showToast('Erro ao carregar painel de SLA', 'erro');
+      } finally { setLoading(false); }
+    }
+    useEffect(() => { carregar(); const id = setInterval(carregar, 60000); return () => clearInterval(id); }, []);
+    useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(id); }, []);
+
+    if (loading && !data) return h('div', { className: 'text-center text-gray-400 py-12' }, 'Carregando painel de SLA…');
+    const filiais = (data && data.filiais) || [];
+    const riscos  = (data && data.riscos)  || [];
+
+    const painel = h('div', { className: 'grid gap-3 md:grid-cols-2' },
+      filiais.length ? filiais.map(f => {
+        const acima = f.pct >= f.meta, perto = f.pct >= f.meta - 1;
+        const cor = acima ? 'text-green-600' : perto ? 'text-amber-600' : 'text-red-600';
+        const barCor = acima ? 'bg-green-500' : perto ? 'bg-amber-500' : 'bg-red-500';
+        return h('div', { key: f.cnpj, className: 'bg-white border border-gray-200 rounded-2xl p-4' },
+          h('div', { className: 'flex items-start justify-between' },
+            h('div', null,
+              h('div', { className: 'font-bold text-gray-900' }, f.nome),
+              h('div', { className: 'text-[11px] text-gray-400 font-mono' }, f.cnpj)
+            ),
+            h('div', { className: 'text-right' },
+              h('div', { className: 'text-3xl font-extrabold ' + cor }, f.pct.toFixed(1) + '%'),
+              h('div', { className: 'text-[11px] text-gray-500' }, 'meta ' + f.meta + '%')
+            )
+          ),
+          h('div', { className: 'relative h-2 rounded-full bg-gray-100 mt-3 mb-3' },
+            h('div', { className: 'h-full rounded-full ' + barCor, style: { width: Math.min(100, f.pct) + '%' } }),
+            h('div', { className: 'absolute w-0.5 bg-gray-800', style: { left: f.meta + '%', top: '-3px', bottom: '-3px' } })
+          ),
+          h('div', { className: 'grid grid-cols-4 gap-2 text-center' },
+            [['No prazo', f.no_prazo, 'text-green-600'], ['Estouradas', f.estourada, 'text-red-600'], ['Em risco', f.em_risco, 'text-orange-600'], ['Em rota', f.em_rota, 'text-blue-600']].map((c, i) =>
+              h('div', { key: i, className: 'border border-gray-100 rounded-lg py-1.5' },
+                h('div', { className: 'text-lg font-bold ' + c[2] }, c[1]),
+                h('div', { className: 'text-[10px] text-gray-500' }, c[0])
+              )
+            )
+          ),
+          h('div', { className: 'flex flex-wrap gap-2 mt-3' },
+            h('span', { className: 'text-[11px] font-bold px-2 py-1 rounded-lg ' + (f.margem <= 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') },
+              '🎯 Margem hoje: ' + (f.margem <= 0 ? '0 — no limite' : f.margem)),
+            h('span', { className: 'text-[11px] font-bold px-2 py-1 rounded-lg bg-blue-50 text-blue-700' }, '📉 Projeção: ' + f.proj.toFixed(1) + '%')
+          )
+        );
+      }) : h('div', { className: 'text-gray-400 text-sm py-8 text-center md:col-span-2 bg-white border border-gray-200 rounded-2xl' }, 'Nenhuma corrida com SLA hoje.')
+    );
+
+    const lista = h('div', { className: 'space-y-2 mt-5' },
+      h('div', { className: 'font-bold text-gray-900 flex items-center gap-2 mb-1' }, '🚨 Em risco agora',
+        h('span', { className: 'text-[11px] bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full' }, riscos.length)
+      ),
+      riscos.length ? riscos.map(r => {
+        const dl = new Date(r.deadline).getTime(), rem = dl - Date.now();
+        const estourou = rem <= 0, crit = rem <= 5 * 60000;
+        return h('div', { key: r.solicitacao_id, className: 'bg-white border rounded-xl p-3 flex items-center justify-between gap-3 ' + (estourou || crit ? 'border-red-200 bg-red-50/40' : 'border-gray-200') },
+          h('div', null,
+            h('div', { className: 'text-xs font-bold text-purple-700' }, '🔍 OS ' + (r.os || '—') + ' · ' + (r.filial || '')),
+            h('div', { className: 'font-semibold text-sm text-gray-800' }, r.cliente || ''),
+            h('div', { className: 'text-[11px] text-gray-500' }, '📍 ' + (r.destino || ''))
+          ),
+          h('div', { className: 'text-right' },
+            h('div', { className: 'text-lg font-extrabold ' + (estourou || crit ? 'text-red-600 animate-pulse' : 'text-orange-600') },
+              estourou ? 'ESTOUROU ' + fmtRemSla(-rem) : fmtRemSla(rem)),
+            h('div', { className: 'text-[10px] text-gray-400' }, 'vence ' + hmBRT(dl))
+          )
+        );
+      }) : h('div', { className: 'text-gray-400 text-sm py-5 text-center bg-white border border-gray-200 rounded-xl' }, 'Nenhuma corrida em risco no momento. 🎉')
+    );
+
+    return h('div', { className: 'space-y-1' },
+      h('div', { className: 'text-[11px] text-gray-400 mb-2' }, 'Meta diária por filial · risco a ≤15 min · alerta automático no WhatsApp'),
+      painel, lista
+    );
+  }
+
   // ─── COMPONENTE PRINCIPAL ────────────────────────────────────
   window.ModuloConfirmaFacil = function (props) {
     const fetchAuth = props.fetchAuth;
@@ -901,14 +988,16 @@
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
-        [{ id: 'nfs', label: '📄 NFs Recebidas' }, { id: 'config', label: '⚙️ Configuração' }].map(a =>
+        [{ id: 'nfs', label: '📄 NFs Recebidas' }, { id: 'risco', label: '🛡️ Risco de SLA' }, { id: 'config', label: '⚙️ Configuração' }].map(a =>
           h('button', {
             key: a.id, onClick: () => setAba(a.id),
             className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (aba === a.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'),
           }, a.label)
         )
       ),
-      aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast }) : h(AbaNFs, { fetchAuth, API_URL, showToast })
+      aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
+        : aba === 'risco' ? h(AbaRiscoSLA, { fetchAuth, API_URL, showToast })
+        : h(AbaNFs, { fetchAuth, API_URL, showToast })
     );
   };
 })();
