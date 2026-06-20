@@ -506,7 +506,8 @@
               },
                 h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
                   h('span', { className: 'flex items-center gap-1.5 min-w-0' },
-                    h(ProviderLogo, { code: (e.provider_code || e.provider || 'uber'), size: 18 }),
+                    h(ProviderLogo, { code: (e.provider_code || e.provider || null), size: 18 }),
+                    h(SeloProvider, { code: (e.provider_code || e.provider || null) }),
                     h('span', { className: 'text-sm font-bold' }, `OS ${e.codigo_os}`)
                   ),
                   h('div', { className: 'flex items-center gap-1.5' },
@@ -632,10 +633,10 @@
   // tabela legada hoje. Quando a leitura migrar pra logistics_deliveries
   // (Fase 6), o provider real já aparece sem mudar nada aqui.
   function provedorInfo(entrega) {
-    const code = (entrega && (entrega.provider_code || entrega.provider)) || 'uber';
-    if (code === 'noventanove' || code === '99') return { code, nome: '99Entrega', icone: '🛵' };
-    if (code === 'uber') return { code, nome: 'Uber Direct', icone: '🛵' };
-    return { code, nome: code, icone: '📦' };
+    const code = (entrega && (entrega.provider_code || entrega.provider)) || null;
+    if (code === 'noventanove' || code === '99') return { code: 'noventanove', nome: '99Entrega', tipo: '99', icone: '🛵' };
+    if (code === 'uber') return { code: 'uber', nome: 'Uber Direct', tipo: 'uber', icone: '🛵' };
+    return { code: code, nome: code || 'Sem provedor', tipo: 'na', icone: '📦' };
   }
 
   // ──────────────────────────────────────────────────────────
@@ -693,6 +694,32 @@
         lineHeight: `${size}px`,
       },
     }, String(code || '?').charAt(0).toUpperCase());
+  }
+
+  // SeloProvider — selo de TEXTO colorido pra diferenciar o provedor num relance.
+  //  uber → preto/branco (marca Uber) · 99 → amarelo (marca 99) · sem provider → cinza neutro.
+  // Acompanha o ProviderLogo; nunca assume 'uber' por omissão (fallback neutro).
+  function SeloProvider({ code }) {
+    const c = (code === '99') ? 'noventanove' : code;
+    let texto, estilo, title;
+    if (c === 'uber') {
+      texto = 'Uber'; title = 'Uber Direct';
+      estilo = { background: '#111827', color: '#ffffff' };
+    } else if (c === 'noventanove') {
+      texto = '99'; title = '99Entrega';
+      estilo = { background: '#FAC775', color: '#412402' };
+    } else {
+      texto = 'sem provedor'; title = 'Sem provedor identificado';
+      estilo = { background: '#f3f4f6', color: '#6b7280', border: '0.5px solid #d1d5db' };
+    }
+    return h('span', {
+      title,
+      style: {
+        fontSize: '10px', fontWeight: 600, padding: '1px 7px',
+        borderRadius: '999px', whiteSpace: 'nowrap', lineHeight: '16px',
+        flexShrink: 0, ...estilo,
+      },
+    }, texto);
   }
 
   function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
@@ -764,11 +791,11 @@
             h('span', { className: 'text-lg md:text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
             h(Badge, { entrega: e }),
             h('span', {
-              className: 'inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-600',
+              className: 'inline-flex items-center gap-1.5',
               title: 'Provedor que despachou esta entrega',
             },
               h(ProviderLogo, { code: prov.code, size: 18 }),
-              prov.nome
+              h(SeloProvider, { code: prov.code })
             ),
           ),
           // Nome do cliente vindo da regra que casou (ou "Manual" se foi despacho manual)
@@ -1185,8 +1212,8 @@
       h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
         h('span', { className: 'text-sm font-bold text-gray-800' }, `OS ${e.codigo_os}`),
         h(Badge, { entrega: e }),
-        h('span', { className: 'ml-auto inline-flex items-center gap-1 text-[10px] text-gray-500 font-medium flex-shrink-0' },
-          h(ProviderLogo, { code: prov.code, size: 15 }), prov.nome),
+        h('span', { className: 'ml-auto inline-flex items-center gap-1.5 flex-shrink-0' },
+          h(ProviderLogo, { code: prov.code, size: 15 }), h(SeloProvider, { code: prov.code })),
       ),
       // cliente
       h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
@@ -1330,6 +1357,7 @@
     const [filtroStatus, setFiltroStatus] = useState('');
     const [busca, setBusca] = useState('');
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
+    const [filtroProvider, setFiltroProvider] = useState('todos'); // todos | uber | noventanove
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
     const [dataFiltro, setDataFiltro] = useState(dataLocalBRT(new Date())); // YYYY-MM-DD em BRT; padrao = hoje
@@ -1632,6 +1660,15 @@
         });
       }
 
+      // Filtro de provedor (todos | uber | noventanove)
+      if (filtroProvider !== 'todos') {
+        lista = lista.filter(e => {
+          const c = (e.provider_code || e.provider || '');
+          const norm = (c === '99') ? 'noventanove' : c;
+          return norm === filtroProvider;
+        });
+      }
+
       // Ordenação
       const ordenado = [...lista].sort((a, b) => {
         if (ordenacao === 'recente') return new Date(b.created_at) - new Date(a.created_at);
@@ -1644,7 +1681,7 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider]);
 
     // Resumo — total de margem da lista filtrada
     const resumo = useMemo(() => {
@@ -1812,6 +1849,16 @@
           h('option', { value: 'todas' }, 'Margem: todas'),
           h('option', { value: 'positiva' }, 'Margem: positiva'),
           h('option', { value: 'negativa' }, 'Margem: negativa (prejuízo)'),
+        ),
+        h('select', {
+          value: filtroProvider,
+          onChange: e => setFiltroProvider(e.target.value),
+          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+          title: 'Filtrar por provedor logístico',
+        },
+          h('option', { value: 'todos' }, 'Todos os provedores'),
+          h('option', { value: 'uber' }, 'Uber'),
+          h('option', { value: 'noventanove' }, '99'),
         ),
         h('select', {
           value: ordenacao,
