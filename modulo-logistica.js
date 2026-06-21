@@ -507,7 +507,6 @@
                 h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
                   h('span', { className: 'flex items-center gap-1.5 min-w-0' },
                     h(ProviderLogo, { code: (e.provider_code || e.provider || null), size: 18 }),
-                    h(SeloProvider, { code: (e.provider_code || e.provider || null) }),
                     h('span', { className: 'text-sm font-bold' }, `OS ${e.codigo_os}`)
                   ),
                   h('div', { className: 'flex items-center gap-1.5' },
@@ -794,8 +793,7 @@
               className: 'inline-flex items-center gap-1.5',
               title: 'Provedor que despachou esta entrega',
             },
-              h(ProviderLogo, { code: prov.code, size: 18 }),
-              h(SeloProvider, { code: prov.code })
+              h(ProviderLogo, { code: prov.code, size: 18 })
             ),
           ),
           // Nome do cliente vindo da regra que casou (ou "Manual" se foi despacho manual)
@@ -1213,7 +1211,7 @@
         h('span', { className: 'text-sm font-bold text-gray-800' }, `OS ${e.codigo_os}`),
         h(Badge, { entrega: e }),
         h('span', { className: 'ml-auto inline-flex items-center gap-1.5 flex-shrink-0' },
-          h(ProviderLogo, { code: prov.code, size: 15 }), h(SeloProvider, { code: prov.code })),
+          h(ProviderLogo, { code: prov.code, size: 15 })),
       ),
       // cliente
       h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
