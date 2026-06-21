@@ -24,7 +24,7 @@
       border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(28,9,52,.22);
       overflow:hidden;display:flex;flex-direction:column}
 
-    .topo{background:linear-gradient(135deg,var(--roxo) 0%,var(--roxo2) 100%);color:#fff;padding:18px 20px;flex-shrink:0}
+    .topo{background:linear-gradient(135deg,var(--roxo) 0%,var(--roxo2) 100%);color:#fff;padding:18px 20px;flex-shrink:0;position:relative}
     .logo svg{height:38px;width:auto;display:block}
     .badge{margin-top:13px;display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:30px;font-size:14px;font-weight:600}
     .dot{width:9px;height:9px;border-radius:50%;background:var(--laranja);flex-shrink:0;box-shadow:0 0 0 0 rgba(245,146,30,.55);animation:pulse 1.7s infinite}
@@ -73,9 +73,11 @@
     .leaflet-top.leaflet-left{top:14px;left:auto;right:14px}
 
     @media (max-width:720px){
-      .painel{top:auto;bottom:0;left:0;width:100%;max-height:74vh;border-radius:24px 24px 0 0}
-      .painel::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;border-radius:3px;background:rgba(0,0,0,.15);z-index:9}
-      .topo{padding-top:20px}
+      .painel{top:auto;bottom:0;left:0;width:100%;max-height:84vh;border-radius:24px 24px 0 0;transition:transform .34s cubic-bezier(.32,.72,0,1)}
+      .painel.dragging{transition:none}
+      .topo{padding-top:24px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:none}
+      .topo::before{content:'';position:absolute;top:9px;left:50%;transform:translateX(-50%);width:42px;height:4px;border-radius:3px;background:rgba(255,255,255,.5);z-index:9}
+      .corpo{overscroll-behavior:contain}
       .leaflet-top.leaflet-left{top:10px;right:10px}
     }
   </style>
@@ -205,6 +207,7 @@
 
     lastTs=Date.now();tickUpd();
     if(fin&&pollTimer){clearInterval(pollTimer);pollTimer=null;document.getElementById('upd').textContent='entrega finalizada';}
+    _apply();
   }
 
   function tickUpd(){if(!lastTs)return;var s=Math.round((Date.now()-lastTs)/1000);document.getElementById('upd').textContent='atualizado há '+(s<5?'instantes':s+'s')+' · atualiza a cada 30s';}
@@ -215,6 +218,19 @@
       .then(render)
       .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponível';document.getElementById('dot').style.background='#e24b4a';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
   }
+
+  // bottom sheet (mobile): arrastar pra baixo ou tocar no topo minimiza e revela o mapa
+  var _painel=document.querySelector('.painel'),_topo=document.querySelector('.topo');
+  var _min=false,_sy=null,_st=0,_moved=false;
+  function _mob(){return window.matchMedia('(max-width:720px)').matches;}
+  function _curT(){var m=/translateY\(([-\d.]+)px\)/.exec(_painel.style.transform||'');return m?parseFloat(m[1]):0;}
+  function _off(){return Math.max(0,_painel.offsetHeight-_topo.offsetHeight);}
+  function _apply(){if(!_mob()){_painel.style.transform='';return;}_painel.style.transform='translateY('+(_min?_off():0)+'px)';}
+  _topo.addEventListener('touchstart',function(e){if(!_mob())return;_sy=e.touches[0].clientY;_st=_curT();_moved=false;_painel.classList.add('dragging');},{passive:true});
+  _topo.addEventListener('touchmove',function(e){if(!_mob()||_sy==null)return;var dy=e.touches[0].clientY-_sy;if(Math.abs(dy)>5)_moved=true;_painel.style.transform='translateY('+Math.max(0,Math.min(_off(),_st+dy))+'px)';},{passive:true});
+  _topo.addEventListener('touchend',function(){if(!_mob()||_sy==null)return;_painel.classList.remove('dragging');_min=_curT()>_off()/2;_apply();_sy=null;},{passive:true});
+  _topo.addEventListener('click',function(){if(!_mob()||_moved)return;_min=!_min;_apply();});
+  window.addEventListener('resize',_apply);
 
   if(!token||token.length<8){document.getElementById('statusText').textContent='Link inválido';document.getElementById('notfound').style.display='block';}
   else{load();pollTimer=setInterval(load,30000);setInterval(tickUpd,1000);}
