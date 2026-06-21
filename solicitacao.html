@@ -118,6 +118,11 @@
       @media (max-width:860px){.tlg-wrap{grid-template-columns:1fr}.tlg-stage{padding:30px 26px 38px;min-height:auto}.tlg-hero{margin:24px 0}.tlg-mark{width:66%}.tlg-htitle{font-size:22px;margin-top:30px}.tlg-side{padding:28px 18px 44px}}
       @media (prefers-reduced-motion:reduce){.tlg-wrap *{animation:none !important}.tlg-mark,.tlg-card,.tlg-grp,.tlg-btn,.tlg-foot,.tlg-top,.tlg-htitle{opacity:1 !important;transform:none !important}.tlg-shine{display:none}}
     </style>
+    <style id="tlg-rota-style">
+      .rota-flow{stroke-dasharray:2 13;stroke-linecap:round;animation:rotaFlow .9s linear infinite}
+      @keyframes rotaFlow{to{stroke-dashoffset:-15}}
+      @media (prefers-reduced-motion:reduce){.rota-flow{animation:none}}
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div id="root"></div>
@@ -213,6 +218,8 @@
             const mapInstanceRef = useRef(null);
             const markersLayerRef = useRef(null);
             const lastPontosHash = useRef('');
+            const tileLayerRef = useRef(null);
+            const [satMapa, setSatMapa] = useState(false); // false = mapa tradicional (padrao); true = satelite
             
             useEffect(() => {
                 if (typeof L === 'undefined') return;
@@ -220,7 +227,8 @@
                 if (!container) return;
                 if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
                 const map = L.map(container, { center: center, zoom: zoom, zoomControl: true });
-                L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: 'Google' }).addTo(map);
+                const tlBase = L.tileLayer(`https://mt1.google.com/vt/lyrs=${satMapa ? 'y' : 'm'}&x={x}&y={y}&z={z}`, { maxZoom: 20, attribution: 'Google' }).addTo(map);
+                tileLayerRef.current = tlBase;
                 const markersLayer = L.layerGroup().addTo(map);
                 mapInstanceRef.current = map;
                 markersLayerRef.current = markersLayer;
@@ -228,6 +236,12 @@
                 setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 100);
                 return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
             }, [id]);
+            
+            useEffect(() => {
+                if (tileLayerRef.current) {
+                    tileLayerRef.current.setUrl(`https://mt1.google.com/vt/lyrs=${satMapa ? 'y' : 'm'}&x={x}&y={y}&z={z}`);
+                }
+            }, [satMapa]);
             
             useEffect(() => {
                 const map = mapInstanceRef.current;
@@ -271,9 +285,10 @@
                             // Remove a linha reta e desenha a rota real
                             markersLayer.removeLayer(linhaReta);
                             const coordsRota = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                            // Faixa-swoosh da marca: glow laranja largo por baixo + linha solida por cima
-                            L.polyline(coordsRota, { color: '#f67602', weight: 11, opacity: 0.18, lineCap: 'round', lineJoin: 'round' }).addTo(markersLayer);
+                            // Faixa-swoosh da marca: glow + linha solida + fluxo animado branco (efeito pow)
+                            L.polyline(coordsRota, { color: '#f67602', weight: 14, opacity: 0.22, lineCap: 'round', lineJoin: 'round' }).addTo(markersLayer);
                             L.polyline(coordsRota, { color: '#f67602', weight: 5, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(markersLayer);
+                            L.polyline(coordsRota, { color: '#ffffff', weight: 3, opacity: 0.9, lineCap: 'round', className: 'rota-flow' }).addTo(markersLayer);
                         })
                         .catch(() => { /* mantém a linha reta se o OSRM falhar */ });
                 }
@@ -296,7 +311,15 @@
                 return () => observer.disconnect();
             }, []);
             
-            return <div ref={mapRef} className="rounded-xl shadow-lg overflow-hidden" style={{ height, minHeight: '300px', width: '100%' }} />;
+            return (
+                <div className="relative rounded-xl shadow-lg overflow-hidden" style={{ height, minHeight: '300px', width: '100%' }}>
+                    <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
+                    <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 500 }} className="flex rounded-lg overflow-hidden shadow-md text-xs font-semibold">
+                        <button type="button" onClick={() => setSatMapa(false)} className={!satMapa ? 'px-3 py-1.5 bg-purple-700 text-white' : 'px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-100'}>Mapa</button>
+                        <button type="button" onClick={() => setSatMapa(true)} className={satMapa ? 'px-3 py-1.5 bg-purple-700 text-white' : 'px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-100'}>Satelite</button>
+                    </div>
+                </div>
+            );
         };
         
         // ============ Componente de Ajuste com Google Maps — toggle Mapa/Satélite 3D ============
@@ -304,7 +327,7 @@
             const mapRef = useRef(null);
             const mapInstanceRef = useRef(null);
             const markerRef = useRef(null);
-            const [tipoMapa, setTipoMapa] = useState('roadmap'); // 'roadmap' (padrao) | 'satellite'
+            const [tipoMapa, setTipoMapa] = useState('satellite'); // 'roadmap' | 'satellite' (satelite 3D p/ ajuste fino)
             const [googleCarregado, setGoogleCarregado] = useState(!!(typeof window !== 'undefined' && window.google?.maps));
             
             // Aguardar Google Maps carregar (script é defer no <head>)
