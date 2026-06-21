@@ -2968,6 +2968,44 @@
                                                                     </div>
                                                                 );
                                                             })()}
+                                                            {/* Timeline-swoosh (redesign) — reflete o estagio real via mesma normalizacao de pontos */}
+                                                            {(() => {
+                                                                if (c.status === 'cancelado' || c.status === 'erro') return null;
+                                                                const norm = (p) => {
+                                                                    if (!p) return 'pendente';
+                                                                    if (p.status && ['chegou','coletado','finalizado','pendente'].includes(p.status)) return p.status;
+                                                                    const cod = (p.codigo || '').toUpperCase();
+                                                                    if (cod === 'CHE') return 'chegou';
+                                                                    if (cod === 'COL') return 'coletado';
+                                                                    if (cod === 'FIN') return 'finalizado';
+                                                                    return 'pendente';
+                                                                };
+                                                                let pts = c.pontos || c.pontos_status || c.dados_pontos;
+                                                                if (pts && typeof pts === 'string') { try { pts = JSON.parse(pts); } catch { pts = null; } }
+                                                                if (!Array.isArray(pts)) pts = null;
+                                                                const sc = pts && pts[0] ? norm(pts[0]) : 'pendente';
+                                                                const se = pts && pts[1] ? norm(pts[1]) : 'pendente';
+                                                                const fin = c.status === 'finalizado' || se === 'finalizado';
+                                                                const coletaOk = fin || sc === 'coletado' || sc === 'finalizado';
+                                                                const etapas = [
+                                                                    { lbl: 'Coleta',   ic: '📦', ok: coletaOk,            now: !coletaOk && c.status !== 'enviado' },
+                                                                    { lbl: 'Em rota',  ic: '🛵', ok: fin,                 now: (coletaOk && !fin) || se === 'chegou' },
+                                                                    { lbl: 'Entregue', ic: '🏁', ok: fin,                 now: false }
+                                                                ];
+                                                                return (
+                                                                    <div className="flex items-center mt-3 mb-1 px-1">
+                                                                        {etapas.map((et, i) => (
+                                                                            <React.Fragment key={i}>
+                                                                                {i > 0 && <div className={`flex-1 h-0.5 ${etapas[i-1].ok ? 'bg-gradient-to-r from-orange-400 to-purple-600' : 'bg-gray-200'}`}></div>}
+                                                                                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] border-2 border-white ${et.ok ? 'bg-purple-700 text-white shadow' : et.now ? 'bg-orange-500 text-white shadow ring-2 ring-orange-200' : 'bg-gray-100 text-gray-400'}`}>{et.ok ? '✓' : et.ic}</div>
+                                                                                    <span className={`text-[10px] font-medium ${et.ok ? 'text-gray-700' : et.now ? 'text-orange-600' : 'text-gray-400'}`}>{et.lbl}</span>
+                                                                                </div>
+                                                                            </React.Fragment>
+                                                                        ))}
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                             {/* Alerta de retorno */}
                                                             {temRetorno && (
                                                                 <div className="mt-2 group relative">
