@@ -6,116 +6,172 @@
   <meta name="theme-color" content="#54168a" />
   <title>Rastreamento Tutts</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2354168a'/><text y='.92em' x='8' font-size='62' font-style='italic' font-family='Trebuchet MS' fill='white'>t</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    :root{--roxo:#5b1a9e;--roxo2:#7c3aed;--laranja:#f5921e;--tinta:#16121f;--muted:#6b6577;--linha:#ece8f3;--ok:#1d9e75;--err:#e24b4a}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#eef0f3;color:#1f2430;-webkit-font-smoothing:antialiased}
-    .wrap{max-width:480px;margin:0 auto;min-height:100vh;background:#fff;display:flex;flex-direction:column}
-    .hd{background:#54168a;color:#fff;padding:16px 18px}
-    .hd .logo{display:flex;align-items:center;gap:10px}
-    .status{margin-top:13px;display:flex;align-items:center;gap:9px;font-size:16px;font-weight:600}
-    .dot{width:9px;height:9px;border-radius:50%;background:#f5921e;display:inline-block}
-    .eta{font-size:12.5px;color:#e6d8f5;margin-top:4px;padding-left:18px}
-    #map{width:100%;height:300px;background:#dde2e8}
-    .sec{padding:15px 18px;border-bottom:1px solid #f0f0f4}
-    .lbl{font-size:11px;color:#9aa0aa;text-transform:lowercase}
-    .courier{display:flex;align-items:center;gap:12px}
-    .av{width:46px;height:46px;border-radius:50%;background:#eee9fb;color:#7c3aed;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
-    .tl-item{display:flex;align-items:center;gap:11px;padding:4px 0;font-size:13.5px}
-    .tl-ic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0}
-    .addr{display:flex;gap:10px;align-items:flex-start;margin-top:11px}
-    .pin{width:22px;text-align:center;font-size:17px;flex-shrink:0}
-    .ft{text-align:center;padding:13px;font-size:11px;color:#9b8fc4;background:#faf7fd;margin-top:auto}
-    .upd{font-size:11px;color:#8b929c;text-align:center;padding:9px}
-    .msg{padding:60px 24px;text-align:center;color:#6b7280}
+    html,body{height:100%}
+    body{font-family:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--tinta);-webkit-font-smoothing:antialiased;overflow:hidden}
+
+    #map{position:fixed;inset:0;width:100%;height:100%;background:#dde2e8;z-index:0}
+
+    .painel{position:fixed;z-index:5;top:20px;left:20px;width:384px;max-height:calc(100vh - 40px);
+      background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
+      border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(28,9,52,.22);
+      overflow:hidden;display:flex;flex-direction:column}
+
+    .topo{background:linear-gradient(135deg,var(--roxo) 0%,var(--roxo2) 100%);color:#fff;padding:18px 20px;flex-shrink:0}
+    .logo svg{height:38px;width:auto;display:block}
+    .badge{margin-top:13px;display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:30px;font-size:14px;font-weight:600}
+    .dot{width:9px;height:9px;border-radius:50%;background:var(--laranja);flex-shrink:0;box-shadow:0 0 0 0 rgba(245,146,30,.55);animation:pulse 1.7s infinite}
+    @keyframes pulse{to{box-shadow:0 0 0 9px rgba(245,146,30,0)}}
+    .eta{margin-top:13px;display:flex;align-items:baseline;gap:8px;min-height:18px}
+    .eta b{font-size:30px;font-weight:700;line-height:1}
+    .eta span{font-size:13px;opacity:.85}
+
+    .corpo{padding:18px 20px;overflow-y:auto}
+    .upd{font-size:11px;color:#8b929c;text-align:center;padding:0 0 12px}
+
+    .tl{position:relative}
+    .tl-item{display:flex;gap:13px;position:relative;padding-bottom:18px}
+    .tl-item:last-child{padding-bottom:0}
+    .tl-rail{position:absolute;left:13px;top:26px;bottom:4px;width:2px;background:var(--linha)}
+    .tl-item.done .tl-rail{background:var(--roxo2)}
+    .tl-ic{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--linha);color:#a9a2b8;z-index:1}
+    .tl-item.done .tl-ic{background:var(--roxo2);color:#fff}
+    .tl-item.cur .tl-ic{background:#fff;color:var(--roxo2);border:2px solid var(--roxo2);box-shadow:0 0 0 4px rgba(124,58,237,.14)}
+    .tl-item.fin .tl-ic{background:var(--ok);color:#fff}
+    .tl-tx{padding-top:4px}
+    .tl-tx .t{font-size:14px;font-weight:500;color:#a9a2b8}
+    .tl-item.done .tl-tx .t,.tl-item.cur .tl-tx .t{color:var(--tinta)}
+    .tl-tx .s{font-size:12px;color:var(--muted);margin-top:1px}
+
+    .sep{height:1px;background:var(--linha);margin:16px 0}
+
+    .moto{display:flex;align-items:center;gap:12px}
+    .av{width:48px;height:48px;border-radius:50%;background:#efeafb;color:var(--roxo2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;overflow:hidden}
+    .moto .nome{font-size:15px;font-weight:600}
+    .moto .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+    .moto .fone{font-size:12.5px;color:var(--roxo);font-weight:600;margin-top:1px}
+    .ligar{margin-left:auto;display:none;align-items:center;gap:6px;background:var(--roxo);color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:9px 15px;border-radius:24px;white-space:nowrap;flex-shrink:0}
+
+    .end{display:flex;gap:12px;margin-top:14px}
+    .end:first-child{margin-top:0}
+    .end .eico{width:30px;height:30px;border-radius:9px;background:#f4f1fa;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .end .lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+    .end .val{font-size:13px;color:#3a3447;margin-top:2px;line-height:1.45}
+
+    .rod{padding:13px 20px;text-align:center;font-size:11.5px;color:#9b8fc4;border-top:1px solid var(--linha);flex-shrink:0}
+    .rod b.r{color:var(--roxo)} .rod b.l{color:var(--laranja)}
+    .msg{padding:30px 20px;text-align:center;color:#6b7280;font-size:14px;line-height:1.6}
+
     .leaflet-control-attribution{font-size:9px}
-    @media (min-width:820px){
-      body{padding:30px 16px}
-      .wrap{max-width:1000px;min-height:0;border-radius:18px;overflow:hidden;box-shadow:0 12px 44px rgba(84,22,138,.14)}
-      #content{display:flex;align-items:stretch}
-      #map{flex:1.15;height:auto;min-height:540px}
-      .panel{flex:1;max-width:480px;min-width:360px;display:flex;flex-direction:column}
-      .panel .sec:last-child{border-bottom:none}
+    .leaflet-top.leaflet-left{top:14px;left:auto;right:14px}
+
+    @media (max-width:720px){
+      .painel{top:auto;bottom:0;left:0;width:100%;max-height:74vh;border-radius:24px 24px 0 0}
+      .painel::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;border-radius:3px;background:rgba(0,0,0,.15);z-index:9}
+      .topo{padding-top:20px}
+      .leaflet-top.leaflet-left{top:10px;right:10px}
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="hd">
+  <div id="map"></div>
+
+  <div class="painel">
+    <div class="topo">
       <div class="logo">
-        <svg viewBox="0 0 132 60" style="height:40px;width:auto" aria-label="Tutts">
+        <svg viewBox="0 0 132 60" aria-label="Tutts">
           <text x="2" y="36" font-family="Trebuchet MS, Verdana, sans-serif" font-size="36" font-style="italic" font-weight="700" fill="#fff" letter-spacing="-1.5">tutts</text>
           <path d="M5,50 C34,61 72,60 99,47" fill="none" stroke="#f5921e" stroke-width="8" stroke-linecap="round"/>
           <path d="M90,40 L120,37 L101,59 Z" fill="#f5921e"/>
         </svg>
       </div>
-      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Carregando...</span></div>
+      <div class="badge"><span class="dot" id="dot"></span><span id="statusText">Carregando...</span></div>
       <div class="eta" id="eta"></div>
     </div>
 
-    <div id="content" style="display:none">
-      <div id="map"></div>
-      <div class="panel">
+    <div class="corpo" id="content" style="display:none">
       <div class="upd" id="upd"></div>
-      <div class="sec"><div id="timeline"></div></div>
-      <div class="sec">
-        <div class="courier">
-          <div class="av" id="cav">--</div>
-          <div style="flex:1">
-            <div style="font-size:14.5px;font-weight:600" id="cname">aguardando entregador</div>
-            <div style="font-size:12.5px;color:#6b7280" id="cveic">sera definido ao aceitar</div>
-            <div style="font-size:12.5px;color:#54168a;font-weight:600;margin-top:1px" id="cphone"></div>
-          </div>
-          <a id="ccall" href="#" style="display:none;align-items:center;gap:6px;background:#54168a;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:8px 14px;border-radius:20px;white-space:nowrap">&#128222; Ligar</a>
+      <div class="tl" id="timeline"></div>
+
+      <div class="sep"></div>
+
+      <div class="moto">
+        <div class="av" id="cav">--</div>
+        <div style="flex:1;min-width:0">
+          <div class="nome" id="cname">aguardando entregador</div>
+          <div class="sub" id="cveic">será definido ao aceitar</div>
+          <div class="fone" id="cphone"></div>
         </div>
+        <a class="ligar" id="ccall" href="#">&#128222; Ligar</a>
       </div>
-      <div class="sec" style="border-bottom:none">
-        <div class="addr"><div class="pin">&#127978;</div><div><div class="lbl" style="font-weight:700;color:#374151">Coleta</div><div style="font-size:13px" id="aColeta">-</div></div></div>
-        <div class="addr"><div class="pin">&#128205;</div><div><div class="lbl" style="font-weight:700;color:#374151">Entrega</div><div style="font-size:13px" id="aEntrega">-</div></div></div>
-      </div>
-      </div>
+
+      <div class="sep"></div>
+
+      <div class="end"><div class="eico">&#127978;</div><div><div class="lbl">Coleta</div><div class="val" id="aColeta">-</div></div></div>
+      <div class="end"><div class="eico">&#128205;</div><div><div class="lbl">Entrega</div><div class="val" id="aEntrega">-</div></div></div>
     </div>
 
-    <div id="notfound" class="msg" style="display:none">
-      Rastreamento nao encontrado ou expirado.<br/>Verifique o link recebido.
+    <div class="msg" id="notfound" style="display:none">
+      Rastreamento não encontrado ou expirado.<br/>Verifique o link recebido.
     </div>
 
-    <div class="ft">Rastreamento - <b style="color:#54168a">Tutts</b> <b style="color:#f5921e">servi&ccedil;o de entregas r&aacute;pidas</b></div>
+    <div class="rod">Rastreamento <b class="r">Tutts</b> · <b class="l">serviço de entregas rápidas</b></div>
   </div>
 
 <script>
 (function(){
   var API='https://tutts-backend-production.up.railway.app';
   var token=location.pathname.replace(/^\/r\//,'').replace(/\/+$/,'').split('/').pop();
-  var STEPS=['Pedido despachado','Entregador em processo de coleta','Saiu para entrega','Entregue'];
+  var STEPS=[
+    {t:'Pedido despachado', s:'Buscando o melhor entregador'},
+    {t:'Entregador a caminho da coleta', s:''},
+    {t:'Saiu para entrega', s:''},
+    {t:'Entregue', s:''}
+  ];
   var map,mCourier,mPickup,mDrop,pollTimer,lastTs;
 
-  function icon(color,glyph){return L.divIcon({className:'',html:'<div style="background:'+color+';width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:13px">'+glyph+'</span></div>',iconSize:[30,30],iconAnchor:[15,28]});}
-  function motoIcon(foto){var base='<div style="width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #7c3aed;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px">\uD83D\uDEF5</div>';var img=foto?'<img src="'+foto+'" alt="" style="position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #7c3aed;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.3)" onerror="this.style.display=\'none\'">':'';return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-20px;top:-20px;width:40px;height:40px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-17px;top:-17px;width:34px;height:34px">'+base+img+'</div></div>',iconSize:[0,0],iconAnchor:[0,0]});}
   function emojiMarker(e,size){var s=size||28;return L.divIcon({className:'',html:'<div style="font-size:'+s+'px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4)">'+e+'</div>',iconSize:[s,s],iconAnchor:[s/2,s]});}
+  function motoIcon(foto){
+    var base='<div style="width:38px;height:38px;border-radius:50%;background:#fff;border:2.5px solid #7c3aed;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:21px">\uD83D\uDEF5</div>';
+    var img=foto?'<img src="'+foto+'" alt="" style="position:absolute;left:0;top:0;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #7c3aed;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,.3)" onerror="this.style.display=\'none\'">':'';
+    return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-19px;top:-19px;width:38px;height:38px">'+base+img+'</div></div>',iconSize:[0,0],iconAnchor:[0,0]});
+  }
 
   function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);setTimeout(function(){try{map.invalidateSize()}catch(e){}},200);}
   window.addEventListener('resize',function(){if(map){try{map.invalidateSize()}catch(e){}}});
 
-  function timeline(etapa){
+  function timeline(etapa,fin){
     var h='';
     for(var i=0;i<STEPS.length;i++){
       var done=i<etapa,cur=i===etapa;
-      var col=(done||cur)?(etapa===3&&cur?'#1d9e75':'#54168a'):'#d2d6dd';
-      var gly=done?'&#10003;':(cur?'&#9679;':'');
-      h+='<div class="tl-item"><div class="tl-ic" style="background:'+col+'">'+gly+'</div><span style="color:'+((done||cur)?'#1f2430':'#aeb4be')+';font-weight:'+(cur?600:400)+'">'+STEPS[i]+'</span></div>';
+      var cls=done?'done':(cur?'cur':'');
+      if(cur&&fin)cls='fin';
+      var gly=done?'&#10003;':(cur?(fin?'&#10003;':'&#9679;'):'');
+      var sub=(STEPS[i].s&&(cur||done))?'<div class="s">'+STEPS[i].s+'</div>':'';
+      var rail=(i<STEPS.length-1)?'<div class="tl-rail"></div>':'';
+      h+='<div class="tl-item '+cls+'">'+rail+'<div class="tl-ic">'+gly+'</div><div class="tl-tx"><div class="t">'+STEPS[i].t+'</div>'+sub+'</div></div>';
     }
     document.getElementById('timeline').innerHTML=h;
   }
 
   function render(d){
     document.getElementById('content').style.display='block';
+    document.getElementById('notfound').style.display='none';
     document.getElementById('statusText').textContent=d.status_label||'Em andamento';
     var fin=d.finalizado;
     document.getElementById('dot').style.background=(d.status==='DELIVERED')?'#1d9e75':(d.status==='CANCELED'||d.status==='RETURNED')?'#e24b4a':'#f5921e';
-    document.getElementById('eta').textContent=fin?'':(d.eta_minutos?('chega em ~'+d.eta_minutos+' min'):'acompanhe em tempo real');
-    timeline(d.etapa>=0?d.etapa:0);
+    var etaEl=document.getElementById('eta');
+    if(fin){etaEl.innerHTML='';}
+    else if(d.eta_minutos){etaEl.innerHTML='<b>~'+d.eta_minutos+'</b><span>min para chegar</span>';}
+    else{etaEl.innerHTML='<span>acompanhe em tempo real</span>';}
+    timeline(d.etapa>=0?d.etapa:0,fin);
 
     if(d.entregador&&d.entregador.nome){
       var n=d.entregador.nome.trim().split(' ');
@@ -125,14 +181,14 @@
       else{cav.textContent=ini;}
       document.getElementById('cname').textContent=d.entregador.nome;
       var v=[];if(d.entregador.veiculo)v.push(d.entregador.veiculo);if(d.entregador.placa)v.push('placa '+d.entregador.placa);
-      document.getElementById('cveic').textContent=v.length?v.join(' - '):'moto';
+      document.getElementById('cveic').textContent=v.length?v.join(' · '):'moto';
       var cc=document.getElementById('ccall');
       if(cc){if(d.entregador.telefone){cc.href='tel:'+String(d.entregador.telefone).replace(/[^0-9+]/g,'');cc.style.display='flex';}else{cc.style.display='none';}}
       var cp=document.getElementById('cphone');
       if(cp){var _t=String(d.entregador.telefone||'').replace(/\D/g,'');if(_t.length>11&&_t.indexOf('55')===0)_t=_t.slice(2);var _f=_t.length===11?'('+_t.slice(0,2)+') '+_t.slice(2,7)+'-'+_t.slice(7):(_t.length===10?'('+_t.slice(0,2)+') '+_t.slice(2,6)+'-'+_t.slice(6):String(d.entregador.telefone||''));cp.textContent=d.entregador.telefone?_f:'';}
     }
     document.getElementById('aColeta').textContent=d.coleta.endereco||'-';
-    document.getElementById('aEntrega').textContent=(d.entrega.nome?d.entrega.nome+' - ':'')+(d.entrega.endereco||'-');
+    document.getElementById('aEntrega').textContent=(d.entrega.nome?d.entrega.nome+' · ':'')+(d.entrega.endereco||'-');
 
     var pickup=(d.coleta.lat!=null)?[d.coleta.lat,d.coleta.lng]:null;
     var drop=(d.entrega.lat!=null)?[d.entrega.lat,d.entrega.lng]:null;
@@ -145,22 +201,22 @@
     if(cour){var _fc=(d.entregador&&d.entregador.foto)||null;if(!mCourier)mCourier=L.marker(cour,{icon:motoIcon(_fc),zIndexOffset:1000}).addTo(map);else{mCourier.setLatLng(cour);mCourier.setIcon(motoIcon(_fc));}}
 
     var pts=[];if(cour)pts.push(cour);if(drop)pts.push(drop);if(!cour&&pickup)pts.push(pickup);
-    if(pts.length>1)map.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)map.setView(pts[0],15);
+    if(pts.length>1)map.fitBounds(pts,{padding:[80,80],maxZoom:15});else if(pts.length===1)map.setView(pts[0],15);
 
     lastTs=Date.now();tickUpd();
     if(fin&&pollTimer){clearInterval(pollTimer);pollTimer=null;document.getElementById('upd').textContent='entrega finalizada';}
   }
 
-  function tickUpd(){if(!lastTs)return;var s=Math.round((Date.now()-lastTs)/1000);document.getElementById('upd').textContent='atualizado ha '+(s<5?'instantes':s+'s')+' - atualiza a cada 30s';}
+  function tickUpd(){if(!lastTs)return;var s=Math.round((Date.now()-lastTs)/1000);document.getElementById('upd').textContent='atualizado há '+(s<5?'instantes':s+'s')+' · atualiza a cada 30s';}
 
   function load(){
     fetch(API+'/api/logistics/rastreio/'+encodeURIComponent(token))
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(render)
-      .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponivel';document.getElementById('dot').style.background='#e24b4a';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
+      .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponível';document.getElementById('dot').style.background='#e24b4a';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
   }
 
-  if(!token||token.length<8){document.getElementById('statusText').textContent='Link invalido';document.getElementById('notfound').style.display='block';}
+  if(!token||token.length<8){document.getElementById('statusText').textContent='Link inválido';document.getElementById('notfound').style.display='block';}
   else{load();pollTimer=setInterval(load,30000);setInterval(tickUpd,1000);}
 })();
 </script>
