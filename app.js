@@ -728,7 +728,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
-        React.createElement("header", { className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg" },
+        React.createElement("header", { className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg" },
             React.createElement("div", { className: "max-w-full mx-auto px-4 py-2" },
                 // Linha 1: Logo + Módulos + Usuário
                 React.createElement("div", { className: "flex items-center justify-between gap-4" },
@@ -929,7 +929,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
         React.createElement("header", {
-            className: "bg-gradient-to-r from-indigo-900 to-purple-900 shadow-lg"
+            className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg"
         },
             React.createElement("div", { className: "max-w-full mx-auto px-3 py-2" },
                 React.createElement("div", { className: "flex items-center justify-between gap-2" },
@@ -20879,7 +20879,7 @@ const hideLoadingScreen = () => {
             
             // Header
             React.createElement("nav", {
-                className: "bg-gradient-to-r from-purple-700 to-indigo-700 shadow-lg"
+                className: "bg-gradient-to-r from-[#3a1556] via-[#5d0b85] to-[#770fa8] shadow-lg"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {className: "flex items-center gap-3"},
@@ -20906,16 +20906,16 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "text-center mb-12"},
                     React.createElement("h1", {
                         className: "text-4xl md:text-5xl font-bold text-gray-800 mb-4"
-                    }, getSaudacao(), ", ", React.createElement("span", {className: "text-purple-600"}, primeiroNome), "!"),
+                    }, getSaudacao(), ", ", React.createElement("span", {className: "text-purple-600 thome-name"}, primeiroNome), "!"),
                     React.createElement("p", {className: "text-xl text-gray-600 mb-2"}, "Seja bem-vindo(a) à Central Tutts"),
-                    React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-purple-500"},
+                    React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-[#f67602] thome-quote"},
                         React.createElement("p", {className: "text-lg text-gray-700 italic"}, "\"", mensagemGentileza, "\""),
                         React.createElement("p", {className: "text-purple-500 mt-2"}, "💜")
                     )
                 ),
                 
                 // Botões de Acesso Rápido
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6"},
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 thome-grid"},
                     // Solicitações
                     hasModuleAccess(l, "solicitacoes") &&
                     React.createElement("div", {
