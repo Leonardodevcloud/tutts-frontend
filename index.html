@@ -351,6 +351,11 @@
     @keyframes tspSweep{0%{background-position:175% 0;opacity:0}25%{opacity:1}55%{opacity:1}75%,100%{background-position:-75% 0;opacity:0}}
     @keyframes tspBlink{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
     @media (prefers-reduced-motion:reduce){.tsp-comet,.tsp-shine,.tsp-dot,.tsp-mark{animation:none !important}.tsp-ring,.tsp-title,.tsp-sub,.tsp-load{opacity:1 !important;transform:none !important}}
+    /* fix: splash deve cobrir a tela toda — restaura position:fixed (o override
+       do login marcou .from-purple-100.to-purple-200 como relative e, por ter
+       mais especificidade que .fixed, derrubava o fixed do splash). So o splash
+       tem a classe .fixed, entao o login nao e afetado. */
+    .fixed.from-purple-100.to-purple-200{ position:fixed !important; inset:0 !important; }
   </style>
 </head>
 <body>
