@@ -2318,18 +2318,37 @@
     },
       h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto' },
 
-        // Header do modal — limpo, só OS + status
-        h('div', { className: 'sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between' },
-          h('div', null,
-            h('h3', { className: 'text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
-            h('div', { className: 'flex items-center gap-2 mt-1' },
-              h(Badge, { entrega: e }),
-            )
+        // Header do modal — OS + status + banner Uber ID (quando for Uber)
+        h('div', { className: 'sticky top-0 bg-white border-b border-gray-200' },
+          // Banner roxo "numero de entrega" — so exibe para entregas Uber
+          e.uber_delivery_id && e.provider_code === 'uber' && h('div', {
+            className: 'flex items-center justify-center gap-2 bg-purple-600 text-white text-sm font-medium px-5 py-2',
+          },
+            h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 20 20', fill: 'currentColor', className: 'w-4 h-4 flex-shrink-0' },
+              h('path', { fillRule: 'evenodd', d: 'M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z', clipRule: 'evenodd' })
+            ),
+            h('span', null,
+              'O numero de entrega do pedido e ',
+              h('strong', null, `#${e.codigo_os}`),
+              ' (Uber ID: ',
+              h('span', { className: 'font-mono' },
+                String(e.uber_delivery_id).slice(-5).toUpperCase()
+              ),
+              ')'
+            ),
           ),
-          h('button', {
-            onClick: onClose,
-            className: 'text-gray-400 hover:text-gray-600 text-2xl leading-none px-2',
-          }, '×')
+          h('div', { className: 'px-5 py-4 flex items-center justify-between' },
+            h('div', null,
+              h('h3', { className: 'text-xl font-bold text-gray-800' }, `OS ${e.codigo_os}`),
+              h('div', { className: 'flex items-center gap-2 mt-1' },
+                h(Badge, { entrega: e }),
+              )
+            ),
+            h('button', {
+              onClick: onClose,
+              className: 'text-gray-400 hover:text-gray-600 text-2xl leading-none px-2',
+            }, '×')
+          ),
         ),
 
         // Body
@@ -2419,11 +2438,47 @@
                 )
               ),
 
-              // Erro último, se houver
-              e.erro_ultimo && h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3' },
-                h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold mb-1' }, '⚠ Último erro'),
-                h('div', { className: 'text-sm text-red-800 font-mono break-words' }, e.erro_ultimo)
-              ),
+              // Erro último, com traducao PT-BR dos erros mais comuns
+              e.erro_ultimo && (function() {
+                const ERROS_MAP = {
+                  // Uber Direct
+                  'pickup_address_not_serviceable':      'Endereco de coleta fora da area de cobertura da Uber',
+                  'dropoff_address_not_serviceable':     'Endereco de entrega fora da area de cobertura da Uber',
+                  'address_not_found':                   'Endereco nao encontrado (verifique o CEP ou logradouro)',
+                  'geocode_failed':                      'Nao foi possivel geocodificar o endereco',
+                  'invalid_address':                     'Endereco invalido ou incompleto',
+                  'quote_expired':                       'Cotacao expirou — tente redespachar',
+                  'quote_not_found':                     'Cotacao nao encontrada (pode ter expirado)',
+                  'delivery_not_found':                  'Entrega nao encontrada na Uber',
+                  'no_couriers_available':               'Nenhum entregador disponivel na regiao no momento',
+                  'courier_unavailable':                 'Entregador indisponivel — tentando reatribuir',
+                  'cannot_cancel':                       'Cancelamento nao permitido neste status (entregador ja coletou)',
+                  'payment_failed':                      'Falha no pagamento junto a Uber — verifique credito da conta',
+                  'rate_limited':                        'Muitas requisicoes — aguarde alguns segundos e tente novamente',
+                  'unauthorized':                        'Credenciais Uber invalidas ou expiradas',
+                  'forbidden':                           'Sem permissao — verifique configuracao do provider Uber',
+                  'service_unavailable':                 'Servico Uber temporariamente indisponivel — tente novamente',
+                  // 99Entrega
+                  'cancel too frequently':               '99Entrega: muitos cancelamentos seguidos — aguarde antes de cancelar novamente',
+                  'errno=-1':                            '99Entrega: erro interno no sistema deles — tente novamente em instantes',
+                  'errno=1001':                          '99Entrega: limite de cancelamentos atingido — aguarde',
+                  'estimate_id':                         '99Entrega: cotacao invalida ou expirada — tente redespachar',
+                  'order_not_found':                     '99Entrega: pedido nao encontrado na plataforma deles',
+                  'invalid_pickup':                      '99Entrega: ponto de coleta invalido (CEP ou coordenada)',
+                  'invalid_dropoff':                     '99Entrega: ponto de entrega invalido (CEP ou coordenada)',
+                  // Generico
+                  'timeout':                             'Timeout na comunicacao com o provedor — tente novamente',
+                  'network':                             'Falha de rede ao comunicar com o provedor',
+                  'auth_failed':                         'Falha de autenticacao com o provedor — verifique as credenciais',
+                };
+                const raw = String(e.erro_ultimo || '').toLowerCase();
+                const traducao = Object.entries(ERROS_MAP).find(([k]) => raw.includes(k.toLowerCase()));
+                return h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3 space-y-1' },
+                  h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold' }, '\u26a0 Ultimo erro'),
+                  traducao && h('div', { className: 'text-sm text-red-900 font-medium' }, traducao[1]),
+                  h('div', { className: 'text-xs text-red-700 font-mono break-words opacity-70 pt-1 border-t border-red-100' }, e.erro_ultimo),
+                );
+              })(),
 
               // ── Códigos de verificação (coleta + entrega) ───────────────────────
               (e.pickup_code || e.dropoff_code) &&
