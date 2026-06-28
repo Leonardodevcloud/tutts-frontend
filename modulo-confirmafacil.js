@@ -99,6 +99,8 @@
     const [dados, setDados] = useState(null);
     const [loading, setLoading] = useState(true);
     const [fotoAtiva, setFotoAtiva] = useState(null);
+    const [horarioManual, setHorarioManual] = useState('');
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
       if (!solicitacaoId) return;
@@ -259,22 +261,54 @@
               className: 'flex-1 text-center text-xs py-2 border border-purple-200 rounded-xl hover:border-purple-400 text-purple-700 bg-purple-50',
             }, '🔗 Ver na Mapp')
           ),
-          h('div', { className: 'flex gap-2' },
+          h('div', { className: 'flex flex-col gap-2' },
+            h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-1.5 rounded-lg' },
+              '🕐 Correção manual de horário (opcional)'
+            ),
+            h('label', { className: 'text-xs text-gray-500' }, 'Horário real da finalização'),
+            h('input', {
+              type: 'datetime-local',
+              value: horarioManual,
+              onChange: (e) => setHorarioManual(e.target.value),
+              className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:border-purple-400 focus:outline-none',
+            }),
+            h('p', { className: 'text-[11px] text-gray-400 -mt-1' }, 'Deixe em branco para usar o horário atual. Fuso de Salvador (BRT).'),
+
             h('button', {
+              disabled: enviando,
               onClick: () => {
                 if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
+                setEnviando(true);
                 fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto' }),
+                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
                 }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast('✅ Finalizado enviado ao CF', 'success');
+                  if (d.ok) showToast('✅ Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success');
                   else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
-                  fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId)
-                    .then(r => r.json()).then(setDados);
-                });
+                  return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                }).finally(() => setEnviando(false));
               },
-              className: 'flex-1 text-xs py-2 bg-green-600 text-white rounded-xl hover:bg-green-700',
-            }, '✅ Finalizar no CF')
+              className: 'w-full text-sm py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60',
+            }, enviando ? '⏳ Enviando...' : '✅ Finalizar no CF'),
+
+            h('button', {
+              disabled: enviando,
+              onClick: () => {
+                if (!window.confirm('Enviar as FOTOS do protocolo ao ConfirmaFacil para esta NF?')) return;
+                setEnviando(true);
+                fetchAuth(API_URL + '/confirmafacil/enviar-protocolo', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
+                }).then(r => r.json()).then(d => {
+                  if (d.ok) showToast(d.mensagem || '✅ Protocolo enviado', 'success');
+                  else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
+                  return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                }).finally(() => setEnviando(false));
+              },
+              className: 'w-full text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
+            }, '📸 Enviar protocolo (fotos)'),
+
+            h('p', { className: 'text-[11px] text-gray-400 text-center' }, 'Toda correção fica registrada na auditoria.')
           )
         )
       ),
