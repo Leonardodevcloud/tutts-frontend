@@ -431,8 +431,101 @@
     //   - Motoboy está em região configurada
     //   - É nível 2 ou 3
     //   - Não viu hoje (cookie/localStorage com data)
+    // ============================================================
+    // 🆕 2026-06: AVISO DE APROVEITAMENTO SEMANAL (modal ao abrir o app)
+    // ============================================================
+    async function mostrarAvisoAproveitamento({ apiUrl, token, fetchAuth }) {
+        let r;
+        if (typeof fetchAuth === 'function') {
+            r = await fetchAuth(apiUrl + '/score-v2/meu-aviso-aproveitamento');
+        } else {
+            r = await fetch(apiUrl + '/score-v2/meu-aviso-aproveitamento', {
+                headers: { 'Authorization': 'Bearer ' + (token || '') }, credentials: 'include'
+            });
+        }
+        if (!r.ok) return false;
+        const data = await r.json();
+        if (!data.tem_aviso || !data.aviso) return false;
+
+        const container = document.createElement('div');
+        container.id = 'score-v2-aviso-aproveitamento';
+        document.body.appendChild(container);
+        const root = ReactDOM.createRoot ? ReactDOM.createRoot(container) : null;
+        const fechar = () => {
+            // marca como visto (fire-and-forget)
+            try {
+                if (typeof fetchAuth === 'function') {
+                    fetchAuth(apiUrl + '/score-v2/aviso-aproveitamento/visto', { method: 'POST' });
+                } else {
+                    fetch(apiUrl + '/score-v2/aviso-aproveitamento/visto', {
+                        method: 'POST', headers: { 'Authorization': 'Bearer ' + (token || '') }, credentials: 'include'
+                    });
+                }
+            } catch (_) {}
+            if (root) root.unmount(); else ReactDOM.unmountComponentAtNode(container);
+            container.remove();
+        };
+        const modal = h(AvisoAproveitamentoModal, { aviso: data.aviso, onFechar: fechar });
+        if (root) root.render(modal); else ReactDOM.render(modal, container);
+        return true;
+    }
+
+    function AvisoAproveitamentoModal({ aviso, onFechar }) {
+        const pct = Number(aviso.pct_prazo) || 0;
+        const meta = Number(aviso.pct_min_aplicado) || 95;
+        const nome = (aviso.nome_prof || '').split(' ')[0];
+        const reincidente = (aviso.semanas_consecutivas || 1) >= 2;
+
+        return h('div', { className: 'fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4' },
+            h('div', { className: 'bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full p-5 max-h-[85vh] overflow-y-auto' },
+                h('div', { className: 'flex justify-center mb-3' },
+                    h('div', { className: 'w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-2xl' }, '🎯')
+                ),
+                h('h2', { className: 'text-center text-lg font-bold text-gray-900' }, 'Bora ajustar pra próxima?'),
+                h('p', { className: 'text-center text-sm text-gray-600 mt-1 mb-4' },
+                    (nome ? ('E aí, ' + nome + '! ') : 'E aí! ') + 'Sua semana fechou assim:'),
+
+                h('div', { className: 'bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4' },
+                    h('div', { className: 'flex items-baseline justify-center gap-1.5' },
+                        h('span', { className: 'text-3xl font-bold text-amber-700' }, pct.toFixed(0) + '%'),
+                        h('span', { className: 'text-sm text-gray-500' }, 'no prazo')
+                    ),
+                    h('p', { className: 'text-center text-xs text-gray-400 mb-3' },
+                        (aviso.entregas_prazo || 0) + ' de ' + (aviso.entregas_total || 0) + ' entregas dentro do tempo'),
+                    h('div', { className: 'relative h-2 bg-gray-200 rounded-full overflow-hidden' },
+                        h('div', { className: 'h-full bg-amber-500 rounded-full', style: { width: Math.min(100, pct) + '%' } }),
+                        h('div', { className: 'absolute top-[-3px] w-0.5 h-3.5 bg-green-600', style: { left: Math.min(100, meta) + '%' } })
+                    ),
+                    h('div', { className: 'flex justify-between text-[11px] text-gray-400 mt-1' },
+                        h('span', null, 'seu índice'),
+                        h('span', { className: 'text-green-600' }, 'ideal: ' + meta + '%')
+                    )
+                ),
+
+                h('p', { className: 'text-xs text-gray-600 leading-relaxed mb-4' },
+                    (reincidente
+                        ? 'Seguimos abaixo do ideal essa semana, mas dá pra virar o jogo. '
+                        : 'Dessa vez não rolou bater os ' + meta + '%, mas é totalmente recuperável. ') +
+                    'Organizar a ordem das paradas e pegar primeiro as corridas mais perto costuma ajudar bastante. ' +
+                    'O direcionamento de oportunidades a cada parceiro considera o aproveitamento ao longo das semanas — mantendo o ritmo acima de ' + meta + '%, você segue com prioridade nos chamados.'),
+
+                h('button', {
+                    onClick: onFechar,
+                    className: 'w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700'
+                }, 'Entendi, bora melhorar')
+            )
+        );
+    }
+
     window.ModuloScoreV2WelcomeModal = {
         show: async function({ apiUrl, token, fetchAuth, onMount }) {
+            // 🆕 2026-06: primeiro checa aviso de aproveitamento semanal (prioritário,
+            // independe do nível). Se houver, mostra ESSE modal e não abre o welcome.
+            try {
+                const mostrouAviso = await mostrarAvisoAproveitamento({ apiUrl, token, fetchAuth });
+                if (mostrouAviso) return;
+            } catch (_) {}
+
             try {
                 // Já mostrou hoje?
                 const hoje = new Date().toISOString().slice(0, 10);

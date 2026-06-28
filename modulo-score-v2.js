@@ -32,6 +32,7 @@
                 h('div', { className: 'flex gap-1 p-1' },
                     [
                         { id: 'configuracoes', label: '⚙️ Configurações' },
+                        { id: 'aproveitamento', label: '📉 Aproveitamento' },
                         { id: 'motoboys', label: '👥 Motoboys por Categoria' },
                         { id: 'ranking', label: '📅 Ranking Anterior' },
                         { id: 'sorteios', label: '🎲 Sorteios' },
@@ -44,11 +45,125 @@
                 )
             ),
             tab === 'configuracoes' && h(AbaConfiguracoes, { fetchApi, showToast }),
+            tab === 'aproveitamento' && h(AbaAproveitamento, { fetchApi, showToast }),
             tab === 'motoboys' && h(AbaMotoboys, { fetchApi, showToast }),
             tab === 'ranking' && h(AbaRanking, { fetchApi, showToast }),
             tab === 'sorteios' && h(AbaSorteios, { fetchApi, showToast })
         );
     };
+
+    // ============================================================
+    // 🆕 ABA APROVEITAMENTO SEMANAL
+    // ============================================================
+    function AbaAproveitamento({ fetchApi, showToast }) {
+        const [configs, setConfigs] = useState([]);
+        const [regiaoSel, setRegiaoSel] = useState('');
+        const [dados, setDados] = useState(null);
+        const [loading, setLoading] = useState(false);
+
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+        // Carrega praças com a regra ativa pro seletor
+        useEffect(() => {
+            (async () => {
+                try {
+                    const cfgs = await fetchApiRef.current('/score-v2/admin/configuracoes');
+                    const comRegra = (cfgs || []).filter(c => c.regra_aproveitamento_ativa);
+                    setConfigs(comRegra);
+                    if (comRegra.length > 0 && !regiaoSel) setRegiaoSel(comRegra[0].regiao);
+                } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            })();
+        }, []);
+
+        const carregar = useCallback(async (regiao) => {
+            setLoading(true);
+            try {
+                const q = regiao ? ('?regiao=' + encodeURIComponent(regiao)) : '';
+                const r = await fetchApiRef.current('/score-v2/admin/alertas-aproveitamento' + q);
+                setDados(r || { alertas: [], total: 0 });
+            } catch (err) {
+                showToastRef.current('❌ ' + err.message, 'error');
+            } finally { setLoading(false); }
+        }, []);
+
+        useEffect(() => { if (regiaoSel) carregar(regiaoSel); }, [regiaoSel, carregar]);
+
+        if (configs.length === 0) {
+            return h('div', { className: 'max-w-2xl mx-auto p-6 text-center' },
+                h('div', { className: 'bg-white rounded-xl border border-gray-200 p-8' },
+                    h('p', { className: 'text-4xl mb-2' }, '📉'),
+                    h('p', { className: 'text-sm font-medium text-gray-700' }, 'Nenhuma praça com a regra de aproveitamento ativa'),
+                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Ative a regra no botão "Editar" de uma praça, na aba Configurações.')
+                )
+            );
+        }
+
+        const alertas = dados?.alertas || [];
+        const reincidentes = alertas.filter(a => (a.semanas_consecutivas || 1) >= 2).length;
+        const naoVistos = alertas.filter(a => !a.visto_em).length;
+
+        const badgeSemanas = (n) => {
+            n = n || 1;
+            const cor = n >= 2 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800';
+            const txt = n === 1 ? '1ª semana' : (n + 'ª semana seguida');
+            return h('span', { className: 'text-[11px] px-2 py-0.5 rounded-full ' + cor }, txt);
+        };
+        const iniciais = (nome) => (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+
+        return h('div', { className: 'max-w-4xl mx-auto p-4 md:p-6 space-y-4' },
+            h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
+                h('div', null,
+                    h('h3', { className: 'text-base font-bold text-gray-900' }, '📉 Aproveitamento semanal'),
+                    h('p', { className: 'text-xs text-gray-500' }, 'Sinalizados nos últimos 7 dias' + (dados?.semana ? (' · ' + dados.semana) : ''))
+                ),
+                h('select', {
+                    value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
+                    className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
+                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
+            ),
+
+            h('div', { className: 'grid grid-cols-3 gap-3' },
+                h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 text-center' },
+                    h('p', { className: 'text-xs text-gray-500' }, 'Sinalizados'),
+                    h('p', { className: 'text-2xl font-bold text-gray-900' }, alertas.length)
+                ),
+                h('div', { className: 'bg-red-50 rounded-lg border border-red-100 p-3 text-center' },
+                    h('p', { className: 'text-xs text-red-700' }, 'Reincidentes (2+)'),
+                    h('p', { className: 'text-2xl font-bold text-red-800' }, reincidentes)
+                ),
+                h('div', { className: 'bg-amber-50 rounded-lg border border-amber-100 p-3 text-center' },
+                    h('p', { className: 'text-xs text-amber-700' }, 'Aviso não visto'),
+                    h('p', { className: 'text-2xl font-bold text-amber-800' }, naoVistos)
+                )
+            ),
+
+            loading
+                ? h('div', { className: 'text-center text-gray-400 py-8 text-sm' }, '⏳ Carregando...')
+                : alertas.length === 0
+                    ? h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-6 text-center' },
+                        h('p', { className: 'text-3xl mb-1' }, '✅'),
+                        h('p', { className: 'text-sm font-medium text-green-800' }, 'Ninguém abaixo do mínimo nesta semana'))
+                    : h('div', { className: 'space-y-2' }, alertas.map(a =>
+                        h('div', { key: a.cod_prof, className: 'flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-3' },
+                            h('div', { className: 'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ' + ((a.semanas_consecutivas || 1) >= 2 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }, iniciais(a.nome_prof)),
+                            h('div', { className: 'flex-1 min-w-0' },
+                                h('div', { className: 'flex items-center gap-2' },
+                                    h('span', { className: 'text-sm font-semibold text-gray-900 truncate' }, a.nome_prof || a.cod_prof),
+                                    badgeSemanas(a.semanas_consecutivas)
+                                ),
+                                h('p', { className: 'text-xs text-gray-500' }, 'cód ' + a.cod_prof + ' · ' + (a.entregas_prazo || 0) + ' de ' + (a.entregas_total || 0) + ' no prazo')
+                            ),
+                            h('div', { className: 'text-right' },
+                                h('p', { className: 'text-lg font-bold ' + ((a.semanas_consecutivas || 1) >= 2 ? 'text-red-700' : 'text-amber-700') }, (Number(a.pct_prazo) || 0).toFixed(1) + '%'),
+                                h('p', { className: 'text-[11px] ' + (a.visto_em ? 'text-green-600' : 'text-gray-400') }, a.visto_em ? '✓ aviso visto' : '• aviso não visto')
+                            )
+                        )
+                    ))
+        );
+    }
 
     // ============================================================
     // ABA CONFIGURAÇÕES
@@ -322,6 +437,9 @@
             n3_min_entregas: cfg.n3_min_entregas != null ? Number(cfg.n3_min_entregas) : 150,
             n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 20,
             n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
+            // 🆕 Regra de aproveitamento semanal (alerta por praça)
+            regra_aproveitamento_ativa: cfg.regra_aproveitamento_ativa === true,
+            pct_min_aproveitamento: cfg.pct_min_aproveitamento != null ? Number(cfg.pct_min_aproveitamento) : 95,
         });
 
         const toggleNivel = (n) => {
@@ -423,6 +541,25 @@
                                 h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Teto saque/sem (R$)'),
                                 numInput('saque_teto_n3', 0.01, 0)
                             )
+                        )
+                    ),
+
+                    // 🆕 Regra de aproveitamento semanal
+                    h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-3 space-y-3' },
+                        h('div', { className: 'flex items-center justify-between' },
+                            h('div', null,
+                                h('h4', { className: 'text-sm font-bold text-purple-900' }, '📉 Alerta de aproveitamento semanal'),
+                                h('p', { className: 'text-[11px] text-purple-700' }, 'Todo sábado avalia os últimos 7 dias. Quem fica abaixo do mínimo é sinalizado e avisado no app.')
+                            ),
+                            h('input', {
+                                type: 'checkbox', checked: form.regra_aproveitamento_ativa,
+                                onChange: e => setForm({ ...form, regra_aproveitamento_ativa: e.target.checked }),
+                                className: 'w-5 h-5'
+                            })
+                        ),
+                        form.regra_aproveitamento_ativa && h('div', null,
+                            h('label', { className: 'text-xs text-purple-700 font-medium' }, '% mínimo no prazo'),
+                            numInput('pct_min_aproveitamento', 0.1, 0, 100)
                         )
                     ),
 
