@@ -310,6 +310,7 @@
     function PainelRegioesNaoConfig({ regioes, onSelecionar }) {
         const [busca, setBusca] = useState('');
         const [mostrarTodas, setMostrarTodas] = useState(false);
+        const [aberto, setAberto] = useState(false);
         const VISIVEIS_INICIAL = 15;
 
         const filtradas = useMemo(() => {
@@ -325,58 +326,59 @@
             [regioes]
         );
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
-            // Header: contador honesto
-            h('div', { className: 'flex items-center justify-between mb-3' },
-                h('div', { className: 'text-sm text-gray-700' },
-                    h('span', { className: 'font-semibold text-gray-900' }, regioes.length + ' regiões'),
-                    ' com ',
-                    h('span', { className: 'font-semibold text-gray-900' }, totalMotoboys.toLocaleString('pt-BR')),
-                    ' motoboys aguardando configuração'
+        return h('div', { className: 'bg-white border border-gray-200 rounded-2xl mb-4 overflow-hidden', style: { borderLeft: '3px solid #7c3aed' } },
+            h('button', {
+                onClick: () => setAberto(!aberto),
+                className: 'w-full flex items-center justify-between gap-2 p-4 hover:bg-gray-50 transition-colors text-left'
+            },
+                h('div', { className: 'flex items-center gap-2' },
+                    h('span', { className: 'text-base' }, '📍'),
+                    h('span', { className: 'text-sm font-semibold text-gray-900' }, 'Configurar nova praça')
+                ),
+                h('div', { className: 'flex items-center gap-2' },
+                    h('span', { className: 'text-[11px] font-medium bg-purple-50 text-purple-700 rounded-full', style: { padding: '4px 10px' } },
+                        regioes.length + ' praças · ' + totalMotoboys.toLocaleString('pt-BR')),
+                    h('span', { className: 'text-gray-400', style: { fontSize: '11px', transition: 'transform .2s', transform: aberto ? 'rotate(180deg)' : 'none', display: 'inline-block' } }, '▼')
                 )
             ),
-
-            // Busca em destaque
-            h('input', {
-                type: 'text',
-                value: busca,
-                placeholder: '🔍 Buscar região...',
-                onChange: e => setBusca(e.target.value),
-                className: 'w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm mb-3 focus:bg-white focus:border-purple-300 focus:outline-none transition-colors'
-            }),
-
-            // Chips cinzas com badge de contagem (ordem já vem do backend)
-            filtradas.length === 0
-                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' },
-                    busca ? `Nenhuma região com "${busca}"` : 'Nenhuma região disponível'
-                )
-                : h('div', { className: 'flex flex-wrap gap-1.5' },
-                    exibidas.map(r => h('button', {
-                        key: r.regiao,
-                        onClick: () => onSelecionar(r),
-                        className: 'inline-flex items-center gap-1.5 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-gray-800 hover:text-purple-800 rounded-full text-xs font-medium transition-colors',
-                        style: { padding: '4px 10px 4px 8px' }
-                    },
-                        h('span', { className: 'text-gray-400 font-semibold' }, '+'),
-                        h('span', null, r.regiao),
-                        r.total_motoboys != null && h('span', {
-                            className: 'bg-white text-gray-500 rounded-full text-[10px] font-medium',
-                            style: { padding: '1px 6px' }
-                        }, r.total_motoboys.toLocaleString('pt-BR'))
-                    ))
+            aberto && h('div', { className: 'px-4 pb-4' },
+                h('div', { className: 'relative mb-3' },
+                    h('span', { className: 'absolute text-gray-400', style: { left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px' } }, '🔍'),
+                    h('input', {
+                        type: 'text', value: busca, placeholder: 'Buscar praça...',
+                        onChange: e => setBusca(e.target.value),
+                        className: 'w-full border border-gray-200 bg-gray-50 rounded-lg text-sm focus:bg-white focus:border-purple-300 focus:outline-none transition-colors',
+                        style: { padding: '10px 12px 10px 36px' }
+                    })
                 ),
-
-            // "Ver mais" só aparece se NÃO está buscando E ainda tem regiões escondidas
-            !busca && !mostrarTodas && restantes > 0 && h('button', {
-                onClick: () => setMostrarTodas(true),
-                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-purple-300 hover:bg-purple-50 rounded-lg text-xs text-purple-700 font-medium transition-colors'
-            }, `Ver mais ${restantes} região(ões) ↓`),
-
-            // "Ver menos" quando todas estão expandidas
-            !busca && mostrarTodas && regioes.length > VISIVEIS_INICIAL && h('button', {
-                onClick: () => setMostrarTodas(false),
-                className: 'w-full mt-3 py-2 bg-white border border-dashed border-gray-300 hover:border-gray-400 rounded-lg text-xs text-gray-500 font-medium transition-colors'
-            }, 'Ver menos ↑')
+                filtradas.length === 0
+                    ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' },
+                        busca ? ('Nenhuma praça com "' + busca + '"') : 'Nenhuma praça disponível'
+                    )
+                    : h('div', { className: 'flex flex-wrap gap-2' },
+                        exibidas.map(r => h('button', {
+                            key: r.regiao,
+                            onClick: () => onSelecionar(r),
+                            className: 'inline-flex items-center gap-2 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-200 text-gray-800 rounded-full text-xs font-medium transition-colors',
+                            style: { padding: '5px 11px 5px 5px' }
+                        },
+                            h('span', { className: 'inline-flex items-center justify-center bg-purple-600 text-white rounded-full', style: { width: '18px', height: '18px', fontSize: '13px', lineHeight: '1' } }, '+'),
+                            h('span', null, r.regiao),
+                            r.total_motoboys != null && h('span', {
+                                className: 'bg-purple-50 text-purple-700 rounded-full text-[10px] font-medium',
+                                style: { padding: '1px 7px' }
+                            }, r.total_motoboys.toLocaleString('pt-BR'))
+                        ))
+                    ),
+                !busca && !mostrarTodas && restantes > 0 && h('button', {
+                    onClick: () => setMostrarTodas(true),
+                    className: 'w-full mt-3 py-2.5 bg-transparent border border-dashed border-gray-300 hover:border-purple-300 hover:bg-purple-50 rounded-lg text-xs text-purple-700 font-medium transition-colors'
+                }, 'Ver mais ' + restantes + ' praça(s) ↓'),
+                !busca && mostrarTodas && regioes.length > VISIVEIS_INICIAL && h('button', {
+                    onClick: () => setMostrarTodas(false),
+                    className: 'w-full mt-3 py-2.5 bg-transparent border border-dashed border-gray-300 hover:border-gray-400 rounded-lg text-xs text-gray-500 font-medium transition-colors'
+                }, 'Ver menos ↑')
+            )
         );
     }
 
