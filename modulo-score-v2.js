@@ -28,21 +28,26 @@
         const [tab, setTab] = useState('configuracoes');
 
         return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
-            h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
-                h('div', { className: 'flex gap-1 p-1' },
-                    [
-                        { id: 'configuracoes', label: '⚙️ Configurações' },
-                        { id: 'aproveitamento', label: '📉 Aproveitamento' },
-                        { id: 'motoboys', label: '👥 Motoboys por Categoria' },
-                        { id: 'ranking', label: '📅 Ranking Anterior' },
-                        { id: 'sorteios', label: '🎲 Sorteios' },
-                    ].map(t => h('button', {
-                        key: t.id,
-                        onClick: () => setTab(t.id),
-                        className: 'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ' +
-                            (tab === t.id ? 'bg-purple-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100')
-                    }, t.label))
+            h('div', { className: 'flex items-center gap-3 mb-5' },
+                h('div', { className: 'w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-xl shadow-sm' }, '🏆'),
+                h('div', null,
+                    h('h2', { className: 'text-lg font-semibold text-gray-900 leading-tight' }, 'Score dos profissionais'),
+                    h('p', { className: 'text-xs text-gray-500' }, 'Gamificação por praça')
                 )
+            ),
+            h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 overflow-x-auto' },
+                [
+                    { id: 'configuracoes', label: 'Configurações', icon: '⚙️' },
+                    { id: 'aproveitamento', label: 'Aproveitamento', icon: '📉' },
+                    { id: 'motoboys', label: 'Categorias', icon: '🏅' },
+                    { id: 'ranking', label: 'Ranking', icon: '📅' },
+                    { id: 'sorteios', label: 'Sorteios', icon: '🎁' },
+                ].map(t => h('button', {
+                    key: t.id,
+                    onClick: () => setTab(t.id),
+                    className: 'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ' +
+                        (tab === t.id ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-white/70')
+                }, h('span', null, t.icon), h('span', null, t.label)))
             ),
             tab === 'configuracoes' && h(AbaConfiguracoes, { fetchApi, showToast }),
             tab === 'aproveitamento' && h(AbaAproveitamento, { fetchApi, showToast }),
@@ -119,10 +124,23 @@
                     h('h3', { className: 'text-base font-bold text-gray-900' }, '📉 Aproveitamento semanal'),
                     h('p', { className: 'text-xs text-gray-500' }, 'Sinalizados nos últimos 7 dias' + (dados?.semana ? (' · ' + dados.semana) : ''))
                 ),
-                h('select', {
-                    value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
-                    className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
-                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
+                h('div', { className: 'flex items-center gap-2' },
+                    h('button', {
+                        onClick: async () => {
+                            try {
+                                showToastRef.current('⏳ Analisando últimos 7 dias...', 'info');
+                                const r = await fetchApiRef.current('/score-v2/admin/avaliar-aproveitamento', { method: 'POST', body: '{}' });
+                                showToastRef.current('✅ ' + (r?.mensagem || 'Análise concluída'), 'success');
+                                carregar(regiaoSel);
+                            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+                        },
+                        className: 'px-3 py-2 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50'
+                    }, '🔄 Forçar análise'),
+                    h('select', {
+                        value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
+                        className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
+                    }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
+                )
             ),
 
             h('div', { className: 'grid grid-cols-3 gap-3' },
@@ -367,56 +385,51 @@
         const ativo = cfg.ativo !== false;
         const counts = cfg.motoboys_por_nivel || { 1: 0, 2: 0, 3: 0 };
 
-        return h('div', {
-            className: 'bg-white border rounded-lg p-4 ' + (ativo ? 'border-gray-200' : 'border-gray-200 opacity-60')
+        const miniCard = (cor, emoji, titulo, valor, l1, l2) => h('div', {
+            className: 'rounded-xl border border-gray-200 p-3',
+            style: { borderLeft: '3px solid ' + cor.bar, background: cor.bg }
         },
-            h('div', { className: 'flex items-start justify-between gap-3 mb-3' },
+            h('div', { className: 'flex items-center gap-1.5 text-xs font-medium', style: { color: cor.txt } }, h('span', null, emoji), h('span', null, titulo)),
+            h('div', { className: 'text-xl font-bold mt-0.5', style: { color: cor.num } }, valor),
+            l1 && h('div', { className: 'text-[10px] mt-0.5', style: { color: cor.txt } }, l1),
+            l2 && h('div', { className: 'text-[10px]', style: { color: cor.txt } }, l2)
+        );
+
+        return h('div', {
+            className: 'bg-white border border-gray-200 rounded-2xl p-4 ' + (ativo ? '' : 'opacity-60'),
+            style: { borderLeft: '3px solid ' + (ativo ? '#7c3aed' : '#cbd5e1') }
+        },
+            h('div', { className: 'flex items-start justify-between gap-3 mb-4 flex-wrap' },
                 h('div', null,
                     h('div', { className: 'flex items-center gap-2' },
-                        h('h3', { className: 'font-bold text-gray-900' }, '📍 ' + cfg.regiao),
-                        h('span', { className: 'px-2 py-0.5 rounded text-xs font-medium ' + (ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600') },
-                            ativo ? '✓ Ativo' : '⏸ Inativo'
+                        h('span', { className: 'text-base' }, '📍'),
+                        h('h3', { className: 'font-semibold text-gray-900' }, cfg.regiao),
+                        h('span', { className: 'px-2.5 py-0.5 rounded-full text-[11px] font-medium ' + (ativo ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500') },
+                            ativo ? 'Ativo' : 'Inativo'
                         )
                     ),
-                    h('p', { className: 'text-xs text-gray-500 mt-1' },
-                        'Categorias ativas: ' + niveis.map(n => n === 3 ? 'Ouro' : n === 2 ? 'Prata' : 'Bronze').join(', ') +
-                        ' • Atualizado em ' + fmtData(cfg.atualizado_em)
+                    h('p', { className: 'text-xs text-gray-400 mt-1' },
+                        niveis.map(n => n === 3 ? 'Ouro' : n === 2 ? 'Prata' : 'Bronze').join(', ') +
+                        ' · atualizado ' + fmtData(cfg.atualizado_em)
                     )
                 ),
                 h('div', { className: 'flex gap-2 flex-wrap' },
                     ativo && h('button', {
                         onClick: onReavaliar,
-                        className: 'px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-xs font-medium hover:bg-blue-100',
+                        className: 'px-3 py-1.5 text-gray-600 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50',
                         title: 'Re-avaliar todos os motoboys da região agora'
                     }, '🔄 Reavaliar'),
                     ativo
-                        ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-medium hover:bg-red-100' }, '⏸ Desativar')
-                        : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-xs font-medium hover:bg-green-100' }, '▶ Reativar'),
-                    h('button', { onClick: onEditar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-md text-xs font-medium hover:bg-purple-700' }, '✏️ Editar')
+                        ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 text-gray-500 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50' }, '⏸ Desativar')
+                        : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium hover:bg-emerald-50' }, '▶ Reativar'),
+                    h('button', { onClick: onEditar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700' }, '✏️ Editar')
                 )
             ),
-            // Cards com valores e contagens
-            h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 text-center' },
-                h('div', { className: 'bg-amber-50 border border-amber-200 rounded p-2' },
-                    h('div', { className: 'text-xs text-amber-700 font-medium' }, '🥈 Prata'),
-                    h('div', { className: 'text-lg font-bold text-amber-900' }, counts[2] + ' motoboys'),
-                    h('div', { className: 'text-[10px] text-amber-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n2)),
-                    h('div', { className: 'text-[10px] text-amber-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n2) + '/mês')
-                ),
-                h('div', { className: 'bg-yellow-50 border border-yellow-300 rounded p-2' },
-                    h('div', { className: 'text-xs text-yellow-700 font-medium' }, '🥇 Ouro'),
-                    h('div', { className: 'text-lg font-bold text-yellow-900' }, counts[3] + ' motoboys'),
-                    h('div', { className: 'text-[10px] text-yellow-700' }, 'Sorteio: ' + fmtBRL(cfg.sorteio_valor_n3)),
-                    h('div', { className: 'text-[10px] text-yellow-700' }, 'Saque: até ' + fmtBRL(cfg.saque_teto_n3) + '/sem')
-                ),
-                h('div', { className: 'bg-orange-50 border border-orange-200 rounded p-2' },
-                    h('div', { className: 'text-xs text-orange-700 font-medium' }, '🥉 Bronze'),
-                    h('div', { className: 'text-lg font-bold text-orange-900' }, counts[1] + ' motoboys')
-                ),
-                h('div', { className: 'bg-blue-50 border border-blue-200 rounded p-2' },
-                    h('div', { className: 'text-xs text-blue-700 font-medium' }, 'Total'),
-                    h('div', { className: 'text-lg font-bold text-blue-900' }, (counts[1] + counts[2] + counts[3]) + ' avaliados')
-                )
+            h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2.5' },
+                miniCard({ bar: '#b45309', bg: '#fff', txt: '#92400e', num: '#1f2937' }, '🥉', 'Bronze', counts[1], 'base da praça'),
+                miniCard({ bar: '#64748b', bg: '#fff', txt: '#475569', num: '#1f2937' }, '🥈', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
+                miniCard({ bar: '#f67602', bg: '#fef6ee', txt: '#854f0b', num: '#633806' }, '🥇', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
+                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#6d28d9', num: '#4c1d95' }, '👥', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
             )
         );
     }
