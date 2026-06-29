@@ -2332,7 +2332,19 @@
               h('strong', null, `#${e.codigo_os}`),
               ' (Uber ID: ',
               h('span', { className: 'font-mono' },
-                String(e.uber_delivery_id).slice(-5).toUpperCase()
+                (function(){
+                  // 🔧 2026-06: Uber ID = ultimos 5 do UUID do tracking_url (apos /orders/),
+                  // nao do del_... (que dava "WDRUW"/"BDBVA"). Fallback pro del_ se faltar URL.
+                  try {
+                    if (e.tracking_url) {
+                      var m = String(e.tracking_url).match(/\/orders\/([0-9a-fA-F-]{36})/);
+                      if (m && m[1]) return m[1].slice(-5).toUpperCase();
+                      var any = String(e.tracking_url).match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+                      if (any) return any[0].slice(-5).toUpperCase();
+                    }
+                  } catch (err) {}
+                  return e.uber_delivery_id ? String(e.uber_delivery_id).slice(-5).toUpperCase() : '-----';
+                })()
               ),
               ')'
             ),
