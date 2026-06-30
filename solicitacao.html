@@ -213,10 +213,11 @@
         };
         
         // Componente de Mapa reutilizável com controle de ciclo de vida
-        const MapaLeaflet = ({ id, pontos, center = [-12.9714, -38.5014], zoom = 12, height = '400px', tipo = 'nova' }) => {
+        const MapaLeaflet = ({ id, pontos, center = [-12.9714, -38.5014], zoom = 12, height = '400px', tipo = 'nova', motoboyPos = null }) => {
             const mapRef = useRef(null);
             const mapInstanceRef = useRef(null);
             const markersLayerRef = useRef(null);
+            const motoboyMarkerRef = useRef(null);
             const lastPontosHash = useRef('');
             const tileLayerRef = useRef(null);
             const [satMapa, setSatMapa] = useState(false); // false = mapa tradicional (padrao); true = satelite
@@ -242,6 +243,25 @@
                     tileLayerRef.current.setUrl(`https://mt1.google.com/vt/lyrs=${satMapa ? 'y' : 'm'}&x={x}&y={y}&z={z}`);
                 }
             }, [satMapa]);
+
+            // 🆕 2026-06: marcador AO VIVO do motoboy (corridas do Hub). Atualiza a
+            // posição a cada novo motoboyPos sem recriar o mapa.
+            useEffect(() => {
+                const map = mapInstanceRef.current;
+                if (!map) return;
+                if (!motoboyPos || motoboyPos.lat == null || motoboyPos.lng == null) {
+                    if (motoboyMarkerRef.current) { map.removeLayer(motoboyMarkerRef.current); motoboyMarkerRef.current = null; }
+                    return;
+                }
+                const html = `<div style="font-size:26px;line-height:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))">🏍️</div>`;
+                const icon = L.divIcon({ className: '', html, iconSize: [28, 28], iconAnchor: [14, 14] });
+                if (!motoboyMarkerRef.current) {
+                    motoboyMarkerRef.current = L.marker([motoboyPos.lat, motoboyPos.lng], { icon, zIndexOffset: 1000 }).addTo(map);
+                    motoboyMarkerRef.current.bindPopup('🏍️ Entregador');
+                } else {
+                    motoboyMarkerRef.current.setLatLng([motoboyPos.lat, motoboyPos.lng]);
+                }
+            }, [motoboyPos && motoboyPos.lat, motoboyPos && motoboyPos.lng]);
             
             useEffect(() => {
                 const map = mapInstanceRef.current;
@@ -1584,7 +1604,22 @@
                 } catch (err) { showToast('❌ Erro de conexão', 'error'); }
                 setSalvandoNovoEndereco(false);
             };
-            const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasAtivas((data.solicitacoes || []).filter(s => ['enviado', 'aceito', 'em_andamento'].includes(s.status))); } } catch (err) {} };
+            const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); const normalizadas = (data.solicitacoes || []).map(aplicarHub); setCorridasAtivas(normalizadas.filter(s => { if (s.hub && s.hub.via_hub) return !s.hub.terminal; return ['enviado', 'aceito', 'em_andamento'].includes(s.status); })); } } catch (err) {} };
+
+            // 🆕 2026-06: quando a corrida veio do Hub (99/Uber), copia os dados do
+            // motoboy do hub para os campos profissional_* que o render já usa, e
+            // mantém o objeto hub (status/selo/tracking/posição) anexado.
+            const aplicarHub = (c) => {
+                if (!c || !c.hub || !c.hub.via_hub) return c;
+                const m = c.hub.motoboy || {};
+                return {
+                    ...c,
+                    profissional_nome:     m.nome     || c.profissional_nome     || null,
+                    profissional_foto:     m.foto     || c.profissional_foto     || null,
+                    profissional_telefone: m.telefone || c.profissional_telefone || null,
+                    profissional_placa:    m.placa    || c.profissional_placa    || null,
+                };
+            };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
             
             // Função para sincronizar histórico (recuperar dados de corridas antigas)
@@ -1618,7 +1653,7 @@
                 try { 
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); 
                     if (resp.ok) {
-                        const data = await resp.json();
+                        const data = aplicarHub(await resp.json());
                         setDetalheCorrida(data);
                         
                         // Atualizar o card lateral com o status mais recente
@@ -1626,17 +1661,22 @@
                             c.id === id ? { 
                                 ...c, 
                                 status: data.status, 
+                                hub: data.hub || c.hub,
                                 profissional_nome: data.profissional_nome || c.profissional_nome, 
                                 profissional_foto: data.profissional_foto || c.profissional_foto,
+                                profissional_telefone: data.profissional_telefone || c.profissional_telefone,
+                                profissional_placa: data.profissional_placa || c.profissional_placa,
                                 // Propagar dados dos pontos para o card lateral
                                 pontos_status: data.pontos ? data.pontos.map(p => ({ status: p.status, ordem: p.ordem, data_chegada: p.data_chegada, data_finalizado: p.data_finalizado })) : c.pontos_status,
                                 dados_pontos: data.dados_pontos || c.dados_pontos
                             } : c
                         ));
                         
-                        // Se a corrida foi finalizada ou cancelada, limpar seleção e atualizar listas
-                        if (['finalizado', 'cancelado'].includes(data.status)) {
-                            showToast(data.status === 'finalizado' ? '🏁 Corrida finalizada!' : '❌ Corrida cancelada', 'info');
+                        // Encerrou? (status legado finalizado/cancelado OU hub terminal)
+                        const encerrouHub = data.hub && data.hub.via_hub && data.hub.terminal;
+                        if (['finalizado', 'cancelado'].includes(data.status) || encerrouHub) {
+                            const entregue = data.status === 'finalizado' || (data.hub && data.hub.status_canonico === 'DELIVERED');
+                            showToast(entregue ? '🏁 Corrida finalizada!' : '❌ Corrida encerrada', 'info');
                             setCorridaSelecionada(null);
                             setDetalheCorrida(null);
                             carregarCorridasAtivas();
@@ -2398,6 +2438,8 @@
             // sempre são exibidos (registro histórico de quem efetivamente fez a entrega).
             const deveExibirMotoboy = (corrida) => {
                 if (!corrida) return false;
+                // 🆕 2026-06: corrida do Hub com motoboy já atribuído
+                if (corrida.hub && corrida.hub.motoboy) return true;
                 const temCodigo = corrida.codigo_profissional && String(corrida.codigo_profissional).trim() !== '';
                 const statusAvancado = ['aceito', 'em_andamento', 'finalizado', 'cancelado'].includes(corrida.status);
                 const dadosCompletos = !!corrida.profissional_foto || !!corrida.profissional_telefone;
@@ -2408,6 +2450,20 @@
             // Combina o status principal com os eventos dos pontos pra dar uma descrição precisa
             // do que o motoboy está fazendo agora.
             const analisarEstadoCorrida = (corrida) => {
+                // 🆕 2026-06: corrida despachada pelo Hub (99/Uber) — status real vem do hub.
+                if (corrida.hub && corrida.hub.via_hub) {
+                    const h = corrida.hub;
+                    const corPorEtapa = h.terminal
+                        ? (h.status_canonico === 'DELIVERED' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300')
+                        : (h.etapa >= 3 ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                           : h.etapa >= 1 ? 'bg-blue-100 text-blue-700 border-blue-300'
+                           : 'bg-gray-100 text-gray-700 border-gray-300');
+                    const iconePorEtapa = h.terminal
+                        ? (h.status_canonico === 'DELIVERED' ? '✅' : '✕')
+                        : (h.etapa >= 4 ? '🏍️' : h.etapa >= 3 ? '📦' : h.etapa >= 2 ? '📍' : h.etapa >= 1 ? '🛵' : '🔍');
+                    const seloProv = h.provider_label === 'Uber' ? '⚫ Uber' : '🟡 99';
+                    return { icone: iconePorEtapa, texto: `${h.status_label}  ·  via ${seloProv}`, cor: corPorEtapa, selo: h.provider_label };
+                }
                 // Estados diretos do status principal
                 if (corrida.status === 'enviado') {
                     // Se temos motoboy oficialmente vinculado → "Aguardando aceite" (do Fulano)
@@ -3363,7 +3419,7 @@
                                                         })}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" /></div>
+                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" motoboyPos={detalheCorrida.hub && detalheCorrida.hub.posicao ? detalheCorrida.hub.posicao : null} /></div>
                                             </div>
                                         </div>
                                     )}
