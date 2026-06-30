@@ -3245,15 +3245,15 @@
                                                     {/* Botões de ação no canto direito */}
                                                     <div className="flex flex-col gap-1 flex-shrink-0">
                                                         {(() => {
-                                                            // 🆕 2026-06: corrida pelo Hub (99/Uber) abre o rastreio do PROVIDER
-                                                            // (tracking_url gerado na corrida). Enquanto o provider não gera o
-                                                            // tracking (ex: ainda buscando entregador), não mostra o botão —
-                                                            // evita abrir o rastreio interno (vazio) por engano.
+                                                            // 🆕 2026-06: corrida pelo Hub (99/Uber) abre o RASTREIO PERSONALIZADO
+                                                            // da Central (/r/<token>), gerado na corrida. Fallback pro link do
+                                                            // provider só se o token ainda não existir. Enquanto nenhum dos dois
+                                                            // existe (ainda buscando entregador), não mostra o botão.
                                                             const ehHub = detalheCorrida.hub && detalheCorrida.hub.via_hub;
-                                                            const urlRastreio = ehHub ? detalheCorrida.hub.tracking_url : detalheCorrida.tutts_url_rastreamento;
-                                                            const labelRastreio = ehHub
-                                                                ? `🗺️ Rastrear na ${detalheCorrida.hub.provider_label || 'App'}`
-                                                                : '🗺️ Rastrear';
+                                                            const urlRastreio = ehHub
+                                                                ? (detalheCorrida.hub.rastreio_url || detalheCorrida.hub.tracking_url)
+                                                                : detalheCorrida.tutts_url_rastreamento;
+                                                            const labelRastreio = ehHub ? '🗺️ Rastrear entrega' : '🗺️ Rastrear';
                                                             return urlRastreio ? (
                                                                 <a href={urlRastreio} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
                                                                     {labelRastreio}
