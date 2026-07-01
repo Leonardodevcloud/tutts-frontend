@@ -3466,7 +3466,19 @@
             ),
           ),
           h('div', { className: 'bg-gray-50 rounded-lg p-3 flex items-center gap-3' },
-            h('div', { className: 'w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-sm font-bold flex-shrink-0' }, iniciaisDoNome(e.entregador_nome)),
+            h('div', { className: 'relative flex-shrink-0' },
+              e.entregador_foto
+                ? h('img', {
+                    src: e.entregador_foto, alt: e.entregador_nome || 'Entregador',
+                    className: 'w-10 h-10 rounded-full object-cover',
+                    onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; },
+                  })
+                : null,
+              h('div', {
+                className: 'w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-sm font-bold',
+                style: e.entregador_foto ? { display: 'none' } : {},
+              }, iniciaisDoNome(e.entregador_nome)),
+            ),
             h('div', { className: 'min-w-0' },
               h('div', { className: 'text-sm font-semibold text-gray-800 truncate' }, e.entregador_nome || 'Entregador'),
               h('div', { className: 'text-xs text-gray-500 truncate' },
