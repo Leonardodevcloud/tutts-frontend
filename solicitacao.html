@@ -213,11 +213,13 @@
         };
         
         // Componente de Mapa reutilizável com controle de ciclo de vida
-        const MapaLeaflet = ({ id, pontos, center = [-12.9714, -38.5014], zoom = 12, height = '400px', tipo = 'nova', motoboyPos = null }) => {
+        const MapaLeaflet = ({ id, pontos, center = [-12.9714, -38.5014], zoom = 12, height = '400px', tipo = 'nova', motoboyPos = null, motoboyFoto = null }) => {
             const mapRef = useRef(null);
             const mapInstanceRef = useRef(null);
             const markersLayerRef = useRef(null);
             const motoboyMarkerRef = useRef(null);
+            const motoboyRotaRef = useRef(null);
+            const jaEnquadrouRef = useRef(false);
             const lastPontosHash = useRef('');
             const tileLayerRef = useRef(null);
             const [satMapa, setSatMapa] = useState(false); // false = mapa tradicional (padrao); true = satelite
@@ -244,24 +246,62 @@
                 }
             }, [satMapa]);
 
-            // 🆕 2026-06: marcador AO VIVO do motoboy (corridas do Hub). Atualiza a
-            // posição a cada novo motoboyPos sem recriar o mapa.
+            // 🆕 2026-07: marcador AO VIVO do motoboy (foto), tracado ate a coleta
+            // (outra cor) e auto-enquadramento na primeira aparicao.
             useEffect(() => {
                 const map = mapInstanceRef.current;
                 if (!map) return;
                 if (!motoboyPos || motoboyPos.lat == null || motoboyPos.lng == null) {
                     if (motoboyMarkerRef.current) { map.removeLayer(motoboyMarkerRef.current); motoboyMarkerRef.current = null; }
+                    if (motoboyRotaRef.current) { map.removeLayer(motoboyRotaRef.current); motoboyRotaRef.current = null; }
+                    jaEnquadrouRef.current = false;
                     return;
                 }
-                const html = `<div style="font-size:26px;line-height:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))">🏍️</div>`;
-                const icon = L.divIcon({ className: '', html, iconSize: [28, 28], iconAnchor: [14, 14] });
+
+                // 1) Marcador: foto do entregador (se houver) ou moto como fallback.
+                const html = motoboyFoto
+                    ? `<div style="width:40px;height:40px;border-radius:50%;border:3px solid #7c3aed;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.45);background:#fff"><img src="${motoboyFoto}" style="width:100%;height:100%;object-fit:cover" /></div>`
+                    : `<div style="font-size:26px;line-height:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))">🏍️</div>`;
+                const sizeIco = motoboyFoto ? [40, 40] : [28, 28];
+                const anchorIco = motoboyFoto ? [20, 20] : [14, 14];
+                const icon = L.divIcon({ className: '', html, iconSize: sizeIco, iconAnchor: anchorIco });
                 if (!motoboyMarkerRef.current) {
                     motoboyMarkerRef.current = L.marker([motoboyPos.lat, motoboyPos.lng], { icon, zIndexOffset: 1000 }).addTo(map);
                     motoboyMarkerRef.current.bindPopup('🏍️ Entregador');
                 } else {
+                    motoboyMarkerRef.current.setIcon(icon);
                     motoboyMarkerRef.current.setLatLng([motoboyPos.lat, motoboyPos.lng]);
                 }
-            }, [motoboyPos && motoboyPos.lat, motoboyPos && motoboyPos.lng]);
+
+                // 2) Tracado do motoboy ate a COLETA (primeiro ponto), em roxo.
+                const coleta = (pontos || []).find(p => p.latitude && p.longitude);
+                if (coleta) {
+                    if (motoboyRotaRef.current) { map.removeLayer(motoboyRotaRef.current); motoboyRotaRef.current = null; }
+                    // linha reta imediata (aparece rapido)
+                    motoboyRotaRef.current = L.polyline(
+                        [[motoboyPos.lat, motoboyPos.lng], [coleta.latitude, coleta.longitude]],
+                        { color: '#7c3aed', weight: 3, opacity: 0.5, dashArray: '4, 8', lineCap: 'round' }
+                    ).addTo(map);
+                    // rota real pelas ruas (OSRM); se falhar, mantem a reta
+                    const urlOsrm = `https://router.project-osrm.org/route/v1/driving/${motoboyPos.lng},${motoboyPos.lat};${coleta.longitude},${coleta.latitude}?overview=full&geometries=geojson`;
+                    fetch(urlOsrm).then(r => r.json()).then(d => {
+                        if (d && d.routes && d.routes[0] && mapInstanceRef.current) {
+                            const coords = d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                            if (motoboyRotaRef.current) { mapInstanceRef.current.removeLayer(motoboyRotaRef.current); }
+                            motoboyRotaRef.current = L.polyline(coords, { color: '#7c3aed', weight: 4, opacity: 0.85, lineCap: 'round' }).addTo(mapInstanceRef.current);
+                        }
+                    }).catch(() => {});
+                }
+
+                // 3) Enquadrar tudo (motoboy + coleta + entrega) UMA vez na aparicao.
+                if (!jaEnquadrouRef.current) {
+                    const bounds = [[motoboyPos.lat, motoboyPos.lng]];
+                    (pontos || []).forEach(p => { if (p.latitude && p.longitude) bounds.push([p.latitude, p.longitude]); });
+                    if (bounds.length >= 1) {
+                        try { map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 }); jaEnquadrouRef.current = true; } catch (e) {}
+                    }
+                }
+            }, [motoboyPos && motoboyPos.lat, motoboyPos && motoboyPos.lng, motoboyFoto]);
             
             useEffect(() => {
                 const map = mapInstanceRef.current;
@@ -3445,7 +3485,7 @@
                                                         })}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" motoboyPos={detalheCorrida.hub && detalheCorrida.hub.posicao ? detalheCorrida.hub.posicao : null} /></div>
+                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" motoboyPos={detalheCorrida.hub && detalheCorrida.hub.posicao ? detalheCorrida.hub.posicao : null} motoboyFoto={detalheCorrida.hub && detalheCorrida.hub.motoboy ? detalheCorrida.hub.motoboy.foto : null} /></div>
                                             </div>
                                         </div>
                                     )}
