@@ -1187,8 +1187,9 @@
   }
 
   // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
-  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast }) {
     const e = entrega;
+    const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
     const valorHub     = parseFloat(e.valor_servico || 0);
     const margemHub    = Math.round((valorHub - valorUber) * 100) / 100;
@@ -1284,12 +1285,16 @@
               : null,
             h('div', { className: 'w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[10px] text-purple-700 flex-shrink-0', style: e.entregador_foto ? { display: 'none' } : {} }, iniciaisDoNome(e.entregador_nome)),
             h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'text-xs font-semibold text-gray-800 truncate' }, e.entregador_nome),
-              h('div', { className: 'text-[10px] text-gray-400 truncate' }, fmtTelefoneBR(e.entregador_telefone) || '—'),
+              h('div', { className: 'text-xs font-semibold text-gray-800 truncate flex items-center gap-1' },
+                freq && h('span', { title: 'Parceiro frequente', className: 'text-amber-500' }, '👑'),
+                e.entregador_nome),
+              h('div', { className: 'text-[10px] text-gray-400 truncate' },
+                freq ? h('span', { className: 'text-amber-600 font-semibold' }, 'Parceiro frequente') : (fmtTelefoneBR(e.entregador_telefone) || '—')),
             ),
-            e.entregador_telefone && h('div', { className: 'flex gap-1 flex-shrink-0' },
-              h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
-              h('button', { onClick: ligar, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Ligar'),
+            h('div', { className: 'flex gap-1 flex-shrink-0' },
+              onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, '⚠️'),
+              e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
+              e.entregador_telefone && h('button', { onClick: ligar, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Ligar'),
             ),
           )
         : h('div', { className: `px-3 py-2 border-b border-gray-100 text-[11px] text-center ${(coluna.id === 'falha' || coluna.id === 'cancel') ? 'text-red-600 bg-red-50' : 'text-gray-400 italic'}` },
@@ -1312,7 +1317,7 @@
   }
 
   // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
-  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast }) {
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
     useEffect(() => {
@@ -1354,7 +1359,7 @@
             itens.length
               ? itens.map(e => h(CardKanban, {
                   key: e.id, entrega: e, coluna: col,
-                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast,
+                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast,
                 }))
               : h('div', { className: 'text-[11px] text-gray-300 text-center py-4 border border-dashed border-gray-200 rounded-xl' }, 'Nenhuma entrega')
           )
@@ -1399,6 +1404,30 @@
     const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
     // Mini-modal pra pedir código da OS (substitui prompt() nativo do navegador)
     const [pedirCodigoModal, setPedirCodigoModal] = useState(null); // null | {valor: string}
+
+    // Motoboys frequentes: Set de telefones (so digitos) com > 3 pedidos.
+    // Carregado uma vez; usado pra destacar (coroa) os cards.
+    const [frequentesSet, setFrequentesSet] = useState(null);
+    useEffect(() => {
+      let vivo = true;
+      (async () => {
+        try {
+          const res = await fetchAuth(`${API_URL}/logistics/frequentes`);
+          const json = await res.json();
+          if (vivo && res.ok && Array.isArray(json.frequentes)) {
+            setFrequentesSet(new Set(json.frequentes.map(f => String(f.telefone || '').replace(/\D/g, '')).filter(Boolean)));
+          }
+        } catch (_) { /* silencioso: destaque e cosmetico */ }
+      })();
+      return () => { vivo = false; };
+    }, [fetchAuth, API_URL]);
+    const ehFrequente = React.useCallback((tel) => {
+      if (!frequentesSet) return false;
+      return frequentesSet.has(String(tel || '').replace(/\D/g, ''));
+    }, [frequentesSet]);
+
+    // Modal de reportar ocorrencia
+    const [reportAberto, setReportAberto] = useState(null); // null | entrega
 
     const carregar = useCallback(async (silencioso) => {
       if (!silencioso) setLoading(true);
@@ -1899,6 +1928,8 @@
               onVerTracking: abrirTracking,
               onVerDetalhes: abrirDetalhes,
               onRedespachar: abrirRedespacho,
+              onReportar: (e) => setReportAberto(e),
+              ehFrequente,
               showToast,
             })
           : entregasFiltradas.length === 0
@@ -1924,6 +1955,16 @@
         showToast,
         fetchAuth,
         API_URL,
+      }),
+
+      // ── Modal de reportar ocorrencia / bloquear ──
+      reportAberto && h(ModalReportarOcorrencia, {
+        entrega: reportAberto,
+        API_URL,
+        fetchAuth,
+        showToast,
+        onClose: () => setReportAberto(null),
+        onSucesso: carregar,
       }),
 
       // ── Modal de redespacho ──
@@ -3361,6 +3402,287 @@
   // COMPONENTE RAIZ
   // Usa props.estado.logisticaTab (controlado pelo OverflowNav do app.js)
   // ════════════════════════════════════════════════════════
+  // =========================================================
+  // Helpers de bloqueio/frequentes
+  // =========================================================
+  function soDigitos(v) { return String(v || '').replace(/\D/g, ''); }
+
+  // =========================================================
+  // MODAL: Reportar ocorrencia (+ bloquear entregador)
+  // =========================================================
+  function ModalReportarOcorrencia({ entrega, API_URL, fetchAuth, showToast, onClose, onSucesso }) {
+    const e = entrega;
+    const [descricao, setDescricao] = useState('');
+    const [bloquear, setBloquear] = useState(true);
+    const [enviando, setEnviando] = useState(false);
+    const prov = provedorInfo(e);
+    const semContato = !e.entregador_telefone && !e.entregador_placa;
+
+    async function enviar() {
+      if (!descricao.trim()) { showToast && showToast('Descreva a ocorrencia', 'error'); return; }
+      if (bloquear && semContato) { showToast && showToast('Sem telefone/placa: nao da pra bloquear com seguranca', 'error'); return; }
+      setEnviando(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/ocorrencias`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_os: e.codigo_os,
+            delivery_id: e.id,
+            provider_code: e.provider_code || prov.code,
+            courier: { name: e.entregador_nome, phone: e.entregador_telefone, plate: e.entregador_placa },
+            descricao: descricao.trim(),
+            bloquear,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          showToast && showToast(bloquear ? 'Ocorrencia registrada e entregador bloqueado' : 'Ocorrencia registrada', 'success');
+          onSucesso && onSucesso();
+          onClose && onClose();
+        } else {
+          showToast && showToast(json.error || 'Erro ao reportar', 'error');
+        }
+      } catch (err) {
+        showToast && showToast('Erro ao reportar: ' + err.message, 'error');
+      } finally {
+        setEnviando(false);
+      }
+    }
+
+    return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50', onClick: onClose },
+      h('div', { className: 'bg-white rounded-xl shadow-xl w-full max-w-md', onClick: (ev) => ev.stopPropagation() },
+        h('div', { className: 'flex items-center justify-between px-5 py-4 border-b border-gray-100' },
+          h('span', { className: 'text-base font-bold text-gray-800 flex items-center gap-2' }, '⚠️ Reportar ocorrencia'),
+          h('button', { onClick: onClose, className: 'text-gray-400 hover:text-gray-600 text-xl leading-none' }, '×'),
+        ),
+        h('div', { className: 'px-5 py-4 space-y-4' },
+          h('div', null,
+            h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'Corrida'),
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { className: 'text-sm font-bold text-gray-800' }, `OS ${e.codigo_os}`),
+              h(ProviderLogo, { code: prov.code, size: 16 }),
+            ),
+          ),
+          h('div', { className: 'bg-gray-50 rounded-lg p-3 flex items-center gap-3' },
+            h('div', { className: 'w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-sm font-bold flex-shrink-0' }, iniciaisDoNome(e.entregador_nome)),
+            h('div', { className: 'min-w-0' },
+              h('div', { className: 'text-sm font-semibold text-gray-800 truncate' }, e.entregador_nome || 'Entregador'),
+              h('div', { className: 'text-xs text-gray-500 truncate' },
+                [fmtTelefoneBR(e.entregador_telefone), e.entregador_placa].filter(Boolean).join(' · ') || 'sem telefone/placa'),
+            ),
+          ),
+          h('div', null,
+            h('label', { className: 'text-xs text-gray-600 block mb-1' }, 'Descreva a ocorrencia'),
+            h('textarea', {
+              value: descricao,
+              onChange: (ev) => setDescricao(ev.target.value),
+              placeholder: 'O que aconteceu? (ex: nao compareceu na coleta, sumiu com a mercadoria, ma conduta...)',
+              className: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-y min-h-[90px] focus:border-purple-400 focus:outline-none',
+            }),
+          ),
+          h('label', { className: 'flex items-start gap-2 cursor-pointer' },
+            h('input', { type: 'checkbox', checked: bloquear, onChange: (ev) => setBloquear(ev.target.checked), className: 'w-4 h-4 mt-0.5' }),
+            h('span', { className: 'text-xs text-gray-700 leading-relaxed' },
+              h('span', { className: 'font-semibold' }, 'Bloquear este entregador'),
+              h('span', { className: 'block text-gray-400' }, 'Se ele aceitar outra corrida nossa, o sistema cancela e reatribui automaticamente.'),
+              semContato && h('span', { className: 'block text-red-500 mt-1' }, 'Sem telefone/placa nesta corrida — nao da pra bloquear.'),
+            ),
+          ),
+        ),
+        h('div', { className: 'flex justify-end gap-2 px-5 py-4 border-t border-gray-100' },
+          h('button', { onClick: onClose, className: 'text-sm px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50' }, 'Cancelar'),
+          h('button', {
+            onClick: enviar, disabled: enviando,
+            className: 'text-sm px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5',
+          }, enviando ? 'Enviando...' : (bloquear ? '🚫 Reportar e bloquear' : 'Reportar')),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // ABA: Entregadores barrados (blacklist)
+  // =========================================================
+  function TabBarrados({ API_URL, fetchAuth, showToast }) {
+    const [dados, setDados] = useState(null); // {bloqueados, metricas}
+    const [loading, setLoading] = useState(true);
+    const [busca, setBusca] = useState('');
+
+    const carregar = React.useCallback(async () => {
+      setLoading(true);
+      try {
+        const q = busca.trim() ? `?busca=${encodeURIComponent(busca.trim())}` : '';
+        const res = await fetchAuth(`${API_URL}/logistics/bloqueados${q}`);
+        const json = await res.json();
+        if (res.ok) setDados(json);
+        else showToast && showToast(json.error || 'Erro ao carregar', 'error');
+      } catch (err) { showToast && showToast('Erro: ' + err.message, 'error'); }
+      finally { setLoading(false); }
+    }, [API_URL, fetchAuth, busca, showToast]);
+
+    useEffect(() => { carregar(); }, []); // carga inicial
+
+    async function desbloquear(id, nome) {
+      if (!window.confirm(`Desbloquear ${nome || 'este entregador'}?`)) return;
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/bloqueados/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (res.ok && json.ok) { showToast && showToast('Desbloqueado', 'success'); carregar(); }
+        else showToast && showToast(json.error || 'Erro ao desbloquear', 'error');
+      } catch (err) { showToast && showToast('Erro: ' + err.message, 'error'); }
+    }
+
+    const m = (dados && dados.metricas) || {};
+    const lista = (dados && dados.bloqueados) || [];
+
+    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
+      h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
+        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, '🚫 Entregadores barrados'),
+        h('div', { className: 'flex gap-2' },
+          h('input', {
+            value: busca, onChange: (ev) => setBusca(ev.target.value),
+            onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
+            placeholder: 'Buscar por nome ou telefone',
+            className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-56 focus:border-purple-400 focus:outline-none',
+          }),
+          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, '↻'),
+        ),
+      ),
+      h('div', { className: 'grid grid-cols-3 gap-3' },
+        [
+          { l: 'Bloqueados ativos', v: m.bloqueados_ativos || 0, c: 'text-gray-800' },
+          { l: 'Reatribuicoes (7 dias)', v: m.reatribuicoes_7d || 0, c: 'text-amber-600' },
+          { l: 'Cancelamentos hoje', v: m.cancelamentos_hoje || 0, c: 'text-gray-800' },
+        ].map((k, i) => h('div', { key: i, className: 'bg-gray-50 rounded-lg px-4 py-3' },
+          h('div', { className: 'text-xs text-gray-500' }, k.l),
+          h('div', { className: `text-2xl font-bold ${k.c}` }, String(k.v)),
+        )),
+      ),
+      loading
+        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+        : lista.length === 0
+          ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum entregador bloqueado')
+          : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
+              h('div', { className: 'grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide' },
+                h('div', { className: 'col-span-3' }, 'Entregador'),
+                h('div', { className: 'col-span-3' }, 'Contato / placa'),
+                h('div', { className: 'col-span-3' }, 'Motivo'),
+                h('div', { className: 'col-span-2' }, 'Bloqueado em'),
+                h('div', { className: 'col-span-1' }, ''),
+              ),
+              lista.map((b) => h('div', { key: b.id, className: 'grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center' },
+                h('div', { className: 'col-span-3 flex items-center gap-2 min-w-0' },
+                  h('div', { className: 'w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-[11px] font-bold flex-shrink-0' }, iniciaisDoNome(b.nome)),
+                  h('span', { className: 'font-semibold text-gray-800 truncate' }, b.nome || 'Entregador'),
+                ),
+                h('div', { className: 'col-span-3 text-xs text-gray-500' },
+                  fmtTelefoneBR(b.telefone_norm) || 'sem telefone',
+                  h('br'),
+                  [b.placa_norm, b.provider_code].filter(Boolean).join(' · '),
+                ),
+                h('div', { className: 'col-span-3 text-xs text-gray-500 break-words' }, b.motivo || '—'),
+                h('div', { className: 'col-span-2 text-xs text-gray-500' },
+                  fmtDT(b.criado_em), h('br'), `por ${b.bloqueado_por || '—'}`),
+                h('div', { className: 'col-span-1' },
+                  h('button', { onClick: () => desbloquear(b.id, b.nome), className: 'text-[11px] px-2.5 py-1 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50' }, 'Desbloquear'),
+                ),
+              )),
+            ),
+      h('div', { className: 'text-xs text-gray-400 flex items-center gap-1.5' }, 'ℹ️ Bloqueio do nosso lado (a 99/Uber tem os protocolos deles). Casamos por telefone e placa.'),
+    );
+  }
+
+  // =========================================================
+  // ABA: Motoboys frequentes (> 3 pedidos)
+  // =========================================================
+  function TabFrequentes({ API_URL, fetchAuth, showToast }) {
+    const [dados, setDados] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [busca, setBusca] = useState('');
+
+    const carregar = React.useCallback(async () => {
+      setLoading(true);
+      try {
+        const q = busca.trim() ? `?busca=${encodeURIComponent(busca.trim())}` : '';
+        const res = await fetchAuth(`${API_URL}/logistics/frequentes${q}`);
+        const json = await res.json();
+        if (res.ok) setDados(json);
+        else showToast && showToast(json.error || 'Erro ao carregar', 'error');
+      } catch (err) { showToast && showToast('Erro: ' + err.message, 'error'); }
+      finally { setLoading(false); }
+    }, [API_URL, fetchAuth, busca, showToast]);
+
+    useEffect(() => { carregar(); }, []);
+
+    const m = (dados && dados.metricas) || {};
+    const lista = (dados && dados.frequentes) || [];
+
+    function fmtUltimo(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts); const hoje = new Date();
+      const diff = Math.floor((hoje - d) / 86400000);
+      if (diff <= 0) return 'hoje';
+      if (diff === 1) return 'ontem';
+      return `${diff} dias`;
+    }
+
+    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
+      h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
+        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, '👑 Motoboys frequentes'),
+        h('div', { className: 'flex gap-2' },
+          h('input', {
+            value: busca, onChange: (ev) => setBusca(ev.target.value),
+            onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
+            placeholder: 'Buscar por nome',
+            className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:border-purple-400 focus:outline-none',
+          }),
+          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, '↻'),
+        ),
+      ),
+      h('div', { className: 'grid grid-cols-3 gap-3' },
+        [
+          { l: 'Parceiros frequentes', v: m.parceiros || 0, c: 'text-amber-600' },
+          { l: `Pedidos (${m.dias || 30} dias)`, v: m.pedidos_periodo || 0, c: 'text-gray-800' },
+          { l: 'Top parceiro', v: m.top_parceiro || 0, c: 'text-gray-800' },
+        ].map((k, i) => h('div', { key: i, className: 'bg-gray-50 rounded-lg px-4 py-3' },
+          h('div', { className: 'text-xs text-gray-500' }, k.l),
+          h('div', { className: `text-2xl font-bold ${k.c}` }, String(k.v)),
+        )),
+      ),
+      h('div', { className: 'text-xs text-gray-400' }, 'Regra: entregador com mais de 3 pedidos concluidos. Ordenado por volume.'),
+      loading
+        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+        : lista.length === 0
+          ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum motoboy frequente ainda')
+          : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
+              h('div', { className: 'grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide' },
+                h('div', { className: 'col-span-1' }, '#'),
+                h('div', { className: 'col-span-4' }, 'Entregador'),
+                h('div', { className: 'col-span-3' }, 'Contato / placa'),
+                h('div', { className: 'col-span-2' }, 'Pedidos'),
+                h('div', { className: 'col-span-2' }, 'Ultimo'),
+              ),
+              lista.map((f, i) => {
+                const top = i === 0;
+                return h('div', { key: (f.telefone || '') + i, className: `grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center ${top ? 'bg-amber-50' : ''}` },
+                  h('div', { className: `col-span-1 font-bold ${top ? 'text-amber-600' : 'text-gray-400'}` }, String(i + 1)),
+                  h('div', { className: 'col-span-4 flex items-center gap-2 min-w-0' },
+                    h('div', { className: `w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${top ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-700'}` }, top ? '👑' : iniciaisDoNome(f.nome)),
+                    h('span', { className: `font-semibold truncate ${top ? 'text-amber-700' : 'text-gray-800'}` }, f.nome || 'Entregador'),
+                  ),
+                  h('div', { className: 'col-span-3 text-xs text-gray-500' },
+                    fmtTelefoneBR(f.telefone) || '—', h('br'),
+                    [f.placa, f.provider].filter(Boolean).join(' · ')),
+                  h('div', { className: 'col-span-2' }, h('span', { className: `font-bold ${top ? 'text-amber-700' : 'text-gray-800'}` }, String(f.pedidos))),
+                  h('div', { className: 'col-span-2 text-xs text-gray-500' }, fmtUltimo(f.ultimo)),
+                );
+              }),
+            ),
+      h('div', { className: 'text-xs text-gray-400' }, 'ℹ️ Contagem por telefone do entregador (corridas concluidas via Hub).'),
+    );
+  }
+
   function ModuloLogistica(props) {
     const { HeaderCompacto, usuario, Ee, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, navegarSidebar, estado, setEstado } = props;
 
@@ -3372,6 +3694,8 @@
       tracking:  TabTracking,
       entregas:  TabEntregas,
       regras:    TabRegras,
+      barrados:   TabBarrados,
+      frequentes: TabFrequentes,
       // 🆕 2026-05 Hub logístico — painel de provedores (modulo-logistica-providers.js).
       // Componente externo (window global) — fallback se o script não carregou.
       provedores: window.ModuloLogisticaProviders || (() => h('div', {
