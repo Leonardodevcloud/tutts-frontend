@@ -3574,7 +3574,19 @@
               ),
               lista.map((b) => h('div', { key: b.id, className: 'grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center' },
                 h('div', { className: 'col-span-3 flex items-center gap-2 min-w-0' },
-                  h('div', { className: 'w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-[11px] font-bold flex-shrink-0' }, iniciaisDoNome(b.nome)),
+                  h('div', { className: 'relative flex-shrink-0' },
+                    b.foto
+                      ? h('img', {
+                          src: b.foto, alt: b.nome || 'Entregador',
+                          className: 'w-8 h-8 rounded-full object-cover',
+                          onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; },
+                        })
+                      : null,
+                    h('div', {
+                      className: 'w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-[11px] font-bold',
+                      style: b.foto ? { display: 'none' } : {},
+                    }, iniciaisDoNome(b.nome)),
+                  ),
                   h('span', { className: 'font-semibold text-gray-800 truncate' }, b.nome || 'Entregador'),
                 ),
                 h('div', { className: 'col-span-3 text-xs text-gray-500' },
