@@ -1223,7 +1223,12 @@
       return 'Aguardando atribuição…';
     }
 
-    return h('div', { className: 'bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden' },
+    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${freq ? 'border-2 border-amber-300' : 'border border-gray-200'}` },
+      // faixa "Parceiro frequente" no topo (Opcao A)
+      freq && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-[11px] font-bold' },
+        h('span', null, '👑'),
+        h('span', null, 'Parceiro frequente'),
+      ),
       // cabeçalho
       h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
         h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os}`),
@@ -1285,16 +1290,12 @@
               : null,
             h('div', { className: 'w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[10px] text-purple-700 flex-shrink-0', style: e.entregador_foto ? { display: 'none' } : {} }, iniciaisDoNome(e.entregador_nome)),
             h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'text-xs font-semibold text-gray-800 truncate flex items-center gap-1' },
-                freq && h('span', { title: 'Parceiro frequente', className: 'text-amber-500' }, '👑'),
-                e.entregador_nome),
-              h('div', { className: 'text-[10px] text-gray-400 truncate' },
-                freq ? h('span', { className: 'text-amber-600 font-semibold' }, 'Parceiro frequente') : (fmtTelefoneBR(e.entregador_telefone) || '—')),
+              h('div', { className: 'text-xs font-semibold text-gray-800 truncate' }, e.entregador_nome),
+              h('div', { className: 'text-[10px] text-gray-400 truncate' }, fmtTelefoneBR(e.entregador_telefone) || '—'),
             ),
             h('div', { className: 'flex gap-1 flex-shrink-0' },
               onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, '⚠️'),
               e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
-              e.entregador_telefone && h('button', { onClick: ligar, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Ligar'),
             ),
           )
         : h('div', { className: `px-3 py-2 border-b border-gray-100 text-[11px] text-center ${(coluna.id === 'falha' || coluna.id === 'cancel') ? 'text-red-600 bg-red-50' : 'text-gray-400 italic'}` },
