@@ -3668,7 +3668,21 @@
                 return h('div', { key: (f.telefone || '') + i, className: `grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center ${top ? 'bg-amber-50' : ''}` },
                   h('div', { className: `col-span-1 font-bold ${top ? 'text-amber-600' : 'text-gray-400'}` }, String(i + 1)),
                   h('div', { className: 'col-span-4 flex items-center gap-2 min-w-0' },
-                    h('div', { className: `w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${top ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-700'}` }, top ? '👑' : iniciaisDoNome(f.nome)),
+                    h('div', { className: 'relative flex-shrink-0' },
+                    f.foto
+                      ? h('img', {
+                          src: f.foto,
+                          alt: f.nome || 'Entregador',
+                          className: `w-8 h-8 rounded-full object-cover ${top ? 'ring-2 ring-amber-300' : ''}`,
+                          onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; },
+                        })
+                      : null,
+                    h('div', {
+                      className: `w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${top ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-700'}`,
+                      style: f.foto ? { display: 'none' } : {},
+                    }, iniciaisDoNome(f.nome)),
+                    top && h('span', { className: 'absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-100 border border-white flex items-center justify-center text-[9px]', title: 'Top parceiro' }, '👑'),
+                  ),
                     h('span', { className: `font-semibold truncate ${top ? 'text-amber-700' : 'text-gray-800'}` }, f.nome || 'Entregador'),
                   ),
                   h('div', { className: 'col-span-3 text-xs text-gray-500' },
