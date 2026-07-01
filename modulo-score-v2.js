@@ -65,11 +65,24 @@
         const [regiaoSel, setRegiaoSel] = useState('');
         const [dados, setDados] = useState(null);
         const [loading, setLoading] = useState(false);
+        // 🆕 2026-07: data de referência (fim da janela de 7 dias). '' = últimos 7 dias (hoje).
+        const [dataRef, setDataRef] = useState('');
 
         const fetchApiRef = useRef(fetchApi);
         const showToastRef = useRef(showToast);
         useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
         useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+        // Semana ISO 'AAAA-Www' de uma data (mesma régua do backend). Sem data = hoje.
+        const isoSemana = (dateStr) => {
+            const base = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
+            const d = new Date(Date.UTC(base.getFullYear(), base.getMonth(), base.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const semana = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return d.getUTCFullYear() + '-W' + String(semana).padStart(2, '0');
+        };
 
         // Carrega praças com a regra ativa pro seletor
         useEffect(() => {
@@ -83,10 +96,14 @@
             })();
         }, []);
 
-        const carregar = useCallback(async (regiao) => {
+        // Carrega alertas: filtra por praça + (opcional) semana da dataRef escolhida.
+        const carregar = useCallback(async (regiao, semanaRef) => {
             setLoading(true);
             try {
-                const q = regiao ? ('?regiao=' + encodeURIComponent(regiao)) : '';
+                const params = [];
+                if (regiao) params.push('regiao=' + encodeURIComponent(regiao));
+                if (semanaRef) params.push('semana=' + encodeURIComponent(semanaRef));
+                const q = params.length ? ('?' + params.join('&')) : '';
                 const r = await fetchApiRef.current('/score-v2/admin/alertas-aproveitamento' + q);
                 setDados(r || { alertas: [], total: 0 });
             } catch (err) {
@@ -94,7 +111,10 @@
             } finally { setLoading(false); }
         }, []);
 
-        useEffect(() => { if (regiaoSel) carregar(regiaoSel); }, [regiaoSel, carregar]);
+        // Recarrega sempre que praça ou dataRef muda (dataRef vazio = semana atual)
+        useEffect(() => {
+            if (regiaoSel) carregar(regiaoSel, dataRef ? isoSemana(dataRef) : null);
+        }, [regiaoSel, dataRef, carregar]);
 
         if (configs.length === 0) {
             return h('div', { className: 'max-w-2xl mx-auto p-6 text-center' },
@@ -118,29 +138,48 @@
         };
         const iniciais = (nome) => (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
 
+        // Dispara a análise. Se dataRef preenchida, reprocessa a janela que TERMINA nela (períodos antigos).
+        const forcarAnalise = async () => {
+            try {
+                const body = dataRef ? { data_ref: dataRef } : {};
+                showToastRef.current(dataRef ? ('⏳ Analisando janela até ' + dataRef + '...') : '⏳ Analisando últimos 7 dias...', 'info');
+                const r = await fetchApiRef.current('/score-v2/admin/avaliar-aproveitamento', { method: 'POST', body: JSON.stringify(body) });
+                showToastRef.current('✅ ' + (r?.mensagem || 'Análise concluída'), 'success');
+                carregar(regiaoSel, dataRef ? isoSemana(dataRef) : null);
+            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+        };
+
         return h('div', { className: 'max-w-4xl mx-auto p-4 md:p-6 space-y-4' },
             h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
                 h('div', null,
                     h('h3', { className: 'text-base font-bold text-gray-900' }, '📉 Aproveitamento semanal'),
-                    h('p', { className: 'text-xs text-gray-500' }, 'Sinalizados nos últimos 7 dias' + (dados?.semana ? (' · ' + dados.semana) : ''))
+                    h('p', { className: 'text-xs text-gray-500' }, (dataRef ? 'Janela de 7 dias até ' + dataRef : 'Últimos 7 dias') + (dados?.semana ? (' · ' + dados.semana) : ''))
                 ),
-                h('div', { className: 'flex items-center gap-2' },
-                    h('button', {
-                        onClick: async () => {
-                            try {
-                                showToastRef.current('⏳ Analisando últimos 7 dias...', 'info');
-                                const r = await fetchApiRef.current('/score-v2/admin/avaliar-aproveitamento', { method: 'POST', body: '{}' });
-                                showToastRef.current('✅ ' + (r?.mensagem || 'Análise concluída'), 'success');
-                                carregar(regiaoSel);
-                            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
-                        },
-                        className: 'px-3 py-2 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50'
-                    }, '🔄 Forçar análise'),
-                    h('select', {
-                        value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
-                        className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
-                    }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
-                )
+                h('select', {
+                    value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
+                    className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
+                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
+            ),
+
+            // 🆕 Barra de reprocessamento (períodos antigos)
+            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-end gap-3 flex-wrap' },
+                h('div', null,
+                    h('label', { className: 'text-[11px] text-purple-700 font-medium block mb-1' }, 'Fim da janela (deixe vazio = hoje)'),
+                    h('input', {
+                        type: 'date', value: dataRef, max: new Date().toISOString().slice(0, 10),
+                        onChange: e => setDataRef(e.target.value),
+                        className: 'px-3 py-1.5 border border-purple-200 rounded-lg text-sm'
+                    })
+                ),
+                dataRef && h('button', {
+                    onClick: () => setDataRef(''),
+                    className: 'px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-white'
+                }, 'Voltar pra hoje'),
+                h('div', { className: 'flex-1' }),
+                h('button', {
+                    onClick: forcarAnalise,
+                    className: 'px-3 py-2 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700'
+                }, dataRef ? '🔄 Reprocessar essa semana' : '🔄 Analisar últimos 7 dias')
             ),
 
             h('div', { className: 'grid grid-cols-3 gap-3' },
@@ -259,6 +298,20 @@
             }
         };
 
+        // 🆕 2026-07: recalcular TODAS as praças de uma vez (nível + aproveitamento).
+        const recalcularTudo = async () => {
+            if (!confirm('Recalcular TODAS as praças agora?\n\nRecalcula o nível de todos os motoboys de todas as praças ativas (CRM + Planilha) e roda a análise de aproveitamento. Pode demorar alguns minutos.')) return;
+            try {
+                showToast('🔄 Recalculando todas as praças... aguarde', 'info');
+                const r = await fetchApi('/score-v2/admin/avaliar-agora', { method: 'POST', body: '{}' });
+                const mud = (r.mudancas || []).length;
+                showToast('✅ ' + (r.processados || 0) + ' motoboys · ' + (r.regioes || 0) + ' praças · ' + mud + ' mudanças de nível', 'success');
+                carregar();
+            } catch (err) {
+                showToast('❌ ' + err.message, 'error');
+            }
+        };
+
         // Regiões que ainda não foram configuradas
         // ⚠️ Backend agora já filtra: só vêm regiões com ≥1 motoboy avaliado, ordenadas DESC.
         // Aqui mantemos filtro extra pra excluir regiões já configuradas (defensivo, backend já faz).
@@ -269,6 +322,18 @@
         if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
 
         return h('div', null,
+            // 🆕 2026-07: cabeçalho com recálculo global de todas as praças
+            h('div', { className: 'flex items-center justify-between gap-3 mb-3 flex-wrap' },
+                h('div', null,
+                    h('h3', { className: 'text-base font-bold text-gray-900' }, 'Praças configuradas'),
+                    h('p', { className: 'text-xs text-gray-500' }, 'Critérios, bonificações e regras por região')
+                ),
+                h('button', {
+                    onClick: recalcularTudo,
+                    className: 'px-3 py-2 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50'
+                }, '🔄 Recalcular todas as praças')
+            ),
+
             // 🚀 2026-05: Painel de regiões sem score — redesign com busca + chips cinzas com badge
             // Mostra 15 inicialmente, expande via "ver mais", filtra por busca em tempo real.
             regioesNaoConfig.length > 0 && h(PainelRegioesNaoConfig, {
@@ -445,14 +510,12 @@
             sorteio_valor_n3: cfg.sorteio_valor_n3 != null ? Number(cfg.sorteio_valor_n3) : 150,
             saque_teto_n2: cfg.saque_teto_n2 != null ? Number(cfg.saque_teto_n2) : 500,
             saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
-            // 🚀 Thresholds (defaults)
             n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
             n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 15,
             n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
             n3_min_entregas: cfg.n3_min_entregas != null ? Number(cfg.n3_min_entregas) : 150,
             n3_min_dias_16h: cfg.n3_min_dias_16h != null ? Number(cfg.n3_min_dias_16h) : 20,
             n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
-            // 🆕 Regra de aproveitamento semanal (alerta por praça)
             regra_aproveitamento_ativa: cfg.regra_aproveitamento_ativa === true,
             pct_min_aproveitamento: cfg.pct_min_aproveitamento != null ? Number(cfg.pct_min_aproveitamento) : 95,
         });
@@ -462,132 +525,107 @@
             setForm({ ...form, niveis_ativos: tem ? form.niveis_ativos.filter(x => x !== n) : [...form.niveis_ativos, n].sort() });
         };
 
-        // Helper de input numérico inline
+        // Input numerico compacto e consistente (borda fina, foco roxo)
         const numInput = (key, step, min, max) => h('input', {
             type: 'number', step: step || 1, min: min != null ? min : 0, max: max,
-            value: form[key], 
+            value: form[key],
             onChange: e => setForm({ ...form, [key]: parseFloat(e.target.value) || 0 }),
-            className: 'w-full px-3 py-2 border rounded-lg text-sm mt-1'
+            className: 'w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm mt-1 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200'
         });
 
-        return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4' },
-            h('div', { className: 'bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto' },
-                h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10' },
-                    h('h2', { className: 'text-lg font-bold text-gray-900' }, '⚙️ ' + (cfg.id ? 'Editar' : 'Configurar') + ' — ' + form.regiao),
-                    h('button', { onClick: onCancelar, className: 'text-gray-400 hover:text-gray-600 text-2xl' }, '×')
+        // Card de categoria (Prata=2 / Ouro=3) — grid 3 criterios + 2 bonificacoes
+        const cardCategoria = (nivel) => {
+            const isOuro = nivel === 3;
+            const pk = isOuro ? 'n3' : 'n2';
+            const badge = h('span', {
+                className: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full ' + (isOuro ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600')
+            }, isOuro ? 'OURO' : 'PRATA');
+            const tetoLabel = isOuro ? 'Teto saque / sem (R$)' : 'Teto saque / mês (R$)';
+            return h('div', { className: 'border border-gray-200 rounded-xl p-3.5 space-y-3' },
+                h('div', { className: 'flex items-center gap-2' },
+                    badge,
+                    h('span', { className: 'text-[11px] text-gray-400' }, 'todos os critérios precisam bater')
                 ),
-                h('div', { className: 'p-4 space-y-4' },
-                    // Toggle ativo
-                    h('div', { className: 'flex items-center justify-between bg-gray-50 rounded-lg p-3' },
-                        h('span', { className: 'text-sm font-medium text-gray-700' }, 'Score ativo nesta região'),
-                        h('input', {
-                            type: 'checkbox', checked: form.ativo,
-                            onChange: e => setForm({ ...form, ativo: e.target.checked }),
-                            className: 'w-5 h-5'
-                        })
+                h('div', { className: 'grid grid-cols-3 gap-2.5' },
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Entregas (28d)'), numInput(pk + '_min_entregas', 1, 0)),
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Após 16h'), numInput(pk + '_min_dias_16h', 1, 0)),
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '% no prazo'), numInput(pk + '_min_pct_prazo', 0.1, 0, 100))
+                ),
+                h('div', { className: 'grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-100' },
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Sorteio mensal (R$)'), numInput('sorteio_valor_' + pk, 0.01, 0)),
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0))
+                )
+            );
+        };
+
+        return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4' },
+            h('div', { className: 'bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col' },
+                // Header
+                h('div', { className: 'px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0' },
+                    h('div', { className: 'flex items-center gap-2.5' },
+                        h('span', { className: 'text-xl' }, '⚙️'),
+                        h('div', null,
+                            h('div', { className: 'text-[15px] font-bold text-gray-900 leading-tight' }, cfg.id ? 'Editar regras' : 'Configurar praça'),
+                            h('div', { className: 'text-xs text-gray-400' }, form.regiao)
+                        )
                     ),
-                    // Níveis ativos
+                    h('button', { onClick: onCancelar, className: 'w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg text-xl' }, '×')
+                ),
+                // Body
+                h('div', { className: 'px-5 py-4 space-y-3.5 overflow-y-auto' },
+                    // Score ativo
+                    h('label', { className: 'flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 cursor-pointer' },
+                        h('div', null,
+                            h('div', { className: 'text-[13px] font-semibold text-gray-800' }, 'Score ativo nesta praça'),
+                            h('div', { className: 'text-[11px] text-gray-400' }, 'Motoboys da região passam a ver e ganhar score')
+                        ),
+                        h('input', { type: 'checkbox', checked: form.ativo, onChange: e => setForm({ ...form, ativo: e.target.checked }), className: 'w-5 h-5 accent-purple-600' })
+                    ),
+                    // Categorias
                     h('div', null,
-                        h('label', { className: 'text-sm font-medium text-gray-700 mb-2 block' }, 'Categorias disponíveis'),
-                        h('div', { className: 'flex gap-3' },
-                            [2, 3].map(n => h('label', { key: n, className: 'flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer ' + (form.niveis_ativos.includes(n) ? 'border-purple-400 bg-purple-50' : 'border-gray-300') },
-                                h('input', { type: 'checkbox', checked: form.niveis_ativos.includes(n), onChange: () => toggleNivel(n) }),
-                                h('span', { className: 'text-sm font-medium' }, n === 3 ? 'Ouro' : 'Prata')
+                        h('div', { className: 'text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2' }, 'Categorias ativas'),
+                        h('div', { className: 'flex gap-2' },
+                            [2, 3].map(n => h('label', { key: n, className: 'flex-1 flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition ' + (form.niveis_ativos.includes(n) ? 'border-purple-300 bg-purple-50' : 'border-gray-200 hover:border-gray-300') },
+                                h('input', { type: 'checkbox', checked: form.niveis_ativos.includes(n), onChange: () => toggleNivel(n), className: 'accent-purple-600' }),
+                                h('span', { className: 'text-[13px] font-medium ' + (form.niveis_ativos.includes(n) ? 'text-purple-800' : 'text-gray-600') }, n === 3 ? 'Ouro' : 'Prata')
                             ))
                         )
                     ),
-
-                    // 🥈 Bloco completo Prata: critérios + valores
-                    form.niveis_ativos.includes(2) && h('div', { className: 'border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-3' },
-                        h('h4', { className: 'text-sm font-bold text-amber-900' }, '🥈 Prata'),
-                        h('p', { className: 'text-[11px] text-amber-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
-                        h('div', { className: 'grid grid-cols-3 gap-2' },
-                            h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas (28d)'),
-                                numInput('n2_min_entregas', 1, 0)
+                    // Cards por categoria
+                    form.niveis_ativos.includes(2) && cardCategoria(2),
+                    form.niveis_ativos.includes(3) && cardCategoria(3),
+                    // Aproveitamento semanal
+                    h('div', { className: 'border border-gray-200 rounded-xl p-3.5' },
+                        h('label', { className: 'flex items-start justify-between gap-3 cursor-pointer' },
+                            h('div', { className: 'flex gap-2.5' },
+                                h('span', { className: 'text-base leading-none mt-0.5' }, '📉'),
+                                h('div', null,
+                                    h('div', { className: 'text-[13px] font-semibold text-gray-800' }, 'Alerta de aproveitamento semanal'),
+                                    h('div', { className: 'text-[11px] text-gray-400' }, 'Todo sábado avalia os últimos 7 dias. Quem fica abaixo do mínimo é sinalizado no painel e avisado no app.')
+                                )
                             ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Mín. entregas após 16h'),
-                                numInput('n2_min_dias_16h', 1, 0)
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, '% prazo mín.'),
-                                numInput('n2_min_pct_prazo', 0.1, 0, 100)
-                            )
+                            h('input', { type: 'checkbox', checked: form.regra_aproveitamento_ativa, onChange: e => setForm({ ...form, regra_aproveitamento_ativa: e.target.checked }), className: 'w-5 h-5 accent-purple-600 flex-shrink-0' })
                         ),
-                        h('p', { className: 'text-[11px] text-amber-700 mt-2' }, 'Bonificações:'),
-                        h('div', { className: 'grid grid-cols-2 gap-2' },
-                            h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Sorteio mensal (R$)'),
-                                numInput('sorteio_valor_n2', 0.01, 0)
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-amber-700 font-medium' }, 'Teto saque/mês (R$)'),
-                                numInput('saque_teto_n2', 0.01, 0)
-                            )
-                        )
-                    ),
-
-                    // 🥇 Bloco completo Ouro: critérios + valores
-                    form.niveis_ativos.includes(3) && h('div', { className: 'border border-yellow-300 bg-yellow-50 rounded-lg p-3 space-y-3' },
-                        h('h4', { className: 'text-sm font-bold text-yellow-900' }, '🥇 Ouro'),
-                        h('p', { className: 'text-[11px] text-yellow-700' }, 'Critérios pra atingir (todos precisam ser cumpridos):'),
-                        h('div', { className: 'grid grid-cols-3 gap-2' },
-                            h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas (28d)'),
-                                numInput('n3_min_entregas', 1, 0)
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Mín. entregas após 16h'),
-                                numInput('n3_min_dias_16h', 1, 0)
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, '% prazo mín.'),
-                                numInput('n3_min_pct_prazo', 0.1, 0, 100)
-                            )
-                        ),
-                        h('p', { className: 'text-[11px] text-yellow-700 mt-2' }, 'Bonificações:'),
-                        h('div', { className: 'grid grid-cols-2 gap-2' },
-                            h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Sorteio mensal (R$)'),
-                                numInput('sorteio_valor_n3', 0.01, 0)
-                            ),
-                            h('div', null,
-                                h('label', { className: 'text-xs text-yellow-700 font-medium' }, 'Teto saque/sem (R$)'),
-                                numInput('saque_teto_n3', 0.01, 0)
-                            )
-                        )
-                    ),
-
-                    // 🆕 Regra de aproveitamento semanal
-                    h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-3 space-y-3' },
-                        h('div', { className: 'flex items-center justify-between' },
-                            h('div', null,
-                                h('h4', { className: 'text-sm font-bold text-purple-900' }, '📉 Alerta de aproveitamento semanal'),
-                                h('p', { className: 'text-[11px] text-purple-700' }, 'Todo sábado avalia os últimos 7 dias. Quem fica abaixo do mínimo é sinalizado e avisado no app.')
-                            ),
+                        form.regra_aproveitamento_ativa && h('div', { className: 'flex items-center gap-2.5 mt-3 pt-3 border-t border-gray-100' },
+                            h('span', { className: 'text-[12px] text-gray-500' }, '% mínimo no prazo'),
                             h('input', {
-                                type: 'checkbox', checked: form.regra_aproveitamento_ativa,
-                                onChange: e => setForm({ ...form, regra_aproveitamento_ativa: e.target.checked }),
-                                className: 'w-5 h-5'
+                                type: 'number', step: 0.1, min: 0, max: 100,
+                                value: form.pct_min_aproveitamento,
+                                onChange: e => setForm({ ...form, pct_min_aproveitamento: parseFloat(e.target.value) || 0 }),
+                                className: 'w-24 px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200'
                             })
-                        ),
-                        form.regra_aproveitamento_ativa && h('div', null,
-                            h('label', { className: 'text-xs text-purple-700 font-medium' }, '% mínimo no prazo'),
-                            numInput('pct_min_aproveitamento', 0.1, 0, 100)
                         )
                     ),
-
-                    h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900' },
-                        h('p', { className: 'font-medium mb-1' }, '💡 Dica de calibragem'),
-                        h('p', null, 'Pra ver quantos motoboys vão se enquadrar antes de salvar definitivo, ' +
-                            'salva com valores baixos primeiro, clica "Reavaliar" no card e veja os totais por categoria na aba "Motoboys por Categoria". Depois ajusta.'),
-                        h('p', { className: 'mt-2' }, '⚠️ Mudar critérios reavalia automaticamente todos os motoboys da região em background ao salvar.')
+                    // Dica
+                    h('div', { className: 'bg-blue-50 rounded-xl p-3 text-[11px] text-blue-900 leading-relaxed' },
+                        h('span', { className: 'font-semibold' }, '💡 '),
+                        'Ao salvar, todos os motoboys da praça são recalculados em background com os novos critérios. Pra conferir a contagem por categoria, use a aba "Motoboys por Categoria".'
                     )
                 ),
-                h('div', { className: 'p-4 border-t border-gray-200 flex gap-2 sticky bottom-0 bg-white' },
-                    h('button', { onClick: onCancelar, className: 'flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50' }, 'Cancelar'),
-                    h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, '💾 Salvar')
+                // Footer
+                h('div', { className: 'px-5 py-3.5 border-t border-gray-100 flex gap-2.5 flex-shrink-0' },
+                    h('button', { onClick: onCancelar, className: 'flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-[13px] hover:bg-gray-50' }, 'Cancelar'),
+                    h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-xl font-semibold text-[13px] hover:bg-purple-700 flex items-center justify-center gap-1.5' }, '💾 Salvar e recalcular praça')
                 )
             )
         );
