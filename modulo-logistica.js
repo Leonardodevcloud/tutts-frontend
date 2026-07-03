@@ -1187,7 +1187,7 @@
   }
 
   // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
-  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast }) {
+  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast }) {
     const e = entrega;
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
@@ -1197,6 +1197,7 @@
     const margemPos    = margemHub >= 0;
     const temCusto     = valorUber > 0;
     const prov         = provedorInfo(e);
+    const eh99         = ['noventanove','99'].includes(String(e.provider_code || e.provider || '').toLowerCase());
     const ind          = indicadorTempo(e);
 
     const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
@@ -1305,6 +1306,13 @@
         '🕐 Despachada ', fmtDT(e.created_at)),
       // ações
       h('div', { className: 'flex gap-1.5 px-2.5 pb-2.5 pt-1' },
+        (eh99 && onChat) && h('button', {
+          onClick: () => onChat(e),
+          title: 'Abrir chat com o motoboy (99)',
+          className: 'relative flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100',
+        }, '\ud83d\udcac Chat',
+          (unread > 0) && h('span', { className: 'absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center', style: { background: '#f67602' } }, unread > 9 ? '9+' : String(unread))
+        ),
         h('button', {
           onClick: () => onVerTracking && onVerTracking(e),
           disabled: !(e.rastreio_token || e.tracking_url),
@@ -1318,7 +1326,7 @@
   }
 
   // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
-  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast }) {
+  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast }) {
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
     useEffect(() => {
@@ -1361,6 +1369,7 @@
               ? itens.map(e => h(CardKanban, {
                   key: e.id, entrega: e, coluna: col,
                   onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast,
+                  onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
                 }))
               : h('div', { className: 'text-[11px] text-gray-300 text-center py-4 border border-dashed border-gray-200 rounded-xl' }, 'Nenhuma entrega')
           )
@@ -1372,7 +1381,7 @@
   // ════════════════════════════════════════════════════════
   // ABA: ENTREGAS — listagem em cards
   // ════════════════════════════════════════════════════════
-  function TabEntregas({ API_URL, fetchAuth, showToast }) {
+  function TabEntregas({ API_URL, fetchAuth, showToast, setEstado }) {
     const [entregas, setEntregas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtroStatus, setFiltroStatus] = useState('');
@@ -1381,6 +1390,23 @@
     const [filtroProvider, setFiltroProvider] = useState('todos'); // todos | uber | noventanove
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
+    // Chat 99: contadores de nao-lidas por OS (badge nos cards) + abrir chat na aba propria
+    const [unreadChat99, setUnreadChat99] = useState({});
+    useEffect(() => {
+      let vivo = true;
+      const puxar = async () => {
+        try {
+          const r = await fetchAuth(`${API_URL}/logistics/chat99/unread-counts`);
+          if (r && r.ok) { const d = await r.json(); if (vivo) setUnreadChat99(d.unread || {}); }
+        } catch (_) {}
+      };
+      puxar();
+      const t = setInterval(puxar, 15000);
+      return () => { vivo = false; clearInterval(t); };
+    }, [API_URL, fetchAuth]);
+    const abrirChat99 = (e) => {
+      if (setEstado) setEstado(st => ({ ...st, logisticaTab: 'chat', chat99OS: String(e.codigo_os) }));
+    };
     const [dataFiltro, setDataFiltro] = useState(dataLocalBRT(new Date())); // YYYY-MM-DD em BRT; padrao = hoje
     // tick de 1 min — mantém o indicador de tempo ("atrasado") atualizado sem refetch
     const [, setTickTempo] = useState(0);
@@ -1930,6 +1956,8 @@
               onVerDetalhes: abrirDetalhes,
               onRedespachar: abrirRedespacho,
               onReportar: (e) => setReportAberto(e),
+              onChat: abrirChat99,
+              unreadMap: unreadChat99,
               ehFrequente,
               showToast,
             })
@@ -3731,6 +3759,7 @@
     const abas = {
       dashboard: TabDashboard,
       tracking:  TabTracking,
+      chat:      window.Chat99Panel || (() => h('div', { className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg' }, '\u26a0\ufe0f chat99-panel.js nao carregou. Verifique o index.html.')),
       entregas:  TabEntregas,
       regras:    TabRegras,
       barrados:   TabBarrados,
