@@ -1311,7 +1311,7 @@
     const [total, setTotal]        = useState(0);
     const [loading, setLoading]    = useState(false);
     const [expandido, setExpandido] = useState(null);
-    const [filtros, setFiltros]    = useState({ status: '', os_numero: '', de: '', ate: '' });
+    const [filtros, setFiltros]    = useState({ os_numero: '', motoboy: '', de: '', ate: '', grupo: 'aprovados' });
     const [page, setPage]          = useState(1);
     const [fotoModal, setFotoModal] = useState(null);
     const PER_PAGE = 20;
@@ -1324,8 +1324,9 @@
       setLoading(true);
       try {
         const params = new URLSearchParams({ page: pg, per_page: PER_PAGE });
-        if (filtrosAtivos.status)    params.set('status',    filtrosAtivos.status);
+        if (filtrosAtivos.grupo)     params.set('grupo',     filtrosAtivos.grupo);
         if (filtrosAtivos.os_numero) params.set('os_numero', filtrosAtivos.os_numero);
+        if (filtrosAtivos.motoboy)   params.set('motoboy',   filtrosAtivos.motoboy);
         if (filtrosAtivos.de)        params.set('de',        filtrosAtivos.de);
         if (filtrosAtivos.ate)       params.set('ate',       filtrosAtivos.ate);
 
@@ -1423,22 +1424,38 @@
       setMapaModal(r);
     };
 
+    const trocarGrupo = (g) => {
+      const novos = { ...filtros, grupo: g };
+      setFiltros(novos);
+      carregar(1, novos);
+    };
+
     return h('div', { className: 'max-w-6xl mx-auto px-4 py-6' },
+
+      // 2026-07: abas Aprovados x Barradas
+      h('div', { className: 'flex gap-2 mb-4' },
+        h('button', {
+          onClick: () => trocarGrupo('aprovados'),
+          className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'aprovados' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
+          style: filtros.grupo === 'aprovados' ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)' } : {},
+        }, '✅ Ajustes Aprovados'),
+        h('button', {
+          onClick: () => trocarGrupo('barradas'),
+          className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'barradas' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
+          style: filtros.grupo === 'barradas' ? { background: 'linear-gradient(135deg, #b91c1c, #ef4444)' } : {},
+        }, '🚫 Solicitações Barradas')
+      ),
 
       // Filtros
       h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-3 mb-5' },
-        h('select', {
-          name: 'status', value: filtros.status, onChange: handleFiltro,
-          className: 'col-span-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400',
-        },
-          h('option', { value: '' }, 'Todos status'),
-          ['pendente','processando','sucesso','erro'].map(s =>
-            h('option', { key: s, value: s }, s.charAt(0).toUpperCase() + s.slice(1))
-          )
-        ),
         h('input', {
           name: 'os_numero', value: filtros.os_numero, onChange: handleFiltro,
           placeholder: 'Nº OS',
+          className: 'col-span-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400',
+        }),
+        h('input', {
+          name: 'motoboy', value: filtros.motoboy, onChange: handleFiltro,
+          placeholder: 'Motoboy (nome ou código)',
           className: 'col-span-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400',
         }),
         h('input', {
