@@ -199,6 +199,7 @@
     // Foto da NF foi removida porque motos não conseguiam capturar legível.
     const [cnpjManual, setCnpjManual] = useState('');
     const [valoresOS, setValoresOS] = useState(null); // { antes, depois }
+    const [bloqueioInfo, setBloqueioInfo] = useState(null); // 2026-07: { loja, numero }
 
     // Progresso real do RPA — atualizados pelo polling (campos etapa_atual / progresso do banco).
     const [progresso, setProgresso] = useState(5);
@@ -322,6 +323,12 @@
             } else {
               setDetalhe(erro); setFase('erro');
             }
+            setLoading(false);
+          } else if (data.status === 'bloqueado_cliente') {
+            // 2026-07: cliente bloqueado para ajuste — mostra tela de suporte
+            pararPolling();
+            setBloqueioInfo({ loja: data.bloqueio_loja || '', numero: data.numero_suporte || '557189260372' });
+            setFase('bloqueado_cliente');
             setLoading(false);
           }
         } catch {}
@@ -599,6 +606,33 @@
         style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
       }, '📸 Enviar outra foto')
     );
+
+    // Fase: cliente bloqueado para ajuste — 2026-07
+    if (fase === 'bloqueado_cliente') {
+      const hh = new Date().getHours();
+      const saud = hh < 12 ? 'Bom dia' : (hh < 18 ? 'Boa tarde' : 'Boa noite');
+      const loja = (bloqueioInfo && bloqueioInfo.loja) || '';
+      const numero = String((bloqueioInfo && bloqueioInfo.numero) || '557189260372').replace(/\D/g, '');
+      const texto = `${saud} suporte! Estou com a OS ${form.os_numero} da loja ${loja} para realizar correção do ponto ${form.ponto}, como proceder?`;
+      const waLink = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+      return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
+        h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' },
+          h('span', { className: 'text-4xl' }, '🚫')
+        ),
+        h('h2', { className: 'text-xl font-bold text-red-700 mb-4' }, 'Ajuste não permitido'),
+        h('div', { className: 'bg-red-50 border border-red-300 rounded-xl p-5 mb-6 max-w-md' },
+          h('p', { className: 'text-sm text-red-800 leading-relaxed font-semibold' }, 'As corridas desse cliente não sofrem ajustes na localização.'),
+          h('p', { className: 'text-sm text-red-800 leading-relaxed mt-3' }, 'Você deve seguir sempre o endereço que está na nota.'),
+          h('p', { className: 'text-sm text-red-800 leading-relaxed mt-3' }, 'Por favor, entre em contato com o suporte.')
+        ),
+        h('a', {
+          href: waLink, target: '_blank', rel: 'noopener noreferrer',
+          className: 'px-8 py-3 rounded-xl font-semibold text-white mb-3 inline-flex items-center gap-2',
+          style: { background: 'linear-gradient(135deg, #16a34a, #22c55e)' },
+        }, '💬 Falar com o suporte'),
+        h('button', { onClick: resetar, className: 'px-8 py-2 rounded-xl font-semibold text-gray-500' }, '↩ Voltar')
+      );
+    }
 
     // Fase: aviso de localização não validada
     if (fase === 'aviso_localizacao') return h('div', {
@@ -2433,6 +2467,7 @@
           { id: 'historico',   label: '📋 Histórico' },
           { id: 'liberacoes',  label: '🔓 Liberação de OS' },  // 2026-04 v3
           { id: 'analytics',   label: '📊 Analytics' },
+          { id: 'bloqueados',  label: '🚫 Clientes Bloqueados' }, // 2026-07
         ]
       : [{ id: 'formulario', label: '📍 Correção' }, { id: 'meu-historico', label: '📋 Minhas Solicitações' }];
 
@@ -2479,6 +2514,9 @@
               ),
               h('div', { style: { display: aba === 'analytics' ? 'block' : 'none' } },
                 h(TabAnalytics, { API_URL, fetchAuth, showToast })
+              ),
+              h('div', { style: { display: aba === 'bloqueados' ? 'block' : 'none' } },
+                h(TabClientesBloqueados, { API_URL, fetchAuth, showToast })
               )
             )
           : h(React.Fragment, null,
@@ -2490,6 +2528,125 @@
               )
             )
       )
+    );
+  }
+
+  // ── ABA: Clientes Bloqueados (admin) — 2026-07 ──────────────────────────────
+  function TabClientesBloqueados({ API_URL, fetchAuth, showToast }) {
+    const [lista, setLista]           = useState([]);
+    const [loading, setLoading]       = useState(true);
+    const [nomeLoja, setNomeLoja]     = useState('');
+    const [endereco, setEndereco]     = useState('');
+    const [salvando, setSalvando]     = useState(false);
+    const [numeroSuporte, setNumeroSuporte] = useState('');
+    const [editandoNum, setEditandoNum]     = useState(false);
+
+    const carregar = async () => {
+      setLoading(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/clientes-bloqueados`);
+        const data = await res.json();
+        setLista(data.clientes || []);
+        const rs = await fetchAuth(`${API_URL}/agent/clientes-bloqueados-suporte`);
+        const ds = await rs.json();
+        setNumeroSuporte(ds.numero_suporte || '');
+      } catch (e) {
+        showToast('Erro ao carregar clientes bloqueados', 'error');
+      }
+      setLoading(false);
+    };
+    useEffect(() => { carregar(); }, []);
+
+    const adicionar = async () => {
+      if (!nomeLoja.trim() || !endereco.trim()) { showToast('Preencha nome e endereço', 'error'); return; }
+      setSalvando(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/clientes-bloqueados`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome_loja: nomeLoja.trim(), endereco: endereco.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.erro || 'Erro ao cadastrar', 'error'); }
+        else { setNomeLoja(''); setEndereco(''); showToast('Cliente bloqueado cadastrado', 'success'); carregar(); }
+      } catch (e) { showToast('Falha de conexão', 'error'); }
+      setSalvando(false);
+    };
+
+    const alternar = async (c) => {
+      try {
+        await fetchAuth(`${API_URL}/agent/clientes-bloqueados/${c.id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ativo: !c.ativo }),
+        });
+        carregar();
+      } catch (e) { showToast('Erro ao atualizar', 'error'); }
+    };
+
+    const excluir = async (c) => {
+      if (!window.confirm(`Excluir "${c.nome_loja}" da lista de bloqueados?`)) return;
+      try {
+        await fetchAuth(`${API_URL}/agent/clientes-bloqueados/${c.id}`, { method: 'DELETE' });
+        showToast('Removido', 'success'); carregar();
+      } catch (e) { showToast('Erro ao excluir', 'error'); }
+    };
+
+    const salvarNumero = async () => {
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/clientes-bloqueados-suporte`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numero_suporte: numeroSuporte }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.erro || 'Número inválido', 'error'); }
+        else { setNumeroSuporte(data.numero_suporte); setEditandoNum(false); showToast('Número salvo', 'success'); }
+      } catch (e) { showToast('Falha de conexão', 'error'); }
+    };
+
+    return h('div', { className: 'max-w-3xl mx-auto px-4 py-6' },
+      h('div', { className: 'mb-6' },
+        h('h2', { className: 'text-lg font-bold text-gray-800 mb-1' }, '🚫 Clientes Bloqueados para Ajuste'),
+        h('p', { className: 'text-sm text-gray-500' }, 'Corridas cujo Ponto 1 bater com um destes clientes NÃO poderão ser ajustadas pelo motoboy.')
+      ),
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-5 flex items-center gap-3 flex-wrap' },
+        h('span', { className: 'text-sm font-semibold text-gray-700' }, '💬 Nº do suporte:'),
+        editandoNum
+          ? h(React.Fragment, null,
+              h('input', { value: numeroSuporte, onChange: (e) => setNumeroSuporte(e.target.value), className: 'border rounded-lg px-3 py-1.5 text-sm flex-1', placeholder: '5571XXXXXXXX' }),
+              h('button', { onClick: salvarNumero, className: 'px-3 py-1.5 rounded-lg text-white text-sm font-semibold', style: { background: '#16a34a' } }, 'Salvar')
+            )
+          : h(React.Fragment, null,
+              h('span', { className: 'text-sm text-gray-800 font-mono flex-1' }, numeroSuporte || '—'),
+              h('button', { onClick: () => setEditandoNum(true), className: 'text-sm text-purple-700 font-semibold' }, 'Editar')
+            )
+      ),
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-5' },
+        h('div', { className: 'grid gap-3' },
+          h('input', { value: nomeLoja, onChange: (e) => setNomeLoja(e.target.value), placeholder: 'Nome da loja/cliente (ex: Abobrinha)', className: 'border rounded-lg px-3 py-2 text-sm' }),
+          h('input', { value: endereco, onChange: (e) => setEndereco(e.target.value), placeholder: 'Endereço do Ponto 1', className: 'border rounded-lg px-3 py-2 text-sm' }),
+          h('button', { onClick: adicionar, disabled: salvando, className: 'px-4 py-2 rounded-lg text-white text-sm font-semibold', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, salvando ? 'Salvando...' : '+ Adicionar cliente')
+        )
+      ),
+      loading
+        ? h('p', { className: 'text-sm text-gray-400 text-center py-6' }, 'Carregando...')
+        : (lista.length === 0
+            ? h('p', { className: 'text-sm text-gray-400 text-center py-6' }, 'Nenhum cliente bloqueado cadastrado.')
+            : h('div', { className: 'space-y-2' },
+                lista.map((c) => h('div', {
+                  key: c.id,
+                  className: `bg-white border rounded-xl p-3 flex items-center gap-3 ${c.ativo ? 'border-red-200' : 'border-gray-200 opacity-60'}`,
+                },
+                  h('div', { className: 'flex-1 min-w-0' },
+                    h('p', { className: 'text-sm font-semibold text-gray-800 truncate' }, c.nome_loja),
+                    h('p', { className: 'text-xs text-gray-500 truncate' }, c.endereco)
+                  ),
+                  h('button', {
+                    onClick: () => alternar(c),
+                    className: `text-xs px-2.5 py-1 rounded-lg font-semibold ${c.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`,
+                  }, c.ativo ? 'Ativo' : 'Inativo'),
+                  h('button', { onClick: () => excluir(c), className: 'text-xs px-2 py-1 text-red-600 font-semibold' }, '🗑')
+                ))
+              )
+          )
     );
   }
 
