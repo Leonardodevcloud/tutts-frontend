@@ -458,6 +458,13 @@
             setLoading(false);
             return;
           }
+          // 2026-06 v6: validação cruzada reprovou — barra o motoboy
+          if (data.validacao_rejeitada) {
+            setFase('foto_rejeitada');
+            setDetalhe(data.motivo_rejeicao || 'Não foi possível validar o endereço. Confira o CNPJ, o endereço e a foto da fachada.');
+            setLoading(false);
+            return;
+          }
           setFase('erro'); setDetalhe(msg); setLoading(false);
           return;
         }
