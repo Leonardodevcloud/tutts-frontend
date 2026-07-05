@@ -541,7 +541,7 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 }
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
-const SISTEMA_MODULOS_CONFIG = [
+let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
@@ -8902,6 +8902,20 @@ const hideLoadingScreen = () => {
                     } catch (err) {
                         console.log("Sem permissões definidas, usando padrão");
                     }
+                }
+                // 2026-07 (Fase 2): catalogo de modulos do backend (registry). Fallback TOTAL:
+                // qualquer erro/formato invalido mantem o SISTEMA_MODULOS_CONFIG local intacto.
+                try {
+                    const mcRes = await fetchAuth(`${API_URL}/modules-config`);
+                    if (mcRes.ok) {
+                        const mcData = await mcRes.json();
+                        if (mcData && Array.isArray(mcData.modulos) && mcData.modulos.length > 0
+                            && mcData.modulos.every(function (m) { return m && m.id; })) {
+                            SISTEMA_MODULOS_CONFIG = mcData.modulos;
+                        }
+                    }
+                } catch (e) {
+                    console.log("modules-config indisponivel, usando catalogo local");
                 }
                 o({
                     ...t,
