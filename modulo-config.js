@@ -557,6 +557,9 @@
             MODULOS.forEach(function(m) {
                 if (pr.modulos && pr.modulos[m.id] === true) allowedModules.push(m.id);
             });
+            // 2026-07: acesso total = lista vazia (irrestrito). Assim modulo novo
+            // entra sozinho pros admins full, sem precisar re-salvar toda vez.
+            if (allowedModules.length === MODULOS.length) allowedModules = [];
             return { allowed_modules: allowedModules, allowed_tabs: pr.abas || {} };
         }
         function patchAdmin(cod, fonte) {

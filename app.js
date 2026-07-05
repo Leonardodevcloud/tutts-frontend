@@ -8869,33 +8869,32 @@ const hideLoadingScreen = () => {
                         const permRes = await fetchAuth(`${API_URL}/admin-permissions/${t.cod_profissional}`);
                         if (permRes.ok) {
                             const permData = await permRes.json();
-                            const allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
+                            let allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
                             const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
-                            
-                            const hasConfig = allowedMods.length > 0 || Object.keys(allowedTabs).length > 0;
-                            
+
+                            // 2026-07: "acesso total" antigo (lista com TODOS os módulos) vira lista vazia = irrestrito,
+                            // pra módulos novos entrarem sozinhos pros admins full.
+                            if (allowedMods.length > 0 && SISTEMA_MODULOS_CONFIG.every(function(m) { return allowedMods.includes(m.id); })) {
+                                allowedMods = [];
+                            }
+
+                            // Restrição de MÓDULO é independente de restrição de ABA.
+                            const temRestricaoModulos = allowedMods.length > 0;
+                            const hasConfig = temRestricaoModulos || Object.keys(allowedTabs).length > 0;
+
+                            // 2026-07: mapa de módulos DINÂMICO a partir do SISTEMA_MODULOS_CONFIG.
+                            // (Antes era hardcoded e ignorava módulos como coleta/gerencial/uber/loja,
+                            //  quebrando a cada módulo novo — causa raiz dos Bugs 1 e 2.)
+                            const modulosPerm = {};
+                            SISTEMA_MODULOS_CONFIG.forEach(function(m) {
+                                modulosPerm[m.id] = !temRestricaoModulos || allowedMods.includes(m.id);
+                            });
+
                             perms = {
                                 allowed_modules: allowedMods,
                                 allowed_tabs: allowedTabs,
                                 hasConfig: hasConfig,
-                                modulos: {
-                                    solicitacoes: !hasConfig || allowedMods.includes("solicitacoes"),
-                                    financeiro: !hasConfig || allowedMods.includes("financeiro"),
-                                    operacional: !hasConfig || allowedMods.includes("operacional"),
-                                    disponibilidade: !hasConfig || allowedMods.includes("disponibilidade"),
-                                    bi: !hasConfig || allowedMods.includes("bi"),
-                                    todo: !hasConfig || allowedMods.includes("todo"),
-                                    filas: !hasConfig || allowedMods.includes("filas"),
-                                    social: !hasConfig || allowedMods.includes("social"),
-                                    cs: !hasConfig || allowedMods.includes("cs"),
-                                    config: !hasConfig || allowedMods.includes("config"),
-                                    "crm-whatsapp": !hasConfig || allowedMods.includes("crm-whatsapp"),
-                                    agente: !hasConfig || allowedMods.includes("agente"),
-                                    "rastreio-clientes": !hasConfig || allowedMods.includes("rastreio-clientes"),
-                                    "bi-monitoramento": !hasConfig || allowedMods.includes("bi-monitoramento"),
-                                    antifraude: !hasConfig || allowedMods.includes("antifraude"),
-                                    performance: !hasConfig || allowedMods.includes("performance")
-                                },
+                                modulos: modulosPerm,
                                 abas: allowedTabs
                             };
                             console.log("Permissões carregadas:", perms);
