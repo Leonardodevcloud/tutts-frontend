@@ -48,6 +48,8 @@
             hint: 'courier informa um código pra retirar o pacote' },
           { key: 'need_dropoff_code', label: 'Exigir código na entrega', type: 'boolean',
             hint: 'destinatário informa um código pra receber' },
+          { key: 'verificacao_devolucao_habilitada', label: 'Exigir código na devolução', type: 'boolean',
+            hint: 'na devolução (falha na entrega) o courier informa um código; se desligado, usa foto' },
         ]},
         { titulo: '⚙️ Avançado', campos: [
           { key: 'cancel_reason_id', label: 'Cancel reason ID padrão', secret: false,
