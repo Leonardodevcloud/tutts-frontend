@@ -1221,11 +1221,11 @@
                                             onClick: async function() {
                                                 if (!confirm("Desativar/ativar este cliente?")) return;
                                                 try {
-                                                    await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
+                                                    var respSt = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
                                                         method: "PATCH",
-                                                        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + getToken()},
                                                         body: JSON.stringify({ativo: !cliente.ativo})
                                                     });
+                                                    if (!respSt.ok) { ja("❌ Erro ao alterar status", "error"); return; }
                                                     ja("Status alterado!", "success");
                                                     x({...p, clientesApiLista: null});
                                                 } catch (err) {
@@ -1321,9 +1321,8 @@
                                                           "Confirmar exclusão?");
                                                 if (!confirm(msg)) return;
                                                 try {
-                                                    var resp = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id, {
-                                                        method: "DELETE",
-                                                        headers: {"Authorization": "Bearer " + getToken()}
+                                                    var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id, {
+                                                        method: "DELETE"
                                                     });
                                                     var data = await resp.json().catch(function() { return {}; });
                                                     if (resp.ok) {
@@ -2249,9 +2248,6 @@
                 var vf  = parseFloat(String(mp.valor_fixo).replace(",", ".")) || 0;
                 var kb  = parseFloat(String(mp.km_base).replace(",", ".")) || 0;
                 var vkm = parseFloat(String(mp.valor_km_adicional).replace(",", ".")) || 0;
-                var simKm = 5;
-                var simExc = Math.max(0, simKm - kb);
-                var simTotal = Math.round((vf + simExc * vkm) * 100) / 100;
                 var brl = function(n) { return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
                 var fechar = function() { if (!mp.salvando) x({...p, modalPreco: null}); };
                 var salvar = async function(limpar) {
@@ -2321,13 +2317,6 @@
                                 campo("Valor fixo (R$)", "valor_fixo", "cobrado até a base"),
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
-                            ),
-                            React.createElement("div", {className: "bg-purple-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "flex items-center justify-between mb-1"},
-                                    React.createElement("span", {className: "text-xs font-medium text-purple-600"}, "Simulação (5 km)"),
-                                    React.createElement("span", {className: "text-lg font-bold text-purple-700"}, "R$ " + brl(simTotal))
-                                ),
-                                React.createElement("div", {className: "text-[11px] text-purple-500 font-mono"}, brl(vf) + " + (5,00 − " + brl(kb) + ") × " + brl(vkm))
                             )
                         ),
                         React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
