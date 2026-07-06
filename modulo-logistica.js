@@ -3756,6 +3756,7 @@
     const [loading, setLoading] = useState(true);
     const [periodo, setPeriodo] = useState('30d');
     const [provider, setProvider] = useState('');
+    const [statusF, setStatusF] = useState('');
 
     const hojeBRT   = () => dataLocalBRT(new Date());
     const diasAtras = (nd) => dataLocalBRT(new Date(Date.now() - nd * 86400000));
@@ -3768,7 +3769,7 @@
       :                     { de: diasAtras(29), ate: hojeBRT() };
     const de = range.de, ate = range.ate;
 
-    const qs = () => `de=${de}&ate=${ate}${provider ? '&provider=' + provider : ''}`;
+    const qs = () => `de=${de}&ate=${ate}${provider ? '&provider=' + provider : ''}${statusF ? '&status=' + encodeURIComponent(statusF) : ''}`;
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -3779,7 +3780,7 @@
         else showToast(json.error || 'Erro ao carregar relatório', 'error');
       } catch { showToast('Erro de rede no relatório', 'error'); }
       finally { setLoading(false); }
-    }, [fetchAuth, API_URL, de, ate, provider]);
+    }, [fetchAuth, API_URL, de, ate, provider, statusF]);
 
     useEffect(() => { carregar(); }, [carregar]);
 
@@ -3830,6 +3831,15 @@
             h('option', { value: '' }, 'Todos'),
             h('option', { value: '99' }, '99'),
             h('option', { value: 'uber' }, 'Uber'),
+          ),
+          h('select', { value: statusF, onChange: e => setStatusF(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' },
+            h('option', { value: '' }, 'Status: todos'),
+            h('option', { value: 'Entregue' }, 'Entregue'),
+            h('option', { value: 'Cancelado' }, 'Cancelado'),
+            h('option', { value: 'Não entregue' }, 'Não entregue'),
+            h('option', { value: 'Em rota' }, 'Em rota'),
+            h('option', { value: 'Pendente' }, 'Pendente'),
+            h('option', { value: 'Devolvido' }, 'Devolvido'),
           ),
           h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳'),
           h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, '⬇ CSV'),
