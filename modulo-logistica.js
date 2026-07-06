@@ -3799,6 +3799,14 @@
     const iconeCanal = (canal) => canal === 'tutts'
       ? h('span', { className: 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex-shrink-0', title: 'Tutts' }, '🏍️')
       : h('span', { className: 'inline-flex items-center justify-center w-5 h-5 rounded-full border border-orange-300 text-orange-500 text-[10px] flex-shrink-0', title: 'Hub' }, '⚡');
+    const statusBadge = (s) => {
+      const cor = { 'Entregue': 'bg-green-100 text-green-700', 'Cancelado': 'bg-gray-100 text-gray-500', 'Não entregue': 'bg-orange-100 text-orange-700', 'Em rota': 'bg-blue-100 text-blue-700', 'Pendente': 'bg-gray-100 text-gray-600', 'Devolvido': 'bg-amber-100 text-amber-700' }[s] || 'bg-gray-100 text-gray-600';
+      return h('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${cor}` }, s || '—');
+    };
+    const trajeto = (r) => h('div', null,
+      h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-500 leading-4' }, '●'), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
+      h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, '▼'), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
+    );
 
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
 
@@ -3851,22 +3859,22 @@
               h('table', { className: 'w-full text-xs' },
                 h('thead', null,
                   h('tr', { className: 'bg-gray-50 text-left text-gray-500' },
-                    ['OS', 'Cliente', 'Coleta', 'Entrega', 'Motoboy', 'KM', 'Valor'].map((c, idx) =>
+                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor'].map((c, idx) =>
                       h('th', { key: c, className: `px-3 py-2 font-semibold ${idx >= 5 ? 'text-right' : ''}` }, c)),
                   ),
                 ),
                 h('tbody', null,
                   rows.length === 0
                     ? h('tr', null, h('td', { colSpan: 7, className: 'px-3 py-8 text-center text-gray-400' }, 'Nenhuma corrida no período'))
-                    : rows.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                    : rows.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
                         h('td', { className: 'px-3 py-2 font-semibold text-gray-700' }, r.os),
                         h('td', { className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate' }, r.cliente_nome || '—'),
-                        h('td', { className: 'px-3 py-2 text-gray-500 max-w-[170px] truncate' }, r.endereco_coleta || '—'),
-                        h('td', { className: 'px-3 py-2 text-gray-500 max-w-[170px] truncate' }, r.endereco_entrega || '—'),
+                        h('td', { className: 'px-3 py-2 min-w-[200px]' }, trajeto(r)),
                         h('td', { className: 'px-3 py-2' },
                           h('span', { className: 'inline-flex items-center gap-1.5' }, iconeCanal(r.canal), r.motoboy || '—')),
-                        h('td', { className: 'px-3 py-2 text-right' }, km(r.km)),
-                        h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800' }, brl(r.valor)),
+                        h('td', { className: 'px-3 py-2' }, statusBadge(r.status)),
+                        h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' }, km(r.km)),
+                        h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap' }, brl(r.valor)),
                       )),
                 ),
               ),

@@ -1213,6 +1213,8 @@
             const [relatorio, setRelatorio] = useState({ corridas: [], totais: null });
             const [relatorioLoading, setRelatorioLoading] = useState(false);
             const [relatorioCanal, setRelatorioCanal] = useState('todos');
+            const [relatorioDe, setRelatorioDe] = useState(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
+            const [relatorioAte, setRelatorioAte] = useState(() => new Date().toISOString().slice(0, 10));
             const [detalhesCorridaExpandida, setDetalhesCorridaExpandida] = useState(null);
             const [sincronizando, setSincronizando] = useState(false);
             const [sincronizandoHistorico, setSincronizandoHistorico] = useState(false);
@@ -1673,12 +1675,22 @@
                 };
             };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
-            const carregarRelatorio = async (canal) => {
+            const relatorioQS = (opts, extra) => {
+                opts = opts || {};
+                const c   = opts.canal !== undefined ? opts.canal : relatorioCanal;
+                const de  = opts.de    !== undefined ? opts.de    : relatorioDe;
+                const ate = opts.ate   !== undefined ? opts.ate   : relatorioAte;
+                const params = [];
+                if (c && c !== 'todos') params.push('canal=' + c);
+                if (de)  params.push('de='  + de);
+                if (ate) params.push('ate=' + ate);
+                if (extra) params.push(extra);
+                return params.length ? '?' + params.join('&') : '';
+            };
+            const carregarRelatorio = async (opts) => {
                 setRelatorioLoading(true);
                 try {
-                    const c = canal || relatorioCanal;
-                    const qs = (c && c !== 'todos') ? `?canal=${c}` : '';
-                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${qs}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${relatorioQS(opts)}`, { headers: { 'Authorization': `Bearer ${token}` } });
                     if (resp.ok) { const data = await resp.json(); setRelatorio({ corridas: data.corridas || [], totais: data.totais || null }); }
                     else { showToast('Erro ao carregar relatório', 'error'); }
                 } catch (err) { showToast('Erro de rede no relatório', 'error'); }
@@ -1686,9 +1698,7 @@
             };
             const exportarRelatorioCSV = async () => {
                 try {
-                    const c = relatorioCanal;
-                    const qs = (c && c !== 'todos') ? `?canal=${c}&formato=csv` : `?formato=csv`;
-                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${qs}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${relatorioQS(null, 'formato=csv')}`, { headers: { 'Authorization': `Bearer ${token}` } });
                     const blob = await resp.blob();
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -3543,8 +3553,11 @@
                                         <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full border border-orange-300 text-orange-500 text-[9px] inline-flex items-center justify-center">⚡</span> Hub</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <select value={relatorioCanal} onChange={e => { setRelatorioCanal(e.target.value); carregarRelatorio(e.target.value); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <input type="date" value={relatorioDe} onChange={e => { setRelatorioDe(e.target.value); carregarRelatorio({de: e.target.value}); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+                                    <span className="text-gray-400 text-xs">até</span>
+                                    <input type="date" value={relatorioAte} onChange={e => { setRelatorioAte(e.target.value); carregarRelatorio({ate: e.target.value}); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+                                    <select value={relatorioCanal} onChange={e => { setRelatorioCanal(e.target.value); carregarRelatorio({canal: e.target.value}); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
                                         <option value="todos">Todos</option>
                                         <option value="tutts">Tutts</option>
                                         <option value="hub">Hub</option>
@@ -3569,9 +3582,9 @@
                                     <table className="w-full text-xs">
                                         <thead><tr className="bg-gray-50 text-left text-gray-500">
                                             <th className="px-3 py-2 font-semibold">OS</th>
-                                            <th className="px-3 py-2 font-semibold">Coleta</th>
-                                            <th className="px-3 py-2 font-semibold">Entrega</th>
+                                            <th className="px-3 py-2 font-semibold">Coleta / Entrega</th>
                                             <th className="px-3 py-2 font-semibold">Motoboy</th>
+                                            <th className="px-3 py-2 font-semibold">Status</th>
                                             <th className="px-3 py-2 font-semibold text-right">KM</th>
                                             <th className="px-3 py-2 font-semibold text-right">Valor</th>
                                         </tr></thead>
@@ -3579,10 +3592,12 @@
                                             {relatorio.corridas.length === 0 ? (
                                                 <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
                                             ) : relatorio.corridas.map((r, i) => (
-                                                <tr key={r.os + '-' + i} className="border-t border-gray-100">
+                                                <tr key={r.os + '-' + i} className="border-t border-gray-100 align-top">
                                                     <td className="px-3 py-2 font-semibold text-gray-700">{r.os}</td>
-                                                    <td className="px-3 py-2 text-gray-500 max-w-[150px] truncate">{r.endereco_coleta || '—'}</td>
-                                                    <td className="px-3 py-2 text-gray-500 max-w-[150px] truncate">{r.endereco_entrega || '—'}</td>
+                                                    <td className="px-3 py-2 min-w-[200px]">
+                                                        <div className="flex items-start gap-1.5"><span className="text-purple-500 leading-4">●</span><span className="text-gray-600">{r.endereco_coleta || '—'}</span></div>
+                                                        <div className="flex items-start gap-1.5 mt-1"><span className="text-orange-500 leading-4">▼</span><span className="text-gray-700">{r.endereco_entrega || '—'}</span></div>
+                                                    </td>
                                                     <td className="px-3 py-2">
                                                         <span className="inline-flex items-center gap-1.5">
                                                             {r.canal === 'tutts'
@@ -3591,8 +3606,14 @@
                                                             {r.motoboy || '—'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 py-2 text-right">{r.km == null ? '—' : Number(r.km).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}</td>
-                                                    <td className="px-3 py-2 text-right font-semibold text-gray-800">{r.valor == null ? '—' : Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                                    <td className="px-3 py-2">
+                                                        {(() => {
+                                                            const cor = {'Entregue':'bg-green-100 text-green-700','Cancelado':'bg-gray-100 text-gray-500','Não entregue':'bg-orange-100 text-orange-700','Em rota':'bg-blue-100 text-blue-700','Pendente':'bg-gray-100 text-gray-600','Devolvido':'bg-amber-100 text-amber-700'}[r.status] || 'bg-gray-100 text-gray-600';
+                                                            return <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${cor}`}>{r.status}</span>;
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right whitespace-nowrap">{r.km == null ? '—' : Number(r.km).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}</td>
+                                                    <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">{r.valor == null ? '—' : Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
