@@ -1283,6 +1283,30 @@
                                             title: "Configurar provedores logísticos",
                                             className: "px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs hover:bg-emerald-200"
                                         }, "🚚"),
+                                        (function() {
+                                            var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
+                                            var temHub = provs.some(function(pv) { return pv !== "tutts"; });
+                                            if (!temHub) return null;
+                                            var pj = cliente.preco_hub;
+                                            if (typeof pj === "string") { try { pj = JSON.parse(pj); } catch (e) { pj = null; } }
+                                            var temPreco = pj && pj.valor_fixo != null;
+                                            return React.createElement("button", {
+                                                key: "preco-hub",
+                                                onClick: function() {
+                                                    x({...p, modalPreco: {
+                                                        id: cliente.id,
+                                                        nome: cliente.nome,
+                                                        ativo: pj ? (pj.ativo !== false) : true,
+                                                        valor_fixo: pj && pj.valor_fixo != null ? String(pj.valor_fixo) : "",
+                                                        km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
+                                                        valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
+                                                        salvando: false
+                                                    }});
+                                                },
+                                                title: "Preço do Hub (por cliente)",
+                                                className: "px-2 py-1 rounded text-xs " + (temPreco ? "bg-purple-100 text-purple-700 hover:bg-purple-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
+                                            }, "💰");
+                                        })(),
                                         React.createElement("button", {
                                             onClick: async function() {
                                                 var total = parseInt(cliente.total_solicitacoes) || 0;
@@ -2210,6 +2234,114 @@
                             React.createElement("button", {
                                 onClick: salvar,
                                 disabled: mp.salvando,
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
+                                    (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
+                            }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
+
+            // Modal — Preço do Hub por cliente (valor fixo / km base / km adicional)
+            p.modalPreco && (function() {
+                var mp = p.modalPreco;
+                var up = function(campo, val) { x({...p, modalPreco: {...mp, [campo]: val}}); };
+                var vf  = parseFloat(String(mp.valor_fixo).replace(",", ".")) || 0;
+                var kb  = parseFloat(String(mp.km_base).replace(",", ".")) || 0;
+                var vkm = parseFloat(String(mp.valor_km_adicional).replace(",", ".")) || 0;
+                var simKm = 5;
+                var simExc = Math.max(0, simKm - kb);
+                var simTotal = Math.round((vf + simExc * vkm) * 100) / 100;
+                var brl = function(n) { return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
+                var fechar = function() { if (!mp.salvando) x({...p, modalPreco: null}); };
+                var salvar = async function(limpar) {
+                    x({...p, modalPreco: {...mp, salvando: true}});
+                    try {
+                        var body = limpar
+                            ? {limpar: true}
+                            : {ativo: mp.ativo !== false,
+                               valor_fixo: mp.valor_fixo === "" ? null : parseFloat(String(mp.valor_fixo).replace(",", ".")),
+                               km_base: mp.km_base === "" ? null : parseFloat(String(mp.km_base).replace(",", ".")),
+                               valor_km_adicional: mp.valor_km_adicional === "" ? null : parseFloat(String(mp.valor_km_adicional).replace(",", "."))};
+                        var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/preco-hub", {
+                            method: "PUT",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify(body)
+                        });
+                        var data = await resp.json().catch(function() { return {}; });
+                        if (resp.ok) {
+                            ja(limpar ? "🧹 Preço removido (herda global)" : "✅ Preço salvo!", "success");
+                            x({...p, modalPreco: null, clientesApiLista: null});
+                        } else {
+                            ja("❌ " + (data.error || "Erro"), "error");
+                            x({...p, modalPreco: {...mp, salvando: false}});
+                        }
+                    } catch (e) {
+                        ja("Erro de conexão", "error");
+                        x({...p, modalPreco: {...mp, salvando: false}});
+                    }
+                };
+                var campo = function(label, chave, hint) {
+                    return React.createElement("div", null,
+                        React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, label),
+                        React.createElement("input", {
+                            type: "number", step: "0.10", value: mp[chave],
+                            onChange: function(e) { up(chave, e.target.value); },
+                            className: "w-full px-2 py-2 border rounded-lg text-sm"
+                        }),
+                        React.createElement("span", {className: "block text-[10px] text-gray-400 mt-1"}, hint)
+                    );
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fechar
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-md",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "💰 Preço do Hub"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — tabela por distância deste cliente")
+                            ),
+                            React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600 text-lg"}, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4"},
+                            React.createElement("label", {className: "flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4 cursor-pointer"},
+                                React.createElement("input", {
+                                    type: "checkbox", checked: mp.ativo !== false,
+                                    onChange: function(e) { up("ativo", e.target.checked); },
+                                    className: "w-4 h-4", style: {accentColor: "#7c3aed"}
+                                }),
+                                React.createElement("span", {className: "text-sm text-gray-700"}, "Usar tabela própria deste cliente",
+                                    React.createElement("span", {className: "block text-[11px] text-gray-400"}, "Desligado: herda a tabela global"))
+                            ),
+                            React.createElement("div", {className: "grid grid-cols-3 gap-3 mb-4"},
+                                campo("Valor fixo (R$)", "valor_fixo", "cobrado até a base"),
+                                campo("Distância base (km)", "km_base", "km inclusos"),
+                                campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
+                            ),
+                            React.createElement("div", {className: "bg-purple-50 rounded-lg px-4 py-3"},
+                                React.createElement("div", {className: "flex items-center justify-between mb-1"},
+                                    React.createElement("span", {className: "text-xs font-medium text-purple-600"}, "Simulação (5 km)"),
+                                    React.createElement("span", {className: "text-lg font-bold text-purple-700"}, "R$ " + brl(simTotal))
+                                ),
+                                React.createElement("div", {className: "text-[11px] text-purple-500 font-mono"}, brl(vf) + " + (5,00 − " + brl(kb) + ") × " + brl(vkm))
+                            )
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: function() { if (!mp.salvando) salvar(true); },
+                                disabled: mp.salvando,
+                                className: "px-3 py-2 border border-gray-300 text-gray-500 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "🧹 Limpar"),
+                            React.createElement("button", {
+                                onClick: fechar, disabled: mp.salvando,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: function() { salvar(false); }, disabled: mp.salvando,
                                 className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
                                     (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
                             }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")

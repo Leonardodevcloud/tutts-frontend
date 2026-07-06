@@ -1210,6 +1210,9 @@
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
             const [filtroConcluidas, setFiltroConcluidas] = useState('todas');
             const [corridaExpandida, setCorridaExpandida] = useState(null);
+            const [relatorio, setRelatorio] = useState({ corridas: [], totais: null });
+            const [relatorioLoading, setRelatorioLoading] = useState(false);
+            const [relatorioCanal, setRelatorioCanal] = useState('todos');
             const [detalhesCorridaExpandida, setDetalhesCorridaExpandida] = useState(null);
             const [sincronizando, setSincronizando] = useState(false);
             const [sincronizandoHistorico, setSincronizandoHistorico] = useState(false);
@@ -1670,6 +1673,29 @@
                 };
             };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
+            const carregarRelatorio = async (canal) => {
+                setRelatorioLoading(true);
+                try {
+                    const c = canal || relatorioCanal;
+                    const qs = (c && c !== 'todos') ? `?canal=${c}` : '';
+                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${qs}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (resp.ok) { const data = await resp.json(); setRelatorio({ corridas: data.corridas || [], totais: data.totais || null }); }
+                    else { showToast('Erro ao carregar relatório', 'error'); }
+                } catch (err) { showToast('Erro de rede no relatório', 'error'); }
+                finally { setRelatorioLoading(false); }
+            };
+            const exportarRelatorioCSV = async () => {
+                try {
+                    const c = relatorioCanal;
+                    const qs = (c && c !== 'todos') ? `?canal=${c}&formato=csv` : `?formato=csv`;
+                    const resp = await fetch(`${API_URL}/api/solicitacao/relatorio${qs}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const blob = await resp.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'minhas-corridas.csv'; a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) { showToast('Erro ao exportar CSV', 'error'); }
+            };
             
             // Função para sincronizar histórico (recuperar dados de corridas antigas)
             const sincronizarHistorico = async () => {
@@ -2656,6 +2682,7 @@
                                 <button onClick={() => { setAbaAtiva('concluidas'); carregarConcluidas(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'concluidas' ? 'bg-white text-blue-900' : 'text-blue-100 hover:bg-blue-800'}`}>✅ Concluídas</button>
                                 <button onClick={() => { setAbaAtiva('enderecos'); carregarTodosEnderecos(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'enderecos' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}>📚 Endereços</button>
                                 <button onClick={() => setAbaAtiva('maquinas')} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'maquinas' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}>🏷️ Máquinas</button>
+                                <button onClick={() => { setAbaAtiva('relatorio'); carregarRelatorio(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'relatorio' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}>📊 Relatório</button>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded">Sair</button>
@@ -3506,6 +3533,75 @@
                     )}
                     
                     {/* ========== ABA CONCLUÍDAS ========== */}
+                    {abaAtiva === 'relatorio' && (
+                        <div className="max-w-6xl mx-auto p-3 md:p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-800">Relatório de corridas</h2>
+                                    <div className="text-xs text-gray-500 flex items-center gap-3 mt-0.5">
+                                        <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] inline-flex items-center justify-center">🏍️</span> Tutts</span>
+                                        <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full border border-orange-300 text-orange-500 text-[9px] inline-flex items-center justify-center">⚡</span> Hub</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select value={relatorioCanal} onChange={e => { setRelatorioCanal(e.target.value); carregarRelatorio(e.target.value); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                        <option value="todos">Todos</option>
+                                        <option value="tutts">Tutts</option>
+                                        <option value="hub">Hub</option>
+                                    </select>
+                                    <button onClick={() => carregarRelatorio()} className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700">⟳</button>
+                                    <button onClick={exportarRelatorioCSV} className="px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-xs font-semibold hover:bg-purple-50">⬇ CSV</button>
+                                </div>
+                            </div>
+
+                            {relatorio.totais && (
+                                <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <div className="bg-white rounded-xl border p-3"><div className="text-[11px] text-gray-400">Corridas</div><div className="text-xl font-bold text-gray-800">{relatorio.totais.corridas}</div><div className="text-[10px] text-gray-400">{relatorio.totais.hub} Hub · {relatorio.totais.tutts} Tutts</div></div>
+                                    <div className="bg-white rounded-xl border p-3"><div className="text-[11px] text-gray-400">KM total</div><div className="text-xl font-bold text-gray-800">{Number(relatorio.totais.km).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}</div></div>
+                                    <div className="bg-purple-50 rounded-xl border border-purple-200 p-3"><div className="text-[11px] text-purple-500">Valor total</div><div className="text-xl font-bold text-purple-700">R$ {Number(relatorio.totais.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</div></div>
+                                </div>
+                            )}
+
+                            {relatorioLoading ? (
+                                <div className="flex justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>
+                            ) : (
+                                <div className="bg-white rounded-xl border overflow-hidden overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead><tr className="bg-gray-50 text-left text-gray-500">
+                                            <th className="px-3 py-2 font-semibold">OS</th>
+                                            <th className="px-3 py-2 font-semibold">Coleta</th>
+                                            <th className="px-3 py-2 font-semibold">Entrega</th>
+                                            <th className="px-3 py-2 font-semibold">Motoboy</th>
+                                            <th className="px-3 py-2 font-semibold text-right">KM</th>
+                                            <th className="px-3 py-2 font-semibold text-right">Valor</th>
+                                        </tr></thead>
+                                        <tbody>
+                                            {relatorio.corridas.length === 0 ? (
+                                                <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
+                                            ) : relatorio.corridas.map((r, i) => (
+                                                <tr key={r.os + '-' + i} className="border-t border-gray-100">
+                                                    <td className="px-3 py-2 font-semibold text-gray-700">{r.os}</td>
+                                                    <td className="px-3 py-2 text-gray-500 max-w-[150px] truncate">{r.endereco_coleta || '—'}</td>
+                                                    <td className="px-3 py-2 text-gray-500 max-w-[150px] truncate">{r.endereco_entrega || '—'}</td>
+                                                    <td className="px-3 py-2">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            {r.canal === 'tutts'
+                                                                ? <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] inline-flex items-center justify-center flex-shrink-0" title="Tutts">🏍️</span>
+                                                                : <span className="w-4 h-4 rounded-full border border-orange-300 text-orange-500 text-[9px] inline-flex items-center justify-center flex-shrink-0" title="Hub">⚡</span>}
+                                                            {r.motoboy || '—'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">{r.km == null ? '—' : Number(r.km).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}</td>
+                                                    <td className="px-3 py-2 text-right font-semibold text-gray-800">{r.valor == null ? '—' : Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {abaAtiva === 'concluidas' && (
                         <div className="w-full px-3 md:px-6 pt-4">
                             <div className="bg-white rounded-xl shadow p-4">

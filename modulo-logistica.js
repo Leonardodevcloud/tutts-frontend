@@ -3750,6 +3750,131 @@
     );
   }
 
+  function TabRelatorio({ API_URL, fetchAuth, showToast }) {
+    const [rows, setRows] = useState([]);
+    const [totais, setTotais] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [periodo, setPeriodo] = useState('30d');
+    const [provider, setProvider] = useState('');
+
+    const hojeBRT   = () => dataLocalBRT(new Date());
+    const diasAtras = (nd) => dataLocalBRT(new Date(Date.now() - nd * 86400000));
+    const [deCustom, setDeCustom]   = useState(diasAtras(29));
+    const [ateCustom, setAteCustom] = useState(hojeBRT());
+
+    const range = periodo === 'custom' ? { de: deCustom, ate: ateCustom }
+      : periodo === '1d'  ? { de: hojeBRT(),    ate: hojeBRT() }
+      : periodo === '7d'  ? { de: diasAtras(6),  ate: hojeBRT() }
+      :                     { de: diasAtras(29), ate: hojeBRT() };
+    const de = range.de, ate = range.ate;
+
+    const qs = () => `de=${de}&ate=${ate}${provider ? '&provider=' + provider : ''}`;
+
+    const carregar = useCallback(async () => {
+      setLoading(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}`);
+        const json = await res.json();
+        if (json.success) { setRows(json.corridas || []); setTotais(json.totais || null); }
+        else showToast(json.error || 'Erro ao carregar relatório', 'error');
+      } catch { showToast('Erro de rede no relatório', 'error'); }
+      finally { setLoading(false); }
+    }, [fetchAuth, API_URL, de, ate, provider]);
+
+    useEffect(() => { carregar(); }, [carregar]);
+
+    const baixarCSV = async () => {
+      try {
+        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}&formato=csv`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'relatorio-hub.csv'; a.click();
+        URL.revokeObjectURL(url);
+      } catch { showToast('Erro ao exportar CSV', 'error'); }
+    };
+
+    const brl = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const km  = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const iconeCanal = (canal) => canal === 'tutts'
+      ? h('span', { className: 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex-shrink-0', title: 'Tutts' }, '🏍️')
+      : h('span', { className: 'inline-flex items-center justify-center w-5 h-5 rounded-full border border-orange-300 text-orange-500 text-[10px] flex-shrink-0', title: 'Hub' }, '⚡');
+
+    const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
+
+    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
+      h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+        h('div', null,
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Relatório de corridas'),
+          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'OS, endereços, motoboy, km e valor (valor pela tabela do cliente)'),
+        ),
+        h('div', { className: 'flex items-center gap-2 flex-wrap' },
+          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
+            pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
+              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
+          ),
+          periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
+            h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+            h('span', { className: 'text-gray-400 text-xs' }, 'até'),
+            h('input', { type: 'date', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+          ),
+          h('select', { value: provider, onChange: e => setProvider(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' },
+            h('option', { value: '' }, 'Todos'),
+            h('option', { value: '99' }, '99'),
+            h('option', { value: 'uber' }, 'Uber'),
+          ),
+          h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳'),
+          h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, '⬇ CSV'),
+        ),
+      ),
+
+      totais && h('div', { className: 'grid grid-cols-3 gap-3' },
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('div', { className: 'text-[11px] text-gray-400' }, 'Corridas'),
+          h('div', { className: 'text-2xl font-bold text-gray-800' }, totais.corridas),
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('div', { className: 'text-[11px] text-gray-400' }, 'KM total'),
+          h('div', { className: 'text-2xl font-bold text-gray-800' }, km(totais.km)),
+        ),
+        h('div', { className: 'bg-purple-50 rounded-xl border border-purple-200 p-3' },
+          h('div', { className: 'text-[11px] text-purple-500' }, 'Valor total'),
+          h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totais.valor)),
+        ),
+      ),
+
+      loading
+        ? h('div', { className: 'flex items-center justify-center py-16' },
+            h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' }))
+        : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
+            h('div', { className: 'overflow-x-auto' },
+              h('table', { className: 'w-full text-xs' },
+                h('thead', null,
+                  h('tr', { className: 'bg-gray-50 text-left text-gray-500' },
+                    ['OS', 'Cliente', 'Coleta', 'Entrega', 'Motoboy', 'KM', 'Valor'].map((c, idx) =>
+                      h('th', { key: c, className: `px-3 py-2 font-semibold ${idx >= 5 ? 'text-right' : ''}` }, c)),
+                  ),
+                ),
+                h('tbody', null,
+                  rows.length === 0
+                    ? h('tr', null, h('td', { colSpan: 7, className: 'px-3 py-8 text-center text-gray-400' }, 'Nenhuma corrida no período'))
+                    : rows.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                        h('td', { className: 'px-3 py-2 font-semibold text-gray-700' }, r.os),
+                        h('td', { className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate' }, r.cliente_nome || '—'),
+                        h('td', { className: 'px-3 py-2 text-gray-500 max-w-[170px] truncate' }, r.endereco_coleta || '—'),
+                        h('td', { className: 'px-3 py-2 text-gray-500 max-w-[170px] truncate' }, r.endereco_entrega || '—'),
+                        h('td', { className: 'px-3 py-2' },
+                          h('span', { className: 'inline-flex items-center gap-1.5' }, iconeCanal(r.canal), r.motoboy || '—')),
+                        h('td', { className: 'px-3 py-2 text-right' }, km(r.km)),
+                        h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800' }, brl(r.valor)),
+                      )),
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
   function ModuloLogistica(props) {
     const { HeaderCompacto, usuario, Ee, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, navegarSidebar, estado, setEstado } = props;
 
@@ -3762,6 +3887,7 @@
       chat:      window.Chat99Panel || (() => h('div', { className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg' }, '\u26a0\ufe0f chat99-panel.js nao carregou. Verifique o index.html.')),
       entregas:  TabEntregas,
       regras:    TabRegras,
+      relatorio: TabRelatorio,
       barrados:   TabBarrados,
       frequentes: TabFrequentes,
       // 🆕 2026-05 Hub logístico — painel de provedores (modulo-logistica-providers.js).
