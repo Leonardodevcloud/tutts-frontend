@@ -1109,7 +1109,7 @@
     const trocas = evs.map(w => {
       const p = _payloadEvt(w);
       if (!p || p.reatribuicao !== true) return null;
-      return { ts: _tsValido(w.created_at), idAnterior: p.id_anterior };
+      return { ts: _tsValido(w.created_at), idAnterior: p.id_anterior, nomeAnterior: p.nome_anterior || null, nomeNovo: p.nome_novo || null };
     }).filter(x => x && x.ts != null);
 
     const tCriacao = _tsValido(e.created_at);
@@ -1148,7 +1148,7 @@
               h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, _fmtHora(m.ts)),
               m.nota && h('div', { className: 'text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1 inline-block' }, '↩ ' + m.nota),
               trocasAqui.map((t, j) => h('div', { key: 'tr' + j, className: 'text-[11px] text-purple-700 bg-purple-50 rounded-md px-2 py-1 mt-1' },
-                '🔄 Troca de entregador · ' + _fmtHora(t.ts) + (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))),
+                '🔄 Troca de entregador · ' + _fmtHora(t.ts) + ((t.nomeAnterior && t.nomeNovo) ? ' — ' + t.nomeAnterior + ' → ' + t.nomeNovo : (t.nomeAnterior ? ' — anterior: ' + t.nomeAnterior : (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))))),
               durMin != null && h('div', { className: `text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded ${durLate ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}` },
                 (m.k === 'criacao' ? (_fmtDur(durMin) + ' até a coleta') : (_fmtDur(durMin) + ' até ' + prox.titulo.toLowerCase())) + (durLate ? ' · acima do SLA' : '')),
             ),
