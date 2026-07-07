@@ -863,7 +863,8 @@
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
           h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—'),
-          CodigoBadge('Código de entrega', e.dropoff_code)
+          CodigoBadge('Código de entrega', e.dropoff_code),
+          CodigoBadge('Código de devolução', e.return_code)
         ),
       ),
 
@@ -1260,6 +1261,7 @@
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
             h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
             CodigoBadge('Código de entrega', e.dropoff_code),
+            CodigoBadge('Código de devolução', e.return_code),
           )),
       ),
       // financeiro (custo / valor / margem)

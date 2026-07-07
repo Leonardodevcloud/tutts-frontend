@@ -114,7 +114,7 @@
       <div class="sep"></div>
 
       <div class="end"><div class="eico">&#127978;</div><div><div class="lbl">Coleta</div><div class="val" id="aColeta">-</div><div id="aColetaCod" style="display:none;margin-top:5px;font-weight:800;color:#7c3aed">&#128273; C&#243;digo de coleta: <span id="aColetaCodVal"></span></div></div></div>
-      <div class="end"><div class="eico">&#128205;</div><div><div class="lbl">Entrega</div><div class="val" id="aEntrega">-</div></div></div>
+      <div class="end"><div class="eico">&#128205;</div><div><div class="lbl">Entrega</div><div class="val" id="aEntrega">-</div><div id="aDevolCod" style="display:none;margin-top:5px;font-weight:800;color:#f67602">&#128273; C&#243;digo de devolu&#231;&#227;o: <span id="aDevolCodVal"></span></div></div></div>
     </div>
 
     <div class="msg" id="notfound" style="display:none">
@@ -199,6 +199,8 @@
     var _cc=document.getElementById('aColetaCod');
     if(_cc){if(d.coleta.codigo){document.getElementById('aColetaCodVal').textContent=d.coleta.codigo;_cc.style.display='block';}else{_cc.style.display='none';}}
     document.getElementById('aEntrega').textContent=(d.entrega.nome?d.entrega.nome+' · ':'')+(d.entrega.endereco||'-');
+    var _dc=document.getElementById('aDevolCod');
+    if(_dc){if(d.devolucao&&d.devolucao.codigo){document.getElementById('aDevolCodVal').textContent=d.devolucao.codigo;_dc.style.display='block';}else{_dc.style.display='none';}}
 
     var pickup=(d.coleta.lat!=null)?[d.coleta.lat,d.coleta.lng]:null;
     var drop=(d.entrega.lat!=null)?[d.entrega.lat,d.entrega.lng]:null;
