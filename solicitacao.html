@@ -3391,6 +3391,14 @@
                                                         )}
                                                     </div>
                                                 </div>
+                                                {/* 🔑 Códigos do Hub (coleta/entrega/devolução) — pro cliente informar ao motoboy */}
+                                                {detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao) && (
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        {detalheCorrida.hub.codigos.coleta && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">🔑 Cód. coleta: {detalheCorrida.hub.codigos.coleta}</span>}
+                                                        {detalheCorrida.hub.codigos.entrega && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">🔑 Cód. entrega: {detalheCorrida.hub.codigos.entrega}</span>}
+                                                        {detalheCorrida.hub.codigos.devolucao && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold">🔑 Cód. devolução: {detalheCorrida.hub.codigos.devolucao}</span>}
+                                                    </div>
+                                                )}
                                                 {/* Alerta de retorno no detalhe */}
                                                 {detalheCorrida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
                                                     <div className="mt-2 group relative inline-block">
