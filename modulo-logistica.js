@@ -74,6 +74,7 @@
     DELIVERED:             { label: 'Entregue',                cor: 'bg-green-100 text-green-700' },
     CANCELED:              { label: 'Cancelado',               cor: 'bg-red-100 text-red-700' },
     RETURNED:              { label: 'Devolvido',               cor: 'bg-red-100 text-red-700' },
+    RETURNING:             { label: 'Devolvendo',              cor: 'bg-amber-100 text-amber-700' },
     FAILED:                { label: 'Falha',                   cor: 'bg-red-200 text-red-900' },
     FALLBACK_QUEUE:        { label: 'Fallback p/ fila',        cor: 'bg-yellow-100 text-yellow-800' },
   };
@@ -1054,6 +1055,9 @@
       const suf = dentro == null ? '' : (dentro ? ' · no prazo' : ' · fora do prazo');
       return { label: 'tempo total', texto: '✓ ' + (_fmtDur(tot) || '—') + metaTxt + suf, cls };
     }
+    if (st === 'RETURNING') {
+      return { label: 'devolução', texto: '↩ devolvendo', cls: 'bg-amber-50 text-amber-700' };
+    }
     if (st === 'RETURNED') {
       return { label: 'devolução', texto: '↩ devolvido', cls: 'bg-amber-50 text-amber-700' };
     }
@@ -1114,16 +1118,19 @@
 
     const tCriacao = _tsValido(e.created_at);
     const tColeta  = _tsValido(e.coletado_at) || primeiroEvento('PICKED_UP');
-    const tRetorno = primeiroEvento('RETURNED');
+    const tDevolIni = primeiroEvento('RETURNING');   // devolução iniciada (SendBack)
+    const tRetorno = tDevolIni || primeiroEvento('RETURNED'); // fallback p/ dados antigos
+    const tDevolFim = primeiroEvento('RETURNED');    // devolução concluída (SendBackCompleted)
     const tEntrega = _tsValido(e.entregue_at) || primeiroEvento('DELIVERED')
                    || (e.status_canonico === 'DELIVERED' ? _tsValido(e.finalizado_at) : null);
-    const houveDevol = tRetorno != null || e.status_canonico === 'RETURNED';
+    const houveDevol = tRetorno != null || tDevolFim != null || ['RETURNING', 'RETURNED'].includes(e.status_canonico);
 
     const marcos = [];
     if (tCriacao != null) marcos.push({ k: 'criacao', titulo: 'Criação / Despacho', ts: tCriacao, node: 'done' });
     if (tColeta  != null) marcos.push({ k: 'coleta',  titulo: 'Coleta',             ts: tColeta,  node: 'done' });
-    if (tRetorno != null) marcos.push({ k: 'devol',   titulo: 'Devolução iniciada', ts: tRetorno, node: 'warn', nota: 'Item retornando ao remetente (sendback)' });
-    if (tEntrega != null) marcos.push({ k: 'entrega', titulo: houveDevol ? 'Devolução concluída' : 'Entrega', ts: tEntrega, node: 'done' });
+    if (tDevolIni != null) marcos.push({ k: 'devol',   titulo: 'Devolução iniciada', ts: tDevolIni, node: 'warn', nota: 'Item retornando ao remetente (sendback)' });
+    if (tDevolFim != null) marcos.push({ k: 'devolfim', titulo: 'Devolução concluída', ts: tDevolFim, node: 'done' });
+    if (tEntrega != null && !houveDevol) marcos.push({ k: 'entrega', titulo: 'Entrega', ts: tEntrega, node: 'done' });
     marcos.sort((a, b) => a.ts - b.ts);
     if (marcos.length === 0) return null;
 
@@ -1179,7 +1186,7 @@
     const c = String((e && e.status_canonico) || '').toUpperCase();
     const n = String((e && e.status_uber) || '').toLowerCase();
     if (c === 'DELIVERED' || ['delivered', 'entregue', 'completed', 'finalizado', 'concluido'].includes(n)) return 'entregue';
-    if (c === 'RETURNED' || ['sendback', 'sendbackcompleted', 'devolucao', 'devolvido'].includes(n)) return 'devol';
+    if (c === 'RETURNED' || c === 'RETURNING' || ['sendback', 'sendbackcompleted', 'devolucao', 'devolvido', 'devolvendo'].includes(n)) return 'devol';
     if (c === 'CANCELED' || ['canceled', 'cancelado'].includes(n)) return 'cancel';
     if (c === 'FAILED' || c === 'FALLBACK_QUEUE' || ['erro', 'fallback_fila'].includes(n)) return 'falha';
     if (['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(c) || ['pickup_complete', 'dropoff'].includes(n)) return 'coletou';
