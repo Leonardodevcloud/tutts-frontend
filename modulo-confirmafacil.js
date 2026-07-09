@@ -360,6 +360,13 @@
     const [statusCF, setStatusCF]   = useState('');
     const [slaFiltro, setSlaFiltro] = useState('');
     const [, setSlaTick]            = useState(0);
+    // 🆕 SLA finalizadas: modo alternativo da pagina (toggle + data + dentro/fora)
+    const hojeBRT = () => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
+    const [slaModo, setSlaModo] = useState(false);
+    const [slaData, setSlaData] = useState(hojeBRT());
+    const [slaFilt, setSlaFilt] = useState('todas'); // todas | dentro | fora
+    const [slaFinalizadas, setSlaFinalizadas] = useState([]);
+    const [slaLoad, setSlaLoad] = useState(false);
     const POR_PAG = 100;
 
     // Atualiza os chips de SLA periodicamente (sem refazer fetch)
@@ -367,6 +374,19 @@
       const id = setInterval(() => setSlaTick(t => t + 1), 30000);
       return () => clearInterval(id);
     }, []);
+
+    // 🆕 Carrega as finalizadas do dia quando o modo SLA esta ligado (reusa /sla-painel)
+    useEffect(() => {
+      if (!slaModo) return;
+      let vivo = true;
+      setSlaLoad(true);
+      fetchAuth(API_URL + '/confirmafacil/sla-painel?data=' + encodeURIComponent(slaData))
+        .then(r => r.json())
+        .then(j => { if (vivo) setSlaFinalizadas((j && j.finalizadas) || []); })
+        .catch(() => { if (vivo) showToast('Erro ao carregar SLA das finalizadas', 'error'); })
+        .finally(() => { if (vivo) setSlaLoad(false); });
+      return () => { vivo = false; };
+    }, [slaModo, slaData]);
 
     // Carregar embarcadores p/ filtro
     useEffect(() => {
@@ -427,6 +447,19 @@
     // Contadores vêm do backend (sobre todos os resultados, não só a página atual)
 
     const pagTotal = Math.ceil(total / POR_PAG);
+
+    // 🆕 Helpers do modo SLA finalizadas
+    const fmtFinSla = (iso) => {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '—';
+      const dia = new Intl.DateTimeFormat('pt-BR', { timeZone: SLA_TZ, day: '2-digit', month: '2-digit' }).format(d);
+      return dia + ' ' + hmBRT(d.getTime());
+    };
+    const slaDentro = slaFinalizadas.filter(r => r.bucket === 'no_prazo').length;
+    const slaFora   = slaFinalizadas.filter(r => r.bucket === 'estourada').length;
+    const slaLista  = slaFinalizadas.filter(r =>
+      slaFilt === 'todas' || (slaFilt === 'dentro' && r.bucket === 'no_prazo') || (slaFilt === 'fora' && r.bucket === 'estourada'));
 
     return h('div', { className: 'space-y-4' },
 
@@ -514,8 +547,63 @@
         )
       ),
 
+      // 🆕 Toggle SLA finalizadas + data + filtros dentro/fora
+      h('div', { className: 'flex items-center gap-3 flex-wrap' },
+        h('label', { className: 'flex items-center gap-2 cursor-pointer select-none', onClick: () => setSlaModo(v => !v) },
+          h('span', { className: 'relative inline-block w-9 h-5 rounded-full transition-colors ' + (slaModo ? 'bg-purple-600' : 'bg-gray-300') },
+            h('span', { className: 'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow', style: { transform: slaModo ? 'translateX(16px)' : 'translateX(0)', transition: 'transform .15s' } })
+          ),
+          h('span', { className: 'text-sm font-medium text-gray-700' }, '🏁 Ver SLA das finalizadas')
+        ),
+        slaModo && h('input', { type: 'date', value: slaData, max: hojeBRT(),
+          onChange: e => { setSlaFilt('todas'); setSlaData(e.target.value || hojeBRT()); },
+          className: 'ml-auto text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-400' })
+      ),
+
+      slaModo && h('div', { className: 'flex flex-wrap gap-2' },
+        [['todas', 'Todas', slaFinalizadas.length], ['dentro', '🟢 Dentro do prazo', slaDentro], ['fora', '🔴 Fora do prazo', slaFora]].map(function (o) {
+          const id = o[0];
+          return h('button', { key: id, onClick: () => setSlaFilt(id),
+            className: 'text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ' + (slaFilt === id ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'),
+          }, o[1] + ' ', h('span', { className: 'opacity-60' }, o[2]));
+        })
+      ),
+
+      slaModo && h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sla-fin-modo' },
+        slaLoad
+          ? h('div', { className: 'text-center text-gray-400 py-10 text-sm' }, 'Carregando finalizadas…')
+          : slaLista.length
+            ? h('table', { className: 'w-full text-sm' },
+                h('thead', null, h('tr', { className: 'bg-gray-50 text-gray-500 text-[11px] text-left' },
+                  h('th', { className: 'px-4 py-2' }, 'OS'),
+                  h('th', { className: 'px-4 py-2' }, 'Destinatário'),
+                  h('th', { className: 'px-4 py-2' }, 'Vence'),
+                  h('th', { className: 'px-4 py-2' }, 'Finalizado'),
+                  h('th', { className: 'px-4 py-2 text-right' }, 'SLA')
+                )),
+                h('tbody', null, slaLista.map(function (r) {
+                  const noPrazo = r.bucket === 'no_prazo';
+                  return h('tr', { key: r.solicitacao_id, className: 'border-t border-gray-100' },
+                    h('td', { className: 'px-4 py-2.5 font-semibold text-purple-700 whitespace-nowrap' }, r.os || '—'),
+                    h('td', { className: 'px-4 py-2.5' },
+                      h('div', { className: 'font-medium text-gray-800 truncate max-w-[240px]' }, r.cliente || ''),
+                      r.destino && h('div', { className: 'text-[10px] text-gray-400 truncate max-w-[240px]' }, r.destino)
+                    ),
+                    h('td', { className: 'px-4 py-2.5 text-gray-500 whitespace-nowrap' }, r.deadline ? hmBRT(new Date(r.deadline).getTime()) : '—'),
+                    h('td', { className: 'px-4 py-2.5 tabular-nums text-gray-700 whitespace-nowrap' }, fmtFinSla(r.entregue_em)),
+                    h('td', { className: 'px-4 py-2.5 text-right' },
+                      h('span', { className: 'inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ' + (noPrazo ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700') },
+                        noPrazo ? '✅ no prazo' : '⚠️ estourada')
+                    )
+                  );
+                }))
+              )
+            : h('div', { className: 'text-gray-400 text-sm py-10 text-center' },
+                'Nenhuma finalizada' + (slaFilt !== 'todas' ? ' nesse filtro' : ' nesse dia') + '.')
+      ),
+
       // Cards KPI por status
-      h('div', { className: 'grid grid-cols-6 gap-3' },
+      !slaModo && h('div', { className: 'grid grid-cols-6 gap-3' },
         [
           { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
           { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
@@ -535,8 +623,8 @@
         )
       ),
 
-      // Tabela
-      h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
+      // Tabela (some no modo SLA finalizadas)
+      !slaModo && h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
 
         // Header tabela
         h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100' },
