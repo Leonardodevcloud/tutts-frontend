@@ -456,9 +456,20 @@
       const dia = new Intl.DateTimeFormat('pt-BR', { timeZone: SLA_TZ, day: '2-digit', month: '2-digit' }).format(d);
       return dia + ' ' + hmBRT(d.getTime());
     };
-    const slaDentro = slaFinalizadas.filter(r => r.bucket === 'no_prazo').length;
-    const slaFora   = slaFinalizadas.filter(r => r.bucket === 'estourada').length;
-    const slaLista  = slaFinalizadas.filter(r =>
+    // 🆕 finalizadas respeitam Embarcador + Busca (busca casa OS e NF)
+    const _soDig = (s) => String(s || '').replace(/\D/g, '');
+    const _bSla = (busca || '').trim().toLowerCase();
+    const slaBase = slaFinalizadas.filter(r => {
+      if (embCnpj && _soDig(r.cnpj) !== _soDig(embCnpj)) return false;
+      if (_bSla) {
+        const alvo = [r.os, r.numero_nf, r.serie_nf, r.cliente].map(x => String(x || '').toLowerCase()).join(' ');
+        if (!alvo.includes(_bSla)) return false;
+      }
+      return true;
+    });
+    const slaDentro = slaBase.filter(r => r.bucket === 'no_prazo').length;
+    const slaFora   = slaBase.filter(r => r.bucket === 'estourada').length;
+    const slaLista  = slaBase.filter(r =>
       slaFilt === 'todas' || (slaFilt === 'dentro' && r.bucket === 'no_prazo') || (slaFilt === 'fora' && r.bucket === 'estourada'));
 
     return h('div', { className: 'space-y-4' },
@@ -561,7 +572,7 @@
       ),
 
       slaModo && h('div', { className: 'flex flex-wrap gap-2' },
-        [['todas', 'Todas', slaFinalizadas.length], ['dentro', '🟢 Dentro do prazo', slaDentro], ['fora', '🔴 Fora do prazo', slaFora]].map(function (o) {
+        [['todas', 'Todas', slaBase.length], ['dentro', '🟢 Dentro do prazo', slaDentro], ['fora', '🔴 Fora do prazo', slaFora]].map(function (o) {
           const id = o[0];
           return h('button', { key: id, onClick: () => setSlaFilt(id),
             className: 'text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ' + (slaFilt === id ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'),
@@ -1010,30 +1021,20 @@
 
   // ─── ABA: RISCO DE SLA (painel por filial + lista de risco) ──
   function AbaRiscoSLA({ fetchAuth, API_URL, showToast }) {
-    const hojeBRT = () => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
     const [data, setData]       = useState(null);
     const [loading, setLoading] = useState(true);
-    const [dataRef, setDataRef] = useState(hojeBRT());
-    const [ffiltro, setFfiltro] = useState('todas'); // todas | dentro | fora
     const [, setTick]           = useState(0);
-    const ehHoje = dataRef === hojeBRT();
 
-    const carregar = useCallback(async () => {
+    async function carregar() {
       try {
-        const r = await fetchAuth(API_URL + '/confirmafacil/sla-painel?data=' + encodeURIComponent(dataRef));
+        const r = await fetchAuth(API_URL + '/confirmafacil/sla-painel');
         const j = await r.json();
         setData(j);
       } catch (e) {
         if (showToast) showToast('Erro ao carregar painel de SLA', 'erro');
       } finally { setLoading(false); }
-    }, [dataRef, fetchAuth, API_URL, showToast]);
-
-    useEffect(() => {
-      setLoading(true); carregar();
-      if (!ehHoje) return;                     // dias anteriores sao estaticos
-      const id = setInterval(carregar, 60000);
-      return () => clearInterval(id);
-    }, [carregar, ehHoje]);
+    }
+    useEffect(() => { carregar(); const id = setInterval(carregar, 60000); return () => clearInterval(id); }, []);
     useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(id); }, []);
 
     async function testarAlerta() {
@@ -1048,7 +1049,6 @@
     if (loading && !data) return h('div', { className: 'text-center text-gray-400 py-12' }, 'Carregando painel de SLA…');
     const filiais = (data && data.filiais) || [];
     const riscos  = (data && data.riscos)  || [];
-    const finalizadas = (data && data.finalizadas) || [];
 
     const painel = h('div', { className: 'grid gap-3 md:grid-cols-2' },
       filiais.length ? filiais.map(f => {
@@ -1109,74 +1109,12 @@
       }) : h('div', { className: 'text-gray-400 text-sm py-5 text-center bg-white border border-gray-200 rounded-xl' }, 'Nenhuma corrida em risco no momento. 🎉')
     );
 
-    // ── Finalizadas (dentro/fora do prazo) com data e hora ──
-    const fmtFin = (iso) => {
-      if (!iso) return '—';
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return '—';
-      const dia = new Intl.DateTimeFormat('pt-BR', { timeZone: SLA_TZ, day: '2-digit', month: '2-digit' }).format(d);
-      return dia + ' ' + hmBRT(d.getTime());
-    };
-    const nDentro = finalizadas.filter(r => r.bucket === 'no_prazo').length;
-    const nFora   = finalizadas.filter(r => r.bucket === 'estourada').length;
-    const finFiltradas = finalizadas.filter(r =>
-      ffiltro === 'todas' || (ffiltro === 'dentro' && r.bucket === 'no_prazo') || (ffiltro === 'fora' && r.bucket === 'estourada'));
-
-    const pill = (id, label, count) => h('button', {
-      key: id, onClick: () => setFfiltro(id),
-      className: 'text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ' +
-        (ffiltro === id ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'),
-    }, label + ' ', h('span', { className: 'opacity-60' }, count));
-
-    const finalizadasSec = h('div', { className: 'mt-6' },
-      h('div', { className: 'flex items-center gap-2 mb-2' },
-        h('span', { className: 'font-bold text-gray-900 flex items-center gap-2' }, '🏁 Finalizadas',
-          h('span', { className: 'text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full' }, finalizadas.length)),
-        h('input', { type: 'date', value: dataRef, max: hojeBRT(),
-          onChange: e => { setFfiltro('todas'); setDataRef(e.target.value || hojeBRT()); },
-          className: 'ml-auto text-sm border border-gray-200 rounded-lg px-2 py-1' })
-      ),
-      h('div', { className: 'flex flex-wrap gap-2 mb-3' },
-        pill('todas', 'Todas', finalizadas.length),
-        pill('dentro', '🟢 Dentro do prazo', nDentro),
-        pill('fora', '🔴 Fora do prazo', nFora)
-      ),
-      finFiltradas.length ? h('div', { className: 'bg-white border border-gray-200 rounded-2xl overflow-hidden' },
-        h('table', { className: 'w-full text-sm' },
-          h('thead', null, h('tr', { className: 'bg-gray-50 text-gray-500 text-[11px] text-left' },
-            h('th', { className: 'px-3 py-2' }, 'OS'),
-            h('th', { className: 'px-3 py-2' }, 'Destinatário'),
-            h('th', { className: 'px-3 py-2' }, 'Vence'),
-            h('th', { className: 'px-3 py-2' }, 'Finalizado'),
-            h('th', { className: 'px-3 py-2 text-right' }, 'SLA')
-          )),
-          h('tbody', null, finFiltradas.map(r => {
-            const noPrazo = r.bucket === 'no_prazo';
-            return h('tr', { key: r.solicitacao_id, className: 'border-t border-gray-100' },
-              h('td', { className: 'px-3 py-2 font-semibold text-purple-700 whitespace-nowrap' }, r.os || '—'),
-              h('td', { className: 'px-3 py-2' },
-                h('div', { className: 'font-medium text-gray-800 truncate max-w-[220px]' }, r.cliente || ''),
-                r.destino && h('div', { className: 'text-[10px] text-gray-400 truncate max-w-[220px]' }, r.destino)
-              ),
-              h('td', { className: 'px-3 py-2 text-gray-500 whitespace-nowrap' }, hmBRT(new Date(r.deadline).getTime())),
-              h('td', { className: 'px-3 py-2 tabular-nums text-gray-700 whitespace-nowrap' }, fmtFin(r.entregue_em)),
-              h('td', { className: 'px-3 py-2 text-right' },
-                h('span', { className: 'inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ' + (noPrazo ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700') },
-                  noPrazo ? '✅ no prazo' : '⚠️ estourada')
-              )
-            );
-          }))
-        )
-      ) : h('div', { className: 'text-gray-400 text-sm py-6 text-center bg-white border border-gray-200 rounded-2xl' },
-        'Nenhuma finalizada' + (ffiltro !== 'todas' ? ' nesse filtro' : ' nesse dia') + '.')
-    );
-
     return h('div', { className: 'space-y-1' },
       h('div', { className: 'flex items-center justify-between mb-2' },
         h('div', { className: 'text-[11px] text-gray-400' }, 'Meta diária por filial · risco a ≤15 min · alerta automático no WhatsApp'),
         h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
       ),
-      painel, lista, finalizadasSec
+      painel, lista
     );
   }
 
