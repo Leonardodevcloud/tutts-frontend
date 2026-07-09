@@ -363,7 +363,6 @@
     // 🆕 SLA finalizadas: modo alternativo da pagina (toggle + data + dentro/fora)
     const hojeBRT = () => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
     const [slaModo, setSlaModo] = useState(false);
-    const [slaData, setSlaData] = useState(hojeBRT());
     const [slaFilt, setSlaFilt] = useState('todas'); // todas | dentro | fora
     const [slaFinalizadas, setSlaFinalizadas] = useState([]);
     const [slaLoad, setSlaLoad] = useState(false);
@@ -378,15 +377,16 @@
     // 🆕 Carrega as finalizadas do dia quando o modo SLA esta ligado (reusa /sla-painel)
     useEffect(() => {
       if (!slaModo) return;
+      const dia = de || ate || hojeBRT();   // 🆕 segue o filtro De/Até
       let vivo = true;
       setSlaLoad(true);
-      fetchAuth(API_URL + '/confirmafacil/sla-painel?data=' + encodeURIComponent(slaData))
+      fetchAuth(API_URL + '/confirmafacil/sla-painel?data=' + encodeURIComponent(dia))
         .then(r => r.json())
         .then(j => { if (vivo) setSlaFinalizadas((j && j.finalizadas) || []); })
         .catch(() => { if (vivo) showToast('Erro ao carregar SLA das finalizadas', 'error'); })
         .finally(() => { if (vivo) setSlaLoad(false); });
       return () => { vivo = false; };
-    }, [slaModo, slaData]);
+    }, [slaModo, de, ate]);
 
     // Carregar embarcadores p/ filtro
     useEffect(() => {
@@ -566,9 +566,8 @@
           ),
           h('span', { className: 'text-sm font-medium text-gray-700' }, '🏁 Ver SLA das finalizadas')
         ),
-        slaModo && h('input', { type: 'date', value: slaData, max: hojeBRT(),
-          onChange: e => { setSlaFilt('todas'); setSlaData(e.target.value || hojeBRT()); },
-          className: 'ml-auto text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-400' })
+        slaModo && h('span', { className: 'ml-auto text-xs text-gray-500' },
+          'Dia ' + ((de || ate || hojeBRT()).split('-').reverse().slice(0, 2).join('/')) + ' · segue o filtro De/Até acima')
       ),
 
       slaModo && h('div', { className: 'flex flex-wrap gap-2' },
