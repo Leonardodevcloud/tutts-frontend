@@ -1443,7 +1443,12 @@
           onClick: () => trocarGrupo('barradas'),
           className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'barradas' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
           style: filtros.grupo === 'barradas' ? { background: 'linear-gradient(135deg, #b91c1c, #ef4444)' } : {},
-        }, '🚫 Solicitações Barradas')
+        }, '🚫 Solicitações Barradas'),
+        h('button', {
+          onClick: () => trocarGrupo('liberacao_ia'),
+          className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'liberacao_ia' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
+          style: filtros.grupo === 'liberacao_ia' ? { background: 'linear-gradient(135deg, #6d28d9, #7c3aed)' } : {},
+        }, '🔓 Falha/Liberação IA')
       ),
 
       // Filtros
@@ -1539,6 +1544,23 @@
                         className: 'mt-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 text-center animate-pulse',
                         title: v.motivo || 'Não validado',
                       }, '🔍 Investigar');
+                    })(),
+                    // 2026-07 auto-liberacao: badge do status da liberação do ponto
+                    // (so na aba "Falha/Liberação IA", onde r.liberacao_status vem preenchido)
+                    r.liberacao_status && (() => {
+                      const s = r.liberacao_status;
+                      const mapa = {
+                        sucesso:     { txt: '🔓 Ponto liberado', cls: 'text-green-700 bg-green-50 border-green-200' },
+                        processando: { txt: '⏳ Liberando ponto…', cls: 'text-amber-700 bg-amber-50 border-amber-200 animate-pulse' },
+                        pendente:    { txt: '⏳ Liberação na fila', cls: 'text-amber-700 bg-amber-50 border-amber-200' },
+                        falhou:      { txt: '⚠️ Liberação falhou', cls: 'text-red-700 bg-red-50 border-red-200' },
+                      };
+                      const cfg = mapa[s] || { txt: `Liberação: ${s}`, cls: 'text-gray-700 bg-gray-50 border-gray-200' };
+                      const pt = r.liberacao_ponto || r.ponto;
+                      return h('div', {
+                        className: `mt-1 text-[10px] font-bold border rounded px-1.5 py-0.5 text-center ${cfg.cls}`,
+                        title: r.liberacao_erro || r.liberacao_mensagem || `Ponto ${pt}`,
+                      }, `${cfg.txt}${pt ? ' (P' + pt + ')' : ''}`);
                     })()
                   ),
                   h('td', { className: 'px-3 py-3 text-xs text-gray-500 max-w-[180px]' },
