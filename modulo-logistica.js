@@ -951,36 +951,7 @@
         ),
       ),
 
-      // ── 3 cards operacionais: custo provedor / preço hub / margem ──
-      h('div', { className: 'grid grid-cols-3 gap-2' },
-        h('div', { className: 'bg-gray-50 rounded-lg px-3 py-2.5' },
-          h('div', { className: 'text-[11px] text-gray-500 mb-0.5' }, 'Custo do provedor'),
-          h('div', { className: 'text-base font-semibold text-gray-800' }, fmtMoney(valorUber)),
-          e.distancia_km && h('div', {
-              className: 'text-[10px] mt-0.5 ' + (e.distancia_origem === 'haversine' ? 'text-amber-500' : 'text-gray-400'),
-              title: e.distancia_origem === 'haversine'
-                ? 'Distância estimada em linha reta (o provedor não retornou a rota)'
-                : e.distancia_origem === 'provider'
-                  ? 'Distância da rota retornada pelo provedor'
-                  : ''
-            },
-            `📏 ${parseFloat(e.distancia_km).toFixed(1)} km` +
-            (e.distancia_origem === 'haversine' ? ' · estimado (linha reta)'
-              : e.distancia_origem === 'provider' ? ' · do provedor'
-              : ''))
-        ),
-        h('div', { className: 'bg-purple-50 rounded-lg px-3 py-2.5' },
-          h('div', { className: 'text-[11px] text-purple-600 mb-0.5' }, 'Valor pela regra (km)'),
-          h('div', { className: 'text-base font-semibold text-purple-800' }, fmtMoney(valorHub))
-        ),
-        h('div', { className: `rounded-lg px-3 py-2.5 ${margemPos ? 'bg-green-50' : 'bg-red-50'}` },
-          h('div', { className: `text-[11px] mb-0.5 ${margemPos ? 'text-green-700' : 'text-red-700'}` }, 'Margem'),
-          h('div', { className: `text-base font-semibold ${margemPos ? 'text-green-800' : 'text-red-800'}` },
-            `${margemPos ? '+ ' : '− '}${fmtMoney(Math.abs(margemHub))}`),
-          margemHubPct !== null && h('div', { className: `text-[10px] mt-0.5 ${margemPos ? 'text-green-600' : 'text-red-600'}` },
-            `${margemPos ? '+' : ''}${margemHubPct.toFixed(1)}%`)
-        ),
-      ),
+      // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
 
       // ── Bloco do entregador ──
       temEntregador
@@ -1360,26 +1331,7 @@
             h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—')
           )),
       ),
-      // financeiro (custo / valor / margem)
-      h('div', { className: 'grid grid-cols-3 border-b border-gray-100 bg-gray-50' },
-        h('div', { className: 'px-2.5 py-2 border-r border-gray-100' },
-          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Custo prov.'),
-          h('div', { className: 'text-xs font-bold text-gray-800 mt-0.5' }, temCusto ? fmtMoney(valorUber) : '—'),
-          temCusto && e.distancia_km && h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, `🏍️ ${parseFloat(e.distancia_km).toFixed(1)} km`),
-        ),
-        h('div', { className: 'px-2.5 py-2 border-r border-gray-100' },
-          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Valor regra'),
-          h('div', { className: 'text-xs font-bold text-gray-800 mt-0.5' }, fmtMoney(valorHub)),
-          h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, 'por km'),
-        ),
-        h('div', { className: 'px-2.5 py-2' },
-          h('div', { className: 'text-[9px] uppercase tracking-wide text-gray-400 font-semibold' }, 'Margem'),
-          temCusto
-            ? h('div', { className: `text-xs font-bold mt-0.5 ${margemPos ? 'text-green-700' : 'text-red-600'}` }, `${margemPos ? '+ ' : '− '}${fmtMoney(Math.abs(margemHub))}`)
-            : h('div', { className: 'text-xs font-bold text-gray-300 mt-0.5' }, '—'),
-          (temCusto && margemHubPct !== null) && h('div', { className: `text-[9px] mt-0.5 ${margemPos ? 'text-green-600' : 'text-red-500'}` }, `${margemPos ? '+' : ''}${margemHubPct.toFixed(1)}%`),
-        ),
-      ),
+      // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
       // entregador
       temEntregador
         ? h('div', { className: 'flex items-center gap-2 px-3 py-2.5 border-b border-gray-100' },
