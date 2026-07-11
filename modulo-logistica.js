@@ -782,10 +782,14 @@
               : (ev.motivo || null);
             detClsExtra = 'text-red-700 bg-red-50';
             providerCode = null;
-          } else if (ev.tipo === 'dispatch_failed') {
+          } else if (ev.tipo === 'dispatch_failed' || ev.tipo === 'error') {
             icone = '⚠️'; dotCls = 'border-amber-500 bg-amber-500';
             titulo = 'Falha no despacho';
-            detalhe = ev.erro || null; detClsExtra = 'text-amber-700 bg-amber-50';
+            const errTxt = String(ev.erro || ev.motivo || '');
+            detalhe = /external_id/i.test(errTxt)
+              ? 'external_id duplicado — 99 recusou recriar'
+              : (errTxt ? errTxt.slice(0, 120) : 'erro ao criar no provedor');
+            detClsExtra = 'text-amber-700 bg-amber-50';
           } else {
             icone = '🚫'; dotCls = 'border-gray-400 bg-gray-400';
             titulo = 'Rejeitado';
@@ -1810,6 +1814,23 @@
     // Filtragem + ordenação client-side
     const entregasFiltradas = useMemo(() => {
       let lista = entregas;
+
+      // 🆕 2026-07: consolida por OS. Cada re-despacho cria um registro novo, entao
+      // a mesma OS pode aparecer varias vezes (cancelado + falha + atual). Mostra
+      // so o registro MAIS RECENTE por codigo_os (o estado atual da corrida); o
+      // historico das tentativas ja aparece na trilha do card. Desempata pelo id
+      // (incremental — o maior e sempre a tentativa mais nova).
+      {
+        const maisRecentePorOs = new Map();
+        for (const e of lista) {
+          const os = e.codigo_os;
+          const atual = maisRecentePorOs.get(os);
+          if (!atual || (Number(e.id) || 0) > (Number(atual.id) || 0)) {
+            maisRecentePorOs.set(os, e);
+          }
+        }
+        lista = Array.from(maisRecentePorOs.values());
+      }
 
       // Filtro de data (despacho) — comparado em BRT. Vazio = todas as datas.
       if (dataFiltro) {
