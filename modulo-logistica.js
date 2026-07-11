@@ -739,7 +739,81 @@
     }, texto);
   }
 
-  function CardEntrega({ entrega, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+  // ════════════════════════════════════════════════════════
+  // 🆕 2026-07: Tentativas de despacho por OS (secao do card).
+  // Aparece SO quando houve historia: mais de uma tentativa OU um
+  // cancelamento (re-despacho). Corrida despachada de primeira nao mostra.
+  // Dados vem do batch GET /logistics/deliveries/tentativas.
+  // ════════════════════════════════════════════════════════
+  function TentativasDespacho({ dados }) {
+    if (!dados || !Array.isArray(dados.eventos)) return null;
+    const evs = dados.eventos;
+    const temCancelamento = evs.some(x => x.tipo === 'canceled');
+    if (evs.length <= 1 && !temCancelamento) return null;
+
+    // marca o ultimo dispatch_success como "atual"
+    let idxUltimoSucesso = -1;
+    evs.forEach((x, i) => { if (x.tipo === 'dispatch_success') idxUltimoSucesso = i; });
+    const totalTent = dados.total_tentativas || evs.filter(x => String(x.tipo).indexOf('dispatch') === 0).length;
+
+    let contDisp = 0;
+    return h('div', { className: 'pt-3 border-t border-gray-100' },
+      h('div', { className: 'flex items-center gap-2 mb-3' },
+        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, '🔁 Tentativas de despacho'),
+        h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent))
+      ),
+      h('div', { className: 'pl-1' },
+        evs.map((ev, i) => {
+          const hora = _fmtHora(_tsValido(ev.hora));
+          const ehUltimo = i === evs.length - 1;
+          let icone, dotCls, titulo, detalhe = null, detClsExtra = '';
+          let providerCode = ev.provider && ev.provider !== 'none' ? ev.provider : null;
+
+          if (ev.tipo === 'dispatch_success') {
+            contDisp++;
+            icone = '📤'; dotCls = 'border-green-500 bg-green-500';
+            titulo = contDisp === 1 ? 'Despachado' : 'Re-despachado';
+          } else if (ev.tipo === 'canceled') {
+            const sistema = ev.cancelado_por === 'sistema-bloqueio';
+            icone = '⛔'; dotCls = 'border-red-500 bg-red-500';
+            titulo = sistema ? 'Cancelado pelo sistema' : 'Cancelado';
+            detalhe = sistema
+              ? ('Entregador bloqueado' + (ev.courier ? ' — ' + ev.courier : ''))
+              : (ev.motivo || null);
+            detClsExtra = 'text-red-700 bg-red-50';
+            providerCode = null;
+          } else if (ev.tipo === 'dispatch_failed') {
+            icone = '⚠️'; dotCls = 'border-amber-500 bg-amber-500';
+            titulo = 'Falha no despacho';
+            detalhe = ev.erro || null; detClsExtra = 'text-amber-700 bg-amber-50';
+          } else {
+            icone = '🚫'; dotCls = 'border-gray-400 bg-gray-400';
+            titulo = 'Rejeitado';
+            detalhe = ev.motivo || ev.erro || null; detClsExtra = 'text-gray-600 bg-gray-100';
+          }
+
+          const ehAtual = (i === idxUltimoSucesso);
+          return h('div', { key: i, className: 'flex gap-3' },
+            h('div', { className: 'flex flex-col items-center flex-shrink-0' },
+              h('span', { className: `w-3 h-3 rounded-full border-2 ${dotCls}` }),
+              !ehUltimo && h('span', { className: 'w-0.5 flex-1 bg-gray-200 my-1', style: { minHeight: '16px' } })
+            ),
+            h('div', { className: 'flex-1 pb-2.5 min-w-0' },
+              h('div', { className: 'flex items-center gap-2 flex-wrap' },
+                h('span', { className: 'text-[13px] font-bold text-gray-800' }, titulo),
+                providerCode && h(ProviderLogo, { code: providerCode, size: 15 }),
+                ehAtual && h('span', { className: 'text-[10px] font-semibold text-green-700 bg-green-50 rounded-full px-2 py-0.5' }, 'atual')
+              ),
+              detalhe && h('div', { className: `inline-block text-[11px] rounded-md px-2 py-0.5 mt-1 ${detClsExtra}` }, detalhe),
+              h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, hora)
+            )
+          );
+        })
+      )
+    );
+  }
+
+  function CardEntrega({ entrega, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
     const e = entrega;
 
     const valorUber           = parseFloat(e.valor_uber || e.valor_provider || 0);
@@ -969,6 +1043,9 @@
             })()
           ),
 
+      // ── 🆕 Tentativas de despacho (so quando houve re-despacho/cancelamento) ──
+      h(TentativasDespacho, { dados: tentativas }),
+
       // ── Rodapé com timestamps ──
       h('div', { className: 'flex items-center justify-between gap-2 pt-2 border-t border-gray-100 text-[11px] text-gray-400 flex-wrap' },
         h('span', null,
@@ -1195,7 +1272,7 @@
   }
 
   // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
-  function CardKanban({ entrega, coluna, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast }) {
+  function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast }) {
     const e = entrega;
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
@@ -1313,6 +1390,8 @@
       // rodapé (hora despachada)
       h('div', { className: 'px-3 pt-2 pb-1 text-[10px] text-gray-400' },
         '🕐 Despachada ', fmtDT(e.created_at)),
+      // 🆕 tentativas de despacho (so quando houve re-despacho/cancelamento)
+      tentativas && h('div', { className: 'px-3' }, h(TentativasDespacho, { dados: tentativas })),
       // ações
       h('div', { className: 'flex gap-1.5 px-2.5 pb-2.5 pt-1' },
         (eh99 && onChat) && h('button', {
@@ -1335,7 +1414,7 @@
   }
 
   // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
-  function KanbanEntregas({ entregas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast }) {
+  function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast }) {
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
     useEffect(() => {
@@ -1377,6 +1456,7 @@
             itens.length
               ? itens.map(e => h(CardKanban, {
                   key: e.id, entrega: e, coluna: col,
+                  tentativas: tentativas && tentativas[e.codigo_os],
                   onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast,
                   onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
                 }))
@@ -1392,6 +1472,7 @@
   // ════════════════════════════════════════════════════════
   function TabEntregas({ API_URL, fetchAuth, showToast, setEstado }) {
     const [entregas, setEntregas] = useState([]);
+    const [tentativas, setTentativas] = useState({}); // 🆕 tentativas de despacho por OS
     const [loading, setLoading] = useState(true);
     const [filtroStatus, setFiltroStatus] = useState('');
     const [busca, setBusca] = useState('');
@@ -1471,7 +1552,21 @@
         const url = `${API_URL}/logistics/deliveries${filtroStatus ? `?status=${filtroStatus}` : ''}`;
         const res = await fetchAuth(url);
         const json = await res.json();
-        setEntregas(json.entregas || []);
+        const lista = json.entregas || [];
+        setEntregas(lista);
+
+        // 🆕 2026-07: tentativas de despacho por OS (batch) — alimenta a secao
+        // "Tentativas de despacho" do card. Nao bloqueia a lista se falhar.
+        try {
+          const oss = Array.from(new Set(lista.map(e => e.codigo_os).filter(Boolean)));
+          if (oss.length > 0) {
+            const rt = await fetchAuth(`${API_URL}/logistics/deliveries/tentativas?os=${oss.join(',')}`);
+            const jt = await rt.json();
+            setTentativas(jt.porOs || {});
+          } else {
+            setTentativas({});
+          }
+        } catch (_) { /* secao de tentativas e best-effort */ }
       } catch { if (!silencioso) showToast('Erro ao carregar entregas', 'error'); }
       finally { if (!silencioso) setLoading(false); }
     }, [fetchAuth, API_URL, filtroStatus]);
@@ -1960,6 +2055,7 @@
         : viewMode === 'kanban'
           ? h(KanbanEntregas, {
               entregas: entregasFiltradas,
+              tentativas,
               onCancelar: cancelarEntrega,
               onVerTracking: abrirTracking,
               onVerDetalhes: abrirDetalhes,
@@ -1978,6 +2074,7 @@
               entregasFiltradas.map(e => h(CardEntrega, {
                 key: e.id,
                 entrega: e,
+                tentativas: tentativas[e.codigo_os],
                 onCancelar: cancelarEntrega,
                 onVerTracking: abrirTracking,
                 onVerDetalhes: abrirDetalhes,
