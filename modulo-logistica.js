@@ -751,9 +751,15 @@
     const temCancelamento = evs.some(x => x.tipo === 'canceled');
     if (evs.length <= 1 && !temCancelamento) return null;
 
-    // marca o ultimo dispatch_success como "atual"
+    // marca o ultimo dispatch_success como "atual" — MAS so se nada terminal
+    // (cancelado/falha) veio depois dele. Se a corrida foi cancelada ou falhou
+    // apos o ultimo despacho, esse despacho nao esta mais valendo: sem "atual".
     let idxUltimoSucesso = -1;
     evs.forEach((x, i) => { if (x.tipo === 'dispatch_success') idxUltimoSucesso = i; });
+    const houveTerminalDepois = evs.some((x, i) =>
+      i > idxUltimoSucesso &&
+      (x.tipo === 'canceled' || x.tipo === 'error' || x.tipo === 'dispatch_failed'));
+    const idxAtual = houveTerminalDepois ? -1 : idxUltimoSucesso;
     const totalTent = dados.total_tentativas || evs.filter(x => String(x.tipo).indexOf('dispatch') === 0).length;
 
     let contDisp = 0;
@@ -796,7 +802,7 @@
             detalhe = ev.motivo || ev.erro || null; detClsExtra = 'text-gray-600 bg-gray-100';
           }
 
-          const ehAtual = (i === idxUltimoSucesso);
+          const ehAtual = (i === idxAtual);
           return h('div', { key: i, className: 'flex gap-3' },
             h('div', { className: 'flex flex-col items-center flex-shrink-0' },
               h('span', { className: `w-3 h-3 rounded-full border-2 ${dotCls}` }),
