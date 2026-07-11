@@ -947,9 +947,7 @@
         ),
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
-          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—'),
-          CodigoBadge('Código de entrega', e.dropoff_code),
-          CodigoBadge('Código de devolução', e.return_code)
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—')
         ),
       ),
 
@@ -1353,9 +1351,7 @@
           h('span', { className: 'w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0' }),
           h('div', { className: 'min-w-0 flex-1' },
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
-            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
-            CodigoBadge('Código de entrega', e.dropoff_code),
-            CodigoBadge('Código de devolução', e.return_code),
+            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—')
           )),
       ),
       // financeiro (custo / valor / margem)
@@ -1559,7 +1555,13 @@
     const carregar = useCallback(async (silencioso) => {
       if (!silencioso) setLoading(true);
       try {
-        const url = `${API_URL}/logistics/deliveries${filtroStatus ? `?status=${filtroStatus}` : ''}`;
+        // 2026-07: filtro de data vai pro BACKEND (traz o dia inteiro, inclusive
+        // datas passadas). Antes so o status ia, e a data era filtrada no front
+        // sobre os 50 recentes — datas passadas voltavam vazias.
+        const qs = [];
+        if (filtroStatus) qs.push(`status=${encodeURIComponent(filtroStatus)}`);
+        if (dataFiltro)   qs.push(`data=${encodeURIComponent(dataFiltro)}`);
+        const url = `${API_URL}/logistics/deliveries${qs.length ? `?${qs.join('&')}` : ''}`;
         const res = await fetchAuth(url);
         const json = await res.json();
         const lista = json.entregas || [];
@@ -1579,7 +1581,7 @@
         } catch (_) { /* secao de tentativas e best-effort */ }
       } catch { if (!silencioso) showToast('Erro ao carregar entregas', 'error'); }
       finally { if (!silencioso) setLoading(false); }
-    }, [fetchAuth, API_URL, filtroStatus]);
+    }, [fetchAuth, API_URL, filtroStatus, dataFiltro]);
 
     // Carga inicial + auto-refresh a cada 30s — mantém os status em dia
     // sem o operador precisar recarregar a tela na mão (o poller/webhook
@@ -2756,6 +2758,20 @@
                         className: 'text-xs px-2.5 py-1.5 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-700',
                       }, '📲 Reenviar WPP'),
                     ),
+                  ),
+
+                  // Código de DEVOLUÇÃO (99 — quando o item retorna ao remetente).
+                  // So aparece quando ha codigo; fica so aqui nos detalhes.
+                  e.return_code && h('div', { className: 'flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-4 py-3' },
+                    h('div', null,
+                      h('div', { className: 'text-xs uppercase tracking-wider text-orange-700 font-semibold mb-1' }, '↩️ Código de devolução'),
+                      h('div', { className: 'text-xs text-orange-600 mb-1' }, 'Apresente ao remetente ao devolver o pacote'),
+                      h('div', { className: 'text-2xl font-bold tracking-widest text-orange-800 font-mono' }, e.return_code),
+                    ),
+                    h('button', {
+                      onClick: () => navigator.clipboard?.writeText(e.return_code).then(() => showToast('Código copiado', 'success')),
+                      className: 'text-xs px-2.5 py-1.5 border border-orange-200 rounded-md hover:bg-orange-100 text-orange-700 ml-4',
+                    }, 'Copiar'),
                   ),
                 ),
               ),
