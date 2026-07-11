@@ -1042,7 +1042,11 @@
             (function () {
               const st = e.status_canonico;
               if (st === 'DELIVERED')   return 'Entrega concluída.';
-              if (st === 'CANCELED' || st === 'FAILED' || st === 'RETURNED')
+              if (st === 'FAILED' || st === 'FALLBACK_QUEUE')
+                return e.erro_ultimo
+                  ? String(e.erro_ultimo).replace(/^Erro\s+[^:]+:\s*/i, '')
+                  : 'Falha no despacho — sem entregador vinculado.';
+              if (st === 'CANCELED' || st === 'RETURNED')
                 return 'Entrega encerrada sem entregador vinculado.';
               if (['COURIER_ASSIGNED','PICKUP_EN_ROUTE','ARRIVED_PICKUP',
                    'PICKED_UP','DROPOFF_EN_ROUTE','ARRIVED_DROPOFF'].includes(st))
@@ -1311,7 +1315,9 @@
     function msgSemEntregador() {
       const st = e.status_canonico;
       if (st === 'DELIVERED') return 'Entrega concluída.';
-      if (st === 'CANCELED' || st === 'FAILED' || st === 'RETURNED' || st === 'FALLBACK_QUEUE') return 'Encerrada sem entregador.';
+      if (st === 'FAILED' || st === 'FALLBACK_QUEUE')
+        return e.erro_ultimo ? String(e.erro_ultimo).replace(/^Erro\s+[^:]+:\s*/i, '') : 'Falha no despacho.';
+      if (st === 'CANCELED' || st === 'RETURNED') return 'Encerrada sem entregador.';
       if (['COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP', 'PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'].includes(st))
         return 'Em andamento — entregador não informado.';
       return 'Aguardando atribuição…';
@@ -2772,6 +2778,14 @@
                       onClick: () => navigator.clipboard?.writeText(e.return_code).then(() => showToast('Código copiado', 'success')),
                       className: 'text-xs px-2.5 py-1.5 border border-orange-200 rounded-md hover:bg-orange-100 text-orange-700 ml-4',
                     }, 'Copiar'),
+                  ),
+
+                  // Devolvido SEM codigo = verificacao por FOTO (return_handover_method=2).
+                  // Direciona o operador pro comprovante em vez de deixar o campo vazio.
+                  !e.return_code && (e.status_canonico === 'RETURNED' || /sendback|devolv/i.test(String(e.status_native || ''))) &&
+                  h('div', { className: 'flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 text-sm text-orange-800' },
+                    h('span', { className: 'text-base' }, '📸'),
+                    h('span', null, 'Devolução verificada por foto — veja o comprovante abaixo.'),
                   ),
                 ),
               ),
