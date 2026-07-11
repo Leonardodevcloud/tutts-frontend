@@ -1263,6 +1263,21 @@
                                             className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
                                         }, "✏️"),
                                         React.createElement("button", {
+                                            onClick: function() {
+                                                x({...p, modalPerfilMensagem: {
+                                                    id: cliente.id,
+                                                    nome: cliente.nome || "",
+                                                    nome_remetente: cliente.nome_remetente || "",
+                                                    package_type: cliente.package_type || "",
+                                                    package_weight: cliente.package_weight || "",
+                                                    aviso_entregador: cliente.aviso_entregador || "",
+                                                    salvando: false
+                                                }});
+                                            },
+                                            title: "Mensagem pro entregador (99)",
+                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                                        }, "💬"),
+                                        React.createElement("button", {
                                             onClick: async function() {
                                                 var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
                                                 var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
@@ -2236,6 +2251,132 @@
                                 className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
                                     (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
                             }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                        )
+                    )
+                );
+            })(),
+
+            // Modal — Mensagem pro entregador (99) por cliente API
+            p.modalPerfilMensagem && (function() {
+                var pm = p.modalPerfilMensagem;
+                var up = function(campo, val) { x({...p, modalPerfilMensagem: {...pm, [campo]: val}}); };
+                var fechar = function() { if (!pm.salvando) x({...p, modalPerfilMensagem: null}); };
+                var TIPOS = [
+                    {v: "", label: "Global (padrao)"},
+                    {v: "medication", label: "Medicamentos"},
+                    {v: "documents", label: "Documentos"},
+                    {v: "food", label: "Alimentos"},
+                    {v: "groceries", label: "Mantimentos"},
+                    {v: "electronics", label: "Eletronicos"},
+                    {v: "apparel", label: "Vestuario"},
+                    {v: "others", label: "Outros"}
+                ];
+                var PESOS = [
+                    {v: "", label: "Global (padrao)"},
+                    {v: "1kg", label: "Ate 1kg"},
+                    {v: "5kg", label: "Ate 5kg"},
+                    {v: "10kg", label: "Ate 10kg"},
+                    {v: "20kg", label: "Ate 20kg"},
+                    {v: "30kg", label: "Ate 30kg"}
+                ];
+                var salvar = async function() {
+                    x({...p, modalPerfilMensagem: {...pm, salvando: true}});
+                    try {
+                        var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + pm.id + "/perfil-mensagem", {
+                            method: "PATCH",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify({
+                                nome_remetente: (pm.nome_remetente || "").trim(),
+                                package_type: pm.package_type || "",
+                                package_weight: pm.package_weight || "",
+                                aviso_entregador: (pm.aviso_entregador || "").trim()
+                            })
+                        });
+                        var data = await resp.json().catch(function() { return {}; });
+                        if (resp.ok) {
+                            ja("✅ Mensagem salva!", "success");
+                            x({...p, modalPerfilMensagem: null, clientesApiLista: null});
+                        } else {
+                            ja("❌ " + (data.error || "Erro"), "error");
+                            x({...p, modalPerfilMensagem: {...pm, salvando: false}});
+                        }
+                    } catch (e) {
+                        ja("Erro de conexão", "error");
+                        x({...p, modalPerfilMensagem: {...pm, salvando: false}});
+                    }
+                };
+                return React.createElement("div", {
+                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
+                    onClick: fechar
+                },
+                    React.createElement("div", {
+                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-md",
+                        onClick: function(e) { e.stopPropagation(); }
+                    },
+                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
+                            React.createElement("div", null,
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "💬 Mensagem pro entregador (99)"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, pm.nome, " — em branco usa o global")
+                            ),
+                            React.createElement("button", {
+                                onClick: fechar,
+                                className: "text-gray-400 hover:text-gray-600 text-lg"
+                            }, "✕")
+                        ),
+                        React.createElement("div", {className: "px-5 py-4 space-y-3"},
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Nome do remetente"),
+                                React.createElement("input", {
+                                    type: "text",
+                                    value: pm.nome_remetente || "",
+                                    onChange: function(e) { up("nome_remetente", e.target.value); },
+                                    maxLength: 100,
+                                    placeholder: "vazio = usa o global",
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm"
+                                })
+                            ),
+                            React.createElement("div", {className: "grid grid-cols-2 gap-3"},
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Tipo de transporte"),
+                                    React.createElement("select", {
+                                        value: pm.package_type || "",
+                                        onChange: function(e) { up("package_type", e.target.value); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                                    }, TIPOS.map(function(t) { return React.createElement("option", {key: t.v, value: t.v}, t.label); }))
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Peso da mercadoria"),
+                                    React.createElement("select", {
+                                        value: pm.package_weight || "",
+                                        onChange: function(e) { up("package_weight", e.target.value); },
+                                        className: "w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                                    }, PESOS.map(function(w) { return React.createElement("option", {key: w.v, value: w.v}, w.label); }))
+                                )
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Observacao sobre o transporte (" + (pm.aviso_entregador || "").length + "/127)"),
+                                React.createElement("textarea", {
+                                    value: pm.aviso_entregador || "",
+                                    onChange: function(e) { up("aviso_entregador", e.target.value.slice(0, 127)); },
+                                    maxLength: 127,
+                                    rows: 2,
+                                    placeholder: "vazio = usa o aviso global",
+                                    className: "w-full px-3 py-2 border rounded-lg text-sm resize-y"
+                                })
+                            )
+                        ),
+                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
+                            React.createElement("button", {
+                                onClick: fechar,
+                                disabled: pm.salvando,
+                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                            }, "Cancelar"),
+                            React.createElement("button", {
+                                onClick: salvar,
+                                disabled: pm.salvando,
+                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
+                                    (pm.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
+                            }, pm.salvando ? "⏳ Salvando..." : "✅ Salvar")
                         )
                     )
                 );
