@@ -1263,21 +1263,6 @@
                                             className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
                                         }, "✏️"),
                                         React.createElement("button", {
-                                            onClick: function() {
-                                                x({...p, modalPerfilMensagem: {
-                                                    id: cliente.id,
-                                                    nome: cliente.nome || "",
-                                                    nome_remetente: cliente.nome_remetente || "",
-                                                    package_type: cliente.package_type || "",
-                                                    package_weight: cliente.package_weight || "",
-                                                    aviso_entregador: cliente.aviso_entregador || "",
-                                                    salvando: false
-                                                }});
-                                            },
-                                            title: "Mensagem pro entregador (99)",
-                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
-                                        }, "💬"),
-                                        React.createElement("button", {
                                             onClick: async function() {
                                                 var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
                                                 var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
@@ -1315,10 +1300,14 @@
                                                         valor_fixo: pj && pj.valor_fixo != null ? String(pj.valor_fixo) : "",
                                                         km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
                                                         valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
+                                                        nome_remetente: cliente.nome_remetente || "",
+                                                        package_type: cliente.package_type || "",
+                                                        package_weight: cliente.package_weight || "",
+                                                        aviso_entregador: cliente.aviso_entregador || "",
                                                         salvando: false
                                                     }});
                                                 },
-                                                title: "Preço do Hub (por cliente)",
+                                                title: "Configurações do Hub (preço e mensagem)",
                                                 className: "px-2 py-1 rounded text-xs " + (temPreco ? "bg-purple-100 text-purple-700 hover:bg-purple-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
                                             }, "💰");
                                         })(),
@@ -2256,132 +2245,6 @@
                 );
             })(),
 
-            // Modal — Mensagem pro entregador (99) por cliente API
-            p.modalPerfilMensagem && (function() {
-                var pm = p.modalPerfilMensagem;
-                var up = function(campo, val) { x({...p, modalPerfilMensagem: {...pm, [campo]: val}}); };
-                var fechar = function() { if (!pm.salvando) x({...p, modalPerfilMensagem: null}); };
-                var TIPOS = [
-                    {v: "", label: "Global (padrao)"},
-                    {v: "medication", label: "Medicamentos"},
-                    {v: "documents", label: "Documentos"},
-                    {v: "food", label: "Alimentos"},
-                    {v: "groceries", label: "Mantimentos"},
-                    {v: "electronics", label: "Eletronicos"},
-                    {v: "apparel", label: "Vestuario"},
-                    {v: "others", label: "Outros"}
-                ];
-                var PESOS = [
-                    {v: "", label: "Global (padrao)"},
-                    {v: "1kg", label: "Ate 1kg"},
-                    {v: "5kg", label: "Ate 5kg"},
-                    {v: "10kg", label: "Ate 10kg"},
-                    {v: "20kg", label: "Ate 20kg"},
-                    {v: "30kg", label: "Ate 30kg"}
-                ];
-                var salvar = async function() {
-                    x({...p, modalPerfilMensagem: {...pm, salvando: true}});
-                    try {
-                        var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + pm.id + "/perfil-mensagem", {
-                            method: "PATCH",
-                            headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({
-                                nome_remetente: (pm.nome_remetente || "").trim(),
-                                package_type: pm.package_type || "",
-                                package_weight: pm.package_weight || "",
-                                aviso_entregador: (pm.aviso_entregador || "").trim()
-                            })
-                        });
-                        var data = await resp.json().catch(function() { return {}; });
-                        if (resp.ok) {
-                            ja("✅ Mensagem salva!", "success");
-                            x({...p, modalPerfilMensagem: null, clientesApiLista: null});
-                        } else {
-                            ja("❌ " + (data.error || "Erro"), "error");
-                            x({...p, modalPerfilMensagem: {...pm, salvando: false}});
-                        }
-                    } catch (e) {
-                        ja("Erro de conexão", "error");
-                        x({...p, modalPerfilMensagem: {...pm, salvando: false}});
-                    }
-                };
-                return React.createElement("div", {
-                    className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
-                    onClick: fechar
-                },
-                    React.createElement("div", {
-                        className: "bg-white rounded-2xl shadow-2xl w-full max-w-md",
-                        onClick: function(e) { e.stopPropagation(); }
-                    },
-                        React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
-                            React.createElement("div", null,
-                                React.createElement("p", {className: "font-bold text-gray-800"}, "💬 Mensagem pro entregador (99)"),
-                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, pm.nome, " — em branco usa o global")
-                            ),
-                            React.createElement("button", {
-                                onClick: fechar,
-                                className: "text-gray-400 hover:text-gray-600 text-lg"
-                            }, "✕")
-                        ),
-                        React.createElement("div", {className: "px-5 py-4 space-y-3"},
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Nome do remetente"),
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: pm.nome_remetente || "",
-                                    onChange: function(e) { up("nome_remetente", e.target.value); },
-                                    maxLength: 100,
-                                    placeholder: "vazio = usa o global",
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm"
-                                })
-                            ),
-                            React.createElement("div", {className: "grid grid-cols-2 gap-3"},
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Tipo de transporte"),
-                                    React.createElement("select", {
-                                        value: pm.package_type || "",
-                                        onChange: function(e) { up("package_type", e.target.value); },
-                                        className: "w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                                    }, TIPOS.map(function(t) { return React.createElement("option", {key: t.v, value: t.v}, t.label); }))
-                                ),
-                                React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Peso da mercadoria"),
-                                    React.createElement("select", {
-                                        value: pm.package_weight || "",
-                                        onChange: function(e) { up("package_weight", e.target.value); },
-                                        className: "w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                                    }, PESOS.map(function(w) { return React.createElement("option", {key: w.v, value: w.v}, w.label); }))
-                                )
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-xs text-gray-600 mb-1"}, "Observacao sobre o transporte (" + (pm.aviso_entregador || "").length + "/127)"),
-                                React.createElement("textarea", {
-                                    value: pm.aviso_entregador || "",
-                                    onChange: function(e) { up("aviso_entregador", e.target.value.slice(0, 127)); },
-                                    maxLength: 127,
-                                    rows: 2,
-                                    placeholder: "vazio = usa o aviso global",
-                                    className: "w-full px-3 py-2 border rounded-lg text-sm resize-y"
-                                })
-                            )
-                        ),
-                        React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
-                            React.createElement("button", {
-                                onClick: fechar,
-                                disabled: pm.salvando,
-                                className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
-                            }, "Cancelar"),
-                            React.createElement("button", {
-                                onClick: salvar,
-                                disabled: pm.salvando,
-                                className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
-                                    (pm.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
-                            }, pm.salvando ? "⏳ Salvando..." : "✅ Salvar")
-                        )
-                    )
-                );
-            })(),
-
             // Modal — Preço do Hub por cliente (valor fixo / km base / km adicional)
             p.modalPreco && (function() {
                 var mp = p.modalPreco;
@@ -2406,8 +2269,22 @@
                             body: JSON.stringify(body)
                         });
                         var data = await resp.json().catch(function() { return {}; });
-                        if (resp.ok) {
-                            ja(limpar ? "🧹 Preço removido (herda global)" : "✅ Preço salvo!", "success");
+                        // Mensagem pro entregador (99) — salva junto, exceto no "Limpar" (que so mexe no preco).
+                        var respMsg = {ok: true};
+                        if (!limpar) {
+                            respMsg = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/perfil-mensagem", {
+                                method: "PATCH",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    nome_remetente: (mp.nome_remetente || "").trim(),
+                                    package_type: mp.package_type || "",
+                                    package_weight: mp.package_weight || "",
+                                    aviso_entregador: (mp.aviso_entregador || "").trim()
+                                })
+                            });
+                        }
+                        if (resp.ok && respMsg.ok) {
+                            ja(limpar ? "🧹 Preço removido (herda global)" : "✅ Configurações salvas!", "success");
                             x({...p, modalPreco: null, clientesApiLista: null});
                         } else {
                             ja("❌ " + (data.error || "Erro"), "error");
@@ -2439,8 +2316,8 @@
                     },
                         React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
                             React.createElement("div", null,
-                                React.createElement("p", {className: "font-bold text-gray-800"}, "💰 Preço do Hub"),
-                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — tabela por distância deste cliente")
+                                React.createElement("p", {className: "font-bold text-gray-800"}, "⚙️ Configurações do Hub"),
+                                React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — preço e mensagem deste cliente")
                             ),
                             React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600 text-lg"}, "✕")
                         ),
@@ -2458,6 +2335,62 @@
                                 campo("Valor fixo (R$)", "valor_fixo", "cobrado até a base"),
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
+                            ),
+                            React.createElement("div", {className: "pt-4 border-t"},
+                                React.createElement("p", {className: "text-sm font-semibold text-gray-800 mb-1"}, "💬 Mensagem pro entregador (99)"),
+                                React.createElement("p", {className: "text-[11px] text-gray-400 mb-3"}, "Em branco usa o global. A regra do Hub, se houver, tem prioridade."),
+                                React.createElement("div", {className: "mb-3"},
+                                    React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, "Nome do remetente"),
+                                    React.createElement("input", {
+                                        type: "text", value: mp.nome_remetente || "",
+                                        onChange: function(e) { up("nome_remetente", e.target.value); },
+                                        maxLength: 100, placeholder: "vazio = usa o global",
+                                        className: "w-full px-2 py-2 border rounded-lg text-sm"
+                                    })
+                                ),
+                                React.createElement("div", {className: "grid grid-cols-2 gap-3 mb-3"},
+                                    React.createElement("div", null,
+                                        React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, "Tipo de transporte"),
+                                        React.createElement("select", {
+                                            value: mp.package_type || "",
+                                            onChange: function(e) { up("package_type", e.target.value); },
+                                            className: "w-full px-2 py-2 border rounded-lg text-sm bg-white"
+                                        },
+                                            React.createElement("option", {value: ""}, "Global (padrao)"),
+                                            React.createElement("option", {value: "medication"}, "Medicamentos"),
+                                            React.createElement("option", {value: "documents"}, "Documentos"),
+                                            React.createElement("option", {value: "food"}, "Alimentos"),
+                                            React.createElement("option", {value: "groceries"}, "Mantimentos"),
+                                            React.createElement("option", {value: "electronics"}, "Eletronicos"),
+                                            React.createElement("option", {value: "apparel"}, "Vestuario"),
+                                            React.createElement("option", {value: "others"}, "Outros")
+                                        )
+                                    ),
+                                    React.createElement("div", null,
+                                        React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, "Peso"),
+                                        React.createElement("select", {
+                                            value: mp.package_weight || "",
+                                            onChange: function(e) { up("package_weight", e.target.value); },
+                                            className: "w-full px-2 py-2 border rounded-lg text-sm bg-white"
+                                        },
+                                            React.createElement("option", {value: ""}, "Global (padrao)"),
+                                            React.createElement("option", {value: "1kg"}, "Ate 1kg"),
+                                            React.createElement("option", {value: "5kg"}, "Ate 5kg"),
+                                            React.createElement("option", {value: "10kg"}, "Ate 10kg"),
+                                            React.createElement("option", {value: "20kg"}, "Ate 20kg"),
+                                            React.createElement("option", {value: "30kg"}, "Ate 30kg")
+                                        )
+                                    )
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, "Observacao (" + (mp.aviso_entregador || "").length + "/127)"),
+                                    React.createElement("textarea", {
+                                        value: mp.aviso_entregador || "",
+                                        onChange: function(e) { up("aviso_entregador", e.target.value.slice(0, 127)); },
+                                        maxLength: 127, rows: 2, placeholder: "vazio = usa o aviso global",
+                                        className: "w-full px-2 py-2 border rounded-lg text-sm resize-y"
+                                    })
+                                )
                             )
                         ),
                         React.createElement("div", {className: "px-5 py-3 bg-gray-50 border-t flex gap-3"},
