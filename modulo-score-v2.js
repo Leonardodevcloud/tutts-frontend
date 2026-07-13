@@ -149,11 +149,17 @@
             } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
         };
 
+        // 🆕 2026-07: período explícito (início → fim) pra ficar claro o que está sendo analisado.
+        const _fmtBR = (d) => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+        const _fimJanela = dataRef ? new Date(dataRef + 'T00:00:00') : new Date();
+        const _iniJanela = new Date(_fimJanela); _iniJanela.setDate(_iniJanela.getDate() - 6);
+        const periodoTexto = _fmtBR(_iniJanela) + ' a ' + _fmtBR(_fimJanela) + ' · 7 dias' + (dados?.semana ? (' · ' + dados.semana) : '');
+
         return h('div', { className: 'max-w-4xl mx-auto p-4 md:p-6 space-y-4' },
             h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
                 h('div', null,
                     h('h3', { className: 'text-base font-bold text-gray-900' }, '📉 Aproveitamento semanal'),
-                    h('p', { className: 'text-xs text-gray-500' }, (dataRef ? 'Janela de 7 dias até ' + dataRef : 'Últimos 7 dias') + (dados?.semana ? (' · ' + dados.semana) : ''))
+                    h('p', { className: 'text-xs text-gray-500' }, 'Período analisado: ' + periodoTexto)
                 ),
                 h('select', {
                     value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
