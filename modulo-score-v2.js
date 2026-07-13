@@ -518,6 +518,13 @@
             n3_min_pct_prazo: cfg.n3_min_pct_prazo != null ? Number(cfg.n3_min_pct_prazo) : 88,
             regra_aproveitamento_ativa: cfg.regra_aproveitamento_ativa === true,
             pct_min_aproveitamento: cfg.pct_min_aproveitamento != null ? Number(cfg.pct_min_aproveitamento) : 95,
+            // 🆕 2026-07: modelo novo (qualidade define + presença no pico destrava)
+            min_entregas_elegivel: cfg.min_entregas_elegivel != null ? Number(cfg.min_entregas_elegivel) : 40,
+            pct_prata: cfg.pct_prata != null ? Number(cfg.pct_prata) : 85,
+            pct_ouro: cfg.pct_ouro != null ? Number(cfg.pct_ouro) : 92,
+            dias_pico_prata: cfg.dias_pico_prata != null ? Number(cfg.dias_pico_prata) : 12,
+            dias_pico_ouro: cfg.dias_pico_ouro != null ? Number(cfg.dias_pico_ouro) : 18,
+            hora_corte_pico: cfg.hora_corte_pico != null ? Number(cfg.hora_corte_pico) : 16,
         });
 
         const toggleNivel = (n) => {
@@ -544,14 +551,9 @@
             return h('div', { className: 'border border-gray-200 rounded-xl p-3.5 space-y-3' },
                 h('div', { className: 'flex items-center gap-2' },
                     badge,
-                    h('span', { className: 'text-[11px] text-gray-400' }, 'todos os critérios precisam bater')
+                    h('span', { className: 'text-[11px] text-gray-400' }, 'bonificações desta categoria')
                 ),
-                h('div', { className: 'grid grid-cols-3 gap-2.5' },
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Entregas (28d)'), numInput(pk + '_min_entregas', 1, 0)),
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Após 16h'), numInput(pk + '_min_dias_16h', 1, 0)),
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '% no prazo'), numInput(pk + '_min_pct_prazo', 0.1, 0, 100))
-                ),
-                h('div', { className: 'grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-100' },
+                h('div', { className: 'grid grid-cols-2 gap-2.5' },
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Sorteio mensal (R$)'), numInput('sorteio_valor_' + pk, 0.01, 0)),
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0))
                 )
@@ -592,6 +594,28 @@
                         )
                     ),
                     // Cards por categoria
+                    // 🆕 2026-07: Regras de nível (modelo novo — qualidade define, presença destrava)
+                    h('div', { className: 'border border-purple-200 rounded-xl p-3.5 space-y-3' },
+                        h('div', { className: 'flex items-center gap-2' },
+                            h('span', { className: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700' }, 'REGRAS DE NÍVEL'),
+                            h('span', { className: 'text-[11px] text-gray-400' }, 'qualidade define, presença destrava')
+                        ),
+                        h('div', { className: 'grid grid-cols-2 gap-2.5' },
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Porta de entrada (entregas)'), numInput('min_entregas_elegivel', 1, 0)),
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Hora de corte do pico (h)'), numInput('hora_corte_pico', 1, 0, 23))
+                        ),
+                        h('div', { className: 'grid grid-cols-2 gap-2.5 pt-3 border-t border-purple-100' },
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥈 Prata — % no prazo'), numInput('pct_prata', 0.1, 0, 100)),
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥈 Prata — dias no pico'), numInput('dias_pico_prata', 1, 0))
+                        ),
+                        h('div', { className: 'grid grid-cols-2 gap-2.5' },
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥇 Ouro — % no prazo'), numInput('pct_ouro', 0.1, 0, 100)),
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥇 Ouro — dias no pico'), numInput('dias_pico_ouro', 1, 0))
+                        ),
+                        h('div', { className: 'text-[11px] text-gray-500 bg-gray-50 rounded-lg p-2 leading-relaxed' },
+                            'O nível é o ', h('b', null, 'menor'), ' entre o que a qualidade dá e o que a presença permite. Sem os dias no pico, trava embaixo — por melhor que seja o % no prazo.'
+                        )
+                    ),
                     form.niveis_ativos.includes(2) && cardCategoria(2),
                     form.niveis_ativos.includes(3) && cardCategoria(3),
                     // Aproveitamento semanal
