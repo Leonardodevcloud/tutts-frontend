@@ -1442,6 +1442,7 @@
     const [busca, setBusca] = useState('');
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [filtroProvider, setFiltroProvider] = useState('todos'); // todos | uber | noventanove
+    const [filtroCliente, setFiltroCliente] = useState('todos'); // FILTRO_CLIENTE_KANBAN: todos | <nome> | __sem__
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
     // Chat 99: contadores de nao-lidas por OS (badge nos cards) + abrir chat na aba propria
@@ -1832,6 +1833,14 @@
         });
       }
 
+      // Filtro de cliente (por cliente_nome_regra; '__sem__' = manual/sem regra)
+      if (filtroCliente !== 'todos') {
+        lista = lista.filter(e => {
+          const nome = e.cliente_nome_regra || '';
+          return filtroCliente === '__sem__' ? !nome : nome === filtroCliente;
+        });
+      }
+
       // Ordenação
       const ordenado = [...lista].sort((a, b) => {
         if (ordenacao === 'recente') return new Date(b.created_at) - new Date(a.created_at);
@@ -1844,9 +1853,16 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente]);
 
     // Resumo — total de margem da lista filtrada
+    // FILTRO_CLIENTE_KANBAN: lista distinta de clientes presente nas entregas carregadas
+    const clientesLista = useMemo(() => {
+      const set = new Set();
+      (entregas || []).forEach(e => { if (e.cliente_nome_regra) set.add(e.cliente_nome_regra); });
+      return Array.from(set).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+    }, [entregas]);
+
     const resumo = useMemo(() => {
       const total = entregasFiltradas.reduce((acc, e) => {
         const m = parseFloat(e.valor_servico || 0) - parseFloat(e.valor_uber || 0);
@@ -2022,6 +2038,16 @@
           h('option', { value: 'todos' }, 'Todos os provedores'),
           h('option', { value: 'uber' }, 'Uber'),
           h('option', { value: 'noventanove' }, '99'),
+        ),
+        h('select', {
+          value: filtroCliente,
+          onChange: e => setFiltroCliente(e.target.value),
+          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+          title: 'Filtrar por cliente',
+        },
+          h('option', { value: 'todos' }, 'Todos os clientes'),
+          clientesLista.map(nome => h('option', { key: nome, value: nome }, nome)),
+          h('option', { value: '__sem__' }, 'Manual / sem regra'),
         ),
         h('select', {
           value: ordenacao,
