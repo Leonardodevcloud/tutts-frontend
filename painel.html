@@ -4,30 +4,72 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Central Tutts - Painel da loja</title>
+<!-- PORTAL_PAINEL_V2 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style id="tlg-login-style">
+      .tlg-wrap{display:grid;grid-template-columns:1.05fr .95fr;min-height:100vh;font-family:'Inter',system-ui,sans-serif}
+      .tlg-stage{position:relative;overflow:hidden;color:#fff;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;
+        background:radial-gradient(120% 100% at 0% 0%,#5d0b85 0%,#3a1556 45%,#26093a 100%)}
+      .tlg-blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5;animation:tlgDrift 14s ease-in-out infinite}
+      .tlg-blob1{width:320px;height:320px;background:#9b1fd6;top:-60px;left:-80px}
+      .tlg-blob2{width:280px;height:280px;background:#f67602;bottom:-70px;left:30%;opacity:.25;animation-delay:-5s}
+      .tlg-blob3{width:240px;height:240px;background:#e6007e;top:35%;right:-60px;opacity:.3;animation-delay:-9s}
+      @keyframes tlgDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(24px,-18px) scale(1.08)}66%{transform:translate(-16px,20px) scale(.96)}}
+      .tlg-grid{position:absolute;inset:0;opacity:.06;background:linear-gradient(#fff 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,#fff 1px,transparent 1px) 0 0/40px 40px;-webkit-mask-image:radial-gradient(80% 80% at 50% 45%,#000,transparent);mask-image:radial-gradient(80% 80% at 50% 45%,#000,transparent)}
+      .tlg-top{position:relative;z-index:2;display:flex;align-items:center;gap:13px;opacity:0;animation:tlgFadeDown .7s .1s forwards}
+      .tlg-logo-sm{height:30px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3))}
+      .tlg-tagchip{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);padding:5px 11px;border-radius:999px}
+      .tlg-hero{position:relative;z-index:2;margin:auto 0;display:flex;flex-direction:column;align-items:center;text-align:center}
+      .tlg-mark{position:relative;width:min(420px,80%);opacity:0;transform:scale(.92);animation:tlgMarkIn 1s .25s cubic-bezier(.2,.7,.2,1) forwards}
+      .tlg-mark-float{animation:tlgFloaty 6s ease-in-out infinite}
+      .tlg-halo{position:absolute;inset:-18% -8%;z-index:0;background:radial-gradient(50% 50% at 50% 55%,rgba(246,118,2,.32),transparent 70%);filter:blur(18px);animation:tlgHalo 5s ease-in-out infinite}
+      .tlg-mark img{position:relative;z-index:1;width:100%;display:block;filter:drop-shadow(0 18px 36px rgba(0,0,0,.45))}
+      .tlg-shine{position:absolute;inset:0;z-index:2;pointer-events:none;
+        -webkit-mask:var(--tlg-logo) center/100% 100% no-repeat;mask:var(--tlg-logo) center/100% 100% no-repeat;
+        background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.85) 48%,rgba(255,236,200,.95) 50%,rgba(255,255,255,.85) 52%,transparent 62%);
+        background-size:260% 100%;background-position:160% 0;animation:tlgSweep 3.8s 1.2s ease-in-out infinite}
+      @keyframes tlgSweep{0%{background-position:170% 0;opacity:0}12%{opacity:1}55%{opacity:1}70%,100%{background-position:-70% 0;opacity:0}}
+      @keyframes tlgHalo{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+      @keyframes tlgMarkIn{to{opacity:1;transform:scale(1)}}
+      @keyframes tlgFloaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+      .tlg-htitle{font-family:'Sora','Inter',sans-serif;font-weight:800;font-size:clamp(24px,2.4vw,32px);line-height:1.1;letter-spacing:-.01em;margin-top:42px;opacity:0;animation:tlgFadeUp .8s .9s forwards}
+      .tlg-grad{background:linear-gradient(100deg,#f67602,#ffd08a);-webkit-background-clip:text;background-clip:text;color:transparent}
+      .tlg-side{background:#f6f2fb;display:flex;align-items:center;justify-content:center;padding:40px 28px;position:relative}
+      .tlg-side::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 80% 10%,#efe7f8,transparent),radial-gradient(50% 40% at 10% 100%,#fdeede,transparent)}
+      .tlg-card{position:relative;width:100%;max-width:380px;background:#fff;border:1px solid #ece6f3;border-radius:24px;padding:38px 34px;box-shadow:0 30px 70px -30px rgba(58,21,86,.4);opacity:0;transform:translateY(22px) scale(.98);animation:tlgCardIn .8s .2s cubic-bezier(.2,.7,.2,1) forwards}
+      .tlg-cbrand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:26px}
+      .tlg-cmark{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;margin-bottom:14px;background:linear-gradient(140deg,#3a1556,#770fa8);box-shadow:0 14px 30px -10px rgba(119,15,168,.6);position:relative;overflow:hidden;animation:tlgFloaty 5s ease-in-out infinite}
+      .tlg-cmark::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.25) 50%,transparent 70%);transform:translateX(-120%);animation:tlgShineCard 4.5s 1.5s ease-in-out infinite}
+      .tlg-cmark img{width:48px;height:auto;position:relative;z-index:1}
+      .tlg-ctitle{font-family:'Sora','Inter',sans-serif;font-weight:800;font-size:21px;color:#1c1430;letter-spacing:-.01em}
+      .tlg-csub{font-size:13px;color:#6b6480;margin-top:4px}
+      .tlg-grp{margin-bottom:16px;opacity:0;transform:translateY(10px);animation:tlgFadeUp .6s forwards}
+      .tlg-grp:nth-of-type(1){animation-delay:.45s}
+      .tlg-grp:nth-of-type(2){animation-delay:.57s}
+      .tlg-lbl{display:block;font-size:12.5px;font-weight:600;color:#1c1430;margin-bottom:7px}
+      .tlg-inp input{width:100%;border:1.5px solid #ece6f3;background:#fbf9fe;border-radius:13px;padding:13px 14px;font-family:'Inter';font-size:14.5px;color:#1c1430;transition:.18s}
+      .tlg-inp input:focus{outline:none;border-color:#770fa8;background:#fff;box-shadow:0 0 0 4px #f1ebfe}
+      .tlg-btn{width:100%;border:0;border-radius:13px;padding:15px;font-family:'Sora','Inter',sans-serif;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(135deg,#770fa8,#5d0b85);cursor:pointer;position:relative;overflow:hidden;box-shadow:0 16px 30px -12px rgba(119,15,168,.7);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:6px;opacity:0;animation:tlgFadeUp .6s .7s forwards}
+      .tlg-btn:hover{transform:translateY(-2px);box-shadow:0 22px 38px -12px rgba(119,15,168,.8)}
+      .tlg-btn:active{transform:translateY(0)}
+      .tlg-btn:disabled{opacity:.6;cursor:wait}
+      .tlg-btnsw{position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%)}
+      .tlg-btn:hover .tlg-btnsw{transform:translateX(120%);transition:transform .7s}
+      .tlg-foot{text-align:center;font-size:11.5px;color:#6b6480;margin-top:22px;opacity:0;animation:tlgFadeUp .6s .85s forwards}
+      @keyframes tlgFadeUp{to{opacity:1;transform:translateY(0)}}
+      @keyframes tlgFadeDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes tlgCardIn{to{opacity:1;transform:translateY(0) scale(1)}}
+      @keyframes tlgShineCard{0%,60%{transform:translateX(-120%)}80%,100%{transform:translateX(120%)}}
+      @media (max-width:860px){.tlg-wrap{grid-template-columns:1fr}.tlg-stage{padding:30px 26px 38px;min-height:auto}.tlg-hero{margin:24px 0}.tlg-mark{width:66%}.tlg-htitle{font-size:22px;margin-top:30px}.tlg-side{padding:28px 18px 44px}}
+      @media (prefers-reduced-motion:reduce){.tlg-wrap *{animation:none !important}.tlg-mark,.tlg-card,.tlg-grp,.tlg-btn,.tlg-foot,.tlg-top,.tlg-htitle{opacity:1 !important;transform:none !important}.tlg-shine{display:none}}
+    </style>
 <style>
   :root { --roxo:#7c3aed; --roxo2:#6d28d9; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#f3f4f6; color:#111827; }
-
-  /* Login */
-  #login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .card-login { width:100%; max-width:360px; background:#fff; border-radius:16px; padding:28px 24px; box-shadow:0 10px 30px rgba(0,0,0,.08); }
-  .logo { width:44px;height:44px;border-radius:12px;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 14px; }
-  .card-login h1 { font-size:18px; text-align:center; margin:0 0 4px; }
-  .card-login p { font-size:13px; color:#6b7280; text-align:center; margin:0 0 20px; }
-  .campo { margin-bottom:14px; }
-  .campo label { display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; }
-  .campo input { width:100%; padding:11px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px; outline:none; }
-  .campo input:focus { border-color:var(--roxo); box-shadow:0 0 0 3px rgba(124,58,237,.15); }
-  .btn-login { width:100%; padding:12px; background:var(--roxo); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
-  .btn-login:hover { background:var(--roxo2); }
-  .btn-login:disabled { opacity:.6; cursor:default; }
-  .erro-login { display:none; background:#fef2f2; color:#b91c1c; font-size:13px; padding:9px 11px; border-radius:8px; margin-bottom:14px; text-align:center; }
-
-  /* App */
+  #login { min-height:100vh; }
   #app { display:none; }
   .topo { position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; padding:12px 16px; display:flex; align-items:center; gap:10px; }
   .topo .mark { width:30px;height:30px;border-radius:8px;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0; }
@@ -37,7 +79,6 @@
   .rt .dot { width:7px;height:7px;border-radius:50%;background:#10b981; }
   .topo input[type=date]{ font-size:12px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; }
   .topo .sair { border:1px solid #d1d5db; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; color:#374151; }
-
   .board { display:flex; gap:14px; overflow-x:auto; padding:16px; align-items:flex-start; }
   .col { flex:0 0 300px; }
   .col-h { display:flex; align-items:center; gap:8px; padding:0 2px 10px; }
@@ -46,7 +87,6 @@
   .col-h .ccnt { margin-left:auto; font-size:11px; font-weight:700; color:#fff; border-radius:20px; padding:1px 8px; min-width:20px; text-align:center; }
   .col-body { display:flex; flex-direction:column; gap:10px; }
   .vazio { font-size:11px; color:#d1d5db; text-align:center; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; }
-
   .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
   .card .h { display:flex; align-items:center; gap:8px; padding:10px 12px 8px; }
   .card .os { font-size:13px; font-weight:700; }
@@ -72,26 +112,70 @@
   .btn-rastrear:hover { background:#ede9fe; }
   .btn-rastrear:disabled { opacity:.5; cursor:default; border-color:#f3f4f6; color:#cbd5e1; background:#fafafa; }
   .hora { font-size:10px; color:#9ca3af; padding:0 12px 8px; }
+  /* trilha de tentativas */
+  .trilha { padding:10px 12px; border-top:1px solid #f3f4f6; }
+  .trilha-h { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .trilha-h .tt { font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--roxo); font-weight:700; }
+  .trilha-h .cnt { font-size:10px; font-weight:700; background:#f5f3ff; color:var(--roxo); border-radius:20px; padding:1px 7px; }
+  .tl-row { display:flex; gap:9px; }
+  .tl-left { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .tl-dot { width:11px;height:11px;border-radius:50%;border:2px solid; }
+  .tl-line { width:2px; flex:1; background:#e5e7eb; margin:2px 0; min-height:14px; }
+  .tl-body { flex:1; padding-bottom:9px; min-width:0; }
+  .tl-tit { font-size:12px; font-weight:700; color:#374151; }
+  .tl-det { display:inline-block; font-size:10.5px; border-radius:6px; padding:1px 7px; margin-top:3px; }
+  .tl-hora { font-size:10px; color:#9ca3af; margin-top:2px; }
+  .tl-atual { font-size:9px; font-weight:700; color:#047857; background:#ecfdf5; border-radius:20px; padding:1px 7px; margin-left:6px; }
   #carregando { text-align:center; padding:40px; color:#9ca3af; font-size:13px; }
 </style>
 </head>
 <body>
 
 <div id="login">
-  <div class="card-login">
-    <div class="logo">T</div>
-    <h1>Painel da loja</h1>
-    <p>Acompanhe suas entregas em tempo real</p>
-    <div class="erro-login" id="erroLogin"></div>
-    <div class="campo">
-      <label>Login</label>
-      <input id="inLogin" type="text" autocomplete="username" placeholder="seu login" />
-    </div>
-    <div class="campo">
-      <label>Senha</label>
-      <input id="inSenha" type="password" autocomplete="current-password" placeholder="sua senha" />
-    </div>
-    <button class="btn-login" id="btnLogin">Entrar</button>
+  <div class="tlg-wrap">
+    <section class="tlg-stage">
+      <div class="tlg-grid"></div>
+      <span class="tlg-blob tlg-blob1"></span>
+      <span class="tlg-blob tlg-blob2"></span>
+      <span class="tlg-blob tlg-blob3"></span>
+      <div class="tlg-top">
+        <img class="tlg-logo-sm js-logo" alt="Tutts" />
+        <span class="tlg-tagchip">Painel da loja</span>
+      </div>
+      <div class="tlg-hero">
+        <div class="tlg-mark">
+          <div class="tlg-mark-float">
+            <div class="tlg-halo"></div>
+            <img class="js-logo" alt="Tutts" />
+            <div class="tlg-shine"></div>
+          </div>
+        </div>
+        <h1 class="tlg-htitle">Suas entregas, na <span class="tlg-grad">velocidade Tutts.</span></h1>
+      </div>
+      <div style="height:30px"></div>
+    </section>
+    <section class="tlg-side">
+      <div class="tlg-card">
+        <div class="tlg-cbrand">
+          <div class="tlg-cmark"><img class="js-logo" alt="Tutts" /></div>
+          <div class="tlg-ctitle">Painel da loja</div>
+          <div class="tlg-csub">Acompanhe suas entregas em tempo real</div>
+        </div>
+        <div class="erro-login" id="erroLogin" style="display:none;background:#fef2f2;color:#b91c1c;font-size:13px;padding:9px 11px;border-radius:10px;margin-bottom:14px;text-align:center;"></div>
+        <div>
+          <div class="tlg-grp">
+            <label class="tlg-lbl">Login</label>
+            <div class="tlg-inp"><input id="inLogin" type="text" autocomplete="username" placeholder="seu login" /></div>
+          </div>
+          <div class="tlg-grp">
+            <label class="tlg-lbl">Senha</label>
+            <div class="tlg-inp"><input id="inSenha" type="password" autocomplete="current-password" placeholder="sua senha" /></div>
+          </div>
+          <button type="button" id="btnLogin" class="tlg-btn"><span class="tlg-btnsw"></span><span id="btnLoginTxt">Entrar</span></button>
+        </div>
+        <div class="tlg-foot">(c) 2026 Tutts . Todos os direitos reservados</div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -113,9 +197,15 @@
 <script>
 (function(){
   'use strict';
+  var LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAj0AAAFdCAMAAADfUyz0AAABNVBMVEVHcEz////////////////////////////////////////////zfAD////////zfAD////////zdgDxhgDzdgDzdgDzdwDzdgDzdgDxiQDyfwDzdgDzdgDyhQDzdwDzdgDxhgDxhQDxhADzdgDxhQDygQDzdgDyhQDzdgDygADyfgDyhADyfgDygQDxhQDxiADyfADyggDyfgDygQDxhgDzfADxiwDyfwDzeQDxhwDyfgDzfADyggDyfQDzewDzegDxhwDzewDyggDzeQDzewDyhADzeQDxhwDxiwD////zdgDxhgDxhwDxiADxiQDxhQDxigDxhADwjADxgwDyggDwiwDygQDwjQDygADyfwDyfgDyfQDyfADyewDxiwDzeQDzeADzdwDwjgDzegDyegDwjwDygwBSYxyTAAAASXRSTlMAYJ8wEO/PgEC/IN8Qj3Agr1DvQGDfQIC/gEAwz8+fj3CAv6+fv1BgcIBgUO9wr7/P37+f35+/r++PMN/vj1C/78qPr3AwjzCn4tpagQAAAAlwSFlzAAAITQAACE0BIYghgQAAIABJREFUeJztnWtXG0cShi2QkAQCAQJsY0OAgDHX+ILje+LjeJMjB8frhRDiywbHzv7/n7BHGl1G07e3urpnRqLfT3uyRjPT/XR1VXVX9xU3mplqNktjRUe/NjSanG02mxMVv69bmWg2m7Pjo9RugxprtjVxyfAZL0XfXfD5kEL0jNKo4lOsNjuq5uBt0lOh+9nNSX/PLHefURrNoVmcaKbRjLlTH57mmLd3G+s/xKuFy0pxeJqeXYA8aSb22d5sbgyeZnkom0mv8anmpaQn3q++6Om7BCNKT9dxvGwz1wA8nmauAas+ijNXAp5SDl4pDRUH4fHTsQl4miMXdBUGv685m4N3SkHJfvXSsYmB2WzmrhmYSsIzko6dKAEeHx0rwDNq2ZCZZCNeDqd5XIDHQ8cK8IzayBxLfl+zeRlyzWK/euhYwao3m3POH5KlJPBMjNQHyiWBx33HSuAZqZGZjDra8pdyzY0KEnicd6zoEjSbU0PcaEmJjmNzVHPpA5IZBecdKxuYoxTOyuEZfadZCo9rp1kKzwg5zWLUcTnomZZ/tlN6irPyh4wMPTLHccTGh1Ryo+A2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';
+  try {
+    document.documentElement.style.setProperty('--tlg-logo', 'url("' + LOGO + '")');
+    var ll = document.querySelectorAll('.js-logo'); for (var i=0;i<ll.length;i++) ll[i].src = LOGO;
+  } catch(e){}
+
   var API = 'https://tutts-backend-production.up.railway.app';
   var TOKEN_KEY = 'tutts_portal_token';
-  var pollTimer = null, tickTimer = null, ultimaAtualizacao = null, clienteNome = '';
+  var pollTimer=null, tickTimer=null, ultimaAtualizacao=null, clienteNome='', tentativasMap={};
 
   var COLS = [
     { id:'aguard',   nome:'Aguardando entregador', cor:'#7c3aed' },
@@ -125,81 +215,80 @@
     { id:'devol',    nome:'Devolucao',             cor:'#f97316' },
     { id:'cancel',   nome:'Cancelado',             cor:'#9ca3af' },
   ];
-
   var STLABEL = {
-    PENDING:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
-    QUOTED:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
+    PENDING:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'}, QUOTED:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
     DISPATCHED:{t:'Procurando entregador',c:'#7c3aed',bg:'#f5f3ff'},
     COURIER_ASSIGNED:{t:'Entregador atribuido',c:'#2563eb',bg:'#eff6ff'},
-    PICKUP_EN_ROUTE:{t:'A caminho da coleta',c:'#2563eb',bg:'#eff6ff'},
-    ARRIVED_PICKUP:{t:'Na coleta',c:'#2563eb',bg:'#eff6ff'},
-    PICKED_UP:{t:'Coletou',c:'#b45309',bg:'#fffbeb'},
-    DROPOFF_EN_ROUTE:{t:'Saiu para entrega',c:'#b45309',bg:'#fffbeb'},
-    ARRIVED_DROPOFF:{t:'No destino',c:'#b45309',bg:'#fffbeb'},
-    DELIVERED:{t:'Entregue',c:'#047857',bg:'#ecfdf5'},
-    CANCELED:{t:'Cancelado',c:'#4b5563',bg:'#f3f4f6'},
-    RETURNED:{t:'Devolvido',c:'#c2410c',bg:'#fff7ed'},
-    RETURNING:{t:'Devolvendo',c:'#c2410c',bg:'#fff7ed'},
+    PICKUP_EN_ROUTE:{t:'A caminho da coleta',c:'#2563eb',bg:'#eff6ff'}, ARRIVED_PICKUP:{t:'Na coleta',c:'#2563eb',bg:'#eff6ff'},
+    PICKED_UP:{t:'Coletou',c:'#b45309',bg:'#fffbeb'}, DROPOFF_EN_ROUTE:{t:'Saiu para entrega',c:'#b45309',bg:'#fffbeb'}, ARRIVED_DROPOFF:{t:'No destino',c:'#b45309',bg:'#fffbeb'},
+    DELIVERED:{t:'Entregue',c:'#047857',bg:'#ecfdf5'}, CANCELED:{t:'Cancelado',c:'#4b5563',bg:'#f3f4f6'},
+    RETURNED:{t:'Devolvido',c:'#c2410c',bg:'#fff7ed'}, RETURNING:{t:'Devolvendo',c:'#c2410c',bg:'#fff7ed'},
   };
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
   function token(){ return localStorage.getItem(TOKEN_KEY); }
+  function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
   function coluna(e){
-    var c = String(e.status_canonico||'').toUpperCase();
-    var n = String(e.status_uber||'').toLowerCase();
+    var c=String(e.status_canonico||'').toUpperCase(); var n=String(e.status_uber||'').toLowerCase();
     if (c==='DELIVERED' || ['delivered','entregue','completed','finalizado','concluido'].indexOf(n)>=0) return 'entregue';
     if (c==='RETURNED' || c==='RETURNING' || ['sendback','sendbackcompleted','devolucao','devolvido','devolvendo'].indexOf(n)>=0) return 'devol';
     if (c==='CANCELED' || ['canceled','cancelado'].indexOf(n)>=0) return 'cancel';
-    if (c==='FAILED' || c==='FALLBACK_QUEUE' || ['erro','fallback_fila'].indexOf(n)>=0) return null; // oculto pra loja
+    if (c==='FAILED' || c==='FALLBACK_QUEUE' || ['erro','fallback_fila'].indexOf(n)>=0) return null;
     if (['PICKED_UP','DROPOFF_EN_ROUTE','ARRIVED_DROPOFF'].indexOf(c)>=0 || ['pickup_complete','dropoff'].indexOf(n)>=0) return 'coletou';
     if (['COURIER_ASSIGNED','PICKUP_EN_ROUTE','ARRIVED_PICKUP'].indexOf(c)>=0 || ['entregador_atribuido','pickup','waiting'].indexOf(n)>=0) return 'coleta';
     return 'aguard';
   }
-
   function badge(e){
-    var c = String(e.status_canonico||'').toUpperCase();
-    var s = STLABEL[c] || {t:(e.status_uber||'Em andamento'),c:'#6b7280',bg:'#f3f4f6'};
+    var c=String(e.status_canonico||'').toUpperCase();
+    var s=STLABEL[c] || {t:(e.status_uber||'Em andamento'),c:'#6b7280',bg:'#f3f4f6'};
     return '<span class="badge" style="color:'+s.c+';background:'+s.bg+'">'+esc(s.t)+'</span>';
   }
+  function iniciais(nome){ var p=String(nome||'').trim().split(/\s+/); return ((p[0]||'')[0]||'')+((p[1]||'')[0]||''); }
+  function fmtHora(iso){ if(!iso) return ''; try{var d=new Date(iso);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}catch(e){return '';} }
 
-  function iniciais(nome){
-    var p = String(nome||'').trim().split(/\s+/);
-    return ((p[0]||'')[0]||'') + ((p[1]||'')[0]||'');
+  function trilhaHTML(os){
+    var d = tentativasMap[os];
+    if (!d || !d.eventos || !d.eventos.length) return '';
+    var evs = d.eventos;
+    var temCancel = false; for (var k=0;k<evs.length;k++){ if(evs[k].tipo==='canceled'){temCancel=true;break;} }
+    if (evs.length<=1 && !temCancel) return '';
+    var idxUltSucesso=-1; for (var i=0;i<evs.length;i++){ if(evs[i].tipo==='dispatch_success') idxUltSucesso=i; }
+    var terminalDepois=false; for (var j=0;j<evs.length;j++){ if(j>idxUltSucesso && (evs[j].tipo==='canceled'||evs[j].tipo==='error'||evs[j].tipo==='dispatch_failed')){terminalDepois=true;break;} }
+    var idxAtual = terminalDepois ? -1 : idxUltSucesso;
+    var totalTent = d.total_tentativas || 0;
+    var contDisp=0, linhas='';
+    for (var q=0;q<evs.length;q++){
+      var ev=evs[q]; var ehUltimo=(q===evs.length-1);
+      var dot, tit, det=null, detBg='', detFg='';
+      if (ev.tipo==='dispatch_success'){ contDisp++; dot='#22c55e'; tit=(contDisp===1?'Despachado':'Re-despachado'); }
+      else if (ev.tipo==='canceled'){ var sis=ev.cancelado_por==='sistema-bloqueio'; dot='#ef4444'; tit=sis?'Cancelado pelo sistema':'Cancelado'; det=sis?('Entregador bloqueado'+(ev.courier?' - '+ev.courier:'')):(ev.motivo||null); detBg='#fef2f2'; detFg='#b91c1c'; }
+      else if (ev.tipo==='dispatch_failed' || ev.tipo==='error'){ dot='#f59e0b'; tit='Falha no despacho'; var et=String(ev.erro||ev.motivo||''); det=/external_id/i.test(et)?'external_id duplicado - provedor recusou recriar':(et?et.slice(0,110):'erro ao criar no provedor'); detBg='#fffbeb'; detFg='#b45309'; }
+      else { dot='#9ca3af'; tit='Rejeitado'; det=ev.motivo||ev.erro||null; detBg='#f3f4f6'; detFg='#4b5563'; }
+      var atual=(q===idxAtual)?'<span class="tl-atual">atual</span>':'';
+      var detHTML= det?('<div class="tl-det" style="background:'+detBg+';color:'+detFg+'">'+esc(det)+'</div>'):'';
+      var line= ehUltimo?'':'<span class="tl-line"></span>';
+      linhas += '<div class="tl-row">'
+        + '<div class="tl-left"><span class="tl-dot" style="border-color:'+dot+';background:'+dot+'"></span>'+line+'</div>'
+        + '<div class="tl-body"><div class="tl-tit">'+esc(tit)+atual+'</div>'+detHTML+'<div class="tl-hora">'+esc(fmtHora(ev.hora))+'</div></div>'
+        + '</div>';
+    }
+    return '<div class="trilha"><div class="trilha-h"><span class="tt">Tentativas de despacho</span><span class="cnt">'+totalTent+'</span></div>'+linhas+'</div>';
   }
-  function fmtHora(iso){
-    if(!iso) return '';
-    try { var d=new Date(iso); return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
-    catch(e){ return ''; }
-  }
-  function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
   function cardHTML(e){
-    var origem = window.location.origin;
-    var temEnt = !!e.entregador_nome;
-    var proc = ['PENDING','QUOTED','DISPATCHED'].indexOf(String(e.status_canonico||'').toUpperCase())>=0;
-    var av = e.entregador_foto
-      ? '<img class="av" src="'+esc(e.entregador_foto)+'" onerror="this.style.display=\'none\'" />'
-      : '<div class="av">'+esc(iniciais(e.entregador_nome))+'</div>';
-
-    var telBloco = '';
-    if (temEnt) {
-      var acts = '';
-      if (e.entregador_telefone) {
-        acts = '<button class="mini" onclick="__portal.ligar('+"'"+esc(e.entregador_telefone)+"'"+')">'+(isMobile()?'Ligar':'Copiar')+'</button>';
-      }
-      telBloco = '<div class="ent">'+av
-        + '<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div>'
-        + '<div class="tel">'+esc(e.entregador_telefone||'')+'</div></div>'
-        + '<div class="acts">'+acts+'</div></div>';
-    } else {
-      telBloco = '<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>';
-    }
-
-    var pickup = e.pickup_code ? '<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>' : '';
-    var podeRastrear = !!e.rastreio_token;
-    var btnR = '<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
-
+    var origem=window.location.origin;
+    var temEnt=!!e.entregador_nome;
+    var proc=['PENDING','QUOTED','DISPATCHED'].indexOf(String(e.status_canonico||'').toUpperCase())>=0;
+    var av=e.entregador_foto?('<img class="av" src="'+esc(e.entregador_foto)+'" onerror="this.style.display=\'none\'" />'):('<div class="av">'+esc(iniciais(e.entregador_nome))+'</div>');
+    var telBloco='';
+    if (temEnt){
+      var acts=''; if (e.entregador_telefone){ acts='<button class="mini" onclick="__portal.ligar('+"'"+esc(e.entregador_telefone)+"'"+')">'+(isMobile()?'Ligar':'Copiar')+'</button>'; }
+      telBloco='<div class="ent">'+av+'<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div><div class="tel">'+esc(e.entregador_telefone||'')+'</div></div><div class="acts">'+acts+'</div></div>';
+    } else { telBloco='<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>'; }
+    var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
+    var podeRastrear=!!e.rastreio_token;
+    var btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
     return '<div class="card">'
       + '<div class="h"><span class="os">OS '+esc(e.codigo_os)+'</span>'+badge(e)+'<span class="prov">'+esc((e.provider_code||'').toUpperCase())+'</span></div>'
       + '<div class="cli">Cliente: '+esc(e.cliente_nome_regra||'-')+'</div>'
@@ -209,49 +298,46 @@
       + '</div>'
       + telBloco
       + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
+      + trilhaHTML(e.codigo_os)
       + '<div class="foot">'+btnR+'</div>'
       + '</div>';
   }
 
   function render(entregas){
-    var grupos = {};
-    COLS.forEach(function(c){ grupos[c.id]=[]; });
+    var grupos={}; COLS.forEach(function(c){ grupos[c.id]=[]; });
     (entregas||[]).forEach(function(e){ var col=coluna(e); if(col && grupos[col]) grupos[col].push(e); });
-
-    var board = document.getElementById('board');
-    board.innerHTML = COLS.map(function(c){
-      var itens = grupos[c.id]||[];
-      var corpo = itens.length ? itens.map(cardHTML).join('') : '<div class="vazio">Nenhuma entrega</div>';
-      return '<div class="col">'
-        + '<div class="col-h"><span class="cdot" style="background:'+c.cor+'"></span>'
-        + '<span class="cnome">'+esc(c.nome)+'</span>'
-        + '<span class="ccnt" style="background:'+c.cor+'">'+itens.length+'</span></div>'
-        + '<div class="col-body">'+corpo+'</div></div>';
+    var board=document.getElementById('board');
+    board.innerHTML=COLS.map(function(c){
+      var itens=grupos[c.id]||[];
+      var corpo=itens.length?itens.map(cardHTML).join(''):'<div class="vazio">Nenhuma entrega</div>';
+      return '<div class="col"><div class="col-h"><span class="cdot" style="background:'+c.cor+'"></span><span class="cnome">'+esc(c.nome)+'</span><span class="ccnt" style="background:'+c.cor+'">'+itens.length+'</span></div><div class="col-body">'+corpo+'</div></div>';
     }).join('');
     document.getElementById('carregando').style.display='none';
     board.style.display='flex';
   }
 
-  function atualizarRt(){
-    if(!ultimaAtualizacao){ return; }
-    var seg = Math.round((Date.now()-ultimaAtualizacao)/1000);
-    document.getElementById('tRt').textContent = 'tempo real . ha '+seg+'s';
+  function atualizarRt(){ if(!ultimaAtualizacao) return; var seg=Math.round((Date.now()-ultimaAtualizacao)/1000); document.getElementById('tRt').textContent='tempo real . ha '+seg+'s'; }
+
+  function carregarTentativas(entregas, cb){
+    var oss=[]; var seen={};
+    (entregas||[]).forEach(function(e){ if(e.codigo_os && !seen[e.codigo_os]){ seen[e.codigo_os]=1; oss.push(e.codigo_os); } });
+    if (!oss.length){ tentativasMap={}; cb&&cb(); return; }
+    fetch(API+'/api/logistics/portal/deliveries/tentativas?os='+oss.join(','), { headers:{ 'Authorization':'Bearer '+token() } })
+      .then(function(r){ return r.ok?r.json():{porOs:{}}; })
+      .then(function(j){ tentativasMap=j.porOs||{}; cb&&cb(); })
+      .catch(function(){ cb&&cb(); });
   }
 
   function carregar(){
-    var t = token();
-    if(!t){ mostrarLogin(); return; }
-    var data = document.getElementById('tData').value;
-    var url = API+'/api/logistics/portal/deliveries'+(data?('?data='+encodeURIComponent(data)):'');
-    fetch(url, { headers:{ 'Authorization':'Bearer '+t } })
-      .then(function(r){
-        if(r.status===401){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); throw new Error('401'); }
-        return r.json();
-      })
+    var t=token(); if(!t){ mostrarLogin(); return; }
+    var data=document.getElementById('tData').value;
+    var url=API+'/api/logistics/portal/deliveries'+(data?('?data='+encodeURIComponent(data)):'');
+    fetch(url,{ headers:{ 'Authorization':'Bearer '+t } })
+      .then(function(r){ if(r.status===401){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); throw new Error('401'); } return r.json(); })
       .then(function(j){
-        ultimaAtualizacao = Date.now();
-        atualizarRt();
-        render(j.entregas||[]);
+        ultimaAtualizacao=Date.now(); atualizarRt();
+        var lista=j.entregas||[];
+        carregarTentativas(lista, function(){ render(lista); });
       })
       .catch(function(e){ if(String(e.message)!=='401'){ document.getElementById('carregando').textContent='Erro ao carregar. Tentando de novo...'; } });
   }
@@ -259,58 +345,40 @@
   function mostrarApp(){
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='block';
-    document.getElementById('tCliente').textContent = clienteNome || 'Minhas entregas';
-    document.getElementById('tSub').textContent = clienteNome ? 'atualizado automaticamente' : '';
-    document.getElementById('tMark').textContent = (clienteNome||'T').trim().charAt(0).toUpperCase() || 'T';
-    var hoje = new Date();
-    document.getElementById('tData').value = hoje.getFullYear()+'-'+('0'+(hoje.getMonth()+1)).slice(-2)+'-'+('0'+hoje.getDate()).slice(-2);
+    document.getElementById('tCliente').textContent=clienteNome||'Minhas entregas';
+    document.getElementById('tSub').textContent=clienteNome?'atualizado automaticamente':'';
+    document.getElementById('tMark').textContent=(clienteNome||'T').trim().charAt(0).toUpperCase()||'T';
+    var hoje=new Date();
+    document.getElementById('tData').value=hoje.getFullYear()+'-'+('0'+(hoje.getMonth()+1)).slice(-2)+'-'+('0'+hoje.getDate()).slice(-2);
     carregar();
-    if(pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(carregar, 30000);
-    if(tickTimer) clearInterval(tickTimer);
-    tickTimer = setInterval(atualizarRt, 1000);
+    if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(carregar,30000);
+    if(tickTimer) clearInterval(tickTimer); tickTimer=setInterval(atualizarRt,1000);
   }
-
   function mostrarLogin(){
-    if(pollTimer) clearInterval(pollTimer);
-    if(tickTimer) clearInterval(tickTimer);
+    if(pollTimer) clearInterval(pollTimer); if(tickTimer) clearInterval(tickTimer);
     document.getElementById('app').style.display='none';
-    document.getElementById('login').style.display='flex';
+    document.getElementById('login').style.display='block';
   }
 
   function fazerLogin(){
-    var login = document.getElementById('inLogin').value.trim();
-    var senha = document.getElementById('inSenha').value;
-    var erro = document.getElementById('erroLogin');
-    var btn = document.getElementById('btnLogin');
+    var login=document.getElementById('inLogin').value.trim();
+    var senha=document.getElementById('inSenha').value;
+    var erro=document.getElementById('erroLogin');
+    var btn=document.getElementById('btnLogin'); var btxt=document.getElementById('btnLoginTxt');
     erro.style.display='none';
-    if(!login || !senha){ erro.textContent='Preencha login e senha'; erro.style.display='block'; return; }
-    btn.disabled = true; btn.textContent = 'Entrando...';
-    fetch(API+'/api/logistics/portal/login', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ login:login, senha:senha })
-    })
-    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
-    .then(function(res){
-      btn.disabled=false; btn.textContent='Entrar';
-      if(res.ok && res.j.token){
-        localStorage.setItem(TOKEN_KEY, res.j.token);
-        clienteNome = res.j.cliente_nome || '';
-        mostrarApp();
-      } else {
-        erro.textContent = 'Login ou senha invalidos'; erro.style.display='block';
-      }
-    })
-    .catch(function(){ btn.disabled=false; btn.textContent='Entrar'; erro.textContent='Erro de conexao'; erro.style.display='block'; });
+    if(!login||!senha){ erro.textContent='Preencha login e senha'; erro.style.display='block'; return; }
+    btn.disabled=true; btxt.textContent='Entrando...';
+    fetch(API+'/api/logistics/portal/login',{ method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ login:login, senha:senha }) })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+      .then(function(res){
+        btn.disabled=false; btxt.textContent='Entrar';
+        if(res.ok && res.j.token){ localStorage.setItem(TOKEN_KEY,res.j.token); clienteNome=res.j.cliente_nome||''; mostrarApp(); }
+        else { erro.textContent='Login ou senha invalidos'; erro.style.display='block'; }
+      })
+      .catch(function(){ btn.disabled=false; btxt.textContent='Entrar'; erro.textContent='Erro de conexao'; erro.style.display='block'; });
   }
 
-  // API global pros handlers inline
-  window.__portal = {
-    ligar: function(tel){
-      if(isMobile()){ window.location.href='tel:'+tel; }
-      else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } }
-    }
-  };
+  window.__portal={ ligar:function(tel){ if(isMobile()){ window.location.href='tel:'+tel; } else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } } } };
 
   document.getElementById('btnLogin').addEventListener('click', fazerLogin);
   document.getElementById('inSenha').addEventListener('keydown', function(e){ if(e.key==='Enter') fazerLogin(); });
@@ -318,15 +386,12 @@
   document.getElementById('btnSair').addEventListener('click', function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
   document.getElementById('tData').addEventListener('change', carregar);
 
-  // Boot: se ja tem token, valida indo direto pro app (o /deliveries confirma).
   if(token()){
-    fetch(API+'/api/logistics/portal/me', { headers:{ 'Authorization':'Bearer '+token() } })
+    fetch(API+'/api/logistics/portal/me',{ headers:{ 'Authorization':'Bearer '+token() } })
       .then(function(r){ if(!r.ok) throw new Error('x'); return r.json(); })
-      .then(function(j){ clienteNome = j.cliente_nome || ''; mostrarApp(); })
+      .then(function(j){ clienteNome=j.cliente_nome||''; mostrarApp(); })
       .catch(function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
-  } else {
-    mostrarLogin();
-  }
+  } else { mostrarLogin(); }
 })();
 </script>
 </body>
