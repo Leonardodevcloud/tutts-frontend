@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Central Tutts - Painel da loja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --roxo:#7c3aed; --roxo2:#6d28d9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#f3f4f6; color:#111827; }
+
+  /* Login */
+  #login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card-login { width:100%; max-width:360px; background:#fff; border-radius:16px; padding:28px 24px; box-shadow:0 10px 30px rgba(0,0,0,.08); }
+  .logo { width:44px;height:44px;border-radius:12px;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 14px; }
+  .card-login h1 { font-size:18px; text-align:center; margin:0 0 4px; }
+  .card-login p { font-size:13px; color:#6b7280; text-align:center; margin:0 0 20px; }
+  .campo { margin-bottom:14px; }
+  .campo label { display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; }
+  .campo input { width:100%; padding:11px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px; outline:none; }
+  .campo input:focus { border-color:var(--roxo); box-shadow:0 0 0 3px rgba(124,58,237,.15); }
+  .btn-login { width:100%; padding:12px; background:var(--roxo); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-login:hover { background:var(--roxo2); }
+  .btn-login:disabled { opacity:.6; cursor:default; }
+  .erro-login { display:none; background:#fef2f2; color:#b91c1c; font-size:13px; padding:9px 11px; border-radius:8px; margin-bottom:14px; text-align:center; }
+
+  /* App */
+  #app { display:none; }
+  .topo { position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+  .topo .mark { width:30px;height:30px;border-radius:8px;background:var(--roxo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0; }
+  .topo .tit { font-size:15px; font-weight:600; line-height:1.2; }
+  .topo .sub { font-size:12px; color:#6b7280; }
+  .rt { margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:11px; color:#047857; background:#ecfdf5; padding:5px 10px; border-radius:20px; white-space:nowrap; }
+  .rt .dot { width:7px;height:7px;border-radius:50%;background:#10b981; }
+  .topo input[type=date]{ font-size:12px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; }
+  .topo .sair { border:1px solid #d1d5db; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; color:#374151; }
+
+  .board { display:flex; gap:14px; overflow-x:auto; padding:16px; align-items:flex-start; }
+  .col { flex:0 0 300px; }
+  .col-h { display:flex; align-items:center; gap:8px; padding:0 2px 10px; }
+  .col-h .cdot { width:8px;height:8px;border-radius:50%; }
+  .col-h .cnome { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#6b7280; }
+  .col-h .ccnt { margin-left:auto; font-size:11px; font-weight:700; color:#fff; border-radius:20px; padding:1px 8px; min-width:20px; text-align:center; }
+  .col-body { display:flex; flex-direction:column; gap:10px; }
+  .vazio { font-size:11px; color:#d1d5db; text-align:center; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; }
+
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+  .card .h { display:flex; align-items:center; gap:8px; padding:10px 12px 8px; }
+  .card .os { font-size:13px; font-weight:700; }
+  .badge { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
+  .prov { margin-left:auto; font-size:10px; color:#9ca3af; font-weight:600; }
+  .card .cli { font-size:11px; color:#6b7280; font-weight:600; padding:0 12px 8px; border-bottom:1px solid #f3f4f6; }
+  .rota { padding:10px 12px; border-bottom:1px solid #f3f4f6; }
+  .pt { display:flex; gap:8px; margin-bottom:8px; }
+  .pt:last-child { margin-bottom:0; }
+  .pin { width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0; }
+  .pt .lab { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#9ca3af; }
+  .pt .end { font-size:12px; color:#1f2937; line-height:1.35; word-break:break-word; }
+  .codigo { display:inline-block; margin-top:5px; font-size:11px; color:var(--roxo); background:#f5f3ff; border-radius:6px; padding:2px 8px; font-weight:600; }
+  .ent { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid #f3f4f6; }
+  .ent .av { width:26px;height:26px;border-radius:50%;background:#ede9fe;color:var(--roxo);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;object-fit:cover; }
+  .ent .nm { font-size:12px; font-weight:600; color:#1f2937; line-height:1.2; }
+  .ent .tel { font-size:11px; color:#9ca3af; }
+  .ent .acts { margin-left:auto; display:flex; gap:6px; }
+  .mini { font-size:11px; padding:5px 8px; border-radius:8px; border:1px solid #e5e7eb; background:#f9fafb; color:#4b5563; cursor:pointer; }
+  .sem { padding:9px 12px; font-size:11px; color:#9ca3af; text-align:center; font-style:italic; border-bottom:1px solid #f3f4f6; }
+  .foot { padding:8px 12px; }
+  .btn-rastrear { width:100%; font-size:12px; font-weight:600; padding:8px; border-radius:8px; border:1px solid #ddd6fe; color:var(--roxo); background:#f5f3ff; cursor:pointer; }
+  .btn-rastrear:hover { background:#ede9fe; }
+  .btn-rastrear:disabled { opacity:.5; cursor:default; border-color:#f3f4f6; color:#cbd5e1; background:#fafafa; }
+  .hora { font-size:10px; color:#9ca3af; padding:0 12px 8px; }
+  #carregando { text-align:center; padding:40px; color:#9ca3af; font-size:13px; }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card-login">
+    <div class="logo">T</div>
+    <h1>Painel da loja</h1>
+    <p>Acompanhe suas entregas em tempo real</p>
+    <div class="erro-login" id="erroLogin"></div>
+    <div class="campo">
+      <label>Login</label>
+      <input id="inLogin" type="text" autocomplete="username" placeholder="seu login" />
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input id="inSenha" type="password" autocomplete="current-password" placeholder="sua senha" />
+    </div>
+    <button class="btn-login" id="btnLogin">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topo">
+    <div class="mark" id="tMark">T</div>
+    <div>
+      <div class="tit" id="tCliente">Minhas entregas</div>
+      <div class="sub" id="tSub">carregando...</div>
+    </div>
+    <span class="rt"><span class="dot"></span><span id="tRt">tempo real</span></span>
+    <input type="date" id="tData" />
+    <button class="sair" id="btnSair">Sair</button>
+  </div>
+  <div id="carregando">Carregando entregas...</div>
+  <div class="board" id="board" style="display:none;"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = 'https://tutts-backend-production.up.railway.app';
+  var TOKEN_KEY = 'tutts_portal_token';
+  var pollTimer = null, tickTimer = null, ultimaAtualizacao = null, clienteNome = '';
+
+  var COLS = [
+    { id:'aguard',   nome:'Aguardando entregador', cor:'#7c3aed' },
+    { id:'coleta',   nome:'Aguardando coleta',     cor:'#3b82f6' },
+    { id:'coletou',  nome:'Coletou',               cor:'#f59e0b' },
+    { id:'entregue', nome:'Entregue',              cor:'#22c55e' },
+    { id:'devol',    nome:'Devolucao',             cor:'#f97316' },
+    { id:'cancel',   nome:'Cancelado',             cor:'#9ca3af' },
+  ];
+
+  var STLABEL = {
+    PENDING:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
+    QUOTED:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
+    DISPATCHED:{t:'Procurando entregador',c:'#7c3aed',bg:'#f5f3ff'},
+    COURIER_ASSIGNED:{t:'Entregador atribuido',c:'#2563eb',bg:'#eff6ff'},
+    PICKUP_EN_ROUTE:{t:'A caminho da coleta',c:'#2563eb',bg:'#eff6ff'},
+    ARRIVED_PICKUP:{t:'Na coleta',c:'#2563eb',bg:'#eff6ff'},
+    PICKED_UP:{t:'Coletou',c:'#b45309',bg:'#fffbeb'},
+    DROPOFF_EN_ROUTE:{t:'Saiu para entrega',c:'#b45309',bg:'#fffbeb'},
+    ARRIVED_DROPOFF:{t:'No destino',c:'#b45309',bg:'#fffbeb'},
+    DELIVERED:{t:'Entregue',c:'#047857',bg:'#ecfdf5'},
+    CANCELED:{t:'Cancelado',c:'#4b5563',bg:'#f3f4f6'},
+    RETURNED:{t:'Devolvido',c:'#c2410c',bg:'#fff7ed'},
+    RETURNING:{t:'Devolvendo',c:'#c2410c',bg:'#fff7ed'},
+  };
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+  function token(){ return localStorage.getItem(TOKEN_KEY); }
+
+  function coluna(e){
+    var c = String(e.status_canonico||'').toUpperCase();
+    var n = String(e.status_uber||'').toLowerCase();
+    if (c==='DELIVERED' || ['delivered','entregue','completed','finalizado','concluido'].indexOf(n)>=0) return 'entregue';
+    if (c==='RETURNED' || c==='RETURNING' || ['sendback','sendbackcompleted','devolucao','devolvido','devolvendo'].indexOf(n)>=0) return 'devol';
+    if (c==='CANCELED' || ['canceled','cancelado'].indexOf(n)>=0) return 'cancel';
+    if (c==='FAILED' || c==='FALLBACK_QUEUE' || ['erro','fallback_fila'].indexOf(n)>=0) return null; // oculto pra loja
+    if (['PICKED_UP','DROPOFF_EN_ROUTE','ARRIVED_DROPOFF'].indexOf(c)>=0 || ['pickup_complete','dropoff'].indexOf(n)>=0) return 'coletou';
+    if (['COURIER_ASSIGNED','PICKUP_EN_ROUTE','ARRIVED_PICKUP'].indexOf(c)>=0 || ['entregador_atribuido','pickup','waiting'].indexOf(n)>=0) return 'coleta';
+    return 'aguard';
+  }
+
+  function badge(e){
+    var c = String(e.status_canonico||'').toUpperCase();
+    var s = STLABEL[c] || {t:(e.status_uber||'Em andamento'),c:'#6b7280',bg:'#f3f4f6'};
+    return '<span class="badge" style="color:'+s.c+';background:'+s.bg+'">'+esc(s.t)+'</span>';
+  }
+
+  function iniciais(nome){
+    var p = String(nome||'').trim().split(/\s+/);
+    return ((p[0]||'')[0]||'') + ((p[1]||'')[0]||'');
+  }
+  function fmtHora(iso){
+    if(!iso) return '';
+    try { var d=new Date(iso); return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+    catch(e){ return ''; }
+  }
+  function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+
+  function cardHTML(e){
+    var origem = window.location.origin;
+    var temEnt = !!e.entregador_nome;
+    var proc = ['PENDING','QUOTED','DISPATCHED'].indexOf(String(e.status_canonico||'').toUpperCase())>=0;
+    var av = e.entregador_foto
+      ? '<img class="av" src="'+esc(e.entregador_foto)+'" onerror="this.style.display=\'none\'" />'
+      : '<div class="av">'+esc(iniciais(e.entregador_nome))+'</div>';
+
+    var telBloco = '';
+    if (temEnt) {
+      var acts = '';
+      if (e.entregador_telefone) {
+        acts = '<button class="mini" onclick="__portal.ligar('+"'"+esc(e.entregador_telefone)+"'"+')">'+(isMobile()?'Ligar':'Copiar')+'</button>';
+      }
+      telBloco = '<div class="ent">'+av
+        + '<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div>'
+        + '<div class="tel">'+esc(e.entregador_telefone||'')+'</div></div>'
+        + '<div class="acts">'+acts+'</div></div>';
+    } else {
+      telBloco = '<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>';
+    }
+
+    var pickup = e.pickup_code ? '<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>' : '';
+    var podeRastrear = !!e.rastreio_token;
+    var btnR = '<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
+
+    return '<div class="card">'
+      + '<div class="h"><span class="os">OS '+esc(e.codigo_os)+'</span>'+badge(e)+'<span class="prov">'+esc((e.provider_code||'').toUpperCase())+'</span></div>'
+      + '<div class="cli">Cliente: '+esc(e.cliente_nome_regra||'-')+'</div>'
+      + '<div class="rota">'
+      +   '<div class="pt"><span class="pin" style="background:#f59e0b"></span><div style="min-width:0"><div class="lab">Coleta</div><div class="end">'+esc(e.endereco_coleta||'-')+'</div>'+pickup+'</div></div>'
+      +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div></div></div>'
+      + '</div>'
+      + telBloco
+      + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
+      + '<div class="foot">'+btnR+'</div>'
+      + '</div>';
+  }
+
+  function render(entregas){
+    var grupos = {};
+    COLS.forEach(function(c){ grupos[c.id]=[]; });
+    (entregas||[]).forEach(function(e){ var col=coluna(e); if(col && grupos[col]) grupos[col].push(e); });
+
+    var board = document.getElementById('board');
+    board.innerHTML = COLS.map(function(c){
+      var itens = grupos[c.id]||[];
+      var corpo = itens.length ? itens.map(cardHTML).join('') : '<div class="vazio">Nenhuma entrega</div>';
+      return '<div class="col">'
+        + '<div class="col-h"><span class="cdot" style="background:'+c.cor+'"></span>'
+        + '<span class="cnome">'+esc(c.nome)+'</span>'
+        + '<span class="ccnt" style="background:'+c.cor+'">'+itens.length+'</span></div>'
+        + '<div class="col-body">'+corpo+'</div></div>';
+    }).join('');
+    document.getElementById('carregando').style.display='none';
+    board.style.display='flex';
+  }
+
+  function atualizarRt(){
+    if(!ultimaAtualizacao){ return; }
+    var seg = Math.round((Date.now()-ultimaAtualizacao)/1000);
+    document.getElementById('tRt').textContent = 'tempo real . ha '+seg+'s';
+  }
+
+  function carregar(){
+    var t = token();
+    if(!t){ mostrarLogin(); return; }
+    var data = document.getElementById('tData').value;
+    var url = API+'/api/logistics/portal/deliveries'+(data?('?data='+encodeURIComponent(data)):'');
+    fetch(url, { headers:{ 'Authorization':'Bearer '+t } })
+      .then(function(r){
+        if(r.status===401){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); throw new Error('401'); }
+        return r.json();
+      })
+      .then(function(j){
+        ultimaAtualizacao = Date.now();
+        atualizarRt();
+        render(j.entregas||[]);
+      })
+      .catch(function(e){ if(String(e.message)!=='401'){ document.getElementById('carregando').textContent='Erro ao carregar. Tentando de novo...'; } });
+  }
+
+  function mostrarApp(){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('tCliente').textContent = clienteNome || 'Minhas entregas';
+    document.getElementById('tSub').textContent = clienteNome ? 'atualizado automaticamente' : '';
+    document.getElementById('tMark').textContent = (clienteNome||'T').trim().charAt(0).toUpperCase() || 'T';
+    var hoje = new Date();
+    document.getElementById('tData').value = hoje.getFullYear()+'-'+('0'+(hoje.getMonth()+1)).slice(-2)+'-'+('0'+hoje.getDate()).slice(-2);
+    carregar();
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(carregar, 30000);
+    if(tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(atualizarRt, 1000);
+  }
+
+  function mostrarLogin(){
+    if(pollTimer) clearInterval(pollTimer);
+    if(tickTimer) clearInterval(tickTimer);
+    document.getElementById('app').style.display='none';
+    document.getElementById('login').style.display='flex';
+  }
+
+  function fazerLogin(){
+    var login = document.getElementById('inLogin').value.trim();
+    var senha = document.getElementById('inSenha').value;
+    var erro = document.getElementById('erroLogin');
+    var btn = document.getElementById('btnLogin');
+    erro.style.display='none';
+    if(!login || !senha){ erro.textContent='Preencha login e senha'; erro.style.display='block'; return; }
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    fetch(API+'/api/logistics/portal/login', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ login:login, senha:senha })
+    })
+    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+    .then(function(res){
+      btn.disabled=false; btn.textContent='Entrar';
+      if(res.ok && res.j.token){
+        localStorage.setItem(TOKEN_KEY, res.j.token);
+        clienteNome = res.j.cliente_nome || '';
+        mostrarApp();
+      } else {
+        erro.textContent = 'Login ou senha invalidos'; erro.style.display='block';
+      }
+    })
+    .catch(function(){ btn.disabled=false; btn.textContent='Entrar'; erro.textContent='Erro de conexao'; erro.style.display='block'; });
+  }
+
+  // API global pros handlers inline
+  window.__portal = {
+    ligar: function(tel){
+      if(isMobile()){ window.location.href='tel:'+tel; }
+      else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } }
+    }
+  };
+
+  document.getElementById('btnLogin').addEventListener('click', fazerLogin);
+  document.getElementById('inSenha').addEventListener('keydown', function(e){ if(e.key==='Enter') fazerLogin(); });
+  document.getElementById('inLogin').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('inSenha').focus(); });
+  document.getElementById('btnSair').addEventListener('click', function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
+  document.getElementById('tData').addEventListener('change', carregar);
+
+  // Boot: se ja tem token, valida indo direto pro app (o /deliveries confirma).
+  if(token()){
+    fetch(API+'/api/logistics/portal/me', { headers:{ 'Authorization':'Bearer '+token() } })
+      .then(function(r){ if(!r.ok) throw new Error('x'); return r.json(); })
+      .then(function(j){ clienteNome = j.cliente_nome || ''; mostrarApp(); })
+      .catch(function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
+  } else {
+    mostrarLogin();
+  }
+})();
+</script>
+</body>
+</html>

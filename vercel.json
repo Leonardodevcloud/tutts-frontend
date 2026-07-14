@@ -5,6 +5,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/r/(.*)", "destination": "/rastreio.html" },
+    { "source": "/loja", "destination": "/painel.html" },
+    { "source": "/loja/(.*)", "destination": "/painel.html" },
     { "source": "/((?!.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.json|.*\\.ico|sw\\.js|manifest\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [

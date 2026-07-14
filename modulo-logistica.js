@@ -3262,6 +3262,11 @@
         package_type: '',
         package_weight: '',
         aviso_entregador: '',
+        // PORTAL_CLIENTE_NOVOFORM: acesso da loja
+        portal_login: '',
+        portal_ativo: false,
+        portal_tem_senha: false,
+        portal_senha: '',
       });
     }
 
@@ -3286,6 +3291,11 @@
         package_type: r.package_type || '',
         package_weight: r.package_weight || '',
         aviso_entregador: r.aviso_entregador || '',
+        // PORTAL_CLIENTE_EDITFORM: acesso da loja (1 login por regra)
+        portal_login: r.portal_login || '',
+        portal_ativo: !!r.portal_ativo,
+        portal_tem_senha: !!r.portal_tem_senha,
+        portal_senha: '',
       });
     }
 
@@ -3317,7 +3327,12 @@
         package_type: editando.package_type || '',
         package_weight: editando.package_weight || '',
         aviso_entregador: (editando.aviso_entregador || '').trim(),
+        // PORTAL_CLIENTE_PAYLOAD: acesso da loja
+        portal_login: (editando.portal_login || '').trim(),
+        portal_ativo: !!editando.portal_ativo,
       };
+      // senha so vai se digitada (vazio = mantem a atual no backend)
+      if ((editando.portal_senha || '').length > 0) payload.portal_senha = editando.portal_senha;
       const metodo = editando.id ? 'PUT' : 'POST';
       const url = editando.id ? `${API_URL}/logistics/dispatch-rules/${editando.id}` : `${API_URL}/logistics/dispatch-rules`;
       try {
@@ -3557,6 +3572,54 @@
                 onClick: () => up('alterar_valor_mapp_ativo', editando.alterar_valor_mapp_ativo === false),
                 className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.alterar_valor_mapp_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.alterar_valor_mapp_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
+            ),
+
+            // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
+            h('div', { className: 'pt-3 border-t' },
+              h('div', { className: 'flex items-center justify-between gap-3 mb-2' },
+                h('div', null,
+                  h('span', { className: 'text-sm font-semibold text-gray-800' }, '🔐 Acesso do cliente ao painel'),
+                  h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                    'A loja ve so as entregas desta regra, em tempo real. Sem chat, editar, cancelar ou valores.')),
+                h('button', {
+                  type: 'button',
+                  onClick: () => up('portal_ativo', !editando.portal_ativo),
+                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.portal_ativo ? 'bg-purple-600' : 'bg-gray-300'}`,
+                }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.portal_ativo ? 'right-0.5' : 'left-0.5'}` })),
+              ),
+              h('div', { className: 'grid grid-cols-2 gap-3' },
+                h('div', null,
+                  h('label', { className: 'block text-xs text-gray-600 mb-1' }, 'Login da loja'),
+                  h('input', {
+                    type: 'text', value: editando.portal_login || '',
+                    onChange: e => up('portal_login', e.target.value.toLowerCase().replace(/\s+/g, '')),
+                    placeholder: 'ex: kampeao', autoComplete: 'off',
+                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  })),
+                h('div', null,
+                  h('label', { className: 'block text-xs text-gray-600 mb-1' },
+                    editando.portal_tem_senha ? 'Senha (vazio = manter)' : 'Senha'),
+                  h('input', {
+                    type: 'text', value: editando.portal_senha || '',
+                    onChange: e => up('portal_senha', e.target.value),
+                    placeholder: editando.portal_tem_senha ? 'senha definida' : 'defina uma senha',
+                    autoComplete: 'new-password',
+                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  })),
+              ),
+              h('div', { className: 'mt-2 flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' },
+                h('span', { className: 'text-[11px] text-purple-700 flex-1 truncate' },
+                  '🔗 ', (typeof window !== 'undefined' ? window.location.origin : ''), '/loja'),
+                h('button', {
+                  type: 'button',
+                  onClick: () => {
+                    const _u = (typeof window !== 'undefined' ? window.location.origin : '') + '/loja';
+                    try { navigator.clipboard.writeText(_u); showToast('Link do painel copiado', 'success'); }
+                    catch (_) { showToast('Nao foi possivel copiar', 'error'); }
+                  },
+                  className: 'text-[11px] px-2 py-1 bg-white border border-purple-200 rounded text-purple-700 hover:bg-purple-100',
+                }, 'Copiar link'),
+              ),
             ),
 
             h('div', { className: 'pt-3 border-t' },
