@@ -13,6 +13,7 @@
 <!-- PORTAL_PAINEL_V8 -->
 <!-- PORTAL_PAINEL_V9 -->
 <!-- PORTAL_PAINEL_V10 -->
+<!-- PORTAL_PAINEL_V11 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -111,6 +112,27 @@
                 padding:6px 14px; font-size:12px; color:#6b7280; box-shadow:0 1px 6px rgba(0,0,0,.12);
                 display:none; pointer-events:none; }
   .chip.off { opacity:.45; text-decoration:line-through; }
+  /* PORTAL_MAPA_V3: painel flutuante com busca. z-index acima dos panes do
+     Leaflet (que vao ate 700 nos controles). */
+  .mapa-pnl { position:absolute; z-index:800; left:52px; top:10px; width:270px;
+              background:rgba(255,255,255,.97); border:1px solid #e5e7eb; border-radius:12px;
+              box-shadow:0 2px 12px rgba(0,0,0,.18); overflow:hidden; }
+  .mapa-pnl-h { display:flex; align-items:center; gap:6px; padding:7px 9px; border-bottom:1px solid #f3f4f6; }
+  .mapa-pnl-h input { flex:1; min-width:0; border:1px solid #e5e7eb; border-radius:7px; padding:5px 8px;
+                      font-size:12px; outline:none; font-family:inherit; }
+  .mapa-pnl-h input:focus { border-color:var(--roxo); }
+  .mapa-pnl-tog { border:0; background:none; cursor:pointer; font-size:13px; color:#9ca3af; padding:2px 4px; }
+  .mapa-pnl-b { max-height:340px; overflow-y:auto; }
+  .mapa-it { display:flex; gap:7px; padding:7px 9px; border-bottom:1px solid #f8f8f8; cursor:pointer; align-items:flex-start; }
+  .mapa-it:hover { background:#faf8ff; }
+  .mapa-it.on { background:#f3f0ff; }
+  .mapa-it-c { width:4px; align-self:stretch; border-radius:2px; flex-shrink:0; }
+  .mapa-it-os { font-size:11.5px; font-weight:700; }
+  .mapa-it-cli { font-size:11px; color:#374151; line-height:1.3; word-break:break-word; }
+  .mapa-it-nf { font-size:10px; font-weight:700; color:#92400e; background:#fef3c7; border-radius:4px; padding:0 5px; display:inline-block; margin-top:2px; }
+  .mapa-it-eta { font-size:10px; color:#6b7280; margin-top:2px; }
+  .mapa-it-st { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .mapa-pnl-v { padding:14px 10px; text-align:center; font-size:11.5px; color:#9ca3af; }
   .mapa-sel { position:absolute; z-index:500; right:10px; top:10px; background:#fff; border:1px solid #ddd6fe;
               border-radius:20px; padding:5px 12px; font-size:11px; font-weight:600; color:var(--roxo);
               box-shadow:0 1px 6px rgba(0,0,0,.12); display:none; cursor:pointer; }
@@ -281,6 +303,13 @@
     <div class="mapa-box">
       <div id="mapa"></div>
       <div class="mapa-aviso" id="mapaAviso"></div>
+      <div class="mapa-pnl" id="mapaPnl">
+        <div class="mapa-pnl-h">
+          <input type="search" id="mapaBusca" placeholder="Buscar OS, NF, cliente..." />
+          <button class="mapa-pnl-tog" id="mapaPnlTog" type="button" title="Recolher">&minus;</button>
+        </div>
+        <div class="mapa-pnl-b" id="mapaPnlB"></div>
+      </div>
       <div class="mapa-sel" id="mapaSel"></div>
     </div>
     <div class="legenda">
@@ -534,7 +563,7 @@
   // mandou e mentira que parece dado.
   // ─────────────────────────────────────────────────────────────
   var mapa=null, camadas=null, mapaDados=[], mapaFiltro={coletar:true, entrega:true};
-  var mapaJaAjustou=false, mapaSel=null;
+  var mapaJaAjustou=false, mapaSel=null, mapaBusca='';
 
   // Cores por corrida. Escolhidas pra serem distinguiveis entre si E contra o
   // mapa OSM (que e bege/verde claro). Fixadas pelo ID: a corrida mantem a
@@ -569,7 +598,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(mapa);
     camadas = L.layerGroup().addTo(mapa);
     // Clicar no vazio limpa o destaque.
-    mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; renderMapa(); } });
+    mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; renderMapa(false); } });
   }
 
   function iconeLoja(){
@@ -630,16 +659,19 @@
 
   function selecionar(id){
     mapaSel = (mapaSel===id) ? null : id; // clicar de novo tira o destaque
-    renderMapa();
+    renderMapa(false); // clicou no marcador: NAO mexe no zoom, ele ja esta olhando ali
   }
 
-  function renderMapa(){
+  // reenquadrar=true: o usuario mexeu no filtro/busca, entao e esperado que
+  // o mapa se ajuste. No poll de 30s vem false — reenquadrar sozinho roubaria
+  // o zoom de quem esta olhando.
+  function renderMapa(reenquadrar){
     if(!mapa) return;
     camadas.clearLayers();
-    var lista = mapaDados.filter(visivel);
+    var lista = mapaDados.filter(visivel).filter(casaBusca);
     var bounds = [];
     var temSel = mapaSel!==null && lista.some(function(e){ return e.id===mapaSel; });
-    if(mapaSel!==null && !temSel) mapaSel=null; // a selecionada saiu do filtro
+    if(mapaSel!==null && !temSel) mapaSel=null; // saiu do filtro/busca
 
     var lojas = {};
     lista.forEach(function(e){
@@ -660,8 +692,9 @@
       // Com algo selecionado, o resto APAGA em vez de sumir: continua dando
       // o contexto de onde estao os outros, sem competir visualmente.
       var apagado = temSel && e.id!==mapaSel;
-      var op  = apagado ? 0.14 : 0.85;
-      var pw  = (mapaSel===e.id) ? 4.5 : 2.5;
+      var op  = apagado ? 0.14 : 0.9;
+      // Tracado real (GPS) mais grosso: e o dado que importa.
+      var pw  = (mapaSel===e.id) ? 6.5 : 4;
 
       if(e.entrega.lat!=null && e.entrega.lng!=null){
         L.marker([e.entrega.lat,e.entrega.lng],{icon:iconeDestino(e,apagado),zIndexOffset:(mapaSel===e.id?900:100)})
@@ -676,8 +709,13 @@
 
       if(e.courier && e.courier.lat!=null && e.courier.lng!=null){
         var pc=[e.courier.lat,e.courier.lng];
+        // "Falta percorrer" em LINHA RETA. Deliberadamente DISCRETA (fina,
+        // apagada): ela nao conhece rua nenhuma — corta rio, viaduto e mao
+        // unica. Serve so pra dizer "o alvo e pra la, mais ou menos tanto".
+        // Desenhar curva de rua aqui exigiria ORS e fingiria uma precisao
+        // que o ETA por haversine nao tem.
         if(alvo && alvo.lat!=null && alvo.lng!=null){
-          L.polyline([pc,[alvo.lat,alvo.lng]],{color:cor,weight:pw-0.7,opacity:op*0.8,dashArray:'2,6'}).addTo(camadas);
+          L.polyline([pc,[alvo.lat,alvo.lng]],{color:cor,weight:1.5,opacity:op*0.45,dashArray:'3,7'}).addTo(camadas);
         }
         L.marker(pc,{icon:iconeMoto(e,apagado),zIndexOffset:(mapaSel===e.id?1200:1000)})
           .addTo(camadas).bindPopup(popupHTML(e))
@@ -699,10 +737,66 @@
       sel.style.display='block';
     } else sel.style.display='none';
 
-    if(!mapaJaAjustou && bounds.length){
-      mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
+    if((reenquadrar || !mapaJaAjustou) && bounds.length){
+      // maxZoom 16: no 15 a cidade inteira cabia e nao dava pra ler rua.
+      mapa.fitBounds(bounds,{padding:[50,50],maxZoom:16});
       mapaJaAjustou=true;
     }
+    renderPainel(lista);
+  }
+
+  // ── Painel flutuante ──────────────────────────────────────
+  function casaBusca(e){
+    if(!mapaBusca) return true;
+    var q = mapaBusca.toLowerCase();
+    return String(e.codigo_os||'').toLowerCase().indexOf(q)>=0
+        || String(e.nota_fiscal||'').toLowerCase().indexOf(q)>=0
+        || String(e.cliente_final||'').toLowerCase().indexOf(q)>=0
+        || String(e.entrega && e.entrega.endereco||'').toLowerCase().indexOf(q)>=0
+        || String(e.courier && e.courier.nome||'').toLowerCase().indexOf(q)>=0;
+  }
+
+  function renderPainel(lista){
+    var b=document.getElementById('mapaPnlB');
+    if(!lista.length){
+      b.innerHTML = '<div class="mapa-pnl-v">'+(mapaBusca?'Nada encontrado.':'Nenhuma corrida nos filtros.')+'</div>';
+      return;
+    }
+    var h='';
+    lista.forEach(function(e){
+      h += '<div class="mapa-it'+(mapaSel===e.id?' on':'')+'" data-id="'+e.id+'">'
+         +   '<div class="mapa-it-c" style="background:'+corDaCorrida(e)+'"></div>'
+         +   '<div style="flex:1;min-width:0">'
+         +     '<div class="mapa-it-os">OS '+esc(e.codigo_os)+'</div>'
+         +     (e.cliente_final ? '<div class="mapa-it-cli">'+esc(e.cliente_final)+'</div>' : '<div class="mapa-it-cli" style="color:#9ca3af">'+esc((e.entrega&&e.entrega.endereco)||'-')+'</div>')
+         +     (e.nota_fiscal ? '<span class="mapa-it-nf">NF '+esc(e.nota_fiscal)+'</span>' : '')
+         +     '<div class="mapa-it-eta">'+(e.courier&&e.courier.nome?esc(e.courier.nome.split(' ')[0])+' &middot; ':'')
+         +       (e.eta_min!=null?'~'+e.eta_min+' min':'sem posicao')+'</div>'
+         +   '</div>'
+         +   '<div class="mapa-it-st" style="background:'+corStatus(e)+'" title="'+(e.coletado?'coletou':'indo coletar')+'"></div>'
+         + '</div>';
+    });
+    b.innerHTML=h;
+    Array.prototype.forEach.call(b.querySelectorAll('.mapa-it'), function(el){
+      el.addEventListener('click', function(){
+        var id=Number(el.getAttribute('data-id'));
+        mapaSel = (mapaSel===id) ? null : id;
+        renderMapa(false);
+        if(mapaSel!==null) focarCorrida(mapaSel);
+      });
+    });
+  }
+
+  // Enquadra so a corrida escolhida (motoboy + alvo), pra ver de perto.
+  function focarCorrida(id){
+    var e = mapaDados.filter(function(x){ return x.id===id; })[0];
+    if(!e) return;
+    var pts=[];
+    if(e.courier && e.courier.lat!=null) pts.push([e.courier.lat,e.courier.lng]);
+    var alvo = e.coletado ? e.entrega : e.coleta;
+    if(alvo && alvo.lat!=null) pts.push([alvo.lat,alvo.lng]);
+    if(e.tracado && e.tracado.length) pts = pts.concat(e.tracado);
+    if(pts.length) mapa.fitBounds(pts,{padding:[70,70],maxZoom:16});
   }
 
   function carregarMapa(){
@@ -715,7 +809,7 @@
         document.getElementById('nEntrega').textContent = j.em_entrega||0;
         document.getElementById('mapaCnt').textContent = (j.total||0)+' em andamento';
         ultimaAtualizacao=Date.now(); atualizarRt();
-        renderMapa();
+        renderMapa(false); // poll: nao rouba o zoom
       })
       .catch(function(e){ if(String(e.message)!=='401') console.warn('mapa:',e.message); });
   }
@@ -739,16 +833,27 @@
 
   document.getElementById('abaLista').addEventListener('click',function(){ trocarAba('lista'); });
   document.getElementById('abaMapa').addEventListener('click',function(){ trocarAba('mapa'); });
-  document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; renderMapa(); });
+  document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; renderMapa(false); });
+  document.getElementById('mapaBusca').addEventListener('input',function(){
+    mapaBusca=this.value.trim();
+    renderMapa(true); // buscou: enquadra no que sobrou
+  });
+  document.getElementById('mapaPnlTog').addEventListener('click',function(){
+    var b=document.getElementById('mapaPnlB');
+    var oculto = b.style.display==='none';
+    b.style.display = oculto?'block':'none';
+    this.innerHTML = oculto?'&minus;':'+';
+    this.title = oculto?'Recolher':'Expandir';
+  });
   document.getElementById('chipColetar').addEventListener('click',function(){
     mapaFiltro.coletar=!mapaFiltro.coletar;
     this.className='chip '+(mapaFiltro.coletar?'on-amb':'off');
-    renderMapa();
+    renderMapa(true);
   });
   document.getElementById('chipEntrega').addEventListener('click',function(){
     mapaFiltro.entrega=!mapaFiltro.entrega;
     this.className='chip '+(mapaFiltro.entrega?'on-vrd':'off');
-    renderMapa();
+    renderMapa(true);
   });
 
   function carregar(){
