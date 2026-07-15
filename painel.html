@@ -16,6 +16,7 @@
 <!-- PORTAL_PAINEL_V11 -->
 <!-- PORTAL_PAINEL_V12 -->
 <!-- PORTAL_PAINEL_V13 -->
+<!-- PORTAL_PAINEL_V14 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -603,11 +604,18 @@
     mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; renderMapa(false); } });
   }
 
+  // PORTAL_MAPA_LOJA_V1: a loja e a ancora do mapa — de onde tudo sai.
+  // Estava em 30px, MENOR que os motoboys (28px + foto colorida chamando
+  // atencao). Ponto fixo tem que ser o mais legivel da tela.
+  // 44px + borda branca de 3.5px + sombra forte pra descolar do OSM.
+  var LOJA_TAM = 44;
   function iconeLoja(){
-    return L.divIcon({ className:'mk-loja', iconSize:[30,30], iconAnchor:[15,15],
-      html:'<div style="width:30px;height:30px;border-radius:50%;background:#7c3aed;border:2.5px solid #fff;'
-         + 'box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;'
-         + 'font-size:15px;line-height:1">\uD83C\uDFEA</div>' });
+    var t = LOJA_TAM;
+    return L.divIcon({ className:'mk-loja', iconSize:[t,t], iconAnchor:[t/2,t/2],
+      html:'<div style="width:'+t+'px;height:'+t+'px;border-radius:50%;background:#7c3aed;'
+         + 'border:3.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);display:flex;'
+         + 'align-items:center;justify-content:center;font-size:'+Math.round(t*0.5)+'px;'
+         + 'line-height:1">\uD83C\uDFEA</div>' });
   }
   // Anel = cor da CORRIDA (identidade) | preenchimento = STATUS (coletou ou nao)
   function iconeMoto(e, apagado){
@@ -687,8 +695,13 @@
     });
     Object.keys(lojas).forEach(function(k){
       var c = lojas[k];
-      L.marker([c.lat,c.lng],{icon:iconeLoja(),zIndexOffset:500}).addTo(camadas)
-        .bindPopup('<div class="pop-t">Loja</div><div class="pop-end">'+esc(c.endereco||'-')+'</div>');
+      // zIndex 1500: acima dos motoboys (1000/1200). Quando o entregador
+      // esta NA loja coletando, os dois marcadores se sobrepoem — e a loja
+      // que tem que ganhar, senao o ponto de coleta some justo na hora em
+      // que ele importa. Como ela e maior, o motoboy ainda aparece em volta.
+      L.marker([c.lat,c.lng],{icon:iconeLoja(),zIndexOffset:1500}).addTo(camadas)
+        .bindPopup('<div class="pop-t">\uD83C\uDFEA Loja - ponto de coleta</div>'
+                 + '<div class="pop-end">'+esc(c.endereco||'-')+'</div>');
       bounds.push([c.lat,c.lng]);
     });
 
