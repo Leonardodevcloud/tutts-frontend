@@ -4166,6 +4166,13 @@
     const [rows, setRows] = useState([]);
     const [totais, setTotais] = useState(null);
     const [loading, setLoading] = useState(true);
+    // RELATORIO_CLIENTE_FRONT_V1
+    // lojasSel = null significa SEM FILTRO (todas). Um Set significa "so estas".
+    // Usar null em vez de "Set com tudo" evita ter que re-sincronizar a selecao
+    // toda vez que o periodo muda e a lista de lojas muda junto.
+    const [lojasSel, setLojasSel] = useState(null);
+    const [lojasAberto, setLojasAberto] = useState(false);
+    const lojasBoxRef = useRef(null);
     const [periodo, setPeriodo] = useState('30d');
     const [provider, setProvider] = useState('');
     const [statusF, setStatusF] = useState('');
@@ -4196,9 +4203,64 @@
 
     useEffect(() => { carregar(); }, [carregar]);
 
+    // RELATORIO_CLIENTE_FRONT_V1: fecha o painel de lojas ao clicar fora.
+    useEffect(() => {
+      if (!lojasAberto) return;
+      const fora = (ev) => {
+        if (lojasBoxRef.current && !lojasBoxRef.current.contains(ev.target)) setLojasAberto(false);
+      };
+      document.addEventListener('mousedown', fora);
+      return () => document.removeEventListener('mousedown', fora);
+    }, [lojasAberto]);
+
+    // Lista de lojas do periodo. Sai das linhas JA carregadas: o filtro e na
+    // tela, entao trocar checkbox nao volta no servidor.
+    const SEM_CLIENTE = '__sem__';
+    const lojasDisponiveis = useMemo(() => {
+      const nomes = Array.from(new Set(rows.map(r => r.cliente_nome).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      if (rows.some(r => !r.cliente_nome)) nomes.push(SEM_CLIENTE);
+      return nomes;
+    }, [rows]);
+
+    const lojaMarcada = (nome) => lojasSel === null || lojasSel.has(nome);
+    const toggleLoja = (nome) => {
+      setLojasSel(prev => {
+        // prev null = tudo marcado; materializa antes de desmarcar um.
+        const base = prev === null ? new Set(lojasDisponiveis) : new Set(prev);
+        if (base.has(nome)) base.delete(nome); else base.add(nome);
+        // voltou a ter tudo -> null (sem filtro), pra nao travar a selecao
+        // quando o periodo mudar e aparecer loja nova.
+        return base.size === lojasDisponiveis.length ? null : base;
+      });
+    };
+
+    // Filtro na tela + totais recalculados a partir do que esta VISIVEL.
+    // Se os totais viessem do backend, eles ignorariam o filtro de loja e
+    // nao bateriam com a tabela.
+    const rowsView = useMemo(() => (
+      lojasSel === null ? rows : rows.filter(r => lojasSel.has(r.cliente_nome || SEM_CLIENTE))
+    ), [rows, lojasSel]);
+
+    const totaisView = useMemo(() => {
+      const t = rowsView.reduce((acc, c) => {
+        acc.corridas += 1;
+        if (c.km != null) acc.km += c.km;
+        if (c.valor != null) acc.valor += c.valor;
+        if (c.valor_mapp != null) acc.mapp += c.valor_mapp;
+        return acc;
+      }, { corridas: 0, km: 0, valor: 0, mapp: 0 });
+      t.km = Math.round(t.km * 100) / 100;
+      t.valor = Math.round(t.valor * 100) / 100;
+      t.mapp = Math.round(t.mapp * 100) / 100;
+      return t;
+    }, [rowsView]);
+
     const baixarCSV = async () => {
       try {
-        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}&formato=csv`);
+        // RELATORIO_CLIENTE_FRONT_V1: o CSV sai igual ao que esta na tela.
+        const qsLojas = lojasSel === null ? '' : '&lojas=' + encodeURIComponent(Array.from(lojasSel).join(','));
+        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}&formato=csv${qsLojas}`);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -4263,23 +4325,52 @@
             h('option', { value: 'Pendente' }, 'Pendente'),
             h('option', { value: 'Devolvido' }, 'Devolvido'),
           ),
+          // RELATORIO_CLIENTE_FRONT_V1: filtro de lojas por checkbox.
+          h('div', { className: 'relative', ref: lojasBoxRef },
+            h('button', {
+              onClick: () => setLojasAberto(v => !v),
+              className: `px-2 py-1.5 border rounded-lg text-xs font-medium ${lojasSel === null ? 'border-gray-200 text-gray-700 bg-white' : 'border-purple-300 text-purple-700 bg-purple-50'}`,
+            }, lojasSel === null ? 'Lojas: todas ▾' : `Lojas: ${lojasSel.size} ▾`),
+            lojasAberto && h('div', { className: 'absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-72 overflow-y-auto' },
+              h('div', { className: 'flex items-center justify-between pb-1.5 mb-1 border-b border-gray-100' },
+                h('button', { onClick: () => setLojasSel(null), className: 'text-[11px] font-semibold text-purple-600 hover:underline' }, 'Todas'),
+                h('button', { onClick: () => setLojasSel(new Set()), className: 'text-[11px] font-semibold text-gray-400 hover:underline' }, 'Nenhuma'),
+              ),
+              lojasDisponiveis.length === 0
+                ? h('div', { className: 'text-[11px] text-gray-400 py-2 text-center' }, 'Nenhuma loja no periodo')
+                : lojasDisponiveis.map(nome => h('label', {
+                    key: nome,
+                    className: 'flex items-center gap-2 px-1 py-1 rounded hover:bg-gray-50 cursor-pointer',
+                  },
+                    h('input', { type: 'checkbox', checked: lojaMarcada(nome), onChange: () => toggleLoja(nome), className: 'w-3.5 h-3.5 accent-purple-600' }),
+                    h('span', { className: `text-[11px] truncate ${nome === SEM_CLIENTE ? 'text-gray-400 italic' : 'text-gray-700'}` },
+                      nome === SEM_CLIENTE ? 'Sem cliente' : nome),
+                  )),
+            ),
+          ),
           h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳'),
           h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, '⬇ CSV'),
         ),
       ),
 
-      totais && h('div', { className: 'grid grid-cols-3 gap-3' },
+      // RELATORIO_CLIENTE_FRONT_V1: totais de totaisView (o que esta na tela,
+      // ja filtrado por loja) e nao os do backend, que ignoram esse filtro.
+      totais && h('div', { className: 'grid grid-cols-4 gap-3' },
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
           h('div', { className: 'text-[11px] text-gray-400' }, 'Corridas'),
-          h('div', { className: 'text-2xl font-bold text-gray-800' }, totais.corridas),
+          h('div', { className: 'text-2xl font-bold text-gray-800' }, totaisView.corridas),
         ),
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
           h('div', { className: 'text-[11px] text-gray-400' }, 'KM total'),
-          h('div', { className: 'text-2xl font-bold text-gray-800' }, km(totais.km)),
+          h('div', { className: 'text-2xl font-bold text-gray-800' }, km(totaisView.km)),
         ),
         h('div', { className: 'bg-purple-50 rounded-xl border border-purple-200 p-3' },
           h('div', { className: 'text-[11px] text-purple-500' }, 'Valor total'),
-          h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totais.valor)),
+          h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totaisView.valor)),
+        ),
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('div', { className: 'text-[11px] text-gray-400' }, 'Valor Mapp'),
+          h('div', { className: 'text-2xl font-bold text-gray-500' }, 'R$ ' + brl(totaisView.mapp)),
         ),
       ),
 
@@ -4291,22 +4382,32 @@
               h('table', { className: 'w-full text-xs' },
                 h('thead', null,
                   h('tr', { className: 'bg-gray-50 text-left text-gray-500' },
-                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor'].map((c, idx) =>
+                    // RELATORIO_CLIENTE_FRONT_V1: + coluna Valor Mapp
+                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor', 'Valor Mapp'].map((c, idx) =>
                       h('th', { key: c, className: `px-3 py-2 font-semibold ${idx >= 5 ? 'text-right' : ''}` }, c)),
                   ),
                 ),
                 h('tbody', null,
-                  rows.length === 0
-                    ? h('tr', null, h('td', { colSpan: 7, className: 'px-3 py-8 text-center text-gray-400' }, 'Nenhuma corrida no período'))
-                    : rows.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
+                  // RELATORIO_CLIENTE_FRONT_V1: rowsView (filtrado por loja na tela)
+                  rowsView.length === 0
+                    ? h('tr', null, h('td', { colSpan: 8, className: 'px-3 py-8 text-center text-gray-400' }, 'Nenhuma corrida no período'))
+                    : rowsView.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
                         h('td', { className: 'px-3 py-2 font-semibold text-gray-700' }, r.os),
-                        h('td', { className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate' }, r.cliente_nome || '—'),
+                        // RELATORIO_CLIENTE_FRONT_V1: title mostra de onde veio o nome
+                        // (regra gravada / match por endereco / solicitacao) - ajuda
+                        // a conferir quando um nome parecer estranho.
+                        h('td', {
+                          className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
+                          title: r.cliente_nome ? (r.cliente_nome + (r.cliente_origem ? ' (' + r.cliente_origem + ')' : '')) : '',
+                        }, r.cliente_nome || '—'),
                         h('td', { className: 'px-3 py-2 min-w-[200px]' }, trajeto(r)),
                         h('td', { className: 'px-3 py-2' },
                           h('span', { className: 'inline-flex items-center gap-1.5' }, iconeCanal(r.canal), r.motoboy || '—')),
                         h('td', { className: 'px-3 py-2' }, statusBadge(r.status)),
                         h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' }, km(r.km)),
                         h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap' }, brl(r.valor)),
+                        // RELATORIO_CLIENTE_FRONT_V1: valor original da Mapp, ao lado.
+                        h('td', { className: 'px-3 py-2 text-right text-gray-500 whitespace-nowrap' }, brl(r.valor_mapp)),
                       )),
                 ),
               ),
