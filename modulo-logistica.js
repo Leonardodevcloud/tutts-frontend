@@ -4248,13 +4248,46 @@
         if (c.km != null) acc.km += c.km;
         if (c.valor != null) acc.valor += c.valor;
         if (c.valor_mapp != null) acc.mapp += c.valor_mapp;
+        // RELATORIO_MODAIS_FRONT_V1 — soma COMPARAVEL, separada.
+        // A diferenca entre os modais so faz sentido nas corridas com as DUAS
+        // pontas preenchidas. Corrida com Mapp = 0 (o snapshot pego antes do
+        // operador lancar o valor) puxaria o total da Mapp pra baixo e
+        // inflaria a diferenca de mentira.
+        if (c.valor != null && c.valor_mapp != null && c.valor_mapp > 0) {
+          acc.cmpHub += c.valor;
+          acc.cmpMapp += c.valor_mapp;
+          acc.cmpN += 1;
+        }
         return acc;
-      }, { corridas: 0, km: 0, valor: 0, mapp: 0 });
+      }, { corridas: 0, km: 0, valor: 0, mapp: 0, cmpHub: 0, cmpMapp: 0, cmpN: 0 });
       t.km = Math.round(t.km * 100) / 100;
       t.valor = Math.round(t.valor * 100) / 100;
       t.mapp = Math.round(t.mapp * 100) / 100;
+      t.cmpHub = Math.round(t.cmpHub * 100) / 100;
+      t.cmpMapp = Math.round(t.cmpMapp * 100) / 100;
+      // quantas corridas com valor de Hub ficaram FORA da comparacao
+      t.cmpFora = rowsView.filter(c => c.valor != null).length - t.cmpN;
       return t;
     }, [rowsView]);
+
+    // RELATORIO_MODAIS_FRONT_V1 — a diferenca.
+    // A BASE do % importa: com Hub 1.334 e Mapp 898, "48,5% mais caro" (base
+    // Mapp) e "32,7% mais barato" (base Hub) descrevem a MESMA diferenca. O
+    // card escreve a base pra ninguem ler errado.
+    const difModais = useMemo(() => {
+      const { cmpHub, cmpMapp, cmpN, cmpFora } = totaisView;
+      if (!cmpN || cmpMapp <= 0) return null;
+      const abs = Math.round((cmpHub - cmpMapp) * 100) / 100;
+      const pct = (abs / cmpMapp) * 100;
+      return {
+        abs,
+        pct: Math.round(Math.abs(pct) * 10) / 10,
+        hubMaisCaro: abs > 0,
+        iguais: Math.abs(abs) < 0.005,
+        n: cmpN,
+        fora: cmpFora,
+      };
+    }, [totaisView]);
 
     const baixarCSV = async () => {
       try {
@@ -4355,7 +4388,8 @@
 
       // RELATORIO_CLIENTE_FRONT_V1: totais de totaisView (o que esta na tela,
       // ja filtrado por loja) e nao os do backend, que ignoram esse filtro.
-      totais && h('div', { className: 'grid grid-cols-4 gap-3' },
+      // RELATORIO_MODAIS_FRONT_V1: 4 -> 5 cards
+      totais && h('div', { className: 'grid grid-cols-5 gap-3' },
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
           h('div', { className: 'text-[11px] text-gray-400' }, 'Corridas'),
           h('div', { className: 'text-2xl font-bold text-gray-800' }, totaisView.corridas),
@@ -4364,13 +4398,39 @@
           h('div', { className: 'text-[11px] text-gray-400' }, 'KM total'),
           h('div', { className: 'text-2xl font-bold text-gray-800' }, km(totaisView.km)),
         ),
+        // RELATORIO_MODAIS_FRONT_V1: "Valor total" -> "Valor do Hub".
+        // Depois que entrou a coluna da Mapp, "total" ficou ambiguo: os dois
+        // sao totais. Este e o que sai da tabela de preco da regra.
         h('div', { className: 'bg-purple-50 rounded-xl border border-purple-200 p-3' },
-          h('div', { className: 'text-[11px] text-purple-500' }, 'Valor total'),
+          h('div', { className: 'text-[11px] text-purple-500' }, 'Valor do Hub'),
           h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totaisView.valor)),
         ),
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
           h('div', { className: 'text-[11px] text-gray-400' }, 'Valor Mapp'),
           h('div', { className: 'text-2xl font-bold text-gray-500' }, 'R$ ' + brl(totaisView.mapp)),
+        ),
+        // RELATORIO_MODAIS_FRONT_V1: diferenca entre os modais.
+        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+          h('div', { className: 'text-[11px] text-gray-400' }, 'Diferença entre os modais'),
+          !difModais
+            ? h('div', { className: 'text-2xl font-bold text-gray-300' }, '—')
+            : difModais.iguais
+              ? h('div', { className: 'text-2xl font-bold text-gray-500' }, 'R$ 0,00')
+              : h('div', {
+                  className: `text-2xl font-bold ${difModais.hubMaisCaro ? 'text-emerald-600' : 'text-rose-600'}`,
+                }, (difModais.hubMaisCaro ? '+' : '−') + ' R$ ' + brl(Math.abs(difModais.abs))),
+          !difModais
+            ? h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'sem corrida comparável')
+            : h('div', { className: 'text-[10px] text-gray-500 mt-0.5' },
+                difModais.iguais
+                  ? 'Hub e Mapp no mesmo valor'
+                  : `Hub ${brl(difModais.pct)}% mais ${difModais.hubMaisCaro ? 'caro' : 'barato'} que a Mapp`),
+          // Base e amostra explicitas: sem isso o numero engana. O % e sempre
+          // sobre a Mapp, e so entram corridas com os dois valores.
+          difModais && h('div', {
+            className: 'text-[9px] text-gray-400 mt-0.5',
+            title: 'Só entram corridas com valor de Hub E de Mapp (> 0). Corrida com Mapp zerado ficaria de fora, senão inflaria a diferença.',
+          }, `${difModais.n} corrida${difModais.n === 1 ? '' : 's'}` + (difModais.fora > 0 ? ` · ${difModais.fora} fora (sem Mapp)` : '')),
         ),
       ),
 
