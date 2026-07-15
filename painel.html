@@ -14,6 +14,7 @@
 <!-- PORTAL_PAINEL_V9 -->
 <!-- PORTAL_PAINEL_V10 -->
 <!-- PORTAL_PAINEL_V11 -->
+<!-- PORTAL_PAINEL_V12 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -318,7 +319,7 @@
       <span><i style="background:#fff;border:3px solid #9ca3af;width:11px;height:11px"></i>Anel do motoboy = cor da corrida</span>
       <span><i style="background:#f59e0b"></i>Indo coletar</span>
       <span><i style="background:#10b981"></i>Coletou</span>
-      <span style="color:#9ca3af">Tracejado = percorrido &middot; pontilhado = falta (linha reta)</span>
+      <span style="color:#9ca3af">Tracejado = liga a coleta a entrega (linha reta, nao e a rota)</span>
       <span style="color:#9ca3af">Clique num motoboy ou destino pra destacar a corrida</span>
     </div>
   </div>
@@ -703,20 +704,26 @@
         bounds.push([e.entrega.lat,e.entrega.lng]);
       }
 
-      if(e.tracado && e.tracado.length>1){
-        L.polyline(e.tracado,{color:cor,weight:pw,opacity:op,dashArray:'5,4'}).addTo(camadas);
+      // PORTAL_MAPA_V4: UMA linha por corrida, COLETA -> ENTREGA.
+      //
+      // Saiu daqui:
+      //   - o breadcrumb do GPS (e.tracado): com 5+ corridas virava
+      //     espaguete e escondia o que importa;
+      //   - a linha motoboy -> alvo: era ela que atravessava o Potengi
+      //     a nado.
+      //
+      // Esta linha e RETA e tracejada de proposito: ela diz "esta corrida
+      // vai de A pra B", nao "o motoboy dirige por aqui". Tracejado sinaliza
+      // ligacao logica; se fosse solida, seria lida como rota.
+      //
+      // A posicao do motoboy segue igual: marcador em tempo real por cima.
+      if(e.coleta.lat!=null && e.coleta.lng!=null && e.entrega.lat!=null && e.entrega.lng!=null){
+        L.polyline([[e.coleta.lat,e.coleta.lng],[e.entrega.lat,e.entrega.lng]],
+          {color:cor,weight:pw,opacity:op,dashArray:'6,5'}).addTo(camadas);
       }
 
       if(e.courier && e.courier.lat!=null && e.courier.lng!=null){
         var pc=[e.courier.lat,e.courier.lng];
-        // "Falta percorrer" em LINHA RETA. Deliberadamente DISCRETA (fina,
-        // apagada): ela nao conhece rua nenhuma — corta rio, viaduto e mao
-        // unica. Serve so pra dizer "o alvo e pra la, mais ou menos tanto".
-        // Desenhar curva de rua aqui exigiria ORS e fingiria uma precisao
-        // que o ETA por haversine nao tem.
-        if(alvo && alvo.lat!=null && alvo.lng!=null){
-          L.polyline([pc,[alvo.lat,alvo.lng]],{color:cor,weight:1.5,opacity:op*0.45,dashArray:'3,7'}).addTo(camadas);
-        }
         L.marker(pc,{icon:iconeMoto(e,apagado),zIndexOffset:(mapaSel===e.id?1200:1000)})
           .addTo(camadas).bindPopup(popupHTML(e))
           .on('click', function(){ selecionar(e.id); });
@@ -791,11 +798,11 @@
   function focarCorrida(id){
     var e = mapaDados.filter(function(x){ return x.id===id; })[0];
     if(!e) return;
+    // Enquadra a corrida inteira: coleta, entrega e o motoboy.
     var pts=[];
+    if(e.coleta.lat!=null)  pts.push([e.coleta.lat,e.coleta.lng]);
+    if(e.entrega.lat!=null) pts.push([e.entrega.lat,e.entrega.lng]);
     if(e.courier && e.courier.lat!=null) pts.push([e.courier.lat,e.courier.lng]);
-    var alvo = e.coletado ? e.entrega : e.coleta;
-    if(alvo && alvo.lat!=null) pts.push([alvo.lat,alvo.lng]);
-    if(e.tracado && e.tracado.length) pts = pts.concat(e.tracado);
     if(pts.length) mapa.fitBounds(pts,{padding:[70,70],maxZoom:16});
   }
 
