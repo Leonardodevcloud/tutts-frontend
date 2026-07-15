@@ -7,6 +7,7 @@
 <!-- PORTAL_PAINEL_V2 -->
 <!-- PORTAL_PAINEL_V3 -->
 <!-- PORTAL_PAINEL_V4 -->
+<!-- PORTAL_PAINEL_V5 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -81,7 +82,9 @@
   .rt .dot { width:7px;height:7px;border-radius:50%;background:#10b981; }
   .topo input[type=date]{ font-size:12px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; }
   .topo .sair { border:1px solid #d1d5db; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; color:#374151; }
-  .board { display:flex; gap:14px; overflow-x:auto; padding:16px; align-items:flex-start; }
+  .board { display:flex; gap:14px; overflow-x:auto; padding:16px; align-items:flex-start;
+           cursor:grab; user-select:none; -webkit-user-select:none; }
+  .board.arrastando { cursor:grabbing; }
   .col { flex:0 0 300px; }
   .col-h { display:flex; align-items:center; gap:8px; padding:0 2px 10px; }
   .col-h .cdot { width:8px;height:8px;border-radius:50%; }
@@ -438,6 +441,27 @@
   document.getElementById('btnSair').addEventListener('click', function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
   document.getElementById('tData').addEventListener('change', carregar);
   document.getElementById('tBusca').addEventListener('input', function(){ render(null); });
+
+  // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
+  // Mesma logica do painel admin: mousedown no board, move/up na window (pra
+  // nao perder o arrasto se o ponteiro sair do quadro).
+  (function(){
+    var el = document.getElementById('board');
+    if (!el) return;
+    var down = false, startX = 0, startScroll = 0;
+    el.addEventListener('mousedown', function(ev){
+      if (ev.button !== 0) return;
+      if (ev.target.closest('button, a, input, textarea, select')) return; // nao atrapalha os botoes
+      down = true; startX = ev.pageX; startScroll = el.scrollLeft;
+      el.classList.add('arrastando');
+    });
+    window.addEventListener('mousemove', function(ev){
+      if (down) el.scrollLeft = startScroll - (ev.pageX - startX);
+    });
+    window.addEventListener('mouseup', function(){
+      down = false; el.classList.remove('arrastando');
+    });
+  })();
 
   if(token()){
     fetch(API+'/api/logistics/portal/me',{ headers:{ 'Authorization':'Bearer '+token() } })
