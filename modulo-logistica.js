@@ -745,7 +745,17 @@
   // cancelamento (re-despacho). Corrida despachada de primeira nao mostra.
   // Dados vem do batch GET /logistics/deliveries/tentativas.
   // ════════════════════════════════════════════════════════
+  // TRILHA_COMPACTA_ADMIN_V1
+  // Trilhas de re-despacho ficam enormes (ja vi 9+ passos). Fechada mostra so
+  // os MAX_TRILHA mais RECENTES — a trilha e cronologica (antigo em cima),
+  // entao cortar pelo fim esconderia justo o "atual". O botao de expandir vai
+  // no TOPO, revelando os passos antigos.
+  const MAX_TRILHA = 4;
+
   function TentativasDespacho({ dados }) {
+    // Hook ANTES de qualquer early return (regras dos hooks). O estado
+    // sobrevive ao refresh de 30s porque o CardKanban tem key: e.id estavel.
+    const [trilhaAberta, setTrilhaAberta] = useState(false);
     if (!dados || !Array.isArray(dados.eventos)) return null;
     const evs = dados.eventos;
     const temCancelamento = evs.some(x => x.tipo === 'canceled');
@@ -762,12 +772,24 @@
     const idxAtual = houveTerminalDepois ? -1 : idxUltimoSucesso;
     const totalTent = dados.total_tentativas || evs.filter(x => String(x.tipo).indexOf('dispatch') === 0).length;
 
+    // Fatia visivel: fechada, so os MAX_TRILHA ultimos.
+    const ocultos = (!trilhaAberta && evs.length > MAX_TRILHA) ? (evs.length - MAX_TRILHA) : 0;
+    const inicio = ocultos;
+    const podeExpandir = evs.length > MAX_TRILHA;
+
     let contDisp = 0;
     return h('div', { className: 'pt-3 border-t border-gray-100' },
       h('div', { className: 'flex items-center gap-2 mb-3' },
         h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, '🔁 Tentativas de despacho'),
         h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent))
       ),
+      // Botao no topo: o que esta escondido sao os passos ANTIGOS.
+      podeExpandir && h('button', {
+        onClick: () => setTrilhaAberta(v => !v),
+        className: 'w-full flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-dashed border-purple-200 rounded-lg py-1.5 mb-2.5 hover:bg-purple-100',
+      }, trilhaAberta
+        ? '▴ ocultar anteriores'
+        : `▾ ver ${ocultos} ${ocultos === 1 ? 'anterior' : 'anteriores'}`),
       h('div', { className: 'pl-1' },
         evs.map((ev, i) => {
           const hora = _fmtHora(_tsValido(ev.hora));
@@ -801,6 +823,10 @@
             titulo = 'Rejeitado';
             detalhe = ev.motivo || ev.erro || null; detClsExtra = 'text-gray-600 bg-gray-100';
           }
+
+          // Fora da fatia visivel: ja contamos o contDisp acima (pra numerar
+          // Despachado x Re-despachado certo), agora so nao desenhamos.
+          if (i < inicio) return null;
 
           const ehAtual = (i === idxAtual);
           return h('div', { key: i, className: 'flex gap-3' },
