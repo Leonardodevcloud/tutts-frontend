@@ -8,6 +8,7 @@
 <!-- PORTAL_PAINEL_V3 -->
 <!-- PORTAL_PAINEL_V4 -->
 <!-- PORTAL_PAINEL_V5 -->
+<!-- PORTAL_PAINEL_V6 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -92,9 +93,11 @@
   .col-h .ccnt { margin-left:auto; font-size:11px; font-weight:700; color:#fff; border-radius:20px; padding:1px 8px; min-width:20px; text-align:center; }
   .col-body { display:flex; flex-direction:column; gap:10px; }
   .vazio { font-size:11px; color:#d1d5db; text-align:center; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; }
-  .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+  /* Card comum: borda lilas definida (2px), sem faixa no topo. Mesmo peso
+     visual do frequente — quem diferencia os dois e a cor + a faixa. */
+  .card { background:#fff; border:2px solid #ddd6fe; border-radius:12px; overflow:hidden; }
   .card.freq { border:2px solid #fcd34d; }
-  .card.extr { border:1px solid #f9a8d4; }
+  .card.extr { border:2px solid #f9a8d4; }
   .faixa { display:flex; align-items:center; gap:6px; padding:4px 10px; font-size:11px; font-weight:700; }
   .faixa-freq { background:#fef3c7; color:#b45309; }
   .faixa-extr { background:#fce7f3; color:#be185d; }
@@ -141,6 +144,9 @@
   .tl-det { display:inline-block; font-size:10.5px; border-radius:6px; padding:1px 7px; margin-top:3px; }
   .tl-hora { font-size:10px; color:#9ca3af; margin-top:2px; }
   .tl-atual { font-size:9px; font-weight:700; color:#047857; background:#ecfdf5; border-radius:20px; padding:1px 7px; margin-left:6px; }
+  .tl-mais { width:100%; display:flex; align-items:center; justify-content:center; gap:5px; font-size:10.5px; font-weight:600;
+             color:var(--roxo); background:#f5f3ff; border:1px dashed #ddd6fe; border-radius:8px; padding:5px; margin-bottom:9px; cursor:pointer; }
+  .tl-mais:hover { background:#ede9fe; }
   #carregando { text-align:center; padding:40px; color:#9ca3af; font-size:13px; }
 </style>
 </head>
@@ -267,6 +273,13 @@
   function iniciais(nome){ var p=String(nome||'').trim().split(/\s+/); return ((p[0]||'')[0]||'')+((p[1]||'')[0]||''); }
   function fmtHora(iso){ if(!iso) return ''; try{var d=new Date(iso);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}catch(e){return '';} }
 
+  // Quantos passos mostrar com a trilha fechada. A trilha e cronologica
+  // (mais antigo em cima), entao mantemos os N MAIS RECENTES visiveis — e o
+  // "atual" fica sempre a vista. O botao de expandir vai no TOPO, revelando
+  // os anteriores.
+  var MAX_TRILHA = 4;
+  var trilhaAberta = {}; // { [os]: true } — sobrevive ao refresh de 30s
+
   function trilhaHTML(os){
     var d = tentativasMap[os];
     if (!d || !d.eventos || !d.eventos.length) return '';
@@ -277,6 +290,23 @@
     var terminalDepois=false; for (var j=0;j<evs.length;j++){ if(j>idxUltSucesso && (evs[j].tipo==='canceled'||evs[j].tipo==='error'||evs[j].tipo==='dispatch_failed')){terminalDepois=true;break;} }
     var idxAtual = terminalDepois ? -1 : idxUltSucesso;
     var totalTent = d.total_tentativas || 0;
+
+    // Fatia visivel: fechada mostra so os MAX_TRILHA ultimos.
+    var aberta = trilhaAberta[os] === true;
+    var ocultos = (!aberta && evs.length > MAX_TRILHA) ? (evs.length - MAX_TRILHA) : 0;
+    var inicio = ocultos > 0 ? ocultos : 0;
+
+    var btnMais = '';
+    if (ocultos > 0) {
+      btnMais = '<button class="tl-mais" onclick="__portal.toggleTrilha(\'' + esc(os) + '\')">'
+              + '\u25BE ver ' + ocultos + (ocultos === 1 ? ' anterior' : ' anteriores') + '</button>';
+    } else if (aberta && evs.length > MAX_TRILHA) {
+      btnMais = '<button class="tl-mais" onclick="__portal.toggleTrilha(\'' + esc(os) + '\')">'
+              + '\u25B4 ocultar anteriores</button>';
+    }
+
+    // contDisp precisa contar desde o INICIO real pra numerar
+    // "Despachado" x "Re-despachado" certo mesmo com a trilha fechada.
     var contDisp=0, linhas='';
     for (var q=0;q<evs.length;q++){
       var ev=evs[q]; var ehUltimo=(q===evs.length-1);
@@ -285,6 +315,8 @@
       else if (ev.tipo==='canceled'){ var sis=ev.cancelado_por==='sistema-bloqueio'; dot='#ef4444'; tit=sis?'Cancelado pelo sistema':'Cancelado'; det=sis?('Entregador bloqueado'+(ev.courier?' - '+ev.courier:'')):(ev.motivo||null); detBg='#fef2f2'; detFg='#b91c1c'; }
       else if (ev.tipo==='dispatch_failed' || ev.tipo==='error'){ dot='#f59e0b'; tit='Falha no despacho'; var et=String(ev.erro||ev.motivo||''); det=/external_id/i.test(et)?'external_id duplicado - provedor recusou recriar':(et?et.slice(0,110):'erro ao criar no provedor'); detBg='#fffbeb'; detFg='#b45309'; }
       else { dot='#9ca3af'; tit='Rejeitado'; det=ev.motivo||ev.erro||null; detBg='#f3f4f6'; detFg='#4b5563'; }
+      // Fora da fatia visivel: conta (pro Despachado/Re-despachado) mas nao desenha.
+      if (q < inicio) continue;
       var atual=(q===idxAtual)?'<span class="tl-atual">atual</span>':'';
       var detHTML= det?('<div class="tl-det" style="background:'+detBg+';color:'+detFg+'">'+esc(det)+'</div>'):'';
       var line= ehUltimo?'':'<span class="tl-line"></span>';
@@ -293,7 +325,7 @@
         + '<div class="tl-body"><div class="tl-tit">'+esc(tit)+atual+'</div>'+detHTML+'<div class="tl-hora">'+esc(fmtHora(ev.hora))+'</div></div>'
         + '</div>';
     }
-    return '<div class="trilha"><div class="trilha-h"><span class="tt">Tentativas de despacho</span><span class="cnt">'+totalTent+'</span></div>'+linhas+'</div>';
+    return '<div class="trilha"><div class="trilha-h"><span class="tt">Tentativas de despacho</span><span class="cnt">'+totalTent+'</span></div>'+btnMais+linhas+'</div>';
   }
 
   // Cliente final + NF (ja tratados no backend). Clientes so-NF vem sem nome.
@@ -433,7 +465,9 @@
       .catch(function(){ btn.disabled=false; btxt.textContent='Entrar'; erro.textContent='Erro de conexao'; erro.style.display='block'; });
   }
 
-  window.__portal={ ligar:function(tel){ if(isMobile()){ window.location.href='tel:'+tel; } else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } } } };
+  window.__portal={
+    toggleTrilha:function(os){ trilhaAberta[os] = !trilhaAberta[os]; render(null); },
+    ligar:function(tel){ if(isMobile()){ window.location.href='tel:'+tel; } else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } } } };
 
   document.getElementById('btnLogin').addEventListener('click', fazerLogin);
   document.getElementById('inSenha').addEventListener('keydown', function(e){ if(e.key==='Enter') fazerLogin(); });
