@@ -1420,7 +1420,10 @@
   }
 
   // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
-  function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast }) {
+  // EXTRAVIADOS_KSIG_V2: marcador UNICO deste patch. A v1 usava um texto que o
+  // patch do CardKanban ja gravava, entao este aqui pulava como 'ja aplicado'
+  // e o KanbanEntregas ficava sem onExtraviar -> ReferenceError.
+  function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
     useEffect(() => {
