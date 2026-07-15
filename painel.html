@@ -17,6 +17,7 @@
 <!-- PORTAL_PAINEL_V12 -->
 <!-- PORTAL_PAINEL_V13 -->
 <!-- PORTAL_PAINEL_V14 -->
+<!-- PORTAL_PAINEL_V15 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -567,6 +568,18 @@
   // ─────────────────────────────────────────────────────────────
   var mapa=null, camadas=null, mapaDados=[], mapaFiltro={coletar:true, entrega:true};
   var mapaJaAjustou=false, mapaSel=null, mapaBusca='';
+  // PORTAL_MAPA_POPUP_V1
+  // Referencia dos marcadores por id, e qual popup deve estar aberto.
+  //
+  // O BUG: o handler de click chamava selecionar() -> renderMapa() ->
+  // camadas.clearLayers(). O marcador era DESTRUIDO antes do Leaflet
+  // conseguir abrir o popup dele. Ou seja: eu trocava o marcador debaixo
+  // do proprio clique.
+  //
+  // Guardar { id: {moto, dest} } e reabrir o popup DEPOIS do render
+  // resolve — e de quebra faz o popup sobreviver ao refresh de 30s, que
+  // antes tambem o fechava.
+  var mapaMk={}, mapaPopup=null;
 
   // Cores por corrida. Escolhidas pra serem distinguiveis entre si E contra o
   // mapa OSM (que e bege/verde claro). Fixadas pelo ID: a corrida mantem a
@@ -601,7 +614,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(mapa);
     camadas = L.layerGroup().addTo(mapa);
     // Clicar no vazio limpa o destaque.
-    mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; renderMapa(false); } });
+    mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; mapaPopup=null; renderMapa(false); } });
   }
 
   // PORTAL_MAPA_LOJA_V1: a loja e a ancora do mapa — de onde tudo sai.
@@ -671,8 +684,12 @@
 
   function visivel(e){ return e.coletado ? mapaFiltro.entrega : mapaFiltro.coletar; }
 
-  function selecionar(id){
-    mapaSel = (mapaSel===id) ? null : id; // clicar de novo tira o destaque
+  function selecionar(id, tipo){
+    if(mapaSel===id){            // clicar de novo tira o destaque e fecha
+      mapaSel=null; mapaPopup=null;
+    } else {
+      mapaSel=id; mapaPopup={ id:id, tipo:tipo||'moto' };
+    }
     renderMapa(false); // clicou no marcador: NAO mexe no zoom, ele ja esta olhando ali
   }
 
@@ -682,10 +699,11 @@
   function renderMapa(reenquadrar){
     if(!mapa) return;
     camadas.clearLayers();
+    mapaMk={}; // clearLayers invalidou tudo; as referencias sao remontadas abaixo
     var lista = mapaDados.filter(visivel).filter(casaBusca);
     var bounds = [];
     var temSel = mapaSel!==null && lista.some(function(e){ return e.id===mapaSel; });
-    if(mapaSel!==null && !temSel) mapaSel=null; // saiu do filtro/busca
+    if(mapaSel!==null && !temSel){ mapaSel=null; mapaPopup=null; } // saiu do filtro/busca
 
     var lojas = {};
     lista.forEach(function(e){
@@ -716,9 +734,11 @@
       var pw  = (mapaSel===e.id) ? 6.5 : 4;
 
       if(e.entrega.lat!=null && e.entrega.lng!=null){
-        L.marker([e.entrega.lat,e.entrega.lng],{icon:iconeDestino(e,apagado),zIndexOffset:(mapaSel===e.id?900:100)})
+        var mkD = L.marker([e.entrega.lat,e.entrega.lng],{icon:iconeDestino(e,apagado),zIndexOffset:(mapaSel===e.id?900:100)})
           .addTo(camadas).bindPopup(popupHTML(e))
-          .on('click', function(){ selecionar(e.id); });
+          .on('click', function(){ selecionar(e.id,'dest'); });
+        if(!mapaMk[e.id]) mapaMk[e.id]={};
+        mapaMk[e.id].dest = mkD;
         bounds.push([e.entrega.lat,e.entrega.lng]);
       }
 
@@ -741,9 +761,11 @@
 
       if(e.courier && e.courier.lat!=null && e.courier.lng!=null){
         var pc=[e.courier.lat,e.courier.lng];
-        L.marker(pc,{icon:iconeMoto(e,apagado),zIndexOffset:(mapaSel===e.id?1200:1000)})
+        var mkM = L.marker(pc,{icon:iconeMoto(e,apagado),zIndexOffset:(mapaSel===e.id?1200:1000)})
           .addTo(camadas).bindPopup(popupHTML(e))
-          .on('click', function(){ selecionar(e.id); });
+          .on('click', function(){ selecionar(e.id,'moto'); });
+        if(!mapaMk[e.id]) mapaMk[e.id]={};
+        mapaMk[e.id].moto = mkM;
         bounds.push(pc);
       }
     });
@@ -760,6 +782,15 @@
       sel.textContent='OS '+alvoSel.codigo_os+' em destaque - clique pra limpar';
       sel.style.display='block';
     } else sel.style.display='none';
+
+    // Reabre o popup DEPOIS de todos os marcadores existirem. Cobre os dois
+    // casos: o clique (que acabou de recriar tudo) e o refresh de 30s.
+    if(mapaPopup){
+      var ref = mapaMk[mapaPopup.id];
+      var alvoMk = ref && (ref[mapaPopup.tipo] || ref.moto || ref.dest);
+      if(alvoMk){ try{ alvoMk.openPopup(); }catch(_){} }
+      else { mapaPopup=null; } // saiu do filtro/busca
+    }
 
     if((reenquadrar || !mapaJaAjustou) && bounds.length){
       // maxZoom 16: no 15 a cidade inteira cabia e nao dava pra ler rua.
@@ -804,7 +835,8 @@
     Array.prototype.forEach.call(b.querySelectorAll('.mapa-it'), function(el){
       el.addEventListener('click', function(){
         var id=Number(el.getAttribute('data-id'));
-        mapaSel = (mapaSel===id) ? null : id;
+        if(mapaSel===id){ mapaSel=null; mapaPopup=null; }
+        else { mapaSel=id; mapaPopup={ id:id, tipo:'moto' }; }
         renderMapa(false);
         if(mapaSel!==null) focarCorrida(mapaSel);
       });
@@ -859,7 +891,7 @@
 
   document.getElementById('abaLista').addEventListener('click',function(){ trocarAba('lista'); });
   document.getElementById('abaMapa').addEventListener('click',function(){ trocarAba('mapa'); });
-  document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; renderMapa(false); });
+  document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; mapaPopup=null; renderMapa(false); });
   document.getElementById('mapaBusca').addEventListener('input',function(){
     mapaBusca=this.value.trim();
     renderMapa(true); // buscou: enquadra no que sobrou
