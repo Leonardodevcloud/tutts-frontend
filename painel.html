@@ -9,6 +9,7 @@
 <!-- PORTAL_PAINEL_V4 -->
 <!-- PORTAL_PAINEL_V5 -->
 <!-- PORTAL_PAINEL_V6 -->
+<!-- PORTAL_PAINEL_V7 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -93,9 +94,12 @@
   .col-h .ccnt { margin-left:auto; font-size:11px; font-weight:700; color:#fff; border-radius:20px; padding:1px 8px; min-width:20px; text-align:center; }
   .col-body { display:flex; flex-direction:column; gap:10px; }
   .vazio { font-size:11px; color:#d1d5db; text-align:center; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; }
-  /* Card comum: borda lilas definida (2px), sem faixa no topo. Mesmo peso
-     visual do frequente — quem diferencia os dois e a cor + a faixa. */
-  .card { background:#fff; border:2px solid #ddd6fe; border-radius:12px; overflow:hidden; }
+  /* Card comum: borda lilas VISIVEL (2px), sem faixa no topo.
+     #d8b4fe = purple-300, o equivalente do #fcd34d (amber-300) do frequente.
+     O v6 usava #ddd6fe, que e cor de fundo: como borda de card branco em
+     fundo claro, sumia. Mesmo peso do frequente — quem diferencia os dois
+     e a cor + a faixa. */
+  .card { background:#fff; border:2px solid #d8b4fe; border-radius:12px; overflow:hidden; }
   .card.freq { border:2px solid #fcd34d; }
   .card.extr { border:2px solid #f9a8d4; }
   .faixa { display:flex; align-items:center; gap:6px; padding:4px 10px; font-size:11px; font-weight:700; }

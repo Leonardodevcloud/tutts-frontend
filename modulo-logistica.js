@@ -1347,7 +1347,12 @@
     // violet-* que nao e usado em lugar nenhum.
     // Todos com o mesmo peso (2px): quem diferencia frequente/extraviado e a
     // cor + a faixa no topo, nao a espessura.
-    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-200')}` },
+    // BORDA_LILAS_V2: card comum com borda lilas VISIVEL.
+    // purple-300 (#d8b4fe) e o equivalente do amber-300 na escala do Tailwind
+    // — mesmo nivel de definicao da borda do parceiro frequente, so que roxo.
+    // (o v1 usava purple-200 = #e9d5ff, que e cor de FUNDO: some como borda)
+    // Todos com o mesmo peso (2px): quem diferencia e a cor + a faixa no topo.
+    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
       // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
       extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
         h('span', null, '📦'),
