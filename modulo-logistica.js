@@ -1826,15 +1826,24 @@
         lista = lista.filter(e => dataLocalBRT(e.created_at) === dataFiltro);
       }
 
-      // Busca por código OS
+      // Busca livre: OS, enderecos, entregador e — BUSCA_CLIENTE_FINAL_NF —
+      // nome do cliente final e nota fiscal. A NF casa tanto na forma limpa
+      // (1148140) quanto na suja digitada pelo usuario (01-001148140-1),
+      // porque comparamos so os digitos dos dois lados.
       if (busca.trim()) {
         const q = busca.trim().toLowerCase();
-        lista = lista.filter(e =>
-          String(e.codigo_os).includes(q) ||
-          (e.endereco_coleta || '').toLowerCase().includes(q) ||
-          (e.endereco_entrega || '').toLowerCase().includes(q) ||
-          (e.entregador_nome || '').toLowerCase().includes(q)
-        );
+        const qDigitos = q.replace(/[^0-9]/g, '');
+        lista = lista.filter(e => {
+          if (String(e.codigo_os).includes(q)) return true;
+          if ((e.endereco_coleta || '').toLowerCase().includes(q)) return true;
+          if ((e.endereco_entrega || '').toLowerCase().includes(q)) return true;
+          if ((e.entregador_nome || '').toLowerCase().includes(q)) return true;
+          if ((e.cliente_final || '').toLowerCase().includes(q)) return true;
+          if ((e.cliente_nome_regra || '').toLowerCase().includes(q)) return true;
+          const nf = String(e.nota_fiscal || '');
+          if (nf && qDigitos && nf.replace(/[^0-9]/g, '').includes(qDigitos)) return true;
+          return false;
+        });
       }
 
       // Filtro de margem
@@ -2009,7 +2018,7 @@
           type: 'search',
           value: busca,
           onChange: e => setBusca(e.target.value),
-          placeholder: '🔍 Buscar OS, endereço, entregador...',
+          placeholder: '🔍 Buscar OS, NF, cliente, endereço, entregador...',
           className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
         }),
         h('div', { className: 'flex items-center gap-1.5' },

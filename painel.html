@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Central Tutts - Painel da loja</title>
 <!-- PORTAL_PAINEL_V2 -->
+<!-- PORTAL_PAINEL_V3 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -112,6 +113,11 @@
   .btn-rastrear:hover { background:#ede9fe; }
   .btn-rastrear:disabled { opacity:.5; cursor:default; border-color:#f3f4f6; color:#cbd5e1; background:#fafafa; }
   .hora { font-size:10px; color:#9ca3af; padding:0 12px 8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+  .chip-cli { font-size:10px; font-weight:600; color:#374151; background:#f3f4f6; border-radius:4px; padding:2px 6px; }
+  .chip-nf { font-size:10px; font-weight:600; color:#b45309; background:#fffbeb; border-radius:4px; padding:2px 6px; }
+  .topo input[type=search]{ font-size:12px; padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; min-width:210px; outline:none; }
+  .topo input[type=search]:focus{ border-color:var(--roxo); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
   /* trilha de tentativas */
   .trilha { padding:10px 12px; border-top:1px solid #f3f4f6; }
   .trilha-h { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
@@ -187,6 +193,7 @@
       <div class="sub" id="tSub">carregando...</div>
     </div>
     <span class="rt"><span class="dot"></span><span id="tRt">tempo real</span></span>
+    <input type="search" id="tBusca" placeholder="Buscar OS, NF, cliente, endereco..." />
     <input type="date" id="tData" />
     <button class="sair" id="btnSair">Sair</button>
   </div>
@@ -276,6 +283,33 @@
     return '<div class="trilha"><div class="trilha-h"><span class="tt">Tentativas de despacho</span><span class="cnt">'+totalTent+'</span></div>'+linhas+'</div>';
   }
 
+  // Cliente final + NF (ja tratados no backend). Clientes so-NF vem sem nome.
+  function chipsHTML(e){
+    if(!e.cliente_final && !e.nota_fiscal) return '';
+    var out = '<div class="chips">';
+    if(e.cliente_final) out += '<span class="chip-cli">\uD83C\uDFEA '+esc(e.cliente_final)+'</span>';
+    if(e.nota_fiscal)   out += '<span class="chip-nf">\uD83E\uDDFE NF '+esc(e.nota_fiscal)+'</span>';
+    return out + '</div>';
+  }
+
+  // Busca livre. A NF casa na forma limpa (1148140) e na suja (01-001148140-1):
+  // comparamos so os digitos dos dois lados.
+  function filtrarBusca(lista){
+    var q = (document.getElementById('tBusca').value || '').trim().toLowerCase();
+    if(!q) return lista;
+    var qd = q.replace(/[^0-9]/g,'');
+    return (lista||[]).filter(function(e){
+      if(String(e.codigo_os||'').indexOf(q) >= 0) return true;
+      if(String(e.endereco_coleta||'').toLowerCase().indexOf(q) >= 0) return true;
+      if(String(e.endereco_entrega||'').toLowerCase().indexOf(q) >= 0) return true;
+      if(String(e.entregador_nome||'').toLowerCase().indexOf(q) >= 0) return true;
+      if(String(e.cliente_final||'').toLowerCase().indexOf(q) >= 0) return true;
+      var nf = String(e.nota_fiscal||'');
+      if(nf && qd && nf.replace(/[^0-9]/g,'').indexOf(qd) >= 0) return true;
+      return false;
+    });
+  }
+
   function cardHTML(e){
     var origem=window.location.origin;
     var temEnt=!!e.entregador_nome;
@@ -294,7 +328,7 @@
       + '<div class="cli">Cliente: '+esc(e.cliente_nome_regra||'-')+'</div>'
       + '<div class="rota">'
       +   '<div class="pt"><span class="pin" style="background:#f59e0b"></span><div style="min-width:0"><div class="lab">Coleta</div><div class="end">'+esc(e.endereco_coleta||'-')+'</div>'+pickup+'</div></div>'
-      +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div></div></div>'
+      +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div>'+chipsHTML(e)+'</div></div>'
       + '</div>'
       + telBloco
       + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
@@ -303,9 +337,12 @@
       + '</div>';
   }
 
+  var _ultimaLista = [];
   function render(entregas){
+    if(entregas) _ultimaLista = entregas;
+    var lista = filtrarBusca(_ultimaLista);
     var grupos={}; COLS.forEach(function(c){ grupos[c.id]=[]; });
-    (entregas||[]).forEach(function(e){ var col=coluna(e); if(col && grupos[col]) grupos[col].push(e); });
+    lista.forEach(function(e){ var col=coluna(e); if(col && grupos[col]) grupos[col].push(e); });
     var board=document.getElementById('board');
     board.innerHTML=COLS.map(function(c){
       var itens=grupos[c.id]||[];
@@ -385,6 +422,7 @@
   document.getElementById('inLogin').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('inSenha').focus(); });
   document.getElementById('btnSair').addEventListener('click', function(){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); });
   document.getElementById('tData').addEventListener('change', carregar);
+  document.getElementById('tBusca').addEventListener('input', function(){ render(null); });
 
   if(token()){
     fetch(API+'/api/logistics/portal/me',{ headers:{ 'Authorization':'Bearer '+token() } })
