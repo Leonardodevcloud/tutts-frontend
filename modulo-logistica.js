@@ -947,7 +947,16 @@
         ),
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
-          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—')
+          h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—'),
+          // CLIENTE_FINAL_NF_DETALHE
+          (e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap items-center gap-1.5 mt-1.5' },
+            e.cliente_final && h('span', {
+              className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-gray-100 rounded px-2 py-0.5',
+            }, '🏪 ', e.cliente_final),
+            e.nota_fiscal && h('span', {
+              className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded px-2 py-0.5',
+            }, '🧾 NF ', e.nota_fiscal),
+          )
         ),
       ),
 
@@ -1328,7 +1337,19 @@
           h('span', { className: 'w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0' }),
           h('div', { className: 'min-w-0 flex-1' },
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
-            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—')
+            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
+            // CLIENTE_FINAL_NF_CARD: nome do cliente final + NF (ja tratados no backend).
+            // Clientes so-NF (1165/1178/1188) vem com cliente_final = null.
+            (e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap items-center gap-1 mt-1' },
+              e.cliente_final && h('span', {
+                className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-0.5',
+                title: 'Cliente final',
+              }, '🏪 ', e.cliente_final),
+              e.nota_fiscal && h('span', {
+                className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5',
+                title: 'Nota fiscal',
+              }, '🧾 NF ', e.nota_fiscal),
+            ),
           )),
       ),
       // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
