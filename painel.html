@@ -15,6 +15,7 @@
 <!-- PORTAL_PAINEL_V10 -->
 <!-- PORTAL_PAINEL_V11 -->
 <!-- PORTAL_PAINEL_V12 -->
+<!-- PORTAL_PAINEL_V13 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -319,7 +320,7 @@
       <span><i style="background:#fff;border:3px solid #9ca3af;width:11px;height:11px"></i>Anel do motoboy = cor da corrida</span>
       <span><i style="background:#f59e0b"></i>Indo coletar</span>
       <span><i style="background:#10b981"></i>Coletou</span>
-      <span style="color:#9ca3af">Tracejado = liga a coleta a entrega (linha reta, nao e a rota)</span>
+      <span style="color:#9ca3af">Linha cheia = rota por rua &middot; tracejada = sem rota, linha reta</span>
       <span style="color:#9ca3af">Clique num motoboy ou destino pra destacar a corrida</span>
     </div>
   </div>
@@ -639,6 +640,10 @@
       h += '</div>';
     }
     h += '<div class="pop-g">';
+    // rota_km e a distancia REAL de rua (ORS). distancia_km e a do provider.
+    if(e.rota_km!=null){
+      h += '<div style="flex:1"><div class="pop-lab">Rota</div><div class="pop-v">'+String(e.rota_km).replace('.',',')+' km</div></div>';
+    }
     if(e.restante_km!=null){
       h += '<div style="flex:1"><div class="pop-lab">Falta</div><div class="pop-v">'+String(e.restante_km).replace('.',',')+' km</div></div>';
     } else if(e.distancia_km!=null){
@@ -704,20 +709,19 @@
         bounds.push([e.entrega.lat,e.entrega.lng]);
       }
 
-      // PORTAL_MAPA_V4: UMA linha por corrida, COLETA -> ENTREGA.
+      // PORTAL_MAPA_ROTA_V1: rota REAL por rua (ORS), da coleta ate a entrega.
       //
-      // Saiu daqui:
-      //   - o breadcrumb do GPS (e.tracado): com 5+ corridas virava
-      //     espaguete e escondia o que importa;
-      //   - a linha motoboy -> alvo: era ela que atravessava o Potengi
-      //     a nado.
+      // e.rota vem do backend ja em [lat,lng] e cacheada — a rota nao muda
+      // depois do despacho, entao e calculada 1x por OS.
       //
-      // Esta linha e RETA e tracejada de proposito: ela diz "esta corrida
-      // vai de A pra B", nao "o motoboy dirige por aqui". Tracejado sinaliza
-      // ligacao logica; se fosse solida, seria lida como rota.
-      //
-      // A posicao do motoboy segue igual: marcador em tempo real por cima.
-      if(e.coleta.lat!=null && e.coleta.lng!=null && e.entrega.lat!=null && e.entrega.lng!=null){
+      // SOLIDA quando e rota de verdade: agora a linha SEGUE a rua, entao
+      // pode ser lida como caminho. Se o ORS falhar / nao estiver
+      // configurado / a OS nao tiver coordenada, e.rota vem null e caimos
+      // na linha reta TRACEJADA — o tracejado continua sinalizando
+      // "isso nao e a rota, e so a ligacao A->B".
+      if(e.rota && e.rota.length>1){
+        L.polyline(e.rota,{color:cor,weight:pw,opacity:op}).addTo(camadas);
+      } else if(e.coleta.lat!=null && e.coleta.lng!=null && e.entrega.lat!=null && e.entrega.lng!=null){
         L.polyline([[e.coleta.lat,e.coleta.lng],[e.entrega.lat,e.entrega.lng]],
           {color:cor,weight:pw,opacity:op,dashArray:'6,5'}).addTo(camadas);
       }
@@ -798,8 +802,10 @@
   function focarCorrida(id){
     var e = mapaDados.filter(function(x){ return x.id===id; })[0];
     if(!e) return;
-    // Enquadra a corrida inteira: coleta, entrega e o motoboy.
+    // Enquadra a corrida inteira: a rota (que pode fazer volta larga),
+    // coleta, entrega e o motoboy.
     var pts=[];
+    if(e.rota && e.rota.length) pts = pts.concat(e.rota);
     if(e.coleta.lat!=null)  pts.push([e.coleta.lat,e.coleta.lng]);
     if(e.entrega.lat!=null) pts.push([e.entrega.lat,e.entrega.lng]);
     if(e.courier && e.courier.lat!=null) pts.push([e.courier.lat,e.courier.lng]);
