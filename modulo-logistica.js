@@ -1247,6 +1247,8 @@
     { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500' },
     { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400' },
     { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
+    // EXTRAVIADOS_COL_V1
+    { id: 'extraviado', nome: 'Extraviados',         dot: 'bg-pink-500',   cnt: 'bg-pink-500' },
   ];
 
   // Mapeia uma entrega pra uma das 7 colunas, a partir do status canônico
@@ -1254,6 +1256,9 @@
   function colunaDoStatus(e) {
     const c = String((e && e.status_canonico) || '').toUpperCase();
     const n = String((e && e.status_uber) || '').toLowerCase();
+    // EXTRAVIADOS_COL_V1: o marcador do admin e soberano — vence qualquer
+    // status vindo do provedor. Sai da coluna atual e vai pra Extraviados.
+    if (e && e.extraviado_em) return 'extraviado';
     if (c === 'DELIVERED' || ['delivered', 'entregue', 'completed', 'finalizado', 'concluido'].includes(n)) return 'entregue';
     if (c === 'RETURNED' || c === 'RETURNING' || ['sendback', 'sendbackcompleted', 'devolucao', 'devolvido', 'devolvendo'].includes(n)) return 'devol';
     if (c === 'CANCELED' || ['canceled', 'cancelado'].includes(n)) return 'cancel';
@@ -1264,9 +1269,16 @@
   }
 
   // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
-  function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast }) {
+  function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
     const e = entrega;
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
+    // EXTRAVIADOS_CARD_V1: so da pra extraviar o que ja foi coletado — antes
+    // disso o pacote nem saiu da loja.
+    const extraviado = !!e.extraviado_em;
+    const jaColetou = !!e.coletado_at ||
+      ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF', 'DELIVERED', 'RETURNING', 'RETURNED']
+        .includes(String(e.status_canonico || '').toUpperCase());
+    const podeExtraviar = jaColetou && !extraviado;
     const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
     const valorHub     = parseFloat(e.valor_servico || 0);
     const margemHub    = Math.round((valorHub - valorUber) * 100) / 100;
@@ -1303,9 +1315,14 @@
       return 'Aguardando atribuição…';
     }
 
-    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${freq ? 'border-2 border-amber-300' : 'border border-gray-200'}` },
+    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border border-gray-200')}` },
+      // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
+      extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
+        h('span', null, '📦'),
+        h('span', null, 'Extraviado'),
+      ),
       // faixa "Parceiro frequente" no topo (Opcao A)
-      freq && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-[11px] font-bold' },
+      !extraviado && freq && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-[11px] font-bold' },
         h('span', null, '👑'),
         h('span', null, 'Parceiro frequente'),
       ),
@@ -1367,6 +1384,8 @@
             ),
             h('div', { className: 'flex gap-1 flex-shrink-0' },
               onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, '⚠️'),
+              // EXTRAVIADOS_BTN_V1: discreto, mesmo padrao do Reportar.
+              podeExtraviar && onExtraviar && h('button', { onClick: () => onExtraviar(e), title: 'Marcar como extraviado', className: 'text-[10px] px-2 py-1 bg-pink-50 rounded-md text-pink-600 hover:bg-pink-100' }, '📦'),
               e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
             ),
           )
@@ -1394,6 +1413,8 @@
         h('button', { onClick: () => onVerDetalhes && onVerDetalhes(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Detalhes'),
         podeCancelar && onRedespachar && h('button', { onClick: () => onRedespachar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50' }, 'Editar'),
         podeCancelar && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'),
+        // EXTRAVIADOS_DESFAZER_V1
+        extraviado && onDesfazerExtravio && h('button', { onClick: () => onDesfazerExtravio(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Desfazer'),
       ),
     );
   }
@@ -1443,6 +1464,7 @@
                   key: e.id, entrega: e, coluna: col,
                   tentativas: tentativas && tentativas[e.codigo_os],
                   onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast,
+                  onExtraviar, onDesfazerExtravio,
                   onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
                 }))
               : h('div', { className: 'text-[11px] text-gray-300 text-center py-4 border border-dashed border-gray-200 rounded-xl' }, 'Nenhuma entrega')
@@ -2105,6 +2127,36 @@
               onVerDetalhes: abrirDetalhes,
               onRedespachar: abrirRedespacho,
               onReportar: (e) => setReportAberto(e),
+              // EXTRAVIADOS_HANDLER_V1
+              onExtraviar: async (e) => {
+                const motivo = window.prompt(`Marcar OS ${e.codigo_os} como EXTRAVIADA?\n\nMotivo (opcional):`, '');
+                if (motivo === null) return; // cancelou o prompt
+                try {
+                  const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/extraviar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motivo: motivo || null }),
+                  });
+                  const json = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(json.error || 'falhou');
+                  showToast(`OS ${e.codigo_os} marcada como extraviada`, 'success');
+                  carregar(true);
+                } catch (err) {
+                  showToast(`Nao foi possivel marcar: ${err.message}`, 'error');
+                }
+              },
+              onDesfazerExtravio: async (e) => {
+                if (!window.confirm(`Desfazer o extravio da OS ${e.codigo_os}?`)) return;
+                try {
+                  const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/extraviar/desfazer`, { method: 'POST' });
+                  const json = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(json.error || 'falhou');
+                  showToast(`Extravio da OS ${e.codigo_os} desfeito`, 'success');
+                  carregar(true);
+                } catch (err) {
+                  showToast(`Nao foi possivel desfazer: ${err.message}`, 'error');
+                }
+              },
               onChat: abrirChat99,
               unreadMap: unreadChat99,
               ehFrequente,

@@ -6,6 +6,7 @@
 <title>Central Tutts - Painel da loja</title>
 <!-- PORTAL_PAINEL_V2 -->
 <!-- PORTAL_PAINEL_V3 -->
+<!-- PORTAL_PAINEL_V4 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -89,6 +90,11 @@
   .col-body { display:flex; flex-direction:column; gap:10px; }
   .vazio { font-size:11px; color:#d1d5db; text-align:center; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; }
   .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+  .card.freq { border:2px solid #fcd34d; }
+  .card.extr { border:1px solid #f9a8d4; }
+  .faixa { display:flex; align-items:center; gap:6px; padding:4px 10px; font-size:11px; font-weight:700; }
+  .faixa-freq { background:#fef3c7; color:#b45309; }
+  .faixa-extr { background:#fce7f3; color:#be185d; }
   .card .h { display:flex; align-items:center; gap:8px; padding:10px 12px 8px; }
   .card .os { font-size:13px; font-weight:700; }
   .badge { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
@@ -221,6 +227,7 @@
     { id:'entregue', nome:'Entregue',              cor:'#22c55e' },
     { id:'devol',    nome:'Devolucao',             cor:'#f97316' },
     { id:'cancel',   nome:'Cancelado',             cor:'#9ca3af' },
+    { id:'extraviado', nome:'Extraviados',         cor:'#ec4899' },
   ];
   var STLABEL = {
     PENDING:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'}, QUOTED:{t:'Buscando',c:'#6b7280',bg:'#f3f4f6'},
@@ -237,6 +244,8 @@
   function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
   function coluna(e){
+    // Marcador do admin e soberano — vence qualquer status do provedor.
+    if(e.extraviado) return 'extraviado';
     var c=String(e.status_canonico||'').toUpperCase(); var n=String(e.status_uber||'').toLowerCase();
     if (c==='DELIVERED' || ['delivered','entregue','completed','finalizado','concluido'].indexOf(n)>=0) return 'entregue';
     if (c==='RETURNED' || c==='RETURNING' || ['sendback','sendbackcompleted','devolucao','devolvido','devolvendo'].indexOf(n)>=0) return 'devol';
@@ -247,6 +256,7 @@
     return 'aguard';
   }
   function badge(e){
+    if(e.extraviado) return '<span class="badge" style="color:#be185d;background:#fce7f3">Extraviado</span>';
     var c=String(e.status_canonico||'').toUpperCase();
     var s=STLABEL[c] || {t:(e.status_uber||'Em andamento'),c:'#6b7280',bg:'#f3f4f6'};
     return '<span class="badge" style="color:'+s.c+';background:'+s.bg+'">'+esc(s.t)+'</span>';
@@ -323,7 +333,12 @@
     var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
     var podeRastrear=!!e.rastreio_token;
     var btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
-    return '<div class="card">'
+    var cls = e.extraviado ? 'card extr' : (e.entregador_frequente ? 'card freq' : 'card');
+    var faixa = '';
+    if(e.extraviado) faixa = '<div class="faixa faixa-extr">\uD83D\uDCE6 Extraviado</div>';
+    else if(e.entregador_frequente) faixa = '<div class="faixa faixa-freq">\uD83D\uDC51 Parceiro frequente</div>';
+    return '<div class="'+cls+'">'
+      + faixa
       + '<div class="h"><span class="os">OS '+esc(e.codigo_os)+'</span>'+badge(e)+'<span class="prov">'+esc((e.provider_code||'').toUpperCase())+'</span></div>'
       + '<div class="cli">Cliente: '+esc(e.cliente_nome_regra||'-')+'</div>'
       + '<div class="rota">'
