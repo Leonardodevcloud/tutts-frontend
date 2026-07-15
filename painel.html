@@ -12,6 +12,7 @@
 <!-- PORTAL_PAINEL_V7 -->
 <!-- PORTAL_PAINEL_V8 -->
 <!-- PORTAL_PAINEL_V9 -->
+<!-- PORTAL_PAINEL_V10 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -91,7 +92,9 @@
   .aba { font-size:13px; font-weight:600; color:#6b7280; padding:9px 0; border-bottom:2px solid transparent;
          cursor:pointer; background:none; border-top:0; border-left:0; border-right:0; }
   .aba.on { color:var(--roxo); border-bottom-color:var(--roxo); }
-  .mapa-wrap { display:none; padding:12px 16px 16px; }
+  /* PORTAL_MAPA_V2: o mapa ocupa a tela toda. A altura e medida em JS
+     (alturaMapa) — calc() com constante quebra quando o header muda. */
+  .mapa-wrap { display:none; padding:8px 12px 6px; }
   .mapa-filtros { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:9px; }
   .chip { font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; cursor:pointer;
           border:1px solid #e5e7eb; background:#fff; color:#6b7280; }
@@ -100,6 +103,17 @@
   .chip .n { opacity:.75; }
   .mapa-cnt { margin-left:auto; font-size:11px; color:#9ca3af; }
   #mapa { height:520px; border-radius:12px; border:1px solid #e5e7eb; background:#eee; }
+  .mapa-box { position:relative; }
+  /* Aviso de filtro vazio: fica POR CIMA do mapa. O mapa nunca some — some
+     era o bug do v1: desligar um chip sem corridas apagava a tela inteira. */
+  .mapa-aviso { position:absolute; z-index:500; left:50%; top:14px; transform:translateX(-50%);
+                background:rgba(255,255,255,.96); border:1px solid #e5e7eb; border-radius:20px;
+                padding:6px 14px; font-size:12px; color:#6b7280; box-shadow:0 1px 6px rgba(0,0,0,.12);
+                display:none; pointer-events:none; }
+  .chip.off { opacity:.45; text-decoration:line-through; }
+  .mapa-sel { position:absolute; z-index:500; right:10px; top:10px; background:#fff; border:1px solid #ddd6fe;
+              border-radius:20px; padding:5px 12px; font-size:11px; font-weight:600; color:var(--roxo);
+              box-shadow:0 1px 6px rgba(0,0,0,.12); display:none; cursor:pointer; }
   .mapa-vazio { display:none; padding:40px 16px; text-align:center; color:#9ca3af; font-size:13px; }
   .legenda { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:9px; font-size:10.5px; color:#6b7280; }
   .legenda i { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
@@ -264,14 +278,19 @@
       <button class="chip on-vrd" id="chipEntrega" type="button">Em rota de entrega <span class="n" id="nEntrega">0</span></button>
       <span class="mapa-cnt" id="mapaCnt"></span>
     </div>
-    <div id="mapa"></div>
-    <div class="mapa-vazio" id="mapaVazio">Nenhuma entrega em andamento agora.</div>
+    <div class="mapa-box">
+      <div id="mapa"></div>
+      <div class="mapa-aviso" id="mapaAviso"></div>
+      <div class="mapa-sel" id="mapaSel"></div>
+    </div>
     <div class="legenda">
       <span><i style="background:#7c3aed"></i>Loja</span>
+      <span>Cada corrida tem sua cor</span>
+      <span><i style="background:#fff;border:3px solid #9ca3af;width:11px;height:11px"></i>Anel do motoboy = cor da corrida</span>
       <span><i style="background:#f59e0b"></i>Indo coletar</span>
-      <span><i style="background:#10b981"></i>Coletou, indo entregar</span>
-      <span><i style="background:#ec4899"></i>Destino</span>
-      <span style="color:#9ca3af">Tracejado = ja percorrido &middot; pontilhado = falta (linha reta)</span>
+      <span><i style="background:#10b981"></i>Coletou</span>
+      <span style="color:#9ca3af">Tracejado = percorrido &middot; pontilhado = falta (linha reta)</span>
+      <span style="color:#9ca3af">Clique num motoboy ou destino pra destacar a corrida</span>
     </div>
   </div>
 </div>
@@ -515,13 +534,42 @@
   // mandou e mentira que parece dado.
   // ─────────────────────────────────────────────────────────────
   var mapa=null, camadas=null, mapaDados=[], mapaFiltro={coletar:true, entrega:true};
-  var mapaJaAjustou=false;
+  var mapaJaAjustou=false, mapaSel=null;
+
+  // Cores por corrida. Escolhidas pra serem distinguiveis entre si E contra o
+  // mapa OSM (que e bege/verde claro). Fixadas pelo ID: a corrida mantem a
+  // MESMA cor entre os refreshes de 30s — se variasse por indice, a cor
+  // pularia toda vez que uma entrega entrasse ou saisse da lista.
+  var PALETA = ['#7c3aed','#0284c7','#ea580c','#15803d','#db2777',
+                '#a16207','#0e7490','#b91c1c','#4338ca','#4d7c0f'];
+  function corDaCorrida(e){
+    var n = Number(e.id) || 0;
+    return PALETA[Math.abs(n) % PALETA.length];
+  }
+  function corStatus(e){ return e.coletado ? '#10b981' : '#f59e0b'; }
+
+  // Altura do mapa medida em runtime: ocupa o resto da tela. calc() com
+  // constante quebraria se o header/legenda mudassem de altura.
+  function alturaMapa(){
+    var el=document.getElementById('mapa'); if(!el) return;
+    var topo = el.getBoundingClientRect().top;
+    var leg  = document.querySelector('.legenda');
+    var legH = leg ? leg.offsetHeight + 14 : 34;
+    var h = Math.max(320, Math.round(window.innerHeight - topo - legH - 10));
+    el.style.height = h+'px';
+    if(mapa){ try{ mapa.invalidateSize(); }catch(_){} }
+  }
+  window.addEventListener('resize', function(){
+    if(document.getElementById('mapaWrap').style.display==='block') alturaMapa();
+  });
 
   function initMapa(){
     if(mapa) return;
     mapa = L.map('mapa',{zoomControl:true, attributionControl:true}).setView([-5.79,-35.21],12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(mapa);
     camadas = L.layerGroup().addTo(mapa);
+    // Clicar no vazio limpa o destaque.
+    mapa.on('click', function(){ if(mapaSel!==null){ mapaSel=null; renderMapa(); } });
   }
 
   function iconeLoja(){
@@ -530,24 +578,29 @@
          + 'box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;'
          + 'font-size:15px;line-height:1">\uD83C\uDFEA</div>' });
   }
-  function iconeMoto(foto, cor){
-    var dentro = foto
-      ? '<img src="'+esc(foto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="">'
-      : '<span style="font-size:14px;line-height:1">\uD83C\uDFCD\uFE0F</span>';
-    return L.divIcon({ className:'mk-moto', iconSize:[28,28], iconAnchor:[14,14],
-      html:'<div style="width:28px;height:28px;border-radius:50%;background:'+cor+';border:2.5px solid #fff;'
-         + 'box-shadow:0 1px 4px rgba(0,0,0,.35);overflow:hidden;display:flex;align-items:center;'
-         + 'justify-content:center">'+dentro+'</div>' });
+  // Anel = cor da CORRIDA (identidade) | preenchimento = STATUS (coletou ou nao)
+  function iconeMoto(e, apagado){
+    var dentro = (e.courier && e.courier.foto)
+      ? '<img src="'+esc(e.courier.foto)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="">'
+      : '<span style="font-size:13px;line-height:1">\uD83C\uDFCD\uFE0F</span>';
+    var tam = mapaSel===e.id ? 34 : 28;
+    return L.divIcon({ className:'mk-moto', iconSize:[tam,tam], iconAnchor:[tam/2,tam/2],
+      html:'<div style="width:'+tam+'px;height:'+tam+'px;border-radius:50%;background:'+corStatus(e)+';'
+         + 'border:3px solid '+corDaCorrida(e)+';box-shadow:0 1px 4px rgba(0,0,0,.35);overflow:hidden;'
+         + 'display:flex;align-items:center;justify-content:center;opacity:'+(apagado?0.25:1)+'">'+dentro+'</div>' });
   }
-  function iconeDestino(cor){
-    return L.divIcon({ className:'mk-loja', iconSize:[22,22], iconAnchor:[11,22],
-      html:'<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);'
-         + 'background:'+cor+';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>' });
+  function iconeDestino(e, apagado){
+    var cor = corDaCorrida(e);
+    var tam = mapaSel===e.id ? 26 : 20;
+    return L.divIcon({ className:'mk-loja', iconSize:[tam,tam], iconAnchor:[tam/2,tam],
+      html:'<div style="width:'+tam+'px;height:'+tam+'px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);'
+         + 'background:'+cor+';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);'
+         + 'opacity:'+(apagado?0.25:1)+'"></div>' });
   }
 
   function popupHTML(e){
-    var h = '<div class="pop-t">OS '+esc(e.codigo_os)+'</div>';
-    h += '<div class="pop-lab">'+(e.coletado?'Entrega':'Coleta')+'</div>';
+    var h = '<div class="pop-t" style="border-left:4px solid '+corDaCorrida(e)+';padding-left:6px">OS '+esc(e.codigo_os)+'</div>';
+    h += '<div class="pop-lab" style="margin-top:4px">'+(e.coletado?'Entrega':'Coleta')+'</div>';
     h += '<div class="pop-end">'+esc((e.coletado ? e.entrega.endereco : e.coleta.endereco)||'-')+'</div>';
     if(e.cliente_final || e.nota_fiscal){
       h += '<div class="chips" style="margin-top:5px">';
@@ -556,7 +609,6 @@
       h += '</div>';
     }
     h += '<div class="pop-g">';
-    // distancia_km e a corrida inteira; restante_km e do motoboy ate o alvo agora.
     if(e.restante_km!=null){
       h += '<div style="flex:1"><div class="pop-lab">Falta</div><div class="pop-v">'+String(e.restante_km).replace('.',',')+' km</div></div>';
     } else if(e.distancia_km!=null){
@@ -574,8 +626,11 @@
     return h;
   }
 
-  function visivel(e){
-    return e.coletado ? mapaFiltro.entrega : mapaFiltro.coletar;
+  function visivel(e){ return e.coletado ? mapaFiltro.entrega : mapaFiltro.coletar; }
+
+  function selecionar(id){
+    mapaSel = (mapaSel===id) ? null : id; // clicar de novo tira o destaque
+    renderMapa();
   }
 
   function renderMapa(){
@@ -583,8 +638,9 @@
     camadas.clearLayers();
     var lista = mapaDados.filter(visivel);
     var bounds = [];
+    var temSel = mapaSel!==null && lista.some(function(e){ return e.id===mapaSel; });
+    if(mapaSel!==null && !temSel) mapaSel=null; // a selecionada saiu do filtro
 
-    // Lojas: varias entregas partem do mesmo ponto — desenha uma vez so.
     var lojas = {};
     lista.forEach(function(e){
       if(e.coleta.lat==null || e.coleta.lng==null) return;
@@ -599,37 +655,50 @@
     });
 
     lista.forEach(function(e){
-      var cor = e.coletado ? '#10b981' : '#f59e0b';
+      var cor = corDaCorrida(e);
       var alvo = e.coletado ? e.entrega : e.coleta;
+      // Com algo selecionado, o resto APAGA em vez de sumir: continua dando
+      // o contexto de onde estao os outros, sem competir visualmente.
+      var apagado = temSel && e.id!==mapaSel;
+      var op  = apagado ? 0.14 : 0.85;
+      var pw  = (mapaSel===e.id) ? 4.5 : 2.5;
 
       if(e.entrega.lat!=null && e.entrega.lng!=null){
-        L.marker([e.entrega.lat,e.entrega.lng],{icon:iconeDestino('#ec4899')}).addTo(camadas)
-          .bindPopup(popupHTML(e));
+        L.marker([e.entrega.lat,e.entrega.lng],{icon:iconeDestino(e,apagado),zIndexOffset:(mapaSel===e.id?900:100)})
+          .addTo(camadas).bindPopup(popupHTML(e))
+          .on('click', function(){ selecionar(e.id); });
         bounds.push([e.entrega.lat,e.entrega.lng]);
       }
 
       if(e.tracado && e.tracado.length>1){
-        L.polyline(e.tracado,{color:'#7c3aed',weight:2.5,opacity:.75,dashArray:'5,4'}).addTo(camadas);
+        L.polyline(e.tracado,{color:cor,weight:pw,opacity:op,dashArray:'5,4'}).addTo(camadas);
       }
 
       if(e.courier && e.courier.lat!=null && e.courier.lng!=null){
         var pc=[e.courier.lat,e.courier.lng];
-        // Pontilhado ate o alvo: LINHA RETA, nao rota de rua. O ETA e por
-        // haversine, entao desenhar curva de rua aqui seria fingir precisao.
         if(alvo && alvo.lat!=null && alvo.lng!=null){
-          L.polyline([pc,[alvo.lat,alvo.lng]],{color:'#9ca3af',weight:2,opacity:.7,dashArray:'2,6'}).addTo(camadas);
+          L.polyline([pc,[alvo.lat,alvo.lng]],{color:cor,weight:pw-0.7,opacity:op*0.8,dashArray:'2,6'}).addTo(camadas);
         }
-        L.marker(pc,{icon:iconeMoto(e.courier.foto,cor),zIndexOffset:1000}).addTo(camadas)
-          .bindPopup(popupHTML(e));
+        L.marker(pc,{icon:iconeMoto(e,apagado),zIndexOffset:(mapaSel===e.id?1200:1000)})
+          .addTo(camadas).bindPopup(popupHTML(e))
+          .on('click', function(){ selecionar(e.id); });
         bounds.push(pc);
       }
     });
 
-    document.getElementById('mapaVazio').style.display = lista.length ? 'none' : 'block';
-    document.getElementById('mapa').style.display = lista.length ? 'block' : 'none';
+    // Aviso por cima. O MAPA NUNCA SOME.
+    var av=document.getElementById('mapaAviso');
+    if(!mapaDados.length){ av.textContent='Nenhuma entrega em andamento agora.'; av.style.display='block'; }
+    else if(!lista.length){ av.textContent='Nenhuma corrida nos filtros marcados.'; av.style.display='block'; }
+    else av.style.display='none';
 
-    // So enquadra na primeira carga: reenquadrar a cada 30s roubaria o zoom
-    // de quem esta olhando.
+    var sel=document.getElementById('mapaSel');
+    if(temSel){
+      var alvoSel = lista.filter(function(e){ return e.id===mapaSel; })[0];
+      sel.textContent='OS '+alvoSel.codigo_os+' em destaque - clique pra limpar';
+      sel.style.display='block';
+    } else sel.style.display='none';
+
     if(!mapaJaAjustou && bounds.length){
       mapa.fitBounds(bounds,{padding:[40,40],maxZoom:15});
       mapaJaAjustou=true;
@@ -662,22 +731,23 @@
     if(ehMapa){
       initMapa();
       // O Leaflet mede o container na criacao; se ele estava display:none, o
-      // mapa nasce com 0px e fica cinza. invalidateSize apos exibir resolve.
-      setTimeout(function(){ try{ mapa.invalidateSize(); }catch(_){} },60);
+      // mapa nasce com 0px e fica cinza. Dimensionar + invalidateSize resolve.
+      setTimeout(function(){ alturaMapa(); },60);
       carregarMapa();
     }
   }
 
   document.getElementById('abaLista').addEventListener('click',function(){ trocarAba('lista'); });
   document.getElementById('abaMapa').addEventListener('click',function(){ trocarAba('mapa'); });
+  document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; renderMapa(); });
   document.getElementById('chipColetar').addEventListener('click',function(){
     mapaFiltro.coletar=!mapaFiltro.coletar;
-    this.className='chip'+(mapaFiltro.coletar?' on-amb':'');
+    this.className='chip '+(mapaFiltro.coletar?'on-amb':'off');
     renderMapa();
   });
   document.getElementById('chipEntrega').addEventListener('click',function(){
     mapaFiltro.entrega=!mapaFiltro.entrega;
-    this.className='chip'+(mapaFiltro.entrega?' on-vrd':'');
+    this.className='chip '+(mapaFiltro.entrega?'on-vrd':'off');
     renderMapa();
   });
 
