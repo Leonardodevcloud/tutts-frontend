@@ -1315,7 +1315,13 @@
       return 'Aguardando atribuição…';
     }
 
-    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border border-gray-200')}` },
+    // BORDA_LILAS_ADMIN_V1: card comum ganha borda lilas definida.
+    // purple-200 e o MESMO tom do chip "Codigo de coleta" (CodigoBadge) que ja
+    // vive dentro do card — mantem o roxo do projeto em vez de introduzir um
+    // violet-* que nao e usado em lugar nenhum.
+    // Todos com o mesmo peso (2px): quem diferencia frequente/extraviado e a
+    // cor + a faixa no topo, nao a espessura.
+    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-200')}` },
       // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
       extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
         h('span', null, '📦'),
