@@ -63,7 +63,9 @@
           termos_filtro: termos ? termos.split('\n').map(s=>s.trim()).filter(Boolean) : null,
           rastreio_cliente_ativo: c.rastreio_cliente_ativo === true,
           usa_hub: c.usa_hub === true,
+          enviar_grupo: c.enviar_grupo !== false, // ENVIAR_GRUPO_FRONT_LOAD
           rastreio_cliente_nome_exibicao: c.rastreio_cliente_nome_exibicao || null,
+          enviar_grupo: c.enviar_grupo !== false, // ENVIAR_GRUPO_FRONT_BODY
         });
         if (c.id) await api('/config/'+c.id,{method:'PUT',body});
         else      await api('/config',{method:'POST',body});
@@ -160,7 +162,7 @@
 
       tab==='config' && h('div',null,
         h('div',{style:{marginBottom:16,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
-          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:'',rastreio_cliente_ativo:false,rastreio_cliente_nome_exibicao:'',usa_hub:false})},'+ Novo cadastro'),
+          h('button',{style:btnPrim,onClick:()=>setEditing({cliente_cod:'',nome_exibicao:'',evolution_group_id:'',ativo:true,termos_filtro_str:'',observacoes:'',rastreio_cliente_ativo:false,rastreio_cliente_nome_exibicao:'',usa_hub:false,enviar_grupo:true})},'+ Novo cadastro'),
           // 2026-05 v3: dica de uso
           h('span',{style:{fontSize:12,color:'#6b7280'}},'Você pode cadastrar o mesmo código várias vezes com grupos e palavras-chave diferentes.')
         ),
@@ -180,7 +182,11 @@
                   ? h('span',{style:{color:'#9ca3af',fontStyle:'italic'}},'(pega tudo)')
                   : c.termos_filtro.slice(0,3).join(', ') + (c.termos_filtro.length > 3 ? ` +${c.termos_filtro.length-3}` : '')
               ),
-              h('td',{style:{padding:10}},h('span',{style:{background:c.ativo?'#d1fae5':'#e5e7eb',color:c.ativo?'#065f46':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo')),
+              h('td',{style:{padding:10}},
+                h('span',{style:{background:c.ativo?'#d1fae5':'#e5e7eb',color:c.ativo?'#065f46':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo'),
+                // ENVIAR_GRUPO_FRONT_BADGE: so aparece quando desligado, pra nao poluir
+                c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fef3c7',color:'#b45309',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},'🔕 sem grupo')
+              ),
               h('td',{style:{padding:10}},
                 h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
                 h('button',{onClick:()=>removerCliente(c.id),style:{background:'#ef4444',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Remover')
@@ -210,6 +216,24 @@
             ),
             h('label',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:16}},
               h('input',{type:'checkbox',checked:editing.ativo!==false,onChange:e=>setEditing({...editing,ativo:e.target.checked})}),
+            ),
+
+            // ENVIAR_GRUPO_FRONT_BOX
+            // Separa "capturar" de "avisar no grupo". O toggle Ativo la em cima
+            // desliga o DETECTOR inteiro (e ai o card do Hub perde NF e cliente
+            // final). Este aqui desliga so o WhatsApp.
+            h('div',{style:{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:12,marginBottom:12}},
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#b45309',margin:'0 0 8px 0'}},'💬 Mensagem no grupo'),
+              h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}},
+                h('input',{type:'checkbox',checked:editing.enviar_grupo!==false,
+                  onChange:e=>setEditing({...editing,enviar_grupo:e.target.checked})}),
+                h('span',{style:{fontSize:13,fontWeight:600}},'Enviar rastreio no grupo do WhatsApp')
+              ),
+              h('p',{style:{fontSize:11,color:'#92400e',margin:'8px 0 0 0'}},
+                editing.enviar_grupo===false
+                  ? '🔕 Grupo desligado. A captura continua rodando: o card do Hub segue com NF e cliente final. Para desligar tudo, use o "Ativo" acima.'
+                  : 'Desmarque para parar só o WhatsApp. A captura continua alimentando o card do Hub (NF e cliente final).'
+              )
             ),
 
             // ── Rastreio direto ao cliente ──
