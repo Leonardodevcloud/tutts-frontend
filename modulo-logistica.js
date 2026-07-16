@@ -1612,6 +1612,9 @@
     const [detalhesAberto, setDetalhesAberto] = useState(null); // {entrega, tracking, webhooks, loading}
     const [redespachoAberto, setRedespachoAberto] = useState(null); // {entrega, motivo}
     const [redespachando, setRedespachando] = useState(false);
+    // REDESPACHO_MODAL_V1 (state) — o confirm() nativo do "Redespachar" virou modal.
+    const [redespachoRapidoModal, setRedespachoRapidoModal] = useState(null); // null | {entrega, erro?}
+    const [redespachandoRapido, setRedespachandoRapido] = useState(false);
     // Modal de cotação manual (Opção C)
     const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
     const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
@@ -2065,14 +2068,22 @@
 
     // REDESPACHO_BTN_V1 — cancela a corrida atual e chama outro entregador.
     // Sem modal de edicao: endereco e valor nao mudam, so o motoboy.
-    async function redespachoRapido(e) {
-      const nome = e.entregador_nome || 'o entregador atual';
-      const aviso =
-        `Redespachar a OS ${e.codigo_os}?\n\n` +
-        `A corrida atual sera cancelada e outro entregador sera chamado no mesmo provedor.\n` +
-        `${nome} fica de fora DESTA OS (segue pegando outras).\n\n` +
-        `O endereco e o valor nao mudam. Se a nova cotacao vier mais cara, o custo sobe.`;
-      if (!confirm(aviso)) return;
+    //
+    // REDESPACHO_MODAL_V1 (funcao) — o clique agora so ABRE o modal; quem chama
+    // a rota e o confirmarRedespachoRapido, depois do OK na tela.
+    //
+    // POR QUE SAIU DO confirm(): ele nao aceita estilo, estampa "www.centraltutts.online
+    // diz" no topo, e — pior — e SINCRONO e bloqueia a aba: sem estado de
+    // "enviando", o operador clicava de novo achando que tinha travado. Numa acao
+    // que cancela e recontrata corrida, clique duplo custa dinheiro.
+    function redespachoRapido(e) {
+      setRedespachoRapidoModal({ entrega: e });
+    }
+
+    async function confirmarRedespachoRapido() {
+      if (!redespachoRapidoModal || redespachandoRapido) return;
+      const e = redespachoRapidoModal.entrega;
+      setRedespachandoRapido(true);
       try {
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/redispatch`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2083,13 +2094,29 @@
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
+          setRedespachoRapidoModal(null);
           showToast('Chamando outro entregador', 'success');
           carregar();
         } else {
-          showToast(json.error || 'Erro ao redespachar', 'error');
+          // Erro NAO fecha o modal. O backend responde coisas que o operador
+          // precisa LER ("ja passou da coleta", "OS nao esta mais na Mapp") —
+          // fechar jogaria ele de volta no card sem contexto, e um toast some
+          // sozinho. Fica na tela, com o botao livre pra tentar de novo.
+          setRedespachoRapidoModal({ entrega: e, erro: json.error || 'Erro ao redespachar' });
         }
-      } catch { showToast('Erro de rede ao redespachar', 'error'); }
+      } catch (err) {
+        setRedespachoRapidoModal({ entrega: e, erro: 'Erro de rede ao redespachar' });
+      } finally {
+        setRedespachandoRapido(false);
+      }
     }
+
+    // Dados derivados do modal — nulos quando ele esta fechado.
+    // Calculados aqui (corpo do componente) e nao dentro do h(...): componente
+    // definido em IIFE dentro do render vira tipo novo a cada render, e o React
+    // desmonta/remonta ele — o clique no botao morreria no meio.
+    const _rrEnt  = redespachoRapidoModal ? redespachoRapidoModal.entrega : null;
+    const _rrProv = _rrEnt ? provedorInfo(_rrEnt) : null;
 
     function fecharRedespacho() {
       if (redespachando) return; // não fecha enquanto está rolando
@@ -2315,6 +2342,91 @@
         onClose: () => setReportAberto(null),
         onSucesso: carregar,
       }),
+
+      // ── REDESPACHO_MODAL_V1 (markup) — confirmacao do botao "Redespachar" ──
+      // Roxo de proposito: e a cor do botao que abriu. Ambar ja e "Editar
+      // endereco" e vermelho e "Cancelar" — tres acoes diferentes, tres cores.
+      redespachoRapidoModal && h('div', {
+        className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4',
+        onClick: (ev) => { if (ev.target === ev.currentTarget && !redespachandoRapido) setRedespachoRapidoModal(null); },
+      },
+        h('div', { className: 'bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden' },
+          h('div', { className: 'bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-4 flex items-center gap-3' },
+            h('span', {
+              className: 'w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-lg flex-shrink-0',
+            }, '\u21bb'),
+            h('div', { className: 'min-w-0' },
+              h('h3', { className: 'text-base font-bold text-white leading-tight' },
+                `Redespachar OS ${_rrEnt.codigo_os}`),
+              h('p', { className: 'text-[11px] text-purple-100 mt-0.5' },
+                'Chamar outro entregador no mesmo provedor'),
+            ),
+            _rrProv && h('span', {
+              className: 'ml-auto flex-shrink-0',
+              title: _rrProv.nome,
+            }, h(ProviderLogo, { code: _rrProv.code, size: 22 })),
+          ),
+
+          h('div', { className: 'p-5 space-y-3' },
+            // Quem sai. E o unico efeito irreversivel do botao, entao vem primeiro
+            // e com cara e nome — nao como texto solto no meio de um paragrafo.
+            _rrEnt.entregador_nome && h('div', {
+              className: 'flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3',
+            },
+              _rrEnt.entregador_foto
+                ? h('img', {
+                    src: _rrEnt.entregador_foto, alt: '',
+                    className: 'w-9 h-9 rounded-full object-cover flex-shrink-0',
+                    onError: (ev) => { ev.target.style.display = 'none'; },
+                  })
+                : h('span', {
+                    className: 'w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm flex-shrink-0',
+                  }, '👤'),
+              h('div', { className: 'min-w-0' },
+                h('div', { className: 'text-sm font-semibold text-gray-800 truncate' }, _rrEnt.entregador_nome),
+                h('div', { className: 'text-[11px] text-gray-500' },
+                  'Fica de fora ', h('b', null, 'desta OS'), ' — segue pegando outras'),
+              ),
+            ),
+
+            h('ul', { className: 'space-y-2 text-[13px] text-gray-700' },
+              [
+                ['🚫', 'A corrida atual é cancelada no provedor'],
+                ['🔁', 'A mesma OS é despachada de novo — endereço e valor não mudam'],
+                ['💸', 'Se a nova cotação vier mais cara, o custo sobe'],
+              ].map((it, i) => h('li', { key: i, className: 'flex gap-2 items-start' },
+                h('span', { className: 'flex-shrink-0' }, it[0]),
+                h('span', null, it[1]),
+              )),
+            ),
+
+            // Custo atual: a decisao fica com numero na frente, nao com sensacao.
+            _rrEnt.valor_provider != null && h('div', {
+              className: 'flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2',
+            },
+              h('span', { className: 'text-[10px] font-bold text-amber-800 uppercase tracking-wide' }, 'Custo atual'),
+              h('span', { className: 'text-sm font-bold text-amber-900' }, fmtMoney(parseFloat(_rrEnt.valor_provider))),
+            ),
+
+            redespachoRapidoModal.erro && h('div', {
+              className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700',
+            }, redespachoRapidoModal.erro),
+          ),
+
+          h('div', { className: 'border-t border-gray-200 bg-gray-50 px-5 py-3 flex justify-end gap-2' },
+            h('button', {
+              onClick: () => setRedespachoRapidoModal(null),
+              disabled: redespachandoRapido,
+              className: 'px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50',
+            }, 'Cancelar'),
+            h('button', {
+              onClick: confirmarRedespachoRapido,
+              disabled: redespachandoRapido,
+              className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-60',
+            }, redespachandoRapido ? 'Redespachando…' : 'Sim, redespachar'),
+          ),
+        )
+      ),
 
       // ── Modal de redespacho ──
       redespachoAberto && h('div', {
