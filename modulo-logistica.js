@@ -4163,24 +4163,34 @@
   const ICONE_TUTTS_JPG = 'data:image/jpeg;base64,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';
 
   function TabRelatorio({ API_URL, fetchAuth, showToast }) {
+    // RELATORIO_FILTROS_FRONT_V1
+    // ARQUITETURA: so o PERIODO vai pro servidor. Todo o resto (canal,
+    // provedor, status, loja, motoboy, busca) filtra na tela.
+    //
+    // Por que: (1) trocar filtro responde na hora, sem round-trip; (2) o CSV
+    // e gerado do que esta RENDERIZADO, entao a planilha nao tem como
+    // divergir da tela — antes o servidor refazia os filtros por conta e as
+    // duas logicas podiam sair de sincronia.
     const [rows, setRows] = useState([]);
     const [totais, setTotais] = useState(null);
     const [loading, setLoading] = useState(true);
-    // RELATORIO_CLIENTE_FRONT_V1
-    // lojasSel = null significa SEM FILTRO (todas). Um Set significa "so estas".
-    // Usar null em vez de "Set com tudo" evita ter que re-sincronizar a selecao
-    // toda vez que o periodo muda e a lista de lojas muda junto.
-    const [lojasSel, setLojasSel] = useState(null);
-    const [lojasAberto, setLojasAberto] = useState(false);
-    const lojasBoxRef = useRef(null);
-    const [periodo, setPeriodo] = useState('30d');
-    const [provider, setProvider] = useState('');
-    const [statusF, setStatusF] = useState('');
+    const [modalAberto, setModalAberto] = useState(false);
 
+    const [periodo, setPeriodo] = useState('30d');
     const hojeBRT   = () => dataLocalBRT(new Date());
     const diasAtras = (nd) => dataLocalBRT(new Date(Date.now() - nd * 86400000));
     const [deCustom, setDeCustom]   = useState(diasAtras(29));
     const [ateCustom, setAteCustom] = useState(hojeBRT());
+
+    // null = SEM FILTRO (todos). Set = "so estes".
+    // Usar null em vez de "Set com tudo" evita re-sincronizar a selecao toda
+    // vez que o periodo muda e a lista de opcoes muda junto: item novo entra
+    // marcado sozinho, em vez de aparecer desmarcado sem ninguem ter mexido.
+    const VAZIO = '__sem__';
+    const [f, setF] = useState({
+      canais: null, provedores: null, status: null,
+      lojas: null, motoboys: null, busca: '',
+    });
 
     const range = periodo === 'custom' ? { de: deCustom, ate: ateCustom }
       : periodo === '1d'  ? { de: hojeBRT(),    ate: hojeBRT() }
@@ -4188,59 +4198,78 @@
       :                     { de: diasAtras(29), ate: hojeBRT() };
     const de = range.de, ate = range.ate;
 
-    const qs = () => `de=${de}&ate=${ate}${provider ? '&provider=' + provider : ''}${statusF ? '&status=' + encodeURIComponent(statusF) : ''}`;
-
     const carregar = useCallback(async () => {
       setLoading(true);
       try {
-        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}`);
+        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?de=${de}&ate=${ate}`);
         const json = await res.json();
         if (json.success) { setRows(json.corridas || []); setTotais(json.totais || null); }
         else showToast(json.error || 'Erro ao carregar relatório', 'error');
       } catch { showToast('Erro de rede no relatório', 'error'); }
       finally { setLoading(false); }
-    }, [fetchAuth, API_URL, de, ate, provider, statusF]);
+    }, [fetchAuth, API_URL, de, ate]);
 
     useEffect(() => { carregar(); }, [carregar]);
 
-    // RELATORIO_CLIENTE_FRONT_V1: fecha o painel de lojas ao clicar fora.
+    // Fecha o modal no ESC.
     useEffect(() => {
-      if (!lojasAberto) return;
-      const fora = (ev) => {
-        if (lojasBoxRef.current && !lojasBoxRef.current.contains(ev.target)) setLojasAberto(false);
-      };
-      document.addEventListener('mousedown', fora);
-      return () => document.removeEventListener('mousedown', fora);
-    }, [lojasAberto]);
+      if (!modalAberto) return;
+      const esc = (ev) => { if (ev.key === 'Escape') setModalAberto(false); };
+      document.addEventListener('keydown', esc);
+      return () => document.removeEventListener('keydown', esc);
+    }, [modalAberto]);
 
-    // Lista de lojas do periodo. Sai das linhas JA carregadas: o filtro e na
-    // tela, entao trocar checkbox nao volta no servidor.
-    const SEM_CLIENTE = '__sem__';
-    const lojasDisponiveis = useMemo(() => {
-      const nomes = Array.from(new Set(rows.map(r => r.cliente_nome).filter(Boolean)))
-        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      if (rows.some(r => !r.cliente_nome)) nomes.push(SEM_CLIENTE);
-      return nomes;
-    }, [rows]);
+    // As opcoes saem das linhas JA carregadas do periodo: so aparece filtro
+    // pra coisa que existe. Filtrar por loja que nao teve corrida no periodo
+    // nao faria sentido.
+    const ordPt = (a, b) => String(a).localeCompare(String(b), 'pt-BR');
+    const opcoesDe = (campo) => {
+      const vals = Array.from(new Set(rows.map(r => r[campo]).filter(Boolean))).sort(ordPt);
+      if (rows.some(r => !r[campo])) vals.push(VAZIO);
+      return vals;
+    };
+    const opcoes = useMemo(() => ({
+      canais:     opcoesDe('canal'),
+      provedores: opcoesDe('provider'),
+      status:     opcoesDe('status'),
+      lojas:      opcoesDe('cliente_nome'),
+      motoboys:   opcoesDe('motoboy'),
+    }), [rows]);
 
-    const lojaMarcada = (nome) => lojasSel === null || lojasSel.has(nome);
-    const toggleLoja = (nome) => {
-      setLojasSel(prev => {
-        // prev null = tudo marcado; materializa antes de desmarcar um.
-        const base = prev === null ? new Set(lojasDisponiveis) : new Set(prev);
-        if (base.has(nome)) base.delete(nome); else base.add(nome);
-        // voltou a ter tudo -> null (sem filtro), pra nao travar a selecao
-        // quando o periodo mudar e aparecer loja nova.
-        return base.size === lojasDisponiveis.length ? null : base;
+    const marcado = (chave, v) => f[chave] === null || f[chave].has(v);
+    const alternar = (chave, v) => {
+      const disp = opcoes[chave] || [];
+      setF(prev => {
+        const base = prev[chave] === null ? new Set(disp) : new Set(prev[chave]);
+        if (base.has(v)) base.delete(v); else base.add(v);
+        // voltou a ter tudo -> null (sem filtro)
+        return { ...prev, [chave]: base.size === disp.length ? null : base };
       });
     };
+    const marcarTodos = (chave) => setF(prev => ({ ...prev, [chave]: null }));
+    const marcarNenhum = (chave) => setF(prev => ({ ...prev, [chave]: new Set() }));
+    const limparTudo = () => setF({ canais: null, provedores: null, status: null, lojas: null, motoboys: null, busca: '' });
 
-    // Filtro na tela + totais recalculados a partir do que esta VISIVEL.
-    // Se os totais viessem do backend, eles ignorariam o filtro de loja e
-    // nao bateriam com a tabela.
-    const rowsView = useMemo(() => (
-      lojasSel === null ? rows : rows.filter(r => lojasSel.has(r.cliente_nome || SEM_CLIENTE))
-    ), [rows, lojasSel]);
+    const qtdFiltros = useMemo(() => {
+      let n = 0;
+      ['canais', 'provedores', 'status', 'lojas', 'motoboys'].forEach(k => { if (f[k] !== null) n++; });
+      if (f.busca.trim()) n++;
+      return n;
+    }, [f]);
+
+    const casaBusca = (r) => {
+      const q = f.busca.trim().toLowerCase();
+      if (!q) return true;
+      return [r.os, r.cliente_nome, r.motoboy, r.endereco_coleta, r.endereco_entrega, r.provider]
+        .some(v => String(v == null ? '' : v).toLowerCase().includes(q));
+    };
+    const passa = (chave, v) => f[chave] === null || f[chave].has(v || VAZIO);
+
+    const rowsView = useMemo(() => rows.filter(r =>
+      passa('canais', r.canal) && passa('provedores', r.provider) &&
+      passa('status', r.status) && passa('lojas', r.cliente_nome) &&
+      passa('motoboys', r.motoboy) && casaBusca(r)
+    ), [rows, f]);
 
     const totaisView = useMemo(() => {
       const t = rowsView.reduce((acc, c) => {
@@ -4248,62 +4277,68 @@
         if (c.km != null) acc.km += c.km;
         if (c.valor != null) acc.valor += c.valor;
         if (c.valor_mapp != null) acc.mapp += c.valor_mapp;
-        // RELATORIO_MODAIS_FRONT_V1 — soma COMPARAVEL, separada.
-        // A diferenca entre os modais so faz sentido nas corridas com as DUAS
-        // pontas preenchidas. Corrida com Mapp = 0 (o snapshot pego antes do
-        // operador lancar o valor) puxaria o total da Mapp pra baixo e
-        // inflaria a diferenca de mentira.
+        if (c.custo_provedor != null) acc.custo += c.custo_provedor;
+        if (c.faturamento_liquido != null) acc.liquido += c.faturamento_liquido;
+        // Soma COMPARAVEL, separada: a diferenca entre os modais so vale nas
+        // corridas com as DUAS pontas. Corrida com Mapp = 0 (o snapshot pego
+        // antes de o operador lancar o valor) inflaria a diferenca.
         if (c.valor != null && c.valor_mapp != null && c.valor_mapp > 0) {
-          acc.cmpHub += c.valor;
-          acc.cmpMapp += c.valor_mapp;
-          acc.cmpN += 1;
+          acc.cmpHub += c.valor; acc.cmpMapp += c.valor_mapp; acc.cmpN += 1;
         }
         return acc;
-      }, { corridas: 0, km: 0, valor: 0, mapp: 0, cmpHub: 0, cmpMapp: 0, cmpN: 0 });
-      t.km = Math.round(t.km * 100) / 100;
-      t.valor = Math.round(t.valor * 100) / 100;
-      t.mapp = Math.round(t.mapp * 100) / 100;
-      t.cmpHub = Math.round(t.cmpHub * 100) / 100;
-      t.cmpMapp = Math.round(t.cmpMapp * 100) / 100;
-      // quantas corridas com valor de Hub ficaram FORA da comparacao
+      }, { corridas: 0, km: 0, valor: 0, mapp: 0, custo: 0, liquido: 0, cmpHub: 0, cmpMapp: 0, cmpN: 0 });
+      ['km', 'valor', 'mapp', 'custo', 'liquido', 'cmpHub', 'cmpMapp'].forEach(k => {
+        t[k] = Math.round(t[k] * 100) / 100;
+      });
       t.cmpFora = rowsView.filter(c => c.valor != null).length - t.cmpN;
       return t;
     }, [rowsView]);
 
-    // RELATORIO_MODAIS_FRONT_V1 — a diferenca.
     // A BASE do % importa: com Hub 1.334 e Mapp 898, "48,5% mais caro" (base
-    // Mapp) e "32,7% mais barato" (base Hub) descrevem a MESMA diferenca. O
-    // card escreve a base pra ninguem ler errado.
+    // Mapp) e "32,7% mais barato" (base Hub) sao a MESMA diferenca. O card
+    // escreve a base pra ninguem ler errado.
     const difModais = useMemo(() => {
       const { cmpHub, cmpMapp, cmpN, cmpFora } = totaisView;
       if (!cmpN || cmpMapp <= 0) return null;
       const abs = Math.round((cmpHub - cmpMapp) * 100) / 100;
-      const pct = (abs / cmpMapp) * 100;
       return {
-        abs,
-        pct: Math.round(Math.abs(pct) * 10) / 10,
-        hubMaisCaro: abs > 0,
-        iguais: Math.abs(abs) < 0.005,
-        n: cmpN,
-        fora: cmpFora,
+        abs, pct: Math.round(Math.abs((abs / cmpMapp) * 100) * 10) / 10,
+        hubMaisCaro: abs > 0, iguais: Math.abs(abs) < 0.005, n: cmpN, fora: cmpFora,
       };
     }, [totaisView]);
 
-    const baixarCSV = async () => {
+    const brl = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const km  = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    // CSV montado NA TELA, a partir de rowsView. Mesmo formato do backend
+    // (BOM UTF-8 + ';') pro Excel abrir certo. Como sai da mesma lista que a
+    // tabela renderiza, planilha e tela nao tem como divergir.
+    const baixarCSV = () => {
       try {
-        // RELATORIO_CLIENTE_FRONT_V1: o CSV sai igual ao que esta na tela.
-        const qsLojas = lojasSel === null ? '' : '&lojas=' + encodeURIComponent(Array.from(lojasSel).join(','));
-        const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?${qs()}&formato=csv${qsLojas}`);
-        const blob = await res.blob();
+        const esc = (v) => {
+          const s = v == null ? '' : String(v);
+          return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        };
+        const nb = (n) => n == null ? '' : Number(n).toFixed(2).replace('.', ',');
+        const headers = ['OS', 'Cliente', 'Canal', 'Provedor', 'Coleta', 'Entrega', 'Motoboy', 'KM',
+          'Valor Hub (R$)', 'Valor Mapp (R$)', 'Custo Provedor (R$)', 'Faturamento Liquido (R$)', 'Status', 'Data'];
+        const linhas = rowsView.map(r => [
+          r.os, r.cliente_nome || '', r.canal || '', r.provider || '',
+          r.endereco_coleta || '', r.endereco_entrega || '', r.motoboy || '',
+          r.km != null ? String(r.km).replace('.', ',') : '',
+          nb(r.valor), nb(r.valor_mapp), nb(r.custo_provedor), nb(r.faturamento_liquido),
+          r.status || '', r.data ? new Date(r.data).toISOString() : '',
+        ]);
+        const csv = '\uFEFF' + [headers.map(esc).join(';')]
+          .concat(linhas.map(l => l.map(esc).join(';'))).join('\n') + '\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'relatorio-hub.csv'; a.click();
+        a.href = url; a.download = `relatorio-hub-${de}-a-${ate}.csv`; a.click();
         URL.revokeObjectURL(url);
       } catch { showToast('Erro ao exportar CSV', 'error'); }
     };
 
-    const brl = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const km  = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const hubSvg = () => h('svg', { viewBox: '0 0 64 64', style: { width: '100%', height: '100%', padding: '3px' } },
       h('circle', { cx: 18, cy: 42, r: 4, fill: '#f67602' }),
       h('path', { d: 'M18 42 Q30 21 46 18', stroke: '#f67602', strokeWidth: 4, fill: 'none', strokeLinecap: 'round' }),
@@ -4326,107 +4361,151 @@
       h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, '▼'), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
     );
 
+    const rotulo = (chave, v) => {
+      if (v === VAZIO) return { canais: 'Sem canal', provedores: 'Sem provedor', status: 'Sem status', lojas: 'Sem cliente', motoboys: 'Sem motoboy' }[chave] || 'Sem valor';
+      if (chave === 'canais') return v === 'tutts' ? 'Tutts' : 'Hub';
+      if (chave === 'provedores') return v === 'noventanove' ? '99' : v === 'uber' ? 'Uber' : v;
+      return v;
+    };
+
+    // Funcao que devolve elementos — NAO e componente. Componente definido
+    // dentro do render vira tipo novo a cada render e o React desmonta/remonta
+    // tudo, quebrando foco e clique.
+    const secao = (titulo, chave, colunas) => {
+      const disp = opcoes[chave] || [];
+      return h('div', null,
+        h('div', { className: 'flex items-center justify-between mb-1.5' },
+          h('span', { className: 'text-xs font-semibold text-gray-700' }, titulo,
+            f[chave] !== null && h('span', { className: 'ml-1.5 text-[10px] font-normal text-purple-600' }, `${f[chave].size}/${disp.length}`)),
+          h('span', { className: 'flex gap-2' },
+            h('button', { onClick: () => marcarTodos(chave), className: 'text-[10px] font-semibold text-purple-600 hover:underline' }, 'Todos'),
+            h('button', { onClick: () => marcarNenhum(chave), className: 'text-[10px] font-semibold text-gray-400 hover:underline' }, 'Nenhum'),
+          ),
+        ),
+        disp.length === 0
+          ? h('div', { className: 'text-[11px] text-gray-400 py-1' }, 'Nada no período')
+          : h('div', { className: `grid ${colunas || 'grid-cols-2'} gap-x-3 gap-y-0.5 max-h-40 overflow-y-auto pr-1` },
+              disp.map(v => h('label', { key: String(v), className: 'flex items-center gap-1.5 py-0.5 rounded hover:bg-gray-50 cursor-pointer' },
+                h('input', { type: 'checkbox', checked: marcado(chave, v), onChange: () => alternar(chave, v), className: 'w-3.5 h-3.5 accent-purple-600 flex-shrink-0' }),
+                h('span', { className: `text-[11px] truncate ${v === VAZIO ? 'text-gray-400 italic' : 'text-gray-700'}`, title: rotulo(chave, v) }, rotulo(chave, v)),
+              )),
+            ),
+      );
+    };
+
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
+
+    const card = (rotuloTxt, valor, cls, sub, sub2, titleTxt) => h('div', {
+      className: `rounded-xl border p-3 ${cls || 'bg-white border-gray-200'}`, title: titleTxt || undefined,
+    },
+      h('div', { className: 'text-[11px] text-gray-400' }, rotuloTxt),
+      h('div', { className: 'text-2xl font-bold text-gray-800' }, valor),
+      sub && h('div', { className: 'text-[10px] text-gray-500 mt-0.5' }, sub),
+      sub2 && h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, sub2),
+    );
 
     return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
       h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
         h('div', null,
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Relatório de corridas'),
-          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'OS, endereços, motoboy, km e valor (valor pela tabela do cliente)'),
+          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'OS, endereços, motoboy, km, valor do Hub, custo do provedor e líquido'),
         ),
         h('div', { className: 'flex items-center gap-2 flex-wrap' },
-          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
-            pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
-              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
-          ),
-          periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
-            h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
-            h('span', { className: 'text-gray-400 text-xs' }, 'até'),
-            h('input', { type: 'date', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
-          ),
-          h('select', { value: provider, onChange: e => setProvider(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' },
-            h('option', { value: '' }, 'Todos'),
-            h('option', { value: '99' }, '99'),
-            h('option', { value: 'uber' }, 'Uber'),
-          ),
-          h('select', { value: statusF, onChange: e => setStatusF(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' },
-            h('option', { value: '' }, 'Status: todos'),
-            h('option', { value: 'Entregue' }, 'Entregue'),
-            h('option', { value: 'Cancelado' }, 'Cancelado'),
-            h('option', { value: 'Não entregue' }, 'Não entregue'),
-            h('option', { value: 'Em rota' }, 'Em rota'),
-            h('option', { value: 'Pendente' }, 'Pendente'),
-            h('option', { value: 'Devolvido' }, 'Devolvido'),
-          ),
-          // RELATORIO_CLIENTE_FRONT_V1: filtro de lojas por checkbox.
-          h('div', { className: 'relative', ref: lojasBoxRef },
-            h('button', {
-              onClick: () => setLojasAberto(v => !v),
-              className: `px-2 py-1.5 border rounded-lg text-xs font-medium ${lojasSel === null ? 'border-gray-200 text-gray-700 bg-white' : 'border-purple-300 text-purple-700 bg-purple-50'}`,
-            }, lojasSel === null ? 'Lojas: todas ▾' : `Lojas: ${lojasSel.size} ▾`),
-            lojasAberto && h('div', { className: 'absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-72 overflow-y-auto' },
-              h('div', { className: 'flex items-center justify-between pb-1.5 mb-1 border-b border-gray-100' },
-                h('button', { onClick: () => setLojasSel(null), className: 'text-[11px] font-semibold text-purple-600 hover:underline' }, 'Todas'),
-                h('button', { onClick: () => setLojasSel(new Set()), className: 'text-[11px] font-semibold text-gray-400 hover:underline' }, 'Nenhuma'),
-              ),
-              lojasDisponiveis.length === 0
-                ? h('div', { className: 'text-[11px] text-gray-400 py-2 text-center' }, 'Nenhuma loja no periodo')
-                : lojasDisponiveis.map(nome => h('label', {
-                    key: nome,
-                    className: 'flex items-center gap-2 px-1 py-1 rounded hover:bg-gray-50 cursor-pointer',
-                  },
-                    h('input', { type: 'checkbox', checked: lojaMarcada(nome), onChange: () => toggleLoja(nome), className: 'w-3.5 h-3.5 accent-purple-600' }),
-                    h('span', { className: `text-[11px] truncate ${nome === SEM_CLIENTE ? 'text-gray-400 italic' : 'text-gray-700'}` },
-                      nome === SEM_CLIENTE ? 'Sem cliente' : nome),
-                  )),
-            ),
-          ),
+          h('button', {
+            onClick: () => setModalAberto(true),
+            className: `px-3 py-1.5 border rounded-lg text-sm font-semibold ${qtdFiltros ? 'border-purple-300 text-purple-700 bg-purple-50' : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'}`,
+          }, qtdFiltros ? `Filtros (${qtdFiltros})` : 'Filtros'),
+          h('span', { className: 'text-[11px] text-gray-400' }, `${de} a ${ate}`),
           h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳'),
           h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, '⬇ CSV'),
         ),
       ),
 
-      // RELATORIO_CLIENTE_FRONT_V1: totais de totaisView (o que esta na tela,
-      // ja filtrado por loja) e nao os do backend, que ignoram esse filtro.
-      // RELATORIO_MODAIS_FRONT_V1: 4 -> 5 cards
-      totais && h('div', { className: 'grid grid-cols-5 gap-3' },
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
-          h('div', { className: 'text-[11px] text-gray-400' }, 'Corridas'),
-          h('div', { className: 'text-2xl font-bold text-gray-800' }, totaisView.corridas),
+      modalAberto && h('div', {
+        className: 'fixed inset-0 z-50 flex items-center justify-center p-4',
+        style: { background: 'rgba(0,0,0,.45)' },
+        onClick: (ev) => { if (ev.target === ev.currentTarget) setModalAberto(false); },
+      },
+        h('div', { className: 'bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto' },
+          h('div', { className: 'flex items-center justify-between px-5 py-3 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl' },
+            h('div', null,
+              h('h3', { className: 'text-lg font-bold text-gray-800' }, 'Filtros'),
+              h('p', { className: 'text-[11px] text-gray-500' }, `${rowsView.length} de ${rows.length} corridas`),
+            ),
+            h('button', { onClick: () => setModalAberto(false), className: 'text-gray-400 hover:text-gray-600 text-xl leading-none px-2' }, '×'),
+          ),
+          h('div', { className: 'p-5 space-y-4' },
+            h('div', null,
+              h('div', { className: 'text-xs font-semibold text-gray-700 mb-1.5' }, 'Período'),
+              h('div', { className: 'flex items-center gap-2 flex-wrap' },
+                h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
+                  pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
+                    className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
+                ),
+                periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
+                  h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+                  h('span', { className: 'text-gray-400 text-xs' }, 'até'),
+                  h('input', { type: 'date', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+                ),
+              ),
+              h('p', { className: 'text-[10px] text-gray-400 mt-1' }, 'O período recarrega do servidor; os demais filtros são na tela.'),
+            ),
+            h('div', null,
+              h('div', { className: 'text-xs font-semibold text-gray-700 mb-1.5' }, 'Busca'),
+              h('input', {
+                type: 'text', value: f.busca, placeholder: 'OS, cliente, motoboy, endereço...',
+                onChange: e => setF(prev => ({ ...prev, busca: e.target.value })),
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700',
+              }),
+            ),
+            h('div', { className: 'grid grid-cols-2 gap-4' },
+              secao('Canal', 'canais', 'grid-cols-1'),
+              secao('Provedor', 'provedores', 'grid-cols-1'),
+            ),
+            secao('Status', 'status', 'grid-cols-3'),
+            secao('Lojas', 'lojas', 'grid-cols-2'),
+            secao('Motoboys', 'motoboys', 'grid-cols-2'),
+          ),
+          h('div', { className: 'flex items-center justify-between px-5 py-3 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-2xl' },
+            h('button', { onClick: limparTudo, className: 'text-xs font-semibold text-gray-500 hover:text-gray-700' }, 'Limpar tudo'),
+            h('button', { onClick: () => setModalAberto(false), className: 'px-4 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, 'Ver resultado'),
+          ),
         ),
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
-          h('div', { className: 'text-[11px] text-gray-400' }, 'KM total'),
-          h('div', { className: 'text-2xl font-bold text-gray-800' }, km(totaisView.km)),
-        ),
-        // RELATORIO_MODAIS_FRONT_V1: "Valor total" -> "Valor do Hub".
-        // Depois que entrou a coluna da Mapp, "total" ficou ambiguo: os dois
-        // sao totais. Este e o que sai da tabela de preco da regra.
-        h('div', { className: 'bg-purple-50 rounded-xl border border-purple-200 p-3' },
+      ),
+
+      // Totais do que esta VISIVEL (ja filtrado), nao os do backend — senao
+      // ignorariam os filtros de tela e nao bateriam com a tabela.
+      totais && h('div', { className: 'grid grid-cols-4 gap-3' },
+        card('Corridas', totaisView.corridas),
+        card('KM total', km(totaisView.km)),
+        h('div', { className: 'rounded-xl border p-3 bg-purple-50 border-purple-200' },
           h('div', { className: 'text-[11px] text-purple-500' }, 'Valor do Hub'),
           h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totaisView.valor)),
         ),
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
-          h('div', { className: 'text-[11px] text-gray-400' }, 'Valor Mapp'),
-          h('div', { className: 'text-2xl font-bold text-gray-500' }, 'R$ ' + brl(totaisView.mapp)),
+        h('div', { className: 'rounded-xl border p-3 bg-white border-gray-200' },
+          h('div', { className: 'text-[11px] text-gray-400' }, 'Custo provedor'),
+          h('div', { className: 'text-2xl font-bold text-rose-600' }, '- R$ ' + brl(totaisView.custo)),
+          h('div', { className: 'text-[10px] text-gray-500 mt-0.5' }, 'o que pagamos a 99/Uber'),
         ),
-        // RELATORIO_MODAIS_FRONT_V1: diferenca entre os modais.
-        h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3' },
+        h('div', { className: 'rounded-xl border p-3 bg-emerald-50 border-emerald-200' },
+          h('div', { className: 'text-[11px] text-emerald-600' }, 'Faturamento líquido'),
+          h('div', { className: `text-2xl font-bold ${totaisView.liquido < 0 ? 'text-rose-600' : 'text-emerald-700'}` }, 'R$ ' + brl(totaisView.liquido)),
+          h('div', { className: 'text-[10px] text-emerald-600/70 mt-0.5' }, 'Hub − custo do provedor'),
+        ),
+        card('Valor Mapp', 'R$ ' + brl(totaisView.mapp)),
+        h('div', { className: 'rounded-xl border p-3 bg-white border-gray-200' },
           h('div', { className: 'text-[11px] text-gray-400' }, 'Diferença entre os modais'),
           !difModais
             ? h('div', { className: 'text-2xl font-bold text-gray-300' }, '—')
             : difModais.iguais
               ? h('div', { className: 'text-2xl font-bold text-gray-500' }, 'R$ 0,00')
-              : h('div', {
-                  className: `text-2xl font-bold ${difModais.hubMaisCaro ? 'text-emerald-600' : 'text-rose-600'}`,
-                }, (difModais.hubMaisCaro ? '+' : '−') + ' R$ ' + brl(Math.abs(difModais.abs))),
+              : h('div', { className: `text-2xl font-bold ${difModais.hubMaisCaro ? 'text-emerald-600' : 'text-rose-600'}` },
+                  (difModais.hubMaisCaro ? '+' : '−') + ' R$ ' + brl(Math.abs(difModais.abs))),
           !difModais
             ? h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'sem corrida comparável')
             : h('div', { className: 'text-[10px] text-gray-500 mt-0.5' },
-                difModais.iguais
-                  ? 'Hub e Mapp no mesmo valor'
+                difModais.iguais ? 'Hub e Mapp no mesmo valor'
                   : `Hub ${brl(difModais.pct)}% mais ${difModais.hubMaisCaro ? 'caro' : 'barato'} que a Mapp`),
-          // Base e amostra explicitas: sem isso o numero engana. O % e sempre
-          // sobre a Mapp, e so entram corridas com os dois valores.
           difModais && h('div', {
             className: 'text-[9px] text-gray-400 mt-0.5',
             title: 'Só entram corridas com valor de Hub E de Mapp (> 0). Corrida com Mapp zerado ficaria de fora, senão inflaria a diferença.',
@@ -4442,20 +4521,16 @@
               h('table', { className: 'w-full text-xs' },
                 h('thead', null,
                   h('tr', { className: 'bg-gray-50 text-left text-gray-500' },
-                    // RELATORIO_CLIENTE_FRONT_V1: + coluna Valor Mapp
-                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor', 'Valor Mapp'].map((c, idx) =>
+                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor Hub', 'Valor Mapp', 'Custo', 'Líquido'].map((c, idx) =>
                       h('th', { key: c, className: `px-3 py-2 font-semibold ${idx >= 5 ? 'text-right' : ''}` }, c)),
                   ),
                 ),
                 h('tbody', null,
-                  // RELATORIO_CLIENTE_FRONT_V1: rowsView (filtrado por loja na tela)
                   rowsView.length === 0
-                    ? h('tr', null, h('td', { colSpan: 8, className: 'px-3 py-8 text-center text-gray-400' }, 'Nenhuma corrida no período'))
+                    ? h('tr', null, h('td', { colSpan: 10, className: 'px-3 py-8 text-center text-gray-400' },
+                        rows.length === 0 ? 'Nenhuma corrida no período' : 'Nenhuma corrida com os filtros atuais'))
                     : rowsView.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
                         h('td', { className: 'px-3 py-2 font-semibold text-gray-700' }, r.os),
-                        // RELATORIO_CLIENTE_FRONT_V1: title mostra de onde veio o nome
-                        // (regra gravada / match por endereco / solicitacao) - ajuda
-                        // a conferir quando um nome parecer estranho.
                         h('td', {
                           className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
                           title: r.cliente_nome ? (r.cliente_nome + (r.cliente_origem ? ' (' + r.cliente_origem + ')' : '')) : '',
@@ -4466,8 +4541,17 @@
                         h('td', { className: 'px-3 py-2' }, statusBadge(r.status)),
                         h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' }, km(r.km)),
                         h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap' }, brl(r.valor)),
-                        // RELATORIO_CLIENTE_FRONT_V1: valor original da Mapp, ao lado.
                         h('td', { className: 'px-3 py-2 text-right text-gray-500 whitespace-nowrap' }, brl(r.valor_mapp)),
+                        // 'cotacao' = a Uber, ou 99 que ainda nao reconciliou.
+                        // O title diz qual, pra nao confundir estimativa com real.
+                        h('td', {
+                          className: 'px-3 py-2 text-right text-rose-600 whitespace-nowrap',
+                          title: r.custo_origem === 'final' ? 'Custo final reconciliado (99)'
+                            : r.custo_origem === 'cotacao' ? 'Cotação do despacho (ainda não reconciliado)' : '',
+                        }, brl(r.custo_provedor),
+                          r.custo_origem === 'cotacao' && h('span', { className: 'text-gray-300 ml-0.5' }, '~')),
+                        h('td', { className: `px-3 py-2 text-right font-semibold whitespace-nowrap ${r.faturamento_liquido == null ? 'text-gray-400' : r.faturamento_liquido < 0 ? 'text-rose-600' : 'text-emerald-700'}` },
+                          brl(r.faturamento_liquido)),
                       )),
                 ),
               ),
