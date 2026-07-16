@@ -4176,7 +4176,9 @@
     const [loading, setLoading] = useState(true);
     const [modalAberto, setModalAberto] = useState(false);
 
-    const [periodo, setPeriodo] = useState('30d');
+    // RELATORIO_COLUNAS_FRONT_V1: abre em HOJE. 30 dias como padrao trazia
+    // milhares de linhas so pra alguem que so queria ver o dia.
+    const [periodo, setPeriodo] = useState('1d');
     const hojeBRT   = () => dataLocalBRT(new Date());
     const diasAtras = (nd) => dataLocalBRT(new Date(Date.now() - nd * 86400000));
     const [deCustom, setDeCustom]   = useState(diasAtras(29));
@@ -4189,7 +4191,27 @@
     const VAZIO = '__sem__';
     const [f, setF] = useState({
       canais: null, provedores: null, status: null,
-      lojas: null, motoboys: null, busca: '',
+      lojas: null, busca: '',
+    });
+
+    // RELATORIO_COLUNAS_FRONT_V1 — colunas visiveis.
+    //
+    // A tabela e o CSV sao gerados desta MESMA lista. Antes o cabecalho, as
+    // celulas e o CSV eram tres listas escritas a mao: mudar uma coluna
+    // exigia lembrar das tres. Agora e uma so.
+    //
+    // 'enderecos' e uma coluna na tela mas DUAS no CSV (Coleta e Entrega) —
+    // por isso csv pode devolver array.
+    // Canal e Provedor saem no CSV junto com Motoboy: o icone do canal mora
+    // naquela celula.
+    const [cols, setCols] = useState(() => new Set(
+      ['cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido']
+    ));
+    const colVisivel = (id) => cols.has(id);
+    const alternarCol = (id) => setCols(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
     });
 
     const range = periodo === 'custom' ? { de: deCustom, ate: ateCustom }
@@ -4233,7 +4255,6 @@
       provedores: opcoesDe('provider'),
       status:     opcoesDe('status'),
       lojas:      opcoesDe('cliente_nome'),
-      motoboys:   opcoesDe('motoboy'),
     }), [rows]);
 
     const marcado = (chave, v) => f[chave] === null || f[chave].has(v);
@@ -4248,11 +4269,11 @@
     };
     const marcarTodos = (chave) => setF(prev => ({ ...prev, [chave]: null }));
     const marcarNenhum = (chave) => setF(prev => ({ ...prev, [chave]: new Set() }));
-    const limparTudo = () => setF({ canais: null, provedores: null, status: null, lojas: null, motoboys: null, busca: '' });
+    const limparTudo = () => setF({ canais: null, provedores: null, status: null, lojas: null, busca: '' });
 
     const qtdFiltros = useMemo(() => {
       let n = 0;
-      ['canais', 'provedores', 'status', 'lojas', 'motoboys'].forEach(k => { if (f[k] !== null) n++; });
+      ['canais', 'provedores', 'status', 'lojas'].forEach(k => { if (f[k] !== null) n++; });
       if (f.busca.trim()) n++;
       return n;
     }, [f]);
@@ -4265,10 +4286,11 @@
     };
     const passa = (chave, v) => f[chave] === null || f[chave].has(v || VAZIO);
 
+    // Motoboy nao tem mais multi-select: eram centenas de checkbox, e a busca
+    // livre ja cobre "quero ver as do fulano". Virou so mostrar/esconder coluna.
     const rowsView = useMemo(() => rows.filter(r =>
       passa('canais', r.canal) && passa('provedores', r.provider) &&
-      passa('status', r.status) && passa('lojas', r.cliente_nome) &&
-      passa('motoboys', r.motoboy) && casaBusca(r)
+      passa('status', r.status) && passa('lojas', r.cliente_nome) && casaBusca(r)
     ), [rows, f]);
 
     const totaisView = useMemo(() => {
@@ -4310,25 +4332,23 @@
     const brl = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const km  = (n) => n == null ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-    // CSV montado NA TELA, a partir de rowsView. Mesmo formato do backend
-    // (BOM UTF-8 + ';') pro Excel abrir certo. Como sai da mesma lista que a
-    // tabela renderiza, planilha e tela nao tem como divergir.
+    // CSV montado NA TELA, das colunas VISIVEIS e das linhas filtradas.
+    // Mesmo formato do backend (BOM UTF-8 + ';') pro Excel abrir certo.
+    // Como sai da mesma definicao que a tabela usa, planilha e tela nao tem
+    // como divergir.
     const baixarCSV = () => {
       try {
         const esc = (v) => {
-          const s = v == null ? '' : String(v);
-          return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+          const s2 = v == null ? '' : String(v);
+          return /[";\n]/.test(s2) ? '"' + s2.replace(/"/g, '""') + '"' : s2;
         };
-        const nb = (n) => n == null ? '' : Number(n).toFixed(2).replace('.', ',');
-        const headers = ['OS', 'Cliente', 'Canal', 'Provedor', 'Coleta', 'Entrega', 'Motoboy', 'KM',
-          'Valor Hub (R$)', 'Valor Mapp (R$)', 'Custo Provedor (R$)', 'Faturamento Liquido (R$)', 'Status', 'Data'];
-        const linhas = rowsView.map(r => [
-          r.os, r.cliente_nome || '', r.canal || '', r.provider || '',
-          r.endereco_coleta || '', r.endereco_entrega || '', r.motoboy || '',
-          r.km != null ? String(r.km).replace('.', ',') : '',
-          nb(r.valor), nb(r.valor_mapp), nb(r.custo_provedor), nb(r.faturamento_liquido),
-          r.status || '', r.data ? new Date(r.data).toISOString() : '',
-        ]);
+        const vis = COLS.filter(c => c.fixa || colVisivel(c.id));
+        if (!vis.length) { showToast('Escolha ao menos uma coluna', 'error'); return; }
+        const headers = vis.reduce((a, c) => a.concat(c.csvRot || [c.rot]), []);
+        const linhas = rowsView.map(r => vis.reduce((a, c) => {
+          const v = c.csv(r);
+          return a.concat(Array.isArray(v) ? v : [v]);
+        }, []));
         const csv = '\uFEFF' + [headers.map(esc).join(';')]
           .concat(linhas.map(l => l.map(esc).join(';'))).join('\n') + '\n';
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -4362,7 +4382,7 @@
     );
 
     const rotulo = (chave, v) => {
-      if (v === VAZIO) return { canais: 'Sem canal', provedores: 'Sem provedor', status: 'Sem status', lojas: 'Sem cliente', motoboys: 'Sem motoboy' }[chave] || 'Sem valor';
+      if (v === VAZIO) return { canais: 'Sem canal', provedores: 'Sem provedor', status: 'Sem status', lojas: 'Sem cliente' }[chave] || 'Sem valor';
       if (chave === 'canais') return v === 'tutts' ? 'Tutts' : 'Hub';
       if (chave === 'provedores') return v === 'noventanove' ? '99' : v === 'uber' ? 'Uber' : v;
       return v;
@@ -4392,6 +4412,56 @@
             ),
       );
     };
+
+    // RELATORIO_COLUNAS_FRONT_V1 — a definicao UNICA de coluna.
+    // cel = como renderiza na tabela | csv = o que sai na planilha
+    // csvRot = cabecalho(s) no CSV, quando difere do rotulo da tela
+    // Precisa vir DEPOIS de brl/km/trajeto/iconeCanal/statusBadge, que ela usa.
+    const nb = (n) => n == null ? '' : Number(n).toFixed(2).replace('.', ',');
+    const COLS = [
+      { id: 'os', rot: 'OS', fixa: true,
+        tdCls: 'px-3 py-2 font-semibold text-gray-700',
+        cel: (r) => r.os, csv: (r) => r.os },
+      { id: 'cliente', rot: 'Cliente',
+        tdCls: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
+        // o title mostra de onde veio o nome (regra / endereco / solicitacao)
+        tdProps: (r) => ({ title: r.cliente_nome ? (r.cliente_nome + (r.cliente_origem ? ' (' + r.cliente_origem + ')' : '')) : '' }),
+        cel: (r) => r.cliente_nome || '—', csv: (r) => r.cliente_nome || '' },
+      { id: 'enderecos', rot: 'Coleta / Entrega', rotFiltro: 'Endereços',
+        tdCls: 'px-3 py-2 min-w-[200px]',
+        cel: (r) => trajeto(r),
+        csvRot: ['Coleta', 'Entrega'],
+        csv: (r) => [r.endereco_coleta || '', r.endereco_entrega || ''] },
+      { id: 'motoboy', rot: 'Motoboy', rotFiltro: 'Motoboy (+ canal)',
+        tdCls: 'px-3 py-2',
+        cel: (r) => h('span', { className: 'inline-flex items-center gap-1.5' }, iconeCanal(r.canal), r.motoboy || '—'),
+        csvRot: ['Motoboy', 'Canal', 'Provedor'],
+        csv: (r) => [r.motoboy || '', r.canal || '', r.provider || ''] },
+      { id: 'status', rot: 'Status', tdCls: 'px-3 py-2',
+        cel: (r) => statusBadge(r.status), csv: (r) => r.status || '' },
+      { id: 'km', rot: 'KM', num: true, tdCls: 'px-3 py-2 text-right whitespace-nowrap',
+        cel: (r) => km(r.km), csv: (r) => r.km != null ? String(r.km).replace('.', ',') : '' },
+      { id: 'valor', rot: 'Valor Hub', num: true,
+        tdCls: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap',
+        cel: (r) => brl(r.valor), csvRot: ['Valor Hub (R$)'], csv: (r) => nb(r.valor) },
+      { id: 'mapp', rot: 'Valor Mapp', num: true,
+        tdCls: 'px-3 py-2 text-right text-gray-500 whitespace-nowrap',
+        cel: (r) => brl(r.valor_mapp), csvRot: ['Valor Mapp (R$)'], csv: (r) => nb(r.valor_mapp) },
+      { id: 'custo', rot: 'Custo', num: true,
+        tdCls: 'px-3 py-2 text-right text-rose-600 whitespace-nowrap',
+        // 'cotacao' = Uber, ou 99 que ainda nao reconciliou. O ~ e o title
+        // avisam que e estimativa, nao custo final.
+        tdProps: (r) => ({ title: r.custo_origem === 'final' ? 'Custo final reconciliado (99)'
+          : r.custo_origem === 'cotacao' ? 'Cotação do despacho (ainda não reconciliado)' : '' }),
+        cel: (r) => [brl(r.custo_provedor), r.custo_origem === 'cotacao' ? h('span', { key: 'c', className: 'text-gray-300 ml-0.5' }, '~') : null],
+        csvRot: ['Custo Provedor (R$)', 'Origem do Custo'],
+        csv: (r) => [nb(r.custo_provedor), r.custo_origem || ''] },
+      { id: 'liquido', rot: 'Líquido', num: true,
+        tdCls: 'px-3 py-2 text-right font-semibold whitespace-nowrap',
+        tdClsFn: (r) => r.faturamento_liquido == null ? 'text-gray-400' : r.faturamento_liquido < 0 ? 'text-rose-600' : 'text-emerald-700',
+        cel: (r) => brl(r.faturamento_liquido), csvRot: ['Faturamento Liquido (R$)'], csv: (r) => nb(r.faturamento_liquido) },
+    ];
+    const colsVis = COLS.filter(c => c.fixa || colVisivel(c.id));
 
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
 
@@ -4464,7 +4534,26 @@
             ),
             secao('Status', 'status', 'grid-cols-3'),
             secao('Lojas', 'lojas', 'grid-cols-2'),
-            secao('Motoboys', 'motoboys', 'grid-cols-2'),
+            // RELATORIO_COLUNAS_FRONT_V1: escolha das colunas. Vale pra tela E
+            // pro CSV — os dois saem da mesma definicao.
+            h('div', { className: 'pt-1 border-t border-gray-100' },
+              h('div', { className: 'flex items-center justify-between mb-1.5 mt-3' },
+                h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Colunas',
+                  h('span', { className: 'ml-1.5 text-[10px] font-normal text-gray-400' }, 'valem pra tela e pro CSV')),
+                h('span', { className: 'flex gap-2' },
+                  h('button', { onClick: () => setCols(new Set(COLS.filter(c => !c.fixa).map(c => c.id))), className: 'text-[10px] font-semibold text-purple-600 hover:underline' }, 'Todas'),
+                  h('button', { onClick: () => setCols(new Set()), className: 'text-[10px] font-semibold text-gray-400 hover:underline' }, 'Nenhuma'),
+                ),
+              ),
+              h('div', { className: 'grid grid-cols-3 gap-x-3 gap-y-0.5' },
+                COLS.filter(c => !c.fixa).map(c => h('label', {
+                  key: c.id, className: 'flex items-center gap-1.5 py-0.5 rounded hover:bg-gray-50 cursor-pointer',
+                },
+                  h('input', { type: 'checkbox', checked: colVisivel(c.id), onChange: () => alternarCol(c.id), className: 'w-3.5 h-3.5 accent-purple-600 flex-shrink-0' }),
+                  h('span', { className: 'text-[11px] text-gray-700 truncate' }, c.rotFiltro || c.rot),
+                )),
+              ),
+            ),
           ),
           h('div', { className: 'flex items-center justify-between px-5 py-3 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-2xl' },
             h('button', { onClick: limparTudo, className: 'text-xs font-semibold text-gray-500 hover:text-gray-700' }, 'Limpar tudo'),
@@ -4521,37 +4610,18 @@
               h('table', { className: 'w-full text-xs' },
                 h('thead', null,
                   h('tr', { className: 'bg-gray-50 text-left text-gray-500' },
-                    ['OS', 'Cliente', 'Coleta / Entrega', 'Motoboy', 'Status', 'KM', 'Valor Hub', 'Valor Mapp', 'Custo', 'Líquido'].map((c, idx) =>
-                      h('th', { key: c, className: `px-3 py-2 font-semibold ${idx >= 5 ? 'text-right' : ''}` }, c)),
+                    colsVis.map(c => h('th', { key: c.id, className: `px-3 py-2 font-semibold ${c.num ? 'text-right' : ''}` }, c.rot)),
                   ),
                 ),
                 h('tbody', null,
                   rowsView.length === 0
-                    ? h('tr', null, h('td', { colSpan: 10, className: 'px-3 py-8 text-center text-gray-400' },
+                    ? h('tr', null, h('td', { colSpan: Math.max(1, colsVis.length), className: 'px-3 py-8 text-center text-gray-400' },
                         rows.length === 0 ? 'Nenhuma corrida no período' : 'Nenhuma corrida com os filtros atuais'))
                     : rowsView.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
-                        h('td', { className: 'px-3 py-2 font-semibold text-gray-700' }, r.os),
-                        h('td', {
-                          className: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
-                          title: r.cliente_nome ? (r.cliente_nome + (r.cliente_origem ? ' (' + r.cliente_origem + ')' : '')) : '',
-                        }, r.cliente_nome || '—'),
-                        h('td', { className: 'px-3 py-2 min-w-[200px]' }, trajeto(r)),
-                        h('td', { className: 'px-3 py-2' },
-                          h('span', { className: 'inline-flex items-center gap-1.5' }, iconeCanal(r.canal), r.motoboy || '—')),
-                        h('td', { className: 'px-3 py-2' }, statusBadge(r.status)),
-                        h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' }, km(r.km)),
-                        h('td', { className: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap' }, brl(r.valor)),
-                        h('td', { className: 'px-3 py-2 text-right text-gray-500 whitespace-nowrap' }, brl(r.valor_mapp)),
-                        // 'cotacao' = a Uber, ou 99 que ainda nao reconciliou.
-                        // O title diz qual, pra nao confundir estimativa com real.
-                        h('td', {
-                          className: 'px-3 py-2 text-right text-rose-600 whitespace-nowrap',
-                          title: r.custo_origem === 'final' ? 'Custo final reconciliado (99)'
-                            : r.custo_origem === 'cotacao' ? 'Cotação do despacho (ainda não reconciliado)' : '',
-                        }, brl(r.custo_provedor),
-                          r.custo_origem === 'cotacao' && h('span', { className: 'text-gray-300 ml-0.5' }, '~')),
-                        h('td', { className: `px-3 py-2 text-right font-semibold whitespace-nowrap ${r.faturamento_liquido == null ? 'text-gray-400' : r.faturamento_liquido < 0 ? 'text-rose-600' : 'text-emerald-700'}` },
-                          brl(r.faturamento_liquido)),
+                        colsVis.map(c => h('td', Object.assign(
+                          { key: c.id, className: (c.tdCls || 'px-3 py-2') + (c.tdClsFn ? ' ' + c.tdClsFn(r) : '') },
+                          c.tdProps ? c.tdProps(r) : {}
+                        ), c.cel(r))),
                       )),
                 ),
               ),
