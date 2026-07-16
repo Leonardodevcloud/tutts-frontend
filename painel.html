@@ -201,6 +201,10 @@
   .foot { padding:8px 12px; }
   .btn-rastrear { width:100%; font-size:12px; font-weight:600; padding:8px; border-radius:8px; border:1px solid #ddd6fe; color:var(--roxo); background:#f5f3ff; cursor:pointer; }
   .btn-rastrear:hover { background:#ede9fe; }
+  /* REDESPACHO_LOJA_V1 - acao, nao leitura: borda cheia pra separar do rastrear. */
+  .btn-redesp { width:100%; margin-top:6px; font-size:12px; font-weight:600; padding:8px; border-radius:8px; border:1px solid var(--roxo); color:#fff; background:var(--roxo); cursor:pointer; }
+  .btn-redesp:hover { filter:brightness(1.08); }
+  .btn-redesp:disabled { opacity:.55; cursor:default; }
   .btn-rastrear:disabled { opacity:.5; cursor:default; border-color:#f3f4f6; color:#cbd5e1; background:#fafafa; }
   .hora { font-size:10px; color:#9ca3af; padding:0 12px 8px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
@@ -389,6 +393,10 @@
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
   function token(){ return localStorage.getItem(TOKEN_KEY); }
+  // REDESPACHO_LOJA_V1 - estagios em que ainda da pra redespachar.
+  // Mesma lista do backend (logistics.redespacho.js). A fronteira e a COLETA,
+  // nao o aceite: entre COURIER_ASSIGNED e ARRIVED_PICKUP a 99 ainda cancela.
+  var ANTES_DA_COLETA_PORTAL=['PENDING','QUOTED','DISPATCHED','COURIER_ASSIGNED','PICKUP_EN_ROUTE','ARRIVED_PICKUP'];
   function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
   function coluna(e){
@@ -507,6 +515,15 @@
     var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
     var podeRastrear=!!e.rastreio_token;
     var btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
+    // REDESPACHO_LOJA_V1 - so ate a coleta.
+    // Doc da 99 (Cancel Order): depois que o entregador coleta, o cancelamento
+    // nao e suportado - a corrida seguiria viva e cobrada, e o redespacho
+    // pagaria duas. Some em vez de ficar cinza: botao que nunca liga so gera
+    // pergunta.
+    var podeRedesp = ANTES_DA_COLETA_PORTAL.indexOf(String(e.status_canonico||'').toUpperCase())>=0 && !e.extraviado;
+    var btnRd = podeRedesp
+      ? '<button class="btn-redesp" onclick="__portal.redespachar('+Number(e.id)+')">\u21bb Redespachar</button>'
+      : '';
     var cls = e.extraviado ? 'card extr' : (e.entregador_frequente ? 'card freq' : 'card');
     var faixa = '';
     if(e.extraviado) faixa = '<div class="faixa faixa-extr">\uD83D\uDCE6 Extraviado</div>';
@@ -522,7 +539,7 @@
       + telBloco
       + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
       + trilhaHTML(e.codigo_os)
-      + '<div class="foot">'+btnR+'</div>'
+      + '<div class="foot">'+btnR+btnRd+'</div>'
       + '</div>';
   }
 
@@ -970,6 +987,21 @@
   }
 
   window.__portal={
+    // REDESPACHO_LOJA_V1
+    redespachar:function(id){
+      if(!confirm('Redespachar esta corrida?\n\nO entregador atual sera dispensado e outro sera chamado.\nO endereco nao muda.\n\nSo da pra fazer isso uma vez por corrida.')) return;
+      var t=token(); if(!t){ mostrarLogin(); return; }
+      var b=event&&event.target; if(b){ b.disabled=true; b.textContent='Chamando...'; }
+      fetch(API+'/api/logistics/portal/deliveries/'+id+'/redispatch',{
+        method:'POST', headers:{ 'Authorization':'Bearer '+t, 'Content-Type':'application/json' }
+      })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+      .then(function(x){
+        if(x.ok && x.j.success){ alert('Chamando outro entregador.'); carregar(); }
+        else { alert(x.j.error||'Nao foi possivel redespachar.'); if(b){ b.disabled=false; b.textContent='\u21bb Redespachar'; } }
+      })
+      .catch(function(){ alert('Erro de conexao.'); if(b){ b.disabled=false; b.textContent='\u21bb Redespachar'; } });
+    },
     toggleTrilha:function(os){ trilhaAberta[os] = !trilhaAberta[os]; render(null); },
     ligar:function(tel){ if(isMobile()){ window.location.href='tel:'+tel; } else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } } } };
 
