@@ -14,7 +14,7 @@
   const PONTOS = [2, 3, 4, 5, 6, 7];
   const POLLING_INTERVAL = 5000;
   const POLLING_TIMEOUT  = 120000;
-  const MAX_FOTO_SIZE    = 5 * 1024 * 1024; // 5MB
+  // AGENTE_BCE_V1 (const): MAX_FOTO_SIZE saiu junto com o upload de foto.
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function fmtDT(d) {
@@ -38,139 +38,15 @@
     }, s.label);
   }
 
-  // ── Compressão de imagem memory-safe + tolerante a HEIC/formatos exoticos ──
-  // 2026-04-27: descobrimos que muitos uploads falhavam porque iPhones entregam HEIC
-  // que o navegador NÃO decodifica via Image(), e Androids antigos travam em fotos
-  // grandes. Esta versão tenta múltiplas estratégias antes de desistir:
-  //   1. createImageBitmap(file) — suporte mais amplo, decoda em worker thread
-  //   2. fallback para Image() com URL.createObjectURL — funciona pra JPG/PNG normais
-  //   3. retry com downscale progressivo se OOM
+  // AGENTE_BCE_V1 (compress) — compressImage() foi removida.
   //
-  // 2026-04-30: agora delega pra window.imageUtils.compressImageSafe (mesmo código,
-  // unificado em arquivo compartilhado). Mantém implementação local como fallback
-  // pra caso image-utils.js não tenha carregado.
-  function compressImage(file, maxWidth = 1200, quality = 0.7) {
-    // 🛡️ Caminho preferido: imageUtils unificado
-    if (window.imageUtils && window.imageUtils.compressImageSafe) {
-      return window.imageUtils.compressImageSafe(file, { maxWidth: maxWidth, quality: quality });
-    }
-    // Fallback (só se image-utils.js não carregou)
-    const tentativas = [
-      { mw: maxWidth, q: quality },
-      { mw: 1000, q: 0.65 },
-      { mw: 800,  q: 0.6  },
-      { mw: 640,  q: 0.55 },
-    ];
-
-    // Encoda canvas em data URL via toBlob+FileReader (mais leve em mobile)
-    function encodeCanvas(canvas, q) {
-      return new Promise((resolve, reject) => {
-        if (canvas.toBlob) {
-          canvas.toBlob((blob) => {
-            if (!blob) { reject(new Error('toBlob retornou null')); return; }
-            const fr = new FileReader();
-            fr.onload  = () => resolve(fr.result);
-            fr.onerror = () => reject(new Error('FileReader falhou'));
-            fr.readAsDataURL(blob);
-          }, 'image/jpeg', q);
-        } else {
-          try { resolve(canvas.toDataURL('image/jpeg', q)); }
-          catch (e) { reject(e); }
-        }
-      });
-    }
-
-    // Desenha um source (ImageBitmap ou HTMLImageElement) num canvas e encoda
-    async function drawAndEncode(source, w, h, q) {
-      let cw = source.width || w;
-      let ch = source.height || h;
-      if (!cw || !ch) throw new Error('Dimensões inválidas');
-      if (cw > w) { ch = Math.round((ch * w) / cw); cw = w; }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = cw; canvas.height = ch;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas 2D indisponível');
-      ctx.drawImage(source, 0, 0, cw, ch);
-      const result = await encodeCanvas(canvas, q);
-      // Liberar bitmap rapido
-      try { canvas.width = 0; canvas.height = 0; } catch(_) {}
-      return result;
-    }
-
-    // Tentativa 1: createImageBitmap (decoda HEIC em alguns navegadores recentes,
-    // funciona com qualquer formato que o navegador conheça, e roda fora da main thread)
-    async function viaImageBitmap() {
-      if (typeof createImageBitmap !== 'function') throw new Error('createImageBitmap nao suportado');
-      let bitmap;
-      try {
-        bitmap = await createImageBitmap(file);
-      } catch (err) {
-        throw new Error('createImageBitmap falhou: ' + (err && err.message ? err.message : 'unknown'));
-      }
-      try {
-        for (const t of tentativas) {
-          try {
-            const result = await drawAndEncode(bitmap, t.mw, t.mw, t.q);
-            return result;
-          } catch (drawErr) {
-            // tenta tamanho menor
-            continue;
-          }
-        }
-        throw new Error('Não foi possível comprimir (memória insuficiente).');
-      } finally {
-        try { bitmap.close && bitmap.close(); } catch(_) {}
-      }
-    }
-
-    // Tentativa 2: Image() + objectURL (caminho clássico)
-    function viaImageElement() {
-      return new Promise((resolve, reject) => {
-        const objectUrl = URL.createObjectURL(file);
-        const cleanup = () => { try { URL.revokeObjectURL(objectUrl); } catch(_) {} };
-
-        const img = new Image();
-        img.decoding = 'async';
-        img.onload = async () => {
-          for (const t of tentativas) {
-            try {
-              const result = await drawAndEncode(img, t.mw, t.mw, t.q);
-              img.src = '';
-              cleanup();
-              resolve(result);
-              return;
-            } catch (drawErr) {
-              continue;
-            }
-          }
-          img.src = '';
-          cleanup();
-          reject(new Error('Não foi possível comprimir (memória insuficiente).'));
-        };
-        img.onerror = () => {
-          cleanup();
-          // Mensagem mais amigavel — geralmente é HEIC do iPhone
-          reject(new Error('Formato da foto não suportado. Tire a foto novamente diretamente pela câmera do app, ou converta pra JPG.'));
-        };
-        img.src = objectUrl;
-      });
-    }
-
-    // Pipeline: tenta ImageBitmap primeiro (mais robusto), se falhar tenta Image
-    return (async () => {
-      try {
-        return await viaImageBitmap();
-      } catch (e1) {
-        try {
-          return await viaImageElement();
-        } catch (e2) {
-          // Se as duas falharam, joga o erro mais informativo (geralmente o segundo)
-          throw e2;
-        }
-      }
-    })();
-  }
+  // Ela existia so pra encolher a foto da fachada antes do upload. Sem foto, sem
+  // caller. Nao e "dead code inofensivo": sao 130 linhas de canvas/HEIC/OOM que a
+  // proxima pessoa a ler o arquivo vai achar que ainda importam.
+  //
+  // A logica NAO se perdeu: ela ja vivia em window.imageUtils.compressImageSafe
+  // (image-utils.js, compartilhado), que este arquivo so embrulhava. O modulo
+  // Coleta continua usando o compartilhado.
 
   // ── ABA: Formulário do motoboy ──────────────────────────────────────────────
   function TabFormulario({ API_URL, fetchAuth, showToast }) {
@@ -181,19 +57,18 @@
     const [detalheErro, setDetalhe] = useState('');
     const pollingRef                = useRef(null);
     const timeoutRef                = useRef(null);
-    const fotoInputRef              = useRef(null);
-    // 🛡️ 2026-04: separamos câmera (capture:environment) de galeria (sem capture).
-    // Em Androids antigos, capture:environment as vezes não dispara nada (botão "morto")
-    // porque o app de câmera padrão foi substituído/desabilitado pelo fabricante.
-    // Galeria como fallback SEMPRE funciona.
-    const fotoGaleriaRef            = useRef(null);
+    // AGENTE_BCE_V1 (states) — a foto saiu. Com ela foram os dois refs de input
+    // (camera/galeria) e os dois states de imagem. A validacao agora e B/C/E:
+    // GPS, Receita e endereco digitado. Nenhuma delas olha imagem.
 
-    // GPS e foto states
+    // GPS states
     const [gps, setGps]             = useState(null);       // { lat, lng }
     const [gpsLoading, setGpsLoad]  = useState(false);
     const [gpsErro, setGpsErro]     = useState('');
-    const [fotoBase64, setFotoB64]  = useState(null);
-    const [fotoPreview, setFotoPre] = useState(null);
+    // AGENTE_BCE_V1: retorno do barramento. `checks` e a lista de conferencias que
+    // o backend ja manda pronta (label + status ok|falhou|nd) — o front so pinta.
+    const [checks, setChecks]       = useState([]);
+    const [barradoInfo, setBarradoInfo] = useState(null); // { indisponivel, cnpj }
     const [validacaoReceita, setValidacaoReceita] = useState(null); // { nome, situacao, ativa, mensagem }
     // 2026-04 v5: única forma de identificar cliente é CNPJ digitado.
     // Foto da NF foi removida porque motos não conseguiam capturar legível.
@@ -265,29 +140,7 @@
       iniciarWatchGPS();
     }
 
-    async function handleFoto(e) {
-      const file = e.target.files?.[0];
-      try { e.target.value = ''; } catch(_) {}
-      if (!file) return;
-
-      if (!file.type.startsWith('image/') && !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name || '')) {
-        showToast('Selecione uma imagem válida.', 'error');
-        return;
-      }
-      if (file.size > MAX_FOTO_SIZE * 4) {
-        showToast('Imagem muito grande. Tire outra foto com menos qualidade.', 'error');
-        return;
-      }
-
-      try {
-        const compressed = await compressImage(file);
-        setFotoB64(compressed);
-        setFotoPre(compressed);
-      } catch (err) {
-        const msg = err && err.message ? err.message : 'Erro ao processar a imagem.';
-        showToast(msg, 'error');
-      }
-    }
+    // AGENTE_BCE_V1 (handleFoto) — removida junto com o campo de foto.
 
     const iniciarPolling = useCallback((id) => {
       timeoutRef.current = setTimeout(() => {
@@ -413,15 +266,15 @@
         showToast('CNPJ inválido. Confira os dígitos.', 'error');
         return;
       }
-      if (!fotoBase64) {
-        showToast('Foto da fachada é obrigatória!', 'error');
-        return;
-      }
+      // AGENTE_BCE_V1 (submit): a trava de foto obrigatoria saiu. OS + ponto +
+      // endereco + GPS + CNPJ continuam obrigatorios — sao esses que a validacao le.
 
       setLoading(true);
       setFase('validando');
       setDetalhe('');
       setValidacaoReceita(null);
+      setChecks([]);
+      setBarradoInfo(null);
 
       try {
         const res = await fetchAuth(`${API_URL}/agent/corrigir-endereco`, {
@@ -433,11 +286,11 @@
             localizacao_raw: form.localizacao_raw.trim(),
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
-            // 2026-04 v5: foto_nf removida do payload — sempre null.
-            // Backend continua aceitando o campo pra compatibilidade
-            // com solicitações antigas, mas frontend só manda cnpj_manual.
+            // AGENTE_BCE_V1 (payload): so cnpj_manual. foto_nf saiu em 2026-04 e
+            // foto_fachada saiu agora — o backend ignora e nao grava nenhuma das
+            // duas. Mandar base64 de 5MB pra ser descartado no servidor e queimar
+            // o plano de dados do motoboy por nada.
             cnpj_manual:     cnpjLimpo,
-            foto_fachada:    fotoBase64,
           }),
         });
 
@@ -451,24 +304,25 @@
             setLoading(false);
             return;
           }
-          // NF rejeitada pela IA — feedback específico
-          if (data.nf_rejeitada) {
-            setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'A foto da NF não é válida. Tire uma foto mais clara mostrando o cabeçalho.');
-            setLoading(false);
-            return;
-          }
-          // Foto fachada rejeitada pela IA — feedback específico
-          if (data.foto_rejeitada) {
-            setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'A foto da fachada não é válida.');
-            setLoading(false);
-            return;
-          }
-          // 2026-06 v6: validação cruzada reprovou — barra o motoboy
+          // AGENTE_BCE_V1 (nf) — o handler de nf_rejeitada saiu.
+          //
+          // Ele ja era letra morta: desde que o fluxo passou a ser CNPJ digitado, o
+          // backend fixa nf_rejeitada: false. Mas ele apontava pra fase
+          // 'foto_rejeitada', que agora NAO EXISTE mais — se um dia caisse ali, o
+          // motoboy veria a tela em branco. Melhor tirar do que deixar armado.
+          // AGENTE_BCE_V1 (handler) — barramento tem tela propria.
+          //
+          // Antes os dois casos caiam em 'foto_rejeitada' — o ecra de "Foto
+          // Invalida", com icone de camera. O motoboy com CNPJ errado tirava a foto
+          // de novo, era barrado de novo, e ligava pro suporte. O backend ja mandava
+          // os dados, o front e que jogava fora.
+          //
+          // data.foto_rejeitada nao existe mais: o backend nao olha foto.
           if (data.validacao_rejeitada) {
-            setFase('foto_rejeitada');
-            setDetalhe(data.motivo_rejeicao || 'Não foi possível validar o endereço. Confira o CNPJ, o endereço e a foto da fachada.');
+            setChecks(Array.isArray(data.checks) ? data.checks : []);
+            setBarradoInfo({ indisponivel: !!data.indisponivel, cnpj: data.cnpj || null });
+            setFase('barrado');
+            setDetalhe(data.motivo_rejeicao || 'Não foi possível validar este endereço.');
             setLoading(false);
             return;
           }
@@ -517,8 +371,9 @@
       setFase('idle');
       setDetalhe('');
       setLoading(false);
-      setFotoB64(null);
-      setFotoPre(null);
+      // AGENTE_BCE_V1 (reset): no lugar dos states de foto, os do barramento.
+      setChecks([]);
+      setBarradoInfo(null);
       setCnpjManual('');
       setValidacaoReceita(null);
       setPontoCoords(null);
@@ -589,23 +444,74 @@
     );
 
     // Fase: foto rejeitada pela IA
-    if (fase === 'foto_rejeitada') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-      h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '📷')
-      ),
-      h('h2', { className: 'text-xl font-bold text-red-700 mb-4' }, 'Foto Inválida'),
-      h('div', { className: 'bg-red-50 border border-red-300 rounded-xl p-5 mb-4 max-w-md' },
-        h('p', { className: 'text-sm text-red-800 leading-relaxed font-semibold' }, detalheErro)
-      ),
-      h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 max-w-md' },
-        h('p', { className: 'text-xs text-purple-800 leading-relaxed font-medium' }, '📸 A foto deve mostrar a fachada do local de entrega: loja, empresa, residência, prédio ou condomínio. Fotos borradas, de veículos, ruas ou screenshots não são aceitas.')
-      ),
-      h('button', {
-        onClick: function() { setFase('idle'); setFotoB64(null); setFotoPre(null); },
-        className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
-      }, '📸 Enviar outra foto')
-    );
+    // AGENTE_BCE_V1 (tela) — barramento.
+    //
+    // Substitui o ecra 'foto_rejeitada' ("Foto Invalida", icone de camera), que
+    // era o unico destino de QUALQUER reprova — inclusive das que nao tinham nada
+    // a ver com foto. Agora a tela diz qual conferencia falhou e o que fazer.
+    //
+    // Duas caras, decididas pelo backend (indisponivel):
+    //   vermelha = deu pra checar e nao bateu   -> ele revisa CNPJ/endereco
+    //   ambar    = nao deu pra checar (infra)   -> "nao e erro seu", tenta de novo
+    //
+    // Sem foto, o fail-closed barra o motoboy quando o geocoding cai. Acusar ele de
+    // um erro que nao e dele queima o suporte e ensina que o sistema mente.
+    //
+    // NAO mostramos distancia nem score de proposito: numero na tela vira jogo (ele
+    // anda ate o score subir) e entrega onde fica o endereco da Receita.
+    if (fase === 'barrado') {
+      const indisp = !!(barradoInfo && barradoInfo.indisponivel);
+      const cnpjFmt = (barradoInfo && barradoInfo.cnpj)
+        ? String(barradoInfo.cnpj).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+        : null;
+      const icone = { ok: '✅', falhou: '❌', nd: '❔' };
+      const corLinha = { ok: 'text-green-700', falhou: 'text-red-700', nd: 'text-gray-400' };
+
+      return h('div', { className: 'flex flex-col items-center py-8 px-5 text-center' },
+        h('div', {
+          className: `w-20 h-20 rounded-full flex items-center justify-center mb-5 ${indisp ? 'bg-amber-100' : 'bg-red-100'}`,
+        }, h('span', { className: 'text-4xl' }, indisp ? '🔌' : '🛑')),
+
+        h('h2', { className: `text-xl font-bold mb-1 ${indisp ? 'text-amber-700' : 'text-red-700'}` },
+          indisp ? 'Não deu pra checar agora' : 'Não deu pra confirmar o local'),
+        h('p', { className: 'text-xs text-gray-500 mb-5' },
+          `OS ${form.os_numero} · Ponto ${form.ponto}`),
+
+        // Conferencias — o backend manda label e status prontos.
+        checks.length > 0 && h('div', { className: 'w-full max-w-md bg-white border border-gray-200 rounded-xl overflow-hidden mb-4 text-left' },
+          cnpjFmt && h('div', { className: 'px-4 py-2 border-b border-gray-100 text-[11px] text-gray-400 font-mono' },
+            `CNPJ ${cnpjFmt}`),
+          checks.map((c, i) => h('div', {
+            key: c.id || i,
+            className: 'flex items-start gap-3 px-4 py-3' + (i < checks.length - 1 ? ' border-b border-gray-100' : ''),
+          },
+            h('span', { className: 'text-base leading-none mt-0.5 flex-shrink-0' }, icone[c.status] || '❔'),
+            h('span', { className: `text-[13px] leading-snug ${corLinha[c.status] || 'text-gray-600'}` }, c.label),
+          )),
+        ),
+
+        h('div', {
+          className: `w-full max-w-md rounded-xl p-4 mb-5 text-left ${indisp ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`,
+        },
+          h('p', { className: `text-sm leading-relaxed ${indisp ? 'text-amber-800' : 'text-red-800'}` }, detalheErro),
+        ),
+
+        h('button', {
+          onClick: function() { setFase('idle'); setChecks([]); setBarradoInfo(null); },
+          className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white mb-3',
+          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        }, indisp ? '↻  Tentar de novo' : '✏️  Revisar e tentar de novo'),
+
+        h('a', {
+          href: `https://wa.me/557189260372?text=${encodeURIComponent(
+            `Olá suporte! A correção da OS ${form.os_numero} (ponto ${form.ponto}) foi barrada. Como proceder?`
+          )}`,
+          target: '_blank', rel: 'noopener noreferrer',
+          className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white inline-flex items-center justify-center gap-2',
+          style: { background: 'linear-gradient(135deg, #16a34a, #22c55e)' },
+        }, '💬  Falar com o suporte'),
+      );
+    }
 
     // Fase: cliente bloqueado para ajuste — 2026-07
     if (fase === 'bloqueado_cliente') {
@@ -902,7 +808,8 @@
               ' Nossa equipe de especialistas fará uma validação posteriormente.'
             ),
             h('p', { className: 'text-sm text-red-800 mt-1 leading-relaxed' },
-              'É importante informar o número da OS de forma correta, bem como a indicação de qual ponto ajustar. A foto da fachada do cliente deve ser legível.'
+              /* AGENTE_BCE_V1 (aviso) */
+              'É importante informar o número da OS de forma correta, a indicação de qual ponto ajustar e o CNPJ que aparece na nota. Envie a localização de dentro do estabelecimento.'
             ),
             h('p', { className: 'text-sm text-red-700 font-semibold mt-1' },
               'Caso não siga os padrões, terá a corrida invalidada pelo sistema.'
@@ -1036,78 +943,10 @@
           cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, '✓ CNPJ válido — vamos consultar a Receita Federal')
         ),
 
-        // ── Foto da fachada (OBRIGATÓRIA — necessária pras regras de cruzamento) ──
-        // 🛡️ 2026-04: 2 inputs separados — câmera (capture) + galeria (sem capture).
-        // Resolve relato de "botão não responde nada" em Android antigo onde
-        // capture:environment falha silenciosamente (app de câmera modificado pelo
-        // fabricante, ROM antiga, etc). Galeria como fallback SEMPRE funciona.
-        h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
-
-          // Input câmera (com capture)
-          h('input', {
-            ref: fotoInputRef,
-            type: 'file',
-            accept: 'image/*',
-            capture: 'environment', // Câmera traseira no mobile
-            onChange: handleFoto,
-            className: 'hidden',
-          }),
-          // Input galeria (SEM capture — abre seletor de arquivos/galeria normal)
-          h('input', {
-            ref: fotoGaleriaRef,
-            type: 'file',
-            accept: 'image/*',
-            onChange: handleFoto,
-            className: 'hidden',
-          }),
-
-          fotoPreview
-            ? h('div', { className: 'relative' },
-                h('img', {
-                  src: fotoPreview,
-                  className: 'w-full h-48 object-cover rounded-xl border-2 border-green-300',
-                  alt: 'Foto da fachada',
-                }),
-                h('button', {
-                  onClick: () => { setFotoB64(null); setFotoPre(null); },
-                  className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg hover:bg-red-600',
-                }, '✕'),
-                h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-lg font-semibold' }, '✓ Foto capturada')
-              )
-            : h('div', { className: 'grid grid-cols-2 gap-2' },
-                // Botão Câmera
-                h('button', {
-                  onClick: () => {
-                    try {
-                      if (fotoInputRef.current) fotoInputRef.current.click();
-                    } catch (_) {}
-                  },
-                  disabled,
-                  className: `h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
-                    ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 cursor-pointer'}`,
-                },
-                  h('span', { className: 'text-3xl' }, '📷'),
-                  h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Câmera'),
-                  h('span', { className: 'text-[10px] text-purple-500' }, 'Tirar foto agora')
-                ),
-                // Botão Galeria (fallback pra Android antigo onde capture trava)
-                h('button', {
-                  onClick: () => {
-                    try {
-                      if (fotoGaleriaRef.current) fotoGaleriaRef.current.click();
-                    } catch (_) {}
-                  },
-                  disabled,
-                  className: `h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition
-                    ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'}`,
-                },
-                  h('span', { className: 'text-3xl' }, '🖼️'),
-                  h('span', { className: 'text-sm font-semibold text-blue-700' }, 'Galeria'),
-                  h('span', { className: 'text-[10px] text-blue-500' }, 'Foto já tirada')
-                )
-              )
-        ),
+        // AGENTE_BCE_V1 (markup) — o bloco da foto da fachada saiu inteiro:
+        // label, os dois inputs (camera com capture + galeria como fallback do
+        // Android antigo), o preview e os dois botoes. Nada disso alimentava a
+        // validacao nova. O ultimo campo do formulario agora e o CNPJ.
 
         // Botão enviar
         h('button', {
