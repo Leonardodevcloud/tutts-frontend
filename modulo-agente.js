@@ -72,10 +72,13 @@
     const [gps, setGps]             = useState(null);       // { lat, lng }
     const [gpsLoading, setGpsLoad]  = useState(false);
     const [gpsErro, setGpsErro]     = useState('');
-    // AGENTE_BCE_V1: retorno do barramento. `checks` e a lista de conferencias que
-    // o backend ja manda pronta (label + status ok|falhou|nd) — o front so pinta.
-    const [checks, setChecks]       = useState([]);
-    const [barradoInfo, setBarradoInfo] = useState(null); // { indisponivel, cnpj }
+    // BARRADO_CNPJ_V1: o state `checks` saiu. Com a regra nova (so o B decide) o
+    // backend manda UMA conferencia — e checklist de um item nao e checklist: o
+    // item "❌ Você está no endereço desse CNPJ" e a frase "Você não está no
+    // endereço desse CNPJ" diziam a mesma coisa, uma embaixo da outra.
+    // O `checks` continua vindo na resposta e continua sendo gravado no
+    // validacao_nf da barrada — o painel admin ve. A tela do motoboy nao precisa.
+    const [barradoInfo, setBarradoInfo] = useState(null); // { indisponivel, cnpj, razao_social }
     const [validacaoReceita, setValidacaoReceita] = useState(null); // { nome, situacao, ativa, mensagem }
     // 2026-04 v5: única forma de identificar cliente é CNPJ digitado.
     // Foto da NF foi removida porque motos não conseguiam capturar legível.
@@ -280,7 +283,7 @@
       setFase('validando');
       setDetalhe('');
       setValidacaoReceita(null);
-      setChecks([]);
+      // BARRADO_CNPJ_V1: limpa so o barradoInfo.
       setBarradoInfo(null);
 
       try {
@@ -326,8 +329,12 @@
           //
           // data.foto_rejeitada nao existe mais: o backend nao olha foto.
           if (data.validacao_rejeitada) {
-            setChecks(Array.isArray(data.checks) ? data.checks : []);
-            setBarradoInfo({ indisponivel: !!data.indisponivel, cnpj: data.cnpj || null });
+            // BARRADO_CNPJ_V1: guarda o CNPJ digitado + a razao social da Receita.
+            setBarradoInfo({
+              indisponivel: !!data.indisponivel,
+              cnpj: data.cnpj || null,
+              razao_social: data.razao_social || null,
+            });
             setFase('barrado');
             setDetalhe(data.motivo_rejeicao || 'Não foi possível validar este endereço.');
             setLoading(false);
@@ -378,8 +385,7 @@
       setFase('idle');
       setDetalhe('');
       setLoading(false);
-      // AGENTE_BCE_V1 (reset): no lugar dos states de foto, os do barramento.
-      setChecks([]);
+      // BARRADO_CNPJ_V1 (reset): so o barradoInfo — o state checks saiu.
       setBarradoInfo(null);
       setCnpjManual('');
       setValidacaoReceita(null);
@@ -451,63 +457,67 @@
     );
 
     // Fase: foto rejeitada pela IA
-    // AGENTE_BCE_V1 (tela) — barramento.
+    // BARRADO_CNPJ_V1 (tela) — barramento.
     //
-    // Substitui o ecra 'foto_rejeitada' ("Foto Invalida", icone de camera), que
-    // era o unico destino de QUALQUER reprova — inclusive das que nao tinham nada
-    // a ver com foto. Agora a tela diz qual conferencia falhou e o que fazer.
+    // Reescrita: o checklist saiu. Com a regra nova quem decide e so a presenca
+    // fisica (B), entao o backend manda UMA conferencia — e uma linha "❌ Você
+    // está no endereço desse CNPJ" logo acima da frase "Você não está no endereço
+    // desse CNPJ" era a mesma informacao duas vezes, ocupando o lugar da unica
+    // coisa util da tela.
+    //
+    // A unica coisa util e o CNPJ. Dos dois erros possiveis, ele ja sabe se esta
+    // no lugar errado — o que ele NAO sabe e que digitou o CNPJ da loja errada.
+    // Por isso o CNPJ vem grande, com a RAZAO SOCIAL que a Receita devolveu: e
+    // lendo "EXPRESSO LUXO VITORIA LTDA" quando esperava outra loja que ele se
+    // corrige sozinho, sem ligar pro suporte.
+    //
+    // O que continua fora da tela: distancia, score e o ENDERECO da Receita.
+    // Numero vira jogo (ele anda ate o score subir) e o endereco entrega de graca
+    // o gabarito da validacao. O painel admin ve tudo isso.
     //
     // Duas caras, decididas pelo backend (indisponivel):
-    //   vermelha = deu pra checar e nao bateu   -> ele revisa CNPJ/endereco
-    //   ambar    = nao deu pra checar (infra)   -> "nao e erro seu", tenta de novo
-    //
-    // Sem foto, o fail-closed barra o motoboy quando o geocoding cai. Acusar ele de
-    // um erro que nao e dele queima o suporte e ensina que o sistema mente.
-    //
-    // NAO mostramos distancia nem score de proposito: numero na tela vira jogo (ele
-    // anda ate o score subir) e entrega onde fica o endereco da Receita.
+    //   vermelha = deu pra checar e ele nao esta la -> "Corrigir o CNPJ"
+    //   ambar    = nao deu pra checar (infra)       -> "nao e erro seu"
     if (fase === 'barrado') {
       const indisp = !!(barradoInfo && barradoInfo.indisponivel);
       const cnpjFmt = (barradoInfo && barradoInfo.cnpj)
         ? String(barradoInfo.cnpj).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
         : null;
-      const icone = { ok: '✅', falhou: '❌', nd: '❔' };
-      const corLinha = { ok: 'text-green-700', falhou: 'text-red-700', nd: 'text-gray-400' };
+      const razao = (barradoInfo && barradoInfo.razao_social) || null;
 
       return h('div', { className: 'flex flex-col items-center py-8 px-5 text-center' },
         h('div', {
           className: `w-20 h-20 rounded-full flex items-center justify-center mb-5 ${indisp ? 'bg-amber-100' : 'bg-red-100'}`,
         }, h('span', { className: 'text-4xl' }, indisp ? '🔌' : '🛑')),
 
-        h('h2', { className: `text-xl font-bold mb-1 ${indisp ? 'text-amber-700' : 'text-red-700'}` },
-          indisp ? 'Não deu pra checar agora' : 'Não deu pra confirmar o local'),
+        h('h2', { className: `text-xl font-bold mb-1 leading-tight ${indisp ? 'text-amber-700' : 'text-red-700'}` },
+          indisp ? 'Não deu pra checar agora' : 'Você não está no endereço desse CNPJ'),
         h('p', { className: 'text-xs text-gray-500 mb-5' },
           `OS ${form.os_numero} · Ponto ${form.ponto}`),
 
-        // Conferencias — o backend manda label e status prontos.
-        checks.length > 0 && h('div', { className: 'w-full max-w-md bg-white border border-gray-200 rounded-xl overflow-hidden mb-4 text-left' },
-          cnpjFmt && h('div', { className: 'px-4 py-2 border-b border-gray-100 text-[11px] text-gray-400 font-mono' },
-            `CNPJ ${cnpjFmt}`),
-          checks.map((c, i) => h('div', {
-            key: c.id || i,
-            className: 'flex items-start gap-3 px-4 py-3' + (i < checks.length - 1 ? ' border-b border-gray-100' : ''),
-          },
-            h('span', { className: 'text-base leading-none mt-0.5 flex-shrink-0' }, icone[c.status] || '❔'),
-            h('span', { className: `text-[13px] leading-snug ${corLinha[c.status] || 'text-gray-600'}` }, c.label),
-          )),
+        // O CNPJ que ele digitou — o herói da tela.
+        cnpjFmt && h('div', {
+          className: `w-full max-w-md bg-white border-2 rounded-xl p-4 mb-4 ${indisp ? 'border-amber-200' : 'border-red-200'}`,
+        },
+          h('p', { className: 'text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1' }, 'CNPJ que você digitou'),
+          h('p', { className: 'text-lg font-bold text-gray-900 font-mono tracking-tight' }, cnpjFmt),
+          razao && h('p', { className: 'text-[13px] text-gray-600 mt-1 leading-snug' }, razao),
         ),
 
         h('div', {
           className: `w-full max-w-md rounded-xl p-4 mb-5 text-left ${indisp ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`,
         },
-          h('p', { className: `text-sm leading-relaxed ${indisp ? 'text-amber-800' : 'text-red-800'}` }, detalheErro),
+          h('p', { className: `text-sm leading-relaxed ${indisp ? 'text-amber-800' : 'text-red-800'}` },
+            indisp
+              ? detalheErro
+              : 'Se for esse mesmo o CNPJ, vá até a porta do estabelecimento e envie sua localização de novo.'),
         ),
 
         h('button', {
-          onClick: function() { setFase('idle'); setChecks([]); setBarradoInfo(null); },
+          onClick: function() { setFase('idle'); setBarradoInfo(null); },
           className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white mb-3',
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
-        }, indisp ? '↻  Tentar de novo' : '✏️  Revisar e tentar de novo'),
+        }, indisp ? '↻  Tentar de novo' : '✏️  Corrigir o CNPJ'),
 
         h('a', {
           href: `https://wa.me/557189260372?text=${encodeURIComponent(
