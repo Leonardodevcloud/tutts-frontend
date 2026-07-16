@@ -1205,6 +1205,7 @@
             const [pontoEditando, setPontoEditando] = useState(null);
             const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', razao_social: '', numero_nota: '', codigo_finalizar: '', complemento: '' });
             const [corridasAtivas, setCorridasAtivas] = useState([]);
+            const [redespachando, setRedespachando] = useState(null); // REDESPACHO_BTN_V1: OS em curso
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
             const [detalheCorrida, setDetalheCorrida] = useState(null);
@@ -1660,6 +1661,39 @@
                 } catch (err) { showToast('❌ Erro de conexão', 'error'); }
                 setSalvandoNovoEndereco(false);
             };
+            // REDESPACHO_BTN_V1 — cancela a corrida atual e chama outro entregador.
+            // Endereco e valor nao mudam; o entregador atual fica de fora DESTA OS.
+            // A rota do backend confere se a OS e deste cliente antes de agir.
+            const redespacharCorrida = async (c) => {
+                const os = c.tutts_os_numero;
+                if (!os) return;
+                const nome = (c.hub && c.hub.entregador_nome) || 'o entregador atual';
+                if (!confirm(
+                    `Redespachar a OS ${os}?\n\n` +
+                    `A corrida atual sera cancelada e outro entregador sera chamado.\n` +
+                    `${nome} fica de fora desta corrida.\n\n` +
+                    `O endereco e o valor nao mudam.`
+                )) return;
+                setRedespachando(os);
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corridas/${String(os).trim()}/redespachar`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (resp.ok && data.success) {
+                        alert('Chamando outro entregador.');
+                        carregarCorridasAtivas();
+                    } else {
+                        alert(data.error || 'Nao foi possivel redespachar agora.');
+                    }
+                } catch (err) {
+                    alert('Erro de conexao ao redespachar.');
+                } finally {
+                    setRedespachando(null);
+                }
+            };
+
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); const normalizadas = (data.solicitacoes || []).map(aplicarHub); setCorridasAtivas(normalizadas.filter(s => { if (s.hub && s.hub.via_hub) return !s.hub.terminal; return ['enviado', 'aceito', 'em_andamento'].includes(s.status); })); } } catch (err) {} };
 
             // 🆕 2026-06: quando a corrida veio do Hub (99/Uber), copia os dados do
@@ -3299,6 +3333,21 @@
                                                             )}
                                                             <div className="mt-1 text-xs text-gray-500">🕐 {formatarSolicitada(c.criado_em)}</div>
                                                             {c.primeiro_numero_nota && <div className="mt-2 text-xs text-green-600 font-medium">🏷️ {c.primeiro_numero_nota}</div>}
+                                                            {/* REDESPACHO_BTN_V1 — so ate a coleta (hub.etapa <= 2).
+                                                                etapa 0 = buscando entregador | 1 = a caminho da coleta
+                                                                2 = chegou na coleta | 3 = COLETOU  <- fronteira
+                                                                A 99 nao cancela depois da coleta: a corrida seguiria viva
+                                                                e cobrada, e o redespacho pagaria duas. Some em vez de
+                                                                ficar cinza — botao que nunca liga so gera pergunta. */}
+                                                            {c.hub && c.hub.via_hub && !c.hub.terminal && c.hub.etapa <= 2 && (
+                                                                <button
+                                                                    onClick={() => redespacharCorrida(c)}
+                                                                    disabled={redespachando === c.tutts_os_numero}
+                                                                    className="mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50"
+                                                                >
+                                                                    {redespachando === c.tutts_os_numero ? 'Chamando outro...' : '↻  Redespachar'}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}

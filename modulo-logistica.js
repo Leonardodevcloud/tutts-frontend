@@ -10,6 +10,19 @@
   const { useState, useEffect, useCallback, useRef, useMemo } = React;
   const h = React.createElement;
 
+  // REDESPACHO_BTN_V1 — estagios em que ainda da pra redespachar.
+  //
+  // Doc oficial da 99 (Cancel Order): "If the courier has picked up the
+  // package, order cancellation is not supported." A fronteira e a COLETA,
+  // nao o aceite: entre COURIER_ASSIGNED e ARRIVED_PICKUP a 99 ainda cancela.
+  // A partir de PICKED_UP ela recusa, a corrida segue viva SENDO COBRADA, e
+  // um redespacho ali pagaria DUAS corridas.
+  //
+  // Fica no escopo do modulo de proposito: TERMINAIS_CANON esta duplicado
+  // dentro de CardEntrega e de CardKanban, e duas copias de uma regra que
+  // envolve dinheiro e uma so pra sair de sincronia.
+  const ANTES_DA_COLETA_CANON = ['PENDING', 'QUOTED', 'DISPATCHED', 'COURIER_ASSIGNED', 'PICKUP_EN_ROUTE', 'ARRIVED_PICKUP'];
+
   // ── Helpers ──
   function fmtDT(d) {
     if (!d) return '—';
@@ -849,7 +862,10 @@
     );
   }
 
-  function CardEntrega({ entrega, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, showToast }) {
+  // REDESPACHO_BTN_V1: onRedespachoRapido e prop NOVA — nao reaproveita
+  // onRedespachar, que abre o modal de "Editar endereco". Sao acoes
+  // diferentes: uma troca o endereco, a outra so troca o motoboy.
+  function CardEntrega({ entrega, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, showToast }) {
     const e = entrega;
 
     const valorUber           = parseFloat(e.valor_uber || e.valor_provider || 0);
@@ -867,6 +883,12 @@
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
     const podeCancelar = !TERMINAIS_CANON.includes(e.status_canonico)
       && !TERMINAIS_NATIVE.includes(e.status_uber);
+    // REDESPACHO_BTN_V1 — trava mais estreita que podeCancelar.
+    // Doc da 99 (Cancel Order): "If the courier has picked up the package,
+    // order cancellation is not supported." Depois da coleta a 99 recusa o
+    // cancelamento, a corrida segue viva sendo COBRADA, e o redespacho
+    // pagaria duas. A fronteira e a COLETA, nao o aceite.
+    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico);
     const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     const duracao = calcularDuracao(e.created_at, e.finalizado_at);
@@ -962,6 +984,18 @@
             className: 'text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50',
           }, 'Cancelar'),
         )
+      ),
+
+      // REDESPACHO_BTN_V1 — linha propria: a fileira de cima ja tem 5 botoes
+      // e um sexto viraria icone. Roxo pra nao parecer irmao de "Editar
+      // endereco" (ambar) nem de "Cancelar" (vermelho) — as tres acoes sao
+      // diferentes.
+      podeRedespachar && onRedespachoRapido && h('div', { className: 'mt-2' },
+        h('button', {
+          onClick: () => onRedespachoRapido(e),
+          title: 'Cancela a corrida atual e chama outro entregador. O atual fica de fora desta OS.',
+          className: 'w-full text-xs font-semibold px-3 py-2 border border-purple-300 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100',
+        }, '\u21bb  Redespachar'),
       ),
 
       // ── Endereços lado a lado ──
@@ -1295,7 +1329,8 @@
   }
 
   // Card compacto do Kanban — MESMA informação do CardEntrega, em compartimentos.
-  function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unread, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
+  // REDESPACHO_BTN_V1: onRedespachoRapido e prop nova (ver CardEntrega).
+  function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, onChat, unread, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
     const e = entrega;
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     // EXTRAVIADOS_CARD_V1: so da pra extraviar o que ja foi coletado — antes
@@ -1318,6 +1353,9 @@
     const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
     const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber);
+    // REDESPACHO_BTN_V1: ver comentario em CardEntrega — a 99 nao cancela
+    // depois da coleta.
+    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico);
     const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     function copiarTel() {
@@ -1453,6 +1491,16 @@
         // EXTRAVIADOS_DESFAZER_V1
         extraviado && onDesfazerExtravio && h('button', { onClick: () => onDesfazerExtravio(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Desfazer'),
       ),
+      // REDESPACHO_BTN_V1 — linha propria, nome por extenso.
+      // Corrida extraviada nao redespacha: o pacote sumiu, chamar outro
+      // motoboy nao traz ele de volta.
+      podeRedespachar && !extraviado && onRedespachoRapido && h('div', { className: 'mt-1.5' },
+        h('button', {
+          onClick: () => onRedespachoRapido(e),
+          title: 'Cancela a corrida atual e chama outro entregador. O atual fica de fora desta OS.',
+          className: 'w-full text-[11px] font-semibold py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100',
+        }, '\u21bb  Redespachar'),
+      ),
     );
   }
 
@@ -1460,7 +1508,7 @@
   // EXTRAVIADOS_KSIG_V2: marcador UNICO deste patch. A v1 usava um texto que o
   // patch do CardKanban ja gravava, entao este aqui pulava como 'ja aplicado'
   // e o KanbanEntregas ficava sem onExtraviar -> ReferenceError.
-  function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, onChat, unreadMap, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
+  function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, onChat, unreadMap, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) { // REDESPACHO_BTN_V1
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
     useEffect(() => {
@@ -1503,7 +1551,7 @@
               ? itens.map(e => h(CardKanban, {
                   key: e.id, entrega: e, coluna: col,
                   tentativas: tentativas && tentativas[e.codigo_os],
-                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onReportar, ehFrequente, showToast,
+                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, ehFrequente, showToast, // REDESPACHO_BTN_V1
                   onExtraviar, onDesfazerExtravio,
                   onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
                 }))
@@ -2015,6 +2063,34 @@
       setRedespachoAberto({ entrega: e, motivo: '' });
     }
 
+    // REDESPACHO_BTN_V1 — cancela a corrida atual e chama outro entregador.
+    // Sem modal de edicao: endereco e valor nao mudam, so o motoboy.
+    async function redespachoRapido(e) {
+      const nome = e.entregador_nome || 'o entregador atual';
+      const aviso =
+        `Redespachar a OS ${e.codigo_os}?\n\n` +
+        `A corrida atual sera cancelada e outro entregador sera chamado no mesmo provedor.\n` +
+        `${nome} fica de fora DESTA OS (segue pegando outras).\n\n` +
+        `O endereco e o valor nao mudam. Se a nova cotacao vier mais cara, o custo sobe.`;
+      if (!confirm(aviso)) return;
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/redispatch`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          // providerCode omitido de proposito: o backend usa o provedor da
+          // propria entrega. Mandar daqui so criaria uma segunda fonte de
+          // verdade pra mesma decisao.
+          body: JSON.stringify({ motivo: 'Redespacho manual', excluirEntregador: true }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
+          showToast('Chamando outro entregador', 'success');
+          carregar();
+        } else {
+          showToast(json.error || 'Erro ao redespachar', 'error');
+        }
+      } catch { showToast('Erro de rede ao redespachar', 'error'); }
+    }
+
     function fecharRedespacho() {
       if (redespachando) return; // não fecha enquanto está rolando
       setRedespachoAberto(null);
@@ -2166,6 +2242,7 @@
               onVerTracking: abrirTracking,
               onVerDetalhes: abrirDetalhes,
               onRedespachar: abrirRedespacho,
+              onRedespachoRapido: redespachoRapido, // REDESPACHO_BTN_V1
               onReportar: (e) => setReportAberto(e),
               // EXTRAVIADOS_HANDLER_V1
               onExtraviar: async (e) => {
@@ -2215,6 +2292,7 @@
                 onVerTracking: abrirTracking,
                 onVerDetalhes: abrirDetalhes,
                 onRedespachar: abrirRedespacho,
+                onRedespachoRapido: redespachoRapido, // REDESPACHO_BTN_V1
                 showToast,
               }))
             ),
