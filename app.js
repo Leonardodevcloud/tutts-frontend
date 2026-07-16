@@ -2712,180 +2712,28 @@ const hideLoadingScreen = () => {
         // Expor função de navegação globalmente para o card de Filas do usuário
         window._tuttsSetModulo = he;
 
-        // ========== COMPONENTE INLINE: Correção de Endereço (fallback se modulo-agente.js não carregar) ==========
-        if (!window._CorrecaoEnderecoInline) {
-            window._CorrecaoEnderecoInline = function CorrecaoEnderecoInline({ usuario, API_URL, fetchAuth, showToast }) {
-                const [form, setForm] = React.useState({ os_numero: '', ponto: '', localizacao_raw: '' });
-                const [gps, setGps] = React.useState(null);
-                const [gpsLoading, setGpsLoading] = React.useState(false);
-                const [gpsErro, setGpsErro] = React.useState('');
-                const [fotoBase64, setFotoBase64] = React.useState(null);
-                const [fotoPreview, setFotoPreview] = React.useState(null);
-                const [loading, setLoading] = React.useState(false);
-                const [fase, setFase] = React.useState('idle');
-                const [detalheErro, setDetalheErro] = React.useState('');
-                const fotoRef = React.useRef(null);
-                const pollingRef = React.useRef(null);
-                const timeoutRef = React.useRef(null);
-
-                function capturarGPS() {
-                    if (!navigator.geolocation) { setGpsErro('GPS não suportado'); return; }
-                    setGpsLoading(true); setGpsErro('');
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => { setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsLoading(false); },
-                        (err) => { setGpsErro(err.code === 1 ? 'Permissão negada. Ative o GPS.' : err.code === 2 ? 'GPS indisponível.' : 'Timeout. Tente novamente.'); setGpsLoading(false); },
-                        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-                    );
-                }
-                React.useEffect(() => { capturarGPS(); }, []);
-
-                function compressImg(file) {
-                    // 🛡️ 2026-04: usa window.imageUtils.compressImageSafe (memory-safe pra mobile fraco)
-                    if (window.imageUtils && window.imageUtils.compressImageSafe) {
-                        return window.imageUtils.compressImageSafe(file, { maxWidth: 1200, quality: 0.7 });
-                    }
-                    // Fallback (só se image-utils.js não carregou)
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 1200) { h = (h * 1200) / w; w = 1200; } c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); resolve(c.toDataURL('image/jpeg', 0.7)); }; img.onerror = reject; img.src = e.target.result; };
-                        reader.onerror = reject; reader.readAsDataURL(file);
-                    });
-                }
-                async function handleFoto(e) {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem', 'error'); return; }
-                    try { const b64 = await compressImg(file); setFotoBase64(b64); setFotoPreview(b64); } catch { showToast('Erro ao processar imagem', 'error'); }
-                }
-
-                function pararPolling() {
-                    if (pollingRef.current) clearInterval(pollingRef.current);
-                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                    pollingRef.current = null; timeoutRef.current = null;
-                }
-                React.useEffect(() => () => pararPolling(), []);
-
-                async function handleSubmit() {
-                    if (!form.os_numero.trim() || !form.ponto || !form.localizacao_raw.trim()) { showToast('Preencha todos os campos', 'error'); return; }
-                    if (!gps) { showToast('GPS obrigatório! Ative e clique Atualizar GPS.', 'error'); return; }
-                    if (!fotoBase64) { showToast('Foto da fachada obrigatória!', 'error'); return; }
-                    setLoading(true); setFase('polling'); setDetalheErro('');
-                    try {
-                        const res = await fetchAuth(API_URL + '/agent/corrigir-endereco', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ os_numero: form.os_numero.trim(), ponto: parseInt(form.ponto, 10), localizacao_raw: form.localizacao_raw.trim(), motoboy_lat: gps.lat, motoboy_lng: gps.lng, foto_fachada: fotoBase64 })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) { setFase('erro'); setDetalheErro(data.erros ? data.erros.join(' ') : (data.erro || 'Erro')); setLoading(false); return; }
-                        // Polling
-                        const solId = data.id;
-                        timeoutRef.current = setTimeout(() => { pararPolling(); setFase('timeout'); setLoading(false); }, 180000);
-                        pollingRef.current = setInterval(async () => {
-                            try {
-                                const r = await fetchAuth(API_URL + '/agent/status/' + solId);
-                                const d = await r.json();
-                                if (d.status === 'sucesso') { pararPolling(); setFase('sucesso'); setLoading(false); }
-                                else if (d.status === 'erro') { pararPolling(); setDetalheErro(d.detalhe_erro || 'Erro'); setFase('erro'); setLoading(false); }
-                            } catch {}
-                        }, 5000);
-                    } catch { setFase('erro'); setDetalheErro('Falha de conexão'); setLoading(false); }
-                }
-
-                function resetar() { pararPolling(); setForm({ os_numero: '', ponto: '', localizacao_raw: '' }); setFase('idle'); setDetalheErro(''); setLoading(false); setFotoBase64(null); setFotoPreview(null); capturarGPS(); }
-
-                const h = React.createElement;
-                if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
-                    h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '✅')),
-                    h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido!'),
-                    h('p', { className: 'text-gray-500 mb-8' }, 'OS ' + form.os_numero + ' — Ponto ' + form.ponto),
-                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, '+ Nova Correção')
-                );
-                if (fase === 'erro' && !loading) return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
-                    h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '❌')),
-                    h('h2', { className: 'text-xl font-bold text-red-700 mb-2' }, 'Erro na correção'),
-                    h('p', { className: 'text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-md' }, detalheErro),
-                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #f37601, #ea580c)' } }, '↩ Tentar Novamente')
-                );
-                if (fase === 'timeout') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
-                    h('div', { className: 'w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-6' }, h('span', { className: 'text-4xl' }, '⏱️')),
-                    h('h2', { className: 'text-xl font-bold text-yellow-700 mb-2' }, 'Processamento em andamento'),
-                    h('p', { className: 'text-gray-500 mb-8' }, 'Verifique o histórico em breve.'),
-                    h('button', { onClick: resetar, className: 'px-8 py-3 rounded-xl font-semibold text-white', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, '+ Nova Correção')
-                );
-
-                const disabled = loading;
-                return h('div', { className: 'max-w-lg mx-auto px-4 py-8' },
-                    h('div', { className: 'text-center mb-6' },
-                        h('p', { className: 'text-gray-500 text-sm' }, 'Informe os dados e tire foto da fachada')
-                    ),
-                    h('div', { className: 'bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-5' },
-                        // GPS
-                        h('div', { className: 'p-3 rounded-xl border ' + (gps ? 'bg-green-50 border-green-200' : gpsErro ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200') },
-                            h('div', { className: 'flex items-center justify-between' },
-                                h('div', { className: 'flex items-center gap-2' },
-                                    h('span', null, gps ? '📡' : gpsLoading ? '⏳' : '⚠️'),
-                                    h('div', null,
-                                        h('p', { className: 'text-sm font-semibold ' + (gps ? 'text-green-700' : gpsErro ? 'text-red-700' : 'text-blue-700') },
-                                            gpsLoading ? 'Obtendo localização...' : gps ? 'GPS capturado' : 'GPS não disponível'
-                                        ),
-                                        gps && h('p', { className: 'text-xs text-green-600 font-mono' }, gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6)),
-                                        gpsErro && h('p', { className: 'text-xs text-red-600' }, gpsErro)
-                                    )
-                                ),
-                                h('button', { onClick: capturarGPS, disabled: gpsLoading, className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-white', style: { background: gps ? '#16a34a' : '#2563eb' } }, gpsLoading ? '...' : '🔄 Atualizar GPS')
-                            )
-                        ),
-                        // OS
-                        h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Número da OS *'),
-                            h('input', { type: 'tel', inputMode: 'numeric', placeholder: 'Ex: 1071614', value: form.os_numero, onChange: (e) => setForm(f => ({ ...f, os_numero: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-gray-900 text-lg font-mono outline-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') })
-                        ),
-                        // Ponto
-                        h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Ponto a corrigir *'),
-                            h('select', { value: form.ponto, onChange: (e) => setForm(f => ({ ...f, ponto: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-gray-900 outline-none appearance-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') },
-                                h('option', { value: '' }, '— Selecione —'),
-                                [2,3,4,5,6,7].map(p => h('option', { key: p, value: p }, 'Ponto ' + p))
-                            )
-                        ),
-                        // Localização
-                        h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Localização do ponto *'),
-                            h('textarea', { rows: 3, placeholder: 'Cole o link do Maps ou coordenadas\nEx: -16.738952, -49.293811', value: form.localizacao_raw, onChange: (e) => setForm(f => ({ ...f, localizacao_raw: e.target.value })), disabled, className: 'w-full rounded-xl border px-4 py-3 text-sm resize-none outline-none ' + (disabled ? 'bg-gray-50' : 'border-gray-200 focus:border-purple-500') }),
-                            h('div', { className: 'flex items-center justify-between mt-1.5' },
-                                h('p', { className: 'text-xs text-gray-400' }, 'Link do Maps ou coordenadas'),
-                                gps && h('button', { onClick: () => { setForm(f => ({ ...f, localizacao_raw: gps.lat + ', ' + gps.lng })); showToast('Localização GPS inserida!', 'success'); }, disabled, className: 'text-xs px-3 py-1 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100' }, '📍 Usar minha localização')
-                            )
-                        ),
-                        // Foto
-                        h('div', null,
-                            h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, '📸 Foto da fachada *'),
-                            h('input', { ref: fotoRef, type: 'file', accept: 'image/*', capture: 'environment', onChange: handleFoto, className: 'hidden' }),
-                            fotoPreview
-                                ? h('div', { className: 'relative' },
-                                    h('img', { src: fotoPreview, className: 'w-full h-48 object-cover rounded-xl border-2 border-green-300' }),
-                                    h('button', { onClick: () => { setFotoBase64(null); setFotoPreview(null); }, className: 'absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg' }, '✕'),
-                                    h('div', { className: 'absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-lg font-semibold' }, '✓ Foto capturada')
-                                )
-                                : h('button', { onClick: () => fotoRef.current?.click(), disabled, className: 'w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 ' + (disabled ? 'border-gray-200 bg-gray-50' : 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer') },
-                                    h('span', { className: 'text-3xl' }, '📷'),
-                                    h('span', { className: 'text-sm font-semibold text-purple-700' }, 'Tirar foto da fachada'),
-                                    h('span', { className: 'text-xs text-purple-500' }, 'Obrigatório')
-                                )
-                        ),
-                        // Botão enviar
-                        h('button', { onClick: handleSubmit, disabled, className: 'w-full py-4 rounded-xl font-bold text-white text-lg flex items-center justify-center gap-3 ' + (disabled ? 'opacity-60' : 'hover:opacity-90 active:scale-[0.98]'), style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
-                            loading ? h(React.Fragment, null, h('div', { className: 'w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin' }), 'Processando...') : h(React.Fragment, null, '🚀 Enviar Correção')
-                        )
-                    ),
-                    h('div', { className: 'mt-4 space-y-2' },
-                        h('div', { className: 'flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl' }, h('span', { className: 'text-sm' }, '⚠️'), h('p', { className: 'text-xs text-amber-700' }, 'Ponto 1 (coleta) não pode ser alterado. Apenas pontos 2 a 7.')),
-                        h('div', { className: 'flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl' }, h('span', { className: 'text-sm' }, '📏'), h('p', { className: 'text-xs text-blue-700' }, 'Seu GPS será validado. Máximo 2 km do ponto.'))
-                    ),
-                    fase === 'polling' && h('div', { className: 'mt-6 flex items-center gap-3 justify-center text-gray-500 text-sm' }, h('div', { className: 'w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }), 'Aguardando confirmação do robô...')
-                );
-            };
-        }
-        
+        // MATA_INLINE_V1 — o _CorrecaoEnderecoInline foi removido daqui (173 linhas).
+        //
+        // Ele era um SEGUNDO formulario de correcao de endereco, escrito inline no
+        // app.js, usado so quando o modulo-agente.js nao carregava. Duas copias da
+        // mesma tela sempre divergem, e essas ja tinham divergido faz tempo:
+        //
+        //   - continuava exigindo foto da fachada (removida do fluxo no AGENTE_BCE_V1)
+        //   - continuava mandando foto_fachada e foto_nf no payload
+        //   - nao conhecia a fase 'barrado' nem os checks
+        //   - avisava "Máximo 2 km do ponto" e "Ponto 1 não pode ser alterado" com
+        //     regras chumbadas, que ninguem lembraria de atualizar aqui
+        //
+        // Ou seja: o "fallback" nao era uma rede de seguranca — era uma armadilha.
+        // Se o modulo-agente.js falhasse, o motoboy caia numa tela que pedia foto
+        // pra um backend que nao aceita mais e mandava um payload que a validacao
+        // nova ignora. Melhor nao ter tela do que ter a tela errada.
+        //
+        // O padrao certo ja existia no mesmo arquivo, na aba vizinha: o
+        // "liberar-ponto" simplesmente mostra "Carregando módulo..." quando o
+        // ModuloLiberacaoComponent nao esta disponivel (o script e lazy-loaded; se
+        // demorar, o React re-renderiza quando ele chega). A aba
+        // "correcao-endereco" passa a fazer o mesmo.
         // ==================== FUNÇÃO DE NAVEGAÇÃO DO SIDEBAR ====================
         // Nota: persistência do estado de navegação é feita via useEffects
         // monitorando Ee, p, Et, todoTab, filasTab, perfTab.
@@ -13791,7 +13639,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : React.createElement(window._CorrecaoEnderecoInline, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
+        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : /* MATA_INLINE_V1: mesmo fallback do liberar-ponto, logo abaixo */ React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
