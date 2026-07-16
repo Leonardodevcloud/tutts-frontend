@@ -26,11 +26,18 @@
   }
 
   function BadgeStatus({ status }) {
+    // ADMIN_BCE_V1 (badge): 'barrado', 'falhou' e 'bloqueado_cliente' entraram no
+    // mapa. Os tres ja existiam no banco (e 'falhou' aparece na tela desde 2026-04),
+    // mas caiam no fallback cinza que so imprime a string crua do status.
     const map = {
       pendente:     { bg: 'bg-yellow-100',  text: 'text-yellow-800',  label: 'Pendente'     },
       processando:  { bg: 'bg-blue-100',    text: 'text-blue-800',    label: 'Processando'  },
       sucesso:      { bg: 'bg-green-100',   text: 'text-green-800',   label: 'Sucesso'      },
       erro:         { bg: 'bg-red-100',     text: 'text-red-800',     label: 'Erro'         },
+      falhou:       { bg: 'bg-orange-100',  text: 'text-orange-800',  label: 'Falhou'       },
+      // Reprovada na validacao B/C/E — nunca virou job do Playwright.
+      barrado:      { bg: 'bg-red-100',     text: 'text-red-800',     label: '🛑 Barrado'   },
+      bloqueado_cliente: { bg: 'bg-gray-200', text: 'text-gray-700',  label: 'Cliente bloqueado' },
     };
     const s = map[status] || { bg: 'bg-gray-100', text: 'text-gray-600', label: status };
     return h('span', {
@@ -1283,11 +1290,10 @@
           className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'barradas' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
           style: filtros.grupo === 'barradas' ? { background: 'linear-gradient(135deg, #b91c1c, #ef4444)' } : {},
         }, '🚫 Solicitações Barradas'),
-        h('button', {
-          onClick: () => trocarGrupo('liberacao_ia'),
-          className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'liberacao_ia' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
-          style: filtros.grupo === 'liberacao_ia' ? { background: 'linear-gradient(135deg, #6d28d9, #7c3aed)' } : {},
-        }, '🔓 Falha/Liberação IA')
+        // ADMIN_BCE_V1 (subaba): a sub-aba "🔓 Falha/Liberação IA" saiu.
+        // O grupo padrao ja e 'aprovados', entao nada quebra ao remover o botao.
+        // O ramo `grupo === 'liberacao_ia'` do historico.routes.js (com o LEFT JOIN
+        // em liberacoes_pontos) fica orfao no backend — ninguem mais chama.
       ),
 
       // Filtros
@@ -1361,8 +1367,10 @@
                       className: 'mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 text-center',
                       title: 'Endereço corrigido, mas o frete NÃO foi recalculado automaticamente. Necessário recalcular manualmente.',
                     }, '⚠️ Frete pendente'),
-                    // Motivo da falha (status=falhou OU status=erro)
-                    (r.status === 'falhou' || r.status === 'erro') && (r.erro || r.detalhe_erro) && h('div', {
+                    // ADMIN_BCE_V1 (motivo): 'barrado' entra aqui. A caixa de motivo ja
+                    // fazia exatamente o que a barrada precisa (mostra erro/detalhe_erro),
+                    // e o detalhe_erro da barrada guarda a frase que o motoboy leu.
+                    (r.status === 'falhou' || r.status === 'erro' || r.status === 'barrado') && (r.erro || r.detalhe_erro) && h('div', {
                       className: 'mt-1 text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-1 max-w-[220px] break-words leading-tight',
                       title: r.erro || r.detalhe_erro,
                     },
@@ -1371,36 +1379,22 @@
                       r.etapa_atual ? h('div', { className: 'font-normal text-red-500 mt-0.5 italic' },
                         'Etapa: ' + r.etapa_atual) : null
                     ),
-                    // Badge de validação IA
-                    (() => {
-                      const v = r.validacao_localizacao;
-                      if (!v) return null;
-                      if (v.valido) return h('div', {
-                        className: 'mt-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5 text-center',
-                        title: `✅ ${v.nome_foto || 'Local'} → ${v.match?.nome || 'Validado'} (${v.confianca || 0}%)`,
-                      }, '✅ IA Validado');
-                      return h('div', {
-                        className: 'mt-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 text-center animate-pulse',
-                        title: v.motivo || 'Não validado',
-                      }, '🔍 Investigar');
-                    })(),
-                    // 2026-07 auto-liberacao: badge do status da liberação do ponto
-                    // (so na aba "Falha/Liberação IA", onde r.liberacao_status vem preenchido)
-                    r.liberacao_status && (() => {
-                      const s = r.liberacao_status;
-                      const mapa = {
-                        sucesso:     { txt: '🔓 Ponto liberado', cls: 'text-green-700 bg-green-50 border-green-200' },
-                        processando: { txt: '⏳ Liberando ponto…', cls: 'text-amber-700 bg-amber-50 border-amber-200 animate-pulse' },
-                        pendente:    { txt: '⏳ Liberação na fila', cls: 'text-amber-700 bg-amber-50 border-amber-200' },
-                        falhou:      { txt: '⚠️ Liberação falhou', cls: 'text-red-700 bg-red-50 border-red-200' },
-                      };
-                      const cfg = mapa[s] || { txt: `Liberação: ${s}`, cls: 'text-gray-700 bg-gray-50 border-gray-200' };
-                      const pt = r.liberacao_ponto || r.ponto;
-                      return h('div', {
-                        className: `mt-1 text-[10px] font-bold border rounded px-1.5 py-0.5 text-center ${cfg.cls}`,
-                        title: r.liberacao_erro || r.liberacao_mensagem || `Ponto ${pt}`,
-                      }, `${cfg.txt}${pt ? ' (P' + pt + ')' : ''}`);
-                    })()
+                    // ADMIN_BCE_V1 (badges) — sairam os dois badges da coluna Status:
+                    //
+                    // "✅ IA Validado" / "🔍 Investigar": liam r.validacao_localizacao,
+                    // que era o retorno do Gemini lendo a FOTO da fachada. Sem foto, a
+                    // coluna vem null em toda correcao nova — o badge simplesmente nunca
+                    // mais apareceria. Quem valida agora e o cruzamento B/C/E, e ele ja
+                    // tem bloco proprio na linha expandida.
+                    //
+                    // "🔓 Ponto liberado (P2)": era o status da sub-aba Falha/Liberacao
+                    // IA, removida neste pacote.
+                    //
+                    // ATENCAO: a funcao de liberar ponto CONTINUA RODANDO. O
+                    // deveAutoLiberar() no agent-correcao.agent.js segue liberando P2/P3
+                    // quando a correcao falha, gravando em liberacoes_pontos. So a tela
+                    // que mostrava isso saiu. Se a intencao era parar de liberar, e outro
+                    // pacote (o "3" da conversa).
                   ),
                   h('td', { className: 'px-3 py-3 text-xs text-gray-500 max-w-[180px]' },
                     r.endereco_antigo
@@ -1413,11 +1407,22 @@
                       : '—'
                   ),
                   h('td', { className: 'px-3 py-3 text-gray-500 text-xs' }, fmtDT(r.criado_em)),
+                  // ADMIN_BCE_V1 (coluna foto): o botao so aparece se a linha TIVER foto.
+                  //
+                  // Antes ele era incondicional: toda linha mostrava "📷 Ver", e as novas
+                  // (sem foto) abriam o modal pra dar erro. O backend ja mandava o
+                  // tem_foto_fachada, so ninguem lia.
+                  //
+                  // A coluna FICA (em vez de sumir) porque as correcoes ANTIGAS ainda tem
+                  // foto no banco e o /agent/foto/:id continua servindo. Ela vai secando
+                  // sozinha: correcao nova nasce sem foto e mostra "—".
                   h('td', { className: 'px-3 py-3' },
-                    h('button', {
-                      onClick: (e) => { e.stopPropagation(); abrirFoto(r.id); },
-                      className: 'text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
-                    }, '📷 Ver')
+                    r.tem_foto_fachada
+                      ? h('button', {
+                          onClick: (e) => { e.stopPropagation(); abrirFoto(r.id); },
+                          className: 'text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
+                        }, '📷 Ver')
+                      : h('span', { className: 'text-xs text-gray-300' }, '—')
                   ),
                   h('td', { className: 'px-3 py-3' },
                     h('div', { className: 'flex flex-col gap-1' },
@@ -1452,41 +1457,21 @@
                         h('p', { className: 'font-semibold text-red-700 mb-1' }, '🔍 Detalhe do erro'),
                         h('pre', { className: 'text-red-600 whitespace-pre-wrap font-mono' }, r.detalhe_erro)
                       ),
-                      // Validação IA
-                      (() => {
-                        const v = r.validacao_localizacao;
-                        if (!v) return h('div', { className: 'p-2 bg-gray-50 rounded-lg col-span-2' },
-                          h('p', { className: 'font-semibold text-gray-500 mb-1' }, '🤖 Validação IA'),
-                          h('p', { className: 'text-gray-400' }, 'Sem dados de validação (solicitação anterior à funcionalidade)')
-                        );
-                        const corCard = v.valido ? 'bg-green-50' : 'bg-red-50';
-                        const corTitulo = v.valido ? 'text-green-700' : 'text-red-700';
-                        const corTexto = v.valido ? 'text-green-600' : 'text-red-600';
-                        return h('div', { className: `p-3 ${corCard} rounded-lg col-span-2` },
-                          h('p', { className: `font-semibold ${corTitulo} mb-2` },
-                            v.valido ? '🤖 ✅ Validação IA — Aprovado' : '🤖 🔍 Validação IA — Necessita Investigação'
-                          ),
-                          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-                            h('div', { className: 'bg-white rounded p-2 text-center' },
-                              h('p', { className: 'text-[10px] text-gray-500' }, 'Nome na Foto'),
-                              h('p', { className: `text-xs font-semibold ${corTexto}` }, v.nome_foto || '—')
-                            ),
-                            h('div', { className: 'bg-white rounded p-2 text-center' },
-                              h('p', { className: 'text-[10px] text-gray-500' }, 'Match Google'),
-                              h('p', { className: 'text-xs font-semibold text-blue-700' }, v.match?.nome || 'Nenhum')
-                            ),
-                            h('div', { className: 'bg-white rounded p-2 text-center' },
-                              h('p', { className: 'text-[10px] text-gray-500' }, 'Confiança'),
-                              h('p', { className: `text-xs font-bold ${(v.confianca || 0) >= 50 ? 'text-green-600' : 'text-red-600'}` }, `${v.confianca || 0}%`)
-                            ),
-                            h('div', { className: 'bg-white rounded p-2 text-center' },
-                              h('p', { className: 'text-[10px] text-gray-500' }, 'Motivo'),
-                              h('p', { className: `text-xs ${corTexto}` }, v.motivo || '—')
-                            )
-                          ),
-                          v.match?.endereco && h('p', { className: 'text-xs text-gray-500 mt-2' }, '📍 Google: ', v.match.endereco)
-                        );
-                      })(),
+                      // ADMIN_BCE_V1 (bloco IA) — o card "🤖 Validação IA" saiu inteiro.
+                      //
+                      // Ele mostrava "Nome na Foto", "Match Google", "Confiança" e
+                      // "Motivo": tudo saida do Gemini lendo a FOTO da fachada. Sem foto,
+                      // r.validacao_localizacao vem null em toda correcao nova — o card
+                      // caia no ramo "Sem dados de validação (solicitação anterior à
+                      // funcionalidade)", que mentiria: nao e correcao antiga, e a
+                      // funcionalidade que acabou.
+                      //
+                      // O que substitui: o card "🧾 Validação NF + Receita Federal" logo
+                      // abaixo, que ja mostra a Receita e o cruzamento B/C/E.
+                      //
+                      // O campo validacao_localizacao continua no SELECT do historico e no
+                      // banco — as correcoes ANTIGAS tem o JSON do Gemini gravado ali. Nao
+                      // e lido em lugar nenhum agora; se um dia quiser consultar, e SQL.
                       // 2026-04: Bloco da Validação NF + Receita Federal
                       (() => {
                         const vnf = r.validacao_nf;
@@ -1499,15 +1484,16 @@
                         return h('div', { className: 'p-3 bg-indigo-50 rounded-lg col-span-2' },
                           h('div', { className: 'flex items-center justify-between mb-2' },
                             h('p', { className: 'font-semibold text-indigo-700' }, '🧾 Validação NF + Receita Federal'),
-                            r.tem_foto_nf
-                              ? h('button', {
-                                  onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
-                                  className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
-                                }, '📷 Ver foto da NF')
-                              : h('span', {
-                                  className: 'text-[10px] px-2 py-1 rounded-lg bg-gray-100 text-gray-500 font-medium',
-                                  title: 'Esta solicitação não tem foto da NF salva (CNPJ digitado ou falha no upload)'
-                                }, '🚫 Sem foto da NF')
+                            // ADMIN_BCE_V1 (selo nf): o selo "🚫 Sem foto da NF" saiu.
+                            // Foto de NF nao existe mais desde 2026-04 (v5, CNPJ digitado):
+                            // o selo aparecia em 100% das linhas novas avisando de um campo
+                            // que ninguem mais preenche. Aviso que sempre aparece nao e
+                            // aviso, e ruido. O botao de ver a foto fica, pro historico
+                            // antigo que ainda tem imagem no banco.
+                            r.tem_foto_nf && h('button', {
+                              onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
+                              className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
+                            }, '📷 Ver foto da NF')
                           ),
                           // Dados extraídos: IA (foto) ou CNPJ digitado pelo motoboy
                           h('div', { className: 'bg-white rounded p-2 mb-2' },
@@ -1567,6 +1553,26 @@
                                 )
                               )
                             ),
+                            // ADMIN_BCE_V1 (cruzamento): distancia + veredito.
+                            // O grid de scores acima e generico (Object.entries), entao ja
+                            // desenha os 3 sinais novos sozinho. Falta o que decide:
+                            // a DISTANCIA (o corte do B e em metros, nao em %) e o motivo
+                            // da barrada. Isto aqui e o painel admin — ele ve o numero que
+                            // a tela do motoboy nao ve.
+                            typeof cruz.distancia_metros === 'number' && h('div', {
+                              className: 'flex justify-between bg-gray-50 rounded px-2 py-1 mt-1 text-[10px]',
+                            },
+                              h('span', { className: 'text-gray-600' }, '📍 distancia Receita↔GPS'),
+                              h('span', {
+                                className: 'font-bold ' + (cruz.distancia_metros <= (cruz.limite_metros || 100) ? 'text-green-600' : 'text-red-600'),
+                              }, `${cruz.distancia_metros} m` + (cruz.limite_metros ? ` (limite ${cruz.limite_metros} m)` : ''))
+                            ),
+                            cruz.motivo_bloqueio && h('p', {
+                              className: 'text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 mt-1.5',
+                            }, '🛑 ', cruz.motivo_bloqueio),
+                            cruz.caminho_aprovacao && h('p', {
+                              className: 'text-[10px] text-green-700 mt-1.5',
+                            }, '✅ Liberado por: ', cruz.caminho_aprovacao),
                             cruz.mensagem_motoboy && h('p', { className: 'text-[10px] text-gray-600 mt-1.5 italic' }, '↳ ', cruz.mensagem_motoboy)
                           )
                         );
