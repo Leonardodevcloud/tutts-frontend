@@ -2669,6 +2669,55 @@
     const margemHubPct = valorUber > 0 ? Math.round((margemHub / valorUber) * 1000) / 10 : null;
     const margemPos    = margemHub >= 0;
     const [showDebug, setShowDebug] = useState(false);
+
+    // CLIENTE_MANUAL_V1 — atribuir a corrida a um cliente (= uma REGRA).
+    //
+    // Serve pra corrida manual cujo endereco nao casou com regra nenhuma: o
+    // trecho e o identificador sao os DOIS substring do endereco de coleta,
+    // entao quando o endereco vem digitado diferente, falham juntos. Aqui e
+    // na mao, sem depender do endereco.
+    const [regras, setRegras] = useState(null);   // null = ainda nao buscou
+    const [regraSel, setRegraSel] = useState(e.regra_id_manual || '');
+    const [salvandoCliente, setSalvandoCliente] = useState(false);
+    const [clienteAtual, setClienteAtual] = useState(e.cliente_nome_regra || null);
+    const [manualAtivo, setManualAtivo] = useState(!!e.regra_id_manual);
+
+    async function carregarRegras() {
+      if (regras !== null) return;
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/dispatch-rules`);
+        const json = await res.json();
+        const lista = Array.isArray(json) ? json : (json.regras || json.rules || json.data || []);
+        setRegras(lista.filter(r => r && r.cliente_nome));
+      } catch { setRegras([]); showToast && showToast('Erro ao carregar clientes', 'error'); }
+    }
+
+    async function salvarCliente(novoId) {
+      setSalvandoCliente(true);
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/cliente`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ regraId: novoId === '' ? null : parseInt(novoId, 10) }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
+          setClienteAtual(json.regra ? json.regra.cliente_nome : null);
+          setManualAtivo(!!json.regra);
+          showToast && showToast(
+            json.regra
+              ? (json.tem_tabela ? 'Cliente atribuído — o valor passa a seguir a tabela dele' : 'Cliente atribuído')
+              : 'Atribuição removida',
+            'success');
+        } else {
+          showToast && showToast(json.error || 'Erro ao atribuir cliente', 'error');
+          setRegraSel(e.regra_id_manual || '');
+        }
+      } catch {
+        showToast && showToast('Erro de rede ao atribuir cliente', 'error');
+        setRegraSel(e.regra_id_manual || '');
+      } finally { setSalvandoCliente(false); }
+    }
+
     const [comprovante, setComprovante] = useState(null);      // proof_of_delivery
     const [loadingComprovante, setLoadingComprovante] = useState(false);
     const [erroComprovante, setErroComprovante] = useState(null);
@@ -2774,6 +2823,39 @@
               h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
             )
           : h('div', { className: 'p-5 space-y-5' },
+
+              // CLIENTE_MANUAL_V1 — atribuicao de cliente.
+              // Fica no topo de proposito: quando a corrida esta sem cliente,
+              // e a primeira coisa que o operador quer resolver.
+              h('div', { className: `rounded-xl border p-3 ${clienteAtual ? 'border-gray-200 bg-white' : 'border-amber-200 bg-amber-50'}` },
+                h('div', { className: 'flex items-center justify-between mb-2' },
+                  h('span', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold' }, 'Cliente'),
+                  manualAtivo && h('span', {
+                    className: 'text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold',
+                    title: `Atribuído manualmente${e.regra_manual_por ? ' por ' + e.regra_manual_por : ''}`,
+                  }, 'manual'),
+                ),
+                h('div', { className: `text-sm font-semibold mb-2 ${clienteAtual ? 'text-gray-800' : 'text-amber-700'}` },
+                  clienteAtual || 'Sem cliente — o endereço não casou com nenhuma regra'),
+                h('div', { className: 'flex items-center gap-2' },
+                  h('select', {
+                    value: regraSel,
+                    disabled: salvandoCliente,
+                    onFocus: carregarRegras,
+                    onMouseDown: carregarRegras,
+                    onChange: (ev) => { setRegraSel(ev.target.value); salvarCliente(ev.target.value); },
+                    className: 'flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700 bg-white',
+                  },
+                    h('option', { value: '' }, regras === null ? 'Escolher cliente...' : '— sem atribuição —'),
+                    (regras || []).map(r => h('option', { key: r.id, value: r.id }, r.cliente_nome)),
+                  ),
+                  salvandoCliente && h('span', { className: 'text-[11px] text-gray-400' }, 'salvando...'),
+                ),
+                // O aviso importa: no Hub "cliente" e uma REGRA, e a regra
+                // carrega a tabela de preco. Nao da pra atribuir so o nome.
+                h('div', { className: 'text-[10px] text-gray-500 mt-1.5' },
+                  'Atribuir um cliente faz a tabela de preço dele valer nesta corrida — o valor no relatório muda.'),
+              ),
 
               // Endereços completos
               h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
