@@ -329,9 +329,11 @@
           //
           // data.foto_rejeitada nao existe mais: o backend nao olha foto.
           if (data.validacao_rejeitada) {
-            // BARRADO_CNPJ_V1: guarda o CNPJ digitado + a razao social da Receita.
+            // CNPJ_INEXISTENTE_V1: guarda tambem o codigo_bloqueio. O fallback pro
+            // `indisponivel` cobre o backend antigo (deploy em ordem diferente).
             setBarradoInfo({
               indisponivel: !!data.indisponivel,
+              codigo: data.codigo_bloqueio || (data.indisponivel ? 'indisponivel' : 'presenca'),
               cnpj: data.cnpj || null,
               razao_social: data.razao_social || null,
             });
@@ -457,67 +459,96 @@
     );
 
     // Fase: foto rejeitada pela IA
-    // BARRADO_CNPJ_V1 (tela) — barramento.
+    // CNPJ_INEXISTENTE_V1 (tela) — barramento, 3 variantes.
     //
-    // Reescrita: o checklist saiu. Com a regra nova quem decide e so a presenca
-    // fisica (B), entao o backend manda UMA conferencia — e uma linha "❌ Você
-    // está no endereço desse CNPJ" logo acima da frase "Você não está no endereço
-    // desse CNPJ" era a mesma informacao duas vezes, ocupando o lugar da unica
-    // coisa util da tela.
+    // Antes eram 2, decididas por um booleano (indisponivel). Faltava a terceira:
+    // CNPJ que nao existe na Receita caia na cara AMBAR, lendo "não é erro seu,
+    // tente de novo em um minuto" — mentira que ele repetiria pra sempre, porque o
+    // CNPJ ia continuar nao existindo. Agora quem manda e o codigo_bloqueio.
     //
-    // A unica coisa util e o CNPJ. Dos dois erros possiveis, ele ja sabe se esta
-    // no lugar errado — o que ele NAO sabe e que digitou o CNPJ da loja errada.
-    // Por isso o CNPJ vem grande, com a RAZAO SOCIAL que a Receita devolveu: e
-    // lendo "EXPRESSO LUXO VITORIA LTDA" quando esperava outra loja que ele se
-    // corrige sozinho, sem ligar pro suporte.
+    // O front NAO fareja o texto do motivo pra decidir cara: motivo e copy, muda
+    // quando alguem melhora a frase, e a tela mudaria junto sem ninguem perceber.
+    // Contrato e o codigo.
     //
-    // O que continua fora da tela: distancia, score e o ENDERECO da Receita.
-    // Numero vira jogo (ele anda ate o score subir) e o endereco entrega de graca
-    // o gabarito da validacao. O painel admin ve tudo isso.
+    // As classes do Tailwind ficam ESCRITAS INTEIRAS em cada variante. Nada de
+    // `bg-${cor}-100`: o CDN varre o codigo procurando nome de classe literal —
+    // string montada em runtime nao gera CSS e a tela sai sem cor nenhuma.
     //
-    // Duas caras, decididas pelo backend (indisponivel):
-    //   vermelha = deu pra checar e ele nao esta la -> "Corrigir o CNPJ"
-    //   ambar    = nao deu pra checar (infra)       -> "nao e erro seu"
+    // O que continua fora daqui: distancia, score e o endereco da Receita. O
+    // endereco e o gabarito da validacao; entregar na tela de erro e ensinar a
+    // fraudar. O painel admin ve tudo.
     if (fase === 'barrado') {
-      const indisp = !!(barradoInfo && barradoInfo.indisponivel);
-      const cnpjFmt = (barradoInfo && barradoInfo.cnpj)
-        ? String(barradoInfo.cnpj).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+      const info = barradoInfo || {};
+      const codigo = info.codigo || (info.indisponivel ? 'indisponivel' : 'presenca');
+
+      const VARIANTES = {
+        presenca: {
+          icone: '🛑',
+          bolha: 'bg-red-100',
+          titulo: 'Você não está no endereço desse CNPJ',
+          corTitulo: 'text-red-700',
+          borda: 'border-red-200',
+          caixa: 'bg-red-50 border border-red-200',
+          corTexto: 'text-red-800',
+          instrucao: 'Se for esse mesmo o CNPJ, vá até a porta do estabelecimento e envie sua localização de novo.',
+          botao: '✏️  Corrigir o CNPJ',
+        },
+        cnpj_nao_encontrado: {
+          icone: '🔎',
+          bolha: 'bg-red-100',
+          titulo: 'Não achamos esse CNPJ',
+          corTitulo: 'text-red-700',
+          borda: 'border-red-200',
+          caixa: 'bg-red-50 border border-red-200',
+          corTexto: 'text-red-800',
+          instrucao: 'Esse CNPJ não consta na Receita Federal. Confira os dígitos na nota fiscal — é fácil trocar um número.',
+          botao: '✏️  Corrigir o CNPJ',
+        },
+        indisponivel: {
+          icone: '🔌',
+          bolha: 'bg-amber-100',
+          titulo: 'Não deu pra checar agora',
+          corTitulo: 'text-amber-700',
+          borda: 'border-amber-200',
+          caixa: 'bg-amber-50 border border-amber-200',
+          corTexto: 'text-amber-800',
+          instrucao: null, // usa o texto que o backend mandou
+          botao: '↻  Tentar de novo',
+        },
+      };
+      const v = VARIANTES[codigo] || VARIANTES.presenca;
+
+      const cnpjFmt = info.cnpj
+        ? String(info.cnpj).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
         : null;
-      const razao = (barradoInfo && barradoInfo.razao_social) || null;
 
       return h('div', { className: 'flex flex-col items-center py-8 px-5 text-center' },
-        h('div', {
-          className: `w-20 h-20 rounded-full flex items-center justify-center mb-5 ${indisp ? 'bg-amber-100' : 'bg-red-100'}`,
-        }, h('span', { className: 'text-4xl' }, indisp ? '🔌' : '🛑')),
+        h('div', { className: `w-20 h-20 rounded-full flex items-center justify-center mb-5 ${v.bolha}` },
+          h('span', { className: 'text-4xl' }, v.icone)),
 
-        h('h2', { className: `text-xl font-bold mb-1 leading-tight ${indisp ? 'text-amber-700' : 'text-red-700'}` },
-          indisp ? 'Não deu pra checar agora' : 'Você não está no endereço desse CNPJ'),
+        h('h2', { className: `text-xl font-bold mb-1 leading-tight ${v.corTitulo}` }, v.titulo),
         h('p', { className: 'text-xs text-gray-500 mb-5' },
           `OS ${form.os_numero} · Ponto ${form.ponto}`),
 
-        // O CNPJ que ele digitou — o herói da tela.
+        // O CNPJ que ele digitou — o herói da tela. Na variante cnpj_nao_encontrado
+        // ele é literalmente a resposta: o número está ali, errado, pra ele ver.
         cnpjFmt && h('div', {
-          className: `w-full max-w-md bg-white border-2 rounded-xl p-4 mb-4 ${indisp ? 'border-amber-200' : 'border-red-200'}`,
+          className: `w-full max-w-md bg-white border-2 rounded-xl p-4 mb-4 ${v.borda}`,
         },
           h('p', { className: 'text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1' }, 'CNPJ que você digitou'),
           h('p', { className: 'text-lg font-bold text-gray-900 font-mono tracking-tight' }, cnpjFmt),
-          razao && h('p', { className: 'text-[13px] text-gray-600 mt-1 leading-snug' }, razao),
+          info.razao_social && h('p', { className: 'text-[13px] text-gray-600 mt-1 leading-snug' }, info.razao_social),
         ),
 
-        h('div', {
-          className: `w-full max-w-md rounded-xl p-4 mb-5 text-left ${indisp ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`,
-        },
-          h('p', { className: `text-sm leading-relaxed ${indisp ? 'text-amber-800' : 'text-red-800'}` },
-            indisp
-              ? detalheErro
-              : 'Se for esse mesmo o CNPJ, vá até a porta do estabelecimento e envie sua localização de novo.'),
+        h('div', { className: `w-full max-w-md rounded-xl p-4 mb-5 text-left ${v.caixa}` },
+          h('p', { className: `text-sm leading-relaxed ${v.corTexto}` }, v.instrucao || detalheErro),
         ),
 
         h('button', {
           onClick: function() { setFase('idle'); setBarradoInfo(null); },
           className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white mb-3',
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
-        }, indisp ? '↻  Tentar de novo' : '✏️  Corrigir o CNPJ'),
+        }, v.botao),
 
         h('a', {
           href: `https://wa.me/557189260372?text=${encodeURIComponent(
