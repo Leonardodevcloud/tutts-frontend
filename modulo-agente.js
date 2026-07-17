@@ -2432,22 +2432,54 @@
 
   // Rotulos das fases. A chave crua (presenca, gps_impreciso...) aparece embaixo
   // em fonte mono: o admin precisa saber o valor real pra escrever SQL.
+  // FASES_EXPLICADAS_V1 — [rotulo, explicacao, quem_errou]
+  //
+  // A explicacao existe porque a chave crua nao ensina nada: "localizando" e
+  // "confirmando" so fazem sentido pra quem escreveu o Playwright, e este painel
+  // e pra decidir o que consertar primeiro. Sem saber o que cada fase E, o
+  // ranking vira uma lista de palavras ordenada por numero.
+  //
+  // O terceiro campo agrupa por CULPA, que e a leitura que importa:
+  //   'motoboy'  ele pode consertar sozinho na proxima tentativa
+  //   'nosso'    bug, infra ou regra nossa — ele nao tem o que fazer
+  //   'robo'     passou na validacao e quebrou no RPA (a Mapp, a rede, o login)
+  //   'regra'    a regra funcionou como devia (ex: OS ja corrigida)
+  //
+  // Isso muda a conclusao. 120 em 'localizando' NAO e motoboy errando: e o robo
+  // nao achando a OS na Mapp — problema nosso, e o maior da lista. Sem a coluna
+  // de culpa, alguem olharia esse ranking e concluiria que os motoboys erram
+  // muito.
+  //
+  // Chave que nao estiver aqui aparece crua, sem explicacao — melhor um rotulo
+  // feio que um rotulo errado.
   const ANL_FASES = {
-    presenca:          'Não estava no endereço',
-    receita:           'CNPJ / Receita',
-    gps_impreciso:     'GPS impreciso',
-    ja_corrigida:      'OS já corrigida',
-    em_andamento:      'Já tinha uma rodando',
-    entrada:           'Dados inválidos',
-    erro_interno:      'Erro interno nosso',
-    // as de RPA vem do etapa_atual
-    login:             'RPA: login',
-    localizando:       'RPA: localizando a OS',
-    codificando:       'RPA: codificando o endereço',
-    confirmando:       'RPA: confirmando',
-    recalculando:      'RPA: recalculando o frete',
-    finalizando:       'RPA: finalizando',
-    sem_fase:          'Sem fase registrada',
+    // ── Validação (rota) ──
+    presenca:      ['Não estava no endereço',   'O GPS ficou a mais de 100m do endereço que a Receita tem pra esse CNPJ.', 'motoboy'],
+    receita:       ['CNPJ / Receita',           'O CNPJ não existe na Receita, ou a consulta às duas bases falhou.', 'motoboy'],
+    gps_impreciso: ['GPS impreciso',            'O aparelho não sabia onde estava com precisão suficiente pra decidir (±60m ou mais).', 'motoboy'],
+    ja_corrigida:  ['OS já corrigida',          'Esse ponto já tinha sido corrigido com sucesso antes. Se repete muito, a correção anterior não resolveu.', 'regra'],
+    em_andamento:  ['Já tinha uma rodando',     'Já existia uma correção em andamento pra esse ponto. Se repete muito, o polling não está dando retorno.', 'regra'],
+    entrada:       ['Dados inválidos',          'Campo faltando ou CNPJ com dígito errado — nem chegou a validar. O app já barra isso, então aqui é raro.', 'motoboy'],
+    erro_interno:  ['Erro interno nosso',       'Exception no servidor. Não é o motoboy: é bug. O detalhe técnico está no detalhe_erro da linha.', 'nosso'],
+    // ── RPA (vem do etapa_atual — a correção passou na validação e quebrou depois) ──
+    login:         ['RPA: login',               'O robô não conseguiu entrar na Mapp. Costuma ser senha, captcha ou a Mapp fora do ar.', 'robo'],
+    localizando:   ['RPA: localizando a OS',    'O robô entrou mas não achou a OS ou o ponto na Mapp. Pode ser OS cancelada, número errado ou a tela mudou.', 'robo'],
+    codificando:   ['RPA: codificando o endereço', 'O robô achou a OS mas não conseguiu gravar o endereço novo.', 'robo'],
+    confirmando:   ['RPA: confirmando',         'Gravou e não confirmou. Vale conferir na Mapp se o endereço entrou mesmo.', 'robo'],
+    recalculando:  ['RPA: recalculando o frete','O endereço entrou, mas o frete não recalculou — a correção vale, o valor não.', 'robo'],
+    finalizando:   ['RPA: finalizando',         'Quebrou no último passo, com quase tudo feito. Confira na Mapp antes de refazer.', 'robo'],
+    retentando:    ['RPA: retentando',          'O robô estava numa nova tentativa quando parou.', 'robo'],
+    bloqueado:     ['Cliente bloqueado',        'A loja está na lista de clientes que não aceitam ajuste automático. Nada a ver com validação.', 'regra'],
+    sem_fase:      ['Sem fase registrada',      'Linha anterior à coluna fase_falha existir. Vai sumir sozinho conforme as antigas saem da janela.', 'nosso'],
+  };
+
+  // Como cada culpa se apresenta. Cinza pro que e regra funcionando: nao e
+  // problema, e o sistema fazendo o trabalho dele.
+  const ANL_CULPA = {
+    motoboy: ['Motoboy',   'bg-rose-50 text-rose-700 border-rose-200'],
+    nosso:   ['Nosso bug', 'bg-purple-50 text-purple-700 border-purple-200'],
+    robo:    ['Robô',      'bg-amber-50 text-amber-700 border-amber-200'],
+    regra:   ['Regra',     'bg-slate-100 text-slate-600 border-slate-200'],
   };
 
   const ANL_GPS_FAIXAS = [
@@ -2703,23 +2735,46 @@
             h('p', { className: 'text-[11px] text-slate-400 mt-0.5 mb-4' }, 'decide o que consertar primeiro'),
             fases.length === 0
               ? h('p', { className: 'text-sm text-slate-400 py-6 text-center' }, 'Nenhuma tentativa perdida no período.')
-              : h('div', { className: 'space-y-2.5' },
-                  fases.map(f => h('div', { key: f.fase },
-                    h('div', { className: 'flex justify-between items-baseline mb-1' },
-                      h('span', { className: 'text-[12px] text-slate-700' }, ANL_FASES[f.fase] || f.fase),
-                      h('span', { className: 'text-[12px] font-semibold text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } },
-                        anlNum(f.total),
-                        h('span', { className: 'text-slate-400 font-normal' }, ` ${anlPct(f.total, fases.reduce((s, x) => s + x.total, 0))}%`)
+              : h('div', { className: 'space-y-3' },
+                  fases.map(f => {
+                    // FASES_EXPLICADAS_V1: chave desconhecida vira rotulo cru, sem
+                    // explicacao e sem etiqueta. Melhor um rotulo feio que um errado.
+                    const meta   = ANL_FASES[f.fase];
+                    const rotulo = meta ? meta[0] : f.fase;
+                    const expl   = meta ? meta[1] : null;
+                    const culpa  = meta ? ANL_CULPA[meta[2]] : null;
+                    return h('div', { key: f.fase },
+                      h('div', { className: 'flex justify-between items-baseline gap-2 mb-1' },
+                        h('div', { className: 'flex items-center gap-2 min-w-0' },
+                          h('span', { className: 'text-[12px] text-slate-700 font-medium' }, rotulo),
+                          culpa && h('span', {
+                            className: `text-[9px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded border flex-shrink-0 ${culpa[1]}`,
+                          }, culpa[0])
+                        ),
+                        h('span', {
+                          className: 'text-[12px] font-semibold text-slate-900 flex-shrink-0',
+                          style: { fontVariantNumeric: 'tabular-nums' },
+                        },
+                          anlNum(f.total),
+                          h('span', { className: 'text-slate-400 font-normal' },
+                            ` ${anlPct(f.total, fases.reduce((s, x) => s + x.total, 0))}%`)
+                        )
+                      ),
+                      h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
+                        h('div', {
+                          className: 'h-full rounded-full transition-all duration-300',
+                          style: { width: `${(f.total / maxFase) * 100}%`, background: '#7c3aed' },
+                        })
+                      ),
+                      // A chave crua e a explicacao na MESMA linha: a chave voce precisa
+                      // pra escrever SQL, a explicacao pra entender o ranking. Duas
+                      // linhas separadas dobrariam a altura do bloco por nada.
+                      h('p', { className: 'text-[10px] text-slate-400 mt-1 leading-relaxed' },
+                        h('span', { className: 'font-mono text-slate-500' }, f.fase),
+                        expl && h('span', null, ' · ', expl)
                       )
-                    ),
-                    h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
-                      h('div', {
-                        className: 'h-full rounded-full transition-all duration-300',
-                        style: { width: `${(f.total / maxFase) * 100}%`, background: '#7c3aed' },
-                      })
-                    ),
-                    h('p', { className: 'text-[10px] text-slate-400 mt-0.5 font-mono' }, f.fase)
-                  ))
+                    );
+                  })
                 )
           ),
 
