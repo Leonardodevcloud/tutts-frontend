@@ -269,7 +269,9 @@
       // 2026-04 v5: única forma de identificar é CNPJ digitado (foto da NF removida).
       const cnpjLimpo = String(cnpjManual).replace(/\D/g, '');
       if (cnpjLimpo.length === 0) {
-        showToast('Digite o CNPJ do cliente!', 'error');
+        // CNPJ_DESTINATARIO_V1: "cliente" era ambiguo — a autopecas TAMBEM e
+        // cliente (da Tutts). Aqui e sempre quem RECEBE.
+        showToast('Digite o CNPJ de quem recebe a entrega!', 'error');
         return;
       }
       if (!validarCNPJ(cnpjLimpo)) {
@@ -965,12 +967,87 @@
               )
         ),
 
-        // ── Identificação do cliente: CNPJ digitado ──────────
+        // ── Identificação de quem RECEBE: CNPJ digitado ──────────
         // 2026-04 v5: foto da NF removida — motos não conseguiam tirar
         // legível mesmo com camera coaching. Agora é só CNPJ digitado.
+        //
+        // CNPJ_DESTINATARIO_V1 — a causa raiz de 58% das barradas estava AQUI, no
+        // texto. Os dois rotulos antigos eram:
+        //
+        //     "🧾 CNPJ do cliente *"
+        //     "Digite o CNPJ que aparece na NF — vamos consultar a Receita Federal"
+        //
+        // Numa nota fiscal, o CNPJ QUE APARECE e o do EMITENTE: topo, negrito,
+        // cabecalho. O do destinatario fica embaixo, num quadro menor. Pedimos
+        // literalmente o que ele digitou — o do despachante. E "cliente" e ambiguo:
+        // a autopecas tambem e cliente (da Tutts).
+        //
+        // Como isso aparecia no banco: o CNPJ 42580092/0011-48 apareceu em 55
+        // correcoes de OS diferentes, com media de 13,9 km; o 42580092/0069-64 em
+        // outras 22. Mesma raiz — filiais da mesma empresa. Cliente de verdade
+        // aparece em uma ou duas OS e some (o endereco fica corrigido). Quem repete
+        // em dezenas e quem despacha. Teve caso de 2.548 km: matriz em SC, motoboy
+        // em PE. Nao era fraude nem geocoder — era gente obedecendo a instrucao.
+        //
+        // Nenhuma regua de metros conserta isso: a 100m ou a 500m, o CNPJ do
+        // despachante nunca vai bater com a loja onde ele esta. E se batesse seria
+        // pior — validaria a coisa errada.
+        //
+        // O DESENHO nao e enfeite: "destinatario" e palavra de escritorio. O cara
+        // esta com a nota na mao, no sol, com o cliente esperando. Ele nao le
+        // paragrafo — ele COMPARA o que esta na tela com o que esta no papel. Um
+        // quadro vermelho em cima e um verde embaixo resolvem em 1 segundo o que
+        // duas linhas de texto nao resolvem em 10.
+        //
+        // SVG inline: sem Tabler, sem Lucide, sem Font Awesome — so Tailwind e SVG,
+        // igual ao resto do sistema.
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 CNPJ do cliente *'),
-          h('p', { className: 'text-xs text-gray-500 mb-2' }, 'Digite o CNPJ que aparece na NF — vamos consultar a Receita Federal'),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 CNPJ de quem RECEBE *'),
+          h('p', { className: 'text-xs text-gray-500 mb-3' },
+            'Na nota, procure o quadro ',
+            h('strong', null, 'DESTINATÁRIO'),
+            ' — não é o CNPJ do topo'),
+
+          // Onde olhar na nota.
+          h('div', { className: 'border border-gray-200 rounded-xl p-3 mb-3 bg-gray-50' },
+            h('svg', {
+              viewBox: '0 0 300 190',
+              className: 'w-full',
+              xmlns: 'http://www.w3.org/2000/svg',
+              role: 'img',
+              'aria-label': 'Desenho de uma nota fiscal: o CNPJ do emitente fica no topo e nao serve; o do destinatario fica no quadro de baixo e e esse que voce deve digitar.',
+            },
+              h('rect', { x: 4, y: 4, width: 292, height: 182, rx: 6, fill: '#fff', stroke: '#e5e7eb' }),
+
+              // EMITENTE — o errado
+              h('rect', { x: 14, y: 14, width: 272, height: 46, rx: 4, fill: '#fef2f2', stroke: '#fecaca' }),
+              h('text', { x: 24, y: 30, fontSize: 8, fill: '#b91c1c', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'EMITENTE — quem despachou'),
+              h('rect', { x: 24, y: 36, width: 120, height: 6, rx: 2, fill: '#fca5a5' }),
+              h('text', { x: 24, y: 54, fontSize: 9, fill: '#dc2626', fontFamily: 'monospace', fontWeight: 'bold' }, 'CNPJ 00.000.000/0000-00'),
+              h('g', { transform: 'translate(258, 30)' },
+                h('circle', { r: 11, fill: '#fee2e2', stroke: '#dc2626', strokeWidth: 1.5 }),
+                h('path', { d: 'M -4 -4 L 4 4 M 4 -4 L -4 4', stroke: '#dc2626', strokeWidth: 2, strokeLinecap: 'round' }),
+              ),
+
+              // itens (só forma, pra nota parecer nota)
+              h('rect', { x: 14, y: 66, width: 272, height: 30, rx: 4, fill: '#fafafa', stroke: '#f3f4f6' }),
+              h('rect', { x: 24, y: 74, width: 180, height: 4, rx: 2, fill: '#e5e7eb' }),
+              h('rect', { x: 24, y: 84, width: 140, height: 4, rx: 2, fill: '#e5e7eb' }),
+
+              // DESTINATÁRIO — o certo
+              h('rect', { x: 14, y: 102, width: 272, height: 70, rx: 4, fill: '#f0fdf4', stroke: '#22c55e', strokeWidth: 2 }),
+              h('text', { x: 24, y: 118, fontSize: 8, fill: '#15803d', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'DESTINATÁRIO — quem recebe'),
+              h('rect', { x: 24, y: 124, width: 110, height: 6, rx: 2, fill: '#86efac' }),
+              h('text', { x: 24, y: 144, fontSize: 10, fill: '#15803d', fontFamily: 'monospace', fontWeight: 'bold' }, 'CNPJ 00.000.000/0000-00'),
+              h('text', { x: 24, y: 160, fontSize: 7.5, fill: '#4b5563', fontFamily: 'sans-serif' }, 'RUA DA LOJA, 123 — CIDADE/UF'),
+              h('g', { transform: 'translate(258, 130)' },
+                h('circle', { r: 12, fill: '#dcfce7', stroke: '#16a34a', strokeWidth: 2 }),
+                h('path', { d: 'M -5 0 L -1.5 4 L 5 -4', stroke: '#16a34a', strokeWidth: 2.5, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }),
+              ),
+            ),
+            h('p', { className: 'text-[10px] text-center text-gray-500 mt-1' },
+              'É o de baixo. O de cima é da empresa que te entregou a carga.'),
+          ),
           h('input', {
             type: 'text',
             inputMode: 'numeric',
