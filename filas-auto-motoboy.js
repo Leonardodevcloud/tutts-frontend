@@ -44,7 +44,12 @@
     // (CHECK no banco), então nunca chegam os dois. Duas telas quase iguais
     // divergiriam em seis meses — e aqui divergir significa uma delas voltar a
     // dizer o que não pode.
-    const [garantidoAviso, setGarantidoAviso] = React.useState(null); // { valor, hora }
+    // AVISO_BONUS_NEUTRO_V2_STATE
+    // Um estado só serve o Garantido E a Diária: a central é ou uma ou outra
+    // (CHECK no banco), então nunca chegam os dois. Duas telas quase iguais
+    // divergiriam em seis meses — e aqui divergir significa uma delas voltar a
+    // dizer o que não pode.
+    const [garantidoAviso, setGarantidoAviso] = React.useState(null); // { valor } // { valor, hora }
     const [barreiraHorario, setBarreiraHorario] = React.useState(null); // { nome, horario_corte }
     let req_nome_profissional = '';
     const [textoConfirmSaida, setTextoConfirmSaida] = React.useState('');
