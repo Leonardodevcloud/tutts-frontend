@@ -2377,209 +2377,451 @@
     );
   }
 
-  let _analyticsData = null;
-  let _analyticsFetching = false;
-  let _analyticsError = false;
+  // ══════════════════════════════════════════════════════════════════════════
+  // ANALYTICS_V2 (front) — reescrito inteiro.
+  //
+  // O que saiu, e por que:
+  //
+  // - OS 4 CARDS DE FUNDO PASTEL, as 3 caixas coloridas e o bloco vermelho de
+  //   Red Flags. Fundo colorido nao carrega informacao — quando tudo grita, nada
+  //   e urgente. Cor agora so aparece onde ela SIGNIFICA: o ponto do KPI, a barra
+  //   do grafico, o marcador de quem esta fora da curva.
+  //
+  // - OS 3 GRAFICOS (mes / semana / dia). Mostravam a mesma coisa em escalas
+  //   diferentes, e era o que mais poluia. Agora e UM, que troca de granularidade
+  //   sozinho conforme a janela (ate ~45 dias mostra dia a dia; acima, agrupa por
+  //   semana no proprio front, sem outra request).
+  //
+  // - O CACHE GLOBAL (_analyticsData / _analyticsFetching / _analyticsError).
+  //   Ele existia pra sobreviver a remount, mas guardava UMA resposta sem chave —
+  //   com filtro de periodo isso passaria a servir o periodo errado calado. O
+  //   componente hoje vive dentro de um display:none (nao remonta), entao o cache
+  //   nao tem mais razao de existir.
+  //
+  // - O grafico "por semana" NAO DESENHAVA BARRA NENHUMA em producao: a altura era
+  //   `height: N%` dentro de um flex item de altura automatica, e porcentagem sem
+  //   altura de referencia resolve pra zero. Ficou assim quem sabe quanto tempo,
+  //   porque o numero ao lado continuava aparecendo. Agora e SVG com viewBox: a
+  //   altura e coordenada, nao porcentagem — nao tem como nao desenhar.
+  //
+  // O que entrou:
+  //
+  // - FILTRO DE PERIODO mandando em TUDO. Antes o card "Total" era de sempre e os
+  //   graficos eram de 6 meses / 8 semanas / 7 dias: quatro janelas na mesma tela.
+  //
+  // - A BARRA DE COMPOSICAO, que soma 100%. Ela existe por um motivo especifico:
+  //   em producao, 5777 - 4652 sucesso - 576 erro - 6 pendentes = 543 linhas que
+  //   nao apareciam em lugar nenhum (o SQL so conhecia 'sucesso' e 'erro'; falhou,
+  //   barrado e bloqueado_cliente eram invisiveis). Se um dia sobrar faixa cinza
+  //   nessa barra, e porque tem estado sem dono — o bug aparece na tela em vez de
+  //   precisar de uma subtracao pra ser descoberto.
+  //
+  // - ONDE AS TENTATIVAS MORREM (fase_falha) e PRECISAO DO GPS (gps_accuracy).
+  //   Sao os dois graficos que respondem as perguntas que a gente vinha
+  //   respondendo no chute: "o que consertar primeiro?" e "o limite de 60m esta
+  //   apertado demais?".
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const ANL_PERIODOS = [
+    { id: '7',      label: '7 dias'  },
+    { id: '30',     label: '30 dias' },
+    { id: '90',     label: '90 dias' },
+    { id: '180',    label: '6 meses' },
+    { id: 'custom', label: 'Personalizado' },
+  ];
+
+  // Rotulos das fases. A chave crua (presenca, gps_impreciso...) aparece embaixo
+  // em fonte mono: o admin precisa saber o valor real pra escrever SQL.
+  const ANL_FASES = {
+    presenca:          'Não estava no endereço',
+    receita:           'CNPJ / Receita',
+    gps_impreciso:     'GPS impreciso',
+    ja_corrigida:      'OS já corrigida',
+    em_andamento:      'Já tinha uma rodando',
+    entrada:           'Dados inválidos',
+    erro_interno:      'Erro interno nosso',
+    // as de RPA vem do etapa_atual
+    login:             'RPA: login',
+    localizando:       'RPA: localizando a OS',
+    codificando:       'RPA: codificando o endereço',
+    confirmando:       'RPA: confirmando',
+    recalculando:      'RPA: recalculando o frete',
+    finalizando:       'RPA: finalizando',
+    sem_fase:          'Sem fase registrada',
+  };
+
+  const ANL_GPS_FAIXAS = [
+    ['0-15',   '0–15 m',   false],
+    ['16-30',  '16–30 m',  false],
+    ['31-60',  '31–60 m',  false],
+    ['61-100', '61–100 m', true],
+    ['100+',   '> 100 m',  true],
+  ];
+
+  const anlNum = (n) => Number(n || 0).toLocaleString('pt-BR');
+  const anlPct = (n, t) => (!t ? 0 : Math.round((n / t) * 100));
+  const anlDM  = (iso) => { const [, m, d] = String(iso).split('-'); return `${d}/${m}`; };
 
   function TabAnalytics({ API_URL, fetchAuth, showToast }) {
-    const containerRef = useRef(null);
-    const [, forceUpdate] = useState(0);
+    const [dados, setDados]     = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [periodo, setPeriodo] = useState('30');
+    const [range, setRange]     = useState({ de: '', ate: '' });
 
-    useEffect(() => {
-      if (_analyticsData) {
-        forceUpdate(n => n + 1);
-        return;
+    // showToast e nova referencia a cada render do pai — em dependencia de
+    // useCallback isso vira loop. Ref.
+    const toastRef = useRef(showToast);
+    toastRef.current = showToast;
+
+    const carregar = useCallback(async (p, r) => {
+      setLoading(true);
+      try {
+        const qs = p === 'custom' && r.de && r.ate
+          ? `de=${r.de}&ate=${r.ate}`
+          : `dias=${p === 'custom' ? 30 : p}`;
+        const res  = await fetchAuth(`${API_URL}/agent/analytics?${qs}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'falhou');
+        setDados(data);
+      } catch (e) {
+        toastRef.current('Erro ao carregar analytics', 'error');
+      } finally {
+        setLoading(false);
       }
-      if (_analyticsFetching) return;
-      _analyticsFetching = true;
+    }, [fetchAuth, API_URL]);
 
-      (async () => {
-        try {
-          const res = await fetchAuth(`${API_URL}/agent/analytics`);
-          _analyticsData = await res.json();
-        } catch {
-          _analyticsError = true;
-        }
-        _analyticsFetching = false;
-        forceUpdate(n => n + 1);
-      })();
-    }, []);
+    useEffect(() => { carregar('30', { de: '', ate: '' }); }, [carregar]);
 
-    if (_analyticsFetching && !_analyticsData) return h('div', { className: 'flex items-center justify-center py-16' },
-      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
-    );
-    if (_analyticsError && !_analyticsData) return h('div', { className: 'text-center py-16 text-gray-400' }, 'Erro ao carregar.');
-    if (!_analyticsData) return null;
+    const trocarPeriodo = (id) => {
+      setPeriodo(id);
+      if (id !== 'custom') carregar(id, range);
+    };
 
-    const data = _analyticsData;
-    const t = data.totais || {};
-    const meses = [...(data.por_mes || [])].reverse();
-    const semanas = [...(data.por_semana || [])].reverse();
-    const dias = data.por_dia || [];
-    const maxMes = Math.max(...meses.map(m => parseInt(m.total) || 0), 1);
-    const maxSemana = Math.max(...semanas.map(s => parseInt(s.total) || 0), 1);
-    const maxDia = Math.max(...dias.map(d => parseInt(d.total) || 0), 1);
+    const aplicarRange = () => {
+      if (!range.de || !range.ate) { toastRef.current('Escolha as duas datas', 'error'); return; }
+      carregar('custom', range);
+    };
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4 sm:p-6 space-y-6' },
+    const t   = (dados && dados.totais)   || {};
+    const ant = (dados && dados.anterior) || {};
+    const total = t.total || 0;
 
-      // KPI Cards
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
-        [
-          { label: 'Total Ajustes',  value: t.total,     bg: 'bg-purple-50',  tc: 'text-purple-600', icon: '📊' },
-          { label: 'Sucesso',        value: t.sucesso,   bg: 'bg-green-50',   tc: 'text-green-600',  icon: '✅' },
-          { label: 'Erros',          value: t.erro,      bg: 'bg-red-50',     tc: 'text-red-600',    icon: '❌' },
-          { label: 'Pendentes',      value: t.pendentes, bg: 'bg-yellow-50',  tc: 'text-yellow-600', icon: '⏳' },
-        ].map(k => h('div', {
-          key: k.label,
-          className: `${k.bg} rounded-xl border border-gray-100 shadow-sm p-4`,
-        },
-          h('div', { className: 'flex items-center gap-2 mb-2' },
-            h('span', { className: 'text-xl' }, k.icon),
-            h('span', { className: 'text-xs font-semibold text-gray-500 uppercase' }, k.label)
-          ),
-          h('p', { className: `text-3xl font-bold ${k.tc}` }, k.value || 0)
-        ))
-      ),
+    // Delta vs periodo anterior. Sem base (periodo anterior zerado) nao inventa
+    // porcentagem: mostra "—". Divisao por zero vira Infinity e "↑ Infinity%" na
+    // tela.
+    const delta = (ant.total > 0) ? Math.round(((total - ant.total) / ant.total) * 100) : null;
 
-      // Gráfico por mês
-      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📈 Ajustes por Mês (últimos 6 meses)'),
-        meses.length === 0
-          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
-          : h('div', { className: 'space-y-2' },
-              meses.map(m => {
-                const sucPct = (parseInt(m.sucesso) / maxMes) * 100;
-                const errPct = (parseInt(m.erro) / maxMes) * 100;
-                return h('div', { key: m.mes, className: 'flex items-center gap-3' },
-                  h('span', { className: 'w-16 text-xs font-mono text-gray-500 flex-shrink-0' }, m.mes),
-                  h('div', { className: 'flex-1 h-6 bg-gray-100 rounded-full overflow-hidden flex' },
-                    sucPct > 0 && h('div', {
-                      className: 'h-full bg-green-500',
-                      style: { width: sucPct + '%', minWidth: sucPct > 0 ? '2px' : 0 },
-                      title: `Sucesso: ${m.sucesso}`,
-                    }),
-                    errPct > 0 && h('div', {
-                      className: 'h-full bg-red-400',
-                      style: { width: errPct + '%', minWidth: errPct > 0 ? '2px' : 0 },
-                      title: `Erro: ${m.erro}`,
-                    })
-                  ),
-                  h('span', { className: 'w-10 text-right text-xs font-bold text-gray-700' }, m.total)
-                );
-              })
-            ),
-        h('div', { className: 'flex items-center gap-4 mt-3 text-xs text-gray-400' },
-          h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-3 h-3 rounded bg-green-500 inline-block' }), 'Sucesso'),
-          h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-3 h-3 rounded bg-red-400 inline-block' }), 'Erro')
+    // ── Grafico: agrupa no front quando a janela e longa ──
+    const dias = (dados && dados.por_dia) || [];
+    let pontos = dias;
+    if (dias.length > 45) {
+      const semanas = [];
+      for (let i = 0; i < dias.length; i += 7) {
+        const b = dias.slice(i, i + 7);
+        semanas.push({
+          dia:        b[0].dia,
+          total:      b.reduce((s, x) => s + x.total, 0),
+          corrigidas: b.reduce((s, x) => s + x.corrigidas, 0),
+          barradas:   b.reduce((s, x) => s + x.barradas, 0),
+          falhas:     b.reduce((s, x) => s + x.falhas, 0),
+        });
+      }
+      pontos = semanas;
+    }
+    const maxY = Math.max(1, ...pontos.map(p => p.total));
+    const W = 1080, H = 180, GAP = pontos.length > 60 ? 1 : 3;
+    const bw = pontos.length ? Math.max(1, (W - GAP * (pontos.length - 1)) / pontos.length) : 0;
+    const passo = Math.max(1, Math.ceil(pontos.length / 12));
+
+    const KPIS = [
+      { k: 'corrigidas', label: 'Corrigidas',     cor: '#10b981', nota: `${anlPct(t.corrigidas, total)}% das tentativas` },
+      { k: 'barradas',   label: 'Barradas',       cor: '#f43f5e', nota: 'a regra recusou' },
+      { k: 'falhas',     label: 'Falhas do robô', cor: '#f59e0b', nota: 'passou e quebrou no RPA' },
+      { k: 'na_fila',    label: 'Na fila',        cor: '#cbd5e1', nota: 'rodando agora' },
+    ];
+
+    // A composicao inclui bloqueadas: sem elas a barra nao fecharia 100%, que e a
+    // unica razao dela existir.
+    const comp = [
+      { k: 'corrigidas', cor: '#10b981' },
+      { k: 'barradas',   cor: '#f43f5e' },
+      { k: 'falhas',     cor: '#f59e0b' },
+      { k: 'bloqueadas', cor: '#a78bfa' },
+      { k: 'na_fila',    cor: '#cbd5e1' },
+    ];
+    const somaComp = comp.reduce((s, c) => s + (t[c.k] || 0), 0);
+
+    const fases   = (dados && dados.por_fase) || [];
+    const maxFase = Math.max(1, ...fases.map(f => f.total));
+    const gpsF    = (dados && dados.gps && dados.gps.faixas) || {};
+    const gpsTot  = Object.values(gpsF).reduce((s, n) => s + n, 0);
+    const profs   = (dados && dados.profissionais) || [];
+
+    return h('div', { className: 'max-w-[1180px] mx-auto px-4 sm:px-6 py-6' },
+
+      // ── Cabeçalho + filtro ──
+      h('div', { className: 'flex items-end justify-between flex-wrap gap-4 mb-5' },
+        h('div', null,
+          h('h1', { className: 'text-xl font-bold tracking-tight text-slate-900' }, 'Analytics'),
+          h('p', { className: 'text-[13px] text-slate-500 mt-0.5' },
+            'Correção de endereço · ',
+            h('span', { className: 'font-medium text-slate-600' },
+              dados ? `${anlDM(dados.periodo.de)} a ${anlDM(dados.periodo.ate)} · ${dados.periodo.dias} dias` : '—'
+            )
+          )
+        ),
+        h('div', { className: 'inline-flex p-0.5 rounded-xl border border-slate-200 bg-white' },
+          ANL_PERIODOS.map(p => h('button', {
+            key: p.id,
+            onClick: () => trocarPeriodo(p.id),
+            className: `text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+              periodo === p.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'}`,
+          }, p.label))
         )
       ),
 
-      // Gráfico por semana
-      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📅 Ajustes por Semana (últimas 8 semanas)'),
-        semanas.length === 0
-          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
-          : h('div', { className: 'flex items-end gap-2 h-40' },
-              semanas.map(s => {
-                const pct = (parseInt(s.total) / maxSemana) * 100;
-                return h('div', { key: s.semana_inicio, className: 'flex-1 flex flex-col items-center gap-1' },
-                  h('span', { className: 'text-xs font-bold text-gray-600' }, s.total),
-                  h('div', { className: 'w-full rounded-t-lg bg-purple-500', style: { height: Math.max(pct, 4) + '%' } }),
-                  h('span', { className: 'text-[10px] text-gray-400 mt-1' }, s.semana_inicio)
-                );
-              })
-            )
+      periodo === 'custom' && h('div', { className: 'bg-white border border-slate-200 rounded-xl p-4 mb-5 flex items-end gap-3 flex-wrap' },
+        h('div', null,
+          h('label', { className: 'block text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1.5' }, 'De'),
+          h('input', {
+            type: 'date', value: range.de,
+            onChange: (e) => setRange(r => ({ ...r, de: e.target.value })),
+            className: 'border border-slate-200 rounded-lg px-3 py-2 text-sm',
+          })
+        ),
+        h('div', null,
+          h('label', { className: 'block text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1.5' }, 'Até'),
+          h('input', {
+            type: 'date', value: range.ate,
+            onChange: (e) => setRange(r => ({ ...r, ate: e.target.value })),
+            className: 'border border-slate-200 rounded-lg px-3 py-2 text-sm',
+          })
+        ),
+        h('button', {
+          onClick: aplicarRange,
+          className: 'px-4 py-2 rounded-lg text-sm font-semibold text-white',
+          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        }, 'Aplicar'),
+        h('p', { className: 'text-xs text-slate-400 ml-auto' }, 'O período vale pra tudo nesta tela.')
       ),
 
-      // Gráfico por dia (últimos 7 dias)
-      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📆 Solicitações por Dia (últimos 7 dias)'),
-        dias.length === 0
-          ? h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados nos últimos 7 dias')
-          : h('div', { className: 'space-y-2' },
-              dias.map(d => {
-                const sucPct = (parseInt(d.sucesso) / maxDia) * 100;
-                const errPct = (parseInt(d.erro) / maxDia) * 100;
-                const total = parseInt(d.total) || 0;
-                const sucesso = parseInt(d.sucesso) || 0;
-                const erro = parseInt(d.erro) || 0;
-                return h('div', { key: d.dia, className: 'flex items-center gap-3' },
-                  h('span', { className: 'w-12 text-xs font-mono font-semibold text-gray-600 flex-shrink-0' }, d.dia),
-                  h('div', { className: 'flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden flex relative' },
-                    sucPct > 0 && h('div', {
-                      className: 'h-full bg-green-500 transition-all',
-                      style: { width: sucPct + '%', minWidth: sucPct > 0 ? '2px' : 0 },
-                      title: `Sucesso: ${sucesso}`,
-                    }),
-                    errPct > 0 && h('div', {
-                      className: 'h-full bg-red-400 transition-all',
-                      style: { width: errPct + '%', minWidth: errPct > 0 ? '2px' : 0 },
-                      title: `Erro: ${erro}`,
+      loading && !dados && h('div', { className: 'flex items-center justify-center py-24' },
+        h('div', { className: 'w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
+      ),
+
+      dados && h(React.Fragment, null,
+        // ── KPIs ──
+        h('div', { className: `grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3 transition-opacity ${loading ? 'opacity-40' : ''}` },
+          h('div', { className: 'bg-white border border-slate-200 rounded-2xl p-4' },
+            h('p', { className: 'text-[10px] font-bold tracking-widest text-slate-400 uppercase' }, 'Tentativas'),
+            h('p', { className: 'text-[30px] font-bold mt-1.5 text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(total)),
+            h('p', { className: 'text-[11px] mt-1' },
+              delta === null
+                ? h('span', { className: 'text-slate-300' }, 'sem período anterior')
+                : h(React.Fragment, null,
+                    h('span', { className: `font-semibold ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}` },
+                      `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)}%`),
+                    h('span', { className: 'text-slate-400' }, ' vs. período anterior')
+                  )
+            )
+          ),
+          KPIS.map(kpi => h('div', { key: kpi.k, className: 'bg-white border border-slate-200 rounded-2xl p-4' },
+            h('div', { className: 'flex items-center gap-1.5' },
+              h('span', { className: 'w-1.5 h-1.5 rounded-full', style: { background: kpi.cor } }),
+              h('p', { className: 'text-[10px] font-bold tracking-widest text-slate-400 uppercase' }, kpi.label)
+            ),
+            h('p', { className: 'text-[30px] font-bold mt-1.5 text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(t[kpi.k])),
+            h('p', { className: 'text-[11px] text-slate-400 mt-1' }, kpi.nota)
+          ))
+        ),
+
+        // ── Composição ──
+        h('div', { className: 'bg-white border border-slate-200 rounded-2xl p-4 mb-6' },
+          h('div', { className: 'flex items-center justify-between mb-2.5' },
+            h('p', { className: 'text-[10px] font-bold tracking-widest text-slate-400 uppercase' }, 'Composição do período'),
+            h('p', { className: 'text-[11px] text-slate-400' }, 'soma 100% — nenhuma tentativa fica de fora')
+          ),
+          h('div', { className: 'flex h-2.5 rounded-full overflow-hidden bg-slate-100 gap-[2px]' },
+            comp.map(c => (t[c.k] > 0) && h('div', {
+              key: c.k,
+              className: 'transition-all duration-300',
+              style: { width: `${(t[c.k] / (somaComp || 1)) * 100}%`, background: c.cor },
+              title: `${c.k}: ${anlNum(t[c.k])}`,
+            }))
+          ),
+          t.bloqueadas > 0 && h('p', { className: 'text-[11px] text-slate-400 mt-2' },
+            h('span', { className: 'inline-block w-2 h-2 rounded-sm mr-1.5 align-middle', style: { background: '#a78bfa' } }),
+            `${anlNum(t.bloqueadas)} de cliente bloqueado (não passam pela validação)`)
+        ),
+
+        // ── Série temporal ──
+        h('div', { className: 'bg-white border border-slate-200 rounded-2xl p-5 mb-3' },
+          h('div', { className: 'flex items-start justify-between mb-4 flex-wrap gap-2' },
+            h('div', null,
+              h('p', { className: 'text-[13px] font-bold text-slate-900' },
+                pontos.length !== dias.length ? 'Tentativas por semana' : 'Tentativas por dia'),
+              h('p', { className: 'text-[11px] text-slate-400 mt-0.5' }, 'empilhado por desfecho')
+            ),
+            h('div', { className: 'flex gap-3 text-[11px] text-slate-500' },
+              [['#10b981', 'Corrigidas'], ['#f43f5e', 'Barradas'], ['#f59e0b', 'Falhas']].map(([c, l]) =>
+                h('span', { key: l, className: 'flex items-center gap-1.5' },
+                  h('span', { className: 'w-2 h-2 rounded-sm', style: { background: c } }), l)
+              )
+            )
+          ),
+          pontos.length === 0
+            ? h('p', { className: 'text-sm text-slate-400 text-center py-10' }, 'Sem tentativas no período.')
+            : h('svg', { viewBox: `0 0 ${W} ${H + 24}`, className: 'w-full', style: { overflow: 'visible' } },
+                [0, 0.25, 0.5, 0.75, 1].map(f => h(React.Fragment, { key: f },
+                  h('line', { x1: 0, y1: H - f * H, x2: W, y2: H - f * H, stroke: '#f1f5f9' }),
+                  h('text', { x: W, y: H - f * H - 3, fontSize: 9, fill: '#cbd5e1', textAnchor: 'end' }, Math.round(maxY * f))
+                )),
+                pontos.map((p, i) => {
+                  const x = i * (bw + GAP);
+                  const hOk = (p.corrigidas / maxY) * H;
+                  const hBa = (p.barradas / maxY) * H;
+                  const hFa = (p.falhas / maxY) * H;
+                  return h(React.Fragment, { key: p.dia },
+                    h('rect', { x, y: H - hOk, width: bw, height: hOk, fill: '#10b981' },
+                      h('title', null, `${anlDM(p.dia)} — ${p.corrigidas} corrigidas`)),
+                    h('rect', { x, y: H - hOk - hBa, width: bw, height: hBa, fill: '#f43f5e' },
+                      h('title', null, `${anlDM(p.dia)} — ${p.barradas} barradas`)),
+                    h('rect', { x, y: H - hOk - hBa - hFa, width: bw, height: hFa, fill: '#f59e0b' },
+                      h('title', null, `${anlDM(p.dia)} — ${p.falhas} falhas`)),
+                    (i % passo === 0) && h('text', {
+                      x: x + bw / 2, y: H + 16, fontSize: 10, fill: '#94a3b8', textAnchor: 'middle',
+                    }, anlDM(p.dia))
+                  );
+                })
+              )
+        ),
+
+        h('div', { className: 'grid lg:grid-cols-2 gap-3 mb-3' },
+          // ── Onde as tentativas morrem ──
+          h('div', { className: 'bg-white border border-slate-200 rounded-2xl p-5' },
+            h('p', { className: 'text-[13px] font-bold text-slate-900' }, 'Onde as tentativas morrem'),
+            h('p', { className: 'text-[11px] text-slate-400 mt-0.5 mb-4' }, 'decide o que consertar primeiro'),
+            fases.length === 0
+              ? h('p', { className: 'text-sm text-slate-400 py-6 text-center' }, 'Nenhuma tentativa perdida no período.')
+              : h('div', { className: 'space-y-2.5' },
+                  fases.map(f => h('div', { key: f.fase },
+                    h('div', { className: 'flex justify-between items-baseline mb-1' },
+                      h('span', { className: 'text-[12px] text-slate-700' }, ANL_FASES[f.fase] || f.fase),
+                      h('span', { className: 'text-[12px] font-semibold text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } },
+                        anlNum(f.total),
+                        h('span', { className: 'text-slate-400 font-normal' }, ` ${anlPct(f.total, fases.reduce((s, x) => s + x.total, 0))}%`)
+                      )
+                    ),
+                    h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
+                      h('div', {
+                        className: 'h-full rounded-full transition-all duration-300',
+                        style: { width: `${(f.total / maxFase) * 100}%`, background: '#7c3aed' },
+                      })
+                    ),
+                    h('p', { className: 'text-[10px] text-slate-400 mt-0.5 font-mono' }, f.fase)
+                  ))
+                )
+          ),
+
+          // ── Precisão do GPS ──
+          h('div', { className: 'bg-white border border-slate-200 rounded-2xl p-5' },
+            h('p', { className: 'text-[13px] font-bold text-slate-900' }, 'Precisão do GPS'),
+            h('p', { className: 'text-[11px] text-slate-400 mt-0.5 mb-4' }, 'diz se o limite de 60m está apertado demais'),
+            gpsTot === 0
+              ? h('p', { className: 'text-sm text-slate-400 py-6 text-center leading-relaxed' },
+                  'Nenhuma tentativa com precisão registrada.',
+                  h('br'),
+                  h('span', { className: 'text-xs' }, 'O app precisa mandar motoboy_accuracy (FRONT_ACCURACY_V1).'))
+              : h(React.Fragment, null,
+                  h('div', { className: 'space-y-2.5' },
+                    ANL_GPS_FAIXAS.map(([k, label, ruim]) => {
+                      const n = gpsF[k] || 0;
+                      return h('div', { key: k },
+                        h('div', { className: 'flex justify-between items-baseline mb-1' },
+                          h('span', { className: 'text-[12px] text-slate-700' }, label,
+                            ruim && h('span', { className: 'text-[10px] text-rose-500 font-medium ml-1.5' }, 'acima do limite')),
+                          h('span', { className: 'text-[12px] font-semibold text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } },
+                            `${anlPct(n, gpsTot)}%`)
+                        ),
+                        h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
+                          h('div', {
+                            className: 'h-full rounded-full transition-all duration-300',
+                            style: { width: `${anlPct(n, gpsTot)}%`, background: ruim ? '#f43f5e' : '#0f172a', opacity: ruim ? 1 : 0.75 },
+                          })
+                        )
+                      );
                     })
                   ),
-                  h('div', { className: 'w-28 flex-shrink-0 flex items-center gap-1.5 text-xs' },
-                    h('span', { className: 'font-bold text-gray-800 w-6 text-right' }, total),
-                    h('span', { className: 'text-green-600 font-medium' }, `✅${sucesso}`),
-                    erro > 0 && h('span', { className: 'text-red-500 font-medium' }, `❌${erro}`)
+                  h('div', { className: 'mt-4 pt-3 border-t border-slate-100 flex items-baseline gap-2' },
+                    h('span', { className: 'text-[10px] font-bold tracking-widest text-slate-400 uppercase' }, 'Mediana'),
+                    h('span', { className: 'text-lg font-bold text-slate-900', style: { fontVariantNumeric: 'tabular-nums' } },
+                      dados.gps.mediana === null ? '—' : dados.gps.mediana),
+                    h('span', { className: 'text-[11px] text-slate-400' }, 'metros de erro')
                   )
-                );
-              }),
-              h('div', { className: 'flex items-center gap-4 mt-3 text-xs text-gray-400' },
-                h('span', { className: 'flex items-center gap-1' },
-                  h('span', { className: 'w-3 h-3 rounded bg-green-500 inline-block' }), 'Sucesso'),
-                h('span', { className: 'flex items-center gap-1' },
-                  h('span', { className: 'w-3 h-3 rounded bg-red-400 inline-block' }), 'Erro')
-              )
-            )
-      ),
-
-      // Red Flags
-      h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
-        h('div', { className: 'p-4 border-b bg-red-50 flex items-center gap-2' },
-          h('span', { className: 'text-xl' }, '🚩'),
-          h('h3', { className: 'text-sm font-bold text-red-700 uppercase tracking-wide' }, 'Red Flags — Profissionais com +10 solicitações na semana'),
-        ),
-        (data.red_flags || []).length === 0
-          ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, '✅ Nenhum profissional com volume anormal esta semana.')
-          : h('div', { className: 'divide-y divide-gray-100' },
-              data.red_flags.map((rf, i) => h('div', {
-                key: i,
-                className: 'flex items-center justify-between p-4 hover:bg-red-50 transition',
-              },
-                h('div', null,
-                  h('p', { className: 'font-semibold text-gray-800' }, rf.usuario_nome || '—'),
-                  h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${rf.cod_profissional || '—'}`)
-                ),
-                h('div', { className: 'text-right' },
-                  h('p', { className: 'text-2xl font-bold text-red-600' }, rf.total_semana),
-                  h('p', { className: 'text-xs text-gray-400' }, `✅ ${rf.sucesso} | ❌ ${rf.erro}`)
                 )
-              ))
-            )
-      ),
-
-      // Top Profissionais
-      h('div', { className: 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden' },
-        h('div', { className: 'p-4 border-b bg-purple-50' },
-          h('h3', { className: 'text-sm font-bold text-purple-700 uppercase tracking-wide' }, '🏍️ Top Profissionais (mais solicitações)')
+          )
         ),
-        h('div', { className: 'divide-y divide-gray-100 max-h-96 overflow-y-auto' },
-          (data.top_profissionais || []).map((p, i) => h('div', {
-            key: i,
-            className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50',
-          },
-            h('div', { className: 'flex items-center gap-3' },
-              h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}` }, i + 1),
-              h('div', null,
-                h('p', { className: 'text-sm font-semibold text-gray-800' }, p.usuario_nome || '—'),
-                h('p', { className: 'text-xs text-gray-400 font-mono' }, `Cód: ${p.cod_profissional || '—'}`)
+
+        // ── Profissionais ──
+        h('div', { className: 'bg-white border border-slate-200 rounded-2xl overflow-hidden' },
+          h('div', { className: 'px-5 py-4 border-b border-slate-100' },
+            h('p', { className: 'text-[13px] font-bold text-slate-900' }, 'Profissionais'),
+            h('p', { className: 'text-[11px] text-slate-400 mt-0.5' },
+              'ordenado por volume · ',
+              h('span', { className: 'text-rose-600 font-medium' }, '▲'),
+              ' marca aproveitamento abaixo de 60% com 10+ tentativas')
+          ),
+          profs.length === 0
+            ? h('p', { className: 'text-sm text-slate-400 text-center py-10' }, 'Nenhuma tentativa no período.')
+            : h('div', { className: 'overflow-x-auto' },
+                h('table', { className: 'w-full text-[13px]' },
+                  h('thead', null,
+                    h('tr', { className: 'border-b border-slate-100 bg-slate-50/60' },
+                      ['Profissional', 'Tentativas', 'Corrigidas', 'Barradas', 'Falhas', 'Aproveitamento'].map((c, i) =>
+                        h('th', {
+                          key: c,
+                          className: `px-3 py-2.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase ${i === 0 ? 'text-left' : 'text-right'}`,
+                        }, c)
+                      )
+                    )
+                  ),
+                  h('tbody', null,
+                    profs.map((p, i) => {
+                      const apr  = p.total ? p.corrigidas / p.total : 0;
+                      // Fora da curva = aproveitamento ruim COM volume. Volume alto
+                      // e aproveitamento bom nao e red flag, e um cara que trabalha
+                      // muito — o bloco vermelho antigo acusava os dois igual.
+                      const flag = apr < 0.6 && p.total >= 10;
+                      return h('tr', { key: i, className: 'border-b border-slate-50 hover:bg-slate-50 transition' },
+                        h('td', { className: 'px-3 py-2.5' },
+                          h('div', { className: 'flex items-center gap-2' },
+                            flag
+                              ? h('span', { className: 'text-rose-600 text-[10px]', title: 'aproveitamento fora da curva' }, '▲')
+                              : h('span', { className: 'inline-block w-[10px]' }),
+                            h('div', null,
+                              h('div', { className: 'font-medium text-slate-900' }, p.usuario_nome || '—'),
+                              h('div', { className: 'text-[11px] text-slate-400 font-mono' }, p.cod_profissional || '—')
+                            )
+                          )
+                        ),
+                        h('td', { className: 'px-3 py-2.5 text-right font-semibold', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(p.total)),
+                        h('td', { className: 'px-3 py-2.5 text-right text-slate-600', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(p.corrigidas)),
+                        h('td', { className: 'px-3 py-2.5 text-right text-slate-600', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(p.barradas)),
+                        h('td', { className: 'px-3 py-2.5 text-right text-slate-600', style: { fontVariantNumeric: 'tabular-nums' } }, anlNum(p.falhas)),
+                        h('td', { className: 'px-3 py-2.5' },
+                          h('div', { className: 'flex items-center gap-2 justify-end' },
+                            h('div', { className: 'w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden' },
+                              h('div', { className: 'h-full rounded-full', style: { width: `${apr * 100}%`, background: flag ? '#f43f5e' : '#0f172a' } })
+                            ),
+                            h('span', { className: 'text-[12px] font-semibold w-9 text-right', style: { fontVariantNumeric: 'tabular-nums' } },
+                              `${Math.round(apr * 100)}%`)
+                          )
+                        )
+                      );
+                    })
+                  )
+                )
               )
-            ),
-            h('div', { className: 'text-right' },
-              h('span', { className: 'text-lg font-bold text-gray-700' }, p.total),
-              h('div', { className: 'text-[10px] text-gray-400' }, `✅${p.sucesso} ❌${p.erro}`)
-            )
-          ))
         )
       )
     );
