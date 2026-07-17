@@ -14,6 +14,28 @@
   const PONTOS = [2, 3, 4, 5, 6, 7];
   const POLLING_INTERVAL = 5000;
   const POLLING_TIMEOUT  = 120000;
+
+  // GPS_UNICO_V1 — precisao do GPS (metros do raio que o aparelho reporta).
+  //
+  // Isto existe porque a regra do backend agora e SO distancia (<=100 m). Um GPS
+  // com +-96 m de erro — e a gente ja viu +-96 no print de producao — faz a
+  // validacao virar cara ou coroa: o aparelho nao sabe onde ele esta com precisao
+  // suficiente pra responder a pergunta que estamos fazendo.
+  //
+  // Melhor travar o envio e dizer o que fazer do que deixar enviar e barrar
+  // depois, que e onde o suporte toca.
+  //
+  //   <= BOM      verde, envia
+  //   <= LIMITE   amarelo, avisa mas deixa enviar
+  //    > LIMITE   trava, com instrucao
+  //
+  // Como o GPS roda em watchPosition, isso se resolve sozinho: ele anda ate a
+  // porta, a precisao melhora e o botao destrava na cara dele. Sem toque nenhum.
+  //
+  // Os numeros sao chute educado (dentro de loja, coberto, o tipico e 30-60 m).
+  // Se travar gente honesta, e uma linha: sobe o GPS_ACC_LIMITE.
+  const GPS_ACC_BOM    = 30;
+  const GPS_ACC_LIMITE = 60;
   // AGENTE_BCE_V1 (const): MAX_FOTO_SIZE saiu junto com o upload de foto.
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -57,7 +79,9 @@
 
   // ── ABA: Formulário do motoboy ──────────────────────────────────────────────
   function TabFormulario({ API_URL, fetchAuth, showToast }) {
-    const [form, setForm]           = useState({ os_numero: '', ponto: '', localizacao_raw: '' });
+    // GPS_UNICO_V1: localizacao_raw sai do form. Ela nunca foi digitada — era o
+    // GPS copiado por um clique. Agora e montada no submit, do gps ao vivo.
+    const [form, setForm]           = useState({ os_numero: '', ponto: '' });
     const [loading, setLoading]     = useState(false);
     const [solicitacaoId, setSolId] = useState(null);
     const [fase, setFase]           = useState('idle');
@@ -90,8 +114,8 @@
     const [progresso, setProgresso] = useState(5);
     const [etapa, setEtapa]         = useState('iniciando');
 
-    // Estados da localização do ponto (coordenada + endereço geocodificado)
-    const [pontoCoords, setPontoCoords]     = useState(null); // { lat, lng }
+    // GPS_UNICO_V1: pontoCoords morreu — ele era o GPS congelado, e agora so existe
+    // o gps ao vivo. Sobram os dois do endereco reverso, que a caixa do GPS mostra.
     const [enderecoGeo, setEnderecoGeo]     = useState('');
     const [geoLoading, setGeoLoading]       = useState(false);
 
@@ -203,33 +227,66 @@
       setForm(f => ({ ...f, [name]: value }));
     };
 
-    // Enviar localização atual do motoboy como coordenada do ponto + geocodificação reversa
-    async function enviarLocalizacao() {
-      if (!gps) {
-        showToast('Aguarde o GPS capturar sua localização.', 'error');
-        return;
-      }
-      const coordStr = `${gps.lat}, ${gps.lng}`;
-      setForm(f => ({ ...f, localizacao_raw: coordStr }));
-      setPontoCoords({ lat: gps.lat, lng: gps.lng });
-      setGeoLoading(true);
-      setEnderecoGeo('');
+    // GPS_UNICO_V1 — enviarLocalizacao() foi removida. Junto com ela, o botao
+    // "Enviar minha localização atual" e o passo inteiro.
+    //
+    // O BUG QUE ISSO FECHA (o motivo real, nao a economia de um toque):
+    //
+    // O GPS ja roda em watchPosition desde que a pagina abre — ao vivo, continuo.
+    // O botao so COPIAVA esse valor pro form:
+    //
+    //     const coordStr = `${gps.lat}, ${gps.lng}`;
+    //     setForm(f => ({ ...f, localizacao_raw: coordStr }));
+    //
+    // Só que o payload mandava DOIS numeros diferentes:
+    //
+    //     localizacao_raw: form.localizacao_raw   <- congelado no clique do botao
+    //     motoboy_lat:     gps.lat                <- AO VIVO, no submit
+    //
+    // A validacao media o motoboy_lat/lng. O RPA gravava o ponto a partir do
+    // localizacao_raw (normalizeLocation -> UPDATE latitude/longitude). Ou seja:
+    // o sistema validava um numero e escrevia o outro.
+    //
+    // Dava pra passar por cima de tudo CAMINHANDO: aperta o botao onde voce quer o
+    // ponto, anda ate a porta do cliente, digita o CNPJ e envia. A validacao olha o
+    // GPS ao vivo (esta na loja, passa) e grava o ponto congelado la atras. Nenhuma
+    // regua de metros pega isso, porque os metros conferidos nao sao os escritos.
+    //
+    // Agora ha UMA fonte: o gps do watchPosition, lido no submit, usado pros dois
+    // campos. Nao e regra nova — e o buraco deixando de existir por construcao.
+    //
+    // O endereco reverso (a unica outra coisa que o botao fazia) agora e buscado
+    // sozinho pelo useEffect abaixo e mostrado na caixa do GPS.
 
-      try {
-        const res = await fetchAuth(`${API_URL}/api/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
-        const data = await res.json();
-        if (res.ok && data.endereco) {
-          setEnderecoGeo(data.endereco);
-        } else {
-          setEnderecoGeo('Endereço não encontrado');
+    // GPS_UNICO_V1: endereco reverso automatico, com debounce.
+    //
+    // O watchPosition dispara a cada metro que ele anda; sem debounce isso seria uma
+    // request de geocoding por passo. 1200ms e o tempo de ele parar de andar.
+    // A coordenada e arredondada em 5 casas (~1 m) pra micro-tremida de GPS parado
+    // nao refazer a busca.
+    const geoReqRef = useRef(0);
+    useEffect(() => {
+      if (!gps) return;
+      const chave = `${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`;
+      const req = ++geoReqRef.current;
+      const t = setTimeout(async () => {
+        setGeoLoading(true);
+        try {
+          const res = await fetchAuth(`${API_URL}/api/geocode/reverse?lat=${gps.lat}&lng=${gps.lng}`);
+          const data = await res.json();
+          // Descarta resposta de posicao velha: ele pode ter andado enquanto a
+          // request ia. Sem isso, o endereco mostrado pisca entre dois lugares.
+          if (req !== geoReqRef.current) return;
+          setEnderecoGeo(res.ok && data.endereco ? data.endereco : '');
+        } catch {
+          if (req === geoReqRef.current) setEnderecoGeo('');
+        } finally {
+          if (req === geoReqRef.current) setGeoLoading(false);
         }
-      } catch {
-        setEnderecoGeo('Erro ao buscar endereço');
-      } finally {
-        setGeoLoading(false);
-      }
-      showToast('Localização enviada com sucesso!', 'success');
-    }
+      }, 1200);
+      return () => clearTimeout(t);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gps && gps.lat.toFixed(5), gps && gps.lng.toFixed(5)]);
 
     // 2026-04 v3: helpers pra CNPJ digitado manualmente
     function formatarCNPJ(v) {
@@ -258,12 +315,21 @@
     }
 
     const handleSubmit = async () => {
-      if (!form.os_numero.trim() || !form.ponto || !form.localizacao_raw.trim()) {
+      // GPS_UNICO_V1: localizacao_raw saiu dos obrigatorios — nao existe mais campo
+      // pra ele preencher. A coordenada e o GPS ao vivo, lido aqui embaixo.
+      if (!form.os_numero.trim() || !form.ponto) {
         showToast('Preencha todos os campos obrigatórios.', 'error');
         return;
       }
       if (!gps) {
-        showToast('GPS obrigatório! Ative a localização e clique em "Atualizar GPS".', 'error');
+        showToast('GPS obrigatório! Ative a localização e toque em "Atualizar GPS".', 'error');
+        return;
+      }
+      // GPS_UNICO_V1: a regra do backend e distancia. Com precisao pior que o
+      // limite, a medida nao decide nada — trava aqui, com instrucao, em vez de
+      // enviar pra ser barrado por um erro do aparelho.
+      if (gps.accuracy && gps.accuracy > GPS_ACC_LIMITE) {
+        showToast(`Sua localização está imprecisa (±${Math.round(gps.accuracy)}m). Chegue perto da porta da loja ou saia de baixo da cobertura.`, 'error');
         return;
       }
       // 2026-04 v5: única forma de identificar é CNPJ digitado (foto da NF removida).
@@ -295,7 +361,15 @@
           body:    JSON.stringify({
             os_numero:       form.os_numero.trim(),
             ponto:           parseInt(form.ponto, 10),
-            localizacao_raw: form.localizacao_raw.trim(),
+            // GPS_UNICO_V1 — UMA fonte. localizacao_raw e motoboy_lat/lng saem do
+            // MESMO gps, lido no MESMO instante.
+            //
+            // Antes o localizacao_raw vinha congelado do clique no botao e o
+            // motoboy_lat vinha ao vivo daqui: o backend validava um e o RPA
+            // gravava o outro. O formato "lat, lng" continua igual porque o
+            // normalizeLocation() do agente ja sabe ler isso — nada muda do outro
+            // lado.
+            localizacao_raw: `${gps.lat}, ${gps.lng}`,
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
             // AGENTE_BCE_V1 (payload): so cnpj_manual. foto_nf saiu em 2026-04 e
@@ -414,7 +488,9 @@
         h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, '📍')
       ),
       h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#e2e0f0', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
-        'Estamos cruzando a informação da foto enviada com a sua localização para identificar o estabelecimento do cliente.'
+        // GPS_UNICO_V1: o texto falava da "foto enviada" — que nao existe desde o
+        // AGENTE_BCE_V1. Ficou dois deploys em producao descrevendo um fluxo morto.
+        'Estamos conferindo o CNPJ na Receita Federal e comparando com a sua localização.'
       ),
       h('div', { style: { display: 'flex', gap: '6px', marginTop: '20px' } },
         h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0s infinite' } }),
@@ -836,6 +912,12 @@
 
     // ── Render: formulário ────────────────────────────────────────────────
     const disabled = loading;
+    // GPS_UNICO_V1: precisao do GPS em 3 faixas. Como o watchPosition atualiza
+    // sozinho, isso muda de cor na cara dele enquanto anda.
+    const gpsAcc      = gps && typeof gps.accuracy === 'number' ? Math.round(gps.accuracy) : null;
+    const gpsRuim     = gpsAcc !== null && gpsAcc > GPS_ACC_LIMITE;
+    const gpsMedio    = gpsAcc !== null && gpsAcc > GPS_ACC_BOM && !gpsRuim;
+    const podeEnviar  = !!gps && !gpsRuim && !disabled;
 
     return h('div', { className: 'max-w-lg mx-auto px-4 py-8' },
 
@@ -871,28 +953,60 @@
       // Card do formulário
       h('div', { className: 'bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-5' },
 
-        // ── GPS Status ────────────────────────────────────────────────────
-        h('div', { className: `p-3 rounded-xl border ${gps ? 'bg-green-50 border-green-200' : gpsErro ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}` },
-          h('div', { className: 'flex items-center justify-between' },
-            h('div', { className: 'flex items-center gap-2' },
-              h('span', null, gps ? '📡' : gpsLoading ? '⏳' : '⚠️'),
-              h('div', null,
-                h('p', { className: `text-sm font-semibold ${gps ? 'text-green-700' : gpsErro ? 'text-red-700' : 'text-blue-700'}` },
-                  gpsLoading ? 'Obtendo localização...' :
-                  gps ? ('GPS ao vivo ' + (gps.accuracy ? '(±' + Math.round(gps.accuracy) + 'm)' : '')) :
+        // ── GPS ───────────────────────────────────────────────────────────
+        // GPS_UNICO_V1 — esta caixa deixou de ser enfeite e virou O campo.
+        //
+        // Ela mostra as tres coisas que decidem a correcao, ao vivo:
+        //   1. a coordenada que VAI SER ENVIADA (nao tem outra)
+        //   2. a precisao, em cor — porque a regra do backend e distancia, e um
+        //      GPS de +-96 m nao consegue responder uma pergunta de 100 m
+        //   3. o endereco da rua, buscado sozinho — pra ele CONFERIR que o
+        //      aparelho concorda com onde ele esta, antes de enviar
+        //
+        // O terceiro item e o que o botao "Enviar minha localização" fazia de util.
+        // Continua existindo; o passo manual e que sumiu.
+        h('div', {
+          className: `p-3 rounded-xl border ${
+            !gps ? (gpsErro ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
+              : gpsRuim ? 'bg-red-50 border-red-200'
+              : gpsMedio ? 'bg-amber-50 border-amber-200'
+              : 'bg-green-50 border-green-200'}`,
+        },
+          h('div', { className: 'flex items-start justify-between gap-2' },
+            h('div', { className: 'flex items-start gap-2 min-w-0' },
+              h('span', { className: 'mt-0.5' }, gps ? (gpsRuim ? '📡' : '📍') : gpsLoading ? '⏳' : '⚠️'),
+              h('div', { className: 'min-w-0' },
+                h('p', {
+                  className: `text-sm font-semibold ${
+                    !gps ? (gpsErro ? 'text-red-700' : 'text-blue-700')
+                      : gpsRuim ? 'text-red-700' : gpsMedio ? 'text-amber-700' : 'text-green-700'}`,
+                },
+                  gpsLoading && !gps ? 'Obtendo localização...' :
+                  gps ? ('GPS ao vivo' + (gpsAcc !== null ? ` (±${gpsAcc}m)` : '')) :
                   'GPS não disponível'
                 ),
-                gps && h('p', { className: 'text-xs text-green-600 font-mono' }, `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`),
+                gps && h('p', {
+                  className: `text-xs font-mono ${gpsRuim ? 'text-red-600' : gpsMedio ? 'text-amber-700' : 'text-green-600'}`,
+                }, `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`),
+                // O endereco da rua: é assim que ele confere que o aparelho não
+                // está mentindo, sem a gente mostrar nada da Receita.
+                gps && enderecoGeo && h('p', { className: 'text-xs text-gray-600 mt-0.5 truncate' }, `📍 ${enderecoGeo}`),
+                gps && !enderecoGeo && geoLoading && h('p', { className: 'text-xs text-gray-400 mt-0.5' }, 'buscando endereço...'),
                 gpsErro && h('p', { className: 'text-xs text-red-600' }, gpsErro)
               )
             ),
             h('button', {
               onClick: capturarGPS,
               disabled: gpsLoading,
-              className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition hover:opacity-80',
-              style: { background: gps ? '#16a34a' : '#2563eb' },
-            }, gpsLoading ? '...' : '🔄 Atualizar GPS')
-          )
+              className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition hover:opacity-80 flex-shrink-0',
+              style: { background: gps && !gpsRuim ? '#16a34a' : '#2563eb' },
+            }, gpsLoading ? '...' : '🔄 Atualizar')
+          ),
+          // A instrucao só aparece quando ele PODE fazer algo com ela.
+          gpsRuim && h('p', { className: 'text-xs text-red-700 mt-2 leading-relaxed border-t border-red-200 pt-2' },
+            'Precisão baixa demais pra confirmar o local. Chegue perto da porta da loja ou saia de baixo da cobertura — isso melhora sozinho.'),
+          gpsMedio && h('p', { className: 'text-xs text-amber-700 mt-2 leading-relaxed border-t border-amber-200 pt-2' },
+            'Dá pra enviar, mas se der erro de localização, chegue mais perto da porta.')
         ),
 
         // Campo OS
@@ -921,51 +1035,21 @@
           )
         ),
 
-        // Localização do ponto
-        h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-1.5' }, 'Localização do ponto *'),
-
-          h('p', { className: 'text-xs text-gray-500 mb-3 leading-relaxed' },
-            'Vá até o local exato do ponto que precisa ser corrigido e clique no botão abaixo para enviar sua localização.'
-          ),
-
-          !pontoCoords
-            ? h('button', {
-                onClick: enviarLocalizacao,
-                disabled: disabled || !gps || geoLoading,
-                className: `w-full py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-3 border-2
-                  ${!gps || disabled
-                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100 hover:border-green-500 active:scale-[0.98] shadow-md'}`,
-              },
-                geoLoading
-                  ? h(React.Fragment, null,
-                      h('div', { className: 'w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin' }),
-                      'Obtendo endereço...'
-                    )
-                  : h(React.Fragment, null,
-                      h('span', { className: 'text-2xl' }, String.fromCodePoint(0x1F4CD)),
-                      'Enviar minha localização atual'
-                    )
-              )
-            : h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-4 space-y-2' },
-                h('div', { className: 'flex items-center justify-between' },
-                  h('div', { className: 'flex items-center gap-2' },
-                    h('span', { className: 'text-green-600 text-lg' }, String.fromCodePoint(0x2705)),
-                    h('span', { className: 'text-sm font-semibold text-green-700' }, 'Localização enviada')
-                  ),
-                  h('button', {
-                    onClick: () => { setPontoCoords(null); setEnderecoGeo(''); setForm(f => ({ ...f, localizacao_raw: '' })); },
-                    disabled,
-                    className: 'text-xs px-3 py-1 rounded-lg font-semibold text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition',
-                  }, String.fromCodePoint(0x1F504) + ' Reenviar')
-                ),
-                h('p', { className: 'text-xs font-mono text-green-800' },
-                  `${String.fromCodePoint(0x1F4CD)} ${pontoCoords.lat.toFixed(6)}, ${pontoCoords.lng.toFixed(6)}`
-                ),
-                null
-              )
-        ),
+        // GPS_UNICO_V1 — o bloco "Localização do ponto *" saiu inteiro: o label, a
+        // instrucao "clique no botao abaixo", o botao verde e o card "Localização
+        // enviada" com o Reenviar.
+        //
+        // Nao era um campo — era uma copia manual de um valor que a gente ja tinha.
+        // E era a copia que abria o buraco (ver o comentario em enviarLocalizacao):
+        // congelava um numero, e a validacao media outro.
+        //
+        // A coordenada agora aparece na caixa do GPS, la em cima, com o endereco da
+        // rua do lado. Nao ha o que ele "enviar": ele ESTA no lugar, o aparelho sabe
+        // disso, e o envio da correcao leva o valor daquele instante.
+        //
+        // O aviso de ir ate o local continua — mudou de lugar, nao de existencia:
+        // esta no bloco vermelho do topo ("Envie a localização de dentro do
+        // estabelecimento").
 
         // ── Identificação de quem RECEBE: CNPJ digitado ──────────
         // 2026-04 v5: foto da NF removida — motos não conseguiam tirar
@@ -1075,9 +1159,12 @@
 
         // Botão enviar
         h('button', {
-          onClick: handleSubmit, disabled,
+          // GPS_UNICO_V1: o botao respeita a trava de precisao. Ele destrava
+          // sozinho quando o GPS melhora (watchPosition) — sem toque nenhum.
+          onClick: handleSubmit,
+          disabled: !podeEnviar,
           className: `w-full py-4 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-3
-            ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-[0.98]'}`,
+            ${!podeEnviar ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-[0.98]'}`,
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
         },
           loading
