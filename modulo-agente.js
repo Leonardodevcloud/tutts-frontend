@@ -153,7 +153,24 @@
       setGpsErro('');
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
-          setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+          // GPS_FRESCO_V1_TS — a coordenada passa a carregar a IDADE dela.
+          //
+          // Sem isto não existe como saber se o `gps` do state é de agora ou de
+          // vinte minutos atrás. E essa diferença é tudo: o watchPosition PARA de
+          // disparar quando o navegador vai pro background — celular no bolso,
+          // tela apagada, Android com otimização de bateria. O último callback
+          // fica congelado onde ele estava quando abriu a tela.
+          //
+          // A trava de precisão não pega isso, e é importante entender por quê:
+          // uma leitura de 20 minutos atrás pode ter accuracy=12. Ela ERA precisa.
+          // O gate olha o raio de erro, passa, o botão fica verde, e a coordenada
+          // velha viaja como se fosse fresca.
+          //
+          // A trava mede a precisão da leitura. Ninguém media a idade dela.
+          //
+          // pos.timestamp é o do aparelho, no instante da fixação — é o que a
+          // Geolocation API entrega e é o que interessa aqui.
+          setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, ts: pos.timestamp || Date.now() });
           setGpsLoad(false);
           setGpsErro('');
         },
@@ -322,8 +339,83 @@
         return;
       }
       if (!gps) {
+        // GPS_FRESCO_V1_SUBMIT
         showToast('GPS obrigatório! Ative a localização e toque em "Atualizar GPS".', 'error');
         return;
+      }
+
+      // ══════════════════════════════════════════════════════════════════════
+      // GPS_FRESCO_V1_SUBMIT — lê a posição AGORA, não a que sobrou do watch.
+      //
+      // O bug que isto conserta:
+      //
+      //   O motoboy abre a tela de ajuste ainda na moto, a 2km da loja. O
+      //   watchPosition pega a posição dali. Ele guarda o celular no bolso — e
+      //   o navegador, em background, PARA de chamar o callback. Ele chega na
+      //   loja, tira o celular, digita o CNPJ, toca em Enviar.
+      //
+      //   O `gps` do state ainda é de onde ele abriu a tela.
+      //
+      //   O backend mede 2km até o CNPJ e responde "Você não está no endereço
+      //   desse CNPJ". Ele ESTÁ. Quem não está é a coordenada.
+      //
+      // O comentário do GPS_ACC_BOM assume que "o watchPosition resolve sozinho:
+      // ele anda até a porta e a precisão melhora na cara dele". Isso é verdade
+      // ENQUANTO a aba está visível. Não é o caso de quem anda com o celular no
+      // bolso, que é o caso do motoboy.
+      //
+      // Estratégia, e ela é de propósito conservadora:
+      //
+      //   - watch fresco (< 15s)  -> usa. O watchPosition está vivo, é a melhor
+      //                              leitura que existe, e não custa nada.
+      //   - watch velho ou sem ts -> força getCurrentPosition({maximumAge: 0}).
+      //                              maximumAge:0 é o ponto todo: proíbe o
+      //                              navegador de devolver cache.
+      //
+      // Só paga o custo da leitura nova no caso quebrado. Quem está com a tela
+      // aberta e o GPS rodando não sente diferença nenhuma.
+      //
+      // Se a leitura nova falhar, ELE NÃO ENVIA. Mandar a coordenada velha
+      // calado é o que produziu o problema: ele leva a culpa por um dado que a
+      // gente sabia estar podre. Melhor dizer "não consegui" — isso ele resolve
+      // andando pra fora da cobertura. "Você não está no endereço" ele não
+      // resolve, porque ele já está.
+      // ══════════════════════════════════════════════════════════════════════
+      const GPS_IDADE_MAX_MS = 15000;
+      let gpsEnvio = gps;
+      const idade = gps.ts ? (Date.now() - gps.ts) : Infinity;
+
+      if (idade > GPS_IDADE_MAX_MS) {
+        setDetalhe('Confirmando sua localização...');
+        try {
+          const fresco = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+          });
+          gpsEnvio = {
+            lat: fresco.coords.latitude,
+            lng: fresco.coords.longitude,
+            accuracy: fresco.coords.accuracy,
+            ts: fresco.timestamp || Date.now(),
+          };
+          // Atualiza a tela também: o mapa e a caixa de precisão passam a mostrar
+          // o mesmo ponto que foi enviado. Sem isto ele veria uma coordenada e o
+          // admin veria outra — e a primeira coisa que o suporte faria era
+          // desconfiar do motoboy.
+          setGps(gpsEnvio);
+        } catch (errGps) {
+          setDetalhe('');
+          const motivo = errGps && errGps.code === 1
+            ? 'Permissão de localização negada.'
+            : errGps && errGps.code === 3
+              ? 'O GPS demorou demais pra responder.'
+              : 'Não foi possível ler o GPS agora.';
+          showToast(`${motivo} Sua localização estava desatualizada e não dá pra enviar assim. Saia de baixo da cobertura e tente de novo.`, 'error');
+          return;
+        }
       }
       // FRONT_ACCURACY_V1 — a trava dura saiu daqui. Ela era esta:
       //
@@ -384,9 +476,15 @@
             // gravava o outro. O formato "lat, lng" continua igual porque o
             // normalizeLocation() do agente ja sabe ler isso — nada muda do outro
             // lado.
-            localizacao_raw: `${gps.lat}, ${gps.lng}`,
-            motoboy_lat:     gps.lat,
-            motoboy_lng:     gps.lng,
+            // GPS_FRESCO_V1_PAYLOAD — `gpsEnvio`, não `gps`.
+            //
+            // gpsEnvio é o gps do watch quando ele está fresco, ou a leitura nova
+            // forçada quando ele estava velho. Se este payload continuasse lendo
+            // `gps`, a leitura nova lá em cima seria só enfeite: eu buscaria a
+            // posição certa e mandaria a errada.
+            localizacao_raw: `${gpsEnvio.lat}, ${gpsEnvio.lng}`,
+            motoboy_lat:     gpsEnvio.lat,
+            motoboy_lng:     gpsEnvio.lng,
             // FRONT_ACCURACY_V1: o raio de erro que o aparelho reporta, do MESMO
             // instante das coordenadas acima. O backend usa pra saber se a
             // distancia pode decidir, e grava em toda tentativa (coluna
@@ -395,7 +493,9 @@
             //
             // Celular velho que nao reporta accuracy manda undefined, e o backend
             // libera na distancia pura: nao se pune quem nao tem o que informar.
-            motoboy_accuracy: gps.accuracy,
+            // GPS_FRESCO_V1_ACC: do mesmo instante das coordenadas acima — que
+            // agora é o instante do ENVIO, não o de quando a tela abriu.
+            motoboy_accuracy: gpsEnvio.accuracy,
             // AGENTE_BCE_V1 (payload): so cnpj_manual. foto_nf saiu em 2026-04 e
             // foto_fachada saiu agora — o backend ignora e nao grava nenhuma das
             // duas. Mandar base64 de 5MB pra ser descartado no servidor e queimar
