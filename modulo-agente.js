@@ -325,13 +325,28 @@
         showToast('GPS obrigatório! Ative a localização e toque em "Atualizar GPS".', 'error');
         return;
       }
-      // GPS_UNICO_V1: a regra do backend e distancia. Com precisao pior que o
-      // limite, a medida nao decide nada — trava aqui, com instrucao, em vez de
-      // enviar pra ser barrado por um erro do aparelho.
-      if (gps.accuracy && gps.accuracy > GPS_ACC_LIMITE) {
-        showToast(`Sua localização está imprecisa (±${Math.round(gps.accuracy)}m). Chegue perto da porta da loja ou saia de baixo da cobertura.`, 'error');
-        return;
-      }
+      // FRONT_ACCURACY_V1 — a trava dura saiu daqui. Ela era esta:
+      //
+      //     if (gps.accuracy && gps.accuracy > GPS_ACC_LIMITE) {
+      //       showToast('Sua localização está imprecisa...'); return;
+      //     }
+      //
+      // Bloquear no celular foi ideia ruim, por dois motivos:
+      //
+      //   1. NAO DEIXA RASTRO. O motoboy toca em Enviar, nao acontece nada, ele
+      //      toca de novo, desiste e liga pro suporte — e o painel do admin fica
+      //      limpo. Bloqueio que ninguem consegue contar nao existe pra quem
+      //      precisa decidir se o numero esta certo.
+      //   2. Ajustar os 60m exigia deploy da Vercel.
+      //
+      // Agora a accuracy vai no payload e QUEM DECIDE E O BACKEND
+      // (GPS_ACC_BACKEND_V1, no cruzar-validacoes.js) — no mesmo lugar onde mora o
+      // DIST_LIBERA_METROS, e no mesmo caminho que grava a tentativa com
+      // fase_falha='gps_impreciso'.
+      //
+      // O aviso visual continua: a caixa do GPS fica vermelha e diz o que fazer
+      // ANTES dele tocar em Enviar. A diferenca e que agora e conselho, nao porta
+      // trancada — e se ele enviar assim mesmo, vira linha no banco.
       // 2026-04 v5: única forma de identificar é CNPJ digitado (foto da NF removida).
       const cnpjLimpo = String(cnpjManual).replace(/\D/g, '');
       if (cnpjLimpo.length === 0) {
@@ -372,6 +387,15 @@
             localizacao_raw: `${gps.lat}, ${gps.lng}`,
             motoboy_lat:     gps.lat,
             motoboy_lng:     gps.lng,
+            // FRONT_ACCURACY_V1: o raio de erro que o aparelho reporta, do MESMO
+            // instante das coordenadas acima. O backend usa pra saber se a
+            // distancia pode decidir, e grava em toda tentativa (coluna
+            // gps_accuracy) — inclusive nas que passam. E o dado que responde se a
+            // massa barrada e GPS ruim ou motoboy longe.
+            //
+            // Celular velho que nao reporta accuracy manda undefined, e o backend
+            // libera na distancia pura: nao se pune quem nao tem o que informar.
+            motoboy_accuracy: gps.accuracy,
             // AGENTE_BCE_V1 (payload): so cnpj_manual. foto_nf saiu em 2026-04 e
             // foto_fachada saiu agora — o backend ignora e nao grava nenhuma das
             // duas. Mandar base64 de 5MB pra ser descartado no servidor e queimar
@@ -581,6 +605,29 @@
           corTexto: 'text-red-800',
           instrucao: 'Esse CNPJ não consta na Receita Federal. Confira os dígitos na nota fiscal — é fácil trocar um número.',
           botao: '✏️  Corrigir o CNPJ',
+        },
+        // FRONT_ACCURACY_V1 — 4a variante: o backend nao consegue decidir porque o
+        // APARELHO nao sabe onde ele esta.
+        //
+        // Nao e vermelha: ele nao errou nada, e nao adianta ele "conferir o CNPJ".
+        // Nao e a ambar do 'indisponivel' tambem — aquela e sobre a NOSSA infra
+        // ("não é erro seu, tente de novo"), e repetir do mesmo lugar nao resolveria
+        // isto aqui. Esta tem acao propria e ela FUNCIONA: andar. O watchPosition
+        // atualiza sozinho, entao a precisao melhora enquanto ele caminha ate a
+        // porta.
+        //
+        // O motivo vem do backend com o numero real (±96m) — mais convincente que
+        // qualquer texto nosso: e o aparelho DELE admitindo o erro.
+        gps_impreciso: {
+          icone: '🛰️',
+          bolha: 'bg-sky-100',
+          titulo: 'Não conseguimos te localizar direito',
+          corTitulo: 'text-sky-700',
+          borda: 'border-sky-200',
+          caixa: 'bg-sky-50 border border-sky-200',
+          corTexto: 'text-sky-800',
+          instrucao: null, // o backend manda a frase com a precisao medida
+          botao: '↻  Tentar de novo',
         },
         indisponivel: {
           icone: '🔌',
@@ -917,7 +964,10 @@
     const gpsAcc      = gps && typeof gps.accuracy === 'number' ? Math.round(gps.accuracy) : null;
     const gpsRuim     = gpsAcc !== null && gpsAcc > GPS_ACC_LIMITE;
     const gpsMedio    = gpsAcc !== null && gpsAcc > GPS_ACC_BOM && !gpsRuim;
-    const podeEnviar  = !!gps && !gpsRuim && !disabled;
+    // FRONT_ACCURACY_V1: gpsRuim saiu da condicao. Ele ainda pinta a caixa de
+    // vermelho e mostra a instrucao — mas nao tranca mais o botao. Sem GPS
+    // NENHUM continua travando: sem coordenada nao ha o que enviar.
+    const podeEnviar  = !!gps && !disabled;
 
     return h('div', { className: 'max-w-lg mx-auto px-4 py-8' },
 
@@ -1003,8 +1053,13 @@
             }, gpsLoading ? '...' : '🔄 Atualizar')
           ),
           // A instrucao só aparece quando ele PODE fazer algo com ela.
+          //
+          // FRONT_ACCURACY_V1: o texto mudou de tom junto com a trava. Antes ele era
+          // a explicacao de uma porta trancada ("precisão baixa demais"); agora e um
+          // conselho antes do envio — ele PODE enviar assim, e se enviar, o backend
+          // devolve a tela 🛰️ e a tentativa fica gravada com fase gps_impreciso.
           gpsRuim && h('p', { className: 'text-xs text-red-700 mt-2 leading-relaxed border-t border-red-200 pt-2' },
-            'Precisão baixa demais pra confirmar o local. Chegue perto da porta da loja ou saia de baixo da cobertura — isso melhora sozinho.'),
+            'Seu GPS está muito impreciso. Se enviar assim, não vamos conseguir confirmar que você está na loja. Chegue perto da porta ou saia de baixo da cobertura — isso melhora sozinho.'),
           gpsMedio && h('p', { className: 'text-xs text-amber-700 mt-2 leading-relaxed border-t border-amber-200 pt-2' },
             'Dá pra enviar, mas se der erro de localização, chegue mais perto da porta.')
         ),
