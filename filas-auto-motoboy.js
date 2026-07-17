@@ -39,17 +39,12 @@
     // FILAS_DIARIA_VAGAS_FRONT_V1_STATE: { limite, mensagem } | null
     const [modalFilaCheia, setModalFilaCheia] = React.useState(null);
     const [modalSaida, setModalSaida] = React.useState(false);
-    // AVISO_BONUS_NEUTRO_V1_STATE
-    // Um estado só serve o Garantido E a Diária: a central é ou uma ou outra
-    // (CHECK no banco), então nunca chegam os dois. Duas telas quase iguais
-    // divergiriam em seis meses — e aqui divergir significa uma delas voltar a
-    // dizer o que não pode.
-    // AVISO_BONUS_NEUTRO_V2_STATE
-    // Um estado só serve o Garantido E a Diária: a central é ou uma ou outra
-    // (CHECK no banco), então nunca chegam os dois. Duas telas quase iguais
-    // divergiriam em seis meses — e aqui divergir significa uma delas voltar a
-    // dizer o que não pode.
-    const [garantidoAviso, setGarantidoAviso] = React.useState(null); // { valor } // { valor, hora }
+    // AVISO_BONUS_NEUTRO_V3_STATE
+    // Um estado so serve o Garantido E a Diaria: a central e ou uma ou outra
+    // (CHECK no banco), entao nunca chegam os dois. Duas telas quase iguais
+    // divergiriam em seis meses - e aqui divergir significa uma delas voltar a
+    // dizer o que nao pode.
+    const [garantidoAviso, setGarantidoAviso] = React.useState(null); // { valor }
     const [barreiraHorario, setBarreiraHorario] = React.useState(null); // { nome, horario_corte }
     let req_nome_profissional = '';
     const [textoConfirmSaida, setTextoConfirmSaida] = React.useState('');
@@ -148,31 +143,23 @@
         if (d.success) {
           toast(`Entrou! Posição ${d.posicao}. Agente vai confirmar em segundos.`, 'success');
           setBloqueioCorrida(null);
-          // AVISO_BONUS_NEUTRO_V1_TRIGGER
+          // AVISO_BONUS_NEUTRO_V3_TRIGGER
           //
-          // O modal aparece em TODO 1º ingresso do dia, e essa condição é
-          // deliberada: não filtre por valor.
+          // O modal aparece em TODO 1o ingresso do dia, e essa condicao e
+          // deliberada: nao filtre por valor.
           //
-          // Uma tela que só aparece quando o valor é menor comunica perda pelo
-          // simples fato de existir — o motoboy aprende o que aquele modal
-          // significa antes de ler. Aparecendo sempre, ela é o recibo do bônus
+          // Uma tela que so aparece quando o valor e menor comunica perda pelo
+          // simples fato de existir - o motoboy aprende o que aquele modal
+          // significa antes de ler. Aparecendo sempre, ela e o recibo do bonus
           // do dia.
           //
-          // Custo: um toque a mais por dia, uma vez só. Barato.
+          // Custo: um toque a mais por dia, uma vez so.
           //
-          // `??` e não `||`: valor 0 é legítimo (ingresso fora da janela) e com
+          // `??` e nao `||`: valor 0 e legitimo (ingresso fora da janela) e com
           // `||` cairia no outro operando calado.
           const bonusHoje = d.diaria || d.garantido;
           if (bonusHoje && bonusHoje.primeiro_do_dia) {
-            setGarantidoAviso({
-              valor: bonusHoje.valor_diaria ?? bonusHoje.valor_garantido ?? 0,
-              // A hora do ingresso é o relógio deste aparelho, agora — é o
-              // instante em que ele tocou "entrar". Fato da transação, como o
-              // horário impresso num cupom. Não vem do backend de propósito: o
-              // que o backend tem são as horas de REFERÊNCIA, e é justamente
-              // isso que a tela não pode mostrar.
-              hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }),
-            });
+            setGarantidoAviso({ valor: bonusHoje.valor_diaria ?? bonusHoje.valor_garantido ?? 0 });
           }
           carregarMinhaPosicao();
           carregarFilaPublica(minhaCentral.id);
@@ -416,20 +403,25 @@
       ),
 
       // ══════════════════════════════════════════════════════════════════════
-      // AVISO_BONUS_NEUTRO_V1_MODAL
+      // AVISO_BONUS_NEUTRO_V3_MODAL
       //
       // ESTE TEXTO PASSOU POR REVISÃO JURÍDICA. NÃO ALTERE SEM NOVA REVISÃO.
       //
       // Regras que o texto desta tela precisa respeitar:
       //
-      //   - não mencionar horário de início, de referência, ou de qualquer
-      //     natureza. Só a hora do próprio ingresso.
+      //   - não mencionar horário de início, de referência, nem o horário do
+      //     próprio ingresso. Nenhum horário.
       //   - não comparar com um valor maior. Nada de "de R$ 180,00" riscado,
       //     percentual, ou "valor cheio". A tela mostra UM valor: o de hoje.
       //   - não usar: diária, garantia, escala, acordo, combinado, atraso,
       //     cumprir, ajuste, desconto, redução.
       //   - não tratar o motoboy nominalmente.
+      //   - não mandar consultar tabela, regra ou aba nenhuma.
       //   - "bônus" e "valor" são os termos aprovados.
+      //
+      // A tela mostra um valor e nada mais. Sem carimbo de hora ela não sugere
+      // que o horário causou coisa alguma — não há o que comparar, nem o que ela
+      // pareça estar justificando.
       //
       // Sem disclaimer jurídico aqui de propósito. Se for preciso um, quem
       // escreve é o jurídico.
@@ -448,12 +440,9 @@
             e('p', { className: 'text-sm text-gray-700 leading-relaxed text-center' },
               'O valor do bônus varia conforme o horário de ingresso na fila.')
           ),
-          e('div', { className: 'bg-white border-2 border-violet-300 rounded-xl p-4 mb-3 text-center' },
-            e('p', { className: 'text-xs text-gray-500 mb-1' }, `Ingresso às ${garantidoAviso.hora}`),
+          e('div', { className: 'bg-white border-2 border-violet-300 rounded-xl p-4 mb-4 text-center' },
             e('p', { className: 'text-3xl font-bold text-violet-800' }, `R$ ${Number(garantidoAviso.valor || 0).toFixed(2).replace('.', ',')}`)
           ),
-          e('p', { className: 'text-[11px] text-gray-400 text-center leading-relaxed mb-4' },
-            'Valor referente ao ingresso de hoje.'),
           e('button', { onClick: () => setGarantidoAviso(null), className: 'w-full py-3 bg-violet-600 text-white rounded-xl font-bold text-lg hover:bg-violet-700' }, 'Ok')
         )
       )
