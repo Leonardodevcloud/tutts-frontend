@@ -36,6 +36,8 @@
     const [bloqueioCorrida, setBloqueioCorrida] = React.useState(null); // { corridas: [...] }
     // 🆕 2026-05-24: modal de bloqueio quando tenta voltar antes do cooldown 30min
     const [modalCooldown, setModalCooldown] = React.useState(null); // { minutos_restantes } | null
+    // FILAS_DIARIA_VAGAS_FRONT_V1_STATE: { limite, mensagem } | null
+    const [modalFilaCheia, setModalFilaCheia] = React.useState(null);
     const [modalSaida, setModalSaida] = React.useState(false);
     const [garantidoAviso, setGarantidoAviso] = React.useState(null);
     const [barreiraHorario, setBarreiraHorario] = React.useState(null); // { nome, horario_corte }
@@ -147,6 +149,13 @@
         } else if (d.error === 'cooldown_despacho') {
           // 🆕 2026-05-24: em vez de toast vermelho, abre modal com explicação
           setModalCooldown({ minutos_restantes: d.minutos_restantes || 30 });
+        } else if (d.error === 'fila_cheia') {
+          // FILAS_DIARIA_VAGAS_FRONT_V1_HANDLER
+          // Modal, e nao toast — mesmo motivo do cooldown_despacho logo acima.
+          // Toast some em 3 segundos e o motoboy fica sem saber o que houve; ele
+          // tenta de novo, falha de novo, e liga pro suporte. Um modal que diz o
+          // numero e diz quando zera nao gera ligacao.
+          setModalFilaCheia({ limite: d.limite, mensagem: d.mensagem });
         } else if (d.error === 'fora_do_raio') {
           toast(d.mensagem || 'Aproxime-se da central', 'error');
         } else if (d.error === 'penalidade_ativa') {
@@ -345,6 +354,31 @@
         minutos_restantes: modalCooldown.minutos_restantes,
         onFechar: () => setModalCooldown(null),
       }),
+
+      // FILAS_DIARIA_VAGAS_FRONT_V1_MODAL
+      modalFilaCheia && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setModalFilaCheia(null) },
+        e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
+          e('div', { className: 'text-center mb-4' },
+            e('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, '🔒')),
+            e('h2', { className: 'text-lg font-bold text-amber-800 mb-1' }, 'Fila cheia hoje')
+          ),
+          e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
+            e('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
+              // A mensagem vem pronta do backend, com o numero da central dentro.
+              // Se um dia faltar, o fallback ainda diz QUANDO zera — que e a
+              // informacao que evita a ligacao pro suporte.
+              modalFilaCheia.mensagem || 'As vagas de hoje ja foram todas ocupadas. As vagas zeram a meia-noite.')
+          ),
+          e('p', { className: 'text-xs text-gray-500 text-center leading-relaxed mb-4' },
+            'A vaga e contada por quem ', e('strong', null, 'entrou hoje'), ' — nao por quem esta na fila agora. ',
+            'Por isso pode ter gente fora e ainda assim nao ter vaga.'
+          ),
+          e('button', {
+            onClick: () => setModalFilaCheia(null),
+            className: 'w-full py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50'
+          }, 'Entendi')
+        )
+      ),
 
       garantidoAviso && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
         e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },

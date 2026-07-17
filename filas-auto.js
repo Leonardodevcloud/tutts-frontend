@@ -716,11 +716,15 @@
 
       // Tabs
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
-        ['monitor', 'config', 'vinculos', 'penalidades', 'garantido', 'logs'].map(aba => e('button', {
+        // FILAS_DIARIA_VAGAS_FRONT_V1_ABAS: +2 abas. A Diária fica ao lado do
+        // Garantido (são irmãs, e são mutuamente exclusivas — ver juntas ajuda a
+        // entender que só uma vale). A Vagas fica no fim porque é trava de fila,
+        // não de remuneração.
+        ['monitor', 'config', 'vinculos', 'penalidades', 'garantido', 'diaria', 'vagas', 'logs'].map(aba => e('button', {
           key: aba,
           onClick: () => setAbaAtiva(aba),
           className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `🚫 Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : aba === 'garantido' ? '🛡️ Garantido' : 'Logs do agente'))
+        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `🚫 Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : aba === 'garantido' ? '🛡️ Garantido' : aba === 'diaria' ? '📅 Diária' : aba === 'vagas' ? '🔒 Vagas' : 'Logs do agente'))
       ),
 
       // === ABA MONITOR ===
@@ -825,6 +829,19 @@
       abaAtiva === 'garantido' && centralSelecionada && (typeof window.ModuloGarantidoAdmin !== 'undefined'
         ? e(window.ModuloGarantidoAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
         : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar o Garantido.')),
+
+      // FILAS_DIARIA_VAGAS_FRONT_V1_RENDER
+      // O `typeof !== 'undefined'` é o mesmo do Garantido: os módulos são
+      // lazy-loaded, e sem cache-bust no index.html o navegador serve o JS velho
+      // — a aba existiria e o painel não. A mensagem manda dar Ctrl+F5 em vez de
+      // quebrar em tela branca.
+      abaAtiva === 'diaria' && centralSelecionada && (typeof window.ModuloDiariaAdmin !== 'undefined'
+        ? e(window.ModuloDiariaAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
+        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar a Diária.')),
+
+      abaAtiva === 'vagas' && centralSelecionada && (typeof window.ModuloVagasAdmin !== 'undefined'
+        ? e(window.ModuloVagasAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
+        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar as Vagas.')),
 
       // Modal de nova/editar central
       modalCentral && renderModalCentral({
