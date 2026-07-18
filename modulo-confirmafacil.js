@@ -506,8 +506,11 @@
     const [embarcadores, setEmbs]   = useState([]);
 
     // Filtros
-    const [de, setDe]               = useState('');
-    const [ate, setAte]             = useState('');
+    // [cf-data-hoje-v1] abre filtrado em HOJE (emitida hoje OU previsao hoje).
+    // hojeBRT() e definido logo abaixo; replicamos o calculo aqui pro initial state.
+    const _hojeInit = new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
+    const [de, setDe]               = useState(_hojeInit);
+    const [ate, setAte]             = useState(_hojeInit);
     const [embCnpj, setEmbCnpj]    = useState('');
     const [statusFiltro, setStatus] = useState('');
     const [corridaFiltro, setCorrida] = useState('');
@@ -580,6 +583,8 @@
       const params = new URLSearchParams({ page: pg, size: POR_PAG });
       if (de)            params.set('de',  de  + 'T00:00:00');
       if (ate)           params.set('ate', ate + 'T23:59:59');
+      // [cf-data-hoje-v1] uniao previsao OU emissao (nota de ontem c/ previsao hoje entra)
+      if (de || ate)     params.set('modo_data', 'previsao_ou_emissao');
       if (embCnpj)       params.set('embarcador_cnpj', embCnpj);
       if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
       if (busca)         params.set('busca', busca);
