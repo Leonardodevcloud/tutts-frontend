@@ -1892,26 +1892,42 @@
                             )
                           ),
                           // Cruzamento (scores)
-                          cruz && cruz.scores && Object.keys(cruz.scores).length > 0 && h('div', { className: 'bg-white rounded p-2' },
+                          // ══════════════════════════════════════════════════════════════
+                          // ADMIN_SEM_SCORE_V1_PAINEL — sai a porcentagem, fica o veredito.
+                          //
+                          // O painel mostrava um grid de scores ("cep receita vs gps 0%",
+                          // "nome receita vs google 100%") e um "Máx: X%".
+                          //
+                          // Por que sai:
+                          //
+                          //   O número não responde a pergunta do admin. Ele quer saber
+                          //   COMO a corrida foi validada — e isso o caminho_aprovacao diz
+                          //   por extenso, com o dado que importa dentro:
+                          //     "Presença confirmada (20m, limite 100m)"
+                          //     "Presença confirmada pelo nome (100%: 'Centro Automotivo
+                          //      Leonardo') — sem geocode nem CEP"
+                          //
+                          //   E o "Máx" era pior que inútil: ele só olhava a distância, então
+                          //   uma corrida aprovada pelo nome com 100% exibia "Máx: 0%". O
+                          //   score_max foi consertado no backend, mas mesmo certo ele não
+                          //   acrescenta nada que o caminho não diga melhor.
+                          //
+                          // A CONDIÇÃO MUDOU, e isso conserta um bug: era
+                          // `cruz.scores && Object.keys(cruz.scores).length > 0`. Uma corrida
+                          // barrada por 'indisponivel' não tem score nenhum — e o bloco
+                          // inteiro sumia, escondendo justamente o motivo da barrada. Agora o
+                          // bloco aparece quando há veredito, que é quando ele serve.
+                          //
+                          // A DISTÂNCIA FICA. Ela é em metros, não em %, e foi ela que
+                          // entregou o bug do geocode em 17/07 (6014m, 11869m, 12699m).
+                          // Tirar ela seria cegar o painel de novo.
+                          // ══════════════════════════════════════════════════════════════
+                          cruz && (cruz.caminho_aprovacao || cruz.motivo_bloqueio || typeof cruz.distancia_metros === 'number') && h('div', { className: 'bg-white rounded p-2' },
                             h('div', { className: 'flex items-center justify-between mb-1' },
-                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, '🧮 CRUZAMENTO (scores)'),
-                              h('div', { className: 'flex items-center gap-1' },
-                                h('span', { className: 'text-[10px] text-gray-500' }, 'Máx:'),
-                                h('span', {
-                                  className: 'text-xs font-bold ' + ((cruz.score_max || 0) >= 90 ? 'text-green-600' : (cruz.score_max || 0) >= 70 ? 'text-yellow-600' : 'text-red-600')
-                                }, `${cruz.score_max || 0}%`),
-                                cruz.salvo_no_banco && h('span', {
-                                  className: 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-200 text-purple-800 ml-1'
-                                }, '💾 Salvo')
-                              )
-                            ),
-                            h('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-1 text-[10px]' },
-                              Object.entries(cruz.scores).map(([k, v]) =>
-                                h('div', { key: k, className: 'flex justify-between bg-gray-50 rounded px-2 py-1' },
-                                  h('span', { className: 'text-gray-600' }, k.replace(/_/g, ' ')),
-                                  h('span', { className: 'font-bold ' + (v >= 90 ? 'text-green-600' : v >= 70 ? 'text-yellow-600' : 'text-red-600') }, `${v}%`)
-                                )
-                              )
+                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, '🧮 VALIDAÇÃO'),
+                              cruz.salvo_no_banco && h('span', {
+                                className: 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-200 text-purple-800'
+                              }, '💾 Salvo')
                             ),
                             // ADMIN_BCE_V1 (cruzamento): distancia + veredito.
                             // O grid de scores acima e generico (Object.entries), entao ja
