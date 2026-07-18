@@ -1221,10 +1221,151 @@
   }
 
   // ─── ABA: RISCO DE SLA (painel por filial + lista de risco) ──
+  // ─── HISTÓRICO DE SLA (mensal/semanal por filial) ────────────
+  // [cf-sla-historico-v1] Top-level (nunca inline) pra nao remontar.
+  function HistoricoSLA({ fetchAuth, API_URL, showToast }) {
+    const _hoje = new Date();
+    const _ym = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ, year: 'numeric', month: '2-digit' }).format(d);
+    const [mesRef, setMesRef]   = useState(_ym(_hoje)); // 'YYYY-MM'
+    const [modo, setModo]       = useState('mensal');   // mensal | semanal
+    const [hist, setHist]       = useState(null);
+    const [loading, setLoading] = useState(true);
+    const chartRefs = React.useRef({});
+
+    const rangeDoMes = (ym) => {
+      const [y, m] = ym.split('-').map(Number);
+      const de = `${ym}-01`;
+      const ate = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC' }).format(new Date(Date.UTC(y, m, 0)));
+      return { de, ate };
+    };
+
+    const carregar = useCallback(() => {
+      setLoading(true);
+      const { de, ate } = rangeDoMes(mesRef);
+      fetchAuth(API_URL + '/confirmafacil/sla-historico?de=' + de + '&ate=' + ate)
+        .then(r => r.json()).then(setHist)
+        .catch(() => showToast && showToast('Erro ao carregar histórico', 'erro'))
+        .finally(() => setLoading(false));
+    }, [mesRef, API_URL, fetchAuth]);
+
+    useEffect(() => { carregar(); }, [carregar]);
+
+    // Agrega a serie diaria em semanas ISO (segunda-domingo) quando modo=semanal.
+    const agregarSemanal = (serie) => {
+      const semanas = {};
+      serie.forEach((d) => {
+        const dt = new Date(d.dia + 'T12:00:00Z');
+        const day = (dt.getUTCDay() + 6) % 7; // 0=segunda
+        const seg = new Date(dt); seg.setUTCDate(dt.getUTCDate() - day);
+        const key = seg.toISOString().slice(0, 10);
+        if (!semanas[key]) semanas[key] = { dia: key, no_prazo: 0, estourada: 0 };
+        semanas[key].no_prazo += d.no_prazo; semanas[key].estourada += d.estourada;
+      });
+      return Object.values(semanas).map((s) => {
+        const fin = s.no_prazo + s.estourada;
+        return { ...s, pct: fin ? Math.round((s.no_prazo / fin) * 1000) / 10 : null,
+          label: 'sem ' + s.dia.slice(8, 10) + '/' + s.dia.slice(5, 7) };
+      }).sort((a, b) => a.dia.localeCompare(b.dia));
+    };
+
+    // Renderiza os graficos apos os dados chegarem (Chart.js ja carregado no index.html).
+    useEffect(() => {
+      if (!hist || !hist.filiais || typeof Chart === 'undefined') return;
+      hist.filiais.forEach((f) => {
+        const cv = chartRefs.current[f.cnpj];
+        if (!cv) return;
+        if (cv._chart) { cv._chart.destroy(); }
+        const pts = modo === 'semanal' ? agregarSemanal(f.serie) : f.serie.map((d) => ({ ...d, label: d.dia.slice(8, 10) }));
+        cv._chart = new Chart(cv, {
+          type: 'line',
+          data: {
+            labels: pts.map((p) => p.label),
+            datasets: [
+              { data: pts.map((p) => p.pct), borderColor: '#1baf7a', backgroundColor: 'rgba(27,175,122,0.08)',
+                borderWidth: 2, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, spanGaps: true },
+              { data: pts.map(() => f.meta), borderColor: '#9ca3af', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+              label: (c) => c.datasetIndex === 0 ? (c.parsed.y != null ? c.parsed.y + '% no prazo' : 'sem dados') : 'meta ' + f.meta + '%' } } },
+            scales: {
+              y: { min: 80, max: 101, ticks: { callback: (v) => v + '%', font: { size: 10 }, color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.15)' } },
+              x: { ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: true, maxTicksLimit: 10 }, grid: { display: false } },
+            },
+          },
+        });
+      });
+    }, [hist, modo]);
+
+    const mesLabel = (() => {
+      const [y, m] = mesRef.split('-');
+      const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      return nomes[Number(m) - 1] + '/' + y;
+    })();
+    const mudarMes = (delta) => {
+      const [y, m] = mesRef.split('-').map(Number);
+      const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+      setMesRef(_ym(d));
+    };
+
+    const filiais = (hist && hist.filiais) || [];
+
+    return h('div', { className: 'space-y-3' },
+      // controles
+      h('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
+        h('div', { className: 'flex items-center gap-2' },
+          h('button', { onClick: () => mudarMes(-1), className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '‹'),
+          h('span', { className: 'text-sm font-semibold text-gray-700 min-w-[80px] text-center' }, mesLabel),
+          h('button', { onClick: () => mudarMes(1), className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '›')
+        ),
+        h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
+          ['mensal', 'semanal'].map((mo) =>
+            h('button', { key: mo, onClick: () => setModo(mo),
+              className: 'text-xs px-3 py-1 rounded-md ' + (modo === mo ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500') },
+              mo === 'mensal' ? 'Diário' : 'Semanal')
+          )
+        )
+      ),
+      loading && !hist ? h('div', { className: 'text-center text-gray-400 py-12' }, 'Carregando histórico…')
+        : filiais.length === 0 ? h('div', { className: 'text-center text-gray-400 py-12 bg-white border border-gray-200 rounded-xl' }, 'Sem entregas finalizadas neste período.')
+        : filiais.map((f) => {
+          const acima = f.pct != null && f.pct >= f.meta;
+          const cor = f.pct == null ? 'text-gray-400' : acima ? 'text-green-600' : (f.pct >= f.meta - 2 ? 'text-amber-600' : 'text-red-600');
+          return h('div', { key: f.cnpj, className: 'bg-white border border-gray-200 rounded-2xl p-4' },
+            h('div', { className: 'flex items-start justify-between mb-3' },
+              h('div', null,
+                h('div', { className: 'font-bold text-gray-900' }, f.nome),
+                h('div', { className: 'text-[11px] text-gray-400' }, f.total + ' entregas finalizadas · ' + mesLabel)
+              ),
+              h('div', { className: 'text-right' },
+                h('div', { className: 'text-2xl font-bold ' + cor }, f.pct != null ? f.pct.toFixed(1) + '%' : '—'),
+                h('div', { className: 'text-[11px] text-gray-400' }, 'meta ' + f.meta + '%')
+              )
+            ),
+            h('div', { className: 'grid grid-cols-3 gap-2 mb-4' },
+              h('div', { className: 'text-center py-2 bg-gray-50 rounded-lg' },
+                h('div', { className: 'text-lg font-bold text-green-600' }, f.no_prazo), h('div', { className: 'text-[11px] text-gray-500' }, 'No prazo')),
+              h('div', { className: 'text-center py-2 bg-gray-50 rounded-lg' },
+                h('div', { className: 'text-lg font-bold text-red-600' }, f.estourada), h('div', { className: 'text-[11px] text-gray-500' }, 'Estouradas')),
+              h('div', { className: 'text-center py-2 bg-gray-50 rounded-lg' },
+                h('div', { className: 'text-lg font-bold text-gray-700' }, f.total), h('div', { className: 'text-[11px] text-gray-500' }, 'Total'))
+            ),
+            h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'SLA por ' + (modo === 'semanal' ? 'semana' : 'dia')),
+            h('div', { style: { position: 'relative', width: '100%', height: '150px' } },
+              h('canvas', { ref: (el) => { if (el) chartRefs.current[f.cnpj] = el; } })
+            )
+          );
+        })
+    );
+  }
+
   function AbaRiscoSLA({ fetchAuth, API_URL, showToast }) {
     const [data, setData]       = useState(null);
     const [loading, setLoading] = useState(true);
     const [, setTick]           = useState(0);
+    const [vista, setVista]     = useState('diario'); // [cf-sla-historico-v1] diario | historico
 
     async function carregar() {
       try {
@@ -1310,12 +1451,23 @@
       }) : h('div', { className: 'text-gray-400 text-sm py-5 text-center bg-white border border-gray-200 rounded-xl' }, 'Nenhuma corrida em risco no momento. 🎉')
     );
 
-    return h('div', { className: 'space-y-1' },
-      h('div', { className: 'flex items-center justify-between mb-2' },
-        h('div', { className: 'text-[11px] text-gray-400' }, 'Meta diária por filial · risco a ≤15 min · alerta automático no WhatsApp'),
-        h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
+    return h('div', { className: 'space-y-3' },
+      // [cf-sla-historico-v1] toggle Diário / Histórico
+      h('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
+        h('div', { className: 'inline-flex bg-gray-100 rounded-xl p-1' },
+          h('button', { onClick: () => setVista('diario'),
+            className: 'text-sm px-4 py-1.5 rounded-lg ' + (vista === 'diario' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500') }, 'Diário'),
+          h('button', { onClick: () => setVista('historico'),
+            className: 'text-sm px-4 py-1.5 rounded-lg ' + (vista === 'historico' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500') }, 'Histórico')
+        ),
+        vista === 'diario' && h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
       ),
-      painel, lista
+      vista === 'diario'
+        ? h('div', { className: 'space-y-1' },
+            h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'Meta diária por filial · risco a ≤15 min · SLA do ConfirmaFácil · alerta automático no WhatsApp'),
+            painel, lista
+          )
+        : h(HistoricoSLA, { fetchAuth, API_URL, showToast })
     );
   }
 
