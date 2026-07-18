@@ -358,6 +358,106 @@
   }
 
   // ─── ABA NFs RECEBIDAS ───────────────────────────────────────
+  // ─── BADGE FLUTUANTE: NOTAS CANCELADAS NO CF ─────────────────
+  // [cf-badge-canceladas-v1] Componente top-level (NUNCA inline no render de
+  // AbaNFs) pra evitar unmount/remount a cada ciclo. Le GET /confirmafacil/canceladas.
+  function BadgeCanceladas({ fetchAuth, API_URL, showToast }) {
+    const [aberto, setAberto]   = useState(false);
+    const [dados, setDados]     = useState(null);
+    const [dias, setDias]       = useState(3);
+    const [carregando, setCarregando] = useState(false);
+
+    const carregar = useCallback((d) => {
+      setCarregando(true);
+      fetchAuth(API_URL + '/confirmafacil/canceladas?dias=' + (d || 3))
+        .then(r => r.json()).then(setDados)
+        .catch(() => {})
+        .finally(() => setCarregando(false));
+    }, [API_URL, fetchAuth]);
+
+    useEffect(() => { carregar(dias); }, [dias, carregar]);
+    useEffect(() => {
+      const t = setInterval(() => carregar(dias), 5 * 60 * 1000); // refresh 5min
+      return () => clearInterval(t);
+    }, [dias, carregar]);
+
+    const resumo = (dados && dados.resumo) || {};
+    const itens  = (dados && dados.itens) || [];
+    const total  = resumo.total || 0;
+    const pend   = resumo.pendentes || 0;
+    if (total === 0 && !carregando) return null; // nada canceladas: badge some
+
+    const VIS = {
+      cancelada: ['bg-green-100 text-green-800', '✅', 'OS cancelada'],
+      alocado:   ['bg-amber-100 text-amber-800', '🛵', 'Motoboy alocado'],
+      falhou:    ['bg-red-100 text-red-800',     '⚠️', 'Falhou'],
+      nada:      ['bg-gray-100 text-gray-500',   '🕑', 'Nada a cancelar'],
+      manual:    ['bg-blue-100 text-blue-700',   '✋', 'Resolvido manual'],
+    };
+
+    const marcarManual = (idEmb) => {
+      fetchAuth(API_URL + '/confirmafacil/canceladas/' + idEmb + '/resolver', { method: 'POST' })
+        .then(r => r.json()).then(() => { showToast && showToast('Marcado como resolvido', 'success'); carregar(dias); })
+        .catch(() => showToast && showToast('Falha ao marcar', 'error'));
+    };
+
+    return h('div', { className: 'fixed bottom-6 right-6 z-50' },
+      // painel
+      aberto && h('div', { className: 'mb-3 w-[420px] max-w-[92vw] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden' },
+        h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-red-50' },
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', null, '🗄️'),
+            h('span', { className: 'font-semibold text-sm text-red-800' }, 'Notas canceladas no CF')
+          ),
+          h('button', { onClick: () => setAberto(false), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+        ),
+        // resumo
+        h('div', { className: 'flex gap-1.5 px-4 py-2.5 border-b border-gray-100 text-xs flex-wrap' },
+          resumo.cancelada > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-green-50 text-green-700' }, '✅ ' + resumo.cancelada + ' canceladas'),
+          resumo.alocado > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-amber-50 text-amber-700' }, '🛵 ' + resumo.alocado + ' alocadas'),
+          resumo.falhou > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-red-50 text-red-700' }, '⚠️ ' + resumo.falhou + ' falhou'),
+        ),
+        // lista
+        h('div', { className: 'max-h-[340px] overflow-y-auto' },
+          itens.length === 0 && h('div', { className: 'px-4 py-6 text-center text-sm text-gray-400' }, carregando ? 'Carregando...' : 'Nenhuma cancelada nos ultimos ' + dias + ' dias'),
+          itens.map((it) => {
+            const [cls, ic, lbl] = VIS[it.resultado] || VIS.nada;
+            const pendente = !it.resolvido && (it.resultado === 'falhou' || it.resultado === 'alocado');
+            return h('div', { key: it.id_embarque, className: 'flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 ' + (it.resultado === 'falhou' && !it.resolvido ? 'bg-red-50/40' : '') },
+              h('div', { className: 'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-sm ' + cls }, ic),
+              h('div', { className: 'flex-1 min-w-0' },
+                h('div', { className: 'text-[13px] font-medium truncate' }, 'NF ' + it.numero_nf + (it.serie_nf ? ' · série ' + it.serie_nf : '')),
+                h('div', { className: 'text-[11px] text-gray-500 truncate' }, (it.nome_embarcador || '') + (it.os_numero ? ' · OS ' + it.os_numero : ' · sem corrida')),
+                it.resultado === 'falhou' && it.erro_msg && h('div', { className: 'text-[10px] text-red-600 mt-0.5 truncate' }, 'Tutts: ' + it.erro_msg + (it.tentativas > 1 ? ' · ' + it.tentativas + 'x' : ''))
+              ),
+              h('div', { className: 'text-right flex-shrink-0' },
+                it.resolvido
+                  ? h('div', { className: 'text-[11px] text-blue-600 font-medium' }, '✋ resolvido')
+                  : pendente
+                    ? h('button', { onClick: () => marcarManual(it.id_embarque),
+                        className: 'text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Cancelei na Mapp')
+                    : h('div', { className: 'text-[11px] font-medium ' + (it.resultado === 'cancelada' ? 'text-green-600' : 'text-gray-400') }, lbl)
+              )
+            );
+          })
+        ),
+        // rodape: ver mais antigas
+        h('div', { className: 'px-4 py-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400' },
+          h('span', null, 'Atualiza a cada ~10 min'),
+          h('button', { onClick: () => setDias(dias === 3 ? 30 : 3),
+            className: 'text-purple-600 hover:underline' }, dias === 3 ? 'Ver mais antigas' : 'Ultimos 3 dias')
+        )
+      ),
+      // pilula
+      h('button', { onClick: () => setAberto(!aberto),
+        className: 'flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-white text-sm font-medium ' + (pend > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-800') },
+        h('span', null, '🗄️'),
+        h('span', null, total + ' cancelada' + (total !== 1 ? 's' : '')),
+        pend > 0 && h('span', { className: 'bg-white text-red-600 text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center' }, pend)
+      )
+    );
+  }
+
   function AbaNFs({ fetchAuth, API_URL, showToast }) {
     const [nfs, setNfs]             = useState([]);
     const [total, setTotal]         = useState(0);
@@ -823,7 +923,10 @@
         solicitacaoId: osAberta,
         onFechar: () => setOsAberta(null),
         fetchAuth, API_URL, showToast,
-      })
+      }),
+
+      // [cf-badge-canceladas-v1] badge flutuante — so na tela do ConfirmaFacil
+      h(BadgeCanceladas, { fetchAuth, API_URL, showToast })
     );
   }
 
