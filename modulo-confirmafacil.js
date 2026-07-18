@@ -342,7 +342,28 @@
               className: 'w-full text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
             }, '📸 Enviar protocolo (fotos)'),
 
-            h('p', { className: 'text-[11px] text-gray-400 text-center' }, 'Toda correção fica registrada na auditoria.')
+            h('p', { className: 'text-[11px] text-gray-400 text-center' }, 'Toda correção fica registrada na auditoria.'),
+
+            // [cf-fixes-v2] Cancelar SO na central (nao toca na Mapp). So aparece
+            // se a corrida ainda esta viva. Backend: POST .../cancelar-local.
+            dados.sc && dados.sc.status && !['cancelado','finalizado'].includes(String(dados.sc.status).toLowerCase()) &&
+            h('div', { className: 'pt-2 mt-1 border-t border-gray-100' },
+              h('button', {
+                disabled: enviando,
+                onClick: () => {
+                  if (!window.confirm('Cancelar esta corrida SOMENTE na nossa central?\n\nA OS na Mapp NAO sera tocada. Use para nivelar corridas antigas que ja foram resolvidas fora do sistema.\n\nStatus atual: ' + dados.sc.status)) return;
+                  setEnviando(true);
+                  fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+                  }).then(r => r.json()).then(d => {
+                    if (d.ok) showToast('🗄️ Corrida cancelada na central (Mapp intocada)', 'success');
+                    else showToast('❌ ' + (d.error || d.mensagem || 'Erro'), 'error');
+                    return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                  }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
+                },
+                className: 'w-full text-sm py-2 text-gray-600 border border-gray-200 rounded-xl hover:border-red-300 hover:text-red-600 disabled:opacity-60',
+              }, '🗄️ Cancelar só na central (não mexe na Mapp)')
+            )
           )
         )
       ),
@@ -492,6 +513,7 @@
     const [corridaFiltro, setCorrida] = useState('');
     const [busca, setBusca]         = useState('');
     const [statusCF, setStatusCF]   = useState('');
+    const [semCorrida, setSemCorrida] = useState(false); // [cf-fixes-v2] card Sem corrida
     const [slaFiltro, setSlaFiltro] = useState('');
     const [, setSlaTick]            = useState(0);
     // 🆕 SLA finalizadas: modo alternativo da pagina (toggle + data + dentro/fora)
@@ -551,9 +573,10 @@
       finally { setReproc(false); }
     }
 
-    async function carregar(pg = 0, statusOverride) {
+    async function carregar(pg = 0, statusOverride, semCorridaOverride) {
       setLoading(true);
       const sCF = statusOverride !== undefined ? statusOverride : statusCF;
+      const semOS = semCorridaOverride !== undefined ? semCorridaOverride : semCorrida;
       const params = new URLSearchParams({ page: pg, size: POR_PAG });
       if (de)            params.set('de',  de  + 'T00:00:00');
       if (ate)           params.set('ate', ate + 'T23:59:59');
@@ -561,6 +584,7 @@
       if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
       if (busca)         params.set('busca', busca);
       if (sCF)           params.set('status_cf', sCF);
+      if (semOS)         params.set('tem_corrida', 'nao');
       if (slaFiltro)     params.set('sla', slaFiltro);
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/nfs-lista?' + params);
@@ -753,15 +777,19 @@
           { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
           { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
           // [cf-canc-v1] EM_TRANSITO nunca existiu — o CF chama de 'NAO ENTREGUE'.
-          { label: 'Em trânsito', val: contadores['NAO ENTREGUE'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'NAO ENTREGUE' },
+          { label: 'Em trânsito', val: contadores['EM_TRANSITO'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'NAO ENTREGUE' },
           { label: 'Entregue', val: contadores['ENTREGUE'] || 0, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
           { label: 'Canceladas', val: contadores['CANCELADO'] || 0, bg: 'bg-red-50', txt: 'text-red-800', icon: '🗄️', filter: 'ARQUIVADO' },
-          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-red-50', txt: 'text-red-800', icon: '⚠️', filter: null },
+          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-gray-50', txt: 'text-gray-700', icon: '⚠️', filter: '__SEM_OS__' },
         ].map(({ label, val, bg, txt, icon, filter }) =>
           h('div', {
             key: label,
-            onClick: filter !== null ? () => { setStatusCF(filter); carregar(0, filter); } : undefined,
-            className: `${bg} rounded-2xl p-3 ${filter !== null ? 'cursor-pointer hover:opacity-80' : ''} ${statusCF === filter && filter !== null ? 'ring-2 ring-purple-400' : ''}`,
+            // [cf-fixes-v2] '__SEM_OS__' e filtro sintetico: manda tem_corrida=nao.
+            onClick: filter !== null ? () => {
+              if (filter === '__SEM_OS__') { setStatusCF(''); setSemCorrida(true); carregar(0, '', true); }
+              else { setSemCorrida(false); setStatusCF(filter); carregar(0, filter, false); }
+            } : undefined,
+            className: `${bg} rounded-2xl p-3 ${filter !== null ? 'cursor-pointer hover:opacity-80' : ''} ${((filter === '__SEM_OS__' && semCorrida) || (statusCF === filter && filter !== null && filter !== '__SEM_OS__')) ? 'ring-2 ring-purple-400' : ''}`,
           },
             h('p', { className: 'text-xs text-gray-500 mb-1' }, icon + ' ' + label),
             h('p', { className: `text-xl font-semibold ${txt}` }, val)
