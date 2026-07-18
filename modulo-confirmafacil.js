@@ -29,7 +29,9 @@
     if (H * 60 + Mi > 16 * 60 + 30) inicioMs = brtParaInstante(Y, Mo, D, 8, 0) + 24 * 3600 * 1000; // 08:00 do dia seguinte
     else inicioMs = criado.getTime();
     const deadlineMs = inicioMs + 2 * 3600 * 1000;
-    const entregue = ['ENTREGUE', 'CANCELADO', 'DEVOLVIDO'].includes(statusCf);
+    // [cf-canc-v1] 'CANCELADO' nunca existiu no CF; nota cancelada e ARQUIVADO.
+    // Aqui 'entregue' significa "sai da contagem de SLA" — cancelada tem que sair.
+    const entregue = ['ENTREGUE', 'ARQUIVADO', 'DEVOLVIDO'].includes(statusCf);
     const agora = Date.now();
     let status;
     if (entregue) status = 'entregue';
@@ -69,13 +71,20 @@
   }
 
   // ─── Badges ─────────────────────────────────────────────────
+  // [cf-canc-v1] Vocabulario REAL do CF, medido em 20.347 NFs. statusEmbarque.nome
+  // so assume 4 valores: ENTREGUE, A_EMBARCAR, NAO ENTREGUE, ARQUIVADO.
+  //   'NAO ENTREGUE' = em transito (stage=EM_TRANSITO, 163 NFs) — voo normal.
+  //   'ARQUIVADO'    = nota cancelada/arquivada (stage=CANCELADAS, 45 NFs).
+  // 'CANCELADO' e 'EM_TRANSITO' NUNCA existiram — eram chute. Removidos.
+  // REENTREGA e DEVOLVIDO nao vem do CF: sao escritos por nos, no
+  // confirmafacil.service.js (Cod. 19/26 -> REENTREGA, Cod. 52 -> DEVOLVIDO).
   const STATUS_CF_MAP = {
     'A_EMBARCAR':     ['bg-amber-100 text-amber-800',  '📦 A embarcar'],
-    'EM_TRANSITO':    ['bg-blue-100 text-blue-800',    '🚚 Em trânsito'],
+    'NAO ENTREGUE':   ['bg-blue-100 text-blue-800',    '🚚 Em trânsito'],
     'ENTREGUE':       ['bg-green-100 text-green-800',  '✅ Entregue'],
     'REENTREGA':      ['bg-orange-100 text-orange-800','🔄 Reentrega'],
     'DEVOLVIDO':      ['bg-red-100 text-red-800',      '↩️ Devolvido'],
-    'CANCELADO':      ['bg-red-100 text-red-800',      '❌ Cancelado'],
+    'ARQUIVADO':      ['bg-red-100 text-red-800',      '🗄️ Cancelada'],
     'DESCONHECIDO':   ['bg-gray-100 text-gray-600',    '❓ Desconhecido'],
   };
 
@@ -525,11 +534,12 @@
               className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
               h('option', { value: '' }, 'Todos'),
               h('option', { value: 'A_EMBARCAR' }, '📦 A embarcar'),
-              h('option', { value: 'EM_TRANSITO' }, '🚚 Em trânsito'),
+              h('option', { value: 'NAO ENTREGUE' }, '🚚 Em trânsito'),
               h('option', { value: 'ENTREGUE' }, '✅ Entregue'),
               h('option', { value: 'REENTREGA' }, '🔄 Reentrega'),
               h('option', { value: 'DEVOLVIDO' }, '↩️ Devolvido'),
-              h('option', { value: 'CANCELADO' }, '❌ Cancelado'),
+              // [cf-canc-v1] ARQUIVADO = cancelada (era 'CANCELADO', que nao existe)
+              h('option', { value: 'ARQUIVADO' }, '🗄️ Cancelada'),
             )
           ),
           h('div', null,
@@ -617,9 +627,10 @@
         [
           { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
           { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
-          { label: 'Em trânsito', val: contadores['EM_TRANSITO'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'EM_TRANSITO' },
+          // [cf-canc-v1] EM_TRANSITO nunca existiu — o CF chama de 'NAO ENTREGUE'.
+          { label: 'Em trânsito', val: contadores['NAO ENTREGUE'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'NAO ENTREGUE' },
           { label: 'Entregue', val: contadores['ENTREGUE'] || 0, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
-          { label: 'Reentrega', val: contadores['REENTREGA'] || 0, bg: 'bg-orange-50', txt: 'text-orange-800', icon: '🔄', filter: 'REENTREGA' },
+          { label: 'Canceladas', val: contadores['CANCELADO'] || 0, bg: 'bg-red-50', txt: 'text-red-800', icon: '🗄️', filter: 'ARQUIVADO' },
           { label: 'Sem corrida', val: totalSemOS, bg: 'bg-red-50', txt: 'text-red-800', icon: '⚠️', filter: null },
         ].map(({ label, val, bg, txt, icon, filter }) =>
           h('div', {
