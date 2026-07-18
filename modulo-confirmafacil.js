@@ -1276,23 +1276,50 @@
         if (!cv) return;
         if (cv._chart) { cv._chart.destroy(); }
         const pts = modo === 'semanal' ? agregarSemanal(f.serie) : f.serie.map((d) => ({ ...d, label: d.dia.slice(8, 10) }));
+        // [cf-sla-melhorias-v1] cada ponto = um dia real. SEM tension (a curva
+        // suavizada inventava vales entre pontos — parecia queda pra 0 que nao
+        // existia). Ponto visivel em cada dia + tooltip com data completa.
+        const nomesMes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+        const fmtDia = (iso) => {
+          if (!iso) return '';
+          const p = String(iso).split('-'); // YYYY-MM-DD
+          return Number(p[2]) + ' ' + (nomesMes[Number(p[1]) - 1] || '');
+        };
         cv._chart = new Chart(cv, {
           type: 'line',
           data: {
             labels: pts.map((p) => p.label),
             datasets: [
-              { data: pts.map((p) => p.pct), borderColor: '#1baf7a', backgroundColor: 'rgba(27,175,122,0.08)',
-                borderWidth: 2, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, spanGaps: true },
+              { data: pts.map((p) => p.pct), borderColor: '#1baf7a', backgroundColor: 'rgba(27,175,122,0.10)',
+                borderWidth: 2, fill: true, tension: 0,
+                pointRadius: pts.map((p) => p.pct == null ? 0 : 3),
+                pointHoverRadius: 6, pointBackgroundColor: '#1baf7a', pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                spanGaps: true },
               { data: pts.map(() => f.meta), borderColor: '#9ca3af', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
             ],
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: {
-              label: (c) => c.datasetIndex === 0 ? (c.parsed.y != null ? c.parsed.y + '% no prazo' : 'sem dados') : 'meta ' + f.meta + '%' } } },
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip: {
+              displayColors: false, padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 },
+              callbacks: {
+                title: (items) => {
+                  const i = items[0].dataIndex;
+                  const p = pts[i];
+                  return modo === 'semanal' ? ('Semana de ' + fmtDia(p.dia)) : fmtDia(p.dia);
+                },
+                label: (c) => {
+                  if (c.datasetIndex !== 0) return 'meta ' + f.meta + '%';
+                  const p = pts[c.dataIndex];
+                  if (p.pct == null) return 'sem entregas';
+                  const fin = p.no_prazo + p.estourada;
+                  return p.pct + '% no prazo (' + p.no_prazo + '/' + fin + ')';
+                },
+              } } },
             scales: {
               y: { min: 80, max: 101, ticks: { callback: (v) => v + '%', font: { size: 10 }, color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.15)' } },
-              x: { ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: true, maxTicksLimit: 10 }, grid: { display: false } },
+              x: { ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: true, maxTicksLimit: modo === 'semanal' ? 8 : 16 }, grid: { display: false } },
             },
           },
         });
@@ -1366,17 +1393,27 @@
     const [loading, setLoading] = useState(true);
     const [, setTick]           = useState(0);
     const [vista, setVista]     = useState('diario'); // [cf-sla-historico-v1] diario | historico
+    // [cf-sla-melhorias-v1] dia do painel diario (vazio = hoje). Permite ver dias passados.
+    const _hojeBRT = () => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
+    const [dataDia, setDataDia] = useState('');
 
     async function carregar() {
       try {
-        const r = await fetchAuth(API_URL + '/confirmafacil/sla-painel');
+        const dia = dataDia || '';
+        const url = API_URL + '/confirmafacil/sla-painel' + (dia ? '?data=' + encodeURIComponent(dia) : '');
+        const r = await fetchAuth(url);
         const j = await r.json();
         setData(j);
       } catch (e) {
         if (showToast) showToast('Erro ao carregar painel de SLA', 'erro');
       } finally { setLoading(false); }
     }
-    useEffect(() => { carregar(); const id = setInterval(carregar, 60000); return () => clearInterval(id); }, []);
+    // recarrega quando muda o dia; auto-refresh (60s) so quando e HOJE (dia vazio)
+    useEffect(() => {
+      carregar();
+      if (dataDia) return; // dia fixo no passado: nao fica atualizando
+      const id = setInterval(carregar, 60000); return () => clearInterval(id);
+    }, [dataDia]);
     useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(id); }, []);
 
     async function testarAlerta() {
@@ -1463,8 +1500,18 @@
         vista === 'diario' && h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
       ),
       vista === 'diario'
-        ? h('div', { className: 'space-y-1' },
-            h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'Meta diária por filial · risco a ≤15 min · SLA do ConfirmaFácil · alerta automático no WhatsApp'),
+        ? h('div', { className: 'space-y-2' },
+            // [cf-sla-melhorias-v1] seletor de dia — ver dias passados
+            h('div', { className: 'flex items-center gap-2 flex-wrap' },
+              h('input', { type: 'date', value: dataDia || _hojeBRT(), max: _hojeBRT(),
+                onChange: (e) => setDataDia(e.target.value === _hojeBRT() ? '' : e.target.value),
+                className: 'border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
+              dataDia
+                ? h('button', { onClick: () => setDataDia(''),
+                    className: 'text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100' }, '↩ Voltar pra hoje')
+                : h('span', { className: 'text-[11px] text-green-600 flex items-center gap-1' }, '● ao vivo (atualiza a cada 1 min)')
+            ),
+            h('div', { className: 'text-[11px] text-gray-400' }, 'Meta diária por filial · risco a ≤15 min · SLA do ConfirmaFácil · alerta automático no WhatsApp'),
             painel, lista
           )
         : h(HistoricoSLA, { fetchAuth, API_URL, showToast })
