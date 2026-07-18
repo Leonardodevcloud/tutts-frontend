@@ -803,8 +803,11 @@
       coleta_lat: embarcador?.coleta_lat || '',
       coleta_lng: embarcador?.coleta_lng || '',
       centro_custo_mapp: embarcador?.centro_custo_mapp || '',
+      // [cf-cat-emb-front-v1] categoria de frete fixa desta filial na Mapp
+      categoria_mapp: embarcador?.categoria_mapp || '',
     });
     const [opcoesCentroCusto, setOpcoesCentroCusto] = useState([]);
+    const [opcoesCategoria, setOpcoesCategoria] = useState([]);
     const [salvando, setSalvando] = useState(false);
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -812,6 +815,9 @@
       if (!clienteId) return;
       fetchAuth(API_URL + '/confirmafacil/centros-custo/' + clienteId)
         .then(r => r.json()).then(d => setOpcoesCentroCusto(d.centros || [])).catch(() => {});
+      // [cf-cat-emb-front-v1] categorias de frete configuradas pro cliente
+      fetchAuth(API_URL + '/confirmafacil/categorias/' + clienteId)
+        .then(r => r.json()).then(d => setOpcoesCategoria(d.categorias || [])).catch(() => {});
     }, [clienteId]);
 
     async function salvar() {
@@ -887,6 +893,26 @@
                 )
               : h('input', { type: 'text', value: form.centro_custo_mapp, onChange: e => set('centro_custo_mapp', e.target.value),
                   placeholder: 'Ex: BR autoparts VTQ', className: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-400' })
+          ),
+          // [cf-cat-emb-front-v1] Categoria (modalidade de frete) fixa desta filial
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' },
+              'Categoria de frete ',
+              h('span', { className: 'text-gray-400 font-normal' }, '— modalidade usada em TODA corrida desta filial')
+            ),
+            opcoesCategoria.length > 0
+              ? h('select', { value: form.categoria_mapp, onChange: e => set('categoria_mapp', e.target.value),
+                  className: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white' },
+                  h('option', { value: '' }, 'Nenhuma (não envia categoria)'),
+                  opcoesCategoria.map(c => h('option', { key: c.sigla, value: c.sigla }, c.sigla + ' — ' + c.nome))
+                )
+              : h('input', { type: 'text', value: form.categoria_mapp, onChange: e => set('categoria_mapp', e.target.value.toUpperCase()),
+                  placeholder: 'Ex: M', className: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-purple-400' }),
+            h('p', { className: 'text-[11px] text-gray-400 mt-1' },
+              opcoesCategoria.length > 0
+                ? 'Vale pro poller automático e pra criação manual de corrida.'
+                : '⚠️ Cliente sem categorias cadastradas — digite a sigla da Mapp (ex: M = Motofrete).'
+            )
           )
         ),
         h('div', { className: 'flex justify-end gap-3 p-5 border-t border-gray-100' },
@@ -996,7 +1022,11 @@
                     h('p', { className: 'font-medium text-sm text-gray-800' }, emb.nome_embarcador || fmtCNPJ(emb.cnpj_embarcador)),
                     h('p', { className: 'text-xs text-gray-500 font-mono' }, fmtCNPJ(emb.cnpj_embarcador)),
                     h('p', { className: 'text-xs text-gray-600 mt-1' }, '📍 ' + ([emb.coleta_rua, emb.coleta_numero, emb.coleta_cidade, emb.coleta_uf].filter(Boolean).join(', ') || '—')),
-                    emb.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 font-mono px-2 py-0.5 rounded mt-1 inline-block' }, emb.centro_custo_mapp)
+                    h('div', { className: 'flex flex-wrap gap-1.5 mt-1' },
+                      emb.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 font-mono px-2 py-0.5 rounded inline-block' }, '💼 ' + emb.centro_custo_mapp),
+                      // [cf-cat-emb-front-v1] categoria fixa da filial
+                      emb.categoria_mapp && h('span', { className: 'text-xs bg-amber-50 text-amber-700 font-mono px-2 py-0.5 rounded inline-block' }, '🏷️ ' + emb.categoria_mapp)
+                    )
                   ),
                   h('div', { className: 'flex gap-2' },
                     h('button', { onClick: () => setModalEmb(emb), className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300' }, '✏️'),
