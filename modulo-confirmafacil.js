@@ -15,7 +15,18 @@
 
   // ─── SLA ConfirmaFácil (2h, BRT, regra das 16:30) ───────────
   const SLA_TZ = 'America/Sao_Paulo';
-  function calcSla(corridaCriadaEm, statusCf) {
+  // [cf-sla-prev-v1] O CF ja entrega o deadline pronto em data_previsao
+  // (= dataEmissao + 2h, com a regra "apos 16:30 -> proximo DIA UTIL as 10:00",
+  // que pula fim de semana E feriado). Medido: 37/45 notas com exatamente
+  // 120 min entre emissao e previsao.
+  //
+  // Quando vier, ela MANDA. O calculo local (ancorado na criacao da corrida,
+  // com date+1 em dia corrido) fica so de fallback: ele ignora feriado e
+  // desconta a nossa propria latencia de despacho do SLA do cliente.
+  //
+  // FUSO: data_previsao chega como naive em hora de parede BRT. Montamos o
+  // instante via brtParaInstante, igual ao resto do arquivo.
+  function calcSla(corridaCriadaEm, statusCf, dataPrevisaoCf) {
     if (!corridaCriadaEm) return null;
     const criado = new Date(corridaCriadaEm);
     if (isNaN(criado.getTime())) return null;
@@ -28,7 +39,21 @@
     let inicioMs;
     if (H * 60 + Mi > 16 * 60 + 30) inicioMs = brtParaInstante(Y, Mo, D, 8, 0) + 24 * 3600 * 1000; // 08:00 do dia seguinte
     else inicioMs = criado.getTime();
-    const deadlineMs = inicioMs + 2 * 3600 * 1000;
+    let deadlineMs = inicioMs + 2 * 3600 * 1000;
+
+    // [cf-sla-prev-v1] previsao do CF manda sobre o calculo local
+    if (dataPrevisaoCf) {
+      const m = String(dataPrevisaoCf).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+      if (m) {
+        const dl = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + 3, +m[5], 0); // parede BRT -> instante
+        if (!isNaN(dl)) {
+          deadlineMs = dl;
+          // Marco zero coerente: 2h antes do prazo do CF. Sem isso o chip
+          // 'agendado' usaria a criacao da corrida e brigaria com o deadline.
+          inicioMs = dl - 2 * 3600 * 1000;
+        }
+      }
+    }
     // [cf-canc-v1] 'CANCELADO' nunca existiu no CF; nota cancelada e ARQUIVADO.
     // Aqui 'entregue' significa "sai da contagem de SLA" — cancelada tem que sair.
     const entregue = ['ENTREGUE', 'ARQUIVADO', 'DEVOLVIDO'].includes(statusCf);
@@ -56,7 +81,7 @@
     entregue:  ['bg-gray-100 text-gray-500', false],
   };
   function slaChipEl(v) {
-    const s = calcSla(v.corrida_criada_em, v.status_cf);
+    const s = calcSla(v.corrida_criada_em, v.status_cf, v.data_previsao);
     if (!s) return null;
     if (s.status === 'entregue') return null; // SLA encerrado: não polui a lista
     const [cls, pulse] = SLA_VIS[s.status] || ['bg-gray-100 text-gray-500', false];
