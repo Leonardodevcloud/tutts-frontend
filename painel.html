@@ -513,6 +513,9 @@
       telBloco='<div class="ent">'+av+'<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div><div class="tel">'+esc(e.entregador_telefone||'')+'</div></div><div class="acts">'+acts+'</div></div>';
     } else { telBloco='<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>'; }
     var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
+    // [hub-codigos-front-v1] codigo de entrega (so quando existe) e de devolucao (destaque laranja)
+    var dropoff=e.dropoff_code?'<span class="codigo">Codigo de entrega '+esc(e.dropoff_code)+'</span>':'';
+    var devol=e.return_code?'<span class="codigo" style="color:#c2410c;background:#fff7ed;border:1px solid #fed7aa">\u21a9\uFE0F Codigo de devolucao '+esc(e.return_code)+'</span>':'';
     var podeRastrear=!!e.rastreio_token;
     var btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
     // REDESPACHO_LOJA_V1 - so ate a coleta.
@@ -534,8 +537,9 @@
       + '<div class="cli">Cliente: '+esc(e.cliente_nome_regra||'-')+'</div>'
       + '<div class="rota">'
       +   '<div class="pt"><span class="pin" style="background:#f59e0b"></span><div style="min-width:0"><div class="lab">Coleta</div><div class="end">'+esc(e.endereco_coleta||'-')+'</div>'+pickup+'</div></div>'
-      +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div>'+chipsHTML(e)+'</div></div>'
+      +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div>'+chipsHTML(e)+dropoff+'</div></div>'
       + '</div>'
+      + (devol?'<div style="margin-top:6px">'+devol+'</div>':'')
       + telBloco
       + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
       + trilhaHTML(e.codigo_os)

@@ -1708,6 +1708,8 @@
                     profissional_foto:     m.foto     || c.profissional_foto     || null,
                     profissional_telefone: m.telefone || c.profissional_telefone || null,
                     profissional_placa:    m.placa    || c.profissional_placa    || null,
+                    // [hub-codigos-front-v1] preserva os codigos do hub pro card exibir
+                    hub_codigos:           c.hub.codigos || null,
                 };
             };
             const carregarConcluidas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=100`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); setCorridasConcluidas((data.solicitacoes || []).filter(s => ['finalizado', 'cancelado'].includes(s.status))); } } catch (err) {} };
@@ -3413,6 +3415,20 @@
                                                                 <span className="text-green-600">🏷️ {detalheCorrida.pontos[1].numero_nota}</span>
                                                             )}
                                                         </div>
+                                                        {/* [hub-codigos-front-v1] codigos de verificacao do Hub (99/Uber) */}
+                                                        {detalheCorrida.hub_codigos && (detalheCorrida.hub_codigos.coleta || detalheCorrida.hub_codigos.entrega || detalheCorrida.hub_codigos.devolucao) && (
+                                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                                {detalheCorrida.hub_codigos.coleta && (
+                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-0.5">📦 Coleta: <b className="tracking-widest">{detalheCorrida.hub_codigos.coleta}</b></span>
+                                                                )}
+                                                                {detalheCorrida.hub_codigos.entrega && (
+                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-0.5">📍 Entrega: <b className="tracking-widest">{detalheCorrida.hub_codigos.entrega}</b></span>
+                                                                )}
+                                                                {detalheCorrida.hub_codigos.devolucao && (
+                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-700 bg-orange-50 border border-orange-300 rounded px-2 py-0.5">↩️ Devolução: <b className="tracking-widest">{detalheCorrida.hub_codigos.devolucao}</b></span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     
                                                     {/* Botões de ação no canto direito */}

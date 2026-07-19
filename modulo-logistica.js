@@ -1016,8 +1016,25 @@
             e.nota_fiscal && h('span', {
               className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded px-2 py-0.5',
             }, '🧾 NF ', e.nota_fiscal),
-          )
+          ),
+          // [hub-codigos-front-v1] codigo de ENTREGA (dropoff). So aparece se a
+          // verificacao de entrega estiver ligada no provider; senao fica oculto
+          // (nao mostra 'aguardando' pra nao poluir quando e desligado de proposito).
+          e.dropoff_code && CodigoBadge('Código de entrega', e.dropoff_code)
         ),
+      ),
+
+      // [hub-codigos-front-v1] codigo de DEVOLUCAO — destaque, so aparece quando
+      // existe (evento raro; a corrida foi devolvida). Faixa laranja pra chamar atencao.
+      e.return_code && h('div', { className: 'mt-3 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2' },
+        h('span', { className: 'text-base' }, '↩️'),
+        h('span', { className: 'text-[10px] uppercase tracking-wider text-orange-500 font-semibold' }, 'Código de devolução'),
+        h('span', {
+          onClick: () => { try { navigator.clipboard.writeText(String(e.return_code)); } catch (_) {} },
+          title: 'Clique para copiar',
+          className: 'text-base font-bold tracking-widest text-orange-800 cursor-pointer'
+        }, String(e.return_code)),
+        h('span', { className: 'text-[10px] text-orange-400' }, '📋')
       ),
 
       // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
