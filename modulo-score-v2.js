@@ -63,28 +63,21 @@
     function AbaAproveitamento({ fetchApi, showToast }) {
         const [configs, setConfigs] = useState([]);
         const [regiaoSel, setRegiaoSel] = useState('');
-        const [dados, setDados] = useState(null);
-        const [loading, setLoading] = useState(false);
-        // 🆕 2026-07: data de referência (fim da janela de 7 dias). '' = últimos 7 dias (hoje).
-        const [dataRef, setDataRef] = useState('');
+        const [motoboys, setMotoboys] = useState([]);
+        const [sel, setSel] = useState(null); // motoboy selecionado
+        const [corridas, setCorridas] = useState([]);
+        const [loadingMb, setLoadingMb] = useState(false);
+        const [loadingCorr, setLoadingCorr] = useState(false);
+        const [de, setDe] = useState('');   // '' = janela padrao 7 dias
+        const [ate, setAte] = useState(''); // '' = hoje
+        const [ordem, setOrdem] = useState('no_prazo'); // no_prazo | fora | os
 
         const fetchApiRef = useRef(fetchApi);
         const showToastRef = useRef(showToast);
         useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
         useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
-        // Semana ISO 'AAAA-Www' de uma data (mesma régua do backend). Sem data = hoje.
-        const isoSemana = (dateStr) => {
-            const base = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
-            const d = new Date(Date.UTC(base.getFullYear(), base.getMonth(), base.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const semana = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return d.getUTCFullYear() + '-W' + String(semana).padStart(2, '0');
-        };
-
-        // Carrega praças com a regra ativa pro seletor
+        // pracas com a regra ativa pro seletor
         useEffect(() => {
             (async () => {
                 try {
@@ -96,25 +89,56 @@
             })();
         }, []);
 
-        // Carrega alertas: filtra por praça + (opcional) semana da dataRef escolhida.
-        const carregar = useCallback(async (regiao, semanaRef) => {
-            setLoading(true);
+        const qperiodo = useCallback(() => {
+            const p = [];
+            if (de) p.push('de=' + encodeURIComponent(de));
+            if (ate) p.push('ate=' + encodeURIComponent(ate));
+            return p;
+        }, [de, ate]);
+
+        // grid esquerdo: motoboys
+        const carregarMotoboys = useCallback(async (regiao) => {
+            if (!regiao) return;
+            setLoadingMb(true);
             try {
-                const params = [];
-                if (regiao) params.push('regiao=' + encodeURIComponent(regiao));
-                if (semanaRef) params.push('semana=' + encodeURIComponent(semanaRef));
-                const q = params.length ? ('?' + params.join('&')) : '';
-                const r = await fetchApiRef.current('/score-v2/admin/alertas-aproveitamento' + q);
-                setDados(r || { alertas: [], total: 0 });
+                const p = ['regiao=' + encodeURIComponent(regiao)].concat(qperiodoRef.current());
+                const r = await fetchApiRef.current('/score-v2/admin/corridas-motoboys?' + p.join('&'));
+                setMotoboys((r && r.motoboys) || []);
             } catch (err) {
                 showToastRef.current('❌ ' + err.message, 'error');
-            } finally { setLoading(false); }
+                setMotoboys([]);
+            } finally { setLoadingMb(false); }
         }, []);
 
-        // Recarrega sempre que praça ou dataRef muda (dataRef vazio = semana atual)
+        // grid direito: corridas do motoboy
+        const carregarCorridas = useCallback(async (codProf) => {
+            if (!codProf) { setCorridas([]); return; }
+            setLoadingCorr(true);
+            try {
+                const p = qperiodoRef.current();
+                const q = p.length ? ('?' + p.join('&')) : '';
+                const r = await fetchApiRef.current('/score-v2/admin/corridas-motoboy/' + codProf + q);
+                setCorridas((r && r.corridas) || []);
+            } catch (err) {
+                showToastRef.current('❌ ' + err.message, 'error');
+                setCorridas([]);
+            } finally { setLoadingCorr(false); }
+        }, []);
+
+        // refs estaveis pra usar dentro dos callbacks sem recriar
+        const qperiodoRef = useRef(qperiodo);
+        useEffect(() => { qperiodoRef.current = qperiodo; }, [qperiodo]);
+
+        // recarrega motoboys quando praca ou periodo muda
         useEffect(() => {
-            if (regiaoSel) carregar(regiaoSel, dataRef ? isoSemana(dataRef) : null);
-        }, [regiaoSel, dataRef, carregar]);
+            if (regiaoSel) carregarMotoboys(regiaoSel);
+            setSel(null); setCorridas([]);
+        }, [regiaoSel, de, ate, carregarMotoboys]);
+
+        // recarrega corridas quando muda o selecionado ou o periodo
+        useEffect(() => {
+            if (sel) carregarCorridas(sel.cod_prof);
+        }, [sel, de, ate, carregarCorridas]);
 
         if (configs.length === 0) {
             return h('div', { className: 'max-w-2xl mx-auto p-6 text-center' },
@@ -126,105 +150,157 @@
             );
         }
 
-        const alertas = dados?.alertas || [];
-        const reincidentes = alertas.filter(a => (a.semanas_consecutivas || 1) >= 2).length;
-        const naoVistos = alertas.filter(a => !a.visto_em).length;
-
-        const badgeSemanas = (n) => {
-            n = n || 1;
-            const cor = n >= 2 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800';
-            const txt = n === 1 ? '1ª semana' : (n + 'ª semana seguida');
-            return h('span', { className: 'text-[11px] px-2 py-0.5 rounded-full ' + cor }, txt);
-        };
-        const iniciais = (nome) => (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-
-        // Dispara a análise. Se dataRef preenchida, reprocessa a janela que TERMINA nela (períodos antigos).
-        const forcarAnalise = async () => {
+        // formata timestamp -> "dd/mm HH:MM"
+        const fmt = (v) => {
+            if (!v) return '—';
             try {
-                const body = dataRef ? { data_ref: dataRef } : {};
-                showToastRef.current(dataRef ? ('⏳ Analisando janela até ' + dataRef + '...') : '⏳ Analisando últimos 7 dias...', 'info');
-                const r = await fetchApiRef.current('/score-v2/admin/avaliar-aproveitamento', { method: 'POST', body: JSON.stringify(body) });
-                showToastRef.current('✅ ' + (r?.mensagem || 'Análise concluída'), 'success');
-                carregar(regiaoSel, dataRef ? isoSemana(dataRef) : null);
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+                const d = new Date(v);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mi = String(d.getMinutes()).padStart(2, '0');
+                return dd + '/' + mm + ' ' + hh + ':' + mi;
+            } catch (_) { return '—'; }
         };
 
-        // 🆕 2026-07: período explícito (início → fim) pra ficar claro o que está sendo analisado.
-        const _fmtBR = (d) => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
-        const _fimJanela = dataRef ? new Date(dataRef + 'T00:00:00') : new Date();
-        const _iniJanela = new Date(_fimJanela); _iniJanela.setDate(_iniJanela.getDate() - 6);
-        const periodoTexto = _fmtBR(_iniJanela) + ' a ' + _fmtBR(_fimJanela) + ' · 7 dias' + (dados?.semana ? (' · ' + dados.semana) : '');
+        const corPct = (pct) => {
+            if (pct == null) return 'text-gray-400';
+            if (pct < 50) return 'text-red-600';
+            if (pct < 80) return 'text-amber-600';
+            return 'text-green-600';
+        };
 
-        return h('div', { className: 'max-w-4xl mx-auto p-4 md:p-6 space-y-4' },
-            h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
-                h('div', null,
-                    h('h3', { className: 'text-base font-bold text-gray-900' }, '📉 Aproveitamento semanal'),
-                    h('p', { className: 'text-xs text-gray-500' }, 'Período analisado: ' + periodoTexto)
-                ),
+        // ordena as corridas conforme o toggle
+        const rank = { no_prazo: 0, fora: 1, sem_dados: 2 };
+        const corridasOrd = [].concat(corridas).sort((a, b) => {
+            if (ordem === 'os') return (b.os || 0) - (a.os || 0);
+            const ra = rank[a.status] != null ? rank[a.status] : 3;
+            const rb = rank[b.status] != null ? rank[b.status] : 3;
+            if (ordem === 'fora') {
+                // fora primeiro: inverte no_prazo<->fora
+                const fa = a.status === 'fora' ? 0 : (a.status === 'no_prazo' ? 1 : 2);
+                const fb = b.status === 'fora' ? 0 : (b.status === 'no_prazo' ? 1 : 2);
+                return fa - fb;
+            }
+            return ra - rb; // no_prazo primeiro (default)
+        });
+
+        const badgePrazo = (st) => {
+            if (st === 'no_prazo') return h('span', { className: 'text-[10px] bg-green-50 text-green-700 rounded px-2 py-0.5 font-semibold' }, 'no prazo');
+            if (st === 'fora') return h('span', { className: 'text-[10px] bg-red-50 text-red-700 rounded px-2 py-0.5 font-semibold' }, 'fora');
+            return h('span', { className: 'text-[10px] bg-gray-100 text-gray-500 rounded px-2 py-0.5' }, 's/ dados');
+        };
+
+        const btnOrdem = (val, label) => h('button', {
+            onClick: () => setOrdem(val),
+            className: 'text-[11px] rounded px-2.5 py-1 ' + (ordem === val
+                ? 'bg-purple-100 text-purple-700 font-semibold'
+                : 'border border-gray-300 text-gray-600 hover:bg-gray-50')
+        }, label);
+
+        return h('div', { className: 'max-w-full mx-auto p-4' },
+            // cabecalho: praca + periodo
+            h('div', { className: 'flex items-center gap-2 mb-3 flex-wrap' },
+                h('span', { className: 'text-base font-semibold text-gray-800' }, '📊 Corridas por motoboy'),
                 h('select', {
-                    value: regiaoSel, onChange: e => setRegiaoSel(e.target.value),
-                    className: 'px-3 py-2 border border-gray-300 rounded-lg text-sm'
-                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + ' (mín. ' + (c.pct_min_aproveitamento || 95) + '%)')))
-            ),
-
-            // 🆕 Barra de reprocessamento (períodos antigos)
-            h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-end gap-3 flex-wrap' },
-                h('div', null,
-                    h('label', { className: 'text-[11px] text-purple-700 font-medium block mb-1' }, 'Fim da janela (deixe vazio = hoje)'),
+                    value: regiaoSel,
+                    onChange: (e) => setRegiaoSel(e.target.value),
+                    className: 'text-sm border border-gray-300 rounded-lg px-2 py-1'
+                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao))),
+                h('div', { className: 'ml-auto flex items-center gap-2' },
+                    h('span', { className: 'text-xs text-gray-500' }, 'De:'),
                     h('input', {
-                        type: 'date', value: dataRef, max: new Date().toISOString().slice(0, 10),
-                        onChange: e => setDataRef(e.target.value),
-                        className: 'px-3 py-1.5 border border-purple-200 rounded-lg text-sm'
-                    })
-                ),
-                dataRef && h('button', {
-                    onClick: () => setDataRef(''),
-                    className: 'px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-white'
-                }, 'Voltar pra hoje'),
-                h('div', { className: 'flex-1' }),
-                h('button', {
-                    onClick: forcarAnalise,
-                    className: 'px-3 py-2 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700'
-                }, dataRef ? '🔄 Reprocessar essa semana' : '🔄 Analisar últimos 7 dias')
-            ),
-
-            h('div', { className: 'grid grid-cols-3 gap-3' },
-                h('div', { className: 'bg-white rounded-lg border border-gray-200 p-3 text-center' },
-                    h('p', { className: 'text-xs text-gray-500' }, 'Sinalizados'),
-                    h('p', { className: 'text-2xl font-bold text-gray-900' }, alertas.length)
-                ),
-                h('div', { className: 'bg-red-50 rounded-lg border border-red-100 p-3 text-center' },
-                    h('p', { className: 'text-xs text-red-700' }, 'Reincidentes (2+)'),
-                    h('p', { className: 'text-2xl font-bold text-red-800' }, reincidentes)
-                ),
-                h('div', { className: 'bg-amber-50 rounded-lg border border-amber-100 p-3 text-center' },
-                    h('p', { className: 'text-xs text-amber-700' }, 'Aviso não visto'),
-                    h('p', { className: 'text-2xl font-bold text-amber-800' }, naoVistos)
+                        type: 'date', value: de, max: ate || undefined,
+                        onChange: (e) => setDe(e.target.value),
+                        className: 'text-xs border border-gray-300 rounded px-2 py-1'
+                    }),
+                    h('span', { className: 'text-xs text-gray-500' }, 'até:'),
+                    h('input', {
+                        type: 'date', value: ate,
+                        onChange: (e) => setAte(e.target.value),
+                        className: 'text-xs border border-gray-300 rounded px-2 py-1'
+                    }),
+                    (de || ate) && h('button', {
+                        onClick: () => { setDe(''); setAte(''); },
+                        className: 'text-xs text-purple-600 hover:underline'
+                    }, '↺ 7 dias')
                 )
             ),
 
-            loading
-                ? h('div', { className: 'text-center text-gray-400 py-8 text-sm' }, '⏳ Carregando...')
-                : alertas.length === 0
-                    ? h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-6 text-center' },
-                        h('p', { className: 'text-3xl mb-1' }, '✅'),
-                        h('p', { className: 'text-sm font-medium text-green-800' }, 'Ninguém abaixo do mínimo nesta semana'))
-                    : h('div', { className: 'space-y-2' }, alertas.map(a =>
-                        h('div', { key: a.cod_prof, className: 'flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-3' },
-                            h('div', { className: 'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ' + ((a.semanas_consecutivas || 1) >= 2 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }, iniciais(a.nome_prof)),
-                            h('div', { className: 'flex-1 min-w-0' },
+            // dois grids
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-3' },
+                // GRID ESQUERDO: motoboys
+                h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+                    h('div', { className: 'px-3 py-2 border-b border-gray-100 text-[11px] uppercase tracking-wide text-gray-400' },
+                        'Motoboys · ' + (regiaoSel || '') + (loadingMb ? ' (carregando...)' : ' · ' + motoboys.length)),
+                    motoboys.length === 0 && !loadingMb
+                        ? h('div', { className: 'p-6 text-center text-xs text-gray-400' }, 'Nenhuma corrida no período')
+                        : motoboys.map(m => {
+                            const ativo = sel && sel.cod_prof === m.cod_prof;
+                            return h('div', {
+                                key: m.cod_prof,
+                                onClick: () => setSel(m),
+                                className: 'px-3 py-2.5 border-b border-gray-100 cursor-pointer ' +
+                                    (ativo ? 'bg-purple-50 border-l-4 border-l-purple-500' : 'hover:bg-gray-50')
+                            },
                                 h('div', { className: 'flex items-center gap-2' },
-                                    h('span', { className: 'text-sm font-semibold text-gray-900 truncate' }, a.nome_prof || a.cod_prof),
-                                    badgeSemanas(a.semanas_consecutivas)
-                                ),
-                                h('p', { className: 'text-xs text-gray-500' }, 'cód ' + a.cod_prof + ' · ' + (a.entregas_prazo || 0) + ' de ' + (a.entregas_total || 0) + ' no prazo')
+                                    h('div', { className: 'min-w-0 flex-1' },
+                                        h('div', { className: 'text-[13px] font-medium text-gray-800 truncate' }, m.nome_prof || ('cód ' + m.cod_prof)),
+                                        h('div', { className: 'text-[10px] text-gray-500' }, 'cód ' + m.cod_prof + ' · ' + m.total + ' corridas')
+                                    ),
+                                    h('span', { className: 'text-[13px] font-semibold ' + corPct(m.pct) },
+                                        m.pct == null ? '—' : (m.pct + '%'))
+                                )
+                            );
+                        })
+                ),
+
+                // GRID DIREITO: corridas
+                h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+                    !sel
+                        ? h('div', { className: 'p-10 text-center text-sm text-gray-400' }, 'Selecione um motoboy à esquerda para ver as corridas')
+                        : h('div', null,
+                            h('div', { className: 'px-3 py-2 border-b border-gray-100 flex items-center gap-2 flex-wrap' },
+                                h('span', { className: 'text-[13px] font-medium text-gray-800' }, sel.nome_prof || ('cód ' + sel.cod_prof)),
+                                h('span', { className: 'text-[11px] text-gray-500' },
+                                    '· ' + sel.total + ' corridas · ' + sel.avaliaveis + ' aval. · ' + (sel.pct == null ? '—' : sel.pct + '%') + ' no prazo'),
+                                h('span', { className: 'ml-auto flex items-center gap-1.5' },
+                                    h('span', { className: 'text-[11px] text-gray-400' }, 'Ordenar:'),
+                                    btnOrdem('no_prazo', 'no prazo ↑'),
+                                    btnOrdem('fora', 'fora ↑'),
+                                    btnOrdem('os', 'OS')
+                                )
                             ),
-                            h('div', { className: 'text-right' },
-                                h('p', { className: 'text-lg font-bold ' + ((a.semanas_consecutivas || 1) >= 2 ? 'text-red-700' : 'text-amber-700') }, (Number(a.pct_prazo) || 0).toFixed(1) + '%'),
-                                h('p', { className: 'text-[11px] ' + (a.visto_em ? 'text-green-600' : 'text-gray-400') }, a.visto_em ? '✓ aviso visto' : '• aviso não visto')
-                            )
+                            loadingCorr
+                                ? h('div', { className: 'p-8 text-center text-xs text-gray-400' }, 'Carregando corridas...')
+                                : h('div', { className: 'overflow-x-auto' },
+                                    h('table', { className: 'w-full text-[11px]' },
+                                        h('thead', null,
+                                            h('tr', { className: 'bg-gray-50 text-gray-400 text-left' },
+                                                h('th', { className: 'px-3 py-1.5 font-medium' }, 'OS'),
+                                                h('th', { className: 'px-3 py-1.5 font-medium' }, 'Criação'),
+                                                h('th', { className: 'px-3 py-1.5 font-medium' }, 'Alocação'),
+                                                h('th', { className: 'px-3 py-1.5 font-medium' }, 'Finalizado'),
+                                                h('th', { className: 'px-3 py-1.5 font-medium text-center' }, 'Prazo')
+                                            )
+                                        ),
+                                        h('tbody', null,
+                                            corridasOrd.map((c, i) => h('tr', {
+                                                key: (c.os || i) + '_' + i,
+                                                className: 'border-t border-gray-100'
+                                            },
+                                                h('td', { className: 'px-3 py-1.5 font-medium text-gray-800' }, c.os || '—'),
+                                                h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.criacao)),
+                                                h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.alocacao)),
+                                                h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.finalizado)),
+                                                h('td', { className: 'px-3 py-1.5 text-center' }, badgePrazo(c.status))
+                                            ))
+                                        )
+                                    )
+                                )
                         )
-                    ))
+                )
+            )
         );
     }
 
