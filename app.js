@@ -861,8 +861,8 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             // Header do sidebar
             React.createElement("div", { className: "p-4 border-b border-white/10 flex items-center justify-between" },
                 React.createElement("div", {className: "flex items-center gap-3"},
-                    socialProfile?.profile_photo ? React.createElement("img", {
-                        src: socialProfile.profile_photo,
+                    (socialProfile?.profile_photo || usuario?.foto_thumb || usuario?.foto) ? React.createElement("img", {
+                        src: socialProfile?.profile_photo || usuario?.foto_thumb || usuario?.foto,
                         className: "w-10 h-10 rounded-full object-cover border-2 border-white/30"
                     }) : React.createElement("div", {
                         className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg"
@@ -9982,8 +9982,8 @@ const hideLoadingScreen = () => {
             className: "max-w-7xl mx-auto px-3 sm:px-4 py-3 flex justify-between items-center gap-2"
         }, React.createElement("div", {className: "flex items-center gap-3"}, 
             // Foto de perfil
-            socialProfile?.profile_photo ? React.createElement("img", {
-                src: socialProfile.profile_photo,
+            (socialProfile?.profile_photo || l?.foto_thumb || l?.foto) ? React.createElement("img", {
+                src: socialProfile?.profile_photo || l?.foto_thumb || l?.foto,
                 className: "w-10 h-10 rounded-full object-cover border-2 border-white/50"
             }) : React.createElement("div", {
                 className: "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/50"
