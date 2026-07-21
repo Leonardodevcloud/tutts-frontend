@@ -291,6 +291,7 @@
                                                 h('th', { className: 'px-3 py-1.5 font-medium' }, 'Criação'),
                                                 h('th', { className: 'px-3 py-1.5 font-medium' }, 'Alocação'),
                                                 h('th', { className: 'px-3 py-1.5 font-medium' }, 'Finalizado'),
+                                                h('th', { className: 'px-3 py-1.5 font-medium text-center' }, 'KM'),
                                                 h('th', { className: 'px-3 py-1.5 font-medium text-center' }, 'Duração'),
                                                 h('th', { className: 'px-3 py-1.5 font-medium text-center' }, 'Prazo')
                                             )
@@ -304,6 +305,7 @@
                                                 h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.criacao)),
                                                 h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.alocacao)),
                                                 h('td', { className: 'px-3 py-1.5 text-gray-500' }, fmt(c.finalizado)),
+                                                h('td', { className: 'px-3 py-1.5 text-center text-gray-500' }, c.distancia != null ? (c.distancia.toFixed(1) + ' km') : '—'),
                                                 h('td', { className: 'px-3 py-1.5 text-center text-gray-600 font-medium' }, fmtDur(c.tempo_prof_min)),
                                                 h('td', { className: 'px-3 py-1.5 text-center' }, badgePrazo(c.status))
                                             ))
