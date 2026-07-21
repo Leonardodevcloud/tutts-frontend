@@ -55,6 +55,21 @@
     );
   }
 
+  // Badge de código de DEVOLUÇÃO (laranja) — só aparece quando a corrida devolveu.
+  // Separado do CodigoBadge (roxo) pra não poluir: devolução é exceção, não padrão.
+  function CodigoBadgeDevol(label, codigo) {
+    if (!codigo) return null;
+    return h('div', {
+      onClick: () => { try { navigator.clipboard.writeText(String(codigo)); } catch (_) {} },
+      title: 'Clique para copiar',
+      className: 'mt-1.5 inline-flex items-center gap-1.5 cursor-pointer bg-orange-50 border border-orange-200 rounded-lg px-2 py-1'
+    },
+      h('span', { className: 'text-[10px] uppercase tracking-wider text-orange-500 font-semibold' }, '↩️ ' + label),
+      h('span', { className: 'text-sm font-bold tracking-widest text-orange-800' }, String(codigo)),
+      h('span', { className: 'text-[10px] text-orange-400' }, '📋')
+    );
+  }
+
   // Labels de status. Duas famílias de chave:
   //  - LEGADAS (snake_case): formato antigo da Uber (enviado_uber, pickup...).
   //  - CANÔNICAS (UPPER): o enum do hub multi-provider (DISPATCHED, PICKED_UP...).
@@ -1003,7 +1018,8 @@
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
           h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_coleta || '—'),
-          CodigoBadge('Código de coleta', e.pickup_code)
+          CodigoBadge('Código de coleta', e.pickup_code),
+          e.return_code && CodigoBadgeDevol('Código de devolução', e.return_code)
         ),
         h('div', null,
           h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
@@ -1016,25 +1032,8 @@
             e.nota_fiscal && h('span', {
               className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded px-2 py-0.5',
             }, '🧾 NF ', e.nota_fiscal),
-          ),
-          // [hub-codigos-front-v1] codigo de ENTREGA (dropoff). So aparece se a
-          // verificacao de entrega estiver ligada no provider; senao fica oculto
-          // (nao mostra 'aguardando' pra nao poluir quando e desligado de proposito).
-          e.dropoff_code && CodigoBadge('Código de entrega', e.dropoff_code)
+          )
         ),
-      ),
-
-      // [hub-codigos-front-v1] codigo de DEVOLUCAO — destaque, so aparece quando
-      // existe (evento raro; a corrida foi devolvida). Faixa laranja pra chamar atencao.
-      e.return_code && h('div', { className: 'mt-3 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2' },
-        h('span', { className: 'text-base' }, '↩️'),
-        h('span', { className: 'text-[10px] uppercase tracking-wider text-orange-500 font-semibold' }, 'Código de devolução'),
-        h('span', {
-          onClick: () => { try { navigator.clipboard.writeText(String(e.return_code)); } catch (_) {} },
-          title: 'Clique para copiar',
-          className: 'text-base font-bold tracking-widest text-orange-800 cursor-pointer'
-        }, String(e.return_code)),
-        h('span', { className: 'text-[10px] text-orange-400' }, '📋')
       ),
 
       // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
@@ -1317,14 +1316,13 @@
   // KANBAN — visão por status (reusa helpers e a mesma lógica do CardEntrega)
   // ════════════════════════════════════════════════════════
   const KANBAN_COLS = [
-    // [hub-falha-alerta-v1] Falhas PRIMEIRO — precisam de atencao imediata.
-    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
     { id: 'aguard',   nome: 'Aguardando entregador', dot: 'bg-purple-500', cnt: 'bg-purple-500' },
     { id: 'coleta',   nome: 'Aguardando coleta',     dot: 'bg-blue-500',   cnt: 'bg-blue-500' },
     { id: 'coletou',  nome: 'Coletou',               dot: 'bg-amber-500',  cnt: 'bg-amber-500' },
     { id: 'entregue', nome: 'Entregue',              dot: 'bg-green-500',  cnt: 'bg-green-500' },
     { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500' },
     { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400' },
+    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
     // EXTRAVIADOS_COL_V1
     { id: 'extraviado', nome: 'Extraviados',         dot: 'bg-pink-500',   cnt: 'bg-pink-500' },
   ];
@@ -1442,6 +1440,7 @@
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Coleta'),
             h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_coleta || '—'),
             CodigoBadge('Código de coleta', e.pickup_code),
+            e.return_code ? CodigoBadgeDevol('Código de devolução', e.return_code) : null,
           )),
         h('div', { className: 'flex gap-2' },
           h('span', { className: 'w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0' }),
@@ -1587,11 +1586,6 @@
     const [entregas, setEntregas] = useState([]);
     const [tentativas, setTentativas] = useState({}); // 🆕 tentativas de despacho por OS
     const [loading, setLoading] = useState(true);
-    // [hub-falha-alerta-v1] fila de falhas novas (nao-cientes) pra alertar o admin.
-    // Guarda os ids ja vistos nesta sessao pra nao reabrir o modal a cada refresh
-    // de 30s enquanto o admin ainda nao confirmou (a confirmacao real e no banco).
-    const [falhaAlerta, setFalhaAlerta] = useState([]); // array de entregas
-    const falhaVistasRef = React.useRef(new Set());
     const [filtroStatus, setFiltroStatus] = useState('');
     const [busca, setBusca] = useState('');
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
@@ -1683,23 +1677,6 @@
         const lista = json.entregas || [];
         setEntregas(lista);
 
-        // [hub-falha-alerta-v1] detecta falhas NOVAS (status falha + sem ciente).
-        // Enfileira as que ainda nao foram confirmadas no banco nem vistas nesta
-        // sessao. O modal abre uma a uma; confirmar grava no banco (vale p/ todos).
-        try {
-          const novasFalhas = lista.filter(e => {
-            const col = colunaDoStatus(e);
-            return col === 'falha' && !e.falha_ciente_em && !falhaVistasRef.current.has(e.id);
-          });
-          if (novasFalhas.length > 0) {
-            novasFalhas.forEach(e => falhaVistasRef.current.add(e.id));
-            setFalhaAlerta(prev => {
-              const idsNaFila = new Set(prev.map(x => x.id));
-              return prev.concat(novasFalhas.filter(e => !idsNaFila.has(e.id)));
-            });
-          }
-        } catch (_) { /* deteccao de falha e best-effort */ }
-
         // 🆕 2026-07: tentativas de despacho por OS (batch) — alimenta a secao
         // "Tentativas de despacho" do card. Nao bloqueia a lista se falhar.
         try {
@@ -1732,15 +1709,6 @@
       const t = setInterval(() => setTickClock(x => x + 1), 1000);
       return () => clearInterval(t);
     }, [cotacaoModal?.state]);
-
-    // [hub-falha-alerta-v1] confirma ciencia da falha atual (primeira da fila).
-    // Grava no banco (vale pra todos os admins) e tira da fila local.
-    async function confirmarFalhaCiente(entrega) {
-      try {
-        await fetchAuth(`${API_URL}/logistics/deliveries/${entrega.id}/falha-ciente`, { method: 'POST' });
-      } catch (_) { /* mesmo se falhar o POST, tira da fila local pra nao travar */ }
-      setFalhaAlerta(prev => prev.filter(x => x.id !== entrega.id));
-    }
 
     // Abre o mini-modal pra pedir o código da OS.
     // Substitui o prompt() nativo do navegador que ficava feio no fluxo.
@@ -2526,64 +2494,6 @@
       ),
 
       // ── Mini-modal pra pedir código da OS (substitui prompt() nativo) ──
-      // [hub-falha-alerta-v1] Modal de alerta de falha. Abre pra primeira falha
-      // nova da fila. NAO fecha ao clicar fora (o admin precisa reconhecer) —
-      // so o botao Confirmar ciente fecha (e grava no banco). Se houver mais de
-      // uma, elas aparecem em sequencia.
-      falhaAlerta.length > 0 && (function () {
-        const f = falhaAlerta[0];
-        const motivo = f.erro_ultimo
-          || (f.provider_code === 'noventanove' ? 'A 99 nao conseguiu entregar (contate o suporte 99)'
-              : 'A entrega falhou no provedor');
-        const dt = f.falhou_em || f.updated_at || f.created_at;
-        const fmtDT = (v) => { try { return new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (_) { return '—'; } };
-        const provLabel = f.provider_code === 'noventanove' ? '99' : (f.provider_code === 'uber' ? 'Uber' : (f.provider_code || '—'));
-        const linha = (rot, val, cls) => h('div', { className: 'flex gap-2' },
-          h('span', { className: 'text-gray-400 flex-shrink-0', style: { minWidth: '64px' } }, rot),
-          h('span', { className: (cls || 'text-gray-700') + ' leading-snug' }, val || '—')
-        );
-        return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4' },
-          h('div', { className: 'bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden' },
-            // cabecalho vermelho
-            h('div', { className: 'bg-red-50 border-b border-red-200 px-5 py-4 flex items-center gap-3' },
-              h('div', { className: 'w-9 h-9 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0' },
-                h('span', { className: 'text-white text-lg' }, '⚠️')
-              ),
-              h('div', null,
-                h('div', { className: 'text-[15px] font-bold text-red-900' }, 'Nova falha na entrega'),
-                h('div', { className: 'text-[11px] text-red-600' }, 'Uma corrida precisa de atenção')
-              )
-            ),
-            // corpo
-            h('div', { className: 'px-5 py-4' },
-              h('div', { className: 'flex items-center justify-between mb-3' },
-                h('span', { className: 'text-base font-bold text-gray-800' }, 'OS ' + (f.codigo_os || f.id)),
-                h('span', { className: 'text-[11px] bg-gray-900 text-white rounded-full px-2.5 py-0.5 font-semibold' }, provLabel)
-              ),
-              h('div', { className: 'flex flex-col gap-2 text-xs' },
-                linha('Cliente', f.cliente_nome_regra || f.cliente_final || '—', 'text-gray-800 font-medium'),
-                linha('Coleta', f.endereco_coleta),
-                linha('Entrega', f.endereco_entrega),
-                linha('Motivo', motivo, 'text-red-700 font-medium'),
-                linha('Falhou às', fmtDT(dt))
-              ),
-              h('div', { className: 'flex gap-2 mt-5' },
-                h('button', {
-                  onClick: () => { setFalhaAlerta(prev => prev.filter(x => x.id !== f.id)); abrirDetalhes(f); },
-                  className: 'flex-1 text-[13px] h-9 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50'
-                }, 'Ver detalhes'),
-                h('button', {
-                  onClick: () => confirmarFalhaCiente(f),
-                  className: 'flex-[1.4] text-[13px] h-9 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-1.5'
-                }, '✓ Confirmar ciente')
-              ),
-              falhaAlerta.length > 1 && h('div', { className: 'text-[10px] text-gray-400 text-center mt-2.5' },
-                'Mais ' + (falhaAlerta.length - 1) + ' falha(s) nova(s) em seguida')
-            )
-          )
-        );
-      })(),
-
       pedirCodigoModal && h('div', {
         className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget) setPedirCodigoModal(null); },
