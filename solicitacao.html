@@ -2530,25 +2530,64 @@
             // Fim = o MAIOR data_finalizado entre os pontos (a ultima entrega).
             // Fontes na mesma ordem de prioridade usada no resto da tela:
             // pontos (detalhe) > pontos_status (historico) > dados_pontos (sync).
+            // ATENCAO (a razao deste codigo ser assim): os dois campos usam
+            // convencoes DIFERENTES no banco.
+            //   criado_em      -> UTC de verdade (CURRENT_TIMESTAMP em servidor UTC)
+            //   data_finalizado -> relogio de PAREDE de Salvador, mas o driver
+            //                      serializa com "Z" no fim. O Z e mentira.
+            // Por isso o formatarHoraPonto extrai os digitos literais (e acerta).
+            // Comparar os dois como instantes dava 3h de erro (o offset UTC-3).
+            // Solucao: converter AMBOS pro relogio de parede da Bahia antes de subtrair.
+
+            // Instante real (UTC) -> relogio de parede da Bahia
+            const paredeDeInstante = (valor) => {
+                const d = new Date(valor);
+                if (isNaN(d.getTime())) return null;
+                try {
+                    const p = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'America/Bahia',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', hour12: false,
+                    }).formatToParts(d);
+                    const g = (tipo) => { const x = p.find(i => i.type === tipo); return x ? Number(x.value) : null; };
+                    const hh = g('hour');
+                    return Date.UTC(g('year'), g('month') - 1, g('day'), hh === 24 ? 0 : hh, g('minute'));
+                } catch (e) { return d.getTime(); }
+            };
+
+            // String com relogio de parede -> os digitos literais (mesma leitura
+            // do formatarHoraPonto, que e o que o usuario ve na tela)
+            const paredeLiteral = (valor) => {
+                if (!valor) return null;
+                const s = valor instanceof Date ? valor.toISOString() : String(valor);
+                const m = s.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/);
+                if (!m) return null;
+                return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+            };
+
             const calcularDuracao = (corrida) => {
                 if (!corrida || !corrida.criado_em) return null;
                 let pts = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
                 if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch (e) { pts = null; } }
                 if (!Array.isArray(pts) || pts.length === 0) return null;
 
+                // fim = a ULTIMA entrega (maior data_finalizado), em parede
                 let fim = null;
                 for (const p of pts) {
                     const df = p && (p.data_finalizado || p.dataFinalizado);
                     if (!df) continue;
-                    const d = new Date(df);
-                    if (isNaN(d.getTime())) continue;
-                    if (!fim || d > fim) fim = d;
+                    const w = paredeLiteral(df);
+                    if (w == null) continue;
+                    if (fim == null || w > fim) fim = w;
                 }
-                if (!fim) return null;
+                if (fim == null) return null;
 
-                const ini = new Date(corrida.criado_em);
-                if (isNaN(ini.getTime())) return null;
-                const min = Math.round((fim.getTime() - ini.getTime()) / 60000);
+                const ini = paredeDeInstante(corrida.criado_em);
+                if (ini == null) return null;
+
+                const min = Math.round((fim - ini) / 60000);
+                // Negativo = as convencoes divergiram de algum jeito inesperado;
+                // melhor mostrar "-" do que um numero errado.
                 return min >= 0 ? min : null;
             };
 
