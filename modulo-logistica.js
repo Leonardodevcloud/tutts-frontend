@@ -4002,8 +4002,8 @@
         className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4',
         onClick: e => { if (e.target === e.currentTarget) setEditando(null); },
       },
-        h('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' },
-          h('div', { className: 'p-5 border-b sticky top-0 bg-white' },
+        h('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto' },
+          h('div', { className: 'p-5 border-b sticky top-0 bg-white z-10' },
             h('h3', { className: 'font-bold text-gray-800' },
               editando.id ? '✏️ Editar regra' : '➕ Nova regra'),
           ),
@@ -4021,29 +4021,32 @@
                 'Nome de exibição do cliente — usado nos cards e no dashboard de margem por cliente.')
             ),
 
-            h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
-              h('input', {
-                type: 'text', value: editando.trecho_endereco || '',
-                onChange: e => up('trecho_endereco', e.target.value),
-                placeholder: 'ex: pernambuco, 1500',
-                className: 'w-full px-3 py-2 border rounded-lg text-sm',
-              }),
-              h('p', { className: 'text-xs text-gray-500 mt-1' },
-                '⚠ A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. ',
-                'Coloque um trecho ÚNICO do endereço do cliente (mínimo 5 caracteres, lowercase, sem acento se possível).')
-            ),
-
-            h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador alternativo (opcional)'),
-              h('input', {
-                type: 'text', value: editando.cliente_identificador || '',
-                onChange: e => up('cliente_identificador', e.target.value),
-                placeholder: 'outro trecho de endereço (alternativa)',
-                className: 'w-full px-3 py-2 border rounded-lg text-sm',
-              }),
-              h('p', { className: 'text-xs text-gray-500 mt-1' },
-                'Segunda opção de match — se este trecho aparecer no endereço de coleta, também casa.')
+            // [regras-modal-v4] os dois trechos de match ficam lado a lado: sao
+            // irmaos (principal + alternativa), e juntos encurtam o modal.
+            h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
+                h('input', {
+                  type: 'text', value: editando.trecho_endereco || '',
+                  onChange: e => up('trecho_endereco', e.target.value),
+                  placeholder: 'ex: pernambuco, 1500',
+                  className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                }),
+                h('p', { className: 'text-xs text-gray-500 mt-1' },
+                  '⚠ A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. ',
+                  'Trecho ÚNICO do endereço (mín. 5 caracteres, lowercase).')
+              ),
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador alternativo (opcional)'),
+                h('input', {
+                  type: 'text', value: editando.cliente_identificador || '',
+                  onChange: e => up('cliente_identificador', e.target.value),
+                  placeholder: 'outro trecho de endereço (alternativa)',
+                  className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                }),
+                h('p', { className: 'text-xs text-gray-500 mt-1' },
+                  'Segunda opção de match — se este trecho aparecer no endereço de coleta, também casa.')
+              ),
             ),
 
             h('div', null,
@@ -4630,7 +4633,9 @@
     // Canal e Provedor saem no CSV junto com Motoboy: o icone do canal mora
     // naquela celula.
     const [cols, setCols] = useState(() => new Set(
-      ['cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido']
+      // [relatorio-data-v4] 'data' entra visivel por padrao (voce pediu data/hora
+      // no relatorio); da pra esconder no seletor de colunas se atrapalhar.
+      ['data', 'cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido']
     ));
     const colVisivel = (id) => cols.has(id);
     const alternarCol = (id) => setCols(prev => {
@@ -4718,8 +4723,22 @@
       passa('status', r.status) && passa('lojas', r.cliente_nome) && casaBusca(r)
     ), [rows, f]);
 
+    // [relatorio-faturaveis-v4] Os CARDS somam so o que FATURA: Entregue e
+    // Devolvido. Cancelado / Nao entregue / Pendente aparecem na tabela (voce
+    // precisa ve-los) mas NAO entram nos totais — senao o faturamento mente.
+    //
+    // EXCECAO: se voce filtrar status especificos, os totais seguem o filtro.
+    // Assim da pra somar so os cancelados quando quiser olhar exatamente isso.
+    const STATUS_FATURAVEIS = ['Entregue', 'Devolvido'];
+    const filtroStatusAtivo = f.status !== null;   // null = "todos"
+    const linhasQueSomam = useMemo(() => (
+      filtroStatusAtivo
+        ? rowsView                                            // segue o filtro
+        : rowsView.filter(c => STATUS_FATURAVEIS.includes(c.status))
+    ), [rowsView, filtroStatusAtivo]);
+
     const totaisView = useMemo(() => {
-      const t = rowsView.reduce((acc, c) => {
+      const t = linhasQueSomam.reduce((acc, c) => {
         acc.corridas += 1;
         if (c.km != null) acc.km += c.km;
         if (c.valor != null) acc.valor += c.valor;
@@ -4737,9 +4756,9 @@
       ['km', 'valor', 'mapp', 'custo', 'liquido', 'cmpHub', 'cmpMapp'].forEach(k => {
         t[k] = Math.round(t[k] * 100) / 100;
       });
-      t.cmpFora = rowsView.filter(c => c.valor != null).length - t.cmpN;
+      t.cmpFora = linhasQueSomam.filter(c => c.valor != null).length - t.cmpN;
       return t;
-    }, [rowsView]);
+    }, [linhasQueSomam]);
 
     // A BASE do % importa: com Hub 1.334 e Mapp 898, "48,5% mais caro" (base
     // Mapp) e "32,7% mais barato" (base Hub) sao a MESMA diferenca. O card
@@ -4847,6 +4866,36 @@
       { id: 'os', rot: 'OS', fixa: true,
         tdCls: 'px-3 py-2 font-semibold text-gray-700',
         cel: (r) => r.os, csv: (r) => r.os },
+      // [relatorio-data-v4] Data/hora da corrida. Na tela vai compacto
+      // (dd/mm HH:MM); no CSV sai em DUAS colunas (Data e Hora) pra facilitar
+      // filtro e tabela dinamica no Excel.
+      { id: 'data', rot: 'Data/Hora',
+        tdCls: 'px-3 py-2 text-gray-500 whitespace-nowrap text-[11px]',
+        cel: (r) => {
+          if (!r.data) return '—';
+          try {
+            const d = new Date(r.data);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            return dd + '/' + mm + ' ' + hh + ':' + mi;
+          } catch (_) { return '—'; }
+        },
+        csvRot: ['Data', 'Hora'],
+        csv: (r) => {
+          if (!r.data) return ['', ''];
+          try {
+            const d = new Date(r.data);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const aa = d.getFullYear();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return [dd + '/' + mm + '/' + aa, hh + ':' + mi + ':' + ss];
+          } catch (_) { return ['', '']; }
+        } },
       { id: 'cliente', rot: 'Cliente',
         tdCls: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
         // o title mostra de onde veio o nome (regra / endereco / solicitacao)
@@ -5000,7 +5049,19 @@
       // Totais do que esta VISIVEL (ja filtrado), nao os do backend — senao
       // ignorariam os filtros de tela e nao bateriam com a tabela.
       totais && h('div', { className: 'grid grid-cols-4 gap-3' },
-        card('Corridas', totaisView.corridas),
+        // [relatorio-faturaveis-v4] o subtitulo explica por que a contagem do
+        // card pode ser menor que a da tabela (nao-faturaveis nao somam).
+        card('Corridas', totaisView.corridas,
+          null,
+          filtroStatusAtivo
+            ? 'seguindo o filtro de status'
+            : (rowsView.length > linhasQueSomam.length
+                ? `${rowsView.length - linhasQueSomam.length} nao faturavel(is) fora da conta`
+                : null),
+          null,
+          filtroStatusAtivo
+            ? 'Voce filtrou status, entao os totais seguem o filtro.'
+            : 'Os totais somam apenas Entregue e Devolvido. Cancelado / Nao entregue / Pendente aparecem na tabela mas nao entram no faturamento.'),
         card('KM total', km(totaisView.km)),
         h('div', { className: 'rounded-xl border p-3 bg-purple-50 border-purple-200' },
           h('div', { className: 'text-[11px] text-purple-500' }, 'Valor do Hub'),
