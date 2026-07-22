@@ -4866,9 +4866,19 @@
         cel: (r) => statusBadge(r.status), csv: (r) => r.status || '' },
       { id: 'km', rot: 'KM', num: true, tdCls: 'px-3 py-2 text-right whitespace-nowrap',
         cel: (r) => km(r.km), csv: (r) => r.km != null ? String(r.km).replace('.', ',') : '' },
+      // [relatorio-retorno-v1] O valor ja vem do backend COM o adicional de
+      // devolucao somado. O marcador discreto + tooltip mostram quanto foi do
+      // retorno, sem precisar de coluna nova (mesma tecnica do '~' do Custo).
       { id: 'valor', rot: 'Valor Hub', num: true,
         tdCls: 'px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap',
-        cel: (r) => brl(r.valor), csvRot: ['Valor Hub (R$)'], csv: (r) => nb(r.valor) },
+        tdProps: (r) => ({ title: r.adicional_retorno
+          ? `Inclui R$ ${nb(r.adicional_retorno)} de adicional por devolução`
+          : '' }),
+        cel: (r) => [brl(r.valor), r.adicional_retorno
+          ? h('span', { key: 'ret', className: 'text-orange-400 ml-0.5', title: 'com adicional de devolução' }, '↩')
+          : null],
+        csvRot: ['Valor Hub (R$)', 'Adicional Retorno (R$)'],
+        csv: (r) => [nb(r.valor), r.adicional_retorno ? nb(r.adicional_retorno) : ''] },
       { id: 'mapp', rot: 'Valor Mapp', num: true,
         tdCls: 'px-3 py-2 text-right text-gray-500 whitespace-nowrap',
         cel: (r) => brl(r.valor_mapp), csvRot: ['Valor Mapp (R$)'], csv: (r) => nb(r.valor_mapp) },
