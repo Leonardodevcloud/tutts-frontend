@@ -2522,6 +2522,48 @@
             const statusPontoNomes = { pendente: 'Pendente', chegou: 'Chegou', coletado: 'Coletado', finalizado: 'Finalizado' };
             const statusPontoIcons = { pendente: '⚪', chegou: '🔵', coletado: '🟡', finalizado: '✅' };
             
+            // [duracao-corrida-v1] Duracao TOTAL da corrida: da criacao da
+            // solicitacao ate a entrega do ULTIMO ponto. Funciona igual pra
+            // corrida normal e pra que saiu pelo Hub (99/Uber), porque a
+            // sincronizacao preenche data_finalizado nos pontos nos dois casos.
+            //
+            // Fim = o MAIOR data_finalizado entre os pontos (a ultima entrega).
+            // Fontes na mesma ordem de prioridade usada no resto da tela:
+            // pontos (detalhe) > pontos_status (historico) > dados_pontos (sync).
+            const calcularDuracao = (corrida) => {
+                if (!corrida || !corrida.criado_em) return null;
+                let pts = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
+                if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch (e) { pts = null; } }
+                if (!Array.isArray(pts) || pts.length === 0) return null;
+
+                let fim = null;
+                for (const p of pts) {
+                    const df = p && (p.data_finalizado || p.dataFinalizado);
+                    if (!df) continue;
+                    const d = new Date(df);
+                    if (isNaN(d.getTime())) continue;
+                    if (!fim || d > fim) fim = d;
+                }
+                if (!fim) return null;
+
+                const ini = new Date(corrida.criado_em);
+                if (isNaN(ini.getTime())) return null;
+                const min = Math.round((fim.getTime() - ini.getTime()) / 60000);
+                return min >= 0 ? min : null;
+            };
+
+            // Minutos -> "47min" / "1h 05" / "1d 2h" (corridas agendadas podem passar de 24h)
+            const formatarDuracao = (min) => {
+                if (min == null) return null;
+                if (min < 60) return min + 'min';
+                if (min < 1440) {
+                    const h = Math.floor(min / 60), r = min % 60;
+                    return h + 'h' + (r > 0 ? ' ' + String(r).padStart(2, '0') : '');
+                }
+                const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60);
+                return d + 'd' + (h > 0 ? ' ' + h + 'h' : '');
+            };
+
             const formatarData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             const formatarHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }) : '';
             // Extrai HH:MM DIRETO da string, sem passar por new Date().
@@ -3684,7 +3726,7 @@
                                         </tr></thead>
                                         <tbody>
                                             {relatorio.corridas.length === 0 ? (
-                                                <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
+                                                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
                                             ) : relatorio.corridas.map((r, i) => (
                                                 <tr key={r.os + '-' + i} className="border-t border-gray-100 align-top">
                                                     <td className="px-3 py-2 font-semibold text-gray-700">{r.os}</td>
@@ -3764,7 +3806,7 @@
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-2 py-2 text-center font-medium text-gray-600 w-12">Foto</th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Nota</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th></tr></thead>
+                                            <thead className="bg-gray-50"><tr><th className="px-2 py-2 text-center font-medium text-gray-600 w-10"></th><th className="px-2 py-2 text-center font-medium text-gray-600 w-12">Foto</th><th className="px-3 py-2 text-left font-medium text-gray-600">OS</th><th className="px-3 py-2 text-left font-medium text-gray-600">Nota</th><th className="px-3 py-2 text-left font-medium text-gray-600">Status</th><th className="px-3 py-2 text-left font-medium text-gray-600">Data</th><th className="px-3 py-2 text-left font-medium text-gray-600">Profissional</th><th className="px-3 py-2 text-center font-medium text-gray-600">Pontos</th><th className="px-3 py-2 text-left font-medium text-gray-600">Distância</th><th className="px-3 py-2 text-left font-medium text-gray-600">Duração</th></tr></thead>
                                             <tbody className="divide-y">
                                                 {corridasConcluidas.filter(c => filtroConcluidas === 'todas' || (filtroConcluidas === 'finalizadas' && c.status === 'finalizado') || (filtroConcluidas === 'canceladas' && c.status === 'cancelado')).map(c => {
                                                     // Verificar se tem retorno
@@ -3809,11 +3851,17 @@
                                                                 <td className="px-3 py-3">{c.profissional_nome || <span className="text-gray-400">-</span>}</td>
                                                                 <td className="px-3 py-3 text-center">{c.total_pontos || '-'}</td>
                                                                 <td className="px-3 py-3">{c.tutts_distancia ? `${c.tutts_distancia} km` : '-'}</td>
+                                                                <td className="px-3 py-3 text-gray-600">{(() => {
+                                                                    const _dur = formatarDuracao(calcularDuracao(c));
+                                                                    return _dur
+                                                                        ? <span className="font-medium" title="Da solicitação até a última entrega">{_dur}</span>
+                                                                        : <span className="text-gray-400">-</span>;
+                                                                })()}</td>
                                                             </tr>
                                                             {/* Linha expandida com detalhes */}
                                                             {corridaExpandida === c.id && (
                                                                 <tr>
-                                                                    <td colSpan="9" className="px-4 py-4 bg-gray-50">
+                                                                    <td colSpan="10" className="px-4 py-4 bg-gray-50">
                                                                         {!detalhesCorridaExpandida ? (
                                                                             <div className="text-center py-4"><span className="animate-pulse">⏳ Carregando detalhes...</span></div>
                                                                         ) : (
