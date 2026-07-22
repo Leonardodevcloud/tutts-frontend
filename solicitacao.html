@@ -2548,23 +2548,30 @@
 
             const calcularDuracao = (corrida) => {
                 if (!corrida || !corrida.criado_em) return null;
-                let pts = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
-                if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch (e) { pts = null; } }
-                if (!Array.isArray(pts) || pts.length === 0) return null;
-
                 const ini = paraInstanteUTC(corrida.criado_em);
                 if (ini == null) return null;
 
-                // fim = a ULTIMA entrega. Ignora timestamps anteriores a criacao:
-                // alguns pontos intermediarios sao gravados com o relogio de
-                // parede do sistema externo (convencao diferente), e entrariam
-                // como "3h antes" — nao servem de fim, e o MAX ja os descarta.
                 let fim = null;
-                for (const p of pts) {
-                    const ms = paraInstanteUTC(p && (p.data_finalizado || p.dataFinalizado));
-                    if (ms == null || ms < ini) continue;
+                const considerar = (v) => {
+                    const ms = paraInstanteUTC(v);
+                    if (ms == null || ms < ini) return;   // anterior a criacao = convencao errada
                     if (fim == null || ms > fim) fim = ms;
+                };
+
+                // 1) Pontos da solicitacao (corrida normal, motoboy da casa)
+                let pts = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
+                if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch (e) { pts = null; } }
+                if (Array.isArray(pts)) {
+                    for (const p of pts) considerar(p && (p.data_finalizado || p.dataFinalizado));
                 }
+
+                // 2) [duracao-hub-v1] Corrida despachada pro Hub (99/Uber): quem
+                // finaliza e o webhook do provedor, entao os pontos da solicitacao
+                // costumam ficar sem data_finalizado e a duracao vinha "-".
+                // Os marcos do Hub (TIMESTAMPTZ, ja com fuso) cobrem esse caso.
+                const th = corrida.hub && corrida.hub.tempos;
+                if (th) { considerar(th.entregue); considerar(th.finalizado); }
+
                 if (fim == null) return null;
 
                 const min = Math.round((fim - ini) / 60000);
@@ -3741,11 +3748,12 @@
                                             <th className="px-3 py-2 font-semibold">Motoboy</th>
                                             <th className="px-3 py-2 font-semibold">Status</th>
                                             <th className="px-3 py-2 font-semibold text-right">KM</th>
+                                            <th className="px-3 py-2 font-semibold text-right">Duração</th>
                                             <th className="px-3 py-2 font-semibold text-right">Valor</th>
                                         </tr></thead>
                                         <tbody>
                                             {relatorio.corridas.length === 0 ? (
-                                                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
+                                                <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">Nenhuma corrida no período</td></tr>
                                             ) : relatorio.corridas.map((r, i) => (
                                                 <tr key={r.os + '-' + i} className="border-t border-gray-100 align-top">
                                                     <td className="px-3 py-2 font-semibold text-gray-700">{r.os}</td>
@@ -3766,6 +3774,9 @@
                                                         })()}
                                                     </td>
                                                     <td className="px-3 py-2 text-right whitespace-nowrap">{r.km == null ? '—' : Number(r.km).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}</td>
+                                                    {/* [relatorio-duracao-v1] duracao vem calculada do backend (duracao_min),
+                                                        entao tela e CSV batem sempre */}
+                                                    <td className="px-3 py-2 text-right whitespace-nowrap text-gray-600">{formatarDuracao(r.duracao_min) || '—'}</td>
                                                     <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">{r.valor == null ? '—' : Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                                 </tr>
                                             ))}
