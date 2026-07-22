@@ -1315,14 +1315,16 @@
   // ════════════════════════════════════════════════════════
   // KANBAN — visão por status (reusa helpers e a mesma lógica do CardEntrega)
   // ════════════════════════════════════════════════════════
+  // [hub-falha-alerta-v2] Falhas em PRIMEIRO lugar: e a coluna que exige acao
+  // imediata do admin. As demais seguem o fluxo natural da corrida.
   const KANBAN_COLS = [
+    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
     { id: 'aguard',   nome: 'Aguardando entregador', dot: 'bg-purple-500', cnt: 'bg-purple-500' },
     { id: 'coleta',   nome: 'Aguardando coleta',     dot: 'bg-blue-500',   cnt: 'bg-blue-500' },
     { id: 'coletou',  nome: 'Coletou',               dot: 'bg-amber-500',  cnt: 'bg-amber-500' },
     { id: 'entregue', nome: 'Entregue',              dot: 'bg-green-500',  cnt: 'bg-green-500' },
     { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500' },
     { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400' },
-    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
     // EXTRAVIADOS_COL_V1
     { id: 'extraviado', nome: 'Extraviados',         dot: 'bg-pink-500',   cnt: 'bg-pink-500' },
   ];
@@ -1585,6 +1587,11 @@
   function TabEntregas({ API_URL, fetchAuth, showToast, setEstado }) {
     const [entregas, setEntregas] = useState([]);
     const [tentativas, setTentativas] = useState({}); // 🆕 tentativas de despacho por OS
+    // [hub-falha-alerta-v2] alerta de falha nova. falhaAlerta = a entrega a exibir
+    // no modal; falhaVistasRef guarda os ids ja mostrados nesta sessao (evita
+    // reabrir o mesmo modal a cada refresh da lista).
+    const [falhaAlerta, setFalhaAlerta] = useState(null);
+    const falhaVistasRef = useRef(new Set());
     const [loading, setLoading] = useState(true);
     const [filtroStatus, setFiltroStatus] = useState('');
     const [busca, setBusca] = useState('');
@@ -1676,6 +1683,23 @@
         const json = await res.json();
         const lista = json.entregas || [];
         setEntregas(lista);
+
+        // [hub-falha-alerta-v2] Detecta falha NOVA que ninguem confirmou ainda.
+        // Regra: esta na coluna 'falha' E falha_ciente_em vazio. O ciente e
+        // gravado no banco, entao quando um admin confirma, silencia pra TODOS.
+        // falhaVistasRef evita reabrir o modal a cada refresh nesta sessao.
+        try {
+          const novas = (lista || []).filter(e =>
+            colunaDoStatus(e) === 'falha' &&
+            !e.falha_ciente_em &&
+            !falhaVistasRef.current.has(e.id)
+          );
+          if (novas.length > 0) {
+            const alvo = novas[0];
+            falhaVistasRef.current.add(alvo.id);
+            setFalhaAlerta({ entrega: alvo, restantes: novas.length - 1 });
+          }
+        } catch (_) { /* deteccao nunca quebra a lista */ }
 
         // 🆕 2026-07: tentativas de despacho por OS (batch) — alimenta a secao
         // "Tentativas de despacho" do card. Nao bloqueia a lista se falhar.
@@ -2052,6 +2076,27 @@
     }
 
     // Detalhes: abre modal com tracking points + webhooks + info completa
+    // [hub-falha-alerta-v2] Confirma que o admin viu a falha. Grava no banco
+    // (falha_ciente_em/por), entao silencia o alerta pra TODOS os admins e
+    // registra QUEM confirmou. O botao so fecha o modal — nao mexe na corrida.
+    async function confirmarFalhaCiente(entrega) {
+      if (!entrega || !entrega.id) { setFalhaAlerta(null); return; }
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/${entrega.id}/falha-ciente`, {
+          method: 'POST',
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        // atualiza local pra nao reaparecer antes do proximo refresh
+        setEntregas(prev => (prev || []).map(e =>
+          e.id === entrega.id ? { ...e, falha_ciente_em: new Date().toISOString() } : e
+        ));
+      } catch (err) {
+        showToast('Nao consegui registrar o ciente: ' + err.message, 'error');
+      } finally {
+        setFalhaAlerta(null);
+      }
+    }
+
     async function abrirDetalhes(e) {
       setDetalhesAberto({ entrega: e, tracking: [], webhooks: [], loading: true });
       try {
@@ -2340,6 +2385,79 @@
                 showToast,
               }))
             ),
+
+      // ── [hub-falha-alerta-v2] Modal de alerta de falha nova ──
+      // Aparece uma vez por falha (o ciente e gravado no banco). Mostra o
+      // essencial pro admin decidir: OS, cliente, enderecos, motivo do erro.
+      falhaAlerta && h('div', {
+        className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4',
+        onClick: (ev) => { if (ev.target === ev.currentTarget) setFalhaAlerta(null); }
+      },
+        h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden' },
+          // cabecalho vermelho
+          h('div', { className: 'bg-red-50 border-b border-red-100 px-5 py-4 flex items-center gap-3' },
+            h('div', { className: 'w-9 h-9 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0' },
+              h('span', { className: 'text-white text-lg font-bold' }, '!')
+            ),
+            h('div', null,
+              h('p', { className: 'text-[15px] font-bold text-red-800' }, 'Nova falha na entrega'),
+              h('p', { className: 'text-[12px] text-red-500' }, 'Uma corrida precisa de atenção')
+            )
+          ),
+          // corpo
+          h('div', { className: 'px-5 py-4 space-y-3' },
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { className: 'text-[17px] font-bold text-gray-900' }, 'OS ' + (falhaAlerta.entrega.codigo_os || '—')),
+              falhaAlerta.entrega.provider_code && h('span', {
+                className: 'ml-auto text-[10px] font-bold text-white bg-gray-800 rounded-full px-2 py-0.5'
+              }, falhaAlerta.entrega.provider_code === 'noventanove' ? '99' : falhaAlerta.entrega.provider_code)
+            ),
+            h('div', { className: 'space-y-2 text-[12px]' },
+              falhaAlerta.entrega.cliente_nome_regra && h('div', { className: 'flex gap-2' },
+                h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Cliente'),
+                h('span', { className: 'text-gray-800 font-semibold' }, falhaAlerta.entrega.cliente_nome_regra)
+              ),
+              h('div', { className: 'flex gap-2' },
+                h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Coleta'),
+                h('span', { className: 'text-gray-700' }, falhaAlerta.entrega.endereco_coleta || '—')
+              ),
+              h('div', { className: 'flex gap-2' },
+                h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Entrega'),
+                h('span', { className: 'text-gray-700' }, falhaAlerta.entrega.endereco_entrega || '—')
+              ),
+              falhaAlerta.entrega.erro_ultimo && h('div', { className: 'flex gap-2' },
+                h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Motivo'),
+                h('span', { className: 'text-red-600 font-medium' }, falhaAlerta.entrega.erro_ultimo)
+              ),
+              falhaAlerta.entrega.updated_at && h('div', { className: 'flex gap-2' },
+                h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Falhou às'),
+                h('span', { className: 'text-gray-600' }, (() => {
+                  try {
+                    const d = new Date(falhaAlerta.entrega.updated_at);
+                    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' +
+                           String(d.getFullYear()).slice(2) + ', ' +
+                           String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                  } catch (_) { return '—'; }
+                })())
+              )
+            )
+          ),
+          // rodape: acoes
+          h('div', { className: 'px-5 pb-5 flex gap-2' },
+            h('button', {
+              onClick: () => { const alvo = falhaAlerta.entrega; setFalhaAlerta(null); abrirDetalhes(alvo); },
+              className: 'flex-1 text-[13px] font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50'
+            }, 'Ver detalhes'),
+            h('button', {
+              onClick: () => confirmarFalhaCiente(falhaAlerta.entrega),
+              className: 'flex-1 text-[13px] font-semibold text-white bg-red-600 rounded-lg py-2.5 hover:bg-red-700'
+            }, '✓ Confirmar ciente')
+          ),
+          falhaAlerta.restantes > 0 && h('p', {
+            className: 'text-center text-[11px] text-gray-400 pb-4 -mt-2'
+          }, 'Mais ' + falhaAlerta.restantes + ' falha(s) nova(s) em seguida')
+        )
+      ),
 
       // ── Modal de detalhes ──
       detalhesAberto && h(ModalDetalhesEntrega, {
