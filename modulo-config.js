@@ -2141,12 +2141,20 @@
                     // [provedor-tutts-opcional-v1] Qualquer provedor pode ser
                     // marcado/desmarcado, INCLUSIVE o Tutts. A unica regra: nao
                     // pode ficar zero — sem provedor o cliente nao despacha nada.
-                    var atual = mp.selecionados || ['tutts'];
-                    var novo = atual.includes(code)
-                        ? atual.filter(function(c) { return c !== code; })
-                        : [...atual, code];
-                    if (novo.length === 0) return; // ignora o clique que zeraria
-                    x({...p, modalProvedores: {...mp, selecionados: novo}});
+                    //
+                    // Usa a forma FUNCIONAL do setState: le sempre o estado mais
+                    // recente. Com o objeto capturado no render, dois cliques
+                    // seguidos podiam partir de uma lista velha e perder a
+                    // selecao anterior.
+                    x(function(prev) {
+                        var base = (prev && prev.modalProvedores) ? prev.modalProvedores : mp;
+                        var atual = Array.isArray(base.selecionados) ? base.selecionados : ['tutts'];
+                        var novo = atual.includes(code)
+                            ? atual.filter(function(c) { return c !== code; })
+                            : atual.concat([code]);
+                        if (novo.length === 0) return prev;   // ignora o clique que zeraria
+                        return {...prev, modalProvedores: {...base, selecionados: novo}};
+                    });
                 };
                 var salvar = async function() {
                     x({...p, modalProvedores: {...mp, salvando: true}});
@@ -2196,7 +2204,11 @@
                                     key: prov.code,
                                     onClick: function() { toggle(prov.code); },
                                     className: "flex items-center justify-between p-3 border rounded-xl transition-colors " +
-                                        ((prov.fixo || ehUltimo) ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
+                                        // [provedor-tutts-opcional-v1] O ultimo selecionado continua
+                                        // com cara de ATIVO (roxo) — so nao deixa desmarcar. Antes ele
+                                        // ficava cinza e parecia desabilitado, mesmo estando marcado.
+                                        (prov.fixo ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
+                                        ehUltimo ? "bg-purple-50 border-purple-200 cursor-not-allowed" :
                                         ativo ? "bg-purple-50 border-purple-200 cursor-pointer" :
                                         "bg-gray-50 border-gray-200 cursor-pointer hover:bg-gray-100")
                                 },
