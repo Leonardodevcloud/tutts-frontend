@@ -3876,6 +3876,8 @@
         preco_valor_fixo: editando.preco_valor_fixo === '' ? null : parseFloat(editando.preco_valor_fixo || ''),
         preco_km_base: editando.preco_km_base === '' ? null : parseFloat(editando.preco_km_base || ''),
         preco_valor_km_adicional: editando.preco_valor_km_adicional === '' ? null : parseFloat(editando.preco_valor_km_adicional || ''),
+        // [preco-retorno-v1] adicional fixo cobrado quando a corrida vira devolução
+        preco_retorno_valor: editando.preco_retorno_valor === '' ? null : parseFloat(editando.preco_retorno_valor || ''),
         ativo: !!editando.ativo,
         alterar_valor_mapp_ativo: editando.alterar_valor_mapp_ativo !== false,
         nome_remetente: (editando.nome_remetente || '').trim(),
@@ -4105,6 +4107,22 @@
               ),
               h('p', { className: 'text-[11px] text-purple-600' },
                 'Deixe todos em branco pra usar a tabela padrão global. Se preenchido, substitui o padrão inteiramente pra este cliente.'),
+
+              // [preco-retorno-v1] Adicional cobrado quando a corrida vira devolução.
+              // Fica separado da tabela por distância: é um valor fixo, aplicado
+              // só se a entrega retornar — não entra no cálculo por km.
+              h('div', { className: 'mt-3 pt-3 border-t border-purple-200 flex items-start gap-3' },
+                h('div', { className: 'flex-shrink-0 w-44' },
+                  h('label', { className: 'block text-xs text-purple-700 mb-1' }, '↩️ Adicional por retorno (R$)'),
+                  h('input', { type: 'number', step: '0.5', min: '0',
+                    value: editando.preco_retorno_valor ?? '',
+                    onChange: e => up('preco_retorno_valor', e.target.value),
+                    placeholder: 'ex: 8,00',
+                    className: 'w-full px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                ),
+                h('p', { className: 'text-[11px] text-purple-600 pt-6' },
+                  'Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.'),
+              ),
             ),
 
             h('div', { className: 'flex items-center gap-6 pt-2 border-t' },
