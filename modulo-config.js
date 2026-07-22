@@ -2130,17 +2130,22 @@
             p.modalProvedores && (function() {
                 var mp = p.modalProvedores;
                 var PROVEDORES = [
-                    {code: "tutts", nome: "Tutts",      desc: "provedor padrão — sempre ativo", fixo: true},
+                    // [provedor-tutts-opcional-v1] O Tutts deixou de ser fixo. Ha
+                    // operacoes que usam SO o Hub — forcar o Tutts fazia o portal
+                    // do cliente abrir sempre com ele selecionado.
+                    {code: "tutts", nome: "Tutts",      desc: "frota propria da plataforma",   fixo: false},
                     {code: "uber",  nome: "Uber Flash",  desc: "entregas expressas via Uber",    fixo: false},
                     {code: "99",    nome: "99 Moto",     desc: "entregas via 99",                fixo: false}
                 ];
                 var toggle = function(code) {
-                    if (code === "tutts") return; // não pode desmarcar tutts
+                    // [provedor-tutts-opcional-v1] Qualquer provedor pode ser
+                    // marcado/desmarcado, INCLUSIVE o Tutts. A unica regra: nao
+                    // pode ficar zero — sem provedor o cliente nao despacha nada.
                     var atual = mp.selecionados || ['tutts'];
                     var novo = atual.includes(code)
                         ? atual.filter(function(c) { return c !== code; })
                         : [...atual, code];
-                    if (!novo.includes("tutts")) novo = ["tutts", ...novo];
+                    if (novo.length === 0) return; // ignora o clique que zeraria
                     x({...p, modalProvedores: {...mp, selecionados: novo}});
                 };
                 var salvar = async function() {
@@ -2185,11 +2190,13 @@
                         React.createElement("div", {className: "px-5 py-4 space-y-2"},
                             PROVEDORES.map(function(prov) {
                                 var ativo = (mp.selecionados || ['tutts']).includes(prov.code);
+                                // ultimo ativo: nao da pra desmarcar (ficaria sem provedor)
+                                var ehUltimo = ativo && (mp.selecionados || ['tutts']).length === 1;
                                 return React.createElement("div", {
                                     key: prov.code,
                                     onClick: function() { toggle(prov.code); },
                                     className: "flex items-center justify-between p-3 border rounded-xl transition-colors " +
-                                        (prov.fixo ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
+                                        ((prov.fixo || ehUltimo) ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
                                         ativo ? "bg-purple-50 border-purple-200 cursor-pointer" :
                                         "bg-gray-50 border-gray-200 cursor-pointer hover:bg-gray-100")
                                 },
