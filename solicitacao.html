@@ -1305,6 +1305,10 @@
                 }));
             };
             
+            // [cotacao-hub-v1] modal de cotacao (so corridas do Hub).
+            // null = fechado. { dados, recotando, mudanca } = aberto.
+            const [cotacao, setCotacao] = useState(null);
+
             const [config, setConfig] = useState({
                 numero_pedido: '', centro_custo: cliente.centro_custo_padrao || '', usuario_solicitante: cliente.nome,
                 data_retirada: '', hora_retirada: '', agendar: false, forma_pagamento: cliente.forma_pagamento_padrao || 'F',
@@ -1312,7 +1316,19 @@
                 codigo_profissional: '',
                 sem_profissional: false,
                 categoria: '',
-                provider: 'tutts'
+                // [provedor-fix-v1] O default sai do que o cliente TEM habilitado,
+                // nao 'tutts' fixo. Operacao que so usa Hub abria com Tutts
+                // selecionado (e o cliente tinha que trocar toda vez).
+                // Regra: se so ha uma opcao, ela e o default; com as duas,
+                // mantem Tutts (o comportamento historico).
+                provider: (() => {
+                    const _h = cliente.provedores_habilitados || ['tutts'];
+                    const _temTutts = _h.includes('tutts');
+                    const _temHub = _h.includes('uber') || _h.includes('99');
+                    if (_temTutts && _temHub) return 'tutts';   // as duas: Tutts primeiro
+                    if (_temHub) return 'hub';                  // so Hub
+                    return 'tutts';                             // so Tutts (ou vazio)
+                })()
             });
             
             useEffect(() => { if (abaAtiva === 'nova' || abaAtiva === 'acompanhar') setMapaKey(prev => prev + 1); }, [abaAtiva, corridaSelecionada]);
@@ -2424,7 +2440,24 @@
             const removerPartidaPadrao = async () => { try { await fetch(`${API_URL}/api/solicitacao/configuracoes`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ endereco_partida_padrao: null, limpar_endereco_padrao: true }) }); setCliente(prev => ({...prev, endereco_partida_padrao: null})); showToast('Padrão removido', 'success'); } catch {} };
             const limpar = () => { if (cliente.endereco_partida_padrao) setPontos([{ id: Date.now(), ...cliente.endereco_partida_padrao, isPartida: true }]); else setPontos([]); setSugestoes([]); setTermoBusca(''); setPontoRecemAdicionado(null); setNotaRapida(''); setPromptAjuste({ aberto: false, pontoId: null }); };
             
-            const enviarSolicitacao = async () => {
+            // [cotacao-hub-v1] Pede a cotacao ao backend. Nada e criado aqui.
+            // Retorna o objeto da cotacao, ou null se nao deu pra cotar (sem
+            // tabela de preco, sem provedor, erro) — nesses casos o fluxo segue
+            // normal, sem modal, como era antes.
+            const pedirCotacao = async () => {
+                try {
+                    const resp = await fetch(`${API_URL}/api/solicitacao/cotar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ pontos }),
+                    });
+                    if (!resp.ok) return null;
+                    const d = await resp.json();
+                    return d && d.cotou ? d : null;
+                } catch (e) { return null; }
+            };
+
+            const enviarSolicitacao = async (opts = {}) => {
                 if (pontos.length < 2) { showToast('Mínimo 2 pontos', 'error'); return; }
                 if (config.ordenar && pontos.length > 20) { showToast('Ordenação: máx 20 pts', 'warning'); return; }
                 // Categoria obrigatória quando o cliente tem modalidades configuradas
@@ -2438,7 +2471,17 @@
                 }
                 setPontoRecemAdicionado(null);
                 setNotaRapida('');
-                
+
+                // [cotacao-hub-v1] Corrida do Hub: mostra a cotacao ANTES de criar.
+                // opts.jaCotado = veio do botao "Confirmar" do modal, entao segue.
+                if (config.provider === 'hub' && !opts.jaCotado) {
+                    setLoading(true);
+                    const c = await pedirCotacao();
+                    setLoading(false);
+                    // Sem cotacao (sem tabela/provedor/erro) -> segue como antes.
+                    if (c) { setCotacao({ dados: c, recotando: false, mudanca: null }); return; }
+                }
+
                 setLoading(true);
                 try {
                     // Só envia data_retirada se o toggle "Agendar" estiver ativo E ambos os campos preenchidos.
@@ -4129,6 +4172,105 @@
                     )}
                     
                     {/* ========== DRAWER: QUICK-ACCESS ENDEREÇOS SALVOS (aba Nova) ========== */}
+                    {/* [cotacao-hub-v1] Modal de cotacao — so aparece em corrida do Hub
+                        e so quando o backend conseguiu cotar. O valor mostrado e o do
+                        CLIENTE (tabela preco_hub), nunca o custo do provedor. */}
+                    {cotacao && (
+                        <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-[60] px-3"
+                             onClick={(e) => { if (e.target === e.currentTarget && !cotacao.recotando) setCotacao(null); }}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                                {cotacao.mudanca ? (
+                                    // ── o provedor recotou diferente na confirmacao ──
+                                    <>
+                                        <div className="px-5 py-4 bg-amber-50 border-b border-amber-100">
+                                            <p className="text-[15px] font-bold text-amber-800">⚠️ O valor mudou</p>
+                                            <p className="text-[12px] text-amber-600">O provedor recotou no momento do envio</p>
+                                        </div>
+                                        <div className="px-5 py-5 text-center">
+                                            <div className="flex items-center justify-center gap-3">
+                                                <span className="text-lg text-gray-400 line-through">R$ {cotacao.mudanca.de.toFixed(2).replace('.', ',')}</span>
+                                                <span className="text-gray-300">→</span>
+                                                <span className="text-2xl font-bold text-gray-900">R$ {cotacao.mudanca.para.toFixed(2).replace('.', ',')}</span>
+                                            </div>
+                                            <p className={"text-[12px] mt-1 " + (cotacao.mudanca.para > cotacao.mudanca.de ? "text-red-600" : "text-green-600")}>
+                                                {cotacao.mudanca.para > cotacao.mudanca.de ? '+' : ''}
+                                                R$ {(cotacao.mudanca.para - cotacao.mudanca.de).toFixed(2).replace('.', ',')}
+                                            </p>
+                                        </div>
+                                        <div className="px-5 pb-5 flex gap-2">
+                                            <button onClick={() => setCotacao(null)}
+                                                className="flex-1 text-[13px] font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50">
+                                                Cancelar
+                                            </button>
+                                            <button onClick={() => { setCotacao(null); enviarSolicitacao({ jaCotado: true }); }}
+                                                className="flex-1 text-[13px] font-semibold text-white bg-purple-600 rounded-lg py-2.5 hover:bg-purple-700">
+                                                Solicitar por R$ {cotacao.mudanca.para.toFixed(2).replace('.', ',')}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    // ── cotacao inicial ──
+                                    <>
+                                        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                                            <p className="text-[15px] font-bold text-gray-800">💰 Cotação da corrida</p>
+                                            {!cotacao.recotando && (
+                                                <button onClick={() => setCotacao(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+                                            )}
+                                        </div>
+                                        <div className="px-5 py-4">
+                                            <div className="text-[11px] space-y-1 mb-4">
+                                                <div className="flex items-start gap-1.5"><span className="text-purple-500 leading-4">●</span><span className="text-gray-600">{(pontos[0] && (pontos[0].endereco_completo || pontos[0].rua)) || '—'}</span></div>
+                                                <div className="flex items-start gap-1.5"><span className="text-orange-500 leading-4">▼</span><span className="text-gray-700">{(pontos[pontos.length-1] && (pontos[pontos.length-1].endereco_completo || pontos[pontos.length-1].rua)) || '—'}</span></div>
+                                            </div>
+                                            <div className="bg-purple-50 border border-purple-100 rounded-xl py-4 text-center mb-3">
+                                                <p className="text-3xl font-bold text-purple-700">R$ {Number(cotacao.dados.valor).toFixed(2).replace('.', ',')}</p>
+                                                <p className="text-[11px] text-purple-500 mt-0.5">valor da corrida</p>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2 text-center">
+                                                <div>
+                                                    <p className="text-[13px] font-semibold text-gray-800">{String(cotacao.dados.km).replace('.', ',')} km</p>
+                                                    <p className="text-[10px] text-gray-400">distância</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[13px] font-semibold text-gray-800">{cotacao.dados.eta_minutos != null ? '~' + cotacao.dados.eta_minutos + ' min' : '—'}</p>
+                                                    <p className="text-[10px] text-gray-400">coleta em</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[13px] font-semibold text-gray-800">{cotacao.dados.provider_label}</p>
+                                                    <p className="text-[10px] text-gray-400">provedor</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="px-5 pb-3 flex gap-2">
+                                            <button onClick={() => setCotacao(null)} disabled={cotacao.recotando}
+                                                className="flex-1 text-[13px] font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50 disabled:opacity-50">
+                                                Cancelar
+                                            </button>
+                                            <button disabled={cotacao.recotando}
+                                                onClick={async () => {
+                                                    // Recota na hora de confirmar. Se o valor mudou, mostra o
+                                                    // antes/depois e deixa o cliente decidir de novo.
+                                                    setCotacao(c => ({ ...c, recotando: true }));
+                                                    const nova = await pedirCotacao();
+                                                    const antes = Number(cotacao.dados.valor);
+                                                    if (nova && Math.abs(Number(nova.valor) - antes) >= 0.01) {
+                                                        setCotacao({ dados: nova, recotando: false, mudanca: { de: antes, para: Number(nova.valor) } });
+                                                        return;
+                                                    }
+                                                    setCotacao(null);
+                                                    enviarSolicitacao({ jaCotado: true });
+                                                }}
+                                                className="flex-1 text-[13px] font-semibold text-white bg-purple-600 rounded-lg py-2.5 hover:bg-purple-700 disabled:opacity-60">
+                                                {cotacao.recotando ? '⏳ Confirmando...' : '✓ Confirmar e solicitar'}
+                                            </button>
+                                        </div>
+                                        <p className="text-center text-[10px] text-gray-400 pb-4">A cotação é reconfirmada no momento do envio.</p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {drawerEnderecos && (
                         <div className="fixed inset-0 z-50 flex" onClick={() => setDrawerEnderecos(false)}>
                             <div className="flex-1 bg-black/50"></div>
