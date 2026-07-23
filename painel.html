@@ -106,6 +106,7 @@
   .rel-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; }
   .rel-card .k { font-size:11px; color:#9ca3af; }
   .rel-card .v { font-size:20px; font-weight:700; color:#111827; }
+  .rel-card .rel-sub { font-size:10px; color:#9ca3af; margin-top:2px; }
   .rel-tab-box { background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:auto; max-height:calc(100vh - 300px); }
   .rel-tab { width:100%; border-collapse:collapse; font-size:12px; }
   .rel-tab thead th { position:sticky; top:0; background:#f9fafb; color:#6b7280; font-weight:600; text-align:left; padding:8px 10px; border-bottom:1px solid #e5e7eb; white-space:nowrap; }
@@ -1021,8 +1022,13 @@
       .then(function(d){
         relDados = d;
         var c = d.corridas || [], t = d.totais || {};
+        // [portal-relatorio-v2] o subtitulo explica por que o numero do card
+        // pode ser menor que o de linhas da tabela (cancelado nao soma).
+        var _fora = t.nao_faturaveis || 0;
         document.getElementById('relCards').innerHTML =
-            '<div class="rel-card"><div class="k">Corridas</div><div class="v">'+(t.corridas||0)+'</div></div>'
+            '<div class="rel-card"><div class="k">Corridas</div><div class="v">'+(t.corridas||0)+'</div>'
+          + (_fora>0 ? '<div class="rel-sub">'+_fora+' cancelada(s) fora da conta</div>' : '')
+          + '</div>'
           + '<div class="rel-card"><div class="k">KM total</div><div class="v">'+(t.km!=null?String(t.km).replace('.',','):'0')+'</div></div>'
           + '<div class="rel-card"><div class="k">Valor total</div><div class="v">'+relFmtBRL(t.valor)+'</div></div>'
           + '<div class="rel-card"><div class="k">No prazo</div><div class="v">'+(t.pct_prazo!=null?(String(t.pct_prazo).replace('.',',')+'%'):'—')+'</div></div>';
@@ -1053,17 +1059,19 @@
       });
   }
 
-  // Excel: baixa o CSV do backend (mesma fonte da tela, entao os numeros batem)
+  // [portal-relatorio-v2] Excel: baixa .xlsx do backend (mesma fonte da tela).
+  // Era CSV — o Excel convertia a data em numero serial e, sem largura de
+  // coluna, mostrava "########". No xlsx a largura e o formato vao junto.
   function baixarRelatorioCsv(){
     var _t = token(); if(!_t){ mostrarLogin(); return; }
-    var url = API + '/api/logistics/portal/relatorio' + relQS('formato=csv');
+    var url = API + '/api/logistics/portal/relatorio' + relQS('formato=xlsx');
     fetch(url, { headers: { 'Authorization': 'Bearer ' + _t } })
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
       .then(function(b){
         var a = document.createElement('a');
         a.href = URL.createObjectURL(b);
         a.download = 'relatorio-' + (document.getElementById('relDe').value||'inicio')
-                   + '_a_' + (document.getElementById('relAte').value||'hoje') + '.csv';
+                   + '_a_' + (document.getElementById('relAte').value||'hoje') + '.xlsx';
         document.body.appendChild(a); a.click();
         setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
       })
@@ -1106,13 +1114,14 @@
   document.getElementById('relBuscar').addEventListener('click', carregarRelatorio);
   document.getElementById('relCsv').addEventListener('click', baixarRelatorioCsv);
   document.getElementById('relPdf').addEventListener('click', baixarRelatorioPdf);
-  // periodo padrao: ultimos 30 dias
+  // [portal-relatorio-v2] periodo padrao = HOJE (era 30 dias). A loja quer
+  // abrir e ja ver o movimento do dia. Usa a data LOCAL, nao o toISOString
+  // (que e UTC e depois das 21h ja viraria o dia seguinte aqui).
   (function(){
-    var hoje = new Date();
-    var ini = new Date(hoje.getTime() - 30*86400000);
-    var iso = function(d){ return d.toISOString().slice(0,10); };
-    document.getElementById('relDe').value  = iso(ini);
-    document.getElementById('relAte').value = iso(hoje);
+    var d = new Date();
+    var iso = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+    document.getElementById('relDe').value  = iso;
+    document.getElementById('relAte').value = iso;
   })();
   document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; mapaPopup=null; renderMapa(false); });
   document.getElementById('mapaBusca').addEventListener('input',function(){
@@ -1163,6 +1172,11 @@
     if(pollTimer) clearInterval(pollTimer);
     pollTimer=setInterval(function(){
       // So busca o que esta na tela: mapa fechado nao gasta request.
+      // [portal-relatorio-v2] O relatorio NAO entra no poll: ele e uma consulta
+      // por periodo (o usuario escolhe e clica Buscar). Antes o else caia em
+      // carregar(), que chama render() e jogava a tela de volta pro quadro —
+      // por isso a aba "voltava sozinha" depois de 30s.
+      if(document.getElementById('relWrap').style.display==='block') return;
       if(document.getElementById('mapaWrap').style.display==='block') carregarMapa();
       else carregar();
     },30000);
