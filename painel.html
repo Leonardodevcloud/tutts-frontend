@@ -546,9 +546,32 @@
   }
 
   var _ultimaLista = [];
+  // [portal-consolida-os-v1] Consolida por OS — a MESMA regra do painel admin.
+  // Cada re-despacho cria um registro novo em logistics_deliveries, entao a
+  // mesma OS podia aparecer em duas colunas ao mesmo tempo (ex: a tentativa
+  // cancelada em "Cancelado" E a atual em "Entregue"). Aqui fica so o registro
+  // MAIS RECENTE (maior id — a coluna e incremental, entao o maior e sempre a
+  // ultima tentativa). O historico das tentativas continua na trilha do card.
+  function consolidarPorOs(lista){
+    if(!Array.isArray(lista)) return [];
+    var porOs = {};
+    for(var i=0;i<lista.length;i++){
+      var e = lista[i];
+      var os = e && e.codigo_os;
+      if(os == null){ continue; }
+      var atual = porOs[os];
+      if(!atual || (Number(e.id)||0) > (Number(atual.id)||0)){ porOs[os] = e; }
+    }
+    var out = [];
+    for(var k in porOs){ if(Object.prototype.hasOwnProperty.call(porOs,k)) out.push(porOs[k]); }
+    // Sem codigo_os (raro): mantem, senao sumiriam do painel.
+    for(var j=0;j<lista.length;j++){ if(lista[j] && lista[j].codigo_os == null) out.push(lista[j]); }
+    return out;
+  }
+
   function render(entregas){
     if(entregas) _ultimaLista = entregas;
-    var lista = filtrarBusca(_ultimaLista);
+    var lista = consolidarPorOs(filtrarBusca(_ultimaLista));
     var grupos={}; COLS.forEach(function(c){ grupos[c.id]=[]; });
     lista.forEach(function(e){ var col=coluna(e); if(col && grupos[col]) grupos[col].push(e); });
     var board=document.getElementById('board');
@@ -719,7 +742,9 @@
     if(!mapa) return;
     camadas.clearLayers();
     mapaMk={}; // clearLayers invalidou tudo; as referencias sao remontadas abaixo
-    var lista = mapaDados.filter(visivel).filter(casaBusca);
+    // [portal-consolida-os-v1] mesma consolidacao do quadro: sem isso a mesma
+    // OS geraria dois pins (a tentativa antiga e a atual).
+    var lista = consolidarPorOs(mapaDados.filter(visivel).filter(casaBusca));
     var bounds = [];
     var temSel = mapaSel!==null && lista.some(function(e){ return e.id===mapaSel; });
     if(mapaSel!==null && !temSel){ mapaSel=null; mapaPopup=null; } // saiu do filtro/busca
