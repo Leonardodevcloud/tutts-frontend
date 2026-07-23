@@ -93,6 +93,35 @@
   .topo input[type=date]{ font-size:12px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; }
   .topo .sair { border:1px solid #d1d5db; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; color:#374151; }
   /* PORTAL_MAPA_V1 */
+  /* [portal-relatorio-v1] aba Relatorio */
+  .rel-wrap { padding:14px 16px; }
+  .rel-filtros { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .rel-filtros label { font-size:12px; color:#6b7280; display:flex; align-items:center; gap:5px; }
+  .rel-filtros input, .rel-filtros select { font-size:12px; padding:5px 8px; border:1px solid #d1d5db; border-radius:7px; background:#fff; }
+  .rel-btn { font-size:12px; font-weight:600; padding:6px 12px; border:1px solid #d1d5db; border-radius:7px; background:#fff; color:#374151; cursor:pointer; }
+  .rel-btn:hover { background:#f9fafb; }
+  .rel-btn-p { background:var(--roxo); border-color:var(--roxo); color:#fff; }
+  .rel-btn-p:hover { opacity:.9; background:var(--roxo); }
+  .rel-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:12px; }
+  .rel-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; }
+  .rel-card .k { font-size:11px; color:#9ca3af; }
+  .rel-card .v { font-size:20px; font-weight:700; color:#111827; }
+  .rel-tab-box { background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:auto; max-height:calc(100vh - 300px); }
+  .rel-tab { width:100%; border-collapse:collapse; font-size:12px; }
+  .rel-tab thead th { position:sticky; top:0; background:#f9fafb; color:#6b7280; font-weight:600; text-align:left; padding:8px 10px; border-bottom:1px solid #e5e7eb; white-space:nowrap; }
+  .rel-tab td { padding:8px 10px; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+  .rel-tab .r { text-align:right; } .rel-tab .c { text-align:center; }
+  .rel-vazio { text-align:center; color:#9ca3af; padding:26px 0 !important; }
+  .rel-end { font-size:11px; color:#6b7280; line-height:1.5; }
+  .rel-pz { font-size:10px; font-weight:600; border-radius:5px; padding:2px 7px; white-space:nowrap; }
+  .rel-pz-ok { background:#ecfdf5; color:#047857; }
+  .rel-pz-no { background:#fef2f2; color:#b91c1c; }
+  .rel-pz-sd { background:#f3f4f6; color:#9ca3af; }
+  @media print {
+    .abas, .top, .rel-filtros, #carregando { display:none !important; }
+    .rel-tab-box { max-height:none; border:0; }
+    .rel-wrap { padding:0; }
+  }
   .abas { display:flex; gap:16px; padding:0 16px; border-bottom:1px solid #e5e7eb; background:#fff; }
   .aba { font-size:13px; font-weight:600; color:#6b7280; padding:9px 0; border-bottom:2px solid transparent;
          cursor:pointer; background:none; border-top:0; border-left:0; border-right:0; }
@@ -300,9 +329,42 @@
   <div class="abas">
     <button class="aba on" id="abaLista" type="button">Entregas</button>
     <button class="aba" id="abaMapa" type="button">Mapa</button>
+    <button class="aba" id="abaRel" type="button">Relatório</button>
   </div>
   <div id="carregando">Carregando entregas...</div>
   <div class="board" id="board" style="display:none;"></div>
+
+  <!-- [portal-relatorio-v1] aba Relatorio -->
+  <div class="rel-wrap" id="relWrap" style="display:none;">
+    <div class="rel-filtros">
+      <label>De <input type="date" id="relDe" /></label>
+      <label>ate <input type="date" id="relAte" /></label>
+      <label>Status
+        <select id="relStatus">
+          <option value="todos">Todos</option>
+          <option value="entregue">Entregue</option>
+          <option value="cancelado">Cancelado</option>
+          <option value="devolvido">Devolvido</option>
+        </select>
+      </label>
+      <button class="rel-btn rel-btn-p" id="relBuscar" type="button">Buscar</button>
+      <span style="flex:1"></span>
+      <button class="rel-btn" id="relCsv" type="button">Excel</button>
+      <button class="rel-btn" id="relPdf" type="button">PDF</button>
+    </div>
+    <div class="rel-cards" id="relCards"></div>
+    <div class="rel-tab-box">
+      <table class="rel-tab" id="relTab">
+        <thead><tr>
+          <th>OS</th><th>Data/Hora</th><th>Status</th><th>Coleta / Entrega</th>
+          <th>Entregador</th><th class="r">KM</th><th class="r">Duracao</th>
+          <th class="c">Prazo</th><th class="r">Valor</th>
+        </tr></thead>
+        <tbody id="relBody"><tr><td colspan="9" class="rel-vazio">Escolha o periodo e clique em Buscar</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="mapa-wrap" id="mapaWrap">
     <div class="mapa-filtros">
       <button class="chip on-amb" id="chipColetar" type="button">A coletar <span class="n" id="nColetar">0</span></button>
@@ -916,14 +978,118 @@
       .catch(function(e){ if(String(e.message)!=='401') console.warn('mapa:',e.message); });
   }
 
+  // ── [portal-relatorio-v1] aba Relatorio ─────────────────────────
+  var relCarregouUmaVez = false;
+  var relDados = null;
+
+  function relFmtDur(m){
+    if(m == null) return '—';
+    if(m < 60) return m + 'min';
+    if(m < 1440){ var h=Math.floor(m/60), r=m%60; return h+'h'+(r>0?' '+String(r).padStart(2,'0'):''); }
+    var d=Math.floor(m/1440), h2=Math.floor((m%1440)/60);
+    return d+'d'+(h2>0?' '+h2+'h':'');
+  }
+  function relFmtDataHora(v){
+    if(!v) return '—';
+    var d = new Date(v);
+    if(isNaN(d.getTime())) return '—';
+    try {
+      return new Intl.DateTimeFormat('pt-BR',{ timeZone:'America/Bahia',
+        day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false
+      }).format(d).replace(',','');
+    } catch(e){ return '—'; }
+  }
+  function relFmtBRL(v){ return v == null ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.',','); }
+  function relQS(extra){
+    var de = document.getElementById('relDe').value;
+    var ate = document.getElementById('relAte').value;
+    var st = document.getElementById('relStatus').value;
+    var qs = [];
+    if(de) qs.push('de='+encodeURIComponent(de));
+    if(ate) qs.push('ate='+encodeURIComponent(ate));
+    if(st && st!=='todos') qs.push('status='+encodeURIComponent(st));
+    if(extra) qs.push(extra);
+    return qs.length ? ('?'+qs.join('&')) : '';
+  }
+
+  function carregarRelatorio(){
+    var body = document.getElementById('relBody');
+    body.innerHTML = '<tr><td colspan="9" class="rel-vazio">Carregando...</td></tr>';
+    var _t = token(); if(!_t){ mostrarLogin(); return; }
+    fetch(API+'/api/logistics/portal/relatorio'+relQS(), { headers:{ 'Authorization':'Bearer '+_t } })
+      .then(function(r){ if(r.status===401){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); throw new Error('401'); } return r.json(); })
+      .then(function(d){
+        relDados = d;
+        var c = d.corridas || [], t = d.totais || {};
+        document.getElementById('relCards').innerHTML =
+            '<div class="rel-card"><div class="k">Corridas</div><div class="v">'+(t.corridas||0)+'</div></div>'
+          + '<div class="rel-card"><div class="k">KM total</div><div class="v">'+(t.km!=null?String(t.km).replace('.',','):'0')+'</div></div>'
+          + '<div class="rel-card"><div class="k">Valor total</div><div class="v">'+relFmtBRL(t.valor)+'</div></div>'
+          + '<div class="rel-card"><div class="k">No prazo</div><div class="v">'+(t.pct_prazo!=null?(String(t.pct_prazo).replace('.',',')+'%'):'—')+'</div></div>';
+        if(!c.length){
+          body.innerHTML = '<tr><td colspan="9" class="rel-vazio">Nenhuma corrida no periodo</td></tr>';
+          return;
+        }
+        body.innerHTML = c.map(function(e){
+          var pz = e.prazo==='no_prazo' ? '<span class="rel-pz rel-pz-ok">no prazo</span>'
+                 : e.prazo==='fora'     ? '<span class="rel-pz rel-pz-no">fora</span>'
+                 : '<span class="rel-pz rel-pz-sd">—</span>';
+          return '<tr>'
+            + '<td><b>'+esc(e.os)+'</b><div style="font-size:10px;color:#9ca3af">'+esc(e.provider||'')+'</div></td>'
+            + '<td style="white-space:nowrap">'+relFmtDataHora(e.criado_em)+'</td>'
+            + '<td>'+esc(e.status||'')+'</td>'
+            + '<td class="rel-end">'+esc(e.endereco_coleta||'—')+'<br>'+esc(e.endereco_entrega||'—')+'</td>'
+            + '<td>'+esc(e.entregador||'—')+'</td>'
+            + '<td class="r">'+(e.km!=null?String(e.km).replace('.',','):'—')+'</td>'
+            + '<td class="r">'+relFmtDur(e.duracao_min)+'</td>'
+            + '<td class="c">'+pz+'</td>'
+            + '<td class="r">'+relFmtBRL(e.valor)+'</td>'
+            + '</tr>';
+        }).join('');
+      })
+      .catch(function(e){
+        if(String(e.message)==='401') return;
+        body.innerHTML = '<tr><td colspan="9" class="rel-vazio">Erro ao carregar: '+esc(e.message)+'</td></tr>';
+      });
+  }
+
+  // Excel: baixa o CSV do backend (mesma fonte da tela, entao os numeros batem)
+  function baixarRelatorioCsv(){
+    var _t = token(); if(!_t){ mostrarLogin(); return; }
+    var url = API + '/api/logistics/portal/relatorio' + relQS('formato=csv');
+    fetch(url, { headers: { 'Authorization': 'Bearer ' + _t } })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+      .then(function(b){
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'relatorio-' + (document.getElementById('relDe').value||'inicio')
+                   + '_a_' + (document.getElementById('relAte').value||'hoje') + '.csv';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      })
+      .catch(function(e){ alert('Nao consegui baixar: '+e.message); });
+  }
+
+  // PDF: usa a impressao do navegador (Salvar como PDF). Sem lib externa —
+  // o @media print acima esconde filtros/abas e solta a altura da tabela.
+  function baixarRelatorioPdf(){
+    if(!relDados){ alert('Carregue o relatorio primeiro.'); return; }
+    window.print();
+  }
+
+  // [portal-relatorio-v1] 3 abas: lista | mapa | relatorio
   function trocarAba(qual){
-    var ehMapa = qual==='mapa';
-    document.getElementById('abaLista').className = 'aba'+(ehMapa?'':' on');
+    var ehMapa = qual==='mapa', ehRel = qual==='rel';
+    var ehLista = !ehMapa && !ehRel;
+    document.getElementById('abaLista').className = 'aba'+(ehLista?' on':'');
     document.getElementById('abaMapa').className  = 'aba'+(ehMapa?' on':'');
-    document.getElementById('board').style.display = ehMapa?'none':'flex';
+    document.getElementById('abaRel').className   = 'aba'+(ehRel?' on':'');
+    document.getElementById('board').style.display = ehLista?'flex':'none';
     document.getElementById('mapaWrap').style.display = ehMapa?'block':'none';
-    document.getElementById('tBusca').style.display = ehMapa?'none':'';
-    document.getElementById('tData').style.display  = ehMapa?'none':'';
+    document.getElementById('relWrap').style.display = ehRel?'block':'none';
+    // a busca e a data do topo sao do quadro; no mapa e no relatorio somem
+    document.getElementById('tBusca').style.display = ehLista?'':'none';
+    document.getElementById('tData').style.display  = ehLista?'':'none';
     if(ehMapa){
       initMapa();
       // O Leaflet mede o container na criacao; se ele estava display:none, o
@@ -931,10 +1097,23 @@
       setTimeout(function(){ alturaMapa(); },60);
       carregarMapa();
     }
+    if(ehRel && !relCarregouUmaVez){ relCarregouUmaVez = true; carregarRelatorio(); }
   }
 
   document.getElementById('abaLista').addEventListener('click',function(){ trocarAba('lista'); });
   document.getElementById('abaMapa').addEventListener('click',function(){ trocarAba('mapa'); });
+  document.getElementById('abaRel').addEventListener('click',function(){ trocarAba('rel'); });
+  document.getElementById('relBuscar').addEventListener('click', carregarRelatorio);
+  document.getElementById('relCsv').addEventListener('click', baixarRelatorioCsv);
+  document.getElementById('relPdf').addEventListener('click', baixarRelatorioPdf);
+  // periodo padrao: ultimos 30 dias
+  (function(){
+    var hoje = new Date();
+    var ini = new Date(hoje.getTime() - 30*86400000);
+    var iso = function(d){ return d.toISOString().slice(0,10); };
+    document.getElementById('relDe').value  = iso(ini);
+    document.getElementById('relAte').value = iso(hoje);
+  })();
   document.getElementById('mapaSel').addEventListener('click',function(){ mapaSel=null; mapaPopup=null; renderMapa(false); });
   document.getElementById('mapaBusca').addEventListener('input',function(){
     mapaBusca=this.value.trim();
