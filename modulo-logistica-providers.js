@@ -76,16 +76,24 @@
             hint: 'Usado quando o ponto de coleta/entrega não tem telefone cadastrado. Formato: 5571999999999' },
         ]},
         { titulo: '🔑 Verificação de coleta e entrega', campos: [
-          { key: 'verificacao_coleta_habilitada',  label: 'Habilitar código de coleta',  type: 'boolean',
-            hint: 'Motoboy precisa informar o código ao atendente antes de pegar o pacote. Código enviado por WhatsApp à loja.' },
+          // 2026-07 [uber-painel-verificacao-v1] O toggle 'Habilitar codigo de
+          // coleta' foi REMOVIDO daqui de proposito. Ele era um toggle morto e
+          // perigoso: na Uber o codigo de coleta e NATIVO (5 ultimos do workflow
+          // UUID) e so funciona se NAO enviarmos pickup_verification. Ligar o
+          // toggle fazia o OPOSTO do que o nome prometia — desligava o codigo.
+          // O backend (uber.parser.js) ja ignora a chave e loga aviso.
+          { key: '_info_codigo_coleta', type: 'info', label: 'Código de coleta',
+            texto: 'Automático — não requer configuração.',
+            hint: 'A Uber usa os 5 últimos caracteres do ID Uber da entrega (ex.: 6DBEB). O código aparece no card do kanban, no portal do cliente e é enviado por WhatsApp à loja — igual à 99.' },
           { key: 'verificacao_entrega_habilitada', label: 'Habilitar verificação de entrega', type: 'boolean',
             hint: 'Exige confirmação do destinatário no momento da entrega.' },
           { key: 'verificacao_entrega_tipo', label: 'Tipo de verificação de entrega',
-            hint: 'codigo = PIN enviado ao destinatário via WhatsApp. assinatura = assinatura digital no app do motoboy (padrão).' },
+            type: 'select', options: ['assinatura', 'pincode'],
+            hint: 'assinatura = assinatura digital no app do motoboy (padrão). pincode = 4 dígitos GERADOS PELA UBER, enviados ao destinatário por WhatsApp. Só vale se a verificação de entrega acima estiver ligada.' },
         ]},
         { titulo: '📸 Comprovante de entrega', campos: [
           { key: 'proof_of_delivery_habilitado', label: 'Coletar comprovante de entrega (foto/assinatura)', type: 'boolean',
-            hint: 'Após entrega concluída, busca automaticamente na Uber Direct a foto e assinatura do recebedor.' },
+            hint: 'Após entrega concluída, busca na Uber Direct a foto e assinatura do recebedor. ⚠️ Só retorna algo se houver verificação ativa na entrega — com tudo desligado, a Uber não coleta comprovante nenhum.' },
           { key: 'manifest_total_value_centavos', label: 'Valor declarado da mercadoria (centavos)',
             hint: 'Valor em centavos. Ex: 10000 = R$ 100,00. Padrão: 10000.' },
         ]},
@@ -481,6 +489,18 @@
       );
     };
 
+    // [uber-painel-verificacao-v1] Campo somente-leitura. Nao escreve em
+    // form.config — serve pra explicar comportamento AUTOMATICO que o operador
+    // nao configura (ex.: codigo de coleta nativo da Uber). Sem esse tipo, a
+    // unica alternativa seria manter um toggle que mente sobre o que faz.
+    const InfoField = (campo) =>
+      e('div', { className: 'mb-3', key: campo.key },
+        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
+        e('div', { className: 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700' },
+          campo.texto || ''),
+        campo.hint && e('p', { className: 'text-[11px] text-gray-400 mt-1' }, campo.hint)
+      );
+
     // Campo boolean — renderizado como toggle (ex: códigos de verificação da 99).
     const BooleanField = (campo) => {
       const val = form.config[campo.key] === true || form.config[campo.key] === 'true';
@@ -506,7 +526,8 @@
         e('div', { key: gi, className: 'mb-4' },
           e('div', { className: 'text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2' }, grupo.titulo),
           grupo.campos.map(campo =>
-            campo.type === 'boolean' ? BooleanField(campo)
+            campo.type === 'info' ? InfoField(campo)
+              : campo.type === 'boolean' ? BooleanField(campo)
               : campo.type === 'select' ? SelectField(campo)
               : campo.secret ? SecretField(campo)
               : Field(campo))
