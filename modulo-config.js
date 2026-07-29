@@ -1040,14 +1040,14 @@
                 return React.createElement("div", null,
                 React.createElement("div", {className: "bg-white rounded-xl shadow-sm border p-6 mb-6"},
                     React.createElement("h2", {className: "text-lg font-bold mb-4 flex items-center gap-2"},
-                        React.createElement("span", null, "🔗"),
+                        /* CLIENTES_API_ICONS_V4 */ React.createElement("svg", {className: "ico ico-lg text-purple-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-link"})),
                         "Clientes API - Solicitação de Serviço"
                     ),
                     React.createElement("p", {className: "text-gray-600 text-sm mb-4"}, "Cadastre clientes que podem solicitar corridas via página externa."),
                     
                     // Formulário de cadastro
                     React.createElement("div", {className: "bg-gray-50 rounded-lg p-4 mb-6"},
-                        React.createElement("h3", {className: "font-bold text-gray-700 mb-3"}, "➕ Novo Cliente"),
+                        React.createElement("h3", {className: "font-bold text-gray-700 mb-3 flex items-center gap-2"}, React.createElement("svg", {className: "ico ico-lg text-purple-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-plus"})), "Novo Cliente"),
                         React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-4"},
                             React.createElement("div", null,
                                 React.createElement("label", {className: "block text-sm font-semibold mb-1 text-gray-700"}, "Nome *"),
@@ -1139,7 +1139,7 @@
                                 }
                             },
                             className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                        }, "✅ Cadastrar Cliente")
+                        }, React.createElement("span", {className: "inline-flex items-center gap-2"}, React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})), "Cadastrar Cliente"))
                     ),
                     
                     // Lista de clientes
@@ -1813,7 +1813,7 @@
                     },
                         React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
                             React.createElement("div", null,
-                                React.createElement("p", {className: "font-bold text-gray-800"}, "🏷️ Modalidades de frete"),
+                                React.createElement("p", {className: "font-bold text-gray-800 flex items-center gap-2"}, React.createElement("svg", {className: "ico ico-lg text-purple-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-tag"})), "Modalidades de frete"),
                                 React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mc.nome, " — ative só o que este cliente pode solicitar")
                             ),
                             React.createElement("button", {onClick: fecharModal, className: "text-gray-400 hover:text-gray-600 text-lg leading-none"}, "✕")
@@ -1856,7 +1856,7 @@
                                 onClick: salvar,
                                 disabled: mc.salvando,
                                 className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white " + (mc.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
-                            }, mc.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                            }, mc.salvando ? "Salvando..." : React.createElement("span", {className: "inline-flex items-center gap-2"}, React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})), "Salvar"))
                         )
                     )
                 );
@@ -1945,7 +1945,7 @@
                     },
                         React.createElement("div", {className: "flex items-center justify-between mb-4"},
                             React.createElement("div", {className: "flex items-center gap-2"},
-                                React.createElement("span", {className: "text-xl"}, "✏️"),
+                                React.createElement("svg", {className: "ico ico-lg text-blue-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-pencil"})),
                                 React.createElement("span", {className: "font-bold text-blue-700"}, "Editar Cliente")
                             ),
                             React.createElement("button", {
@@ -1956,7 +1956,7 @@
                         
                         // Seção: Dados gerais
                         React.createElement("div", {className: "mb-4"},
-                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2"}, "📋 Dados"),
+                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1.5"}, React.createElement("svg", {className: "ico-sm ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-list"})), "Dados"),
                             React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Nome *"),
                             React.createElement("input", {
                                 type: "text",
@@ -1981,7 +1981,7 @@
                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1 mb-2 focus:ring-2 focus:ring-blue-400 outline-none",
                                 placeholder: "Nome da empresa (opcional)"
                             }),
-                            React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "📚 Grupo de Endereços"),
+                            React.createElement("label", {className: "text-xs text-gray-600 font-medium flex items-center gap-1.5"}, React.createElement("svg", {className: "ico-sm ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-pin"})), "Grupo de Endereços"),
                             React.createElement("select", {
                                 value: ec.grupo_enderecos_id || "",
                                 onChange: function(e) { atualizarCampo("grupo_enderecos_id", e.target.value); },
@@ -1994,14 +1994,14 @@
                             ),
                             React.createElement("div", {className: "text-xs text-gray-500 mt-1"}, 
                                 ec.grupo_enderecos_id 
-                                    ? "💡 Este cliente vê e edita os endereços de todo o grupo"
-                                    : "💡 Este cliente tem endereços próprios, não compartilha com ninguém"
+                                    ? "Este cliente vê e edita os endereços de todo o grupo"
+                                    : "Este cliente tem endereços próprios, não compartilha com ninguém"
                             )
                         ),
                         
                         // Seção: Senha (opcional)
                         React.createElement("div", {className: "mb-4 pt-3 border-t"},
-                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2"}, "🔒 Alterar Senha (opcional)"),
+                            React.createElement("div", {className: "text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1.5"}, React.createElement("svg", {className: "ico-sm ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-lock"})), "Alterar Senha (opcional)"),
                             React.createElement("div", {className: "text-xs text-gray-500 mb-2"}, "Deixe em branco para manter a senha atual"),
                             React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Nova senha"),
                             React.createElement("div", {className: "relative mt-1 mb-2"},
@@ -2017,7 +2017,7 @@
                                     type: "button",
                                     onClick: function() { atualizarCampo("mostrar_senha", !ec.mostrar_senha); },
                                     className: "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm"
-                                }, ec.mostrar_senha ? "🙈" : "👁️")
+                                }, ec.mostrar_senha ? React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-eyeoff"})) : React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-eye"})))
                             ),
                             temSenha && React.createElement("label", {className: "text-xs text-gray-600 font-medium"}, "Confirmar senha"),
                             temSenha && React.createElement("input", {
@@ -2049,7 +2049,7 @@
                                 onClick: salvar,
                                 disabled: !podeSalvar,
                                 className: "flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            }, ec.salvando ? "⏳ Salvando..." : "💾 Salvar")
+                            }, ec.salvando ? "Salvando..." : React.createElement("span", {className: "inline-flex items-center gap-2"}, React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})), "Salvar"))
                         )
                     )
                 );
@@ -2210,7 +2210,7 @@
                     },
                         React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
                             React.createElement("div", null,
-                                React.createElement("p", {className: "font-bold text-gray-800"}, "🚚 Provedores logísticos"),
+                                React.createElement("p", {className: "font-bold text-gray-800 flex items-center gap-2"}, React.createElement("svg", {className: "ico ico-lg text-purple-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-truck"})), "Provedores logísticos"),
                                 React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — ative só os que este cliente pode usar")
                             ),
                             React.createElement("button", {
@@ -2281,7 +2281,7 @@
                                 disabled: mp.salvando,
                                 className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
                                     (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
-                            }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                            }, mp.salvando ? "Salvando..." : React.createElement("span", {className: "inline-flex items-center gap-2"}, React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})), "Salvar"))
                         )
                     )
                 );
@@ -2362,7 +2362,7 @@
                     },
                         React.createElement("div", {className: "px-5 py-4 border-b flex items-center justify-between"},
                             React.createElement("div", null,
-                                React.createElement("p", {className: "font-bold text-gray-800"}, "⚙️ Configurações do Hub"),
+                                React.createElement("p", {className: "font-bold text-gray-800 flex items-center gap-2"}, React.createElement("svg", {className: "ico ico-lg text-purple-600", "aria-hidden": "true"}, React.createElement("use", {href: "#i-settings"})), "Configurações do Hub"),
                                 React.createElement("p", {className: "text-xs text-gray-500 mt-0.5"}, mp.nome, " — preço e mensagem deste cliente")
                             ),
                             React.createElement("button", {onClick: fechar, className: "text-gray-400 hover:text-gray-600 text-lg"}, "✕")
@@ -2396,7 +2396,7 @@
                                         rotulo);
                                 };
                                 return React.createElement("div", {className: "mb-4 pt-3 border-t"},
-                                    React.createElement("p", {className: "text-[11px] font-semibold tracking-wide text-gray-500 mb-2 uppercase"}, "↩️ Adicional por retorno"),
+                                    React.createElement("p", {className: "text-[11px] font-semibold tracking-wide text-gray-500 mb-2 uppercase flex items-center gap-1.5"}, React.createElement("svg", {className: "ico-sm ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-corner"})), "Adicional por retorno"),
                                     React.createElement("div", {className: "flex items-center gap-4 mb-2"}, opt("fixo", "Valor fixo"), opt("pct", "Percentual")),
                                     React.createElement("div", {className: "flex items-center gap-2"},
                                         React.createElement("input", {
@@ -2416,7 +2416,7 @@
                                 );
                             })(),
                             React.createElement("div", {className: "pt-4 border-t"},
-                                React.createElement("p", {className: "text-sm font-semibold text-gray-800 mb-1"}, "💬 Mensagem pro entregador (99)"),
+                                React.createElement("p", {className: "text-sm font-semibold text-gray-800 mb-1 flex items-center gap-1.5"}, React.createElement("svg", {className: "ico-sm ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-message"})), "Mensagem pro entregador (99)"),
                                 React.createElement("p", {className: "text-[11px] text-gray-400 mb-3"}, "Em branco usa o global. A regra do Hub, se houver, tem prioridade."),
                                 React.createElement("div", {className: "mb-3"},
                                     React.createElement("label", {className: "block text-[11px] font-semibold tracking-wide text-gray-500 mb-1 uppercase"}, "Nome do remetente"),
@@ -2477,7 +2477,7 @@
                                 onClick: function() { if (!mp.salvando) salvar(true); },
                                 disabled: mp.salvando,
                                 className: "px-3 py-2 border border-gray-300 text-gray-500 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
-                            }, "🧹 Limpar"),
+                            }, "Limpar"),
                             React.createElement("button", {
                                 onClick: fechar, disabled: mp.salvando,
                                 className: "flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
@@ -2486,7 +2486,7 @@
                                 onClick: function() { salvar(false); }, disabled: mp.salvando,
                                 className: "flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 " +
                                     (mp.salvando ? "bg-purple-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700")
-                            }, mp.salvando ? "⏳ Salvando..." : "✅ Salvar")
+                            }, mp.salvando ? "Salvando..." : React.createElement("span", {className: "inline-flex items-center gap-2"}, React.createElement("svg", {className: "ico", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})), "Salvar"))
                         )
                     )
                 );
