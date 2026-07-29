@@ -586,7 +586,7 @@ function tabLabelEl(label) {
   }
   return label;
 }
-/* NAV_ICONS_V4 HOME_ICONS_V1 */
+/* NAV_ICONS_V4 HOME_ICONS_V2 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -20817,7 +20817,7 @@ const hideLoadingScreen = () => {
                     React.createElement("p", {className: "text-xl text-gray-600 mb-2"}, "Seja bem-vindo(a) à Central Tutts"),
                     React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-[#f67602] thome-quote"},
                         React.createElement("p", {className: "text-lg text-gray-700 italic"}, "\"", mensagemGentileza, "\""),
-                        React.createElement("p", {className: "text-purple-500 mt-2"}, "💜")
+                        React.createElement("svg", { className: "ico", style: { width: 24, height: 24 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" }))
                     )
                 ),
                 
@@ -20832,7 +20832,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📋")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gerencie pedidos e ajustes")
@@ -20847,7 +20847,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🔓")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Controle de Máquinas"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Liberar saque de motoboy com máquina")
@@ -20863,7 +20863,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "⚡")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Desenvolvimentos"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Roadmap, bugs e sugestões")
@@ -20880,7 +20880,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🔗")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "ConfirmaFácil"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Integração NFs e rastreamento de entregas")
@@ -20896,7 +20896,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🗺️")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Consultar Endereços"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Base colaborativa")
@@ -20912,7 +20912,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "💰")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Financeiro"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Saques e valores")
@@ -20928,7 +20928,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📅")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Disponibilidade"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Escalas e horários")
@@ -20944,7 +20944,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-purple-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                React.createElement("span", {className: "text-3xl"}, "📝"),
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })),
                                 todoMeuDia.length > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, todoMeuDia.length > 9 ? "9+" : todoMeuDia.length)
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "TO-DO"),
@@ -20961,7 +20961,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-cyan-500 to-teal-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "👥")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Filas"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão de filas")
@@ -20977,7 +20977,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-amber-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📊")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "BI"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Análises e dados")
@@ -20992,7 +20992,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-pink-500 to-rose-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                React.createElement("span", {className: "text-3xl"}, "💜"),
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" })),
                                 socialUnread > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, socialUnread > 9 ? "9+" : socialUnread)
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Social"),
@@ -21009,7 +21009,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🔧")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wrench" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Operacional"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Gestão operacional")
@@ -21025,7 +21025,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🚚")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Hub Logístico"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Despacho multi-provedor")
@@ -21041,7 +21041,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-gray-500 to-slate-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "⚙️")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Config"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Configurações")
@@ -21057,7 +21057,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🤝")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-handshake" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Sucesso do Cliente"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "CS & Raio-X IA")
@@ -21073,7 +21073,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "💬")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "CRM WhatsApp"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Leads e conversas")
@@ -21089,7 +21089,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-pink-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🤖")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Agente RPA"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Correção de endereços")
@@ -21102,7 +21102,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-teal-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📡")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "BI Monitoramento"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Visão operacional sem dados financeiros")
@@ -21115,7 +21115,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📡")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Rastreio Clientes"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "SLA e monitoramento")
@@ -21131,7 +21131,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-red-500 to-rose-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "🛡️")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Anti-Fraude"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Detecção de duplicatas")
@@ -21147,7 +21147,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📈")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Performance"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Desempenho diário")
@@ -21163,7 +21163,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
                         React.createElement("div", {className: "p-6"},
                             React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                React.createElement("span", {className: "text-3xl"}, "📊")
+                                React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
                             ),
                             React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Análise Gerencial"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, "Relatório semanal consolidado")
@@ -21221,16 +21221,16 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
         }, React.createElement("div", {
             className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
-        }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+        }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Atenção!")),
             React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
         ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
-            React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+            React.createElement("p", {className: "text-gray-600 mb-3"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), ""), todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
             React.createElement("div", {className: "space-y-2"},
                 todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
                     key: t.id,
                     className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                 }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                    t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                    t.data_prazo && React.createElement("p", {className: "text-xs text-purple-600"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Vence: "), new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                 ))
             ),
             todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -21242,7 +21242,7 @@ const hideLoadingScreen = () => {
             React.createElement("button", {
                 onClick: () => { setTodoNotifModal(false); he("todo"); },
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "📋 Ir para Tarefas")
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Ir para Tarefas"))
         ))),
         // ========== HEADER COM NAVEGAÇÃO ==========
         React.createElement(HeaderCompacto, {
