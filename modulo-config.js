@@ -1301,6 +1301,8 @@
                                                         km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
                                                         valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
                                                         retorno_valor: pj && pj.retorno_valor != null ? String(pj.retorno_valor) : "",
+                                                        retorno_percentual: pj && pj.retorno_percentual != null ? String(pj.retorno_percentual) : "",
+                                                        retorno_modo: pj && pj.retorno_percentual != null ? "pct" : "fixo",
                                                         nome_remetente: cliente.nome_remetente || "",
                                                         package_type: cliente.package_type || "",
                                                         package_weight: cliente.package_weight || "",
@@ -2283,7 +2285,10 @@
                                valor_fixo: mp.valor_fixo === "" ? null : parseFloat(String(mp.valor_fixo).replace(",", ".")),
                                km_base: mp.km_base === "" ? null : parseFloat(String(mp.km_base).replace(",", ".")),
                                valor_km_adicional: mp.valor_km_adicional === "" ? null : parseFloat(String(mp.valor_km_adicional).replace(",", ".")),
-                               retorno_valor: mp.retorno_valor === "" || mp.retorno_valor == null ? null : parseFloat(String(mp.retorno_valor).replace(",", "."))};
+                               retorno_valor: mp.retorno_modo === "pct" || mp.retorno_valor === "" || mp.retorno_valor == null
+                                   ? null : parseFloat(String(mp.retorno_valor).replace(",", ".")),
+                               retorno_percentual: mp.retorno_modo !== "pct" || mp.retorno_percentual === "" || mp.retorno_percentual == null
+                                   ? null : parseFloat(String(mp.retorno_percentual).replace(",", "."))};
                         var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/preco-hub", {
                             method: "PUT",
                             headers: {"Content-Type": "application/json"},
@@ -2357,13 +2362,39 @@
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
                             ),
-                            React.createElement("div", {className: "mb-4 pt-3 border-t"},
-                                React.createElement("div", {className: "w-48"},
-                                    campo("↩️ Adicional por retorno (R$)", "retorno_valor", "")
-                                ),
-                                React.createElement("p", {className: "text-[11px] text-gray-400 mt-1"},
-                                    "Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.")
-                            ),
+                            (function() {
+                                // [retorno-percentual-v1] radio fixo/percentual + previa do calculo
+                                var modo = mp.retorno_modo || "fixo";
+                                var pct = parseFloat(String(mp.retorno_percentual || "").replace(",", ".")) || 0;
+                                var fix = parseFloat(String(mp.retorno_valor || "").replace(",", ".")) || 0;
+                                var adic = modo === "pct" ? Math.round(vf * (pct / 100) * 100) / 100 : fix;
+                                var opt = function(val, rotulo) {
+                                    return React.createElement("label", {key: val, className: "flex items-center gap-1.5 cursor-pointer text-xs text-gray-700"},
+                                        React.createElement("input", {type: "radio", checked: modo === val,
+                                            onChange: function() { up("retorno_modo", val); },
+                                            style: {accentColor: "#7c3aed"}}),
+                                        rotulo);
+                                };
+                                return React.createElement("div", {className: "mb-4 pt-3 border-t"},
+                                    React.createElement("p", {className: "text-[11px] font-semibold tracking-wide text-gray-500 mb-2 uppercase"}, "↩️ Adicional por retorno"),
+                                    React.createElement("div", {className: "flex items-center gap-4 mb-2"}, opt("fixo", "Valor fixo"), opt("pct", "Percentual")),
+                                    React.createElement("div", {className: "flex items-center gap-2"},
+                                        React.createElement("input", {
+                                            type: "number", step: modo === "pct" ? "1" : "0.10",
+                                            min: "0", max: modo === "pct" ? "100" : undefined,
+                                            value: (modo === "pct" ? mp.retorno_percentual : mp.retorno_valor) || "",
+                                            onChange: function(e) { up(modo === "pct" ? "retorno_percentual" : "retorno_valor", e.target.value); },
+                                            placeholder: modo === "pct" ? "ex: 50" : "ex: 8,00",
+                                            className: "w-28 px-2 py-2 border rounded-lg text-sm"
+                                        }),
+                                        React.createElement("span", {className: "text-xs text-gray-600"}, modo === "pct" ? "% do valor da corrida" : "R$")
+                                    ),
+                                    (adic > 0 && vf > 0) ? React.createElement("p", {className: "text-[11px] text-purple-800 mt-2 bg-purple-50 rounded px-2 py-1 inline-block"},
+                                        "Corrida de R$ " + brl(vf) + "  →  +R$ " + brl(adic) + "  →  total R$ " + brl(Math.round((vf + adic) * 100) / 100)) : null,
+                                    React.createElement("p", {className: "text-[11px] text-gray-400 mt-1"},
+                                        "Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.")
+                                );
+                            })(),
                             React.createElement("div", {className: "pt-4 border-t"},
                                 React.createElement("p", {className: "text-sm font-semibold text-gray-800 mb-1"}, "💬 Mensagem pro entregador (99)"),
                                 React.createElement("p", {className: "text-[11px] text-gray-400 mb-3"}, "Em branco usa o global. A regra do Hub, se houver, tem prioridade."),

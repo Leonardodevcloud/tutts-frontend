@@ -3877,7 +3877,14 @@
         preco_km_base: editando.preco_km_base === '' ? null : parseFloat(editando.preco_km_base || ''),
         preco_valor_km_adicional: editando.preco_valor_km_adicional === '' ? null : parseFloat(editando.preco_valor_km_adicional || ''),
         // [preco-retorno-v1] adicional fixo cobrado quando a corrida vira devolução
-        preco_retorno_valor: editando.preco_retorno_valor === '' ? null : parseFloat(editando.preco_retorno_valor || ''),
+        preco_retorno_valor: editando.preco_retorno_modo === 'pct' ? null
+          : (editando.preco_retorno_valor === '' || editando.preco_retorno_valor == null
+              ? null : parseFloat(editando.preco_retorno_valor)),
+        // [retorno-percentual-v1] radio: manda UM ou OUTRO, nunca os dois
+        preco_retorno_percentual: editando.preco_retorno_modo === 'pct'
+          ? (editando.preco_retorno_percentual === '' || editando.preco_retorno_percentual == null
+              ? null : parseFloat(editando.preco_retorno_percentual))
+          : null,
         ativo: !!editando.ativo,
         alterar_valor_mapp_ativo: editando.alterar_valor_mapp_ativo !== false,
         nome_remetente: (editando.nome_remetente || '').trim(),
@@ -4114,18 +4121,49 @@
               // [preco-retorno-v1] Adicional cobrado quando a corrida vira devolução.
               // Fica separado da tabela por distância: é um valor fixo, aplicado
               // só se a entrega retornar — não entra no cálculo por km.
-              h('div', { className: 'mt-3 pt-3 border-t border-purple-200 flex items-start gap-3' },
-                h('div', { className: 'flex-shrink-0 w-44' },
-                  h('label', { className: 'block text-xs text-purple-700 mb-1' }, '↩️ Adicional por retorno (R$)'),
-                  h('input', { type: 'number', step: '0.5', min: '0',
-                    value: editando.preco_retorno_valor ?? '',
-                    onChange: e => up('preco_retorno_valor', e.target.value),
-                    placeholder: 'ex: 8,00',
-                    className: 'w-full px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
-                ),
-                h('p', { className: 'text-[11px] text-purple-600 pt-6' },
-                  'Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.'),
-              ),
+              // [retorno-percentual-v1] radio fixo/percentual + previa do calculo.
+              // Modo derivado do estado salvo: se veio percentual, abre em '%'.
+              (function () {
+                var modo = editando.preco_retorno_modo
+                  || (editando.preco_retorno_percentual != null && editando.preco_retorno_percentual !== '' ? 'pct' : 'fixo');
+                var vf = parseFloat(editando.preco_valor_fixo) || 0;
+                var pct = parseFloat(editando.preco_retorno_percentual) || 0;
+                var fix = parseFloat(editando.preco_retorno_valor) || 0;
+                var adic = modo === 'pct' ? Math.round(vf * (pct / 100) * 100) / 100 : fix;
+                var brl = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+                var opt = function (val, rotulo) {
+                  return h('label', { key: val, className: 'flex items-center gap-1.5 cursor-pointer text-xs text-purple-700' },
+                    h('input', { type: 'radio', checked: modo === val,
+                      onChange: function () { up('preco_retorno_modo', val); },
+                      style: { accentColor: '#7c3aed' } }),
+                    rotulo);
+                };
+                return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
+                  h('label', { className: 'block text-xs font-semibold text-purple-700 mb-2' }, '↩️ Adicional por retorno'),
+                  h('div', { className: 'flex items-center gap-4 mb-2' }, opt('fixo', 'Valor fixo'), opt('pct', 'Percentual')),
+                  modo === 'pct'
+                    ? h('div', { className: 'flex items-center gap-2' },
+                        h('input', { type: 'number', step: '1', min: '0', max: '100',
+                          value: editando.preco_retorno_percentual ?? '',
+                          onChange: function (e) { up('preco_retorno_percentual', e.target.value); },
+                          placeholder: 'ex: 50',
+                          className: 'w-24 px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                        h('span', { className: 'text-xs text-purple-700' }, '% do valor da corrida'))
+                    : h('div', { className: 'flex items-center gap-2' },
+                        h('input', { type: 'number', step: '0.5', min: '0',
+                          value: editando.preco_retorno_valor ?? '',
+                          onChange: function (e) { up('preco_retorno_valor', e.target.value); },
+                          placeholder: 'ex: 8,00',
+                          className: 'w-24 px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                        h('span', { className: 'text-xs text-purple-700' }, 'R$')),
+                  adic > 0 && vf > 0
+                    ? h('p', { className: 'text-[11px] text-purple-800 mt-2 bg-purple-100 rounded px-2 py-1 inline-block' },
+                        'Corrida de ' + brl(vf) + '  →  +' + brl(adic) + '  →  total ' + brl(Math.round((vf + adic) * 100) / 100))
+                    : null,
+                  h('p', { className: 'text-[11px] text-purple-600 mt-2' },
+                    'Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.')
+                );
+              })(),
             ),
 
             h('div', { className: 'flex items-center gap-6 pt-2 border-t' },
