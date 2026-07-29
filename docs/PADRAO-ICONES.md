@@ -2,94 +2,94 @@
 # Padrão de Ícones — Central Tutts
 
 > **Regra oficial (a partir de julho/2026):** o padrão de ícones do frontend é o
-> **sprite Lucide embutido** no `index.html`. **Não usamos** emojis, Tabler Icons
-> (`<i class="ti ...">`), Font Awesome, nem `lucide-react` (pacote npm, exige build).
-> Os emojis legados estão sendo migrados gradualmente — há um **redesign geral em breve**.
+> **sprite Lucide embutido** no `index.html`. **Não usamos** emojis novos, Tabler
+> (`<i class="ti ...">`), Font Awesome, nem `lucide-react` (npm, exige build).
+> Os emojis legados estão sendo migrados gradualmente. Onde não houver ícone
+> adequado, o emoji pode permanecer. As telas **home** não são mexidas.
 
 ---
 
 ## Por que sprite (e não CDN / npm)
 
-O frontend é **React via CDN, sem build step** (`React.createElement` aliased como `h`).
-Nesse cenário:
-
-- **Lucide vanilla** substitui elementos no DOM via `lucide.createIcons()`. A cada
-  re-render, o React descarta o SVG injetado e os ícones somem.
-- **`lucide-react`** é pacote npm e exige build — que não temos.
-
-O **sprite inline** resolve os dois problemas: os `<symbol>` ficam no HTML uma vez,
-cacheiam junto com a página, e cada ícone é só um `<use href="#i-nome">`. Pesa ~2,5 KB
-contra ~300 KB do set completo.
-
----
+Frontend é **React via CDN, sem build** (`React.createElement` aliased como `h`).
+Lucide vanilla some no re-render; `lucide-react` exige build. O sprite inline
+resolve os dois: `<symbol>` no HTML uma vez, cada ícone é um `<use href="#i-nome">`.
 
 ## Onde fica
-
-- Arquivo: **`index.html`**, bloco `<svg id="tutts-icons" ...>` inserido **antes de `</body>`**.
-- Helper global: **`window.Icon(nome, cls)`** (definido no `<script>` do sprite).
-- Estilos de tamanho/traço: classes **`.ico`**, **`.ico-sm`** (14px), **`.ico-lg`** (18px),
-  todas com `stroke:currentColor; fill:none`.
-
----
+- `index.html`, bloco `<svg id="tutts-icons">` antes de `</body>`.
+- Helper global `window.Icon(nome, cls)`.
+- Classes `.ico` / `.ico-sm` (14px) / `.ico-lg` (18px), `stroke:currentColor`.
 
 ## Como usar
 
-**Forma 1 — helper global** (mais curto, para uso comum):
-
 ```js
-window.Icon('pencil')                 // no lugar de qualquer emoji
-window.Icon('trash', 'text-rose-600') // com classe extra de cor
-```
-
-**Forma 2 — inline** (quando o helper global pode não estar no escopo, ou para não
-depender de `window.Icon` em runtime — recomendado dentro de módulos lazy-loaded):
-
-```js
+window.Icon('pencil', 'text-rose-600')
+// ou inline (recomendado em módulos lazy-loaded, sem depender do global):
 React.createElement("svg", { className: "ico ico-sm", "aria-hidden": "true" },
   React.createElement("use", { href: "#i-refresh" }))
 ```
 
-A cor vem de `currentColor` — basta setar `text-...` (Tailwind) no elemento ou no pai.
-Cores da marca: roxo `#7c3aed` / `#770fa8`, laranja `#f67602`.
+Cor vem de `currentColor`. Marca: roxo `#7c3aed`/`#770fa8`, laranja `#f67602`.
 
 ---
 
 ## Ícones disponíveis no sprite
 
-`power`, `pencil`, `tag`, `truck`, `wallet`, `trash`, `search`, `plus`, `copy`, `x`,
-`alert`, `refresh`, `check`, `corner`.
+**Base:** `power` `pencil` `tag` `truck` `wallet` `trash` `search` `plus` `copy`
+`x` `alert` `refresh` `check` `corner` `link` `list` `pin` `lock` `eye` `eyeoff`
+`settings` `message`
+
+**Expansão (jul/2026):** `chart` `calendar` `package` `wrench` `map` `filetext`
+`building` `bike` `ban` `users` `user` `target` `camera` `zap` `clock` `crown`
+`rocket` `save` `bulb` `new` `clipboard` `home` `bell` `star` `mail` `phone`
+`card` `key` `info` `help` `circle` `arrowright` `arrowleft` `trendup`
+`trenddown` `download` `upload` `filter`
 
 ---
+
+## Mapa emoji → ícone (para a migração)
+
+| emoji | ícone | | emoji | ícone |
+|---|---|---|---|---|
+| ✅ ✓ | `check` | | 📦 | `package` |
+| ❌ ✕ | `x` | | 🔧 | `wrench` |
+| ⚠️ | `alert` | | 🗺️ | `map` |
+| 🔄 | `refresh` | | 📝 📄 | `filetext` |
+| 🔍 | `search` | | 🏢 | `building` |
+| 📍 | `pin` | | 🏍️ | `bike` |
+| 🗑️ | `trash` | | 🚫 | `ban` |
+| ✏️ | `pencil` | | 👥 | `users` |
+| ➕ | `plus` | | 👤 | `user` |
+| 🔒 | `lock` | | 🎯 | `target` |
+| 👁️ | `eye` / `eyeoff` | | 📷 | `camera` |
+| ⚙️ | `settings` | | ⚡ | `zap` |
+| 💬 | `message` | | ⏱️ ⏰ | `clock` |
+| 💰 | `wallet` | | 👑 | `crown` |
+| 📊 📈 | `chart` / `trendup` | | 🚀 | `rocket` |
+| 📅 | `calendar` | | 💾 | `save` |
+| 📋 | `clipboard` / `list` | | 💡 | `bulb` |
+| 🔗 | `link` | | 🆕 | `new` |
+| 🏠 | `home` | | 🔔 | `bell` |
+| ⭐ | `star` | | 📧 ✉️ | `mail` |
+| 📞 | `phone` | | 💳 | `card` |
+| 🔑 | `key` | | ℹ️ | `info` |
+| ❓ | `help` | | ↩️ | `corner` |
+| → | `arrowright` | | ← | `arrowleft` |
+| 📥 | `download` | | 📤 | `upload` |
+
+Sem correspondência boa? **Deixa o emoji.** Botões "Salvando..." ficam só texto.
 
 ## Como adicionar um ícone novo
+Pegue o SVG em [lucide.dev](https://lucide.dev) (só os paths internos) e adicione
+`<symbol id="i-NOME" viewBox="0 0 24 24">...</symbol>` no sprite. Só stroke, sem fill.
 
-1. Pegue o SVG oficial no [lucide.dev](https://lucide.dev) (só os `<path>`/`<circle>` internos).
-2. Adicione um `<symbol>` no sprite do `index.html`:
-
-   ```html
-   <symbol id="i-NOME" viewBox="0 0 24 24"><path d="..." /></symbol>
-   ```
-
-3. Use `id="i-NOME"` (prefixo `i-` obrigatório). **Só traço, sem `fill`** — o `.ico`
-   já aplica `stroke:currentColor; fill:none`.
-
----
-
-## Armadilhas conhecidas
-
-- **`window.Icon` só existe em runtime.** Helpers locais (ex.: uma função `ico()`
-  dentro de um `.map()`) precisam estar **no mesmo escopo onde são chamados**. Já
-  ocorreu `ReferenceError: ico is not defined` porque a legenda de rodapé chamava
-  `ico()` fora do `.map()` que a definia. Solução: usar a **Forma 2 (inline)** fora
-  do escopo do helper.
-- Não espalhar SVG escrito à mão pelo código — use o helper ou o padrão inline acima.
-- Antes de adicionar qualquer ícone, confirme que não voltou Tabler/FA:
-  `grep -rn "tabler\|font-awesome\|ti ti-" .`
-
----
+## Armadilhas
+- `window.Icon` só existe em runtime. Helper local (ex.: `ico()` dentro de `.map`)
+  precisa estar no escopo onde é chamado (bug já ocorrido: `ico is not defined`).
+- Não espalhar SVG na mão; use o helper ou o padrão inline.
+- `grep -rn "tabler\|font-awesome\|ti ti-" .` antes de adicionar ícones.
 
 ## Status da migração
-
-- **Migrado:** Configurações → Clientes API (cards, faixas identidade/configuração/ações).
-- **Pendente:** demais telas e os 6 modais de Clientes API (Editar, Modalidades,
-  Provedores, Preço e mensagem, Desativar, Excluir) — entram no redesign geral.
+- **Feito:** Configurações → Clientes API (cards + 4 modais).
+- **Regra:** converter onde há ícone; deixar emoji onde não há; **não tocar nas home**;
+  toasts/alerts por enquanto mantidos.
