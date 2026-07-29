@@ -1362,7 +1362,7 @@
                                 })
                             ),
                             React.createElement("p", {className: "text-[12px] text-[#94a3b8] mt-4 flex items-center gap-1.5"},
-                                ico("check", "ico-sm"),
+                                React.createElement("svg", {className: "ico ico-sm", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})),
                                 "Ponto verde: configurado neste cliente. Cinza: herda a configura\u00e7\u00e3o global."
                             )
                         )
