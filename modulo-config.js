@@ -1300,6 +1300,7 @@
                                                         valor_fixo: pj && pj.valor_fixo != null ? String(pj.valor_fixo) : "",
                                                         km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
                                                         valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
+                                                        retorno_valor: pj && pj.retorno_valor != null ? String(pj.retorno_valor) : "",
                                                         nome_remetente: cliente.nome_remetente || "",
                                                         package_type: cliente.package_type || "",
                                                         package_weight: cliente.package_weight || "",
@@ -2281,7 +2282,8 @@
                             : {ativo: mp.ativo !== false,
                                valor_fixo: mp.valor_fixo === "" ? null : parseFloat(String(mp.valor_fixo).replace(",", ".")),
                                km_base: mp.km_base === "" ? null : parseFloat(String(mp.km_base).replace(",", ".")),
-                               valor_km_adicional: mp.valor_km_adicional === "" ? null : parseFloat(String(mp.valor_km_adicional).replace(",", "."))};
+                               valor_km_adicional: mp.valor_km_adicional === "" ? null : parseFloat(String(mp.valor_km_adicional).replace(",", ".")),
+                               retorno_valor: mp.retorno_valor === "" || mp.retorno_valor == null ? null : parseFloat(String(mp.retorno_valor).replace(",", "."))};
                         var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/preco-hub", {
                             method: "PUT",
                             headers: {"Content-Type": "application/json"},
@@ -2354,6 +2356,13 @@
                                 campo("Valor fixo (R$)", "valor_fixo", "cobrado até a base"),
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
+                            ),
+                            React.createElement("div", {className: "mb-4 pt-3 border-t"},
+                                React.createElement("div", {className: "w-48"},
+                                    campo("↩️ Adicional por retorno (R$)", "retorno_valor", "")
+                                ),
+                                React.createElement("p", {className: "text-[11px] text-gray-400 mt-1"},
+                                    "Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.")
                             ),
                             React.createElement("div", {className: "pt-4 border-t"},
                                 React.createElement("p", {className: "text-sm font-semibold text-gray-800 mb-1"}, "💬 Mensagem pro entregador (99)"),
