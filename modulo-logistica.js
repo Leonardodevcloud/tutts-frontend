@@ -8,7 +8,7 @@
   'use strict';
 
   const { useState, useEffect, useCallback, useRef, useMemo } = React;
-  const h = React.createElement;
+  const h = React.createElement; /* HUB_ICONS_V1 */
 
   // REDESPACHO_BTN_V1 — estagios em que ainda da pra redespachar.
   //
@@ -46,7 +46,7 @@
       },
         h('span', { className: 'text-[10px] uppercase tracking-wider text-purple-500 font-semibold' }, label),
         h('span', { className: 'text-sm font-bold tracking-widest text-purple-800' }, String(codigo)),
-        h('span', { className: 'text-[10px] text-purple-400' }, '📋')
+        h('span', { className: 'text-[10px] text-purple-400' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })))
       );
     }
     return h('div', { className: 'mt-1.5 inline-flex items-center gap-1 text-[11px] text-gray-400' },
@@ -64,9 +64,9 @@
       title: 'Clique para copiar',
       className: 'mt-1.5 inline-flex items-center gap-1.5 cursor-pointer bg-orange-50 border border-orange-200 rounded-lg px-2 py-1'
     },
-      h('span', { className: 'text-[10px] uppercase tracking-wider text-orange-500 font-semibold' }, '↩️ ' + label),
+      h('span', { className: 'text-[10px] uppercase tracking-wider text-orange-500 font-semibold' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })) + label),
       h('span', { className: 'text-sm font-bold tracking-widest text-orange-800' }, String(codigo)),
-      h('span', { className: 'text-[10px] text-orange-400' }, '📋')
+      h('span', { className: 'text-[10px] text-orange-400' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })))
     );
   }
 
@@ -254,12 +254,12 @@
       // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
         [
-          { lbl: 'Total de entregas', val: total, ico: '📦', chip: 'bg-purple-50 text-purple-600', foot: null },
-          { lbl: 'Entregues', val: entregues, ico: '✅', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total` : null },
-          { lbl: 'Em andamento', val: emand, ico: '🛵', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
-          { lbl: 'Cancelados', val: cancel, ico: '✖', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback` : null },
+          { lbl: 'Total de entregas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: null },
+          { lbl: 'Entregues', val: entregues, ico: 'check', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total` : null },
+          { lbl: 'Em andamento', val: emand, ico: 'bike', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
+          { lbl: 'Cancelados', val: cancel, ico: 'x', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback` : null },
         ].map(k => h('div', { key: k.lbl, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4' },
-          h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center text-lg mb-3 ${k.chip}` }, k.ico),
+          h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${k.chip}` }, h('svg', { className: 'ico ico-lg', 'aria-hidden': 'true' }, h('use', { href: '#i-' + k.ico }))),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, k.lbl),
           h('div', { className: 'text-3xl font-extrabold text-gray-800 mt-1 leading-none' }, k.val),
           k.foot && h('div', { className: 'text-[11px] text-gray-500 mt-2' }, k.foot),
@@ -270,7 +270,7 @@
       h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-3' },
         h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
           h('div', { className: 'flex items-center gap-2 mb-1' },
-            h('h3', { className: 'text-base font-bold text-gray-800' }, '⏱️ Desempenho de tempo'),
+            h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Desempenho de tempo')),
             h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, `média · ${ni(data.n_trilha)} c/ trilha`),
           ),
           h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, da criação à entrega (inclui em andamento).'),
@@ -303,7 +303,7 @@
           const R = 54, CIRC = 2 * Math.PI * R;
           const off = CIRC * (1 - pct / 100);
           return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
-            h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, '🎯 SLA / Prazo'),
+            h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-target' })), 'SLA / Prazo')),
             h('p', { className: 'text-xs text-gray-500 mb-3' }, `No prazo da distância · ${sla ? sla.total_avaliado : 0} entregas avaliadas.`),
             h('div', { className: 'flex flex-col items-center' },
               h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
@@ -343,7 +343,7 @@
       // MARGEM POR CLIENTE
       h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4' },
         h('div', null,
-          h('h3', { className: 'text-base font-bold text-gray-800' }, '💼 Margem por cliente'),
+          h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), 'Margem por cliente')),
           h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Margem = valor cliente − custo do provedor.'),
         ),
         margemLoading
@@ -521,7 +521,7 @@
     }, [posicaoAtual]);
 
     return h('div', { className: 'max-w-7xl mx-auto p-4' },
-      h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, '🛵 Tracking em tempo real'),
+      h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })), 'Tracking em tempo real')),
       h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-4' },
         // Lista
         h('div', { className: 'lg:col-span-1 bg-white rounded-xl border shadow-sm p-3 max-h-[600px] overflow-y-auto' },
@@ -547,7 +547,7 @@
                       onClick: (ev) => ev.stopPropagation(),
                       title: 'Abrir tracking oficial do provedor',
                       className: 'text-purple-600 hover:text-purple-800 text-base',
-                    }, '🔗'),
+                    }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' }))),
                   ),
                 ),
                 e.entregador_nome && h('p', { className: 'text-xs text-gray-600' }, `🛵 ${e.entregador_nome}`),
@@ -582,7 +582,7 @@
                   rel: 'noopener noreferrer',
                   className: 'flex items-center gap-1.5 text-xs px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold flex-shrink-0',
                   title: 'Abrir página oficial de rastreio da entrega em nova aba',
-                }, '🔗 Tracking'),
+                }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' })), 'Tracking')),
               ),
 
               // Dados do entregador
@@ -808,7 +808,7 @@
     let contDisp = 0;
     return h('div', { className: 'pt-3 border-t border-gray-100' },
       h('div', { className: 'flex items-center gap-2 mb-3' },
-        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, '🔁 Tentativas de despacho'),
+        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' })), 'Tentativas de despacho')),
         h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent))
       ),
       // Botao no topo: o que esta escondido sao os passos ANTIGOS.
@@ -1016,22 +1016,22 @@
       // ── Endereços lado a lado ──
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
         h('div', null,
-          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
+          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' })), 'Coleta')),
           h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_coleta || '—'),
           CodigoBadge('Código de coleta', e.pickup_code),
           e.return_code && CodigoBadgeDevol('Código de devolução', e.return_code)
         ),
         h('div', null,
-          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
+          h('div', { className: 'text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })), 'Entrega')),
           h('div', { className: 'text-sm text-gray-800 leading-relaxed break-words' }, e.endereco_entrega || '—'),
           // CLIENTE_FINAL_NF_DETALHE
           (e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap items-center gap-1.5 mt-1.5' },
             e.cliente_final && h('span', {
               className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-gray-100 rounded px-2 py-0.5',
-            }, '🏪 ', e.cliente_final),
+            }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-building' })), e.cliente_final),
             e.nota_fiscal && h('span', {
               className: 'inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded px-2 py-0.5',
-            }, '🧾 NF ', e.nota_fiscal),
+            }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-filetext' })), 'NF '), e.nota_fiscal),
           )
         ),
       ),
@@ -1298,7 +1298,7 @@
             h('div', { className: 'flex-1 pb-3' },
               h('div', { className: 'text-[13px] font-bold text-gray-800' }, m.titulo),
               h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, _fmtHora(m.ts)),
-              m.nota && h('div', { className: 'text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1 inline-block' }, '↩ ' + m.nota),
+              m.nota && h('div', { className: 'text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1 inline-block' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })) + m.nota),
               trocasAqui.map((t, j) => h('div', { key: 'tr' + j, className: 'text-[11px] text-purple-700 bg-purple-50 rounded-md px-2 py-1 mt-1' },
                 '🔄 Troca de entregador · ' + _fmtHora(t.ts) + ((t.nomeAnterior && t.nomeNovo) ? ' — ' + t.nomeAnterior + ' → ' + t.nomeNovo : (t.nomeAnterior ? ' — anterior: ' + t.nomeAnterior : (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))))),
               durMin != null && h('div', { className: `text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded ${durLate ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}` },
@@ -1411,12 +1411,12 @@
     return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
       // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
       extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
-        h('span', null, '📦'),
+        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
         h('span', null, 'Extraviado'),
       ),
       // faixa "Parceiro frequente" no topo (Opcao A)
       !extraviado && freq && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-[11px] font-bold' },
-        h('span', null, '👑'),
+        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' }))),
         h('span', null, 'Parceiro frequente'),
       ),
       // cabeçalho
@@ -1455,11 +1455,11 @@
               e.cliente_final && h('span', {
                 className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-0.5',
                 title: 'Cliente final',
-              }, '🏪 ', e.cliente_final),
+              }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-building' })), e.cliente_final),
               e.nota_fiscal && h('span', {
                 className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5',
                 title: 'Nota fiscal',
-              }, '🧾 NF ', e.nota_fiscal),
+              }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-filetext' })), 'NF '), e.nota_fiscal),
             ),
           )),
       ),
@@ -1477,9 +1477,9 @@
               h('div', { className: 'text-[10px] text-gray-400 truncate' }, fmtTelefoneBR(e.entregador_telefone) || '—'),
             ),
             h('div', { className: 'flex gap-1 flex-shrink-0' },
-              onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, '⚠️'),
+              onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
               // EXTRAVIADOS_BTN_V1: discreto, mesmo padrao do Reportar.
-              podeExtraviar && onExtraviar && h('button', { onClick: () => onExtraviar(e), title: 'Marcar como extraviado', className: 'text-[10px] px-2 py-1 bg-pink-50 rounded-md text-pink-600 hover:bg-pink-100' }, '📦'),
+              podeExtraviar && onExtraviar && h('button', { onClick: () => onExtraviar(e), title: 'Marcar como extraviado', className: 'text-[10px] px-2 py-1 bg-pink-50 rounded-md text-pink-600 hover:bg-pink-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
               e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
             ),
           )
@@ -2235,7 +2235,7 @@
           h('button', {
             onClick: carregar,
             className: 'px-3 py-1.5 bg-gray-200 rounded-lg text-sm hover:bg-gray-300',
-          }, '🔄'),
+          }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
         )
       ),
 
@@ -2265,7 +2265,7 @@
             onClick: () => setDataFiltro(''),
             title: 'Ver todas as datas',
             className: 'px-2 py-2 text-gray-400 hover:text-gray-600 text-sm',
-          }, '✕'),
+          }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-x' }))),
         ),
         h('select', {
           value: filtroStatus,
@@ -2451,7 +2451,7 @@
             h('button', {
               onClick: () => confirmarFalhaCiente(falhaAlerta.entrega),
               className: 'flex-1 text-[13px] font-semibold text-white bg-red-600 rounded-lg py-2.5 hover:bg-red-700'
-            }, '✓ Confirmar ciente')
+            }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-check' })), 'Confirmar ciente'))
           ),
           falhaAlerta.restantes > 0 && h('p', {
             className: 'text-center text-[11px] text-gray-400 pb-4 -mt-2'
@@ -2516,7 +2516,7 @@
                   })
                 : h('span', {
                     className: 'w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm flex-shrink-0',
-                  }, '👤'),
+                  }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-user' }))),
               h('div', { className: 'min-w-0' },
                 h('div', { className: 'text-sm font-semibold text-gray-800 truncate' }, _rrEnt.entregador_nome),
                 h('div', { className: 'text-[11px] text-gray-500' },
@@ -2773,9 +2773,9 @@
                 m.state === 'ok'
                   ? h('div', { className: 'mt-1 space-y-0.5' },
                       h('p', { className: 'text-xs text-gray-600' },
-                        h('span', { className: 'font-semibold text-gray-500' }, '📍 Coleta: '), endColeta),
+                        h('span', { className: 'font-semibold text-gray-500' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })), 'Coleta: ')), endColeta),
                       h('p', { className: 'text-xs text-gray-600' },
-                        h('span', { className: 'font-semibold text-purple-600' }, '🎯 Entrega: '), endEntrega),
+                        h('span', { className: 'font-semibold text-purple-600' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-target' })), 'Entrega: ')), endEntrega),
                       (kmRota != null) && h('p', { className: 'text-[11px] text-gray-400' },
                         `Distância da rota: ${kmRota.toFixed(1)} km`))
                   : h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'comparando provedores'),
@@ -2783,7 +2783,7 @@
               h('button', {
                 onClick: fecharCotacaoModal,
                 className: 'text-gray-400 hover:text-gray-700 text-xl leading-none',
-              }, '✕'),
+              }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-x' }))),
             ),
 
             // Body
@@ -2794,7 +2794,7 @@
 
             : (m.state === 'erro')
               ? h('div', { className: 'p-8 text-center' },
-                  h('div', { className: 'text-3xl mb-2' }, '⚠️'),
+                  h('div', { className: 'text-3xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
                   h('p', { className: 'text-sm text-gray-700 mb-4' }, m.error || 'Erro ao cotar'),
                   h('button', {
                     onClick: recotarOS,
@@ -2820,7 +2820,7 @@
 
                 // Observacao da OS (read-only) — e o que o motoboy ve no app do provedor.
                 obsOS && h('div', { className: 'mb-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' },
-                  h('div', { className: 'text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-0.5' }, '📝 Observação (vai pro motoboy)'),
+                  h('div', { className: 'text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-0.5' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-filetext' })), 'Observação (vai pro motoboy)')),
                   h('div', { className: 'text-xs text-gray-700 leading-relaxed' }, obsOS)),
 
                 // Telefone do cliente — prefill da OS, editavel, obrigatorio.
@@ -3107,13 +3107,13 @@
               // Endereços completos
               h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
                 h('div', null,
-                  h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📦 Coleta'),
+                  h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' })), 'Coleta')),
                   h('div', { className: 'text-sm text-gray-800 leading-relaxed' }, e.endereco_coleta || '—'),
                   e.latitude_coleta && h('div', { className: 'text-[11px] text-gray-400 mt-1 font-mono' },
                     `${e.latitude_coleta}, ${e.longitude_coleta}`)
                 ),
                 h('div', null,
-                  h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1' }, '📍 Entrega'),
+                  h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })), 'Entrega')),
                   h('div', { className: 'text-sm text-gray-800 leading-relaxed' }, e.endereco_entrega || '—'),
                   e.latitude_entrega && h('div', { className: 'text-[11px] text-gray-400 mt-1 font-mono' },
                     `${e.latitude_entrega}, ${e.longitude_entrega}`)
@@ -3143,7 +3143,7 @@
 
               // Entregador completo
               e.entregador_nome && h('div', { className: 'bg-gray-50 rounded-lg p-4' },
-                h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3' }, '🏍 Entregador'),
+                h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })), 'Entregador')),
                 h('div', { className: 'flex gap-4 items-start' },
                   // Foto grande à esquerda
                   e.entregador_foto && h('img', {
@@ -3167,7 +3167,7 @@
 
               // Tracking URL oficial do provedor
               e.tracking_url && h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3' },
-                h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-2' }, '🔗 Rastreio da entrega'),
+                h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' })), 'Rastreio da entrega')),
                 h('div', { className: 'flex items-center gap-2 flex-wrap' },
                   h('a', {
                     href: e.tracking_url,
@@ -3230,7 +3230,7 @@
               (e.pickup_code || e.dropoff_code) &&
               h('div', { className: 'border border-gray-200 rounded-xl overflow-hidden' },
                 h('div', { className: 'bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
-                  h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔑 Códigos de verificação'),
+                  h('span', { className: 'text-sm font-semibold text-gray-700' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-key' })), 'Códigos de verificação')),
                   h('span', { className: 'text-xs text-gray-400' }, 'Apresente ao entregador / destinatário'),
                 ),
                 h('div', { className: 'p-4 space-y-3' },
@@ -3238,7 +3238,7 @@
                   // Código de COLETA
                   e.pickup_code && h('div', { className: 'flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3' },
                     h('div', null,
-                      h('div', { className: 'text-xs uppercase tracking-wider text-amber-700 font-semibold mb-1' }, '📦 Código de coleta'),
+                      h('div', { className: 'text-xs uppercase tracking-wider text-amber-700 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' })), 'Código de coleta')),
                       h('div', { className: 'text-xs text-amber-600 mb-1' }, 'Atendente da loja informa ao motoboy ao entregar o pacote'),
                       h('div', { className: 'text-2xl font-bold tracking-widest text-amber-800 font-mono' }, e.pickup_code),
                     ),
@@ -3256,14 +3256,14 @@
                           } catch (_) { showToast('Erro ao enviar', 'error'); }
                         },
                         className: 'text-xs px-2.5 py-1.5 border border-amber-200 rounded-md hover:bg-amber-100 text-amber-700',
-                      }, '📲 Reenviar WPP'),
+                      }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-phone' })), 'Reenviar WPP')),
                     ),
                   ),
 
                   // Código de ENTREGA
                   e.dropoff_code && h('div', { className: 'flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-3' },
                     h('div', null,
-                      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-1' }, '📍 Código de entrega'),
+                      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })), 'Código de entrega')),
                       h('div', { className: 'text-xs text-purple-600 mb-1' },
                         e.codigo_wpp_enviado
                           ? '✓ WhatsApp enviado ao destinatário'
@@ -3285,7 +3285,7 @@
                           } catch (_) { showToast('Erro ao enviar', 'error'); }
                         },
                         className: 'text-xs px-2.5 py-1.5 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-700',
-                      }, '📲 Reenviar WPP'),
+                      }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-phone' })), 'Reenviar WPP')),
                     ),
                   ),
 
@@ -3293,7 +3293,7 @@
                   // So aparece quando ha codigo; fica so aqui nos detalhes.
                   e.return_code && h('div', { className: 'flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-4 py-3' },
                     h('div', null,
-                      h('div', { className: 'text-xs uppercase tracking-wider text-orange-700 font-semibold mb-1' }, '↩️ Código de devolução'),
+                      h('div', { className: 'text-xs uppercase tracking-wider text-orange-700 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })), 'Código de devolução')),
                       h('div', { className: 'text-xs text-orange-600 mb-1' }, 'Apresente ao remetente ao devolver o pacote'),
                       h('div', { className: 'text-2xl font-bold tracking-widest text-orange-800 font-mono' }, e.return_code),
                     ),
@@ -3307,7 +3307,7 @@
                   // Direciona o operador pro comprovante em vez de deixar o campo vazio.
                   !e.return_code && (e.status_canonico === 'RETURNED' || /sendback|devolv/i.test(String(e.status_native || ''))) &&
                   h('div', { className: 'flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 text-sm text-orange-800' },
-                    h('span', { className: 'text-base' }, '📸'),
+                    h('span', { className: 'text-base' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-camera' }))),
                     h('span', null, 'Devolução verificada por foto — veja o comprovante abaixo.'),
                   ),
                 ),
@@ -3320,7 +3320,7 @@
                 // Header do bloco
                 h('div', { className: 'bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
                   h('div', { className: 'flex items-center gap-2' },
-                    h('span', { className: 'text-sm font-semibold text-gray-700' }, '📸 Comprovante de entrega'),
+                    h('span', { className: 'text-sm font-semibold text-gray-700' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-camera' })), 'Comprovante de entrega')),
                     h('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full' }, e.provider_code === 'noventanove' ? '99Entrega' : 'Uber Direct'),
                   ),
                   !comprovante && !loadingComprovante && h('button', {
@@ -3402,7 +3402,7 @@
                       const srcSig = imgSrc(comprovante.signature);
                       if (!srcSig) return null;
                       return h('div', null,
-                        h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, '✍ Assinatura do recebedor'),
+                        h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pencil' })), 'Assinatura do recebedor')),
                         h('div', { className: 'bg-gray-50 rounded-lg border border-gray-200 p-3 flex justify-center' },
                           h('img', {
                             src: srcSig,
@@ -3431,14 +3431,14 @@
                           URL.revokeObjectURL(url);
                         },
                         className: 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 text-gray-600',
-                      }, '⬇ Baixar dados brutos'),
+                      }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-download' })), 'Baixar dados brutos')),
                     ),
                   ),
 
                   // Estado inicial — antes de clicar em "Carregar"
                   !comprovante && !loadingComprovante && !erroComprovante &&
                   h('div', { className: 'text-center py-5 text-gray-400 text-sm' },
-                    h('div', { className: 'text-2xl mb-2' }, '📄'),
+                    h('div', { className: 'text-2xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-filetext' }))),
                     'Clique em "Carregar comprovante" para buscar a foto e assinatura coletadas pelo entregador da Uber.'
                   ),
                 ),
@@ -3462,7 +3462,7 @@
                   onClick: copiarDeliveryId,
                   className: 'text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 text-gray-600 flex-shrink-0',
                   title: 'Copiar ID',
-                }, '📋 Copiar'),
+                }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })), 'Copiar')),
               ),
 
               // ── 🔧 Dados técnicos (colapsável) ──
@@ -3944,7 +3944,7 @@
     return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
       h('div', { className: 'flex items-center justify-between' },
         h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, '📋 Regras por endereço de coleta'),
+          h('h2', { className: 'text-2xl font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })), 'Regras por endereço de coleta')),
           h('p', { className: 'text-xs text-gray-500 mt-1' },
             'O worker só despacha OS cujo endereço de coleta casa com algum trecho cadastrado aqui. ',
             'A Mapp não retorna nome do cliente — match é por trecho do endereço. Sem regra ativa = sem despacho automático.')
@@ -3963,7 +3963,7 @@
       h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
         regras.length === 0
           ? h('div', { className: 'p-12 text-center text-gray-400' },
-              h('div', { className: 'text-4xl mb-2' }, '📭'),
+              h('div', { className: 'text-4xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-mail' }))),
               h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
               h('p', { className: 'text-xs mt-1' }, 'Enquanto não houver regras, o worker não vai despachar nada automaticamente.'))
           : h('table', { className: 'w-full text-sm' },
@@ -3991,7 +3991,7 @@
                   h('td', { className: 'px-4 py-3 text-xs' },
                     (r.regioes_permitidas && r.regioes_permitidas.length > 0)
                       ? r.regioes_permitidas.join(', ')
-                      : h('span', { className: 'text-amber-600 font-semibold' }, '⚠ qualquer região')),
+                      : h('span', { className: 'text-amber-600 font-semibold' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' })), 'qualquer região'))),
                   h('td', { className: 'px-4 py-3 text-xs' },
                     (r.horario_inicio && r.horario_fim)
                       ? `${r.horario_inicio} – ${r.horario_fim}`
@@ -4139,7 +4139,7 @@
                     rotulo);
                 };
                 return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
-                  h('label', { className: 'block text-xs font-semibold text-purple-700 mb-2' }, '↩️ Adicional por retorno'),
+                  h('label', { className: 'block text-xs font-semibold text-purple-700 mb-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })), 'Adicional por retorno')),
                   h('div', { className: 'flex items-center gap-4 mb-2' }, opt('fixo', 'Valor fixo'), opt('pct', 'Percentual')),
                   modo === 'pct'
                     ? h('div', { className: 'flex items-center gap-2' },
@@ -4192,7 +4192,7 @@
             h('div', { className: 'pt-3 border-t' },
               h('div', { className: 'flex items-center justify-between gap-3 mb-2' },
                 h('div', null,
-                  h('span', { className: 'text-sm font-semibold text-gray-800' }, '🔐 Acesso do cliente ao painel'),
+                  h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-lock' })), 'Acesso do cliente ao painel')),
                   h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
                     'A loja ve so as entregas desta regra, em tempo real. Sem chat, editar, cancelar ou valores.')),
                 h('button', {
@@ -4238,7 +4238,7 @@
 
             h('div', { className: 'pt-3 border-t' },
               h('div', { className: 'flex items-center gap-2 mb-1' },
-                h('span', { className: 'text-sm font-semibold text-gray-800' }, '💬 Mensagem pro entregador (99)')),
+                h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-message' })), 'Mensagem pro entregador (99)'))),
               h('p', { className: 'text-[11px] text-gray-500 mb-3' },
                 'Em branco usa a configuracao global. Preenchido, sobrescreve so para este cliente.'),
               h('div', { className: 'mb-3' },
@@ -4358,7 +4358,7 @@
     return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50', onClick: onClose },
       h('div', { className: 'bg-white rounded-xl shadow-xl w-full max-w-md', onClick: (ev) => ev.stopPropagation() },
         h('div', { className: 'flex items-center justify-between px-5 py-4 border-b border-gray-100' },
-          h('span', { className: 'text-base font-bold text-gray-800 flex items-center gap-2' }, '⚠️ Reportar ocorrencia'),
+          h('span', { className: 'text-base font-bold text-gray-800 flex items-center gap-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' })), 'Reportar ocorrencia')),
           h('button', { onClick: onClose, className: 'text-gray-400 hover:text-gray-600 text-xl leading-none' }, '×'),
         ),
         h('div', { className: 'px-5 py-4 space-y-4' },
@@ -4455,7 +4455,7 @@
 
     return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
       h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, '🚫 Entregadores barrados'),
+        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-ban' })), 'Entregadores barrados')),
         h('div', { className: 'flex gap-2' },
           h('input', {
             value: busca, onChange: (ev) => setBusca(ev.target.value),
@@ -4463,7 +4463,7 @@
             placeholder: 'Buscar por nome ou telefone',
             className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-56 focus:border-purple-400 focus:outline-none',
           }),
-          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, '↻'),
+          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
         ),
       ),
       h('div', { className: 'grid grid-cols-3 gap-3' },
@@ -4558,7 +4558,7 @@
 
     return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
       h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, '👑 Motoboys frequentes'),
+        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' })), 'Motoboys frequentes')),
         h('div', { className: 'flex gap-2' },
           h('input', {
             value: busca, onChange: (ev) => setBusca(ev.target.value),
@@ -4566,7 +4566,7 @@
             placeholder: 'Buscar por nome',
             className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:border-purple-400 focus:outline-none',
           }),
-          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, '↻'),
+          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
         ),
       ),
       h('div', { className: 'grid grid-cols-3 gap-3' },
@@ -4610,7 +4610,7 @@
                       className: `w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${top ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-700'}`,
                       style: f.foto ? { display: 'none' } : {},
                     }, iniciaisDoNome(f.nome)),
-                    top && h('span', { className: 'absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-100 border border-white flex items-center justify-center text-[9px]', title: 'Top parceiro' }, '👑'),
+                    top && h('span', { className: 'absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-100 border border-white flex items-center justify-center text-[9px]', title: 'Top parceiro' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' }))),
                   ),
                     h('span', { className: `font-semibold truncate ${top ? 'text-amber-700' : 'text-gray-800'}` }, f.nome || 'Entregador'),
                   ),
@@ -4859,7 +4859,7 @@
       return h('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${cor}` }, s || '—');
     };
     const trajeto = (r) => h('div', null,
-      h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-500 leading-4' }, '●'), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
+      h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-500 leading-4' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-circle' }))), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
       h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, '▼'), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
     );
 
@@ -4962,7 +4962,7 @@
           ? `Inclui R$ ${nb(r.adicional_retorno)} de adicional por devolução`
           : '' }),
         cel: (r) => [brl(r.valor), r.adicional_retorno
-          ? h('span', { key: 'ret', className: 'text-orange-400 ml-0.5', title: 'com adicional de devolução' }, '↩')
+          ? h('span', { key: 'ret', className: 'text-orange-400 ml-0.5', title: 'com adicional de devolução' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })))
           : null],
         csvRot: ['Valor Hub (R$)', 'Adicional Retorno (R$)'],
         csv: (r) => [nb(r.valor), r.adicional_retorno ? nb(r.adicional_retorno) : ''] },
@@ -5009,7 +5009,7 @@
           }, qtdFiltros ? `Filtros (${qtdFiltros})` : 'Filtros'),
           h('span', { className: 'text-[11px] text-gray-400' }, `${de} a ${ate}`),
           h('button', { onClick: carregar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳'),
-          h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, '⬇ CSV'),
+          h('button', { onClick: baixarCSV, className: 'px-3 py-1.5 bg-white border border-purple-300 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-download' })), 'CSV')),
         ),
       ),
 
@@ -5183,7 +5183,7 @@
       // Componente externo (window global) — fallback se o script não carregou.
       provedores: window.ModuloLogisticaProviders || (() => h('div', {
         className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg'
-      }, '⚠️ modulo-logistica-providers.js não foi carregado. Verifique o index.html.')),
+      }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' })), 'modulo-logistica-providers.js não foi carregado. Verifique o index.html.'))),
     };
     const Atual = abas[aba] || TabDashboard;
 
