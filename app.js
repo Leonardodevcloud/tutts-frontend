@@ -542,7 +542,7 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 // ==== Icones do menu (sprite Lucide). Converte no render; NAO altera o config nem a home. ====
-var NAV_EMOJI_ICON = {"📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"lock"};
+var NAV_EMOJI_ICON = {"🤖":"bot","📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"shield"};
 function navIconEl(raw, cls) {
   if (!raw) return null;
   var key = String(raw).replace(/\uFE0F/g, "");
@@ -551,20 +551,42 @@ function navIconEl(raw, cls) {
   return React.createElement("svg", { className: "ico " + (cls || ""), "aria-hidden": "true" },
     React.createElement("use", { href: "#i-" + name }));
 }
+var NAV_TAB_NAME = {
+  "dashboard":"chart","tracking":"pin","entregas":"package","regras":"list","busca":"search",
+  "ranking":"crown","relatorios":"filetext","relatorio":"filetext","relatório":"filetext","relatórios":"filetext",
+  "clientes":"users","interacoes":"message","interações":"message","ocorrencias":"alert","ocorrências":"alert",
+  "agenda":"calendar","emails":"mail","usuarios":"users","usuários":"users","auditoria":"filetext",
+  "sistema":"settings","tarefas":"check","metricas":"chart","métricas":"chart","panorama":"chart",
+  "principal":"home","faltosos":"alert","espelho":"copy","motoboys":"bike","restricoes":"ban","restrições":"ban",
+  "configuracoes":"settings","configurações":"settings","config":"settings","perfil":"user","comunidade":"users",
+  "mensagens":"message","indicacoes":"handshake","indicações":"handshake","avisos":"bell","recrutamento":"users",
+  "provedores":"link","chat":"message","garantido":"wallet","upload":"upload","backup":"save","validacao":"check",
+  "validação":"check","conciliacao":"refresh","conciliação":"refresh","resumo":"filetext","gratuidades":"package",
+  "restritos":"ban","loja":"package","horarios":"settings","horários":"settings","limites":"lock","saldo":"card"
+};
 function tabLabelEl(label) {
   if (!label || typeof label !== "string") return label;
   var chars = Array.from(label);
   var first = chars[0];
   var idx = (chars[1] === "\uFE0F") ? 2 : 1;
   var name = NAV_EMOJI_ICON[first];
-  if (!name) return label;
-  var rest = chars.slice(idx).join("").replace(/^\s+/, "");
-  return React.createElement("span", { className: "inline-flex items-center gap-1.5" },
-    React.createElement("svg", { className: "ico", "aria-hidden": "true" },
-      React.createElement("use", { href: "#i-" + name })),
-    rest);
+  if (name) {
+    var rest = chars.slice(idx).join("").replace(/^\s+/, "");
+    return React.createElement("span", { className: "inline-flex items-center gap-1.5" },
+      React.createElement("svg", { className: "ico", "aria-hidden": "true" },
+        React.createElement("use", { href: "#i-" + name })),
+      rest);
+  }
+  var nm = NAV_TAB_NAME[label.trim().toLowerCase()];
+  if (nm) {
+    return React.createElement("span", { className: "inline-flex items-center gap-1.5" },
+      React.createElement("svg", { className: "ico", "aria-hidden": "true" },
+        React.createElement("use", { href: "#i-" + nm })),
+      label);
+  }
+  return label;
 }
-/* NAV_ICONS_V2 */
+/* NAV_ICONS_V3 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -798,7 +820,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                             onClick: onRefresh,
                             className: "p-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors",
                             title: "Atualizar"
-                        }, "🔄"),
+                        }, React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))),
                         // Avatar e nome
                         React.createElement("div", { className: "flex items-center gap-2" },
                             socialProfile?.profile_photo ? 
@@ -812,9 +834,9 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                             React.createElement("div", { className: "hidden lg:block" },
                                 React.createElement("p", { className: "text-white text-sm font-medium leading-tight" }, usuario?.fullName?.split(" ")[0] || "Usuário"),
                                 React.createElement("p", { className: "text-indigo-300 text-xs leading-tight" },
-                                    usuario?.role === "admin_master" ? "👑 Master" :
-                                    usuario?.role === "admin" ? "👑 Admin" :
-                                    usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                    usuario?.role === "admin_master" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Master") :
+                                    usuario?.role === "admin" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Admin") :
+                                    usuario?.role === "admin_financeiro" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Financeiro") : React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Usuário")
                                 )
                             )
                         ),
@@ -823,7 +845,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                             onClick: onLogout,
                             className: "p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors",
                             title: "Sair"
-                        }, "🚪")
+                        }, React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-logout" })))
                     )
                 )
             )
@@ -1013,9 +1035,9 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                             React.createElement("div", { className: "hidden lg:block" },
                                 React.createElement("p", { className: "text-white text-sm font-medium leading-tight" }, usuario?.fullName?.split(" ")[0] || "Usuário"),
                                 React.createElement("p", { className: "text-indigo-300 text-xs leading-tight" },
-                                    usuario?.role === "admin_master" ? "👑 Master" :
-                                    usuario?.role === "admin" ? "👑 Admin" :
-                                    usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                                    usuario?.role === "admin_master" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Master") :
+                                    usuario?.role === "admin" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Admin") :
+                                    usuario?.role === "admin_financeiro" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Financeiro") : React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Usuário")
                                 )
                             )
                         ),
