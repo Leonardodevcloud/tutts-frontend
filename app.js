@@ -586,7 +586,7 @@ function tabLabelEl(label) {
   }
   return label;
 }
-/* NAV_ICONS_V3 */
+/* NAV_ICONS_V4 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -916,9 +916,9 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
                     React.createElement("div", {className: "overflow-hidden"},
                         React.createElement("p", {className: "text-white font-semibold text-sm truncate"}, usuario?.fullName || "Usuário"),
                         React.createElement("p", {className: "text-purple-300 text-xs truncate"}, 
-                            usuario?.role === "admin_master" ? "👑 Master" :
-                            usuario?.role === "admin" ? "👑 Admin" :
-                            usuario?.role === "admin_financeiro" ? "💰 Financeiro" : "👤 Usuário"
+                            usuario?.role === "admin_master" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Master") :
+                            usuario?.role === "admin" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Admin") :
+                            usuario?.role === "admin_financeiro" ? React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Financeiro") : React.createElement("span", { className: "inline-flex items-center gap-1" }, React.createElement("svg", { className: "ico-sm", "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Usuário")
                         )
                     )
                 ),
@@ -1021,7 +1021,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                         React.createElement("button", {
                             onClick: onRefresh,
                             className: "p-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20"
-                        }, "🔄"),
+                        }, React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))),
                         // Avatar
                         React.createElement("div", { className: "flex items-center gap-2" },
                             socialProfile?.profile_photo ?
@@ -1045,7 +1045,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                         React.createElement("button", {
                             onClick: onLogout,
                             className: "p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
-                        }, "🚪")
+                        }, React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-logout" })))
                     )
                 )
             )
