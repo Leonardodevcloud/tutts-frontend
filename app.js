@@ -542,18 +542,7 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 // ==== Icones do menu (sprite Lucide). Converte no render; NAO altera o config nem a home. ====
-var NAV_EMOJI_ICON = {
-  "\U0001F4CB":"clipboard","\U0001F4B0":"wallet","\u2699":"settings","\U0001F4C5":"calendar",
-  "\U0001F4CA":"chart","\U0001F4DD":"filetext","\U0001F465":"users","\U0001F5FA":"map",
-  "\U0001F527":"wrench","\U0001F4AC":"message","\U0001F4C8":"trendup","\U0001F69A":"truck",
-  "\U0001F517":"link","\u26A1":"zap","\U0001F3E0":"home","\U0001F513":"lock","\U0001F3E6":"building",
-  "\U0001F4BC":"wallet","\U0001F4D1":"filetext","\U0001F381":"package","\U0001F6AB":"ban",
-  "\U0001F3AF":"target","\U0001F6D2":"package","\U0001F4E2":"bell","\U0001F4BE":"save",
-  "\U0001F4B3":"card","\U0001F3E2":"building","\U0001F464":"user","\U0001F4E4":"upload",
-  "\U0001F50D":"search","\U0001F451":"crown","\U0001F50C":"link","\U0001F504":"refresh",
-  "\u2705":"check","\U0001F4E5":"download","\U0001F91D":"users","\U0001F3E5":"plus",
-  "\U0001F5C2":"list","\U0001F5D3":"calendar"
-};
+var NAV_EMOJI_ICON = {"📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"lock"};
 function navIconEl(raw, cls) {
   if (!raw) return null;
   var key = String(raw).replace(/\uFE0F/g, "");
@@ -575,7 +564,7 @@ function tabLabelEl(label) {
       React.createElement("use", { href: "#i-" + name })),
     rest);
 }
-/* NAV_ICONS_V1 */
+/* NAV_ICONS_V2 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
