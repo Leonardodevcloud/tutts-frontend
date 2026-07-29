@@ -1164,61 +1164,76 @@
                             }, "🔄 Carregar")
                         ),
                         p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
-                        p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement("div", {className: "space-y-2"},
-                            p.clientesApiLista.map(function(cliente) {
-                                var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
-                                return React.createElement("div", {
-                                    key: cliente.id,
-                                    className: "bg-gray-50 rounded-lg p-3"
-                                },
-                                    React.createElement("div", {className: "flex items-start justify-between gap-2"},
-                                        React.createElement("div", {className: "flex-1 min-w-0"},
-                                            React.createElement("p", {className: "font-medium text-gray-800"}, cliente.nome),
-                                            React.createElement("p", {className: "text-sm text-gray-500"}, cliente.email, " • ", cliente.empresa || "Sem empresa"),
-                                            React.createElement("p", {className: "text-xs text-gray-400 font-mono"}, "Cód: ", cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente),
-                                            cats.length > 0
-                                                ? React.createElement("div", {className: "flex flex-wrap gap-1 mt-1.5"},
-                                                    cats.map(function(c) {
-                                                        return React.createElement("span", {
-                                                            key: c.sigla,
-                                                            className: "px-2 py-0.5 rounded-full text-xs font-medium",
-                                                            style: {background: "#EEEDFE", color: "#3C3489", border: "0.5px solid #AFA9EC"}
-                                                        }, c.sigla + " — " + c.nome);
-                                                    })
-                                                  )
-                                                : React.createElement("p", {className: "text-xs text-gray-400 mt-1 italic"}, "Nenhuma categoria configurada"),
-                                            (function() {
-                                                var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
-                                                var extras = provs.filter(function(p) { return p !== "tutts"; });
-                                                if (extras.length === 0) return null;
-                                                var INFO = {
-                                                    uber: { label: "Uber Flash", logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSIyMCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlViZXI8L3RleHQ+PC9zdmc+" },
-                                                    "99": { label: "99 Moto",    logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiNGRkQ3MDAiLz48dGV4dCB4PSIyMCIgeT0iMjciIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzFhMWExYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+OTk8L3RleHQ+PC9zdmc+" }
-                                                };
-                                                return React.createElement("div", {className: "flex flex-wrap gap-1 mt-1"},
-                                                    extras.map(function(code) {
-                                                        var info = INFO[code] || {label: code, bg: "#888", color: "white"};
-                                                        return React.createElement("span", {
-                                                            key: code,
-                                                            className: "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
-                                                            style: {background:code==="uber"?"#f3f3f3":"#fffbe6",color:code==="uber"?"#1a1a1a":"#7a5c00",border:"0.5px solid "+(code==="uber"?"#d1d5db":"#f0d060")}
-                                                        },
-                                                            React.createElement("img",{
-                                                                src: info.logo,
-                                                                style:{width:16,height:16,borderRadius:"50%",flexShrink:0,objectFit:"cover"}
-                                                            }),
-                                                            " " + info.label
-                                                        );
-                                                    })
-                                                );
-                                            })()
+                        p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement(React.Fragment, null,
+                            /* CLIENTES_API_CARDS_V1 */
+                            React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"},
+                                p.clientesApiLista.map(function(cliente) {
+                                    function ico(n, extra) {
+                                        return React.createElement("svg", {className: "ico " + (extra || ""), "aria-hidden": "true"},
+                                            React.createElement("use", {href: "#i-" + n}));
+                                    }
+                                    function fmtBRL(v) {
+                                        var n = Number(String(v).replace(",", "."));
+                                        if (!isFinite(n)) return String(v);
+                                        return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    }
+                                    function capRow(set, txt) {
+                                        return React.createElement("div", {className: "flex items-center gap-2 py-[3px]"},
+                                            React.createElement("span", {className: "w-[5px] h-[5px] rounded-full flex-none", style: {background: set ? "#0f766e" : "#dde2ea"}}),
+                                            React.createElement("span", {className: "text-[12px] truncate " + (set ? "text-[#0f172a] font-medium" : "text-[#94a3b8]"), title: txt}, txt));
+                                    }
+                                    var codigo = cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente || "\u2014";
+                                    var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
+                                    var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
+                                    var extras = provs.filter(function(pv) { return pv !== "tutts"; });
+                                    var temHub = extras.length > 0;
+                                    var pj = cliente.preco_hub;
+                                    if (typeof pj === "string") { try { pj = JSON.parse(pj); } catch (e) { pj = null; } }
+                                    var temPreco = !!(pj && pj.valor_fixo != null);
+                                    var PROV_LABEL = {uber: "Uber Flash", "99": "99 Moto"};
+                                    var freteSet = cats.length > 0;
+                                    var freteTxt = freteSet ? cats.map(function(c) { return c.sigla; }).join(", ") : "Modalidades globais";
+                                    var provSet = extras.length > 0;
+                                    var provTxt = provSet ? extras.map(function(pv) { return PROV_LABEL[pv] || pv; }).join(" \u00b7 ") : "S\u00f3 frota Tutts";
+                                    var precoTxt = temPreco
+                                        ? ("R$ " + fmtBRL(pj.valor_fixo) + (pj.valor_km_adicional != null ? " + R$ " + fmtBRL(pj.valor_km_adicional) + "/km" : " fixo"))
+                                        : "Tabela global";
+                                    var actBase = "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#64748b] hover:bg-[#f1f3f7] hover:border-[#e5e8ee] hover:text-[#0f172a]";
+
+                                    return React.createElement("div", {
+                                        key: cliente.id,
+                                        className: "bg-white border border-[#e5e8ee] rounded-[10px] transition hover:border-[#cfd5e0] hover:shadow-sm flex flex-col" + (cliente.ativo ? "" : " opacity-60")
+                                    },
+                                        // ---- FAIXA 1: IDENTIDADE ----
+                                        React.createElement("div", {className: "px-3.5 pt-3.5 pb-3"},
+                                            React.createElement("div", {className: "flex items-start justify-between gap-2 mb-1.5"},
+                                                React.createElement("button", {
+                                                    className: "font-mono text-[11px] font-medium text-[#5b21b6] bg-[#f5f2ff] border border-[#e6dcfb] rounded px-1.5 py-0.5 flex-none inline-flex items-center gap-1 hover:bg-[#efe8fe] transition",
+                                                    title: "Copiar c\u00f3digo",
+                                                    onClick: function() { try { navigator.clipboard.writeText(String(codigo)); ja("C\u00f3digo copiado", "success"); } catch (e) {} }
+                                                }, codigo, ico("copy", "ico-sm")),
+                                                cliente.ativo
+                                                    ? React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#ecfdf5", color: "#0f766e"}}, "Ativo")
+                                                    : React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#f1f3f7", color: "#64748b"}}, "Inativo")
+                                            ),
+                                            React.createElement("h3", {
+                                                className: "text-[14px] font-semibold tracking-[-.01em] leading-snug mb-1",
+                                                title: cliente.nome,
+                                                style: {display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"}
+                                            }, cliente.nome),
+                                            React.createElement("p", {className: "text-[12px] text-[#64748b] truncate", title: cliente.email}, cliente.email),
+                                            React.createElement("p", {className: "text-[11px] text-[#94a3b8] truncate mt-0.5", title: cliente.empresa || ""}, cliente.empresa || "Sem empresa")
                                         ),
-                                        React.createElement("div", {className: "flex items-center gap-2 flex-shrink-0"},
-                                        React.createElement("span", {
-                                            className: cliente.ativo ? "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" : "px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
-                                        }, cliente.ativo ? "✅ Ativo" : "❌ Inativo"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
+                                        // ---- FAIXA 2: CONFIGURACAO ----
+                                        React.createElement("div", {className: "px-3.5 py-2.5 border-y border-[#e5e8ee] bg-[#fcfdfe] flex-1"},
+                                            capRow(freteSet, freteTxt),
+                                            capRow(provSet, provTxt),
+                                            capRow(temPreco, precoTxt)
+                                        ),
+                                        // ---- FAIXA 3: ACOES ----
+                                        React.createElement("div", {className: "px-2.5 py-2 flex items-center gap-0.5"},
+                                            React.createElement("button", {
+                                                onClick: async function() {
                                                 if (!confirm("Desativar/ativar este cliente?")) return;
                                                 try {
                                                     var respSt = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/status", {
@@ -1232,11 +1247,11 @@
                                                     ja("Erro", "error");
                                                 }
                                             },
-                                            title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
-                                            className: "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-                                        }, "🔄"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
+                                                title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
+                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border transition " + (cliente.ativo ? "text-[#7c3aed] bg-[#f5f2ff] border-[#efe8fe]" : "text-[#64748b] border-transparent hover:bg-[#f1f3f7] hover:border-[#e5e8ee] hover:text-[#0f172a]")
+                                            }, ico("power")),
+                                            React.createElement("button", {
+                                                onClick: async function() {
                                                 // Abre modal de edição + carrega lista de grupos pra o select
                                                 var gruposFetched = [];
                                                 try {
@@ -1259,39 +1274,31 @@
                                                     }
                                                 });
                                             },
-                                            title: "Editar cliente (nome, email, empresa, grupo, senha)",
-                                            className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                                        }, "✏️"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
+                                                title: "Editar cliente (nome, email, empresa, grupo, senha)",
+                                                className: actBase
+                                            }, ico("pencil")),
+                                            React.createElement("button", {
+                                                onClick: async function() {
                                                 var respCats = await fetch(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/categorias", {headers: {"Authorization": "Bearer " + getToken()}});
                                                 var dataCats = respCats.ok ? await respCats.json() : {categorias: []};
                                                 var catsAtivas = (dataCats.categorias || []).map(function(c) { return c.sigla; });
                                                 x({...p, modalCategorias: {id: cliente.id, nome: cliente.nome, catsAtivas: catsAtivas, salvando: false}});
                                             },
-                                            title: "Configurar modalidades de frete",
-                                            className: "px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
-                                        }, "🏷️"),
-                                        React.createElement("button", {
-                                            onClick: async function() {
+                                                title: "Configurar modalidades de frete",
+                                                className: actBase
+                                            }, ico("tag")),
+                                            React.createElement("button", {
+                                                onClick: async function() {
                                                 try {
                                                     var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
                                                     var dp = rp.ok ? await rp.json() : {provedores: ['tutts']};
                                                     x({...p, modalProvedores: {id: cliente.id, nome: cliente.nome, selecionados: dp.provedores || ['tutts'], salvando: false}});
                                                 } catch(e) { ja("Erro ao carregar provedores", "error"); }
                                             },
-                                            title: "Configurar provedores logísticos",
-                                            className: "px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs hover:bg-emerald-200"
-                                        }, "🚚"),
-                                        (function() {
-                                            var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
-                                            var temHub = provs.some(function(pv) { return pv !== "tutts"; });
-                                            if (!temHub) return null;
-                                            var pj = cliente.preco_hub;
-                                            if (typeof pj === "string") { try { pj = JSON.parse(pj); } catch (e) { pj = null; } }
-                                            var temPreco = pj && pj.valor_fixo != null;
-                                            return React.createElement("button", {
-                                                key: "preco-hub",
+                                                title: "Configurar provedores log\u00edsticos",
+                                                className: actBase
+                                            }, ico("truck")),
+                                            temHub ? React.createElement("button", {
                                                 onClick: function() {
                                                     x({...p, modalPreco: {
                                                         id: cliente.id,
@@ -1310,12 +1317,12 @@
                                                         salvando: false
                                                     }});
                                                 },
-                                                title: "Configurações do Hub (preço e mensagem)",
-                                                className: "px-2 py-1 rounded text-xs " + (temPreco ? "bg-purple-100 text-purple-700 hover:bg-purple-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
-                                            }, "💰");
-                                        })(),
-                                        React.createElement("button", {
-                                            onClick: async function() {
+                                                title: "Configura\u00e7\u00f5es do Hub (pre\u00e7o e mensagem)",
+                                                className: actBase + (temPreco ? " text-[#7c3aed]" : "")
+                                            }, ico("wallet")) : null,
+                                            React.createElement("span", {className: "flex-1"}),
+                                            React.createElement("button", {
+                                                onClick: async function() {
                                                 var total = parseInt(cliente.total_solicitacoes) || 0;
                                                 var msg = "⚠️ EXCLUIR cliente \"" + cliente.nome + "\" (" + cliente.email + ")?\n\n" +
                                                     (total > 0
@@ -1347,13 +1354,17 @@
                                                     ja("❌ Erro de conexão ao excluir", "error");
                                                 }
                                             },
-                                            title: "Excluir cliente permanentemente",
-                                            className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                                        }, "🗑️")
+                                                title: "Excluir cliente permanentemente",
+                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#64748b] hover:bg-[#fff1f2] hover:border-[#fecdd3] hover:text-[#be123c]"
+                                            }, ico("trash"))
                                         )
-                                    )
-                                );
-                            })
+                                    );
+                                })
+                            ),
+                            React.createElement("p", {className: "text-[12px] text-[#94a3b8] mt-4 flex items-center gap-1.5"},
+                                ico("check", "ico-sm"),
+                                "Ponto verde: configurado neste cliente. Cinza: herda a configura\u00e7\u00e3o global."
+                            )
                         )
                     ),
                     
