@@ -1145,7 +1145,7 @@
                     // Lista de clientes
                     React.createElement("div", null,
                         React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                            React.createElement("h3", {className: "font-bold text-gray-700"}, "📋 Clientes Cadastrados"),
+                            React.createElement("h3", {className: "font-bold text-gray-700"}, "Clientes Cadastrados"),
                             React.createElement("button", {
                                 onClick: async function() {
                                     try {
@@ -1160,12 +1160,12 @@
                                         ja("Erro ao carregar clientes", "error");
                                     }
                                 },
-                                className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                            }, "🔄 Carregar")
+                                className: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 inline-flex items-center gap-1.5"
+                            }, React.createElement("svg", {className: "ico ico-sm", "aria-hidden": "true"}, React.createElement("use", {href: "#i-refresh"})), "Carregar")
                         ),
                         p.clientesApiLista && p.clientesApiLista.length === 0 && React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Nenhum cliente cadastrado"),
                         p.clientesApiLista && p.clientesApiLista.length > 0 && React.createElement(React.Fragment, null,
-                            /* CLIENTES_API_CARDS_V1 */
+                            /* CLIENTES_API_CARDS_V3 */
                             React.createElement("div", {className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"},
                                 p.clientesApiLista.map(function(cliente) {
                                     function ico(n, extra) {
@@ -1177,12 +1177,16 @@
                                         if (!isFinite(n)) return String(v);
                                         return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
                                     }
-                                    function capRow(set, txt) {
-                                        return React.createElement("div", {className: "flex items-center gap-2 py-[3px]"},
-                                            React.createElement("span", {className: "w-[5px] h-[5px] rounded-full flex-none", style: {background: set ? "#0f766e" : "#dde2ea"}}),
-                                            React.createElement("span", {className: "text-[12px] truncate " + (set ? "text-[#0f172a] font-medium" : "text-[#94a3b8]"), title: txt}, txt));
+                                    function dot(set) {
+                                        return React.createElement("span", {className: "w-[5px] h-[5px] rounded-full flex-none mt-[6px]", style: {background: set ? "#0f766e" : "#dde2ea"}});
                                     }
-                                    var codigo = cliente.tutts_cod_cliente || cliente.tutts_codigo_cliente || "\u2014";
+                                    var LOGOS = {uber: {label: "Uber Flash", logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSIyMCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlViZXI8L3RleHQ+PC9zdmc+"}, "99": {label: "99 Moto", logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiNGRkQ3MDAiLz48dGV4dCB4PSIyMCIgeT0iMjciIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzFhMWExYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+OTk8L3RleHQ+PC9zdmc+"}};
+                                    function provChip(code) {
+                                        var inf = LOGOS[code] || {label: code, logo: null};
+                                        return React.createElement("span", {key: code, className: "inline-flex items-center gap-1 text-[12px] text-[#0f172a] font-medium"},
+                                            inf.logo ? React.createElement("img", {src: inf.logo, style: {width: 16, height: 16, borderRadius: "50%", flexShrink: 0, objectFit: "cover"}}) : null,
+                                            inf.label);
+                                    }
                                     var cats = Array.isArray(cliente.categorias_disponiveis) ? cliente.categorias_disponiveis : [];
                                     var provs = Array.isArray(cliente.provedores_habilitados) ? cliente.provedores_habilitados : [];
                                     var extras = provs.filter(function(pv) { return pv !== "tutts"; });
@@ -1190,14 +1194,13 @@
                                     var pj = cliente.preco_hub;
                                     if (typeof pj === "string") { try { pj = JSON.parse(pj); } catch (e) { pj = null; } }
                                     var temPreco = !!(pj && pj.valor_fixo != null);
-                                    var PROV_LABEL = {uber: "Uber Flash", "99": "99 Moto"};
                                     var freteSet = cats.length > 0;
-                                    var freteTxt = freteSet ? cats.map(function(c) { return c.sigla; }).join(", ") : "Modalidades globais";
+                                    var freteTxt = freteSet ? cats.map(function(c) { return c.nome ? (c.sigla + " \u2014 " + c.nome) : c.sigla; }).join(", ") : "Modalidades globais";
                                     var provSet = extras.length > 0;
-                                    var provTxt = provSet ? extras.map(function(pv) { return PROV_LABEL[pv] || pv; }).join(" \u00b7 ") : "S\u00f3 frota Tutts";
                                     var precoTxt = temPreco
                                         ? ("R$ " + fmtBRL(pj.valor_fixo) + (pj.valor_km_adicional != null ? " + R$ " + fmtBRL(pj.valor_km_adicional) + "/km" : " fixo"))
                                         : "Tabela global";
+                                    var temEmpresa = cliente.empresa && cliente.empresa !== cliente.nome;
                                     var actBase = "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#64748b] hover:bg-[#f1f3f7] hover:border-[#e5e8ee] hover:text-[#0f172a]";
 
                                     return React.createElement("div", {
@@ -1206,12 +1209,7 @@
                                     },
                                         // ---- FAIXA 1: IDENTIDADE ----
                                         React.createElement("div", {className: "px-3.5 pt-3.5 pb-3"},
-                                            React.createElement("div", {className: "flex items-start justify-between gap-2 mb-1.5"},
-                                                React.createElement("button", {
-                                                    className: "font-mono text-[11px] font-medium text-[#5b21b6] bg-[#f5f2ff] border border-[#e6dcfb] rounded px-1.5 py-0.5 flex-none inline-flex items-center gap-1 hover:bg-[#efe8fe] transition",
-                                                    title: "Copiar c\u00f3digo",
-                                                    onClick: function() { try { navigator.clipboard.writeText(String(codigo)); ja("C\u00f3digo copiado", "success"); } catch (e) {} }
-                                                }, codigo, ico("copy", "ico-sm")),
+                                            React.createElement("div", {className: "flex items-center justify-end mb-1.5"},
                                                 cliente.ativo
                                                     ? React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#ecfdf5", color: "#0f766e"}}, "Ativo")
                                                     : React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#f1f3f7", color: "#64748b"}}, "Inativo")
@@ -1222,13 +1220,24 @@
                                                 style: {display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"}
                                             }, cliente.nome),
                                             React.createElement("p", {className: "text-[12px] text-[#64748b] truncate", title: cliente.email}, cliente.email),
-                                            React.createElement("p", {className: "text-[11px] text-[#94a3b8] truncate mt-0.5", title: cliente.empresa || ""}, cliente.empresa || "Sem empresa")
+                                            temEmpresa ? React.createElement("p", {className: "text-[11px] text-[#94a3b8] truncate mt-0.5", title: cliente.empresa}, cliente.empresa) : null
                                         ),
                                         // ---- FAIXA 2: CONFIGURACAO ----
-                                        React.createElement("div", {className: "px-3.5 py-2.5 border-y border-[#e5e8ee] bg-[#fcfdfe] flex-1"},
-                                            capRow(freteSet, freteTxt),
-                                            capRow(provSet, provTxt),
-                                            capRow(temPreco, precoTxt)
+                                        React.createElement("div", {className: "px-3.5 py-2.5 border-y border-[#e5e8ee] bg-[#fcfdfe] flex-1 space-y-0.5"},
+                                            React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
+                                                dot(freteSet),
+                                                React.createElement("span", {className: "text-[12px] leading-snug " + (freteSet ? "text-[#0f172a] font-medium" : "text-[#94a3b8]")}, freteTxt)
+                                            ),
+                                            React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
+                                                dot(provSet),
+                                                provSet
+                                                    ? React.createElement("span", {className: "flex items-center flex-wrap gap-x-3 gap-y-1"}, extras.map(provChip))
+                                                    : React.createElement("span", {className: "text-[12px] text-[#94a3b8]"}, "S\u00f3 frota Tutts")
+                                            ),
+                                            React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
+                                                dot(temPreco),
+                                                React.createElement("span", {className: "text-[12px] truncate " + (temPreco ? "text-[#0f172a] font-medium" : "text-[#94a3b8]"), title: precoTxt}, precoTxt)
+                                            )
                                         ),
                                         // ---- FAIXA 3: ACOES ----
                                         React.createElement("div", {className: "px-2.5 py-2 flex items-center gap-0.5"},
