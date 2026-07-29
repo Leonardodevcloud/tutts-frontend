@@ -541,6 +541,41 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 }
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
+// ==== Icones do menu (sprite Lucide). Converte no render; NAO altera o config nem a home. ====
+var NAV_EMOJI_ICON = {
+  "\U0001F4CB":"clipboard","\U0001F4B0":"wallet","\u2699":"settings","\U0001F4C5":"calendar",
+  "\U0001F4CA":"chart","\U0001F4DD":"filetext","\U0001F465":"users","\U0001F5FA":"map",
+  "\U0001F527":"wrench","\U0001F4AC":"message","\U0001F4C8":"trendup","\U0001F69A":"truck",
+  "\U0001F517":"link","\u26A1":"zap","\U0001F3E0":"home","\U0001F513":"lock","\U0001F3E6":"building",
+  "\U0001F4BC":"wallet","\U0001F4D1":"filetext","\U0001F381":"package","\U0001F6AB":"ban",
+  "\U0001F3AF":"target","\U0001F6D2":"package","\U0001F4E2":"bell","\U0001F4BE":"save",
+  "\U0001F4B3":"card","\U0001F3E2":"building","\U0001F464":"user","\U0001F4E4":"upload",
+  "\U0001F50D":"search","\U0001F451":"crown","\U0001F50C":"link","\U0001F504":"refresh",
+  "\u2705":"check","\U0001F4E5":"download","\U0001F91D":"users","\U0001F3E5":"plus",
+  "\U0001F5C2":"list","\U0001F5D3":"calendar"
+};
+function navIconEl(raw, cls) {
+  if (!raw) return null;
+  var key = String(raw).replace(/\uFE0F/g, "");
+  var name = NAV_EMOJI_ICON[key];
+  if (!name) return React.createElement("span", { className: cls || "" }, raw);
+  return React.createElement("svg", { className: "ico " + (cls || ""), "aria-hidden": "true" },
+    React.createElement("use", { href: "#i-" + name }));
+}
+function tabLabelEl(label) {
+  if (!label || typeof label !== "string") return label;
+  var chars = Array.from(label);
+  var first = chars[0];
+  var idx = (chars[1] === "\uFE0F") ? 2 : 1;
+  var name = NAV_EMOJI_ICON[first];
+  if (!name) return label;
+  var rest = chars.slice(idx).join("").replace(/^\s+/, "");
+  return React.createElement("span", { className: "inline-flex items-center gap-1.5" },
+    React.createElement("svg", { className: "ico", "aria-hidden": "true" },
+      React.createElement("use", { href: "#i-" + name })),
+    rest);
+}
+/* NAV_ICONS_V1 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -657,8 +692,8 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
         onClick: () => { onSelect(item); setDropdownOpen(false); },
         className: btnBase + (item.id === activeId ? activeClass : inactiveClass)
     },
-        item.icon && React.createElement("span", null, item.icon),
-        React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+        item.icon && navIconEl(item.icon),
+        React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, tabLabelEl(item.label))
     );
 
     return React.createElement("div", { className: "relative flex-1 flex items-center min-w-0" },
@@ -692,8 +727,8 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
                             ? (isDark ? "bg-white/20 text-white font-semibold" : "bg-purple-50 text-purple-800 font-semibold")
                             : (isDark ? "text-white/80 hover:bg-white/10" : "text-gray-700 hover:bg-gray-50"))
                 },
-                    item.icon && React.createElement("span", { className: "text-base" }, item.icon),
-                    React.createElement("span", null, item.label),
+                    item.icon && navIconEl(item.icon, "text-base"),
+                    React.createElement("span", null, tabLabelEl(item.label)),
                     item.id === activeId && React.createElement("span", {
                         className: "ml-auto w-2 h-2 rounded-full " + (isDark ? "bg-white" : "bg-purple-600")
                     })
@@ -711,8 +746,8 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
                 key: item.id,
                 className: btnBase + inactiveClass
             },
-                item.icon && React.createElement("span", null, item.icon),
-                React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, item.label)
+                item.icon && navIconEl(item.icon),
+                React.createElement("span", { className: isDark ? "hidden sm:inline" : "" }, tabLabelEl(item.label))
             ))
         )
     );
@@ -892,7 +927,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
                                 (moduloAtivo === modulo.id ? "bg-white/20 text-white border-l-4 border-yellow-400" : "text-white/80 hover:bg-white/10 hover:text-white border-l-4 border-transparent")
                         },
                             React.createElement("div", {className: "flex items-center gap-3"},
-                                React.createElement("span", {className: "text-xl"}, modulo.icon),
+                                navIconEl(modulo.icon, "ico-lg"),
                                 React.createElement("span", {className: "font-medium"}, modulo.label)
                             ),
                             modulo.abas && modulo.abas.length > 0 && React.createElement("span", {
@@ -905,7 +940,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
                                     key: aba.id,
                                     onClick: () => handleAbaClick(modulo.id, aba.id),
                                     className: "w-full px-4 py-2 pl-12 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                                }, aba.label)
+                                }, tabLabelEl(aba.label))
                             )
                         )
                     )
