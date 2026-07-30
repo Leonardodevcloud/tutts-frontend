@@ -89,14 +89,14 @@ const VERSION_KEY = "tutts_app_version";
 (function checkVersion() {
     const savedVersion = localStorage.getItem(VERSION_KEY);
     if (savedVersion !== APP_VERSION) {
-        console.log(`🔄 Atualizando de ${savedVersion || 'inicial'} para ${APP_VERSION}`);
+        console.log(`Atualizando de ${savedVersion || 'inicial'} para ${APP_VERSION}`);
         
         // Limpar caches
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
                     caches.delete(name);
-                    console.log(`🗑️ Cache ${name} limpo`);
+                    console.log(`Cache ${name} limpo`);
                 });
             });
         }
@@ -267,14 +267,14 @@ const marcarRefreshFeito = () => {
                 // 🔧 BUGFIX F5-DISCONNECT: Só apaga sessão em status de auth explícito.
                 // Antes: qualquer !response.ok (incluindo 500, 502, 503, timeout) apagava
                 // sessionStorage e o usuário era deslogado em qualquer hiccup de rede/backend.
-                console.warn(`⚠️ Refresh cookie inválido (HTTP ${response.status}) — limpando sessão`);
+                console.warn(`Refresh cookie inválido (HTTP ${response.status}) — limpando sessão`);
                 sessionStorage.removeItem("tutts_user");
                 sessionStorage.removeItem("tutts_csrf");
             } else {
                 // Erros transitórios (5xx) ou inesperados: mantém sessão, loga e segue.
                 // O usuário ainda tem o refresh cookie httpOnly, então fetchAuth nas
                 // próximas requests vai tentar renovar de novo e eventualmente funciona.
-                console.warn(`⚠️ Refresh falhou com HTTP ${response.status} — mantendo sessão (retry no próximo fetch)`);
+                console.warn(`Refresh falhou com HTTP ${response.status} — mantendo sessão (retry no próximo fetch)`);
             }
         } catch (e) {
             // 🔧 BUGFIX F5-DISCONNECT: Erros de rede NÃO deslogam.
@@ -332,13 +332,13 @@ const renovarToken = async () => {
                 // 🔧 BUGFIX F5-DISCONNECT: Só desloga em 401/403 explícitos (refresh inválido/revogado).
                 // 500/502/503/timeout são transitórios — retornar null permite retry mais tarde
                 // sem destruir a sessão.
-                console.log(`❌ Refresh token inválido (HTTP ${response.status}) — fazendo logout`);
+                console.log(`Refresh token inválido (HTTP ${response.status}) — fazendo logout`);
                 fazerLogoutCompleto();
                 return null;
             } else {
                 // Erros transitórios: NÃO desloga, só sinaliza falha pra este ciclo.
                 // O próximo fetchAuth com 401 vai tentar renovar de novo.
-                console.warn(`⚠️ Renovação falhou transitoriamente (HTTP ${response.status}) — tentando de novo em seguida`);
+                console.warn(`Renovação falhou transitoriamente (HTTP ${response.status}) — tentando de novo em seguida`);
                 return null;
             }
         } catch (error) {
@@ -586,7 +586,7 @@ function tabLabelEl(label) {
   }
   return label;
 }
-/* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 */
+/* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V1 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -1739,7 +1739,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h3", {
             className: "text-lg font-semibold mb-4"
-        }, "🏆 Ranking de Profissionais"), 0 === a.length ? React.createElement("p", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trophy" })), "Ranking de Profissionais")), 0 === a.length ? React.createElement("p", {
             className: "text-gray-500 text-center py-8"
         }, "Sem dados") : React.createElement("div", {
             className: "space-y-3"
@@ -1756,11 +1756,11 @@ const hideLoadingScreen = () => {
             className: "flex gap-4 text-sm text-gray-600 mt-1"
         }, React.createElement("span", null, "Total: ", React.createElement("b", null, e.total)), React.createElement("span", {
             className: "text-green-600"
-        }, "✓ ", e.aprovadas), React.createElement("span", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), ""), e.aprovadas), React.createElement("span", {
             className: "text-red-600"
-        }, "✗ ", e.rejeitadas), React.createElement("span", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), ""), e.rejeitadas), React.createElement("span", {
             className: "text-yellow-600"
-        }, "⏳ ", e.pendentes))), React.createElement("div", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), ""), e.pendentes))), React.createElement("div", {
             className: "text-right"
         }, React.createElement("div", {
             className: "text-2xl font-bold text-purple-600"
@@ -4070,7 +4070,7 @@ const hideLoadingScreen = () => {
                 if (isInitialCheck) {
                     // No login, mostra todas as pendentes
                     if (pendentes.length > 0) {
-                        console.log(`📢 Login: ${pendentes.length} mensagem(ns) da liderança pendente(s)`);
+                        console.log(`Login: ${pendentes.length} mensagem(ns) da liderança pendente(s)`);
                         setLiderancaModal({ tipo: 'notificacao', dados: pendentes[0], fila: pendentes });
                         setLiderancaMensagensJaNotificadas(pendentes.map(m => m.id));
                     }
@@ -4078,7 +4078,7 @@ const hideLoadingScreen = () => {
                     // No polling, só mostra novas
                     const novas = pendentes.filter(m => !liderancaMensagensJaNotificadas.includes(m.id));
                     if (novas.length > 0) {
-                        console.log(`📢 Polling: ${novas.length} NOVA(S) mensagem(ns) da liderança!`);
+                        console.log(`Polling: ${novas.length} NOVA(S) mensagem(ns) da liderança!`);
                         setLiderancaModal({ tipo: 'notificacao', dados: novas[0], fila: novas });
                         setLiderancaMensagensJaNotificadas(prev => [...prev, ...novas.map(m => m.id)]);
                     }
@@ -4494,7 +4494,7 @@ const hideLoadingScreen = () => {
                             if (data.event === 'NEW_WITHDRAWAL') {
                                 U(prev => { if (prev.some(w => w.id === data.data.id)) return prev; return [data.data, ...prev]; });
                                 v(prev => ({ ...prev, solicitacoes: (prev.solicitacoes || 0) + 1, validacao: (prev.validacao || 0) + 1 }));
-                                Ca(); ja(`🔔 Novo saque de ${data.data.user_name || data.data.user_cod}!`, "info");
+                                Ca(); ja(`Novo saque de ${data.data.user_name || data.data.user_cod}!`, "info");
                             } else if (data.event === 'WITHDRAWAL_UPDATE') {
                                 U(prev => prev.map(w => w.id === data.data.id ? { 
                                     ...w, 
@@ -4520,7 +4520,7 @@ const hideLoadingScreen = () => {
                                     }, 500);
                                 }
                                 else if (data.data.status === 'rejeitado') {
-                                    ja(`❌ Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error');
+                                    ja(`Saque rejeitado: ${data.data.reject_reason || 'Sem motivo'}. Você já pode solicitar novamente.`, 'error');
                                     // Recarregar dados completos para atualizar timer e histórico
                                     setTimeout(() => {
                                         fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
@@ -4546,7 +4546,7 @@ const hideLoadingScreen = () => {
                                 console.log('⚡ [WS] Nova contestação:', data.data);
                                 const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l && l.role);
                                 if (isAdmin) {
-                                    ja(`⚡ Nova contestação de ${data.data.user_name || data.data.user_cod} — OS ${data.data.ordem_servico}`, "info");
+                                    ja(`Nova contestação de ${data.data.user_name || data.data.user_cod} — OS ${data.data.ordem_servico}`, "info");
                                     Ca();
                                     // Recarregar lista de submissions se admin está na aba de solicitações
                                     if (Ee === 'solicitacoes') { try { La(); } catch {} }
@@ -4556,17 +4556,17 @@ const hideLoadingScreen = () => {
                                 console.log('💬 [WS] Resposta na contestação:', data.data);
                                 const isAdmin = ['admin', 'admin_master', 'admin_financeiro'].includes(l && l.role);
                                 if (isAdmin) {
-                                    ja(`💬 ${data.data.user_name || 'Motoboy'} respondeu na contestação — OS ${data.data.ordem_servico}`, "info");
+                                    ja(`${data.data.user_name || 'Motoboy'} respondeu na contestação — OS ${data.data.ordem_servico}`, "info");
                                 } else {
-                                    ja(`💬 Admin respondeu sua contestação — OS ${data.data.ordem_servico}`, "info");
+                                    ja(`Admin respondeu sua contestação — OS ${data.data.ordem_servico}`, "info");
                                 }
                             }
                             else if (data.event === 'CONTESTATION_CLOSED') {
                                 console.log('📋 [WS] Contestação encerrada:', data.data);
                                 if (data.data.decisao === 'aprovar') {
-                                    ja(`✅ Sua contestação da OS ${data.data.ordem_servico} foi APROVADA!`, "success");
+                                    ja(`Sua contestação da OS ${data.data.ordem_servico} foi APROVADA!`, "success");
                                 } else {
-                                    ja(`❌ Sua contestação da OS ${data.data.ordem_servico} foi rejeitada definitivamente.`, "error");
+                                    ja(`Sua contestação da OS ${data.data.ordem_servico} foi rejeitada definitivamente.`, "error");
                                 }
                                 try { La(); } catch {}
                             }
@@ -5418,7 +5418,7 @@ const hideLoadingScreen = () => {
         const copiarParaClipboard = async (texto, tipo) => {
             try {
                 await navigator.clipboard.writeText(texto);
-                ja(`✅ Link ${tipo} copiado!`, "success");
+                ja(`Link ${tipo} copiado!`, "success");
             } catch (err) {
                 // Fallback para browsers antigos
                 const textarea = document.createElement('textarea');
@@ -5429,9 +5429,9 @@ const hideLoadingScreen = () => {
                 textarea.select();
                 try {
                     document.execCommand('copy');
-                    ja(`✅ Link ${tipo} copiado!`, "success");
+                    ja(`Link ${tipo} copiado!`, "success");
                 } catch (e) {
-                    ja(`❌ Erro ao copiar`, "error");
+                    ja(`Erro ao copiar`, "error");
                 }
                 document.body.removeChild(textarea);
             }
@@ -6420,7 +6420,7 @@ const hideLoadingScreen = () => {
                         user_name: l.fullName
                     })
                 });
-                ja(`✅ Tarefa movida para ${colunaDestino === 'todo' ? 'A Fazer' : colunaDestino === 'doing' ? 'Fazendo' : 'Concluído'}!`, "success");
+                ja(`Tarefa movida para ${colunaDestino === 'todo' ? 'A Fazer' : colunaDestino === 'doing' ? 'Fazendo' : 'Concluído'}!`, "success");
                 // Atualizar lista
                 if (todoViewMode === "meudia") await loadTodoMeuDia();
                 else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
@@ -6510,7 +6510,7 @@ const hideLoadingScreen = () => {
                 if (isInitialCheck) {
                     // Login: mostra TODAS as pendentes, mas só 1x por sessão
                     if (pendentes.length > 0 && !sessionStorage.getItem('tutts_todo_notif_shown')) {
-                        console.log(`🔔 Login: ${pendentes.length} tarefa(s) pendente(s)`);
+                        console.log(`Login: ${pendentes.length} tarefa(s) pendente(s)`);
                         sessionStorage.setItem('tutts_todo_notif_shown', '1');
                         sessionStorage.setItem('tutts_todo_ids_notificados', JSON.stringify(pendentes.map(t => t.id)));
                         setTodoPendentesNotif(pendentes);
@@ -6522,7 +6522,7 @@ const hideLoadingScreen = () => {
                     const novasTarefas = pendentes.filter(t => !idsJaNotificados.includes(t.id));
                     
                     if (novasTarefas.length > 0) {
-                        console.log(`🔔 Polling: ${novasTarefas.length} NOVA(S) tarefa(s) pendente(s)!`);
+                        console.log(`Polling: ${novasTarefas.length} NOVA(S) tarefa(s) pendente(s)!`);
                         const novosIds = [...idsJaNotificados, ...novasTarefas.map(t => t.id)];
                         sessionStorage.setItem('tutts_todo_ids_notificados', JSON.stringify(novosIds));
                         setTodoPendentesNotif(novasTarefas);
@@ -6674,7 +6674,7 @@ const hideLoadingScreen = () => {
 
                 const fromCrm = a.filter(p => p.origem === 'crm').length;
                 const fromPlan = a.filter(p => p.origem === 'planilha').length;
-                console.log(`📊 Cadastro carregado: ${a.length} profissionais (${fromCrm} do CRM, ${fromPlan} da planilha) · ${cidadesArray.length} cidades`);
+                console.log(`Cadastro carregado: ${a.length} profissionais (${fromCrm} do CRM, ${fromPlan} da planilha) · ${cidadesArray.length} cidades`);
             } catch (e) {
                 console.error("Erro ao carregar cadastro de profissionais:", e);
                 Re("Erro ao carregar lista de profissionais");
@@ -6845,7 +6845,7 @@ const hideLoadingScreen = () => {
                             ...u,
                             foto: mapaFotos[u.codProfissional] || u.foto || null
                         })));
-                        console.log(`✅ Fotos dos usuários: ${Object.keys(mapaFotos).length} carregadas`);
+                        console.log(`Fotos dos usuários: ${Object.keys(mapaFotos).length} carregadas`);
                     }
                 } catch (errFoto) {
                     console.warn('Fotos dos usuários não carregaram:', errFoto.message);
@@ -8214,7 +8214,7 @@ const hideLoadingScreen = () => {
                         method: "POST"
                     }),
                     t = await e.json();
-                ja(`✅ ${t.atualizados} entregas recalculadas!`, "success"), el()
+                ja(`${t.atualizados} entregas recalculadas!`, "success"), el()
             } catch (e) {
                 ja("Erro ao recalcular", "error")
             }
@@ -8666,7 +8666,7 @@ const hideLoadingScreen = () => {
                         acertos: t.acertos,
                         passou: t.passou,
                         created_at: (new Date).toISOString()
-                    }), t.passou && (ja(`🎉 Parabéns! Você ganhou R$ ${t.valor_gratuidade.toFixed(2).replace(".",",")} de gratuidade!`, "success"), qa())
+                    }), t.passou && (ja(`Parabéns! Você ganhou R$ ${t.valor_gratuidade.toFixed(2).replace(".",",")} de gratuidade!`, "success"), qa())
                 } catch (e) {
                     ja(e.message, "error")
                 } finally {
@@ -8885,7 +8885,7 @@ const hideLoadingScreen = () => {
             if (temMascara(p.finPix)) return void ja("❌ Clique no campo Chave PIX e digite sua chave completa", "error");
             // Validar CPF antes de enviar
             const validacaoCpf = validarCPFCompleto(p.finCpf);
-            if (!validacaoCpf.valido) return void ja(`❌ ${validacaoCpf.mensagem}`, "error");
+            if (!validacaoCpf.valido) return void ja(`${validacaoCpf.mensagem}`, "error");
             const e = tr(p.finPix, p.pixTipo);
             if (e.valido) {
                 s(!0);
@@ -8920,12 +8920,12 @@ const hideLoadingScreen = () => {
                         email: "Email",
                         aleatoria: "Chave Aleatória"
                     } [p.pixTipo];
-                    ja(`✅ Dados salvos! (PIX: ${tipoNome})`, "success")
+                    ja(`Dados salvos! (PIX: ${tipoNome})`, "success")
                 } catch (err) {
-                    ja(`❌ ${err.message}`, "error")
+                    ja(`${err.message}`, "error")
                 }
                 s(!1)
-            } else ja(`❌ ${e.mensagem}`, "error")
+            } else ja(`${e.mensagem}`, "error")
         }, Vl = async () => {
             // 🚀 GUARD MÁQUINA EM MÃOS (2026-05): bloqueio client-side antes do POST.
             // O banner já avisa, mas se o motoboy ignorar e tentar mesmo assim,
@@ -8941,10 +8941,10 @@ const hideLoadingScreen = () => {
             // Validar limites diário e semanal (se já carregados)
             if (limitesSaque) {
                 if (limitesSaque.diario && e > limitesSaque.diario.disponivel) {
-                    return void ja(`⚠️ Limite diário atingido! Você já solicitou R$ ${limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")} hoje. Disponível: R$ ${limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                    return void ja(`Limite diário atingido! Você já solicitou R$ ${limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")} hoje. Disponível: R$ ${limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")}`, "error");
                 }
                 if (limitesSaque.semanal && e > limitesSaque.semanal.disponivel) {
-                    return void ja(`⚠️ Limite semanal atingido! Você já solicitou R$ ${limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")} esta semana. Disponível: R$ ${limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")}`, "error");
+                    return void ja(`Limite semanal atingido! Você já solicitou R$ ${limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")} esta semana. Disponível: R$ ${limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")}`, "error");
                 }
             }
             // Verificar saldo Plific (considerando saques pendentes)
@@ -8963,7 +8963,7 @@ const hideLoadingScreen = () => {
             if (r.length >= 1) {
                 const e = new Date(new Date(r[0].created_at).getTime() + 36e5),
                     a = Math.ceil((e - t) / 6e4);
-                return void ja(`⚠️ Você já possui um saque em processamento! Aguarde a conclusão antes de solicitar novamente.`, "error")
+                return void ja(`Você já possui um saque em processamento! Aguarde a conclusão antes de solicitar novamente.`, "error")
             }
             // Com 1 saque por hora, não precisa verificar valor repetido
             s(!0);
@@ -9022,7 +9022,7 @@ const hideLoadingScreen = () => {
             
             // Verificar se já está processando este withdrawal
             if (processandoWithdrawals.has(withdrawalKey)) {
-                console.log(`⚠️ Withdrawal ${e} já está sendo processado para status ${t}`);
+                console.log(`Withdrawal ${e} já está sendo processado para status ${t}`);
                 ja("⏳ Aguarde, esta solicitação já está sendo processada...", "warning");
                 return;
             }
@@ -12720,7 +12720,7 @@ const hideLoadingScreen = () => {
             className: "px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-sm"
         }, "📋"))), React.createElement("button", {
             onClick: () => {
-                const e = `🚀 Fala, parceiro(a)!\n\nEstou te indicando para realizar entregas comigo no aplicativo TUTTS! 💜📦 \n\nFaça seu cadastro pelo link abaixo, rode pelo menos 5 dias e garanta um bônus de R$ 30,00 no final! 💰✨\n\n👉 Link para cadastro: ${window.location.origin}/#/indicar/${p.meuLinkIndicacao.token}\n\nVem ganhar com a gente! 🛵🔥`;
+                const e = `Fala, parceiro(a)!\n\nEstou te indicando para realizar entregas comigo no aplicativo TUTTS! 💜📦 \n\nFaça seu cadastro pelo link abaixo, rode pelo menos 5 dias e garanta um bônus de R$ 30,00 no final! 💰✨\n\n👉 Link para cadastro: ${window.location.origin}/#/indicar/${p.meuLinkIndicacao.token}\n\nVem ganhar com a gente! 🛵🔥`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(e)}`, "_blank")
             },
             className: "w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
@@ -16696,7 +16696,7 @@ const hideLoadingScreen = () => {
                 }, cat));
             })), React.createElement("p", {
                 className: "text-xs text-blue-600 mt-1"
-            }, (ua.categorias || []).length > 0 ? `✓ ${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `💡 ${pa.length} disponíveis | Sem seleção = Todas`))), React.createElement("div", {
+            }, (ua.categorias || []).length > 0 ? `${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `${pa.length} disponíveis | Sem seleção = Todas`))), React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
             }, 
             // ===== CLIENTE - CHECKBOXES =====
@@ -19164,7 +19164,7 @@ const hideLoadingScreen = () => {
                     e.target.value = "";
                     
                     if (arquivosProcessados > 0) {
-                        ja(`✅ ${arquivosProcessados} arquivo(s) processado(s)! ${totalInseridos} inseridos, ${totalIgnorados} ignorados`, "success");
+                        ja(`${arquivosProcessados} arquivo(s) processado(s)! ${totalInseridos} inseridos, ${totalIgnorados} ignorados`, "success");
                         el();
                         ll();
                     } else {
@@ -19234,10 +19234,10 @@ const hideLoadingScreen = () => {
                     
                     ha(null);
                     if (totalAtualizados > 0) {
-                        ja(`✅ ${totalAtualizados} registros atualizados com Data/Hora Alocado!`, "success");
+                        ja(`${totalAtualizados} registros atualizados com Data/Hora Alocado!`, "success");
                         el(); // Recarregar dashboard
                     } else {
-                        ja(`⚠️ Nenhum registro atualizado. Verifique se a planilha tem a coluna "Data/Hora Alocado"`, "warning");
+                        ja(`Nenhum registro atualizado. Verifique se a planilha tem a coluna "Data/Hora Alocado"`, "warning");
                     }
                     e.target.value = "";
                 },
@@ -19260,13 +19260,13 @@ const hideLoadingScreen = () => {
                         const r = await fetchAuth(`${API_URL}/bi/inicializar-prazos-dax`, { method: "POST" });
                         const j = await r.json();
                         if (j.success) {
-                            ja(`✅ Prazos inicializados! ${j.registrosAtualizados} registros atualizados`, "success");
+                            ja(`Prazos inicializados! ${j.registrosAtualizados} registros atualizados`, "success");
                             el();
                         } else {
-                            ja(`❌ Erro: ${j.error}`, "error");
+                            ja(`Erro: ${j.error}`, "error");
                         }
                     } catch (err) {
-                        ja(`❌ Erro: ${err.message}`, "error");
+                        ja(`Erro: ${err.message}`, "error");
                     }
                     ha(null);
                 },
@@ -20711,7 +20711,7 @@ const hideLoadingScreen = () => {
                                     });
                                     const data = await resp.json();
                                     if (data.success) {
-                                        ja(`✅ Recalculado! ${data.atualizados} entregas (✅ ${data.dentroPrazo} no prazo | ❌ ${data.foraPrazo} fora | ⚠️ ${data.semDados} sem dados)`, "success");
+                                        ja(`Recalculado! ${data.atualizados} entregas (✅ ${data.dentroPrazo} no prazo | ❌ ${data.foraPrazo} fora | ⚠️ ${data.semDados} sem dados)`, "success");
                                         // Recarregar dados do dashboard
                                         xl();
                                     } else {
@@ -21331,7 +21331,7 @@ const hideLoadingScreen = () => {
                 className: "text-xl font-bold"
             }, o < 1 ? `${Math.round(60*o)}min` : `${o.toFixed(1)}h`), React.createElement("p", {
                 className: "text-xs " + (o <= 12 ? "text-green-300" : o <= 24 ? "text-yellow-300" : "text-red-300")
-            }, o <= 6 ? "✅ Excelente" : o <= 12 ? "✅ Bom" : o <= 24 ? "⚠️ Regular" : "🚨 Lento")), React.createElement("div", {
+            }, o <= 6 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Excelente") : o <= 12 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Bom") : o <= 24 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Regular") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Lento"))), React.createElement("div", {
                 className: "bg-white/10 rounded-lg p-3 text-center"
             }, React.createElement("p", {
                 className: "text-white/70 text-xs"
@@ -21345,7 +21345,7 @@ const hideLoadingScreen = () => {
                 className: "text-white/70 text-xs"
             }, "Prazo (24h)"), React.createElement("p", {
                 className: "text-xl font-bold " + (0 === c.length ? "text-green-300" : "text-red-300")
-            }, 0 === c.length ? "✅" : `${c.length} 🚨`), React.createElement("p", {
+            }, 0 === c.length ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("span", { className: "inline-flex items-center gap-1" }, String(c.length), React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })))), React.createElement("p", {
                 className: "text-xs text-white/60"
             }, 0 === c.length ? "Nenhum atraso" : "Ação necessária!"))))))
         })(), React.createElement("div", {
@@ -21355,23 +21355,23 @@ const hideLoadingScreen = () => {
             motivosData: dashStats && dashStats.motivos ? dashStats.motivos : null
         }), React.createElement(PieChart, {
             data: [{
-                label: "✓ Aprovados",
+                label: "Aprovados",
                 value: dashStats ? dashStats.aprovados : j.filter(e => "aprovado" === e.status).length,
                 color: "#22c55e"
             }, {
-                label: "✗ Rejeitados",
+                label: "Rejeitados",
                 value: dashStats ? dashStats.rejeitados : j.filter(e => "rejeitado" === e.status).length,
                 color: "#ef4444"
             }, {
-                label: "⏳ Pendentes",
+                label: "Pendentes",
                 value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length,
                 color: "#fbbf24"
             }, {
-                label: "📦 Outros",
+                label: "Outros",
                 value: dashStats ? Math.max(0, dashStats.total - dashStats.aprovados - dashStats.rejeitados - dashStats.pendentes) : j.filter(e => !["aprovado","rejeitado","pendente"].includes(e.status)).length,
                 color: "#94a3b8"
             }].filter(e => e.value > 0),
-            title: "📈 Status das Solicitações"
+            title: "Status das Solicitações"
         })), React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h2", {
@@ -21382,14 +21382,14 @@ const hideLoadingScreen = () => {
             key: e,
             onClick: async () => { x({ ...p, pendingFilter: e }); if (e === "expiradas") { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r.ok) { const _d = await _r.json(); x(prev => ({ ...prev, _expiradas: _d.expiradas || [] })); } } catch {} } },
             className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "expiradas" === e ? "bg-amber-500 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && `📋 Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `⚡ Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `🚨 Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `🔄 Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `📍 Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `🛣️ Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `🏭 Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`, "expiradas" === e && `⏰ Expiradas (${(p._expiradas||[]).length})`))), React.createElement("div", {
+        }, "all" === e && `Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`, "expiradas" === e && `Expiradas (${(p._expiradas||[]).length})`))), React.createElement("div", {
             className: "flex justify-end mb-2"
         }, React.createElement("button", {
             onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
             className: "px-3 py-1.5 rounded-lg text-xs font-semibold " + (p._showRespostas ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200")
-        }, "⚙️ Respostas Prontas")), p._showRespostas && React.createElement("div", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Respostas Prontas"))), p._showRespostas && React.createElement("div", {
             className: "mb-4 bg-white border-2 border-purple-200 rounded-xl p-4"
-        }, React.createElement("h3", { className: "text-sm font-bold text-purple-800 mb-3" }, "💬 Gerenciar Respostas Prontas"), React.createElement("div", { className: "flex gap-2 mb-3" }, React.createElement("input", {
+        }, React.createElement("h3", { className: "text-sm font-bold text-purple-800 mb-3" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Gerenciar Respostas Prontas")), React.createElement("div", { className: "flex gap-2 mb-3" }, React.createElement("input", {
             type: "text", placeholder: "Título curto", value: p._rpTitulo || "",
             onChange: e => x({ ...p, _rpTitulo: e.target.value }),
             className: "flex-1 px-3 py-2 border rounded-lg text-xs"
@@ -21412,7 +21412,7 @@ const hideLoadingScreen = () => {
                 } catch { ja("Erro de conexão", "error"); }
             },
             className: "px-4 py-2 rounded-lg text-xs font-semibold text-white " + (p._rpEditId ? "bg-orange-500" : "bg-purple-600")
-        }, p._rpEditId ? "💾 Salvar Edição" : "➕ Adicionar"), p._rpEditId && React.createElement("button", {
+        }, p._rpEditId ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Edição") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar")), p._rpEditId && React.createElement("button", {
             onClick: () => x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }),
             className: "ml-2 px-3 py-2 rounded-lg text-xs font-semibold bg-gray-200 text-gray-700"
         }, "Cancelar"), React.createElement("div", { className: "mt-3 space-y-2" }, (p._respostasProntas || []).map(r => React.createElement("div", {
@@ -21423,13 +21423,13 @@ const hideLoadingScreen = () => {
         ), React.createElement("button", {
             onClick: () => x({ ...p, _rpTitulo: r.titulo, _rpMensagem: r.mensagem, _rpMotivo: r.motivo || "", _rpEditId: r.id }),
             className: "text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-semibold shrink-0"
-        }, "✏️"), React.createElement("button", {
+        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
             onClick: async () => {
                 if (!confirm("Excluir \"" + r.titulo + "\"?")) return;
                 try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("🗑️ Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
             },
             className: "text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-semibold shrink-0"
-        }, "🗑️"))))), (p.pendingFilter || "all") === "expiradas" && React.createElement("div", { className: "space-y-3 py-2" },
+        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))), (p.pendingFilter || "all") === "expiradas" && React.createElement("div", { className: "space-y-3 py-2" },
             (p._expiradas||[]).length === 0
               ? React.createElement("p", { className: "text-center text-gray-400 py-10 text-sm" }, "Nenhuma solicitação expirada nas últimas 48h")
               : (p._expiradas||[]).map(ex => React.createElement("div", { key: ex.id, className: "bg-white border rounded-xl p-4" + (ex.liberado_por_admin ? " opacity-60" : "") },
@@ -21437,8 +21437,8 @@ const hideLoadingScreen = () => {
                     React.createElement("span", { className: "font-bold text-gray-800 text-sm" }, "OS: " + ex.os),
                     ex.subcategoria && React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800" }, ex.subcategoria),
                     React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700" }, "expirada há " + Math.round(ex.horas_atras) + "h"),
-                    ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700" }, "✓ liberada — " + (ex.tipo_liberacao === "contestacao" ? "contestação" : "nova solicitação")),
-                    ex.ja_tem_submission && !ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700" }, "✓ já tem submission")
+                    ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "liberada — ") + (ex.tipo_liberacao === "contestacao" ? "contestação" : "nova solicitação")),
+                    ex.ja_tem_submission && !ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "já tem submission"))
                   ),
                   React.createElement("div", { className: "grid grid-cols-3 gap-3 mb-3" },
                     React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "motoboy"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, ex.nome_prof || ex.cod_prof)),
@@ -21495,15 +21495,15 @@ const hideLoadingScreen = () => {
                 className: "mb-2 p-2 bg-yellow-200 rounded-lg text-xs font-bold text-yellow-900 flex items-center gap-2"
             }, React.createElement("span", {
                 className: "text-lg"
-            }, "⚠️"), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" }))), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
                 className: "flex justify-between items-start mb-2"
             }, React.createElement("button", {
                 className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
                 title: "Clique para copiar o número da OS",
                 onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
-            }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-sm text-purple-400" }, "📋")), React.createElement("span", {
+            }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
-            }, r ? "🚨" : o ? "⚠️" : "⏱️", a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("div", {
+            }, r ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : o ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("div", {
                 className: "flex items-center gap-2 mb-1"
             }, (
                 // 🆕 2026-05: foto do profissional (e.foto) ou avatar de inicial
@@ -21528,7 +21528,7 @@ const hideLoadingScreen = () => {
                 className: "text-[11px] text-purple-600 font-medium"
             }, "↳ ", e.subcategoria), React.createElement("p", {
                 className: "text-[10px] text-gray-500 mt-1"
-            }, "📅 ", new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), ""), new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit"
             })), e.coordenadas && React.createElement("div", {
@@ -21542,11 +21542,11 @@ const hideLoadingScreen = () => {
                     navigator.clipboard.writeText(e.coordenadas), ja("Copiado!", "success")
                 },
                 className: "text-xs text-green-600"
-            }, "📋 Copiar"), React.createElement("a", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Copiar")), React.createElement("a", {
                 href: `https://www.google.com/maps?q=${e.coordenadas}`,
                 target: "_blank",
                 className: "text-xs text-green-600"
-            }, "🗺️ Maps"))), e.temImagem && React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Maps")))), e.temImagem && React.createElement("div", {
                 className: "mt-2"
             }, e.imagemComprovante ? React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "flex gap-2 flex-wrap"
@@ -21566,15 +21566,15 @@ const hideLoadingScreen = () => {
                     ja("🔄 Carregando...", "success"), Fa(e.id)
                 },
                 className: "px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-            }, "📷 Ver foto(s)")), e.validacao_ia && React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.validacao_ia && React.createElement("div", {
                 className: "mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs"
-            }, React.createElement("p", { className: "font-semibold text-blue-800" }, "🤖 Resumo IA:"), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-purple-700 mt-1" }, "⚠️ ", v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, "📷 Tentativas: ", e.tentativas_foto)),
+            }, React.createElement("p", { className: "font-semibold text-blue-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" })), "Resumo IA:")), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-purple-700 mt-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Tentativas: "), e.tentativas_foto)),
             // Esconder Aprovar/Rejeitar quando contestação está aberta
             e.contestacao_status !== 'aberta' && React.createElement(React.Fragment, null, React.createElement("select", {
                 value: "",
                 onChange: t => { if (t.target.value) { x({ ...p, [`obs_${e.id}`]: t.target.value }); } t.target.selectedIndex = 0; },
                 className: "w-full px-2 py-1 border border-orange-300 bg-orange-50 rounded mt-2 text-xs text-gray-700"
-            }, React.createElement("option", { value: "" }, "💬 Usar resposta pronta..."), (p._respostasProntas || []).filter(r => !r.motivo || r.motivo === e.motivo).map(r => React.createElement("option", { key: r.id, value: r.mensagem }, r.titulo))), React.createElement("textarea", {
+            }, React.createElement("option", { value: "" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Usar resposta pronta...")), (p._respostasProntas || []).filter(r => !r.motivo || r.motivo === e.motivo).map(r => React.createElement("option", { key: r.id, value: r.mensagem }, r.titulo))), React.createElement("textarea", {
                 placeholder: "Obs (opcional)",
                 value: p[`obs_${e.id}`] || "",
                 onChange: t => x({
@@ -21588,14 +21588,14 @@ const hideLoadingScreen = () => {
             }, React.createElement("button", {
                 onClick: () => Kl(e.id, !0),
                 className: "flex-1 bg-green-600 text-white py-1 rounded text-xs font-semibold"
-            }, "✓ Aprovar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovar")), React.createElement("button", {
                 onClick: () => Kl(e.id, !1),
                 className: "flex-1 bg-red-600 text-white py-1 rounded text-xs font-semibold"
-            }, "✗ Rejeitar"))),
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar")))),
             // CONTESTAÇÃO - Badge + chat inline
             e.contestacao_status === 'aberta' && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
                 React.createElement("div", { className: "flex items-center justify-between mb-2" },
-                    React.createElement("span", { className: "text-sm font-bold text-purple-800" }, "⚡ CONTESTAÇÃO ABERTA"),
+                    React.createElement("span", { className: "text-sm font-bold text-purple-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "CONTESTAÇÃO ABERTA")),
                     React.createElement("button", {
                         onClick: async () => {
                             try {
@@ -21605,7 +21605,7 @@ const hideLoadingScreen = () => {
                             } catch { ja("Erro ao carregar", "error"); }
                         },
                         className: "px-3 py-1 bg-orange-600 text-white rounded text-xs font-bold"
-                    }, p[`contest_open_${e.id}`] ? "🔄 Atualizar" : "💬 Ver Contestação")
+                    }, p[`contest_open_${e.id}`] ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Ver Contestação"))
                 ),
                 p[`contest_open_${e.id}`] && React.createElement(React.Fragment, null,
                     React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto mb-2" },
@@ -21613,7 +21613,7 @@ const hideLoadingScreen = () => {
                             key: mi,
                             className: `p-2 rounded-lg text-xs ${m.autor_tipo === 'admin' ? 'bg-purple-100 text-purple-800 ml-4' : 'bg-white border mr-4'}`
                         },
-                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? '👔 ' + m.autor_nome : '🏍️ ' + m.autor_nome, React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
+                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? React.createElement(React.Fragment, null, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), " " + m.autor_nome) : React.createElement(React.Fragment, null, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), " " + m.autor_nome), React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
                             React.createElement("p", null, m.mensagem),
                             m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { className: "flex gap-1 mt-1" }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, className: "h-16 rounded cursor-pointer", onClick: () => g(img) }))) : null; } catch { return null; } })()
                         ))
@@ -21627,25 +21627,25 @@ const hideLoadingScreen = () => {
                                 try { await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-responder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: msg }) }); x({ ...p, [`contest_resp_${e.id}`]: '' }); ja("Resposta enviada!", "success"); const r2 = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`); const d2 = await r2.json(); if (d2.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d2.mensagens })); } catch { ja("Erro", "error"); }
                             },
                             className: "flex-1 py-1 bg-purple-600 text-white rounded text-xs font-bold"
-                        }, "💬 Responder"),
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Responder")),
                         React.createElement("button", {
                             onClick: async () => {
                                 if (!confirm("APROVAR a contestação? A solicitação será aprovada.")) return;
                                 try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("✅ Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
                             },
                             className: "py-1 px-2 bg-green-600 text-white rounded text-xs font-bold"
-                        }, "✅ Aprovar"),
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovar")),
                         React.createElement("button", {
                             onClick: async () => {
                                 if (!confirm("REJEITAR DEFINITIVAMENTE? O motoboy não poderá mais contestar.")) return;
                                 try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("❌ Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
                             },
                             className: "py-1 px-2 bg-red-700 text-white rounded text-xs font-bold"
-                        }, "❌ Rejeitar Def.")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar Def."))
                     )
                 )
             ),
-            (e.contestacao_status === 'encerrada_aprovada' || e.contestacao_status === 'encerrada_rejeitada') && React.createElement("div", { className: `mt-2 p-2 rounded text-xs font-bold ${e.contestacao_status === 'encerrada_aprovada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}` }, e.contestacao_status === 'encerrada_aprovada' ? '✅ Contestação aprovada' : '❌ Contestação rejeitada definitivamente')
+            (e.contestacao_status === 'encerrada_aprovada' || e.contestacao_status === 'encerrada_rejeitada') && React.createElement("div", { className: `mt-2 p-2 rounded text-xs font-bold ${e.contestacao_status === 'encerrada_aprovada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}` }, e.contestacao_status === 'encerrada_aprovada' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Contestação aprovada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Contestação rejeitada definitivamente"))
             )
         })))), "search" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
@@ -21653,7 +21653,7 @@ const hideLoadingScreen = () => {
             className: "flex flex-wrap gap-4 mb-6"
         }, React.createElement("input", {
             type: "text",
-            placeholder: "🔍 Buscar por OS, código ou nome...",
+            placeholder: "Buscar por OS, código ou nome...",
             value: p.searchOS || "",
             onChange: e => x({
                 ...p,
@@ -21678,7 +21678,7 @@ const hideLoadingScreen = () => {
             value: "rejeitado"
         }, "Rejeitado"), React.createElement("option", {
             value: "contestado"
-        }, "⚡ Contestado")), React.createElement("select", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Contestado"))), React.createElement("select", {
             value: p.dateFilter || "",
             onChange: e => x({
                 ...p,
@@ -21695,7 +21695,7 @@ const hideLoadingScreen = () => {
             value: "month"
         }, "Este mês"), React.createElement("option", {
             value: "custom"
-        }, "📅 Personalizado")), p.dateFilter === "custom" && React.createElement(React.Fragment, null, React.createElement("input", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Personalizado"))), p.dateFilter === "custom" && React.createElement(React.Fragment, null, React.createElement("input", {
             type: "date",
             value: p.buscaDataInicio || "",
             onChange: e => x({ ...p, buscaDataInicio: e.target.value }),
@@ -21709,11 +21709,11 @@ const hideLoadingScreen = () => {
             onClick: () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : ""),
             disabled: buscaLoading,
             className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
-        }, buscaLoading ? "🔄 Buscando..." : "🔍 Buscar")), buscaTotal > 0 && React.createElement("p", {
+        }, buscaLoading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Buscando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Buscar"))), buscaTotal > 0 && React.createElement("p", {
             className: "text-sm text-gray-500 mb-4"
         }, `${buscaTotal} resultado(s) encontrado(s)${buscaTotal > 100 ? " (mostrando 100)" : ""}`), 0 === buscaResults.length && !buscaLoading && React.createElement("div", {
             className: "text-center py-12 text-gray-400"
-        }, React.createElement("p", { className: "text-4xl mb-2" }, "🔍"), React.createElement("p", { className: "text-lg" }, "Use os filtros acima para buscar solicitações")), React.createElement("div", {
+        }, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), React.createElement("p", { className: "text-lg" }, "Use os filtros acima para buscar solicitações")), React.createElement("div", {
             className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
         }, buscaResults.map(e => React.createElement("div", {
             key: e.id,
@@ -21724,7 +21724,7 @@ const hideLoadingScreen = () => {
             className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
             title: "Clique para copiar o número da OS",
             onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
-        }, "OS: ", e.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
+        }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.fullName)), React.createElement("div", {
             className: "flex items-center gap-1"
@@ -21737,7 +21737,7 @@ const hideLoadingScreen = () => {
                 }), ja("🗑️ Excluída!", "success"), La())
             },
             className: "px-1.5 py-0.5 bg-red-600 text-white rounded text-xs"
-        }, "🗑️"))), React.createElement("p", {
+        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))), React.createElement("p", {
             className: "text-xs text-gray-600"
         }, e.motivo), e.coordenadas && React.createElement("div", {
             className: "mt-1 bg-green-50 border border-green-200 rounded p-1.5 flex items-center justify-between"
@@ -21748,7 +21748,7 @@ const hideLoadingScreen = () => {
                 navigator.clipboard.writeText(e.coordenadas), ja("📋 Copiado!", "success")
             },
             className: "px-1.5 py-0.5 bg-green-600 text-white text-xs rounded"
-        }, "📋")), e.temImagem && React.createElement("div", {
+        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })))), e.temImagem && React.createElement("div", {
             className: "mt-1"
         }, e.imagemComprovante ? React.createElement(React.Fragment, null, React.createElement("div", {
             className: "flex gap-1 flex-wrap"
@@ -21768,7 +21768,7 @@ const hideLoadingScreen = () => {
                 ja("🔄 Carregando...", "success"), Fa(e.id)
             },
             className: "px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-        }, "📷 Ver foto(s)")), e.observacao && React.createElement("div", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.observacao && React.createElement("div", {
             className: "mt-1 bg-white p-1 rounded border"
         }, React.createElement("p", {
             className: "text-xs text-gray-600"
@@ -21778,7 +21778,7 @@ const hideLoadingScreen = () => {
             className: "text-xs text-gray-400"
         }, e.timestamp), e.validated_by_name && "pendente" !== e.status && React.createElement("p", {
             className: "text-xs text-purple-600 font-semibold"
-        }, "👤 ", e.validated_by_name)))))), "ranking" === adminTabEfetivo && (() => {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), ""), e.validated_by_name)))))), "ranking" === adminTabEfetivo && (() => {
             // Helper: aplica filtros e dispara recarregamento (resumo + ranking)
             const aplicarFiltros = (patch) => {
                 const novo = { ...p, ...patch };
@@ -21799,10 +21799,10 @@ const hideLoadingScreen = () => {
             const totalGeral = resumo.total_geral || 0;
             // Estilos compartilhados pros 4 cards
             const cardCats = [
-                { key: 'retorno',  emoji: '🔄', label: 'Retorno',         tema: { fg: '#993C1D', bg: '#FAECE7', borda: '#D85A30' } },
-                { key: 'pedagio',  emoji: '🛣️', label: 'Pedágio',         tema: { fg: '#854F0B', bg: '#FAEEDA', borda: '#EF9F27' } },
-                { key: 'simoes',   emoji: '🏭', label: 'Simões/Camaçari', tema: { fg: '#0F6E56', bg: '#E1F5EE', borda: '#5DCAA5' } },
-                { key: 'ponto1',   emoji: '📍', label: 'Ponto 1',         tema: { fg: '#0C447C', bg: '#E6F1FB', borda: '#85B7EB' } }
+                { key: 'retorno',  emoji: 'refresh', label: 'Retorno',         tema: { fg: '#993C1D', bg: '#FAECE7', borda: '#D85A30' } },
+                { key: 'pedagio',  emoji: 'map', label: 'Pedágio',         tema: { fg: '#854F0B', bg: '#FAEEDA', borda: '#EF9F27' } },
+                { key: 'simoes',   emoji: 'building', label: 'Simões/Camaçari', tema: { fg: '#0F6E56', bg: '#E1F5EE', borda: '#5DCAA5' } },
+                { key: 'ponto1',   emoji: 'pin', label: 'Ponto 1',         tema: { fg: '#0C447C', bg: '#E6F1FB', borda: '#85B7EB' } }
             ];
             const labelCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].label) || categoriaAtiva;
             const totalCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].total) || 0;
@@ -21819,7 +21819,7 @@ const hideLoadingScreen = () => {
                 // ── Header ─────────────────────────────────────────────
                 React.createElement("div", { className: "flex items-start justify-between mb-4 flex-wrap gap-3" },
                     React.createElement("div", null,
-                        React.createElement("h2", { className: "text-lg font-semibold text-gray-900" }, "🏆 Ranking de Solicitações"),
+                        React.createElement("h2", { className: "text-lg font-semibold text-gray-900" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trophy" })), "Ranking de Solicitações")),
                         React.createElement("p", { className: "text-xs text-gray-500 mt-0.5" },
                             totalGeral, " solicitações aprovadas no período · ",
                             resumo.total_profissionais || 0, " profissionais")
@@ -21872,7 +21872,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {
                             className: "text-xs font-semibold flex items-center gap-1",
                             style: { color: ativa ? c.tema.fg : '#6b7280' }
-                        }, React.createElement("span", null, c.emoji), c.label),
+                        }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: c.tema.fg }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + c.emoji })), c.label),
                         React.createElement("div", {
                             className: "text-2xl font-medium mt-0.5",
                             style: { color: ativa ? c.tema.fg : '#111827' }
@@ -21918,7 +21918,7 @@ const hideLoadingScreen = () => {
                             },
                             className: "text-xs px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition flex items-center gap-1",
                             title: "Exportar a lista completa em CSV"
-                        }, "📥 Exportar CSV")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Exportar CSV"))
                     )
                 ),
                 // ── Lista de profissionais (lógica original preservada)
@@ -21940,7 +21940,7 @@ const hideLoadingScreen = () => {
                 })
             }, React.createElement("div", {
                 className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-purple-600" : "text-gray-400")
-            }, 0 === i ? "🥇" : 1 === i ? "🥈" : 2 === i ? "🥉" : `${i+1}º`), React.createElement("div", {
+            }, 0 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 1 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 2 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : `${i+1}º`), React.createElement("div", {
                 className: "flex-1"
             }, React.createElement("p", {
                 className: "font-semibold text-lg text-gray-800"
@@ -21967,7 +21967,7 @@ const hideLoadingScreen = () => {
                 className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
                 title: "Clique para copiar o número da OS",
                 onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("📋 OS " + s.ordemServico + " copiada!", "success"); }
-            }, "OS: ", s.ordemServico, React.createElement("span", { className: "opacity-0 group-hover:opacity-100 transition-opacity text-xs text-purple-400" }, "📋")), React.createElement("p", {
+            }, "OS: ", s.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
                 className: "text-xs text-gray-500"
             }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
@@ -21985,9 +21985,9 @@ const hideLoadingScreen = () => {
                     }
                 },
                 className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200 flex items-center gap-1"
-            }, "📷 Ver Foto"), React.createElement("span", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver Foto")), React.createElement("span", {
                 className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded"
-            }, "✓ Aprovada"))), s.imagemComprovante && React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovada")))), s.imagemComprovante && React.createElement("div", {
                 className: "mt-2 flex gap-2 flex-wrap"
             }, s.imagemComprovante.split("|||").map((img, imgIdx) => React.createElement("img", {
                 key: imgIdx,
@@ -22036,11 +22036,11 @@ const hideLoadingScreen = () => {
                 className: "flex items-center gap-2"
             }, React.createElement("label", {
                 className: "font-semibold"
-            }, "📅 Período:"), React.createElement("select", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Período:")), React.createElement("select", {
                 value: p.relTipoFiltro || "mes",
                 onChange: ev => { x({ ...p, relTipoFiltro: ev.target.value }); },
                 className: "px-3 py-2 border rounded-lg bg-purple-50 font-semibold"
-            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, "📅 Personalizado")),
+            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Personalizado"))),
             p.relTipoFiltro === "custom" ? React.createElement(React.Fragment, null,
                 React.createElement("input", {
                     type: "date", value: p.relDataInicio || "",
@@ -22056,7 +22056,7 @@ const hideLoadingScreen = () => {
                 React.createElement("button", {
                     onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
                     className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                }, "🔍 Filtrar")
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtrar"))
             ) : React.createElement(React.Fragment, null,
                 React.createElement("select", {
                     value: e,
@@ -22079,31 +22079,31 @@ const hideLoadingScreen = () => {
                     p.document.write(m), p.document.close(), p.print()
                 },
                 className: "ml-auto px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-2"
-            }, "📄 Gerar PDF")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Gerar PDF"))), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 border-l-4 border-purple-500"
             }, React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "📋 Total Solicitações"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Total Solicitações")), React.createElement("p", {
                 className: "text-3xl font-bold text-purple-600"
             }, a.length)), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 border-l-4 border-green-500"
             }, React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "✅ Aprovadas"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas")), React.createElement("p", {
                 className: "text-3xl font-bold text-green-600"
             }, l.length)), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 border-l-4 border-red-500"
             }, React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "❌ Rejeitadas"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas")), React.createElement("p", {
                 className: "text-3xl font-bold text-red-600"
             }, r.length)), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500"
             }, React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "⏳ Pendentes"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes")), React.createElement("p", {
                 className: "text-3xl font-bold text-yellow-600"
             }, o.length))), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
@@ -22135,7 +22135,7 @@ const hideLoadingScreen = () => {
                 className: "rounded-xl p-4 mb-6 " + (parseFloat(h) >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")
             }, React.createElement("h3", {
                 className: "font-semibold mb-2"
-            }, "📊 Comparativo com Mês Anterior"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Comparativo com Mês Anterior")), React.createElement("div", {
                 className: "flex items-center gap-6"
             }, React.createElement("div", null, React.createElement("p", {
                 className: "text-sm text-gray-600"
@@ -22143,13 +22143,13 @@ const hideLoadingScreen = () => {
                 className: "text-sm text-gray-600"
             }, "Mês atual: ", React.createElement("strong", null, a.length), " solicitações")), React.createElement("div", {
                 className: "text-3xl font-bold " + (parseFloat(h) >= 0 ? "text-green-600" : "text-red-600")
-            }, parseFloat(h) >= 0 ? "📈" : "📉", " ", parseFloat(h) >= 0 ? "+" : "", h, "%"))), React.createElement("div", {
+            }, parseFloat(h) >= 0 ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trenddown" })), " ", parseFloat(h) >= 0 ? "+" : "", h, "%"))), React.createElement("div", {
                 className: "grid md:grid-cols-2 gap-6 mb-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📈 Evolução (Últimos 6 meses)"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Evolução (Últimos 6 meses)")), React.createElement("div", {
                 className: "flex items-end justify-between h-40 gap-2"
             }, g.map((e, t) => React.createElement("div", {
                 key: t,
@@ -22170,7 +22170,7 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📅 Por Semana (", f[e], ")"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Por Semana ("), f[e], ")"), React.createElement("div", {
                 className: "flex items-end justify-between h-40 gap-2"
             }, d.map((e, t) => React.createElement("div", {
                 key: t,
@@ -22191,7 +22191,7 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📁 Por Motivo"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Por Motivo")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
@@ -22203,11 +22203,11 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-center"
             }, "Total"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "✅ Aprovadas"), React.createElement("th", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas")), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "❌ Rejeitadas"), React.createElement("th", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas")), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "⏳ Pendentes"), React.createElement("th", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes")), React.createElement("th", {
                 className: "px-4 py-3 text-center"
             }, "Taxa"))), React.createElement("tbody", null, Object.entries(n).sort((e, t) => t[1].total - e[1].total).map(([e, t]) => React.createElement("tr", {
                 key: e,
@@ -22230,7 +22230,7 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "👷 Top 10 Profissionais do Mês"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Top 10 Profissionais do Mês")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
@@ -22246,16 +22246,16 @@ const hideLoadingScreen = () => {
                 className: "px-4 py-3 text-center"
             }, "Total"), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "✅"), React.createElement("th", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("th", {
                 className: "px-4 py-3 text-center"
-            }, "❌"), React.createElement("th", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))), React.createElement("th", {
                 className: "px-4 py-3 text-center"
             }, "Taxa"))), React.createElement("tbody", null, i.map((e, t) => React.createElement("tr", {
                 key: t,
                 className: "border-t hover:bg-gray-50 " + (t < 3 ? "bg-yellow-50" : "")
             }, React.createElement("td", {
                 className: "px-4 py-3 text-center"
-            }, 0 === t ? "🥇" : 1 === t ? "🥈" : 2 === t ? "🥉" : t + 1), React.createElement("td", {
+            }, 0 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 1 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 2 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : t + 1), React.createElement("td", {
                 className: "px-4 py-3 font-semibold"
             }, e.nome), React.createElement("td", {
                 className: "px-4 py-3 font-mono text-gray-600"
@@ -22418,7 +22418,7 @@ const hideLoadingScreen = () => {
             className: "px-4 py-2 bg-purple-600 text-white rounded text-sm font-semibold"
         }, "🔑 Resetar"), React.createElement("button", {
             onClick: async () => {
-                const t = `⚠️ ATENÇÃO!\n\nExcluir ${e.fullName} (${e.codProfissional})?\n\nTODOS os dados associados serão excluídos:\n• Solicitações de saque\n• Histórico de saques\n• Gratuidades\n• Indicações\n• Inscrições em promoções\n• Respostas do quiz\n\nEsta ação NÃO pode ser desfeita!`;
+                const t = `ATENÇÃO!\n\nExcluir ${e.fullName} (${e.codProfissional})?\n\nTODOS os dados associados serão excluídos:\n• Solicitações de saque\n• Histórico de saques\n• Gratuidades\n• Indicações\n• Inscrições em promoções\n• Respostas do quiz\n\nEsta ação NÃO pode ser desfeita!`;
                 if (confirm(t)) {
                     try {
                         const t = await fetchAuth(`${API_URL}/users/${e.codProfissional}`, {
@@ -22428,7 +22428,7 @@ const hideLoadingScreen = () => {
                         if (!t.ok) throw new Error(a.error);
                         {
                             const e = a.deleted;
-                            ja(`🗑️ Excluído! (${e.submissions} solicitações, ${e.withdrawals} saques, ${e.gratuities} gratuidades, ${e.indicacoes} indicações)`, "success")
+                            ja(`Excluído! (${e.submissions} solicitações, ${e.withdrawals} saques, ${e.gratuities} gratuidades, ${e.indicacoes} indicações)`, "success")
                         }
                     } catch (e) {
                         ja("❌ Erro ao excluir: " + e.message, "error")
@@ -22735,10 +22735,10 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
                 // Linha 3: Detalhamento dos pontos
                 React.createElement('div', { className: 'flex flex-wrap gap-2 text-xs' },
                   React.createElement('span', { className: `px-2 py-1 rounded-full ${item.dentro_prazo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` },
-                    item.dentro_prazo ? `✓ No prazo (+${pontoPrazo.toFixed(2)})` : `✗ Fora do prazo (${pontoPrazo.toFixed(2)})`
+                    item.dentro_prazo ? `No prazo (+${pontoPrazo.toFixed(2)})` : `Fora do prazo (${pontoPrazo.toFixed(2)})`
                   ),
                   pontoBonus > 0 && React.createElement('span', { className: 'px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full' },
-                    `🎯 Bônus ${item.janela_bonus} (+${pontoBonus.toFixed(2)})`
+                    `Bônus ${item.janela_bonus} (+${pontoBonus.toFixed(2)})`
                   )
                 )
               );
