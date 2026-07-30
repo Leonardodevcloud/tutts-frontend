@@ -16,7 +16,7 @@
 // ============================================================
 
 (function () {
-  const e = React.createElement; /* FILAS_ICONS_V1 */
+  const e = React.createElement; /* FILAS_ICONS_V2 */
 
   function ModuloFilasAutoMotoboy(props) {
     const {

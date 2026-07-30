@@ -16,7 +16,7 @@
 // ============================================================
 
 (function () {
-  const e = React.createElement; /* FILAS_ICONS_V1 */
+  const e = React.createElement; /* FILAS_ICONS_V2 */
 
   function ModuloFilasAuto(props) {
     const { usuario, apiUrl, fetchAuth, showToast } = props;
@@ -724,7 +724,7 @@
           key: aba,
           onClick: () => setAbaAtiva(aba),
           className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? 'Monitor' : aba === 'config' ? 'Configuração' : aba === 'vinculos' ? 'Vínculos' : aba === 'penalidades' ? `Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}` : aba === 'garantido' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" })), "Garantido") : aba === 'diaria' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" })), "Diária") : aba === 'vagas' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Vagas") : 'Logs do agente'))
+        }, aba === 'monitor' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-chart" })), 'Monitor') : aba === 'config' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-settings" })), 'Configuração') : aba === 'vinculos' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-link" })), 'Vínculos') : aba === 'penalidades' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })), `Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}`) : aba === 'garantido' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" })), "Garantido") : aba === 'diaria' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" })), "Diária") : aba === 'vagas' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Vagas") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-list" })), 'Logs do agente')))
       ),
 
       // === ABA MONITOR ===
