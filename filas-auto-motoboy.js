@@ -16,7 +16,7 @@
 // ============================================================
 
 (function () {
-  const e = React.createElement;
+  const e = React.createElement; /* FILAS_ICONS_V1 */
 
   function ModuloFilasAutoMotoboy(props) {
     const {
@@ -263,7 +263,7 @@
     if (!minhaCentral) {
       return e('div', { className: 'min-h-[400px] flex items-center justify-center' },
         e('div', { className: 'text-center bg-white rounded-2xl shadow-lg p-8 max-w-md mx-4' },
-          e('span', { className: 'text-6xl block mb-4' }, '🚫'),
+          e("svg", { className: "ico", style: { width: 18, height: 18, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })),
           e('h2', { className: 'text-xl font-bold text-gray-800 mb-2' }, 'Sem acesso à fila'),
           e('p', { className: 'text-gray-600' }, 'Você não está vinculado a nenhuma central auto-gerenciável.')
         )
@@ -280,7 +280,7 @@
       // ═══ HEADER ═══
       e('div', { className: 'bg-purple-600 text-white rounded-2xl p-4 shadow-md' },
         e('div', { className: 'flex items-center gap-3 mb-2' },
-          e('span', { className: 'text-2xl' }, '🤖'),
+          e("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })),
           e('div', { className: 'flex-1 min-w-0' },
             e('h1', { className: 'text-base font-bold truncate' }, minhaCentral.central_nome),
             e('p', { className: 'text-purple-200 text-xs flex items-center gap-1' },
@@ -291,7 +291,7 @@
         ),
         // Status GPS
         e('div', { className: 'flex items-center gap-2 bg-white/10 rounded-lg p-2 text-xs' },
-          e('span', null, gpsStatus === 'permitido' ? '📍' : '⚠️'),
+          e('span', null, gpsStatus === 'permitido' ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })) : e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
           e('div', { className: 'flex-1 min-w-0' },
             e('p', { className: 'font-medium' },
               gpsStatus === 'permitido' ? 'GPS ativo' :
@@ -310,7 +310,7 @@
 
       // ═══ ESTADO PENALIZADO ═══
       penalizado && e('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-5 text-center' },
-        e('span', { className: 'text-4xl block mb-2' }, '⏳'),
+        e("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })),
         e('h2', { className: 'text-lg font-bold text-red-800' }, 'Você está bloqueado'),
         e('p', { className: 'text-red-600 text-sm mt-1' },
           'Pode voltar à fila em alguns minutos.'
@@ -321,7 +321,7 @@
       // (futuro: o backend pode retornar isso ao tentar entrar)
       !penalizado && bloqueioCorrida && e('div', { className: 'bg-red-50 border border-red-300 rounded-2xl p-4' },
         e('div', { className: 'text-center mb-3' },
-          e('span', { className: 'text-4xl block mb-2' }, '🛵'),
+          e("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" })),
           e('h2', { className: 'text-base font-bold text-red-800' }, 'Você tem corridas ativas'),
           e('p', { className: 'text-xs text-red-700 mt-1' },
             'Finalize suas entregas antes de voltar pra fila'
@@ -334,7 +334,7 @@
           (bloqueioCorrida.corridas || []).map((c, i) => e('div', {
             key: i, className: 'flex items-center gap-2 py-1 border-b border-gray-100 last:border-0'
           },
-            e('span', null, '📦'),
+            e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-package" })),
             e('div', { className: 'flex-1 text-xs' },
               e('p', { className: 'font-medium text-gray-800' }, `OS ${c.os_numero || '?'}`),
               e('p', { className: 'text-gray-500 text-[10px]' }, c.status || '—')
@@ -344,7 +344,7 @@
         e('button', {
           onClick: () => { setBloqueioCorrida(null); entrarNaFila(); },
           className: 'w-full mt-3 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium'
-        }, '🔄 Verificar novamente')
+        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Verificar novamente"))
       ),
 
       // ═══ ESTADO: EM ROTA (despachado pelo agente) ═══
@@ -381,7 +381,7 @@
       modalFilaCheia && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setModalFilaCheia(null) },
         e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
           e('div', { className: 'text-center mb-4' },
-            e('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, '🔒')),
+            e('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, e("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
             e('h2', { className: 'text-lg font-bold text-amber-800 mb-1' }, 'Fila cheia hoje')
           ),
           e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
@@ -433,7 +433,7 @@
       garantidoAviso && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
         e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
           e('div', { className: 'text-center mb-4' },
-            e('div', { className: 'w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, '💜')),
+            e('div', { className: 'w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-3' }, e("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, e("use", { href: "#i-heart" }))),
             e('h2', { className: 'text-lg font-bold text-gray-800 mb-1' }, 'Bônus de hoje')
           ),
           e('div', { className: 'bg-violet-50 border border-violet-200 rounded-xl p-4 mb-4' },
@@ -473,13 +473,13 @@
         // Status do agente
         agenteStatus === 'pendente' && e('p', {
           className: 'mt-2 text-[10px] text-amber-700 bg-amber-100 inline-block px-2 py-1 rounded'
-        }, '🤖 agente verificando...'),
+        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "agente verificando...")),
         agenteStatus === 'validado' && e('p', {
           className: 'mt-2 text-[10px] text-green-700 bg-green-100 inline-block px-2 py-1 rounded'
-        }, '✓ validado pelo agente'),
+        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "validado pelo agente")),
         agenteStatus === 'reprovado' && e('p', {
           className: 'mt-2 text-[10px] text-red-700 bg-red-100 inline-block px-2 py-1 rounded'
-        }, '⚠️ agente detectou corrida ativa')
+        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "agente detectou corrida ativa"))
       ),
 
       // Lista pública da fila
@@ -523,7 +523,7 @@
 
       // Info do agente
       e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2' },
-        e('span', { className: 'text-base' }, '🤖'),
+        e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })),
         e('div', null,
           e('p', { className: 'text-xs font-medium text-amber-900' }, 'Agente monitorando'),
           e('p', { className: 'text-[11px] text-amber-700 mt-0.5 leading-snug' },
@@ -541,7 +541,7 @@
           // Ícone
           e('div', { className: 'flex justify-center' },
             e('div', { className: 'w-24 h-24 rounded-full bg-white/10 flex items-center justify-center' },
-              e('span', { className: 'text-5xl' }, '🚧')
+              e("svg", { className: "ico", style: { width: 48, height: 48, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))
             )
           ),
           // Saudação
@@ -579,14 +579,14 @@
         e('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden' },
           // Header vermelho
           e('div', { className: 'bg-red-600 px-5 py-4 text-white text-center' },
-            e('span', { className: 'text-4xl block mb-1' }, '🚫'),
+            e("svg", { className: "ico", style: { width: 38, height: 38, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })),
             e('h2', { className: 'text-lg font-bold' }, 'Sair da fila?'),
             e('p', { className: 'text-red-200 text-xs mt-1' }, 'Esta ação não pode ser desfeita')
           ),
           e('div', { className: 'p-5 space-y-4' },
             // Aviso de punição
             e('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-4' },
-              e('p', { className: 'text-sm font-bold text-red-800 mb-2 text-center' }, '⚠️ Você será bloqueado'),
+              e('p', { className: 'text-sm font-bold text-red-800 mb-2 text-center' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Você será bloqueado")),
               e('p', { className: 'text-sm text-red-700 text-center leading-relaxed' },
                 'Ao sair voluntariamente, você ',
                 e('strong', null, 'não poderá reentrar na fila'),
@@ -658,14 +658,14 @@
       // Status pronto/não pronto
       podeChekin
         ? e('div', { className: 'bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-2' },
-            e('span', { className: 'text-xl' }, '✅'),
+            e("svg", { className: "ico", style: { width: 22, height: 22, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })),
             e('div', { className: 'flex-1' },
               e('p', { className: 'text-sm font-medium text-green-900' }, 'GPS confirmado'),
               e('p', { className: 'text-[11px] text-green-700' }, 'Pronto pra entrar na fila')
             )
           )
         : e('div', { className: 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center gap-2' },
-            e('span', { className: 'text-xl' }, '📍'),
+            e("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })),
             e('div', { className: 'flex-1' },
               e('p', { className: 'text-sm font-medium text-amber-900' },
                 gpsStatus !== 'permitido' ? 'Aguardando GPS' : 'Você está muito longe'
@@ -685,7 +685,7 @@
         className: podeChekin
           ? 'w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-base font-semibold transition-colors'
           : 'w-full py-4 bg-gray-200 text-gray-400 rounded-xl text-base font-semibold cursor-not-allowed'
-      }, '🚀 Entrar na fila'),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Entrar na fila")),
 
       e('p', { className: 'text-center text-[10px] text-gray-400 leading-relaxed px-4' },
         'Ao entrar, o agente vai verificar no sistema se você não tem corridas ativas. Se tiver, te tira da fila automaticamente.'
@@ -708,7 +708,7 @@
     return e('div', { className: 'border-2 rounded-2xl p-6 bg-green-50 border-green-300' },
       // Cabeçalho 🏍️ + título
       e('div', { className: 'flex items-center gap-4 mb-4' },
-        e('span', { className: 'text-5xl' }, '🏍️'),
+        e("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" })),
         e('div', null,
           e('h2', { className: 'text-xl font-bold text-green-800' }, 'Você está em rota!'),
           e('p', { className: 'text-green-600 text-sm' },
@@ -721,7 +721,7 @@
       cooldownAtivo
         ? e('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-4' },
             e('p', { className: 'text-sm text-orange-800 leading-relaxed' },
-              '🤖 O agente detectou corridas ativas no seu nome. Você saiu da fila automaticamente. Finalize as entregas e poderá voltar em ',
+              e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "O agente detectou corridas ativas no seu nome. Você saiu da fila automaticamente. Finalize as entregas e poderá voltar em "),
               e('strong', null, `${minutosRestantes} ${minutosRestantes === 1 ? 'minuto' : 'minutos'}`),
               '.'
             )
@@ -729,14 +729,14 @@
         : e(React.Fragment, null,
             e('div', { className: 'bg-green-100 border border-green-300 rounded-xl p-4 mb-4' },
               e('p', { className: 'text-sm text-green-800 leading-relaxed' },
-                '✅ Se finalizou suas entregas, retorne para a fila quando estiver próximo da central.'
+                e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Se finalizou suas entregas, retorne para a fila quando estiver próximo da central.")
               )
             ),
             e('button', {
               onClick: entrarNaFila,
               disabled: !podeChekin,
               className: `w-full py-4 rounded-xl font-bold text-lg ${!podeChekin ? 'bg-gray-300 text-gray-500' : 'bg-green-600 text-white hover:bg-green-700'}`,
-            }, '🔄 Retornar para a fila')
+            }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Retornar para a fila"))
           )
     );
   }
@@ -757,7 +757,7 @@
         onClick: (ev) => ev.stopPropagation(),
       },
         e('div', { className: 'text-center mb-4' },
-          e('span', { className: 'text-5xl block mb-2' }, '⏳'),
+          e("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })),
           e('h3', { className: 'text-lg font-bold text-gray-800 mb-2' }, 'Calma aí!'),
           e('p', { className: 'text-sm text-gray-600 leading-relaxed' },
             'Você foi despachado há pouco. Finalize sua corrida e conseguirá entrar na fila novamente em ',
@@ -769,7 +769,7 @@
         ),
         e('div', { className: 'bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4' },
           e('p', { className: 'text-xs text-orange-800 leading-relaxed' },
-            '💡 Esse tempo serve pra você ter chance de finalizar a corrida e não furar a fila dos outros motoboys.'
+            e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Esse tempo serve pra você ter chance de finalizar a corrida e não furar a fila dos outros motoboys.")
           )
         ),
         e('button', {
