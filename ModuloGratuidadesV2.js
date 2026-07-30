@@ -1,3 +1,4 @@
+/* GRAT_ICONS_V1 */
 /**
  * ModuloGratuidadesV2.js
  * ─────────────────────────────────────────────────────────────────────────
@@ -210,20 +211,20 @@
           }),
           lookupStatus === 'buscando' && React.createElement('span', {
             style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: cores.textMuted },
-          }, '⏳'),
+          }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }))),
           lookupStatus === 'encontrado' && React.createElement('span', {
             style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#065f46' },
             title: 'Motoboy encontrado',
-          }, '✓'),
+          }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
           lookupStatus === 'nao_encontrado' && React.createElement('span', {
             style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#A32D2D' },
             title: 'Código não encontrado',
-          }, '✕')
+          }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
         ),
         lookupStatus === 'nao_encontrado' && (codigo || '').trim().length >= 2 &&
         React.createElement('p', {
           style: { fontSize: 11, color: '#A32D2D', margin: '4px 0 0' },
-        }, '⚠️ Código não encontrado. Preencha o nome manualmente.')
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Código não encontrado. Preencha o nome manualmente."))
       ),
       React.createElement('div', null,
         React.createElement('label', {
@@ -455,7 +456,7 @@
 
     return React.createElement(Modal, {
       aberto, onClose, largura: 460,
-      titulo: 'Gerenciar motivos', icone: '⚙',
+      titulo: 'Gerenciar motivos', icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })),
     },
       React.createElement('p', {
         style: { fontSize: 13, color: cores.textMuted, margin: '0 0 12px' },
@@ -503,12 +504,12 @@
                     onClick: () => salvarEdicao(m.id),
                     title: 'Salvar',
                     style: btnIcon(cores.successSoft, '#065f46'),
-                  }, '✓')
+                  }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })))
                   : React.createElement('button', {
                     onClick: () => { setEditandoId(m.id); setTextoEdit(m.motivo); },
                     title: 'Editar',
                     style: btnIcon('#fff', cores.gray),
-                  }, '✎'),
+                  }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                 React.createElement('button', {
                   onClick: () => excluir(m),
                   title: 'Excluir',
@@ -681,7 +682,7 @@
               color: cores.primary, fontSize: 12, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500,
             },
-          }, '⚙ Gerenciar motivos')
+          }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Gerenciar motivos"))
         ),
         React.createElement('div', {
           style: {
@@ -707,7 +708,7 @@
                   borderRadius: 14, fontSize: 12, cursor: 'pointer',
                   fontWeight: motivo === m.motivo ? 600 : 400,
                 },
-              }, m.motivo, motivo === m.motivo && ' ✓')
+              }, m.motivo, motivo === m.motivo && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })))
             )
           ),
           React.createElement(CapsInput, {
@@ -956,7 +957,7 @@
           React.createElement('div', { style: { flex: 1, minWidth: 200, position: 'relative' } },
             React.createElement('span', {
               style: { position: 'absolute', left: 10, top: 9, color: cores.textMuted, fontSize: 14 },
-            }, '🔍'),
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
             React.createElement('input', {
               type: 'text', value: busca,
               onChange: (e) => setBusca(e.target.value),
@@ -1063,7 +1064,7 @@
                             border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
                           },
                           disabled: g.status_ui === 'removida',
-                        }, '🗑 Excluir')
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir"))
                       )
                     )
                   )
@@ -1352,7 +1353,7 @@
           React.createElement('div', { style: { flex: 1, minWidth: 200, position: 'relative' } },
             React.createElement('span', {
               style: { position: 'absolute', left: 10, top: 9, color: cores.textMuted, fontSize: 14 },
-            }, '🔍'),
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
             React.createElement('input', {
               type: 'text', value: busca,
               onChange: (e) => setBusca(e.target.value),
@@ -1519,7 +1520,7 @@
     };
 
     return React.createElement(Modal, {
-      aberto, onClose, titulo: 'Cadastrar isenção', icone: '🛡', largura: 480,
+      aberto, onClose, titulo: 'Cadastrar isenção', icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" })), largura: 480,
     },
       React.createElement('p', {
         style: { fontSize: 13, color: cores.textMuted, margin: '0 0 14px' },
@@ -1542,7 +1543,7 @@
             React.createElement('button', {
               onClick: onAbrirGerenciar,
               style: { background: 'transparent', border: 'none', color: cores.primary, fontSize: 12, cursor: 'pointer', fontWeight: 500 },
-            }, '⚙ Gerenciar motivos')
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Gerenciar motivos"))
           ),
           React.createElement('select', {
             value: motivo, onChange: (e) => setMotivo(e.target.value),
@@ -1627,7 +1628,7 @@
     };
 
     return React.createElement(Modal, {
-      aberto, onClose, largura: 460, titulo: 'Gerenciar motivos de isenção', icone: '⚙',
+      aberto, onClose, largura: 460, titulo: 'Gerenciar motivos de isenção', icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })),
     },
       React.createElement('p', {
         style: { fontSize: 13, color: cores.textMuted, margin: '0 0 12px' },
@@ -1655,8 +1656,8 @@
                   : React.createElement('span', { style: { flex: 1, fontWeight: 500, fontSize: 13 } }, m.motivo),
                 React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, `${m.contador_uso} uso${m.contador_uso === 1 ? '' : 's'}`),
                 editandoId === m.id
-                  ? React.createElement('button', { onClick: () => salvarEdicao(m.id), title: 'Salvar', style: btnIcon(cores.successSoft, '#065f46') }, '✓')
-                  : React.createElement('button', { onClick: () => { setEditandoId(m.id); setTextoEdit(m.motivo); }, title: 'Editar', style: btnIcon('#fff', cores.gray) }, '✎'),
+                  ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))
+                  : React.createElement('button', { onClick: () => { setEditandoId(m.id); setTextoEdit(m.motivo); }, title: 'Editar', style: btnIcon('#fff', cores.gray) }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                 React.createElement('button', { onClick: () => excluir(m), title: 'Excluir', style: btnIcon(cores.dangerSoft, '#991b1b') }, '×')
               )
             )
@@ -1706,8 +1707,8 @@
         },
       },
         [
-          { id: 'gratuidades', label: '🎁 Gratuidades' },
-          { id: 'isencoes', label: '🛡 Isenções' },
+          { id: 'gratuidades', label: React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Gratuidades") },
+          { id: 'isencoes', label: React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" })), "Isenções") },
         ].map((s) =>
           React.createElement('button', {
             key: s.id,
