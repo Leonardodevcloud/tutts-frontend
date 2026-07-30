@@ -1,3 +1,4 @@
+/* FIN_HOME_REDESIGN_V1 */
 // MÓDULO FINANCEIRO - TUTTS v2.0
 (function() {
     'use strict';
@@ -1604,21 +1605,21 @@
                 
                 // Cards de Navegação
                 React.createElement("div", {className: "max-w-6xl mx-auto px-6 pb-12"},
-                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"},
+                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"},
                         
                         // Card Solicitações
                         React.createElement("div", {
                             onClick: () => { x({...p, finTab: "solicitacoes"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-green-500 to-emerald-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "📋"),
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })),
                                     y.solicitacoes > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.solicitacoes > 9 ? "9+" : y.solicitacoes)
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Solicitações"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Saques emergenciais pendentes de aprovação e histórico completo.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Solicitações"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Saques emergenciais pendentes de aprovação e histórico completo.")
                             )
                         ),
 
@@ -1627,14 +1628,14 @@
                             onClick: () => { x({...p, finTab: "limites"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-orange-500 to-red-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "🔓"),
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-orange-500 to-red-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })),
                                     y.limites_pendentes > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.limites_pendentes > 9 ? "9+" : y.limites_pendentes)
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Limites"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Solicitações de liberação de limite de saque.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Limites"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Solicitações de liberação de limite de saque.")
                             )
                         ),
 
@@ -1643,13 +1644,13 @@
                             onClick: function() { x({...p, finTab: "stark-bank"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-emerald-500 to-teal-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🏦")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Pagamento Pix"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Pagamento automático via Stark Bank.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Pagamento Pix"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Pagamento automático via Stark Bank.")
                             )
                         ),
 
@@ -1658,13 +1659,13 @@
                             onClick: function() { x({...p, finTab: "acerto-prof"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-violet-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "💼")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-indigo-500 to-violet-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Acerto Prof"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Upload de planilha de faturamento e pagamento via Stark Bank.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Acerto Prof"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Upload de planilha de faturamento e pagamento via Stark Bank.")
                             )
                         ),
 
@@ -1673,13 +1674,13 @@
                             onClick: function() { x({...p, finTab: "conciliacao-acerto"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "📊")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Conc. Acerto"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Conciliação e acompanhamento dos acertos profissionais.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Conc. Acerto"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Conciliação e acompanhamento dos acertos profissionais.")
                             )
                         ),
                         
@@ -1693,14 +1694,14 @@
                             },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-blue-500 to-cyan-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "✅"),
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-blue-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
                                     y.validacao > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.validacao > 9 ? "9+" : y.validacao)
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Validação"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Aprovação de ajustes de OS e retornos enviados pelos entregadores.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Validação"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Aprovação de ajustes de OS e retornos enviados pelos entregadores.")
                             )
                         ),
                         
@@ -1709,13 +1710,13 @@
                             onClick: () => { x({...p, finTab: "conciliacao"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-teal-500 to-cyan-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🔄")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Conciliação"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Marcar saques como efetivamente pagos e controle de pagamentos.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Conciliação"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Marcar saques como efetivamente pagos e controle de pagamentos.")
                             )
                         ),
                         
@@ -1724,13 +1725,13 @@
                             onClick: () => { x({...p, finTab: "resumo"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-violet-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "📑")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Resumo"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Busca detalhada por profissional com histórico completo de saques.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Resumo"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Busca detalhada por profissional com histórico completo de saques.")
                             )
                         ),
                         
@@ -1739,14 +1740,14 @@
                             onClick: () => { x({...p, finTab: "gratuidades"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-pink-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-pink-500 to-rose-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "🎁"),
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-pink-500 to-rose-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })),
                                     y.gratuidades > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.gratuidades > 9 ? "9+" : y.gratuidades)
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Gratuidades"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Gerenciar saques gratuitos como premiações e bonificações.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Gratuidades"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Gerenciar saques gratuitos como premiações e bonificações.")
                             )
                         ),
                         
@@ -1755,13 +1756,13 @@
                             onClick: () => { x({...p, finTab: "restritos"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-red-500 to-rose-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🚫")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-red-500 to-rose-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Restritos"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Profissionais bloqueados de realizar saques emergenciais.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Restritos"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Profissionais bloqueados de realizar saques emergenciais.")
                             )
                         ),
                         
@@ -1770,13 +1771,13 @@
                             onClick: () => { x({...p, finTab: "indicacoes"}); if (ae && ae.length > 0) verificarCadastrosIndicados(ae); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-amber-500 to-orange-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "👥")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Indicações"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Programa de indicação de novos profissionais e bonificações.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Indicações"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Programa de indicação de novos profissionais e bonificações.")
                             )
                         ),
                         
@@ -1785,13 +1786,13 @@
                             onClick: () => { x({...p, finTab: "promo-novatos"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-indigo-500 to-blue-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "🚀")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Promoções"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Promoções e campanhas especiais para novos entregadores.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Promoções"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Promoções e campanhas especiais para novos entregadores.")
                             )
                         ),
                         
@@ -1800,14 +1801,14 @@
                             onClick: () => { x({...p, finTab: "loja"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative"},
-                                    React.createElement("span", {className: "text-3xl"}, "🛒"),
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })),
                                     y.loja > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, y.loja > 9 ? "9+" : y.loja)
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Loja"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Lojinha Tutts com produtos, pedidos e gestão de estoque.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Loja"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Lojinha Tutts com produtos, pedidos e gestão de estoque.")
                             )
                         ),
                         
@@ -1816,13 +1817,13 @@
                             onClick: () => { x({...p, finTab: "relatorios"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-cyan-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-cyan-500 to-teal-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "📈")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-cyan-500 to-teal-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-cyan-100 text-cyan-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Relatórios"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Relatórios gerenciais e exportação de dados financeiros.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Relatórios"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Relatórios gerenciais e exportação de dados financeiros.")
                             )
                         ),
                         
@@ -1831,13 +1832,13 @@
                             onClick: () => { x({...p, finTab: "horarios"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-slate-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-slate-500 to-slate-700"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "⚙️")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-slate-500 to-slate-700"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Configurações"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Toggles de saque, horários de atendimento e regras gerais.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Configurações"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Toggles de saque, horários de atendimento e regras gerais.")
                             )
                         ),
                         
@@ -1846,13 +1847,13 @@
                             onClick: () => { x({...p, finTab: "avisos"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-yellow-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-yellow-500 to-amber-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "📢")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-yellow-500 to-amber-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Avisos"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Comunicados e avisos para os profissionais no app.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Avisos"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Comunicados e avisos para os profissionais no app.")
                             )
                         ),
                         
@@ -1861,13 +1862,13 @@
                             onClick: () => { x({...p, finTab: "backup"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-gray-500 to-slate-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "💾")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-gray-500 to-slate-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Backup"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Exportar e fazer backup dos dados do sistema.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Backup"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Exportar e fazer backup dos dados do sistema.")
                             )
                         ),
                         // Card Saldo Plific
@@ -1875,13 +1876,13 @@
                             onClick: function() { x({...p, finTab: "saldo-plific"}); },
                             className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
                         },
-                            React.createElement("div", {className: "h-2 bg-gradient-to-r from-purple-500 to-indigo-600"}),
-                            React.createElement("div", {className: "p-6"},
-                                React.createElement("div", {className: "w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"},
-                                    React.createElement("span", {className: "text-3xl"}, "💳")
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" }))
                                 ),
-                                React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-2"}, "Saldo Plific"),
-                                React.createElement("p", {className: "text-sm text-gray-500"}, "Consultar saldos dos profissionais.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Saldo Plific"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Consultar saldos dos profissionais.")
                             )
                         )
                     ),
@@ -1889,7 +1890,7 @@
                     // Resumo Rápido com contadores
                     React.createElement("div", {className: "mt-10"},
                         React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"},
-                            React.createElement("span", null, "⚡"),
+                            React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })),
                             "Pendências"
                         ),
                         React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4"},
