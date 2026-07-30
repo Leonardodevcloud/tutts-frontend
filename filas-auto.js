@@ -16,7 +16,7 @@
 // ============================================================
 
 (function () {
-  const e = React.createElement; /* FILAS_ICONS_V2 */
+  const e = React.createElement; /* FILAS_ICONS_V3 */
 
   function ModuloFilasAuto(props) {
     const { usuario, apiUrl, fetchAuth, showToast } = props;
@@ -584,7 +584,7 @@
         e('div', { className: 'flex items-center justify-between gap-3' },
           e('div', null,
             e('h2', { className: 'text-lg font-semibold text-gray-800 flex items-center gap-2' },
-              e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), 'Filas auto-gerenciáveis'
+              e('span', null, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))), 'Filas auto-gerenciáveis'
             ),
             e('p', { className: 'text-sm text-gray-500 mt-0.5' },
               'Motoboys se organizam · agente Playwright valida no sistema externo'
@@ -612,7 +612,7 @@
             ? e('div', {
                 className: 'border border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50'
               },
-                e("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })),
+                e('div', { className: 'text-4xl mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))),
                 e('p', { className: 'text-gray-700 font-medium' }, 'Nenhuma central auto-gerenciável ainda'),
                 e('p', { className: 'text-gray-500 text-sm mt-1' }, 'Clique em "Nova central auto" pra começar'),
               )
@@ -707,7 +707,7 @@
         }, '← Voltar'),
         e('span', { className: 'text-gray-300' }, '·'),
         e('h2', { className: 'text-lg font-semibold text-gray-800 flex items-center gap-2' },
-          e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })), centralSelecionada.nome
+          e('span', null, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" }))), centralSelecionada.nome
         ),
         e('span', {
           className: `text-[10px] px-2 py-0.5 rounded font-medium ml-auto ${centralSelecionada.validacao_agente_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`
@@ -724,7 +724,7 @@
           key: aba,
           onClick: () => setAbaAtiva(aba),
           className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-chart" })), 'Monitor') : aba === 'config' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-settings" })), 'Configuração') : aba === 'vinculos' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-link" })), 'Vínculos') : aba === 'penalidades' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })), `Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}`) : aba === 'garantido' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" })), "Garantido") : aba === 'diaria' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" })), "Diária") : aba === 'vagas' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Vagas") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-list" })), 'Logs do agente')))
+        }, aba === 'monitor' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-chart" })), 'Monitor') : aba === 'config' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-settings" })), 'Configuração') : aba === 'vinculos' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-link" })), 'Vínculos') : aba === 'penalidades' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })), `Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}`) : aba === 'garantido' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" })), "Garantido") : aba === 'diaria' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" })), "Diária") : aba === 'vagas' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Vagas") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-list" })), 'Logs do agente')))
       ),
 
       // === ABA MONITOR ===
@@ -772,7 +772,7 @@
           ? e('div', { className: 'text-center py-8 text-gray-400' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Carregando..."))
           : penalidades.length === 0
             ? e('div', { className: 'text-center py-10 text-gray-400' },
-                e("svg", { className: "ico", style: { width: 38, height: 38, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })),
+                e('span', { className: 'text-4xl block mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" }))),
                 e('p', { className: 'text-sm' }, 'Nenhum motoboy punido no momento')
               )
             : e('div', { className: 'space-y-2' }, penalidades.map(p => {
@@ -977,7 +977,7 @@
           className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
           title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
         },
-          e("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })),
+          e('span', { className: 'text-base' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
           e('span', { className: 'text-xs font-semibold text-red-700' }, 'Sem Disponibilidade'),
           e('span', { className: 'text-[10px] text-red-600 ml-auto' }, 'Aloque na escala'),
         ),
@@ -1033,7 +1033,7 @@
       // Alertas (se houver)
       alertas.length > 0 && e('div', { className: 'bg-red-50 border-2 border-red-400 rounded-xl p-4 animate-pulse' },
         e('div', { className: 'flex items-center gap-3 mb-3' },
-          e("svg", { className: "ico", style: { width: 30, height: 30, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })),
+          e('span', { className: 'text-3xl' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
           e('div', null,
             e('p', { className: 'text-red-800 font-bold text-lg' }, `ATENÇÃO: ${alertas.length} profissional(is) não retornou!`),
             e('p', { className: 'text-red-600 text-sm' }, 'Tempo em rota > 1h30min')
