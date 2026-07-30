@@ -586,7 +586,7 @@ function tabLabelEl(label) {
   }
   return label;
 }
-/* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V1 */
+/* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V2 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -21382,7 +21382,7 @@ const hideLoadingScreen = () => {
             key: e,
             onClick: async () => { x({ ...p, pendingFilter: e }); if (e === "expiradas") { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r.ok) { const _d = await _r.json(); x(prev => ({ ...prev, _expiradas: _d.expiradas || [] })); } } catch {} } },
             className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "expiradas" === e ? "bg-amber-500 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && `Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`, "contestacoes" === e && `Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`, "atrasados" === e && `Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`, "retorno" === e && `Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`, "ponto1" === e && `Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`, "pedagio" === e && `Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`, "simoesfilho" === e && `Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`, "expiradas" === e && `Expiradas (${(p._expiradas||[]).length})`))), React.createElement("div", {
+        }, "all" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-list" })), `Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`), "contestacoes" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), `Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`), "atrasados" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), `Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`), "retorno" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), `Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`), "ponto1" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), `Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`), "pedagio" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), `Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`), "simoesfilho" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), `Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`), "expiradas" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), `Expiradas (${(p._expiradas||[]).length})`)))), React.createElement("div", {
             className: "flex justify-end mb-2"
         }, React.createElement("button", {
             onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
@@ -21452,7 +21452,7 @@ const hideLoadingScreen = () => {
                   )
                 ))
             ), React.createElement("div", {
-            className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+            className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
         }, j.filter(e => {
             const f = p.pendingFilter || "all";
             if (f === "expiradas") return false;
@@ -21714,7 +21714,7 @@ const hideLoadingScreen = () => {
         }, `${buscaTotal} resultado(s) encontrado(s)${buscaTotal > 100 ? " (mostrando 100)" : ""}`), 0 === buscaResults.length && !buscaLoading && React.createElement("div", {
             className: "text-center py-12 text-gray-400"
         }, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), React.createElement("p", { className: "text-lg" }, "Use os filtros acima para buscar solicitações")), React.createElement("div", {
-            className: "grid md:grid-cols-2 lg:grid-cols-3 gap-3"
+            className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
         }, buscaResults.map(e => React.createElement("div", {
             key: e.id,
             className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
