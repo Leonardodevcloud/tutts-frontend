@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 /* ============================================================================
  * modulo-bi-monitoramento.js
  *
@@ -237,13 +238,13 @@
           style: { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }
         },
           h('div', { className: 'flex items-center gap-2 text-white font-medium' },
-            h('span', null, '🔎'), 'Filtros Inteligentes'),
+            h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-search" }))), 'Filtros Inteligentes'),
           h('button', { className: 'text-white text-2xl leading-none px-2', onClick: onFechar }, '×')
         ),
         h('div', { className: 'p-4 overflow-y-auto flex-1' },
           h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 mb-3' },
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, '📅 Data Início'),
+              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Data Início")),
               h('input', {
                 type: 'date', value: local.data_inicio || '',
                 onChange: (e) => setLocal({ ...local, data_inicio: e.target.value }),
@@ -251,7 +252,7 @@
               })
             ),
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, '📅 Data Fim'),
+              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Data Fim")),
               h('input', {
                 type: 'date', value: local.data_fim || '',
                 onChange: (e) => setLocal({ ...local, data_fim: e.target.value }),
@@ -259,7 +260,7 @@
               })
             ),
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, '⏱ Status Prazo'),
+              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Status Prazo")),
               h('select', {
                 value: local.status_prazo || '',
                 onChange: (e) => setLocal({ ...local, status_prazo: e.target.value }),
@@ -284,7 +285,7 @@
             )
           ),
           h('div', { className: 'mb-3' },
-            h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, '🗺 Região'),
+            h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Região")),
             h('select', {
               value: local.regiao || '',
               onChange: (e) => setLocal({ ...local, regiao: e.target.value }),
@@ -296,7 +297,7 @@
           ),
           h('div', { className: 'border border-gray-200 rounded-lg p-3 mb-3 bg-blue-50/30' },
             h('div', { className: 'flex justify-between items-center mb-2' },
-              h('div', { className: 'text-xs font-semibold text-gray-700' }, '🏷 Categoria'),
+              h('div', { className: 'text-xs font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-tag" })), "Categoria")),
               h('button', {
                 className: 'text-[10px] text-blue-600 hover:underline',
                 onClick: () => setLocal({ ...local, categoria: [] })
@@ -319,7 +320,7 @@
             h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-purple-50/30' },
               h('div', { className: 'flex justify-between items-center mb-2' },
                 h('div', { className: 'text-xs font-semibold text-gray-700' },
-                  '📚 Cliente (Loja) ',
+                  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente (Loja) "),
                   arrCli.length > 0 ? h('span', { className: 'text-purple-700' }, `· ${arrCli.length} selec.`) : null
                 ),
                 h('button', {
@@ -350,7 +351,7 @@
             h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-emerald-50/30' },
               h('div', { className: 'flex justify-between items-center mb-2' },
                 h('div', { className: 'text-xs font-semibold text-gray-700' },
-                  '📁 Centro de Custo ',
+                  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Centro de Custo "),
                   arrCC.length > 0 ? h('span', { className: 'text-emerald-700' }, `· ${arrCC.length} selec.`) : null
                 ),
                 h('button', {
@@ -380,7 +381,7 @@
           h('button', {
             className: 'text-xs text-gray-700 px-4 py-2 rounded-md border border-gray-300 hover:bg-white',
             onClick: limpar
-          }, '🧹 Limpar Filtros'),
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Limpar Filtros")),
           h('button', {
             className: 'text-xs text-white px-5 py-2 rounded-md font-medium',
             style: { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' },
@@ -449,32 +450,32 @@
 
     if (erro) {
       return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        '❌ Erro ao carregar dados: ' + erro);
+        'Erro ao carregar dados: ' + erro);
     }
 
     return h('div', null,
       // Linha 1: KPIs operacionais
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4' },
         h(KpiCard, {
-          icone: '📋', iconeBg: '#f5f3ff', accent: '#7c3aed',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#7c3aed" }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), iconeBg: '#f5f3ff', accent: '#7c3aed',
           label: 'Ordens de Serviço', labelCor: '#7c3aed', labelBg: '#f5f3ff',
           valor: loading ? '—' : fmtNum(m.total_os),
           sub: 'Total de OS no período'
         }),
         h(KpiCard, {
-          icone: '📦', iconeBg: '#eff6ff', accent: '#3b82f6',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#3b82f6" }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), iconeBg: '#eff6ff', accent: '#3b82f6',
           label: 'Entregas', labelCor: '#3b82f6', labelBg: '#eff6ff',
           valor: loading ? '—' : fmtNum(m.total_entregas),
           sub: loading ? '' : `Realizadas — ${fmtNum(m.retornos)} retornos`
         }),
         h(KpiCard, {
-          icone: '⏱', iconeBg: '#f0f9ff', accent: '#0ea5e9',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#0ea5e9" }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), iconeBg: '#f0f9ff', accent: '#0ea5e9',
           label: 'Tempo Médio', labelCor: '#0ea5e9', labelBg: '#f0f9ff',
           valor: loading ? '—' : fmtMin(m.tempo_medio),
           sub: 'Da coleta até a entrega'
         }),
         h(KpiCard, {
-          icone: '🛵', iconeBg: '#fffbeb', accent: '#f59e0b',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#f59e0b" }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), iconeBg: '#fffbeb', accent: '#f59e0b',
           label: 'Média Ent./Prof.', labelCor: '#f59e0b', labelBg: '#fffbeb',
           valor: loading ? '—' : (m.media_entregas_entregador != null ? Number(m.media_entregas_entregador).toFixed(1) : '—'),
           sub: loading ? '' : `${fmtNum(m.total_entregadores)} profissionais ativos`
@@ -488,7 +489,7 @@
           h('span', {
             className: 'text-[10px] font-semibold px-2.5 py-1 rounded-full',
             style: { color: '#15803d', background: '#f0fdf4' }
-          }, '🏆 Performance')
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" })), "Performance"))
         ),
         loading ? h('div', { className: 'h-44 flex items-center justify-center text-gray-400' }, 'Carregando...')
         : h(DonutPrazo, {
@@ -502,7 +503,7 @@
       h('div', { className: 'bg-purple-50/40 border border-purple-200 rounded-xl p-4' },
         h('div', { className: 'flex justify-between items-center mb-3' },
           h('div', { className: 'text-sm font-medium text-purple-900' },
-            '📊 Resumo Operacional por Cliente'),
+            h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Resumo Operacional por Cliente")),
           h('div', { className: 'flex items-center gap-2' },
             h('input', {
               type: 'text', placeholder: 'Buscar cliente...',
@@ -662,13 +663,13 @@
 
     if (erro) {
       return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        '❌ Erro ao carregar profissionais: ' + erro);
+        'Erro ao carregar profissionais: ' + erro);
     }
 
     return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
       h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-100' },
         h('div', { className: 'text-sm font-medium text-gray-900' },
-          '👤 Por Profissional ',
+          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Por Profissional "),
           h('span', { className: 'text-xs text-gray-500 font-normal' },
             `(${linhas.length})`)
         ),
@@ -782,7 +783,7 @@
 
     if (erro) {
       return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        '❌ Erro ao carregar regiões: ' + erro);
+        'Erro ao carregar regiões: ' + erro);
     }
 
     const regioes = dados?.regioes || [];
@@ -791,7 +792,7 @@
     return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
       h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-100' },
         h('div', { className: 'text-sm font-medium text-gray-900' },
-          '🗺 Por Região ',
+          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Por Região "),
           h('span', { className: 'text-xs text-gray-500 font-normal' },
             `(${regioes.length} regiões)`)
         ),
@@ -825,7 +826,7 @@
                 return h('tr', { key: r.regiao, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
                   h('td', { className: 'px-3 py-2' },
                     h('div', { className: 'flex items-center gap-2' },
-                      h('span', null, r.regiao === 'Sem Região' ? '❓' : '📍'),
+                      h('span', null, r.regiao === 'Sem Região' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-help" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
                       h('div', null,
                         h('div', { className: 'text-gray-900 font-medium' }, r.regiao),
                         h('div', { className: 'mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-32' },
@@ -894,7 +895,7 @@
 
     if (erro) {
       return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        '❌ Erro ao carregar hora a hora: ' + erro);
+        'Erro ao carregar hora a hora: ' + erro);
     }
 
     const horas = dados?.horas || [];
@@ -905,7 +906,7 @@
       // Header
       h('div', { className: 'flex justify-between items-center mb-3' },
         h('div', { className: 'text-sm font-medium text-gray-900' },
-          '🕐 Acompanhamento hora a hora ',
+          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Acompanhamento hora a hora "),
           resumo.pct_pico != null ?
             h('span', {
               className: 'text-[10px] font-medium px-2 py-0.5 rounded-full ml-1',
@@ -1067,7 +1068,7 @@
         h('div', { className: 'px-5 py-3 flex items-center justify-between flex-wrap gap-2' },
           h('div', null,
             h('div', { className: 'flex items-center gap-2 text-sm font-medium text-gray-900' },
-              h('span', { style: { fontSize: '18px' } }, '📡'),
+              h('span', { style: { fontSize: '18px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" }))),
               'BI Monitoramento'
             ),
             h('div', { className: 'text-[11px] text-gray-500 mt-0.5' },
@@ -1077,20 +1078,20 @@
           h('div', { className: 'flex items-center gap-2' },
             filtrosResumo.length > 0 ?
               h('div', { className: 'text-[11px] text-gray-600 max-w-sm truncate' },
-                '🔎 ' + filtrosResumo.join(' · '))
+                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), ' ' + filtrosResumo.join(' · '))
               : null,
             h('button', {
               className: 'text-xs px-3 py-1.5 rounded-md border border-purple-200 bg-purple-50 text-purple-700 font-medium hover:bg-purple-100',
               onClick: () => setFiltrosAbertos(true)
-            }, '🔎 Filtros')
+            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtros"))
           )
         ),
         h('div', { className: 'px-5 flex gap-1 border-t border-gray-100' },
           [
-            { id: 'dashboard',   label: '📊 Dashboard' },
-            { id: 'profissional', label: '👤 Por Profissional' },
-            { id: 'regiao',      label: '🗺 Por Região' },
-            { id: 'hora',        label: '🕐 Hora a Hora' }
+            { id: 'dashboard',   label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), 'Dashboard') },
+            { id: 'profissional', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), 'Por Profissional') },
+            { id: 'regiao',      label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), 'Por Região') },
+            { id: 'hora',        label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), 'Hora a Hora') }
           ].map(t =>
             h('button', {
               key: t.id,

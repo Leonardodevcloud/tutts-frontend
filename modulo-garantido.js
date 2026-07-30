@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 // modulo-garantido.js — Painel ADMIN do Garantido (sub-aba das filas)
 // Auto-contido: config por central + valores especiais + registros do dia.
 // Exposto como window.ModuloGarantidoAdmin. Sem JSX, sem Tabler/Lucide (emojis/SVG inline).
@@ -121,7 +122,7 @@
       // ── CONFIG ──
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
         e('div', { className: 'flex items-center justify-between pb-3 border-b border-gray-100' },
-          e('div', { className: 'flex items-center gap-2' }, e('span', { className: 'text-xl' }, '🛡️'), e('div', null,
+          e('div', { className: 'flex items-center gap-2' }, e('span', { className: 'text-xl' }, e("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" }))), e('div', null,
             e('div', { className: 'font-bold text-gray-800' }, 'Garantido'),
             e('div', { className: 'text-xs text-gray-500' }, cfg.central_nome))),
           e('button', {
@@ -159,14 +160,14 @@
             e('option', { value: '' }, 'Selecione o motoboy...'),
             vinculados.map(v => e('option', { key: v.cod_profissional, value: v.cod_profissional }, `${v.nome_profissional} (#${v.cod_profissional})`))),
           e('input', { type: 'text', placeholder: 'R$ 0,00', value: novoValor, onChange: (ev) => setNovoValor(ev.target.value), className: 'w-32 px-3 py-2 border rounded-lg text-sm' }),
-          e('button', { onClick: addEspecial, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium' }, '➕ Adicionar')
+          e('button', { onClick: addEspecial, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-plus" })), "Adicionar"))
         ),
         especiais.length === 0
           ? e('div', { className: 'text-sm text-gray-400 italic' }, `Nenhum valor especial. Todos usam o padrão (${brl(cfg.garantido_valor_padrao)}).`)
           : e('div', { className: 'divide-y' }, especiais.map(x => e('div', { key: x.id, className: 'flex items-center justify-between py-2' },
               e('div', null, e('div', { className: 'text-sm font-medium' }, x.nome_profissional || x.cod_profissional), e('div', { className: 'text-xs text-gray-400 font-mono' }, `#${x.cod_profissional}`)),
               e('div', { className: 'flex items-center gap-3' }, e('span', { className: 'text-sm font-semibold' }, brl(x.valor)),
-                e('button', { onClick: () => removerEspecial(x.id), className: 'text-red-500 hover:text-red-700 text-lg' }, '🗑️')))))
+                e('button', { onClick: () => removerEspecial(x.id), className: 'text-red-500 hover:text-red-700 text-lg' }, e("svg", { className: "ico", style: { width: 20, height: 20, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-trash" })))))))
       ),
 
       // ── REGISTROS DO DIA ──
@@ -177,7 +178,7 @@
           e('div', { className: 'bg-purple-50 rounded-lg px-3 py-1.5 text-right' }, e('div', { className: 'text-[10px] text-purple-600' }, 'Total do dia'), e('div', { className: 'text-base font-bold text-purple-800' }, brl(total)))
         ),
         registros.length === 0
-          ? e('div', { className: 'text-center py-6 text-gray-400 text-sm' }, '📭 Nenhum ingresso registrado nesta data')
+          ? e('div', { className: 'text-center py-6 text-gray-400 text-sm' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-mail" })), "Nenhum ingresso registrado nesta data"))
           : e('div', { className: 'overflow-x-auto' }, e('table', { className: 'w-full text-sm' },
               e('thead', { className: 'bg-gray-50 text-gray-500 text-xs' }, e('tr', null,
                 e('th', { className: 'px-2 py-2 text-left' }, 'Motoboy'),

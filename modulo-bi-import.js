@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 /**
  * modulo-bi-import.js
  * Componente React Vanilla — sub-aba "Automático (RPA)" do módulo BI / Upload.
@@ -127,10 +128,10 @@
     }
 
     const labelStatus = {
-      sucesso: '✅ Sucesso',
-      falhou: '❌ Falhou',
-      processando: '⏳ Processando',
-      pendente: '⏸️ Pendente',
+      sucesso: 'Sucesso',
+      falhou: 'Falhou',
+      processando: 'Processando',
+      pendente: 'Pendente',
     };
     const corStatus = {
       sucesso:     'bg-green-100 text-green-800 border-green-300',
@@ -168,7 +169,7 @@
       // Card "Importar agora"
       h('div', { className: 'bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 p-5 rounded-r-lg' },
         h('div', { className: 'mb-3' },
-          h('h3', { className: 'text-lg font-bold text-purple-900' }, '🤖 Importação Automática (RPA)'),
+          h('h3', { className: 'text-lg font-bold text-purple-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Importação Automática (RPA)")),
           h('p', { className: 'text-sm text-purple-700' },
             'O sistema baixa a planilha do Tutts/expresso, aplica o tratamento e sobe pro BI. ',
             h('strong', null, 'Cron diário às 12h (TZ Bahia)'), ' processa D-1 automaticamente.'
@@ -176,7 +177,7 @@
         ),
         h('div', { className: 'flex items-end gap-3 flex-wrap' },
           h('div', { className: 'flex-1 min-w-[200px]' },
-            h('label', { className: 'block text-xs font-semibold text-purple-900 mb-1' }, '▶️ Importar manualmente — escolha a data:'),
+            h('label', { className: 'block text-xs font-semibold text-purple-900 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-play" })), "Importar manualmente — escolha a data:")),
             h('input', {
               type: 'date',
               value: dataManual,
@@ -190,7 +191,7 @@
             onClick: handleImportar,
             disabled: enviando,
             className: 'px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md',
-          }, enviando ? '⏳ Processando...' : '🚀 Importar agora')
+          }, enviando ? 'Processando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), 'Importar agora'))
         ),
 
         // Progresso ao vivo
@@ -214,10 +215,10 @@
             labelEtapa[jobAtivo.etapa_atual] || jobAtivo.etapa_atual || ''
           ),
           jobAtivo.status === 'sucesso' && h('p', { className: 'text-xs text-green-700 mt-1' },
-            `✓ ${jobAtivo.linhas_inseridas || 0} inseridas, ${jobAtivo.linhas_ignoradas || 0} ignoradas (de ${jobAtivo.total_linhas || 0} totais)`
+            `${jobAtivo.linhas_inseridas || 0} inseridas, ${jobAtivo.linhas_ignoradas || 0} ignoradas (de ${jobAtivo.total_linhas || 0} totais)`
           ),
           jobAtivo.status === 'falhou' && h('p', { className: 'text-xs text-red-700 mt-1' },
-            `⚠️ ${jobAtivo.erro || 'Erro desconhecido'}`
+            `${jobAtivo.erro || 'Erro desconhecido'}`
           )
         )
       ),
@@ -228,15 +229,15 @@
         onClick: () => setHistoricoAberto(v => !v),
       },
         h('h3', { className: 'text-lg font-bold text-gray-800 flex items-center gap-2' },
-          h('span', { className: 'text-gray-400 text-base' }, historicoAberto ? '▼' : '▶'),
-          `📋 Histórico de Importações Automáticas (${total})`
+          h('span', { className: 'text-gray-400 text-base' }, historicoAberto ? '▼' : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-play" }))),
+          `Histórico de Importações Automáticas (${total})`
         ),
         h('div', { className: 'flex items-center gap-2' },
           h('button', {
             onClick: (e) => { e.stopPropagation(); carregar(page, filtros); },
             disabled: loading,
             className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-semibold disabled:opacity-50',
-          }, loading ? 'Carregando...' : '🔄 Atualizar'),
+          }, loading ? 'Carregando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar")),
           h('span', { className: 'text-xs text-gray-400' }, historicoAberto ? 'recolher' : 'expandir')
         )
       ),
@@ -271,8 +272,8 @@
               className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
             },
               h('option', { value: '' }, 'Todas'),
-              h('option', { value: 'cron' }, '🤖 Cron (12h)'),
-              h('option', { value: 'manual' }, '👤 Manual')
+              h('option', { value: 'cron' }, 'Cron (12h)'),
+              h('option', { value: 'manual' }, 'Manual')
             )
           ),
           h('div', null,
@@ -301,7 +302,7 @@
           ? h('div', { className: 'p-10 text-center text-gray-500' }, 'Carregando...')
           : dados.length === 0
             ? h('div', { className: 'p-10 text-center text-gray-500' },
-                h('p', { className: 'text-4xl mb-2' }, '📭'),
+                h('p', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" }))),
                 h('p', null, 'Nenhuma importação automática ainda.')
               )
             : h('div', { className: 'overflow-x-auto' },
@@ -328,8 +329,8 @@
                       h('td', { className: 'px-3 py-2 font-bold' }, fmtDataRef(r.data_referencia)),
                       h('td', { className: 'px-3 py-2 text-xs' },
                         r.origem === 'cron'
-                          ? h('span', { className: 'px-2 py-1 bg-purple-100 text-purple-700 rounded' }, '🤖 Cron')
-                          : h('span', { className: 'px-2 py-1 bg-blue-100 text-blue-700 rounded' }, '👤 Manual')
+                          ? h('span', { className: 'px-2 py-1 bg-purple-100 text-purple-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Cron"))
+                          : h('span', { className: 'px-2 py-1 bg-blue-100 text-blue-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Manual"))
                       ),
                       h('td', { className: 'px-3 py-2' },
                         h('span', {
@@ -362,7 +363,7 @@
                     linhaExpandida === r.id && r.erro && h('tr', { key: `${r.id}-log`, className: 'bg-gray-50' },
                       h('td', { colSpan: 8, className: 'px-3 py-3' },
                         h('div', { className: 'flex items-center justify-between mb-1' },
-                          h('span', { className: 'text-xs font-semibold text-gray-600' }, '📋 Log do agente Playwright'),
+                          h('span', { className: 'text-xs font-semibold text-gray-600' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Log do agente Playwright")),
                           h('button', {
                             onClick: () => { try { navigator.clipboard.writeText(r.erro); showToastFn('Log copiado!', 'success'); } catch (e) {} },
                             className: 'text-xs text-purple-600 hover:underline',

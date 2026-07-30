@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 /* ============================================================================
  * BIGarantidoV2.js
  * Tela refatorada da aba "Garantido" do BI (substitui o bloco antigo
@@ -110,7 +111,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
               background: "#DCFCE7", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 16,
             }
-          }, "💰"),
+          }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-wallet" }))),
           e("div", null,
             e("p", { style: { fontSize: 15, fontWeight: 600, color: "#111827", margin: 0 } }, "Mínimo Garantido"),
             e("p", { style: { fontSize: 11, color: "#6b7280", margin: "1px 0 0" } }, "Comparativo entre negociado e produção · " + new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }))
@@ -179,7 +180,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
             height: 30, alignSelf: "end",
             opacity: garantidoLoading ? 0.6 : 1,
           }
-        }, garantidoLoading ? "🔄 Carregando..." : "↻ Atualizar"),
+        }, garantidoLoading ? "Carregando..." : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Atualizar")),
         e("button", {
           onClick: carregarGarantido,
           disabled: garantidoLoading,
@@ -288,7 +289,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
     return e("div", {
       style: { background: "white", border: "1px solid #E5E7EB", padding: 48, textAlign: "center", color: "#9CA3AF", borderRadius: "0 0 10px 10px" }
     },
-      e("div", { style: { fontSize: 32, marginBottom: 8 } }, "📊"),
+      e("div", { style: { fontSize: 32, marginBottom: 8 } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-chart" }))),
       e("p", { style: { fontSize: 13, margin: 0 } }, "Nenhum dado encontrado. Ajuste os filtros ou verifique a planilha.")
     );
   }
@@ -473,11 +474,11 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
               cursor: "pointer",
             }
           },
-            e("option", { value: "analise" }, "🔍 Análise"),
-            e("option", { value: "nao_rodou" }, "⚫ Não Rodou"),
-            e("option", { value: "ultrapassou" }, "🔵 Ultrapassou"),
-            e("option", { value: "lancado" }, "✅ Lançado"),
-            e("option", { value: "reprovado" }, "❌ Reprovado")
+            e("option", { value: "analise" }, "Análise"),
+            e("option", { value: "nao_rodou" }, "Não Rodou"),
+            e("option", { value: "ultrapassou" }, "Ultrapassou"),
+            e("option", { value: "lancado" }, "Lançado"),
+            e("option", { value: "reprovado" }, "Reprovado")
           ),
           // Meta compacta + escura
           !statusSalvo && autoStatus && e("span", {
@@ -490,7 +491,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
           statusEfetivo === "reprovado" && statusInfo?.motivo_reprovado && e("span", {
             style: { fontSize: 10, color: "#991B1B", fontStyle: "italic", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
             title: statusInfo.motivo_reprovado
-          }, "📝 " + statusInfo.motivo_reprovado)
+          }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-filetext" })), " " + statusInfo.motivo_reprovado)
         )
       ),
     );
@@ -583,7 +584,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
                           borderTop: "1px solid #F3F4F6",
                         }
                       },
-                        "📍 ", centro,
+                        e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })), centro,
                         e("span", { style: { color: "#9CA3AF", marginLeft: 8, fontWeight: 400 } },
                           "· " + linhasCentro.length + " " + (linhasCentro.length > 1 ? "profs" : "prof"))
                       )

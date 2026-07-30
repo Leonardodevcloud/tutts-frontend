@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 /**
  * modulo-bi-historico-unificado.js (v2 - sem loop)
  * Componente React Vanilla — Histórico unificado de uploads (manuais + RPA)
@@ -116,7 +117,7 @@
             ? 'bg-purple-100 text-purple-800 border-purple-300'
             : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
         )
-      }, label + (count != null ? ' (' + count + ')' : ''));
+      }, label, (count != null ? ' (' + count + ')' : ''));
 
     const totalManual = dados.filter(d => d.origem === 'manual').length;
     const totalAuto   = dados.filter(d => d.origem === 'auto').length;
@@ -124,23 +125,23 @@
     return h('div', { className: 'bg-white rounded-xl shadow p-5' },
       h('div', { className: 'flex items-center justify-between mb-3 flex-wrap gap-2' },
         h('h3', { className: 'text-base font-semibold text-purple-900' },
-          '📋 Histórico de Uploads (' + dados.length + ')'
+          h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), ' Histórico de Uploads (' + dados.length + ')'
         ),
         h('div', { className: 'flex gap-1' },
           btnFiltro('todos', 'Todos', dados.length),
-          btnFiltro('auto', '🤖 Auto', totalAuto),
-          btnFiltro('manual', '📄 Manual', totalManual),
+          btnFiltro('auto', h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), 'Auto'), totalAuto),
+          btnFiltro('manual', h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), 'Manual'), totalManual),
           h('button', {
             type: 'button',
             onClick: handleAtualizar,
             disabled: loading,
             className: 'px-3 py-1.5 rounded-md text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
-          }, loading ? '⏳' : '🔄 Atualizar')
+          }, loading ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), 'Atualizar'))
         )
       ),
 
       loading && dados.length === 0
-        ? h('p', { className: 'text-center text-gray-400 py-4 text-sm' }, '⏳ Carregando...')
+        ? h('p', { className: 'text-center text-gray-400 py-4 text-sm' }, 'Carregando...')
         : dados.length === 0
           ? h('p', { className: 'text-center text-gray-400 py-4 text-sm' }, 'Nenhum upload encontrado')
           : h('div', { className: 'overflow-x-auto' },
@@ -163,7 +164,7 @@
                           className: item.origem === 'auto'
                             ? 'inline-block px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-semibold'
                             : 'inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold'
-                        }, item.origem === 'auto' ? '🤖 Auto' : '📄 Manual')
+                        }, item.origem === 'auto' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), 'Auto') : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), 'Manual'))
                       ),
                       h('td', { className: 'py-2 px-2 text-gray-800' }, item.arquivo || '-'),
                       h('td', { className: 'py-2 px-2 text-gray-600' }, item.por || '-'),
@@ -179,7 +180,7 @@
                           onClick: function() { handleExcluir(item); },
                           className: 'text-red-500 hover:text-red-700 text-base',
                           title: 'Excluir'
-                        }, '🗑️')
+                        }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })))
                       )
                     );
                   })

@@ -1,3 +1,4 @@
+/* BI_ICONS_V1 */
 /**
  * BI · Acompanhamento Periódico
  *
@@ -178,10 +179,10 @@
             // HEADER: título + toggles
             h('div', { className: 'flex items-center justify-between mb-3 gap-3 flex-wrap' },
                 h('div', null,
-                    h('div', { className: 'text-base font-semibold text-gray-900' }, '📊 Acompanhamento Periódico'),
+                    h('div', { className: 'text-base font-semibold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Acompanhamento Periódico")),
                     h('div', { className: 'text-xs text-gray-500' },
                         loading ? 'Carregando...' :
-                        erro ? '❌ ' + erro :
+                        erro ? erro :
                         (dados ? (dados.serie?.length || 0) + ' ' + (granu === 'dia' ? 'dia(s)' : granu === 'semana' ? 'semana(s)' : 'mês(es)') + ' · ' + (dados.porCliente?.length || 0) + ' clientes' : '')
                     )
                 ),
@@ -265,7 +266,7 @@
                             onClick: () => setDropdownMetricas(prev => !prev),
                             className: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors'
                         },
-                            '⚙️ Métricas (' + metricasSelecionadas.length + '/' + METRICAS_CATALOGO.length + ')'
+                            h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), ' Métricas (' + metricasSelecionadas.length + '/' + METRICAS_CATALOGO.length + ')'
                         ),
 
                         // Dropdown com checkboxes
@@ -318,7 +319,7 @@
                         )
                     )
                 ),
-                loading ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, '⏳ Carregando...') :
+                loading ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Carregando...') :
                 (!dados?.serie || dados.serie.length === 0) ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Sem dados no período') :
                 h(MiniChart, {
                     serie: dados.serie,
@@ -353,7 +354,7 @@
                         h('div', { className: 'flex gap-2 items-center' },
                             h('input', {
                                 type: 'text', value: busca,
-                                placeholder: eixo === 'cliente' ? '🔍 Buscar cliente...' : '🔍 Buscar período...',
+                                placeholder: eixo === 'cliente' ? 'Buscar cliente...' : 'Buscar período...',
                                 onChange: e => setBusca(e.target.value),
                                 className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
                             }),
@@ -367,7 +368,7 @@
                             )
                         )
                     ),
-                    loading ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, '⏳ Carregando...') :
+                    loading ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Carregando...') :
                     linhas.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
                     h('div', { className: 'overflow-x-auto' },
                         h('table', { className: 'w-full text-sm' },
@@ -701,11 +702,11 @@
                 h('div', { className: 'flex gap-2 items-center' },
                     h('input', {
                         type: 'text', value: busca,
-                        placeholder: '🔍 Buscar cliente...',
+                        placeholder: 'Buscar cliente...',
                         onChange: e => setBusca(e.target.value),
                         className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
                     }),
-                    h('span', { className: 'text-[10px] text-gray-500' }, 'Pra trocar a métrica, ative outra no ⚙️ acima')
+                    h('span', { className: 'text-[10px] text-gray-500' }, 'Pra trocar a métrica, ative outra no ', h("svg", { className: "ico", style: { width: 13, height: 13 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), ' acima')
                 )
             ),
             clientesFiltrados.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
