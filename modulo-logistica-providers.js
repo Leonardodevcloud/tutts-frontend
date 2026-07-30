@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ============================================================
 // MÓDULO LOGÍSTICA — Painel de Provedores (Hub) v1
 // ------------------------------------------------------------
@@ -25,13 +26,13 @@
   // ────────────────────────────────────────────────────────────
   const SCHEMA = {
     noventanove: {
-      icon: '🛵',
+      icon: e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" })),
       grupos: [
-        { titulo: '🔑 Credenciais 99Entrega (OAuth)', campos: [
+        { titulo: 'Credenciais 99Entrega (OAuth)', campos: [
           { key: 'client_id',     label: 'Client ID',     secret: false, hint: 'client_id da 99Entrega' },
           { key: 'client_secret', label: 'Client Secret', secret: true,  hint: 'client_secret da 99Entrega' },
         ]},
-        { titulo: '📦 Padrões do pacote', campos: [
+        { titulo: 'Padrões do pacote', campos: [
           { key: 'package_type',   label: 'Tipo do pacote',  type: 'select',
             options: ['groceries', 'food', 'documents', 'apparel', 'medication', 'electronics', 'others'],
             hint: 'enum fixo da 99 — autopecas nao existe; use "others"' },
@@ -39,11 +40,11 @@
             options: ['1kg', '5kg', '10kg', '20kg', '30kg'],
             hint: 'enum fixo da 99 — ate 25kg: use "30kg"' },
         ]},
-        { titulo: '📞 Contato', campos: [
+        { titulo: 'Contato', campos: [
           { key: 'telefone_suporte', label: 'Telefone de suporte', secret: false,
             hint: 'fallback quando a OS não tem telefone' },
         ]},
-        { titulo: '🔐 Códigos de verificação', campos: [
+        { titulo: 'Códigos de verificação', campos: [
           { key: 'need_pickup_code',  label: 'Exigir código na coleta',  type: 'boolean',
             hint: 'courier informa um código pra retirar o pacote' },
           { key: 'need_dropoff_code', label: 'Exigir código na entrega', type: 'boolean',
@@ -51,11 +52,11 @@
           { key: 'verificacao_devolucao_habilitada', label: 'Exigir código na devolução', type: 'boolean',
             hint: 'na devolução (falha na entrega) o courier informa um código; se desligado, usa foto' },
         ]},
-        { titulo: '⚙️ Avançado', campos: [
+        { titulo: 'Avançado', campos: [
           { key: 'cancel_reason_id', label: 'Cancel reason ID padrão', secret: false,
             hint: 'enum 410013…410021 — default 410013' },
         ]},
-        { titulo: '🪝 Webhook (HMAC-SHA256)', campos: [
+        { titulo: 'Webhook (HMAC-SHA256)', campos: [
           // webhook_secret é coluna top-level — não vai dentro de config
           { key: 'webhook_secret', label: 'Webhook Secret (HMAC)', secret: true, topLevel: true,
             hint: 'se vazio, usa o client_secret pra validar a assinatura' },
@@ -63,19 +64,19 @@
       ],
     },
     uber: {
-      icon: '🛵',
+      icon: e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" })),
       grupos: [
-        { titulo: '🚗 Credenciais Uber Direct', campos: [
+        { titulo: 'Credenciais Uber Direct', campos: [
           { key: 'client_id',     label: 'Client ID',     secret: false },
           { key: 'client_secret', label: 'Client Secret', secret: true },
           { key: 'customer_id',   label: 'Customer ID',   secret: false },
           { key: 'webhook_secret', label: 'Webhook Secret (HMAC)', secret: true, topLevel: true },
         ]},
-        { titulo: '📞 Contato', campos: [
+        { titulo: 'Contato', campos: [
           { key: 'telefone_suporte', label: 'Telefone de suporte (fallback)',
             hint: 'Usado quando o ponto de coleta/entrega não tem telefone cadastrado. Formato: 5571999999999' },
         ]},
-        { titulo: '🔑 Verificação de coleta e entrega', campos: [
+        { titulo: 'Verificação de coleta e entrega', campos: [
           // 2026-07 [uber-painel-verificacao-v1] O toggle 'Habilitar codigo de
           // coleta' foi REMOVIDO daqui de proposito. Ele era um toggle morto e
           // perigoso: na Uber o codigo de coleta e NATIVO (5 ultimos do workflow
@@ -91,9 +92,9 @@
             type: 'select', options: ['assinatura', 'pincode'],
             hint: 'assinatura = assinatura digital no app do motoboy (padrão). pincode = 4 dígitos GERADOS PELA UBER, enviados ao destinatário por WhatsApp. Só vale se a verificação de entrega acima estiver ligada.' },
         ]},
-        { titulo: '📸 Comprovante de entrega', campos: [
+        { titulo: 'Comprovante de entrega', campos: [
           { key: 'proof_of_delivery_habilitado', label: 'Coletar comprovante de entrega (foto/assinatura)', type: 'boolean',
-            hint: 'Após entrega concluída, busca na Uber Direct a foto e assinatura do recebedor. ⚠️ Só retorna algo se houver verificação ativa na entrega — com tudo desligado, a Uber não coleta comprovante nenhum.' },
+            hint: 'Após entrega concluída, busca na Uber Direct a foto e assinatura do recebedor. Só retorna algo se houver verificação ativa na entrega — com tudo desligado, a Uber não coleta comprovante nenhum.' },
           { key: 'manifest_total_value_centavos', label: 'Valor declarado da mercadoria (centavos)',
             hint: 'Valor em centavos. Ex: 10000 = R$ 100,00. Padrão: 10000.' },
         ]},
@@ -102,7 +103,7 @@
   };
 
   function iconDe(code) {
-    return (SCHEMA[code] && SCHEMA[code].icon) || '📦';
+    return (SCHEMA[code] && SCHEMA[code].icon) || '';
   }
 
   // ──────────────────────────────────────────────────────────
@@ -155,7 +156,7 @@
     const campos = Object.keys(config || {})
       .filter(k => !k.endsWith('_setado'))
       .map(k => ({ key: k, label: k, secret: ehChaveSecreta(k) }));
-    return { icon: '📦', grupos: [{ titulo: '🔧 Configuração', campos }] };
+    return { icon: e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-package" })), grupos: [{ titulo: 'Configuração', campos }] };
   }
 
   // ────────────────────────────────────────────────────────────
@@ -207,7 +208,7 @@
     return e('div', { className: 'max-w-3xl mx-auto p-4 md:p-6' },
       e('div', { className: 'mb-5' },
         e('h2', { className: 'text-2xl font-semibold text-gray-900 mb-1 flex items-center gap-2' },
-          e('span', null, '🔌'),
+          e('span', null, e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-power" }))),
           e('span', null, 'Provedores logísticos')
         ),
         e('p', { className: 'text-sm text-gray-500' },
@@ -219,7 +220,7 @@
             e('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' }))
         : providers.length === 0
           ? e('div', { className: 'text-center py-16 text-gray-400 bg-gray-50 rounded-xl' },
-              e('div', { className: 'text-3xl mb-2' }, '🗺️'),
+              e('div', { className: 'text-3xl mb-2' }, e("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, e("use", { href: "#i-map" }))),
               e('p', { className: 'text-sm' }, 'Nenhum provider cadastrado no hub.'))
           : e('div', { className: 'space-y-3' },
               providers.map(p => e(ProviderCard, {
@@ -387,7 +388,7 @@
           ? pill('Sandbox', 'bg-amber-100 text-amber-700')
           : pill('Produção', 'bg-blue-100 text-blue-700'),
         !provider.has_adapter_class && pill('Sem adapter', 'bg-red-100 text-red-700'),
-        e('span', { className: 'text-gray-400 text-lg leading-none' }, expandido ? '▴' : '▾')
+        e('span', { className: 'text-gray-400 text-lg leading-none' }, expandido ? '' : '')
       ),
 
       // Corpo expandido
@@ -397,12 +398,12 @@
               e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
           : erroDet
             ? e('div', { className: 'text-center py-8' },
-                e('div', { className: 'text-3xl mb-2' }, '⚠️'),
+                e('div', { className: 'text-3xl mb-2' }, e("svg", { className: "ico", style: { width: 30, height: 30, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
                 e('p', { className: 'text-sm text-red-600 mb-3' }, erroDet),
                 e('button', {
                   onClick: carregarDetalhe,
                   className: 'inline-flex items-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200'
-                }, '🔄 Tentar de novo'))
+                }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Tentar de novo")))
             : (!form || !detalhe)
               ? e('div', { className: 'flex items-center justify-center py-8' },
                   e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
@@ -478,14 +479,14 @@
           value: form.config[campo.key] || '',
           onChange: ev => updateConfig(campo.key, ev.target.value),
           placeholder: setado
-            ? '✓ Configurado · cole novo valor só pra alterar'
+            ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Configurado · cole novo valor só pra alterar")
             : (campo.hint || 'Cole o valor aqui'),
           className: `w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
             setado ? 'border-green-300 bg-green-50' : 'border-gray-300'
           }`
         }),
         setado && e('p', { className: 'text-[11px] text-green-700 mt-1' },
-          '✓ Já existe valor salvo. Deixe em branco pra preservar.')
+          e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Já existe valor salvo. Deixe em branco pra preservar."))
       );
     };
 
@@ -519,7 +520,7 @@
       // Aviso quando marcado ativo mas adapter não instanciou
       provider.ativo && provider.instanciado === false && e('div', {
         className: 'mb-4 text-[12px] bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2'
-      }, '⚠️ Marcado como ativo, mas o adapter não está instanciado — confira se a config está completa.'),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Marcado como ativo, mas o adapter não está instanciado — confira se a config está completa.")),
 
       // Grupos de campos do schema
       schema.grupos.map((grupo, gi) =>
@@ -560,20 +561,20 @@
         e('button', {
           onClick: testarConexao, disabled: testando,
           className: 'inline-flex items-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 disabled:opacity-50'
-        }, testando ? 'Testando…' : '🔌 Testar conexão'),
+        }, testando ? 'Testando…' : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-power" })), "Testar conexão")),
 
         testResult && e('span', {
           className: `inline-flex items-center gap-1 text-[12px] px-2.5 py-1 rounded-md ${
             testResult.ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
           }`
-        }, `${testResult.ok ? '✓' : '✗'} ${testResult.msg}${testResult.latencyMs != null ? ` (${testResult.latencyMs}ms)` : ''}`),
+        }, `${testResult.ok ? e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })) : e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" }))} ${testResult.msg}${testResult.latencyMs != null ? ` (${testResult.latencyMs}ms)` : ''}`),
 
         e('div', { className: 'flex-1' }),
 
         e('button', {
           onClick: salvar, disabled: salvando,
           className: 'inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50'
-        }, salvando ? 'Salvando…' : '💾 Salvar')
+        }, salvando ? 'Salvando…' : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-save" })), "Salvar"))
       )
     );
   }

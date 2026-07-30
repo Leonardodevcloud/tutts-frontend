@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO UBER DIRECT ====================
 // Arquivo: modulo-uber.js
 // Admin: Dashboard, Tracking em tempo real, Entregas, Configuração
@@ -550,7 +551,7 @@
                     }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' }))),
                   ),
                 ),
-                e.entregador_nome && h('p', { className: 'text-xs text-gray-600' }, `🛵 ${e.entregador_nome}`),
+                e.entregador_nome && h('p', { className: 'text-xs text-gray-600' }, `${e.entregador_nome}`),
                 h('p', { className: 'text-xs text-gray-400 truncate' }, e.endereco_entrega)
               ))
         ),
@@ -588,7 +589,7 @@
               // Dados do entregador
               selecionada.entregador_nome && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600 pt-3 border-t border-gray-100' },
                 h('div', null, h('strong', null, 'Entregador: '), selecionada.entregador_nome,
-                  selecionada.entregador_rating && h('span', { className: 'ml-2 text-gray-500' }, `★ ${selecionada.entregador_rating}`)),
+                  selecionada.entregador_rating && h('span', { className: 'ml-2 text-gray-500' }, `${selecionada.entregador_rating}`)),
                 h('div', null, h('strong', null, 'Telefone: '), fmtTelefoneBR(selecionada.entregador_telefone)),
                 h('div', null, h('strong', null, 'Veículo: '), selecionada.entregador_veiculo || '—'),
                 h('div', null, h('strong', null, 'Placa: '), selecionada.entregador_placa || '—')
@@ -596,13 +597,13 @@
 
               // Última posição (se houver)
               posicaoAtual && h('div', { className: 'text-[11px] text-gray-400 mt-2 pt-2 border-t border-gray-100 font-mono' },
-                `📍 ${parseFloat(posicaoAtual.lat).toFixed(5)}, ${parseFloat(posicaoAtual.lng).toFixed(5)}`,
+                `${parseFloat(posicaoAtual.lat).toFixed(5)}, ${parseFloat(posicaoAtual.lng).toFixed(5)}`,
                 posicaoAtual.at && h('span', { className: 'ml-2' }, `· ${fmtDT(posicaoAtual.at)}`)
               )
             ),
             h('div', { key: 'map', id: 'uber-map', className: 'w-full h-[500px] rounded-xl border shadow-sm bg-gray-100' })
           ] : h('div', { className: 'bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 p-12 text-center' },
-            h('p', { className: 'text-gray-400' }, '👈 Selecione uma entrega para acompanhar')
+            h('p', { className: 'text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-arrowleft" })), "Selecione uma entrega para acompanhar"))
           )
         )
       )
@@ -679,9 +680,9 @@
 
   function provedorInfo(entrega) {
     const code = (entrega && (entrega.provider_code || entrega.provider)) || null;
-    if (code === 'noventanove' || code === '99') return { code: 'noventanove', nome: '99Entrega', tipo: '99', icone: '🛵' };
-    if (code === 'uber') return { code: 'uber', nome: 'Uber Direct', tipo: 'uber', icone: '🛵' };
-    return { code: code, nome: code || 'Sem provedor', tipo: 'na', icone: '📦' };
+    if (code === 'noventanove' || code === '99') return { code: 'noventanove', nome: '99Entrega', tipo: '99', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) };
+    if (code === 'uber') return { code: 'uber', nome: 'Uber Direct', tipo: 'uber', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) };
+    return { code: code, nome: code || 'Sem provedor', tipo: 'na', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })) };
   }
 
   // ──────────────────────────────────────────────────────────
@@ -816,8 +817,8 @@
         onClick: () => setTrilhaAberta(v => !v),
         className: 'w-full flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-dashed border-purple-200 rounded-lg py-1.5 mb-2.5 hover:bg-purple-100',
       }, trilhaAberta
-        ? '▴ ocultar anteriores'
-        : `▾ ver ${ocultos} ${ocultos === 1 ? 'anterior' : 'anteriores'}`),
+        ? 'ocultar anteriores'
+        : `ver ${ocultos} ${ocultos === 1 ? 'anterior' : 'anteriores'}`),
       h('div', { className: 'pl-1' },
         evs.map((ev, i) => {
           const hora = _fmtHora(_tsValido(ev.hora));
@@ -827,11 +828,11 @@
 
           if (ev.tipo === 'dispatch_success') {
             contDisp++;
-            icone = '📤'; dotCls = 'border-green-500 bg-green-500';
+            icone = ''; dotCls = 'border-green-500 bg-green-500';
             titulo = contDisp === 1 ? 'Despachado' : 'Re-despachado';
           } else if (ev.tipo === 'canceled') {
             const sistema = ev.cancelado_por === 'sistema-bloqueio';
-            icone = '⛔'; dotCls = 'border-red-500 bg-red-500';
+            icone = ''; dotCls = 'border-red-500 bg-red-500';
             titulo = sistema ? 'Cancelado pelo sistema' : 'Cancelado';
             detalhe = sistema
               ? ('Entregador bloqueado' + (ev.courier ? ' — ' + ev.courier : ''))
@@ -839,7 +840,7 @@
             detClsExtra = 'text-red-700 bg-red-50';
             providerCode = null;
           } else if (ev.tipo === 'dispatch_failed' || ev.tipo === 'error') {
-            icone = '⚠️'; dotCls = 'border-amber-500 bg-amber-500';
+            icone = ''; dotCls = 'border-amber-500 bg-amber-500';
             titulo = 'Falha no despacho';
             const errTxt = String(ev.erro || ev.motivo || '');
             detalhe = /external_id/i.test(errTxt)
@@ -847,7 +848,7 @@
               : (errTxt ? errTxt.slice(0, 120) : 'erro ao criar no provedor');
             detClsExtra = 'text-amber-700 bg-amber-50';
           } else {
-            icone = '🚫'; dotCls = 'border-gray-400 bg-gray-400';
+            icone = ''; dotCls = 'border-gray-400 bg-gray-400';
             titulo = 'Rejeitado';
             detalhe = ev.motivo || ev.erro || null; detClsExtra = 'text-gray-600 bg-gray-100';
           }
@@ -984,7 +985,7 @@
             title: `Código de coleta: ${e.pickup_code}`,
             className: 'text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded font-mono font-semibold cursor-default border border-amber-200',
             onClick: () => navigator.clipboard?.writeText(e.pickup_code),
-          }, `🔑 ${e.pickup_code}`),
+          }, `${e.pickup_code}`),
           onVerDetalhes && h('button', {
             onClick: () => onVerDetalhes(e),
             className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700',
@@ -1065,7 +1066,7 @@
             h('div', { className: 'flex-1 min-w-0' },
               h('div', { className: 'flex items-center gap-2 flex-wrap' },
                 h('span', { className: 'text-sm font-semibold text-gray-800' }, e.entregador_nome),
-                e.entregador_rating && h('span', { className: 'text-xs text-gray-600' }, `★ ${e.entregador_rating}`),
+                e.entregador_rating && h('span', { className: 'text-xs text-gray-600' }, `${e.entregador_rating}`),
                 e.id_motoboy_mapp && h('span', { className: 'text-[11px] text-gray-400' }, `· id Mapp ${e.id_motoboy_mapp}`),
               ),
               h('div', { className: 'text-xs text-gray-600 mt-0.5 break-words' },
@@ -1194,11 +1195,11 @@
     if (st === 'DELIVERED') {
       const fim = _tsValido(e.entregue_at) || _tsValido(e.finalizado_at);
       const tot = fim != null ? _minsEntre(e.created_at, fim) : null;
-      if (tot == null) return { label: 'entregue', texto: '✓ concluída', cls: 'bg-gray-50 text-gray-500' };
+      if (tot == null) return { label: 'entregue', texto: 'concluída', cls: 'bg-gray-50 text-gray-500' };
       const dentro = (prazo != null) ? tot <= prazo : null;
       const cls = dentro == null ? 'bg-gray-50 text-gray-500' : (dentro ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
       const suf = dentro == null ? '' : (dentro ? ' · no prazo' : ' · fora do prazo');
-      return { label: 'tempo total', texto: '✓ ' + (_fmtDur(tot) || '—') + metaTxt + suf, cls };
+      return { label: 'tempo total', texto: '' + (_fmtDur(tot) || '—') + metaTxt + suf, cls };
     }
     if (st === 'RETURNING') {
       return { label: 'devolução', texto: '↩ devolvendo', cls: 'bg-amber-50 text-amber-700' };
@@ -1222,7 +1223,7 @@
       const atrasado = prazo != null && m != null && m > prazo;
       const perto    = prazo != null && m != null && m >= prazo - 10 && m <= prazo;
       const cls = atrasado ? 'bg-red-50 text-red-700' : (perto ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700');
-      return { label: 'em rota de entrega', texto: '🛵 ' + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
+      return { label: 'em rota de entrega', texto: '' + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
     }
 
     // ESTÁGIO 2 — entregador atribuído → coleta: limite desde a ATRIBUIÇÃO
@@ -1231,13 +1232,13 @@
       const base = _tsValido(e.atribuido_at) || _tsValido(e.created_at);
       const m = _minsEntre(base, Date.now());
       const atrasado = m != null && m > SLA_COLETA_MIN;
-      return { label: 'aguardando coleta', texto: '⏱ ' + (m != null ? _fmtDur(m) : '—') + ' / ' + _fmtDur(SLA_COLETA_MIN) + (atrasado ? ' · atrasado' : ''), cls: _corLim(m, SLA_COLETA_MIN) };
+      return { label: 'aguardando coleta', texto: '' + (m != null ? _fmtDur(m) : '—') + ' / ' + _fmtDur(SLA_COLETA_MIN) + (atrasado ? ' · atrasado' : ''), cls: _corLim(m, SLA_COLETA_MIN) };
     }
 
     // ESTÁGIO 1 — procurando entregador: limite desde a CRIAÇÃO
     const mLoc = _minsEntre(e.created_at, Date.now());
     const atrasadoLoc = mLoc != null && mLoc > SLA_LOCALIZAR_MIN;
-    return { label: 'aguardando entregador', texto: '⏱ ' + (mLoc != null ? _fmtDur(mLoc) : '—') + ' / ' + _fmtDur(SLA_LOCALIZAR_MIN) + (atrasadoLoc ? ' · atrasado' : ''), cls: _corLim(mLoc, SLA_LOCALIZAR_MIN) };
+    return { label: 'aguardando entregador', texto: '' + (mLoc != null ? _fmtDur(mLoc) : '—') + ' / ' + _fmtDur(SLA_LOCALIZAR_MIN) + (atrasadoLoc ? ' · atrasado' : ''), cls: _corLim(mLoc, SLA_LOCALIZAR_MIN) };
   }
   // Extrai o payload de um evento (JSONB pode vir como objeto ou string).
   function _payloadEvt(w) {
@@ -1282,7 +1283,7 @@
     const totalMin = marcos.length >= 2 ? Math.round((marcos[marcos.length - 1].ts - marcos[0].ts) / 60000) : null;
 
     return h('div', { className: 'pt-3 border-t border-gray-100' },
-      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-3' }, '🧭 Trilha da entrega'),
+      h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Trilha da entrega")),
       h('div', { className: 'pl-1' },
         marcos.map((m, i) => {
           const prox = marcos[i + 1];
@@ -1300,7 +1301,7 @@
               h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, _fmtHora(m.ts)),
               m.nota && h('div', { className: 'text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1 inline-block' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })) + m.nota),
               trocasAqui.map((t, j) => h('div', { key: 'tr' + j, className: 'text-[11px] text-purple-700 bg-purple-50 rounded-md px-2 py-1 mt-1' },
-                '🔄 Troca de entregador · ' + _fmtHora(t.ts) + ((t.nomeAnterior && t.nomeNovo) ? ' — ' + t.nomeAnterior + ' → ' + t.nomeNovo : (t.nomeAnterior ? ' — anterior: ' + t.nomeAnterior : (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))))),
+                'Troca de entregador · ' + _fmtHora(t.ts) + ((t.nomeAnterior && t.nomeNovo) ? ' — ' + t.nomeAnterior + ' → ' + t.nomeNovo : (t.nomeAnterior ? ' — anterior: ' + t.nomeAnterior : (t.idAnterior ? ' — anterior #' + t.idAnterior : ''))))),
               durMin != null && h('div', { className: `text-[10px] font-bold mt-1 inline-block px-2 py-0.5 rounded ${durLate ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}` },
                 (m.k === 'criacao' ? (_fmtDur(durMin) + ' até a coleta') : (_fmtDur(durMin) + ' até ' + prox.titulo.toLowerCase())) + (durLate ? ' · acima do SLA' : '')),
             ),
@@ -1487,7 +1488,7 @@
             msgSemEntregador()),
       // rodapé (hora despachada)
       h('div', { className: 'px-3 pt-2 pb-1 text-[10px] text-gray-400' },
-        '🕐 Despachada ', fmtDT(e.created_at)),
+        h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Despachada "), fmtDT(e.created_at)),
       // 🆕 tentativas de despacho (so quando houve re-despacho/cancelamento)
       tentativas && h('div', { className: 'px-3' }, h(TentativasDespacho, { dados: tentativas })),
       // ações
@@ -2245,7 +2246,7 @@
           type: 'search',
           value: busca,
           onChange: e => setBusca(e.target.value),
-          placeholder: '🔍 Buscar OS, NF, cliente, endereço, entregador...',
+          placeholder: 'Buscar OS, NF, cliente, endereço, entregador...',
           className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
         }),
         h('div', { className: 'flex items-center gap-1.5' },
@@ -2526,9 +2527,9 @@
 
             h('ul', { className: 'space-y-2 text-[13px] text-gray-700' },
               [
-                ['🚫', 'A corrida atual é cancelada no provedor'],
-                ['🔁', 'A mesma OS é despachada de novo — endereço e valor não mudam'],
-                ['💸', 'Se a nova cotação vier mais cara, o custo sobe'],
+                ['', 'A corrida atual é cancelada no provedor'],
+                ['', 'A mesma OS é despachada de novo — endereço e valor não mudam'],
+                ['', 'Se a nova cotação vier mais cara, o custo sobe'],
               ].map((it, i) => h('li', { key: i, className: 'flex gap-2 items-start' },
                 h('span', { className: 'flex-shrink-0' }, it[0]),
                 h('span', null, it[1]),
@@ -2577,7 +2578,7 @@
           ),
           h('div', { className: 'p-5 space-y-3' },
             h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
-              '⚠ Esta ação cancela a delivery atual no provedor (perdendo qualquer progresso de courier) e redespacha a mesma OS. O endereço vem da Mapp — se ele estiver errado, corrija na Mapp antes.'),
+              h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Esta ação cancela a delivery atual no provedor (perdendo qualquer progresso de courier) e redespacha a mesma OS. O endereço vem da Mapp — se ele estiver errado, corrija na Mapp antes.")),
 
             h('div', null,
               h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Endereço de entrega'),
@@ -2826,7 +2827,7 @@
                 // Telefone do cliente — prefill da OS, editavel, obrigatorio.
                 h('div', { className: 'mb-4' },
                   h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
-                    '📱 Telefone do cliente (recebe o código por WhatsApp)'),
+                    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Telefone do cliente (recebe o código por WhatsApp)")),
                   h('input', {
                     type: 'tel',
                     value: m.telefone || '',
@@ -2842,7 +2843,7 @@
                 h('div', { className: 'grid grid-cols-2 gap-2 mb-4' },
                   h('div', {},
                     h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
-                      '🏪 Nome do remetente (loja)'),
+                      h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Nome do remetente (loja)")),
                     h('input', {
                       type: 'text',
                       value: m.nomeRemetente || '',
@@ -2852,7 +2853,7 @@
                     })),
                   h('div', {},
                     h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
-                      '🎯 Nome do cliente final'),
+                      h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-target" })), "Nome do cliente final")),
                     h('input', {
                       type: 'text',
                       value: m.nomeCliente || '',
@@ -2864,7 +2865,7 @@
                 // Complemento / observação da entrega -> dropoff_notes (Uber) / obs (99)
                 h('div', { className: 'mb-4' },
                   h('label', { className: 'block text-[11px] font-semibold text-gray-500 uppercase mb-1' },
-                    '📝 Complemento / observação da entrega'),
+                    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Complemento / observação da entrega")),
                   h('input', {
                     type: 'text',
                     value: m.complementoEntrega || '',
@@ -3155,7 +3156,7 @@
                   // Dados ao lado
                   h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-sm flex-1 min-w-0' },
                     h('div', null, h('span', { className: 'text-gray-500' }, 'Nome: '), h('span', { className: 'font-semibold' }, e.entregador_nome)),
-                    e.entregador_rating && h('div', null, h('span', { className: 'text-gray-500' }, 'Rating: '), `★ ${e.entregador_rating}`),
+                    e.entregador_rating && h('div', null, h('span', { className: 'text-gray-500' }, 'Rating: '), `${e.entregador_rating}`),
                     e.entregador_telefone && h('div', null, h('span', { className: 'text-gray-500' }, 'Telefone: '), fmtTelefoneBR(e.entregador_telefone)),
                     e.entregador_placa && h('div', null, h('span', { className: 'text-gray-500' }, 'Placa: '), e.entregador_placa),
                     e.entregador_veiculo && h('div', null, h('span', { className: 'text-gray-500' }, 'Veículo: '), e.entregador_veiculo),
@@ -3266,8 +3267,8 @@
                       h('div', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })), 'Código de entrega')),
                       h('div', { className: 'text-xs text-purple-600 mb-1' },
                         e.codigo_wpp_enviado
-                          ? '✓ WhatsApp enviado ao destinatário'
-                          : '⚠ WhatsApp ainda não enviado ao destinatário'
+                          ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "WhatsApp enviado ao destinatário")
+                          : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "WhatsApp ainda não enviado ao destinatário")
                       ),
                       h('div', { className: 'text-2xl font-bold tracking-widest text-purple-800 font-mono' }, e.dropoff_code),
                     ),
@@ -3378,7 +3379,7 @@
                       if (fotos.length === 0) return null;
                       return h('div', null,
                         h('div', { className: 'text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2' },
-                          `📷 ${fotos.length === 1 ? 'Foto da entrega' : `Fotos (${fotos.length})`}`),
+                          `${fotos.length === 1 ? 'Foto da entrega' : `Fotos (${fotos.length})`}`),
                         h('div', { className: `grid gap-2 ${fotos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}` },
                           fotos.map(({ src, label }, i) =>
                             h('div', { key: i },
@@ -3477,8 +3478,8 @@
                   className: 'w-full flex items-center justify-between text-xs text-gray-500 hover:text-gray-800 py-2 px-3 rounded-lg hover:bg-gray-50',
                 },
                   h('span', { className: 'font-semibold' },
-                    `🔧 Dados técnicos (${(tracking?.length || 0)} pts · ${(webhooks?.length || 0)} webhooks)`),
-                  h('span', { className: 'text-base' }, showDebug ? '▴' : '▾'),
+                    `Dados técnicos (${(tracking?.length || 0)} pts · ${(webhooks?.length || 0)} webhooks)`),
+                  h('span', { className: 'text-base' }, showDebug ? '' : ''),
                 ),
                 showDebug && h('div', { className: 'mt-2 space-y-3' },
                   // Tracking points
@@ -3500,7 +3501,7 @@
                       webhooks.map((w, i) => h('div', { key: i, className: 'text-[11px] flex justify-between text-gray-600' },
                         h('span', { className: 'font-semibold' }, w.tipo),
                         h('span', { className: 'text-gray-400' },
-                          `${w.processado ? '✓' : '✗'} ${fmtDT(w.created_at)}`,
+                          `${w.processado ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))} ${fmtDT(w.created_at)}`,
                           w.erro && h('span', { className: 'text-red-600 ml-2' }, w.erro)
                         )
                       ))
@@ -3677,7 +3678,7 @@
       h('div', { className: 'flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100' },
         h('div', null,
           h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-base' }, '📏'),
+            h('span', { className: 'text-base' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" }))),
             h('span', { className: 'font-semibold text-gray-800 text-sm' }, 'Precificação por distância'),
             ativa
               ? h('span', { className: 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700' }, 'ATIVA')
@@ -3734,7 +3735,7 @@
         // ── Simulador interativo ──
         tabelaOk && h('div', { className: 'bg-gray-50 rounded-xl border border-gray-200 p-4' },
           h('div', { className: 'flex items-center gap-2 mb-3' },
-            h('span', { className: 'text-xs font-semibold text-gray-600 uppercase' }, '🧮 Simulador'),
+            h('span', { className: 'text-xs font-semibold text-gray-600 uppercase' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-hash" })), "Simulador")),
           ),
           // Slider de distância
           h('div', { className: 'flex items-center gap-3 mb-4' },
@@ -3982,7 +3983,7 @@
                     h('button', {
                       onClick: () => toggleAtivo(r),
                       className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
-                    }, r.ativo ? '● Ativa' : '○ Inativa')),
+                    }, r.ativo ? 'Ativa' : 'Inativa')),
                   h('td', { className: 'px-4 py-3' },
                     h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome)),
                   h('td', { className: 'px-4 py-3 text-xs' },
@@ -4012,7 +4013,7 @@
         h('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto' },
           h('div', { className: 'p-5 border-b sticky top-0 bg-white z-10' },
             h('h3', { className: 'font-bold text-gray-800' },
-              editando.id ? '✏️ Editar regra' : '➕ Nova regra'),
+              editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar regra") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Nova regra")),
           ),
           h('div', { className: 'p-5 space-y-3' },
 
@@ -4040,7 +4041,7 @@
                   className: 'w-full px-3 py-2 border rounded-lg text-sm',
                 }),
                 h('p', { className: 'text-xs text-gray-500 mt-1' },
-                  '⚠ A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. ',
+                  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. "),
                   'Trecho ÚNICO do endereço (mín. 5 caracteres, lowercase).')
               ),
               h('div', null,
@@ -4065,7 +4066,7 @@
                 className: 'w-full px-3 py-2 border rounded-lg text-sm',
               }),
               h('p', { className: 'text-xs text-amber-700 mt-1 font-semibold' },
-                '⚠ Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura sejam travadas na Mapp.')
+                h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura sejam travadas na Mapp."))
             ),
 
             h('div', { className: 'grid grid-cols-2 gap-3' },
@@ -4088,7 +4089,7 @@
 
             // Tabela de preço por distância — override do cliente
             h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-4' },
-              h('div', { className: 'text-xs font-semibold text-purple-800 uppercase mb-3' }, '📏 Tabela de preço por distância — override deste cliente'),
+              h('div', { className: 'text-xs font-semibold text-purple-800 uppercase mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" })), "Tabela de preço por distância — override deste cliente")),
               h('div', { className: 'grid grid-cols-3 gap-3 mb-2' },
                 h('div', null,
                   h('label', { className: 'block text-xs text-purple-700 mb-1' }, 'Valor fixo (R$)'),
@@ -4223,7 +4224,7 @@
               ),
               h('div', { className: 'mt-2 flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' },
                 h('span', { className: 'text-[11px] text-purple-700 flex-1 truncate' },
-                  '🔗 ', (typeof window !== 'undefined' ? window.location.origin : ''), '/loja'),
+                  h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), (typeof window !== 'undefined' ? window.location.origin : ''), '/loja'),
                 h('button', {
                   type: 'button',
                   onClick: () => {
@@ -4295,7 +4296,7 @@
           h('div', { className: 'p-5 border-t flex justify-end gap-2 bg-gray-50' },
             h('button', { onClick: () => setEditando(null), className: 'px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, 'Cancelar'),
             h('button', { onClick: salvar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold' },
-              editando.id ? '💾 Salvar' : '➕ Criar'),
+              editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Criar")),
           )
         )
       )
@@ -4412,7 +4413,7 @@
           h('button', {
             onClick: enviar, disabled: enviando,
             className: 'text-sm px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5',
-          }, enviando ? 'Enviando...' : (bloquear ? '🚫 Reportar e bloquear' : 'Reportar')),
+          }, enviando ? 'Enviando...' : (bloquear ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })), "Reportar e bloquear") : 'Reportar')),
         ),
       ),
     );
@@ -4860,7 +4861,7 @@
     };
     const trajeto = (r) => h('div', null,
       h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-500 leading-4' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-circle' }))), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
-      h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, '▼'), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
+      h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, ''), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
     );
 
     const rotulo = (chave, v) => {

@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 /**
  * saude-sistema.js — Tutts Frontend
  * ─────────────────────────────────────────────────────────────────────────
@@ -113,7 +114,7 @@
             return `${agente.ticksErr} erros (${agente.taxaErroPct}%) · última ${formatarTempoAtras(agente.ultimaExecucao)}`;
         }
         if (status === 'parado') {
-            return `⚠ Sem execução ${formatarTempoAtras(agente.ultimaExecucao)}`;
+            return `Sem execução ${formatarTempoAtras(agente.ultimaExecucao)}`;
         }
         // ok
         if (agente.ultimaExecucao) {
@@ -207,7 +208,7 @@
             },
                 React.createElement('h3', { 
                     className: 'text-lg font-semibold mb-2' 
-                }, '⚠️ Reiniciar Worker'),
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Reiniciar Worker")),
                 React.createElement('p', { 
                     className: 'text-sm text-gray-600 mb-4' 
                 }, 'Isso vai pausar TODOS os agentes RPA por 10-30 segundos enquanto o container reinicia. Durante esse período:'),
@@ -245,7 +246,7 @@
                             background: (podeConfirmar && !processando) ? '#dc2626' : '#fca5a5',
                             cursor: (podeConfirmar && !processando) ? 'pointer' : 'not-allowed',
                         }
-                    }, processando ? '⏳ Reiniciando...' : '🔄 Confirmar restart')
+                    }, processando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Reiniciando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Confirmar restart"))
                 )
             )
         );
@@ -313,13 +314,13 @@
 
         if (carregando && !dados) {
             return React.createElement('div', { className: 'p-8 text-center text-gray-500' },
-                '⏳ Carregando status dos agentes...'
+                'Carregando status dos agentes...'
             );
         }
 
         if (erro && !dados) {
             return React.createElement('div', { className: 'p-8 text-center' },
-                React.createElement('p', { className: 'text-red-600 font-medium' }, '❌ Erro ao carregar saúde do sistema'),
+                React.createElement('p', { className: 'text-red-600 font-medium' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Erro ao carregar saúde do sistema")),
                 React.createElement('p', { className: 'text-sm text-gray-500 mt-2' }, erro),
                 React.createElement('button', {
                     onClick: carregar,
@@ -352,7 +353,7 @@
             // Cabeçalho
             React.createElement('div', { className: 'flex items-center justify-between mb-6' },
                 React.createElement('div', null,
-                    React.createElement('h2', { className: 'text-xl font-semibold m-0' }, '🏥 Saúde do Sistema'),
+                    React.createElement('h2', { className: 'text-xl font-semibold m-0' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Saúde do Sistema")),
                     React.createElement('p', { 
                         className: 'text-sm text-gray-500 m-0', 
                         style: { marginTop: '4px' } 
@@ -366,12 +367,12 @@
                     React.createElement('button', {
                         onClick: carregar,
                         className: 'px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md flex items-center gap-1'
-                    }, '🔄 Atualizar'),
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar")),
                     React.createElement('button', {
                         onClick: () => setModalRestartAberto(true),
                         className: 'px-3 py-2 text-sm text-white rounded-md flex items-center gap-1',
                         style: { background: '#dc2626' }
-                    }, '⚡ Reiniciar worker')
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Reiniciar worker"))
                 )
             ),
 

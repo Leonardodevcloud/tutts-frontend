@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 /**
  * modulo-liberacao.js
  * Componente React Vanilla — Liberar Ponto da OS via Agente RPA.
@@ -155,12 +156,12 @@
         onClick: () => setAba('liberar'),
         className: 'flex-1 py-2 rounded-lg text-sm font-semibold transition ' +
           (aba === 'liberar' ? 'bg-purple-600 text-white shadow' : 'bg-transparent text-gray-600 hover:bg-white'),
-      }, '🔓 Liberar OS'),
+      }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Liberar OS")),
       h('button', {
         onClick: () => setAba('historico'),
         className: 'flex-1 py-2 rounded-lg text-sm font-semibold transition ' +
           (aba === 'historico' ? 'bg-purple-600 text-white shadow' : 'bg-transparent text-gray-600 hover:bg-white'),
-      }, '📋 Minhas Liberações')
+      }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Liberações"))
     );
 
     // ── Conteúdo: Liberar ─────────────────────────────────────────────────
@@ -170,7 +171,7 @@
       // Sucesso
       if (fase === 'sucesso') {
         return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-          h('div', { className: 'w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-5xl mb-4' }, '✅'),
+          h('div', { className: 'w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-5xl mb-4' }, h("svg", { className: "ico", style: { width: 48, height: 48, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" }))),
           h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'OS liberada!'),
           h('p', { className: 'text-gray-600 mb-6' }, `OS ${osNumero} — Ponto 1 liberado com sucesso`),
           h('p', { className: 'text-sm text-gray-500 mb-8' }, statusAtual?.mensagem_retorno
@@ -187,7 +188,7 @@
       // Erro
       if (fase === 'erro') {
         return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-          h('div', { className: 'w-24 h-24 bg-red-100 rounded-full flex items-center justify-center text-5xl mb-4' }, '❌'),
+          h('div', { className: 'w-24 h-24 bg-red-100 rounded-full flex items-center justify-center text-5xl mb-4' }, h("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
           h('h2', { className: 'text-xl font-bold text-red-700 mb-2' }, 'Não foi possível liberar'),
           h('p', { className: 'text-gray-600 mb-6 max-w-md' }, detalhe),
           h('div', { className: 'flex gap-2' },
@@ -200,7 +201,7 @@
       // OS duplicada
       if (fase === 'os_duplicada') {
         return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-          h('div', { className: 'w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-5xl mb-4' }, '⚠️'),
+          h('div', { className: 'w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-5xl mb-4' }, h("svg", { className: "ico", style: { width: 48, height: 48, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" }))),
           h('h2', { className: 'text-xl font-bold text-yellow-700 mb-2' }, 'Atenção'),
           h('p', { className: 'text-gray-600 mb-6 max-w-md' }, detalhe),
           h('button', { onClick: resetar, className: 'px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700' }, 'Voltar')
@@ -221,7 +222,7 @@
         }[etapa] || etapa;
 
         return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
-          h('div', { className: 'w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center text-5xl mb-4 animate-pulse' }, '🤖'),
+          h('div', { className: 'w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center text-5xl mb-4 animate-pulse' }, h("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" }))),
           h('h2', { className: 'text-xl font-bold text-purple-700 mb-2' }, 'Liberando...'),
           h('p', { className: 'text-gray-600 mb-6' }, `OS ${osNumero}`),
           h('div', { className: 'w-full max-w-sm h-2 bg-gray-200 rounded-full overflow-hidden mb-2' },
@@ -238,7 +239,7 @@
       // Idle (form)
       return h('div', { className: 'space-y-4' },
         h('div', { className: 'bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg' },
-          h('p', { className: 'text-sm text-purple-900 font-semibold mb-1' }, '🔓 Liberar Ponto da OS'),
+          h('p', { className: 'text-sm text-purple-900 font-semibold mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Liberar Ponto da OS")),
           h('p', { className: 'text-xs text-purple-700' },
             'Informe o número da OS pra liberar o Ponto 1 no aplicativo. ' +
             'Use quando o sistema está bloqueando você de bater chegada/finalizar fora do ponto cadastrado.'
@@ -246,7 +247,7 @@
         ),
 
         h('div', { className: 'bg-amber-50 border border-amber-300 p-3 rounded-lg flex items-start gap-2' },
-          h('span', { className: 'text-lg leading-none' }, '⚠️'),
+          h('span', { className: 'text-lg leading-none' }, h("svg", { className: "ico", style: { width: 20, height: 20, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" }))),
           h('p', { className: 'text-xs text-amber-800 leading-relaxed' },
             h('span', { className: 'font-bold' }, 'Atenção: libera apenas o Ponto 1 (coleta).'),
             ' Os demais pontos da OS (Ponto 2 em diante) não são liberados por aqui.'
@@ -276,7 +277,7 @@
             (disabled || osNumero.length !== 7
               ? 'bg-gray-300 cursor-not-allowed'
               : 'bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 active:scale-[0.98] shadow-lg'),
-        }, '🚀 Liberar agora')
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), "Liberar agora"))
       );
     }
 
@@ -287,7 +288,7 @@
       }
       if (historico.length === 0) {
         return h('div', { className: 'text-center py-10 text-gray-500' },
-          h('p', { className: 'text-4xl mb-2' }, '📭'),
+          h('p', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" }))),
           h('p', null, 'Nenhuma liberação ainda.')
         );
       }
@@ -297,7 +298,7 @@
           h('button', {
             onClick: carregarHistorico,
             className: 'text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 font-semibold',
-          }, '🔄 Atualizar')
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
         ),
         ...historico.map((r) => {
           const corStatus = {
@@ -307,10 +308,10 @@
             pendente: 'bg-yellow-100 text-yellow-700 border-yellow-300',
           }[r.status] || 'bg-gray-100 text-gray-700 border-gray-300';
           const labelStatus = {
-            sucesso: '✅ Sucesso',
-            falhou: '❌ Falhou',
-            processando: '⏳ Processando',
-            pendente: '⏸️ Pendente',
+            sucesso: 'Sucesso',
+            falhou: 'Falhou',
+            processando: 'Processando',
+            pendente: 'Pendente',
           }[r.status] || r.status;
           const data = new Date(r.criado_em).toLocaleString('pt-BR');
 
@@ -329,10 +330,10 @@
             ),
             r.status === 'falhou' && r.erro && h('p', {
               className: 'text-xs text-red-600 mt-2 bg-red-50 p-2 rounded',
-            }, '⚠️ ', r.erro),
+            }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), r.erro),
             r.status === 'sucesso' && r.mensagem_retorno && h('p', {
               className: 'text-xs text-green-600 mt-2',
-            }, '✓ ', r.mensagem_retorno)
+            }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), r.mensagem_retorno)
           );
         })
       );

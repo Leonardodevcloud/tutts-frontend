@@ -1,3 +1,4 @@
+/* APP_DEEMOJI_V2 */
 /* APP_DEEMOJI_FULL_V1 */
 const {
     useState: useState,
@@ -2252,7 +2253,7 @@ const hideLoadingScreen = () => {
                             buscando && React.createElement('div', { className: 'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
                         ),
                         React.createElement('div', { className: 'flex items-center justify-between mt-1' },
-                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Carregando...") : '✅ ' + enderecosBI.length + ' endereços únicos'),
+                            React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Carregando...") : '' + enderecosBI.length + ' endereços únicos'),
                             pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
                         ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[250px] overflow-y-auto' },
@@ -9369,7 +9370,7 @@ const hideLoadingScreen = () => {
             resto = (soma * 10) % 11;
             if (resto === 10 || resto === 11) resto = 0;
             if (resto !== parseInt(cpfLimpo.substring(10, 11))) return { valido: false, mensagem: "CPF inválido. Verifique se digitou corretamente." };
-            return { valido: true, mensagem: "✅ CPF válido" };
+            return { valido: true, mensagem: "CPF válido" };
         },
         er = e => parseFloat(e || 0).toLocaleString("pt-BR", {
             style: "currency",
@@ -9384,43 +9385,43 @@ const hideLoadingScreen = () => {
                 case "cpf":
                     return 11 === a.replace(/\D/g, "").length ? {
                         valido: !0,
-                        mensagem: "✅ CPF válido"
+                        mensagem: "CPF válido"
                     } : {
                         valido: !1,
-                        mensagem: "❌ CPF deve ter 11 dígitos"
+                        mensagem: "CPF deve ter 11 dígitos"
                     };
                 case "cnpj":
                     return 14 === a.replace(/\D/g, "").length ? {
                         valido: !0,
-                        mensagem: "✅ CNPJ válido"
+                        mensagem: "CNPJ válido"
                     } : {
                         valido: !1,
-                        mensagem: "❌ CNPJ deve ter 14 dígitos"
+                        mensagem: "CNPJ deve ter 14 dígitos"
                     };
                 case "telefone":
                     const e = a.replace(/\D/g, "");
                     return 10 === e.length || 11 === e.length ? {
                         valido: !0,
-                        mensagem: "✅ Telefone válido"
+                        mensagem: "Telefone válido"
                     } : {
                         valido: !1,
-                        mensagem: "❌ Telefone deve ter 10 ou 11 dígitos"
+                        mensagem: "Telefone deve ter 10 ou 11 dígitos"
                     };
                 case "email":
                     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a) ? {
                         valido: !0,
-                        mensagem: "✅ Email válido"
+                        mensagem: "Email válido"
                     } : {
                         valido: !1,
-                        mensagem: "❌ Formato de email inválido"
+                        mensagem: "Formato de email inválido"
                     };
                 case "aleatoria":
                     return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(a) || /^[a-f0-9]{32}$/i.test(a) ? {
                         valido: !0,
-                        mensagem: "✅ Chave aleatória válida"
+                        mensagem: "Chave aleatória válida"
                     } : {
                         valido: !1,
-                        mensagem: "❌ Formato de chave aleatória inválido"
+                        mensagem: "Formato de chave aleatória inválido"
                     };
                 default:
                     return {
@@ -9566,7 +9567,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-lg p-4 border border-purple-300"
         }, React.createElement("p", {
             className: "text-sm text-gray-500 mb-1"
-        }, "📞 Contato Suporte"), React.createElement("a", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), "Contato Suporte")), React.createElement("a", {
             href: "https://wa.me/5571989260372",
             target: "_blank",
             className: "text-2xl font-bold text-green-600 hover:text-green-700"
@@ -11214,7 +11215,7 @@ const hideLoadingScreen = () => {
                             key: mi,
                             className: `p-2 rounded-lg text-xs ${m.autor_tipo === 'admin' ? 'bg-purple-100 text-purple-800 ml-4' : 'bg-white border mr-4'}`
                         },
-                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? '👔 ' + m.autor_nome : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Você"), React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
+                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? '' + m.autor_nome : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Você"), React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
                             React.createElement("p", null, m.mensagem),
                             m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { className: "flex gap-1 mt-1" }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, className: "h-16 rounded cursor-pointer", onClick: () => g(img) }))) : null; } catch { return null; } })()
                         ))
@@ -11546,7 +11547,7 @@ const hideLoadingScreen = () => {
                     React.createElement("p", { className: "text-gray-600 max-w-md leading-relaxed" }, "Infelizmente o saque emergencial está temporariamente fora do ar!"),
                     React.createElement("p", { className: "text-gray-500 mt-2" }, "Aguarde a normalização."),
                     React.createElement("div", { className: "mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4 max-w-md" },
-                        React.createElement("p", { className: "text-sm text-yellow-800" }, "📞 Em caso de dúvidas, entre em contato com o suporte.")
+                        React.createElement("p", { className: "text-sm text-yellow-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), "Em caso de dúvidas, entre em contato com o suporte."))
                     )
                 );
             }
@@ -11642,7 +11643,7 @@ const hideLoadingScreen = () => {
                                 : React.createElement("p", { style: { fontSize: "20px", margin: 0, opacity: 0.7 } }, "Não disponível"),
                     totalPend > 0 && React.createElement("p", {
                         style: { fontSize: "11px", opacity: 0.85, margin: "8px 0 0 0" }
-                    }, "📋 R$ " + totalPend.toFixed(2).replace(".", ",") + " em saques aguardando aprovação")
+                    }, "R$ " + totalPend.toFixed(2).replace(".", ",") + " em saques aguardando aprovação")
                 ),
                 // Botão refresh discreto no canto inferior direito
                 React.createElement("button", {
@@ -11764,13 +11765,13 @@ const hideLoadingScreen = () => {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Valor máximo por solicitação é R$ 1.000,00")), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Limite diário: você já solicitou R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",") + " hoje. Disponível: R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel >= parseFloat(p.withdrawAmount) && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
+            }, "Limite diário: você já solicitou R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",") + " hoje. Disponível: R$ " + limitesSaque.diario.disponivel.toFixed(2).replace(".", ",")), limitesSaque && p.withdrawAmount && parseFloat(p.withdrawAmount) > 0 && parseFloat(p.withdrawAmount) <= 1000 && parseFloat(p.withdrawAmount) >= 15 && limitesSaque.diario.disponivel >= parseFloat(p.withdrawAmount) && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount) && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Limite semanal: você já solicitou R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",") + " esta semana. Disponível: R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")), r && React.createElement("p", {
+            }, "Limite semanal: você já solicitou R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",") + " esta semana. Disponível: R$ " + limitesSaque.semanal.disponivel.toFixed(2).replace(".", ",")), r && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Valor excede o limite da gratuidade ("), er(a), ")")), saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp && React.createElement("p", {
                 className: "text-red-600 text-sm mt-1 font-semibold"
-            }, "❌ Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && (() => {
+            }, "Valor excede seu saldo disponível (R$ " + saldoDisp.toFixed(2).replace(".", ",") + ")"), p.withdrawAmount && parseFloat(p.withdrawAmount) >= 10 && !r && (() => {
                 const e = (e => {
                     const t = G.find(e => "ativa" === e.status && e.remaining > 0),
                         a = !!t;
@@ -11845,7 +11846,7 @@ const hideLoadingScreen = () => {
                 onClick: Vl,
                 disabled: c || !p.withdrawAmount || parseFloat(p.withdrawAmount) < 15 || parseFloat(p.withdrawAmount) > 1000 || r || 0 === m || (saldoDisp !== null && saldoDisp <= 0) || (saldoDisp !== null && parseFloat(p.withdrawAmount || 0) > saldoDisp) || (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) || (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)),
                 className: "w-full bg-green-600 text-white py-3 rounded-lg font-bold disabled:opacity-50"
-            }, c ? "..." : 0 === m ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Limite Atingido") : parseFloat(p.withdrawAmount || 0) < 15 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mínimo R$ 15") : parseFloat(p.withdrawAmount || 0) > 1000 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Máximo R$ 1.000") : (limitesSaque && (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Limite Esgotado") : (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Excede Limite Diário") : (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Excede Limite Semanal") : "💸 Solicitar"))
+            }, c ? "..." : 0 === m ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Limite Atingido") : parseFloat(p.withdrawAmount || 0) < 15 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mínimo R$ 15") : parseFloat(p.withdrawAmount || 0) > 1000 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Máximo R$ 1.000") : (limitesSaque && (limitesSaque.diario.disponivel <= 0 || limitesSaque.semanal.disponivel <= 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Limite Esgotado") : (limitesSaque && limitesSaque.diario.disponivel < parseFloat(p.withdrawAmount || 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Excede Limite Diário") : (limitesSaque && limitesSaque.semanal.disponivel < parseFloat(p.withdrawAmount || 0)) ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Excede Limite Semanal") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Solicitar")))
         })(), React.createElement("h3", {
             className: "text-lg font-semibold mt-8 mb-4"
         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Histórico")),
@@ -11977,7 +11978,7 @@ const hideLoadingScreen = () => {
                 ),
                 limitesSaque.ciclo && React.createElement("p", {
                     style: { fontSize: "11px", color: "#999", marginTop: "12px", marginBottom: 0 }
-                }, "📅 Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " · reseta toda terça"),
+                }, "Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " · reseta toda terça"),
                 // Botão de solicitar mais limite — aparece quando o disponivel fica
                 // ABAIXO do saque minimo (R$ 15), nao so quando zera. Uma sobra tipo
                 // R$ 0,20 nao da pra sacar (minimo 15), entao o motoboy precisa poder pedir.
@@ -12216,7 +12217,7 @@ const hideLoadingScreen = () => {
                                 display: "inline-flex", alignItems: "center", gap: "6px",
                                 textDecoration: "none"
                             }
-                        }, "📞 Falar com a loja"),
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), "Falar com a loja")),
                         React.createElement("button", {
                             onClick: () => {
                                 if (maquinaPendenteModal && maquinaPendenteModal.movimentacao_id_origem) {
@@ -12265,11 +12266,11 @@ const hideLoadingScreen = () => {
         }, "Tipo da Chave PIX"), React.createElement("span", {
             className: "px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold"
         }, {
-            cpf: "🪪 CPF",
-            cnpj: "🏢 CNPJ",
-            telefone: "📱 Telefone",
-            email: "📧 Email",
-            aleatoria: "🔑 Aleatória"
+            cpf: "CPF",
+            cnpj: "CNPJ",
+            telefone: "Telefone",
+            email: "Email",
+            aleatoria: "Aleatória"
         } [T.pix_tipo] || T.pix_tipo)), React.createElement("div", {
             className: "flex justify-between items-center py-2"
         }, React.createElement("span", {
@@ -12292,7 +12293,7 @@ const hideLoadingScreen = () => {
             className: "flex justify-between items-start"
         }, React.createElement("div", null, React.createElement("span", {
             className: "font-semibold text-gray-700"
-        }, "ALTERACAO_NOME" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Nome alterado"), "ALTERACAO_CPF" === e.action && "🪪 CPF alterado", "ALTERACAO_PIX" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Chave PIX alterada"), "CADASTRO_DADOS" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Cadastro inicial")), e.old_value && e.new_value && React.createElement("p", {
+        }, "ALTERACAO_NOME" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Nome alterado"), "ALTERACAO_CPF" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-idcard" })), "CPF alterado"), "ALTERACAO_PIX" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Chave PIX alterada"), "CADASTRO_DADOS" === e.action && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Cadastro inicial")), e.old_value && e.new_value && React.createElement("p", {
             className: "text-gray-500 text-xs mt-1"
         }, "De: ", React.createElement("span", {
             className: "line-through text-red-500"
@@ -12693,7 +12694,7 @@ const hideLoadingScreen = () => {
             className: "flex justify-between items-start mb-3"
         }, React.createElement("span", {
             className: "px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold"
-        }, "🔥 ATIVA")), React.createElement("p", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "ATIVA"))), React.createElement("p", {
             className: "text-lg font-bold text-gray-800 mb-1"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), e.regiao), React.createElement("p", {
             className: "text-3xl font-bold text-green-600 mb-3"
@@ -12764,7 +12765,7 @@ const hideLoadingScreen = () => {
             className: "bg-white rounded-xl shadow p-6 mb-6"
         }, React.createElement("h3", {
             className: "text-lg font-bold text-gray-800 mb-4"
-        }, "📖 Como Funciona"), React.createElement("div", {
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Como Funciona")), React.createElement("div", {
             className: "grid md:grid-cols-4 gap-4"
         }, React.createElement("div", {
             className: "bg-blue-50 rounded-lg p-4 text-center"
@@ -12819,7 +12820,7 @@ const hideLoadingScreen = () => {
             className: "font-bold text-lg"
         }, e.indicado_nome), React.createElement("p", {
             className: "text-sm text-gray-600"
-        }, "📞 ", e.indicado_contato), e.regiao && React.createElement("p", {
+        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), e.indicado_contato), e.regiao && React.createElement("p", {
             className: "text-sm text-purple-600"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), e.regiao), e.valor_bonus && React.createElement("p", {
             className: "text-sm text-green-600 font-semibold"
@@ -13215,7 +13216,7 @@ const hideLoadingScreen = () => {
             className: "bg-green-500 text-white font-bold text-center py-2 text-sm"
         }, "COBERTURAS E VALORES"), React.createElement("div", {
             className: "p-4 space-y-2 text-sm text-gray-700"
-        }, React.createElement("p", null, "☠️ ", React.createElement("strong", null, "Morte Acidental:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), React.createElement("strong", null, "Invalidez Perm.:"), " R$ 20.000"), React.createElement("p", null, "🏥 ", React.createElement("strong", null, "Desp. Médicas/Hosp.:"), " Até R$ 5.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), React.createElement("strong", null, "Diária Incapacidade:"), " R$ 80/dia (30 dias)"), React.createElement("p", null, "⚰️ ", React.createElement("strong", null, "Funeral:"), " R$ 5.000"))), React.createElement("div", {
+        }, React.createElement("p", null, "☠️ ", React.createElement("strong", null, "Morte Acidental:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), React.createElement("strong", null, "Invalidez Perm.:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), React.createElement("strong", null, "Desp. Médicas/Hosp.:"), " Até R$ 5.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), React.createElement("strong", null, "Diária Incapacidade:"), " R$ 80/dia (30 dias)"), React.createElement("p", null, "⚰️ ", React.createElement("strong", null, "Funeral:"), " R$ 5.000"))), React.createElement("div", {
             className: "bg-white rounded-xl shadow border-l-4 border-red-500 overflow-hidden"
         }, React.createElement("div", {
             className: "bg-red-500 text-white font-bold text-center py-2 text-sm"
@@ -13227,7 +13228,7 @@ const hideLoadingScreen = () => {
             className: "bg-gray-600 text-white font-bold text-center py-2 text-sm"
         }, "COMO ACIONAR? (IZA Seguros)"), React.createElement("div", {
             className: "p-4 space-y-2 text-sm text-gray-700"
-        }, React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), React.createElement("strong", null, "Baixar"), " App IZA"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), React.createElement("strong", null, "Informar"), " Data/Hora/Local"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), React.createElement("strong", null, "Anexar Documentos"), " (B.O., atestado)"), React.createElement("p", null, "📞 ", React.createElement("strong", null, "Suporte:"), " Tel (11) 4673-2002"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), React.createElement("strong", null, "WhatsApp:"), " ", React.createElement("a", {
+        }, React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), React.createElement("strong", null, "Baixar"), " App IZA"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), React.createElement("strong", null, "Informar"), " Data/Hora/Local"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), React.createElement("strong", null, "Anexar Documentos"), " (B.O., atestado)"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), React.createElement("strong", null, "Suporte:"), " Tel (11) 4673-2002"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), React.createElement("strong", null, "WhatsApp:"), " ", React.createElement("a", {
             href: "https://wa.me/551146732004",
             target: "_blank",
             rel: "noopener noreferrer",
@@ -13935,9 +13936,9 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "bg-purple-50 p-3 rounded-lg text-center"},
                             React.createElement("p", {className: "text-xs text-purple-600 font-semibold"}, "Prioridade"),
                             React.createElement("p", {className: "font-bold text-purple-800"}, 
-                                todoTarefaDetalhe.prioridade === "urgente" ? "🔴 Urgente" :
-                                todoTarefaDetalhe.prioridade === "alta" ? "🟠 Alta" :
-                                todoTarefaDetalhe.prioridade === "media" ? "🟡 Média" : "🟢 Baixa"
+                                todoTarefaDetalhe.prioridade === "urgente" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Urgente") :
+                                todoTarefaDetalhe.prioridade === "alta" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Alta") :
+                                todoTarefaDetalhe.prioridade === "media" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Média") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Baixa")
                             )
                         ),
                         React.createElement("div", {className: "bg-blue-50 p-3 rounded-lg text-center"},
@@ -14079,7 +14080,7 @@ const hideLoadingScreen = () => {
                                 onClick: () => setTodoFiltroCard(todoFiltroCard === "atrasadas" ? null : "atrasadas"),
                                 className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
                                     (todoFiltroCard === "atrasadas" ? "bg-red-500 text-white" : "bg-red-100 text-red-700 hover:bg-red-200")
-                            }, "🔥 Atrasadas (", atrasadas.length, ")"),
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Atrasadas ("), atrasadas.length, ")"),
                             React.createElement("button", {
                                 onClick: () => setTodoFiltroCard(todoFiltroCard === "concluidas" ? null : "concluidas"),
                                 className: "px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-all " + 
@@ -14366,8 +14367,8 @@ const hideLoadingScreen = () => {
                                         className: "text-xs px-2 py-0.5 rounded-full " + 
                                             (t.prioridade === "alta" ? "bg-red-100 text-red-700" : 
                                              t.prioridade === "media" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700")
-                                    }, t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "media" ? "🟡 Média" : "🔵 Baixa"),
-                                    isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, "🔥 Atrasada"),
+                                    }, t.prioridade === "alta" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Alta") : t.prioridade === "media" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Média") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Baixa")),
+                                    isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Atrasada")),
                                     isHoje && !isAtrasada && React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Hoje")),
                                     // Badge de Recorrente com tipo
                                     t.recorrente && React.createElement("span", {
@@ -14720,7 +14721,7 @@ const hideLoadingScreen = () => {
                                                 ? (p === "alta" ? "bg-red-500 text-white" : p === "media" ? "bg-yellow-500 text-white" : "bg-blue-500 text-white")
                                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                         }`
-                                    }, p === "baixa" ? "🔵 Baixa" : p === "media" ? "🟡 Média" : "🔴 Alta")
+                                    }, p === "baixa" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Baixa") : p === "media" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Média") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Alta"))
                                 )
                             )
                         ),
@@ -15041,7 +15042,7 @@ const hideLoadingScreen = () => {
                 }, socialModalUser.display_name?.charAt(0)?.toUpperCase() || "?"),
                 React.createElement("div", null,
                     React.createElement("p", {className: "font-bold"}, socialModalUser.display_name),
-                    React.createElement("p", {className: "text-sm text-purple-200"}, socialModalUser.is_online ? "🟢 Online" : "⚫ Offline")
+                    React.createElement("p", {className: "text-sm text-purple-200"}, socialModalUser.is_online ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Online") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Offline"))
                 )
             )),
             React.createElement("div", {className: "p-6"},
@@ -15095,7 +15096,7 @@ const hideLoadingScreen = () => {
                         },
                         disabled: !p.socialSelectedEmoji && !p.socialMsgText?.trim(),
                         className: "w-full mt-3 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold disabled:opacity-50"
-                    }, "💌 Enviar")
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" })), "Enviar"))
                 )
             ))),
             
@@ -15141,7 +15142,7 @@ const hideLoadingScreen = () => {
                 React.createElement("button", {
                     onClick: () => { setSocialTab("mensagens"); loadSocialMessages(); markMessagesAsRead(); },
                     className: "flex-1 py-4 text-center font-semibold relative whitespace-nowrap px-2 " + (socialTab === "mensagens" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500")
-                }, "💌 Mensagens", socialUnread > 0 && React.createElement("span", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" })), "Mensagens"), socialUnread > 0 && React.createElement("span", {
                     className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
                 }, socialUnread > 9 ? "9+" : socialUnread)),
                 // Aba Mensagens da Liderança (para todos admins verem o histórico)
@@ -15174,7 +15175,7 @@ const hideLoadingScreen = () => {
                                 }, l.fullName?.charAt(0)?.toUpperCase() || "?"),
                             React.createElement("label", {
                                 className: "absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full cursor-pointer hover:bg-purple-700 shadow-lg"
-                            }, "📷", React.createElement("input", {
+                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), React.createElement("input", {
                                 type: "file",
                                 accept: "image/*",
                                 className: "hidden",
@@ -15243,7 +15244,7 @@ const hideLoadingScreen = () => {
                 socialTab === "mensagens" && React.createElement("div", null,
                     socialMessages.length === 0 ? 
                         React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-8 text-center"},
-                            React.createElement("span", {className: "text-6xl block mb-4"}, "💌"),
+                            React.createElement("span", {className: "text-6xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))),
                             React.createElement("p", {className: "text-gray-500"}, "Nenhuma mensagem ainda"),
                             React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Quando alguém enviar uma mensagem ou reação, aparecerá aqui!")
                         ) :
@@ -15341,7 +15342,7 @@ const hideLoadingScreen = () => {
                                     React.createElement("div", {className: "px-4 py-3 bg-gray-50 border-t flex items-center justify-between"},
                                         // Fotos dos usuários que visualizaram
                                         React.createElement("div", {className: "flex items-center gap-2"},
-                                            React.createElement("span", {className: "text-xs text-gray-500 mr-1"}, "👁️ Visto por:"),
+                                            React.createElement("span", {className: "text-xs text-gray-500 mr-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Visto por:")),
                                             React.createElement("div", {className: "flex -space-x-2"},
                                                 (liderancaVizPorMsg[msg.id] || []).slice(0, 8).map((viz, idx) => 
                                                     viz.user_foto ?
@@ -15438,7 +15439,7 @@ const hideLoadingScreen = () => {
                                         React.createElement("button", {
                                             onClick: async () => { await loadVisualizacoes(msg.id); setLiderancaModal({tipo: 'visualizacoes', dados: msg}); },
                                             className: "text-sm text-purple-600 hover:underline flex items-center gap-1"
-                                        }, "👁️ ", msg.total_visualizacoes || 0, " visualização(ões)"),
+                                        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), msg.total_visualizacoes || 0, " visualização(ões)"),
                                         React.createElement("div", {className: "flex gap-2"},
                                             React.createElement("button", {
                                                 onClick: () => setLiderancaModal({tipo: 'editar', dados: msg}),
@@ -15717,7 +15718,7 @@ const hideLoadingScreen = () => {
                         onClick: e => e.stopPropagation()
                     },
                         React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white"},
-                            React.createElement("h2", {className: "text-lg font-bold"}, "👁️ Visualizações"),
+                            React.createElement("h2", {className: "text-lg font-bold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Visualizações")),
                             React.createElement("p", {className: "text-sm text-purple-200"}, liderancaModal?.dados?.titulo)
                         ),
                         React.createElement("div", {className: "p-4 max-h-[60vh] overflow-y-auto"},
@@ -16303,12 +16304,12 @@ const hideLoadingScreen = () => {
                     
                     // Período
                     ua.data_inicio && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"},
-                        "📅 " + new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
+                        "" + new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
                     ),
                     
                     // Região
                     ua.regiao && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"},
-                        "🗺️ " + (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao)
+                        "" + (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao)
                     ),
                     
                     // Clientes - com tooltip quando há múltiplos
@@ -16316,7 +16317,7 @@ const hideLoadingScreen = () => {
                         className: "inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs cursor-pointer relative group",
                         title: ua.cod_cliente.length > 1 ? ua.cod_cliente.map(c => c + " - " + (il(c) || "Cliente")).join("\n") : ""
                     },
-                        "🏢 " + (ua.cod_cliente.length === 1 
+                        "" + (ua.cod_cliente.length === 1 
                             ? (il(ua.cod_cliente[0]) || "Cliente " + ua.cod_cliente[0])
                             : ua.cod_cliente.length + " clientes"),
                         // Tooltip customizado
@@ -16335,7 +16336,7 @@ const hideLoadingScreen = () => {
                         className: "inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs cursor-pointer relative group",
                         title: ua.centro_custo.length > 1 ? ua.centro_custo.join("\n") : ""
                     },
-                        "📁 " + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros"),
+                        "" + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros"),
                         // Tooltip customizado
                         ua.centro_custo.length > 1 && React.createElement("div", {
                             className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
@@ -16350,7 +16351,7 @@ const hideLoadingScreen = () => {
                         className: "inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs cursor-pointer relative group",
                         title: ua.categorias.length > 1 ? ua.categorias.join("\n") : ""
                     },
-                        "🏷️ " + (ua.categorias.length === 1 ? ua.categorias[0] : ua.categorias.length + " categorias"),
+                        "" + (ua.categorias.length === 1 ? ua.categorias[0] : ua.categorias.length + " categorias"),
                         ua.categorias.length > 1 && React.createElement("div", {
                             className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
                         },
@@ -17875,7 +17876,7 @@ const hideLoadingScreen = () => {
             "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Acompanhamento Regional")),
-                    React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? "👁️ Ocultar" : "👁️ Mostrar")
+                    React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Ocultar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Mostrar"))
                 ), 
                 mapaCalorVisivel && React.createElement("div", {style: {position: "relative", minHeight: "600px", overflow: "hidden", borderRadius: "12px"}},
                     React.createElement("div", {id: "mapa-calor-leaflet", style: {height: "600px", width: "100%", borderRadius: "12px", backgroundColor: "#e5e7eb"}}),
@@ -19409,7 +19410,7 @@ const hideLoadingScreen = () => {
                             "Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
                         ),
                         relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "bg-purple-100 text-purple-800 px-2 py-1 rounded"},
-                            "🏢 " + (function() {
+                            "" + (function() {
                                 var mascara = il(relatorioIAFiltros.cod_cliente);
                                 if (mascara) return mascara;
                                 var cliente = jt.find(c => String(c.cod_cliente) === String(relatorioIAFiltros.cod_cliente));
@@ -19417,7 +19418,7 @@ const hideLoadingScreen = () => {
                             })()
                         ),
                         relatorioIAFiltros.centro_custo && React.createElement("span", {className: "bg-blue-100 text-blue-800 px-2 py-1 rounded"},
-                            "📁 " + relatorioIAFiltros.centro_custo
+                            "" + relatorioIAFiltros.centro_custo
                         ),
                         !relatorioIAFiltros.data_inicio && !relatorioIAFiltros.data_fim && !relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "text-gray-400 italic"},
                             "Nenhum filtro aplicado - analisará todos os dados"
@@ -19524,7 +19525,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "flex items-center gap-2 text-sm text-violet-800"},
                             React.createElement("span", {className: "font-semibold"}, "Análises selecionadas:"),
                             relatorioIATipos.map(function(t) {
-                                var labels = {performance: "📈 Performance", tendencias: "📉 Tendências", alertas: "⚠️ Alertas", gestao_profissionais: "👥 Gestão de Profissionais", personalizado: "✨ Personalizado"};
+                                var labels = {performance: "Performance", tendencias: "Tendências", alertas: "Alertas", gestao_profissionais: "Gestão de Profissionais", personalizado: "Personalizado"};
                                 return React.createElement("span", {key: t, className: "px-2 py-0.5 bg-violet-200 rounded text-xs"}, labels[t] || t);
                             })
                         )
@@ -19645,22 +19646,22 @@ const hideLoadingScreen = () => {
                                                     item.cod_cliente ? item.cod_cliente + " - " + (item.nome_cliente || "Cliente") : "Todos os Clientes"
                                                 ),
                                                 item.centro_custo && React.createElement("span", {className: "text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"},
-                                                    "📁 " + item.centro_custo
+                                                    "" + item.centro_custo
                                                 )
                                             ),
                                             // Tipo de análise
                                             React.createElement("div", {className: "text-sm text-gray-600 mt-1"},
-                                                "📊 " + (item.tipo_analise || "Análise Geral")
+                                                "" + (item.tipo_analise || "Análise Geral")
                                             ),
                                             // Período
                                             React.createElement("div", {className: "text-xs text-gray-500 mt-1"},
-                                                "📅 Período: " + (item.data_inicio ? new Date(item.data_inicio).toLocaleDateString("pt-BR") : "-") + 
+                                                "Período: " + (item.data_inicio ? new Date(item.data_inicio).toLocaleDateString("pt-BR") : "-") + 
                                                 " a " + (item.data_fim ? new Date(item.data_fim).toLocaleDateString("pt-BR") : "-")
                                             ),
                                             // Usuário e data de criação
                                             React.createElement("div", {className: "flex items-center gap-3 mt-2 text-xs text-gray-400"},
-                                                React.createElement("span", null, "👤 " + (item.usuario_nome || "Usuário")),
-                                                React.createElement("span", null, "🕐 " + new Date(item.created_at).toLocaleString("pt-BR"))
+                                                React.createElement("span", null, "" + (item.usuario_nome || "Usuário")),
+                                                React.createElement("span", null, "" + new Date(item.created_at).toLocaleString("pt-BR"))
                                             )
                                         ),
                                         // Botões de ação
@@ -19841,7 +19842,7 @@ const hideLoadingScreen = () => {
                             
                             return React.createElement("div", {key: codCliente, className: "mb-3 pb-3 border-b last:border-b-0"},
                                 React.createElement("div", {className: "font-medium text-purple-700 text-sm mb-2"}, 
-                                    "🏢 " + codCliente + " - " + nomeCliente
+                                    "" + codCliente + " - " + nomeCliente
                                 ),
                                 // Opção "Todos os centros"
                                 React.createElement("label", {className: "flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer ml-2"},
@@ -19941,7 +19942,7 @@ const hideLoadingScreen = () => {
             // Lista de itens adicionados
             regiaoItensAdicionados.length > 0 && React.createElement("div", {className: "mb-4"},
                 React.createElement("label", {className: "text-sm font-semibold text-gray-700 mb-2 block"}, 
-                    "✅ Itens na Região (" + regiaoItensAdicionados.length + ")"
+                    "Itens na Região (" + regiaoItensAdicionados.length + ")"
                 ),
                 React.createElement("div", {className: "flex flex-wrap gap-2"},
                     regiaoItensAdicionados.map(function(item, idx) {
@@ -22655,14 +22656,14 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
         React.createElement('div', { className: 'space-y-2 text-sm text-blue-700' },
           React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), 'Entrega no prazo: +0,75 pts'),
           React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), 'Bônus 10h-12h: +0,50 pts extra'),
-          React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-orange-500' }, '🔥'), 'Bônus 16h-18h: +0,75 pts extra'),
+          React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('span', { className: 'text-orange-500' }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" }))), 'Bônus 16h-18h: +0,75 pts extra'),
           React.createElement('div', { className: 'flex items-center gap-2 text-red-600' }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), 'Fora do prazo: -1,00 pt')
         )
       ),
       // Tabela de Prazos por KM
       React.createElement('div', { className: 'bg-gray-50 rounded-xl p-4 border border-gray-200' },
         React.createElement('h4', { className: 'font-bold text-gray-800 mb-3 flex items-center gap-2' },
-          React.createElement('span', null, '📏'), 'Prazo por Distância'
+          React.createElement('span', null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ruler" }))), 'Prazo por Distância'
         ),
         React.createElement('div', { className: 'grid grid-cols-2 gap-2 text-sm' },
           [
@@ -23279,7 +23280,7 @@ function AuditLogs({ apiUrl, showToast }) {
       // Top ações e usuários
       React.createElement('div', { className: 'grid md:grid-cols-2 gap-6' },
         React.createElement('div', { className: 'bg-white rounded-xl p-6 shadow' },
-          React.createElement('h3', { className: 'font-bold text-lg mb-4' }, '🔥 Top Ações'),
+          React.createElement('h3', { className: 'font-bold text-lg mb-4' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Top Ações")),
           React.createElement('div', { className: 'space-y-2' },
             stats.top_acoes?.map((item, idx) =>
               React.createElement('div', { key: idx, className: 'flex justify-between items-center p-2 bg-gray-50 rounded-lg' },

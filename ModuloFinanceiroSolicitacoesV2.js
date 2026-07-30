@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 /* ============================================================================
  * ModuloFinanceiroSolicitacoesV2.js
  * Tela refatorada de "Solicitações de Saque" (substitui o bloco antigo
@@ -303,7 +304,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
           title: p.gerandoLote
             ? "Gerando lote..."
             : (z.length === 0 ? "Selecione saques antes de gerar o lote" : `Gerar lote com ${z.length} saques`),
-        }, p.gerandoLote ? "⏳ Gerando..." : `+ Gerar Lote ${z.length > 0 ? `(${z.length})` : ""}`),
+        }, p.gerandoLote ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Gerando...") : `+ Gerar Lote ${z.length > 0 ? `(${z.length})` : ""}`),
         e("button", {
           onClick: () => {
             const selecionados = q.filter(s => z.includes(s.id));
@@ -311,12 +312,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
             if (qtd === 0) { ja("Selecione saques primeiro", "error"); return; }
             const totalProf = selecionados.reduce((a, s) => a + parseFloat(s.final_amount || 0), 0);
             const acima200 = selecionados.filter(s => parseFloat(s.final_amount || 0) > 200);
-            let texto = "💰 *Aprovar saque, por favor!*\n\n";
-            texto += "📊 *Quantidade realizada:* " + qtd + "\n";
-            texto += "💵 *Valor total em saques:* R$ " + totalProf.toFixed(2).replace(".", ",") + "\n";
+            let texto = "*Aprovar saque, por favor!*\n\n";
+            texto += "*Quantidade realizada:* " + qtd + "\n";
+            texto += "*Valor total em saques:* R$ " + totalProf.toFixed(2).replace(".", ",") + "\n";
             if (acima200.length > 0) {
-              texto += "\n⚠️ *Motoboys que solicitaram valor superior a R$200:*\n\n";
-              acima200.forEach(s => { texto += "🏍️ " + (s.user_name || "Cód: " + s.user_cod) + " — *R$ " + parseFloat(s.final_amount).toFixed(2).replace(".", ",") + "*\n"; });
+              texto += "\n*Motoboys que solicitaram valor superior a R$200:*\n\n";
+              acima200.forEach(s => { texto += "" + (s.user_name || "Cód: " + s.user_cod) + " — *R$ " + parseFloat(s.final_amount).toFixed(2).replace(".", ",") + "*\n"; });
             }
             navigator.clipboard.writeText(texto.trim());
             ja("✅ Resumo copiado!", "success");
@@ -328,7 +329,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
             fontSize: 11, fontWeight: 500,
             cursor: "pointer", whiteSpace: "nowrap",
           },
-        }, "📋 Copiar resumo"),
+        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clipboard" })), "Copiar resumo")),
       ),
     ),
 
@@ -561,7 +562,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         onMouseEnter: (ev) => { ev.currentTarget.style.transform = "scale(1.25)"; },
                         onMouseLeave: (ev) => { ev.currentTarget.style.transform = "scale(1)"; },
                         title: "Gerar QR Code PIX (pagamento manual)"
-                      }, "💠"),
+                      }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-star" }))),
                       e("span", {
                         style: { fontFamily: "ui-monospace, monospace", fontSize: 10.5, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 },
                         title: s.pix_key || "—"
@@ -578,7 +579,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         background: status.bg, color: status.cor,
                       }
                     },
-                      e("span", { style: { color: status.dot, fontSize: 10 } }, "●"),
+                      e("span", { style: { color: status.dot, fontSize: 10 } }, ""),
                       status.txt
                     ),
                     auto && (s.status === "aprovado" || s.status === "aprovado_gratuidade" || isPagoStark || isEmLote || isProcessandoPix) && e("span", {
@@ -589,7 +590,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         fontSize: 9, fontWeight: 500,
                       },
                       title: "Pago automaticamente pelo sistema"
-                    }, "⚡ auto"),
+                    }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" })), "auto")),
                     s.has_gratuity && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", gap: 3, marginLeft: 4,
@@ -599,7 +600,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         textTransform: "uppercase", letterSpacing: "0.4px",
                       },
                       title: "Saque com gratuidade aplicada"
-                    }, "🎁 grat."),
+                    }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-gift" })), "grat.")),
                     s.is_restricted && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", marginLeft: 4,
@@ -608,7 +609,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         fontSize: 9, fontWeight: 500,
                       },
                       title: "Motoboy com restrição"
-                    }, "🔒")
+                    }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })))
                   ),
                   // Data/Hora
                   e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
@@ -631,12 +632,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               onClick: () => setSolicitacoesPagina(1),
               disabled: solicitacoesPagina === 1,
               style: pagBtnStyle(solicitacoesPagina === 1),
-            }, "⏮"),
+            }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-arrowleft" }))),
             e("button", {
               onClick: () => setSolicitacoesPagina(p => Math.max(1, p - 1)),
               disabled: solicitacoesPagina === 1,
               style: pagBtnStyle(solicitacoesPagina === 1),
-            }, "◀"),
+            }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-arrowleft" }))),
             e("span", { style: { fontSize: 12, color: "#4B5563", padding: "0 8px" } },
               `${solicitacoesPagina} / ${totalPaginas}`
             ),
@@ -644,12 +645,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               onClick: () => setSolicitacoesPagina(p => Math.min(totalPaginas, p + 1)),
               disabled: solicitacoesPagina === totalPaginas,
               style: pagBtnStyle(solicitacoesPagina === totalPaginas),
-            }, "▶"),
+            }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-play" }))),
             e("button", {
               onClick: () => setSolicitacoesPagina(totalPaginas),
               disabled: solicitacoesPagina === totalPaginas,
               style: pagBtnStyle(solicitacoesPagina === totalPaginas),
-            }, "⏭"),
+            }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-arrowright" }))),
           )
         )
       ),
@@ -715,7 +716,7 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           fontSize: 10, fontWeight: 600,
           background: status.bg, color: status.cor,
         }
-      }, e("span", { style: { color: status.dot } }, "●"), status.txt)
+      }, e("span", { style: { color: status.dot } }, ""), status.txt)
     ),
 
     // Financeiro
@@ -723,8 +724,8 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
       ["Valor solicitado", er(s.requested_amount)],
       ["Taxa", taxa > 0 ? e("span", { style: { color: "#BA7517" } }, `– ${er(taxa)}`) : "—"],
       ["Líquido pago", e("span", { style: { color: "#0F6E56", fontWeight: 600 } }, er(s.final_amount))],
-      ["Débito Plific", s.debito_plific_at ? `✓ ${formatHora(s.debito_plific_at)}` : s.debito_erro ? e("span", { style: { color: "#991B1B" } }, "❌ Falha") : "—"],
-      auto ? ["Origem", e("span", { style: { color: "#4338CA", fontWeight: 600 } }, "⚡ Auto-saque")] : ["Origem", e("span", { style: { color: "#6b7280" } }, "✋ Manual")],
+      ["Débito Plific", s.debito_plific_at ? `${formatHora(s.debito_plific_at)}` : s.debito_erro ? e("span", { style: { color: "#991B1B" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Falha")) : "—"],
+      auto ? ["Origem", e("span", { style: { color: "#4338CA", fontWeight: 600 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" })), "Auto-saque"))] : ["Origem", e("span", { style: { color: "#6b7280" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-hand" })), "Manual"))],
       s.admin_name ? ["Aprovado por", s.admin_name] : null,
     ]),
 
@@ -768,15 +769,15 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           setDrawerSaque(null);
         },
         style: { ...drawerActionStyle, background: "#0F6E56", color: "white", borderColor: "#0F6E56", gridColumn: "1 / -1" },
-      }, "✓ Aprovar saque"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Aprovar saque")),
       s.status === "aguardando_aprovacao" && e("button", {
         onClick: () => setDrawerEditandoStatus("rejeitar"),
         style: { ...drawerActionStyle, color: "#991B1B", borderColor: "#FECACA" },
-      }, "✕ Rejeitar"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Rejeitar")),
       s.status === "aguardando_aprovacao" && e("button", {
         onClick: () => { Jl(s.id, "inativo"); setDrawerSaque(null); },
         style: drawerActionStyle,
-      }, "⏸ Marcar inativo"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-power" })), "Marcar inativo")),
       // Geral
       e("button", {
         onClick: () => {
@@ -784,7 +785,7 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           else ja("Função QR não disponível", "error");
         },
         style: { ...drawerActionStyle, background: "#534AB7", color: "white", borderColor: "#534AB7" },
-      }, "💠 Gerar QR Pix"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-star" })), "Gerar QR Pix")),
       e("button", {
         onClick: () => {
           const dados = `Saque #${s.id}\nMotoboy: ${s.user_name} (cod ${s.user_cod})\nValor: ${er(s.requested_amount)}\nLíquido: ${er(s.final_amount)}\nPIX: ${s.pix_key}\nStatus: ${status.txt}`;
@@ -792,11 +793,11 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           ja("📋 Dados copiados!", "success");
         },
         style: drawerActionStyle,
-      }, "📋 Copiar dados"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clipboard" })), "Copiar dados")),
       e("button", {
         onClick: () => x({ ...p, deleteConfirm: s }),
         style: { ...drawerActionStyle, color: "#991B1B", borderColor: "#FECACA" },
-      }, "🗑️ Excluir"),
+      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-trash" })), "Excluir")),
     ),
 
     // Form de rejeição

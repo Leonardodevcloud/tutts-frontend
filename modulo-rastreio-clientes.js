@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // modulo-rastreio-clientes.js — v1.0
 // 2 abas: Histórico + Configuração. Tema #7c3aed. Padrão Tutts.
 (function () {
@@ -111,12 +112,12 @@
       }),
       h('div',{style:{padding:24}},
       h('div',{style:{marginBottom:24}},
-        h('h1',{style:{fontSize:28,fontWeight:700,color:'#1f2937',margin:0}},'📡 Rastreio Clientes'),
+        h('h1',{style:{fontSize:28,fontWeight:700,color:'#1f2937',margin:0}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" })), "Rastreio Clientes")),
         h('p',{style:{color:'#6b7280',marginTop:4}},'Gestão do detector automático de OS para envio de rastreio')
       ),
       h('div',{style:{borderBottom:'2px solid #e5e7eb',marginBottom:16}},
-        h('button',{style:tabBtn(tab==='historico'),onClick:()=>setTab('historico')},'📋 Histórico'),
-        h('button',{style:tabBtn(tab==='config'),onClick:()=>setTab('config')},'⚙️ Configuração')
+        h('button',{style:tabBtn(tab==='historico'),onClick:()=>setTab('historico')},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Histórico")),
+        h('button',{style:tabBtn(tab==='config'),onClick:()=>setTab('config')},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), "Configuração"))
       ),
 
       tab==='historico' && h('div',null,
@@ -130,7 +131,7 @@
             h('option',{value:''},'Todos os status'),
             ...Object.keys(STATUS_COR).map(s=>h('option',{key:s,value:s},STATUS_COR[s].label))
           ),
-          h('button',{style:btnPrim,onClick:carregarHist},'🔄 Atualizar')
+          h('button',{style:btnPrim,onClick:carregarHist},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
         ),
         h('div',{style:card},
           loading ? h('p',null,'Carregando...') :
@@ -152,7 +153,7 @@
                 h('td',{style:{padding:10,fontSize:12,color:'#6b7280'}},r.enviado_em ? new Date(r.enviado_em).toLocaleString('pt-BR',{timeZone:'America/Bahia'}) : '-'),
                 h('td',{style:{padding:10}},
                   r.status==='falhou' && h('button',{onClick:()=>reenviar(r.id),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Reenviar'),
-                  r.erro && h('span',{title:r.erro,style:{marginLeft:8,cursor:'help'}},'⚠️')
+                  r.erro && h('span',{title:r.erro,style:{marginLeft:8,cursor:'help'}},h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })))
                 )
               );
             }))
@@ -185,7 +186,7 @@
               h('td',{style:{padding:10}},
                 h('span',{style:{background:c.ativo?'#d1fae5':'#e5e7eb',color:c.ativo?'#065f46':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo'),
                 // ENVIAR_GRUPO_FRONT_BADGE: so aparece quando desligado, pra nao poluir
-                c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fef3c7',color:'#b45309',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},'🔕 sem grupo')
+                c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fef3c7',color:'#b45309',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "sem grupo"))
               ),
               h('td',{style:{padding:10}},
                 h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
@@ -223,7 +224,7 @@
             // desliga o DETECTOR inteiro (e ai o card do Hub perde NF e cliente
             // final). Este aqui desliga so o WhatsApp.
             h('div',{style:{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:12,marginBottom:12}},
-              h('p',{style:{fontWeight:700,fontSize:13,color:'#b45309',margin:'0 0 8px 0'}},'💬 Mensagem no grupo'),
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#b45309',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Mensagem no grupo")),
               h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}},
                 h('input',{type:'checkbox',checked:editing.enviar_grupo!==false,
                   onChange:e=>setEditing({...editing,enviar_grupo:e.target.checked})}),
@@ -231,14 +232,14 @@
               ),
               h('p',{style:{fontSize:11,color:'#92400e',margin:'8px 0 0 0'}},
                 editing.enviar_grupo===false
-                  ? '🔕 Grupo desligado. A captura continua rodando: o card do Hub segue com NF e cliente final. Para desligar tudo, use o "Ativo" acima.'
+                  ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Grupo desligado. A captura continua rodando: o card do Hub segue com NF e cliente final. Para desligar tudo, use o \"Ativo\" acima.")
                   : 'Desmarque para parar só o WhatsApp. A captura continua alimentando o card do Hub (NF e cliente final).'
               )
             ),
 
             // ── Rastreio direto ao cliente ──
             h('div',{style:{background:'#f5f3ff',border:'1px solid #ddd6fe',borderRadius:8,padding:12,marginBottom:12}},
-              h('p',{style:{fontWeight:700,fontSize:13,color:'#6d28d9',margin:'0 0 8px 0'}},'📱 Rastreio direto ao cliente'),
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#6d28d9',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Rastreio direto ao cliente")),
               h('p',{style:{fontSize:12,color:'#6b7280',margin:'0 0 10px 0'}},
                 'Quando ativo, o sistema extrai o telefone da nota fiscal e envia o link de rastreio diretamente ao cliente.'
               ),

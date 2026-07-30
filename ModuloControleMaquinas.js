@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ============================================================
 // MÓDULO CONTROLE DE MÁQUINAS - FRONTEND v1
 // Tela admin Central: ver motoboys com restrição por máquina
@@ -138,7 +139,7 @@
     return e('div', { style: { maxWidth: '1100px', margin: '0 auto', padding: '20px 16px' } },
       // Header
       e('div', { style: { marginBottom: '16px' } },
-        e('h2', { style: { fontSize: '20px', fontWeight: 700, color: '#1f2937', margin: 0 } }, '🔓 Controle de Máquinas'),
+        e('h2', { style: { fontSize: '20px', fontWeight: 700, color: '#1f2937', margin: 0 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Controle de Máquinas")),
         e('p', { style: { fontSize: '13px', color: '#6b7280', margin: '4px 0 0' } },
           'Motoboys com saque bloqueado por estarem com máquina da loja em mãos')
       ),
@@ -273,7 +274,7 @@
           style: { background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }
         },
           e('div', { style: { background: '#EEEDFE', padding: '16px 20px 14px', borderBottom: '1px solid #CECBF6' } },
-            e('div', { style: { width: '42px', height: '42px', borderRadius: '50%', background: '#CECBF6', color: '#3C3489', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '8px' } }, '🔓'),
+            e('div', { style: { width: '42px', height: '42px', borderRadius: '50%', background: '#CECBF6', color: '#3C3489', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '8px' } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
             e('p', { style: { fontSize: '16px', fontWeight: 500, color: '#26215C', margin: 0 } }, 'Liberar saque do motoboy')
           ),
           e('div', { style: { padding: '16px 20px' } },
@@ -296,7 +297,7 @@
               ))
             ),
             e('div', { style: { background: '#FAEEDA', borderRadius: '8px', padding: '9px 12px', fontSize: '11px', color: '#633806', lineHeight: 1.5, marginBottom: '14px', display: 'flex', gap: '7px' } },
-              e('span', null, '⚠️'),
+              e('span', null, e("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
               e('span', null, 'A liberação vale para ', e('b', { style: { fontWeight: 500 } }, 'um único saque'), '. Após o motoboy sacar, a restrição volta automaticamente. A máquina continua em campo na loja.')
             ),
             e('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } },

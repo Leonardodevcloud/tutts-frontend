@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO OPERACIONAL ====================
 // Arquivo: modulo-operacional.js
 // Renderização do módulo Operacional - Carregado dinamicamente
@@ -100,7 +101,7 @@
             React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
                 // Conteúdo Indicação
                 (p.opTab || "indicacoes") === "indicacoes" && React.createElement("div", {className: "bg-teal-50 border border-teal-200 rounded-xl p-8 text-center"},
-                    React.createElement("span", {className: "text-5xl mb-4 block"}, "👥"),
+                    React.createElement("span", {className: "text-5xl mb-4 block"}, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" }))),
                     React.createElement("h2", {className: "text-xl font-bold text-teal-800 mb-2"}, "Gestão de Indicações"),
                     React.createElement("p", {className: "text-teal-600 mb-4"}, "Para gerenciar indicações, acesse o módulo Financeiro na aba correspondente."),
                     React.createElement("button", {
@@ -110,7 +111,7 @@
                 ),
                 // Conteúdo Promo Novatos
                 p.opTab === "promo-novatos" && React.createElement("div", {className: "bg-teal-50 border border-teal-200 rounded-xl p-8 text-center"},
-                    React.createElement("span", {className: "text-5xl mb-4 block"}, "🚀"),
+                    React.createElement("span", {className: "text-5xl mb-4 block"}, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" }))),
                     React.createElement("h2", {className: "text-xl font-bold text-teal-800 mb-2"}, "Promoção Novatos"),
                     React.createElement("p", {className: "text-teal-600 mb-4"}, "Para gerenciar promoções de novatos, acesse o módulo Financeiro na aba correspondente."),
                     React.createElement("button", {
@@ -123,18 +124,18 @@
                     // Header
                     React.createElement("div", {className: "flex justify-between items-center"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "📢 Gestão de Avisos"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })), "Gestão de Avisos")),
                             React.createElement("p", {className: "text-gray-600"}, "Crie avisos que aparecerão para os usuários por região")
                         ),
                         React.createElement("button", {
                             onClick: () => { setAvisoEdit(null); setAvisoForm({ titulo: '', regioes: [], todas_regioes: false, data_inicio: '', data_fim: '', recorrencia_tipo: 'uma_vez', recorrencia_intervalo: 24, imagem_url: '' }); setAvisoModal(true); },
                             className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2"
-                        }, "➕ Novo Aviso")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Aviso"))
                     ),
                     // Lista de avisos
                     React.createElement("div", {className: "grid gap-4"},
                         (!avisosData || avisosData.length === 0) ? React.createElement("div", {className: "bg-white rounded-xl p-8 text-center shadow"},
-                            React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                            React.createElement("span", {className: "text-5xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))),
                             React.createElement("p", {className: "text-gray-500"}, "Nenhum aviso cadastrado"),
                             React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Novo Aviso\" para criar o primeiro")
                         ) : (Array.isArray(avisosData) ? avisosData : []).map(aviso => React.createElement("div", {
@@ -149,13 +150,13 @@
                                             React.createElement("span", {className: "px-2 py-0.5 rounded-full text-xs font-semibold " + (aviso.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600")}, aviso.ativo ? "Ativo" : "Inativo")
                                         ),
                                         React.createElement("div", {className: "flex flex-wrap gap-2 mb-3"},
-                                            aviso.todas_regioes ? React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"}, "🌎 Todas as Regiões") :
-                                            aviso.regioes?.map((r, i) => React.createElement("span", {key: i, className: "px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"}, "📍 ", r))
+                                            aviso.todas_regioes ? React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Todas as Regiões")) :
+                                            aviso.regioes?.map((r, i) => React.createElement("span", {key: i, className: "px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), r))
                                         ),
                                         React.createElement("div", {className: "flex flex-wrap gap-4 text-sm text-gray-600"},
-                                            React.createElement("span", null, "📅 ", new Date(aviso.data_inicio?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR"), " - ", new Date(aviso.data_fim?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR")),
-                                            React.createElement("span", null, "🔄 ", aviso.recorrencia_tipo === "uma_vez" ? "Uma vez" : aviso.recorrencia_tipo === "diario" ? "Diário" : `A cada ${aviso.recorrencia_intervalo}h`),
-                                            React.createElement("span", null, "👁️ ", aviso.total_visualizacoes || 0, " visualizações")
+                                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), new Date(aviso.data_inicio?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR"), " - ", new Date(aviso.data_fim?.slice(0,10) + "T12:00:00").toLocaleDateString("pt-BR")),
+                                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), aviso.recorrencia_tipo === "uma_vez" ? "Uma vez" : aviso.recorrencia_tipo === "diario" ? "Diário" : `A cada ${aviso.recorrencia_intervalo}h`),
+                                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), aviso.total_visualizacoes || 0, " visualizações")
                                         )
                                     ),
                                     aviso.imagem_url && React.createElement("img", {
@@ -167,15 +168,15 @@
                                     React.createElement("button", {
                                         onClick: () => { setAvisoEdit(aviso); setAvisoForm({ titulo: aviso.titulo, regioes: aviso.regioes || [], todas_regioes: aviso.todas_regioes, data_inicio: aviso.data_inicio?.slice(0,16), data_fim: aviso.data_fim?.slice(0,16), recorrencia_tipo: aviso.recorrencia_tipo, recorrencia_intervalo: aviso.recorrencia_intervalo, imagem_url: aviso.imagem_url }); setAvisoModal(true); },
                                         className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200"
-                                    }, "✏️ Editar"),
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar")),
                                     React.createElement("button", {
                                         onClick: async () => { await fetchAuth(`${API_URL}/avisos-op/${aviso.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({...aviso, ativo: !aviso.ativo})}); carregarAvisos(); },
                                         className: "px-4 py-2 rounded-lg font-semibold " + (aviso.ativo ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" : "bg-green-100 text-green-700 hover:bg-green-200")
-                                    }, aviso.ativo ? "⏸️ Desativar" : "▶️ Ativar"),
+                                    }, aviso.ativo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })), "Desativar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })), "Ativar")),
                                     React.createElement("button", {
                                         onClick: () => deletarAviso(aviso.id),
                                         className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200"
-                                    }, "🗑️ Excluir")
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir"))
                                 )
                             )
                         ))
@@ -186,7 +187,7 @@
             avisoModal && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"},
                 React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto"},
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white"},
-                        React.createElement("h2", {className: "text-xl font-bold"}, avisoEdit ? "✏️ Editar Aviso" : "➕ Novo Aviso"),
+                        React.createElement("h2", {className: "text-xl font-bold"}, avisoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Aviso") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Aviso")),
                         React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure o aviso que será exibido aos usuários")
                     ),
                     React.createElement("div", {className: "p-6 space-y-6"},
@@ -211,7 +212,7 @@
                                     onChange: e => setAvisoForm(f => ({...f, todas_regioes: e.target.checked, regioes: []})),
                                     className: "w-5 h-5 rounded text-teal-600"
                                 }),
-                                React.createElement("span", {className: "text-gray-700"}, "🌎 Todas as regiões")
+                                React.createElement("span", {className: "text-gray-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Todas as regiões"))
                             ),
                             !avisoForm.todas_regioes && React.createElement("div", {className: "max-h-64 overflow-y-auto border rounded-xl p-3 space-y-2 grid grid-cols-2 md:grid-cols-3 gap-2"},
                                 avisosRegioes.map(regiao => React.createElement("label", {
@@ -290,9 +291,9 @@
                                     React.createElement("button", {
                                         onClick: () => setAvisoForm(f => ({...f, imagem_url: ''})),
                                         className: "text-red-600 text-sm hover:underline"
-                                    }, "🗑️ Remover imagem")
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Remover imagem"))
                                 ) : React.createElement("div", null,
-                                    React.createElement("span", {className: "text-4xl block mb-2"}, "📷"),
+                                    React.createElement("span", {className: "text-4xl block mb-2"}, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" }))),
                                     React.createElement("p", {className: "text-gray-500 mb-3"}, "Arraste uma imagem ou clique para selecionar"),
                                     React.createElement("input", {
                                         type: "file",
@@ -319,7 +320,7 @@
                             onClick: salvarAviso,
                             disabled: !avisoForm.titulo || !avisoForm.data_inicio || !avisoForm.data_fim || (!avisoForm.todas_regioes && avisoForm.regioes.length === 0),
                             className: "flex-1 px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        }, avisoEdit ? "💾 Salvar Alterações" : "➕ Criar Aviso")
+                        }, avisoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Aviso"))
                     )
                 )
             ),
@@ -329,7 +330,7 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🏢 Novas Operações"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Novas Operações")),
                             React.createElement("p", {className: "text-gray-600"}, "Cadastre e gerencie operações de entrega")
                         ),
                         React.createElement("button", {
@@ -370,7 +371,7 @@
                             setOperacaoModal(true); 
                         },
                         className: "px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 flex items-center gap-2 shadow-lg"
-                    }, "➕ Nova Operação")
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Nova Operação"))
                 ),
                 
                 // KPIs (faixa compacta)
@@ -401,7 +402,7 @@
                             className: "relative pb-3 pt-1 text-sm font-semibold transition-colors " +
                                 (operacaoSubTab === 'execucao' ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600')
                         },
-                            "🚀 Em execução",
+                            React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Em execução"),
                             React.createElement("span", {className: "ml-2 px-2 py-0.5 rounded-full text-xs " + (operacaoSubTab === 'execucao' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500')}, operacoesData?.filter(o => o.status !== 'concluido').length || 0),
                             operacaoSubTab === 'execucao' && React.createElement("span", {className: "absolute left-0 right-0 -bottom-px h-0.5 bg-violet-600 rounded"})
                         ),
@@ -410,7 +411,7 @@
                             className: "relative pb-3 pt-1 text-sm font-semibold transition-colors " +
                                 (operacaoSubTab === 'concluidas' ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600')
                         },
-                            "✅ Concluídas",
+                            React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Concluídas"),
                             React.createElement("span", {className: "ml-2 px-2 py-0.5 rounded-full text-xs " + (operacaoSubTab === 'concluidas' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500')}, operacoesData?.filter(o => o.status === 'concluido').length || 0),
                             operacaoSubTab === 'concluidas' && React.createElement("span", {className: "absolute left-0 right-0 -bottom-px h-0.5 bg-violet-600 rounded"})
                         )
@@ -423,7 +424,7 @@
 
                         if (operacoesFiltradas.length === 0) {
                             return React.createElement("div", {className: "bg-white rounded-2xl border border-gray-100 p-12 text-center"},
-                                React.createElement("span", {className: "text-5xl block mb-3"}, operacaoSubTab === 'execucao' ? "📭" : "🎉"),
+                                React.createElement("span", {className: "text-5xl block mb-3"}, operacaoSubTab === 'execucao' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-party" }))),
                                 React.createElement("p", {className: "text-gray-500"}, operacaoSubTab === 'execucao' ? "Nenhuma operação em execução" : "Nenhuma operação concluída ainda"),
                                 React.createElement("p", {className: "text-gray-400 text-sm mt-1"}, operacaoSubTab === 'execucao' ? "Clique em \"Nova Operação\" para começar" : "As operações concluídas aparecerão aqui")
                             );
@@ -436,13 +437,13 @@
                                 const motosEncontradas = Object.values(checklist).filter(v => v).length;
                                 const todasMotosEncontradas = motosEncontradas === op.quantidade_motos;
                                 const aberto = operacaoExpandida === op.id;
-                                const modChip = op.modalidade === 'hub' ? ['bg-teal-50 text-teal-700', '🌐 Hub']
-                                    : op.modalidade === 'hibrida' ? ['bg-fuchsia-50 text-fuchsia-700', '🔀 Híbrida']
-                                    : op.modalidade === 'clt' ? ['bg-amber-50 text-amber-700', '🪪 CLT']
-                                    : op.modalidade === 'dedicado' ? ['bg-violet-50 text-violet-700', '🎯 Dedicado']
-                                    : op.modelo === 'nuvem' ? ['bg-blue-50 text-blue-700', '☁️ Nuvem']
-                                    : op.modelo === 'dedicado' ? ['bg-violet-50 text-violet-700', '🎯 Dedicado']
-                                    : ['bg-gray-100 text-gray-600', '⚡ Flash'];
+                                const modChip = op.modalidade === 'hub' ? ['bg-teal-50 text-teal-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Hub")]
+                                    : op.modalidade === 'hibrida' ? ['bg-fuchsia-50 text-fuchsia-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shuffle" })), "Híbrida")]
+                                    : op.modalidade === 'clt' ? ['bg-amber-50 text-amber-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-idcard" })), "CLT")]
+                                    : op.modalidade === 'dedicado' ? ['bg-violet-50 text-violet-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Dedicado")]
+                                    : op.modelo === 'nuvem' ? ['bg-blue-50 text-blue-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-cloud" })), "Nuvem")]
+                                    : op.modelo === 'dedicado' ? ['bg-violet-50 text-violet-700', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Dedicado")]
+                                    : ['bg-gray-100 text-gray-600', React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Flash")];
                                 const dotCls = op.status === 'ativo' ? 'bg-green-500 ring-green-100'
                                     : op.status === 'concluido' ? 'bg-blue-500 ring-blue-100'
                                     : op.status === 'pausado' ? 'bg-amber-500 ring-amber-100'
@@ -450,7 +451,7 @@
                                 const cdCls = contador.status === 'iniciado' ? 'bg-blue-50 text-blue-700'
                                     : (contador.status === 'hoje' || contador.status === 'amanha') ? 'bg-amber-50 text-amber-700'
                                     : 'bg-gray-100 text-gray-600';
-                                const veicEmoji = op.tipo_veiculo === 'carro' ? '🚐' : '🏍️';
+                                const veicEmoji = op.tipo_veiculo === 'carro' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-car" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" }));
                                 const veicLabel = op.tipo_veiculo === 'carro' ? 'veículo' : 'moto';
                                 const dataFmt = op.data_inicio ? new Date(op.data_inicio.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
@@ -469,14 +470,14 @@
                                                 React.createElement("span", {className: "text-[11px] font-bold px-2 py-0.5 rounded-full " + modChip[0]}, modChip[1])
                                             ),
                                             React.createElement("div", {className: "flex items-center gap-x-4 gap-y-1 flex-wrap mt-1 text-xs text-gray-500"},
-                                                React.createElement("span", null, "📍 ", op.regiao),
+                                                React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), op.regiao),
                                                 React.createElement("span", null, veicEmoji, " ", op.quantidade_motos, " ", veicLabel, op.quantidade_motos > 1 ? "s" : ""),
-                                                React.createElement("span", null, "🗓️ ", dataFmt),
+                                                React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), dataFmt),
                                                 React.createElement("span", {className: "px-2 py-0.5 rounded-md text-[11px] font-bold " + cdCls}, contador.texto)
                                             )
                                         ),
                                         React.createElement("div", {onClick: e => e.stopPropagation(), className: "flex items-center gap-1.5 flex-none"},
-                                            React.createElement("button", {onClick: () => gerarRelatorioOperacao(op), title: "Relatório Word", className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"}, "📄"),
+                                            React.createElement("button", {onClick: () => gerarRelatorioOperacao(op), title: "Relatório Word", className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" }))),
                                             React.createElement("button", {
                                                 onClick: () => {
                                                     setOperacaoEdit(op);
@@ -516,7 +517,7 @@
                                                 },
                                                 title: "Editar",
                                                 className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
-                                            }, "✏️"),
+                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                                             op.status !== 'concluido' && React.createElement("button", {
                                                 onClick: async () => {
                                                     const novoStatus = op.status === 'ativo' ? 'pausado' : 'ativo';
@@ -531,7 +532,7 @@
                                                 },
                                                 title: op.status === 'ativo' ? 'Pausar' : 'Ativar',
                                                 className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
-                                            }, op.status === 'ativo' ? '⏸️' : '▶️'),
+                                            }, op.status === 'ativo' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" }))),
                                             React.createElement("button", {
                                                 onClick: async () => {
                                                     if (confirm(`Excluir operação "${op.nome_cliente}"?`)) {
@@ -543,25 +544,25 @@
                                                 },
                                                 title: "Excluir",
                                                 className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-sm"
-                                            }, "🗑️")
+                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                                         ),
-                                        React.createElement("span", {className: "text-gray-300 text-xs transition-transform flex-none " + (aberto ? 'rotate-180' : '')}, "▼")
+                                        React.createElement("span", {className: "text-gray-300 text-xs transition-transform flex-none " + (aberto ? 'rotate-180' : '')}, "")
                                     ),
                                     aberto && React.createElement("div", {className: "px-4 pb-4 border-t border-gray-100 pt-3 space-y-3"},
                                         React.createElement("div", null,
-                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, "📍 Endereço"),
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), "Endereço")),
                                             React.createElement("p", {className: "text-sm text-gray-700"}, op.endereco || '-')
                                         ),
                                         op.observacoes && React.createElement("div", null,
-                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, "📝 Observações"),
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-0.5"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Observações")),
                                             React.createElement("p", {className: "text-sm text-gray-700"}, op.observacoes)
                                         ),
                                         (op.obrigatoriedade_bau || op.possui_garantido) && React.createElement("div", {className: "flex flex-wrap gap-2 text-xs"},
-                                            op.obrigatoriedade_bau && React.createElement("span", {className: "px-2 py-1 bg-orange-50 text-orange-700 rounded-md font-semibold"}, "📦 Baú obrigatório"),
-                                            op.possui_garantido && React.createElement("span", {className: "px-2 py-1 bg-green-50 text-green-700 rounded-md font-semibold"}, "💰 Garantido: R$ ", parseFloat(op.valor_garantido || 0).toFixed(2))
+                                            op.obrigatoriedade_bau && React.createElement("span", {className: "px-2 py-1 bg-orange-50 text-orange-700 rounded-md font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Baú obrigatório")),
+                                            op.possui_garantido && React.createElement("span", {className: "px-2 py-1 bg-green-50 text-green-700 rounded-md font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Garantido: R$ "), parseFloat(op.valor_garantido || 0).toFixed(2))
                                         ),
                                         op.faixas_km && op.faixas_km.filter(f => f.valor_motoboy > 0).length > 0 && React.createElement("div", null,
-                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1"}, "💰 Valores por faixa de KM"),
+                                            React.createElement("p", {className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valores por faixa de KM")),
                                             React.createElement("div", {className: "flex flex-wrap gap-1.5"},
                                                 op.faixas_km.filter(f => f.valor_motoboy > 0).map((faixa, idx) =>
                                                     React.createElement("span", {key: idx, className: "px-2.5 py-1 bg-gray-50 text-gray-600 rounded-md text-xs"}, faixa.km_inicio, "-", faixa.km_fim, "km: R$ ", parseFloat(faixa.valor_motoboy).toFixed(2))
@@ -605,7 +606,7 @@
                                                     }
                                                 },
                                                 className: "px-4 py-2 rounded-lg text-sm font-bold border border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                                            }, "✅ Marcar como concluída")
+                                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Marcar como concluída"))
                                         )
                                     )
                                 );
@@ -627,11 +628,11 @@
                 var bens = operacaoForm.beneficios || {};
                 var podeAvancar = operacaoForm.tipo_veiculo && operacaoForm.modalidade && (isHub || operacaoForm.quantidade_motos);
                 var BENS = [
-                    { k: 'va', i: '🛒', t: 'Vale alimentação' },
-                    { k: 'vr', i: '🍽️', t: 'Vale refeição' },
-                    { k: 'comb', i: '⛽', t: 'Auxílio combustível' },
-                    { k: 'vt', i: '🚌', t: 'Vale transporte' },
-                    { k: 'net', i: '📶', t: 'Bônus internet' }
+                    { k: 'va', i: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), t: 'Vale alimentação' },
+                    { k: 'vr', i: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-utensils" })), t: 'Vale refeição' },
+                    { k: 'comb', i: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-fuel" })), t: 'Auxílio combustível' },
+                    { k: 'vt', i: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bus" })), t: 'Vale transporte' },
+                    { k: 'net', i: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), t: 'Bônus internet' }
                 ];
                 var toggleBen = function(k) {
                     setOperacaoForm(function(fm) {
@@ -670,7 +671,7 @@
                             (opts.sel ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 bg-white hover:border-violet-300") +
                             (opts.col ? " flex flex-col gap-2" : " flex items-center gap-3")
                     },
-                        opts.sel && React.createElement("span", { className: "absolute top-2 right-2 w-6 h-6 rounded-lg bg-violet-600 text-white grid place-items-center text-sm" }, "✓"),
+                        opts.sel && React.createElement("span", { className: "absolute top-2 right-2 w-6 h-6 rounded-lg bg-violet-600 text-white grid place-items-center text-sm" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
                         React.createElement("span", { className: "w-12 h-12 rounded-xl grid place-items-center text-2xl flex-none " + (opts.sel ? "bg-white" : "bg-violet-50") }, opts.emoji),
                         React.createElement("span", { className: "block" },
                             React.createElement("span", { className: "block font-bold text-gray-800 text-sm" }, opts.titulo),
@@ -685,17 +686,17 @@
                         React.createElement("div", { className: "bg-gradient-to-r from-violet-600 to-violet-700 p-6 text-white sticky top-0 z-10" },
                             React.createElement("div", { className: "flex justify-between items-center" },
                                 React.createElement("div", { className: "flex items-center gap-3" },
-                                    React.createElement("div", { className: "w-11 h-11 rounded-xl bg-white/15 grid place-items-center text-xl" }, operacaoEdit ? "✏️" : "➕"),
+                                    React.createElement("div", { className: "w-11 h-11 rounded-xl bg-white/15 grid place-items-center text-xl" }, operacaoEdit ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" }))),
                                     React.createElement("div", null,
                                         React.createElement("h2", { className: "text-xl font-bold" }, operacaoEdit ? "Editar Operação" : "Nova Operação"),
                                         React.createElement("p", { className: "text-violet-100 text-sm" }, step === 1 ? "Escolha o tipo de veículo e a modalidade" : (isClt ? "Contratação CLT — remuneração e benefícios" : "Preencha os dados da operação"))
                                     )
                                 ),
-                                React.createElement("button", { onClick: () => setOperacaoModal(false), className: "text-white/80 hover:text-white text-2xl" }, "✕")
+                                React.createElement("button", { onClick: () => setOperacaoModal(false), className: "text-white/80 hover:text-white text-2xl" }, React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                             ),
                             React.createElement("div", { className: "flex gap-2 mt-4" },
                                 React.createElement("div", { className: "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl " + (step === 1 ? "bg-white text-violet-700" : "bg-white/10") },
-                                    React.createElement("span", { className: "w-6 h-6 rounded-lg grid place-items-center text-xs font-bold " + (step === 1 ? "bg-violet-600 text-white" : "bg-emerald-500 text-white") }, step === 1 ? "1" : "✓"),
+                                    React.createElement("span", { className: "w-6 h-6 rounded-lg grid place-items-center text-xs font-bold " + (step === 1 ? "bg-violet-600 text-white" : "bg-emerald-500 text-white") }, step === 1 ? "1" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
                                     React.createElement("span", { className: "text-sm font-semibold" }, "Veículo & Modalidade")
                                 ),
                                 React.createElement("div", { className: "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl " + (step === 2 ? "bg-white text-violet-700" : "bg-white/10") },
@@ -707,23 +708,23 @@
                         React.createElement("div", { className: "p-6 space-y-6" },
                           step === 1 && React.createElement("div", { className: "space-y-6" },
                             React.createElement("div", null,
-                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🚦 Tipo de veículo ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Tipo de veículo "), React.createElement("span", { className: "text-violet-600" }, "*")),
                                 React.createElement("div", { className: "grid grid-cols-2 gap-3" },
-                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'moto', onClick: () => selVeic('moto'), emoji: "🏍️", titulo: "Moto", desc: "Entregas urbanas, leve e ágil" }),
-                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'carro', onClick: () => selVeic('carro'), emoji: "🚐", titulo: "Carro utilitário", desc: "Cargas maiores e volumosas" })
+                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'moto', onClick: () => selVeic('moto'), emoji: "", titulo: "Moto", desc: "Entregas urbanas, leve e ágil" }),
+                                    choiceCard({ sel: operacaoForm.tipo_veiculo === 'carro', onClick: () => selVeic('carro'), emoji: "", titulo: "Carro utilitário", desc: "Cargas maiores e volumosas" })
                                 )
                             ),
                             React.createElement("div", null,
-                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🧩 Modalidade ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-puzzle" })), "Modalidade "), React.createElement("span", { className: "text-violet-600" }, "*")),
                                 React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
-                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'dedicado', onClick: () => selMod('dedicado'), emoji: "🎯", titulo: "Dedicado", desc: "Frota fixa para um cliente", badge: "exclusivo", badgeClass: "bg-indigo-100 text-indigo-700" }),
-                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hub', onClick: () => selMod('hub'), emoji: "🌐", titulo: "Hub", desc: "Pool compartilhado por região", badge: "compartilhado", badgeClass: "bg-teal-100 text-teal-700" }),
-                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hibrida', onClick: () => selMod('hibrida'), emoji: "🔀", titulo: "Híbrida", desc: "Dedicado + Hub no mesmo contrato", badge: "dedicado + hub", badgeClass: "bg-fuchsia-100 text-fuchsia-700" }),
-                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'clt', onClick: () => selMod('clt'), emoji: "🪪", titulo: "CLT", desc: "Carteira assinada, salário fixo", badge: "contratação", badgeClass: "bg-amber-100 text-amber-700" })
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'dedicado', onClick: () => selMod('dedicado'), emoji: "", titulo: "Dedicado", desc: "Frota fixa para um cliente", badge: "exclusivo", badgeClass: "bg-indigo-100 text-indigo-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hub', onClick: () => selMod('hub'), emoji: "", titulo: "Hub", desc: "Pool compartilhado por região", badge: "compartilhado", badgeClass: "bg-teal-100 text-teal-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'hibrida', onClick: () => selMod('hibrida'), emoji: "", titulo: "Híbrida", desc: "Dedicado + Hub no mesmo contrato", badge: "dedicado + hub", badgeClass: "bg-fuchsia-100 text-fuchsia-700" }),
+                                    choiceCard({ col: true, sel: operacaoForm.modalidade === 'clt', onClick: () => selMod('clt'), emoji: "", titulo: "CLT", desc: "Carteira assinada, salário fixo", badge: "contratação", badgeClass: "bg-amber-100 text-amber-700" })
                                 )
                             ),
                             (operacaoForm.modalidade && !isHub) && React.createElement("div", null,
-                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "🔢 Quantidade " + (isClt ? "de vagas CLT" : "de veículos") + " ", React.createElement("span", { className: "text-violet-600" }, "*")),
+                                React.createElement("h3", { className: "font-bold text-gray-800 mb-3 flex items-center gap-2" }, "Quantidade " + (isClt ? "de vagas CLT" : "de veículos") + " ", React.createElement("span", { className: "text-violet-600" }, "*")),
                                 React.createElement("div", { className: "bg-violet-50 border-2 border-dashed border-violet-200 rounded-2xl p-4 flex items-center gap-4 flex-wrap" },
                                     React.createElement("div", null,
                                         React.createElement("p", { className: "font-bold text-gray-800 text-sm" }, isClt ? "Quantas vagas CLT nessa operação?" : "Quantos veículos nessa operação?"),
@@ -740,7 +741,7 @@
                           step === 2 && React.createElement("div", { className: "space-y-6" },
                             React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
                                 React.createElement("div", { className: "flex items-center justify-between mb-4" },
-                                    React.createElement("h3", { className: "font-semibold text-gray-800 flex items-center gap-2" }, "📋 Dados Básicos"),
+                                    React.createElement("h3", { className: "font-semibold text-gray-800 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Dados Básicos")),
                                     React.createElement("span", { className: "text-xs text-gray-500" }, (VEH[operacaoForm.tipo_veiculo] || '—') + " · " + (MOD[operacaoForm.modalidade] || '—') + (isHub ? "" : " · " + (operacaoForm.quantidade_motos || 0) + (isClt ? " vaga(s)" : " veículo(s)")))
                                 ),
                                 React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
@@ -759,7 +760,7 @@
                                 )
                             ),
                             React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
-                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "⚙️ Configurações"),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Configurações")),
                                 React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
                                     React.createElement("div", null,
                                         React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Data de Início *"),
@@ -770,25 +771,25 @@
                                     !isCarro && React.createElement("label", { className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50" },
                                         React.createElement("input", { type: "checkbox", checked: operacaoForm.obrigatoriedade_bau, onChange: e => setOperacaoForm(f => ({ ...f, obrigatoriedade_bau: e.target.checked })), className: "w-5 h-5 rounded text-violet-600" }),
                                         React.createElement("div", null,
-                                            React.createElement("span", { className: "font-semibold text-gray-700" }, "📦 Obrigatoriedade de Baú"),
+                                            React.createElement("span", { className: "font-semibold text-gray-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Obrigatoriedade de Baú")),
                                             React.createElement("p", { className: "text-sm text-gray-500" }, "Veículo precisa ter baú?")
                                         )
                                     ),
                                     !isClt && React.createElement("label", { className: "flex items-center gap-3 p-4 bg-white rounded-xl border cursor-pointer hover:bg-gray-50" },
                                         React.createElement("input", { type: "checkbox", checked: operacaoForm.possui_garantido, onChange: e => setOperacaoForm(f => ({ ...f, possui_garantido: e.target.checked, valor_garantido: e.target.checked ? operacaoForm.valor_garantido : '' })), className: "w-5 h-5 rounded text-violet-600" }),
                                         React.createElement("div", null,
-                                            React.createElement("span", { className: "font-semibold text-gray-700" }, "💰 Possui Garantido"),
+                                            React.createElement("span", { className: "font-semibold text-gray-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Possui Garantido")),
                                             React.createElement("p", { className: "text-sm text-gray-500" }, "Loja paga garantido?")
                                         )
                                     )
                                 ),
                                 (!isClt && operacaoForm.possui_garantido) && React.createElement("div", { className: "mt-4" },
-                                    React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "💰 Valor do Garantido (R$)"),
+                                    React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valor do Garantido (R$)")),
                                     React.createElement("input", { type: "number", step: "0.01", min: "0", value: operacaoForm.valor_garantido, onChange: e => setOperacaoForm(f => ({ ...f, valor_garantido: e.target.value })), placeholder: "0.00", className: "w-full md:w-1/3 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
                                 )
                             ),
                             !isClt && React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
-                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "💰 Valores Pagos por Faixa de KM"),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valores Pagos por Faixa de KM")),
                                 React.createElement("p", { className: "text-sm text-gray-500 mb-4" }, "Preencha os valores de cada faixa de quilometragem"),
                                 React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-5 gap-3" },
                                     operacaoForm.faixas_km.map(function(faixa, idx) {
@@ -803,7 +804,7 @@
                                 )
                             ),
                             isClt && React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
-                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "🪪 Remuneração CLT"),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-idcard" })), "Remuneração CLT")),
                                 React.createElement("div", { className: "grid md:grid-cols-3 gap-4" },
                                     React.createElement("div", null,
                                         React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Salário base (R$) *"),
@@ -822,7 +823,7 @@
                                     React.createElement("label", { className: "block text-sm font-semibold text-gray-700 mb-1" }, "Escala / observação de horário"),
                                     React.createElement("input", { type: "text", value: operacaoForm.escala_obs, onChange: e => setOperacaoForm(f => ({ ...f, escala_obs: e.target.value })), placeholder: "Ex.: 6x1, seg a sáb, 1h de almoço", className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
                                 ),
-                                React.createElement("h3", { className: "font-semibold text-gray-800 mt-6 mb-2 flex items-center gap-2" }, "🎁 Benefícios"),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mt-6 mb-2 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Benefícios")),
                                 React.createElement("p", { className: "text-sm text-gray-500 mb-3" }, "Ative e informe o valor de cada um"),
                                 React.createElement("div", { className: "space-y-2" },
                                     BENS.map(function(b) {
@@ -848,7 +849,7 @@
                                                 React.createElement("span", { className: "w-10 h-6 rounded-full relative transition-all flex-none " + (on ? "bg-violet-600" : "bg-gray-300") },
                                                     React.createElement("span", { className: "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all " + (on ? "left-[18px]" : "left-0.5") })
                                                 ),
-                                                React.createElement("span", { className: "text-lg" }, "➕"),
+                                                React.createElement("span", { className: "text-lg" }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" }))),
                                                 React.createElement("span", { className: "font-semibold text-gray-700 text-sm" }, "Outros bônus")
                                             ),
                                             on && React.createElement("div", { className: "px-4 pb-4 pt-1 grid md:grid-cols-2 gap-3" },
@@ -866,7 +867,7 @@
                                 )
                             ),
                             React.createElement("div", { className: "bg-gray-50 rounded-xl p-4" },
-                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, "📝 Observações"),
+                                React.createElement("h3", { className: "font-semibold text-gray-800 mb-4 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Observações")),
                                 React.createElement("textarea", { value: operacaoForm.observacoes, onChange: e => setOperacaoForm(f => ({ ...f, observacoes: e.target.value })), placeholder: "Informações adicionais sobre a operação...", rows: 3, className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-violet-500" })
                             )
                           )
@@ -896,7 +897,7 @@
                                         s(false);
                                     },
                                     className: "px-6 py-3 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-700"
-                                  }, operacaoEdit ? "💾 Salvar Alterações" : "➕ Criar Operação")
+                                  }, operacaoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Operação"))
                         )
                     )
                 );
@@ -907,7 +908,7 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🏍️ Recrutamento de Motos"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Recrutamento de Motos")),
                             React.createElement("p", {className: "text-gray-600"}, "Gerencie as necessidades de recrutamento de motoboys")
                         ),
                         React.createElement("div", {className: "flex gap-3"},
@@ -915,7 +916,7 @@
                                 onClick: carregarRecrutamento,
                                 disabled: recrutamentoLoading,
                                 className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:opacity-50"
-                            }, "🔄"),
+                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))),
                             React.createElement("button", {
                                 onClick: () => {
                                     setRecrutamentoEdit(null);
@@ -929,15 +930,15 @@
                                     setRecrutamentoModal(true);
                                 },
                                 className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
-                            }, "➕ Nova Necessidade")
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Nova Necessidade"))
                         )
                     ),
                     
                     // Card de Progresso Geral
                     recrutamentoStats && React.createElement("div", {className: "bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl shadow-lg p-6 text-white"},
                         React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                            React.createElement("h3", {className: "text-xl font-bold"}, "📊 Progresso Geral de Recrutamento"),
-                            React.createElement("span", {className: "text-4xl"}, "🎯")
+                            React.createElement("h3", {className: "text-xl font-bold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Progresso Geral de Recrutamento")),
+                            React.createElement("span", {className: "text-4xl"}, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })))
                         ),
                         React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"},
                             React.createElement("div", {className: "text-center"},
@@ -983,17 +984,17 @@
                                 onClick: () => setRecrutamentoSubTab('em_andamento'),
                                 className: "flex-1 px-4 py-3 text-sm font-semibold " + 
                                     (recrutamentoSubTab === 'em_andamento' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
-                            }, "🚀 Em Andamento (", recrutamentoData.filter(r => r.status === 'em_andamento').length, ")"),
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Em Andamento ("), recrutamentoData.filter(r => r.status === 'em_andamento').length, ")"),
                             React.createElement("button", {
                                 onClick: () => setRecrutamentoSubTab('concluido'),
                                 className: "flex-1 px-4 py-3 text-sm font-semibold " + 
                                     (recrutamentoSubTab === 'concluido' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
-                            }, "✅ Concluídas (", recrutamentoData.filter(r => r.status === 'concluido').length, ")"),
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Concluídas ("), recrutamentoData.filter(r => r.status === 'concluido').length, ")"),
                             React.createElement("button", {
                                 onClick: () => setRecrutamentoSubTab('todos'),
                                 className: "flex-1 px-4 py-3 text-sm font-semibold " + 
                                     (recrutamentoSubTab === 'todos' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-600 hover:bg-gray-50')
-                            }, "📋 Todas (", recrutamentoData.length, ")")
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Todas ("), recrutamentoData.length, ")")
                         )
                     ),
                     
@@ -1008,7 +1009,7 @@
                         (recrutamentoData
                             .filter(r => recrutamentoSubTab === 'todos' ? true : r.status === recrutamentoSubTab)
                             .length === 0) && React.createElement("div", {className: "bg-white rounded-xl shadow p-12 text-center"},
-                            React.createElement("span", {className: "text-6xl block mb-4"}, "📭"),
+                            React.createElement("span", {className: "text-6xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))),
                             React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhuma necessidade encontrada"),
                             React.createElement("p", {className: "text-gray-400 text-sm"}, "Clique em \"Nova Necessidade\" para cadastrar")
                         ),
@@ -1045,12 +1046,12 @@
                                                             (nec.status === 'concluido' ? 'bg-green-100 text-green-700' : 
                                                              nec.status === 'cancelado' ? 'bg-red-100 text-red-700' :
                                                              'bg-yellow-100 text-yellow-700')
-                                                    }, nec.status === 'concluido' ? '✅ Concluído' : 
-                                                       nec.status === 'cancelado' ? '❌ Cancelado' : '🚀 Em Andamento')
+                                                    }, nec.status === 'concluido' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Concluído") : 
+                                                       nec.status === 'cancelado' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Cancelado") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Em Andamento"))
                                                 ),
                                                 React.createElement("div", {className: "flex items-center gap-4 text-sm text-gray-600"},
                                                     React.createElement("span", {className: "flex items-center gap-1"},
-                                                        "📅 Conclusão: ",
+                                                        React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Conclusão: "),
                                                         React.createElement("strong", null, new Date(nec.data_conclusao?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR'))
                                                     ),
                                                     React.createElement("span", {
@@ -1078,11 +1079,11 @@
                                                         setRecrutamentoModal(true);
                                                     },
                                                     className: "px-3 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200"
-                                                }, "✏️"),
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                                                 React.createElement("button", {
                                                     onClick: () => deletarRecrutamento(nec.id),
                                                     className: "px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                                                }, "🗑️")
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                                             )
                                         ),
                                         
@@ -1105,7 +1106,7 @@
                                         
                                         // Observação
                                         nec.observacao && React.createElement("p", {className: "text-sm text-gray-500 italic mb-4"}, 
-                                            "📝 ", nec.observacao
+                                            React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), nec.observacao
                                         ),
                                         
                                         // Grid de seções: Titulares e Backups
@@ -1114,7 +1115,7 @@
                                             React.createElement("div", {className: "bg-gray-50 rounded-xl p-4"},
                                                 React.createElement("div", {className: "flex justify-between items-center mb-3"},
                                                     React.createElement("h4", {className: "font-bold text-gray-700"}, 
-                                                        "🏍️ Motos Titulares"
+                                                        "Motos Titulares"
                                                     ),
                                                     React.createElement("span", {className: "text-sm font-bold " + 
                                                         (motosAtribuidas >= nec.quantidade_motos ? 'text-green-600' : 'text-orange-600')
@@ -1142,7 +1143,7 @@
                                                             React.createElement("button", {
                                                                 onClick: () => removerAtribuicaoRecrutamento(attr.id),
                                                                 className: "text-red-500 hover:text-red-700 text-sm"
-                                                            }, "✕")
+                                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                                                         )
                                                     )
                                                 ),
@@ -1169,18 +1170,18 @@
                                                             React.createElement("p", {className: "text-xs text-gray-400 mt-1"}, "Buscando..."),
                                                         recrutamentoCodBusca[`${nec.id}_titular`]?.nome && 
                                                             React.createElement("p", {className: "text-xs text-green-600 mt-1"}, 
-                                                                "✅ ", recrutamentoCodBusca[`${nec.id}_titular`].nome
+                                                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), recrutamentoCodBusca[`${nec.id}_titular`].nome
                                                             ),
                                                         recrutamentoCodBusca[`${nec.id}_titular`]?.erro && 
                                                             React.createElement("p", {className: "text-xs text-red-500 mt-1"}, 
-                                                                "❌ ", recrutamentoCodBusca[`${nec.id}_titular`].erro
+                                                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), recrutamentoCodBusca[`${nec.id}_titular`].erro
                                                             )
                                                     ),
                                                     React.createElement("button", {
                                                         onClick: () => atribuirProfissionalRecrutamento(nec.id, 'titular'),
                                                         disabled: !recrutamentoCodBusca[`${nec.id}_titular`]?.nome,
                                                         className: "px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    }, "➕")
+                                                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))
                                                 )
                                             ),
                                             
@@ -1188,7 +1189,7 @@
                                             nec.quantidade_backup > 0 && React.createElement("div", {className: "bg-blue-50 rounded-xl p-4"},
                                                 React.createElement("div", {className: "flex justify-between items-center mb-3"},
                                                     React.createElement("h4", {className: "font-bold text-gray-700"}, 
-                                                        "🔄 Motos Backup"
+                                                        "Motos Backup"
                                                     ),
                                                     React.createElement("span", {className: "text-sm font-bold " + 
                                                         (backupsAtribuidos >= nec.quantidade_backup ? 'text-green-600' : 'text-blue-600')
@@ -1216,7 +1217,7 @@
                                                             React.createElement("button", {
                                                                 onClick: () => removerAtribuicaoRecrutamento(attr.id),
                                                                 className: "text-red-500 hover:text-red-700 text-sm"
-                                                            }, "✕")
+                                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                                                         )
                                                     )
                                                 ),
@@ -1243,18 +1244,18 @@
                                                             React.createElement("p", {className: "text-xs text-gray-400 mt-1"}, "Buscando..."),
                                                         recrutamentoCodBusca[`${nec.id}_backup`]?.nome && 
                                                             React.createElement("p", {className: "text-xs text-green-600 mt-1"}, 
-                                                                "✅ ", recrutamentoCodBusca[`${nec.id}_backup`].nome
+                                                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), recrutamentoCodBusca[`${nec.id}_backup`].nome
                                                             ),
                                                         recrutamentoCodBusca[`${nec.id}_backup`]?.erro && 
                                                             React.createElement("p", {className: "text-xs text-red-500 mt-1"}, 
-                                                                "❌ ", recrutamentoCodBusca[`${nec.id}_backup`].erro
+                                                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), recrutamentoCodBusca[`${nec.id}_backup`].erro
                                                             )
                                                     ),
                                                     React.createElement("button", {
                                                         onClick: () => atribuirProfissionalRecrutamento(nec.id, 'backup'),
                                                         disabled: !recrutamentoCodBusca[`${nec.id}_backup`]?.nome,
                                                         className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    }, "➕")
+                                                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))
                                                 )
                                             ),
                                             
@@ -1280,7 +1281,7 @@
                         // Header do modal
                         React.createElement("div", {className: "p-6 border-b bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-t-2xl"},
                             React.createElement("h3", {className: "text-xl font-bold"}, 
-                                recrutamentoEdit ? "✏️ Editar Necessidade" : "➕ Nova Necessidade de Recrutamento"
+                                recrutamentoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Necessidade") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Nova Necessidade de Recrutamento")
                             ),
                             React.createElement("p", {className: "text-sm opacity-80"}, 
                                 "Preencha os dados da necessidade de motos"
@@ -1312,7 +1313,7 @@
                             // Quantidades
                             React.createElement("div", {className: "grid grid-cols-2 gap-4"},
                                 React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "🏍️ Quantidade de Motos *"),
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Quantidade de Motos *")),
                                     React.createElement("input", {
                                         type: "number",
                                         min: "1",
@@ -1322,7 +1323,7 @@
                                     })
                                 ),
                                 React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "🔄 Quantidade de Backup"),
+                                    React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Quantidade de Backup")),
                                     React.createElement("input", {
                                         type: "number",
                                         min: "0",
@@ -1334,7 +1335,7 @@
                             ),
                             // Observação
                             React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, "📝 Observação (opcional)"),
+                                React.createElement("label", {className: "block text-sm font-semibold text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Observação (opcional)")),
                                 React.createElement("textarea", {
                                     value: recrutamentoForm.observacao,
                                     onChange: (e) => setRecrutamentoForm(f => ({...f, observacao: e.target.value})),
@@ -1354,7 +1355,7 @@
                                 onClick: salvarRecrutamento,
                                 disabled: !recrutamentoForm.nome_cliente || !recrutamentoForm.data_conclusao || !recrutamentoForm.quantidade_motos,
                                 className: "flex-1 px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            }, recrutamentoEdit ? "💾 Salvar Alterações" : "➕ Criar Necessidade")
+                            }, recrutamentoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Necessidade"))
                         )
                     )
                 )
@@ -1365,7 +1366,7 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "📍 Localização Clientes"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), "Localização Clientes")),
                             React.createElement("p", {className: "text-gray-600"}, "Endereços de coleta (Ponto 1) dos clientes do BI")
                         ),
                         React.createElement("div", {className: "flex gap-3"},
@@ -1417,12 +1418,12 @@
                                     console.log("🗺️ Modal renderizado!");
                                 },
                                 className: "px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                            }, "🗺️ Roteirizador"),
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Roteirizador")),
                             React.createElement("button", {
                                 onClick: carregarLocalizacaoClientes,
                                 disabled: localizacaoLoading,
                                 className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg disabled:opacity-50"
-                            }, localizacaoLoading ? "🔄 Carregando..." : "🔄 Atualizar")
+                            }, localizacaoLoading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Carregando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar"))
                         )
                     ),
                     
@@ -1432,14 +1433,14 @@
                             React.createElement("button", {
                                 onClick: () => setLocalizacaoSubTab('lista'),
                                 className: "flex-1 px-6 py-3 text-sm font-semibold transition-all " + (localizacaoSubTab === 'lista' ? "bg-teal-50 text-teal-700 border-b-2 border-teal-600" : "text-gray-600 hover:bg-gray-50")
-                            }, "📋 Lista"),
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Lista")),
                             React.createElement("button", {
                                 onClick: () => { 
                                     setLocalizacaoSubTab('mapa'); 
                                     setTimeout(() => window.initMapaClientes(localizacaoClientes), 100);
                                 },
                                 className: "flex-1 px-6 py-3 text-sm font-semibold transition-all " + (localizacaoSubTab === 'mapa' ? "bg-teal-50 text-teal-700 border-b-2 border-teal-600" : "text-gray-600 hover:bg-gray-50")
-                            }, "🗺️ Mapa")
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Mapa"))
                         )
                     ),
                     
@@ -1448,7 +1449,7 @@
                         // Barra de busca
                         React.createElement("div", {className: "bg-white rounded-xl p-4 shadow"},
                             React.createElement("div", {className: "flex gap-3 items-center"},
-                                React.createElement("span", {className: "text-2xl"}, "🔍"),
+                                React.createElement("span", {className: "text-2xl"}, React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
                                 React.createElement("input", {
                                     type: "text",
                                     value: localizacaoFiltro,
@@ -1459,7 +1460,7 @@
                                 localizacaoFiltro && React.createElement("button", {
                                     onClick: () => setLocalizacaoFiltro(""),
                                     className: "px-4 py-2 text-gray-500 hover:text-gray-700"
-                                }, "✕ Limpar")
+                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar"))
                             )
                         ),
                         
@@ -1471,7 +1472,7 @@
                             )
                             : localizacaoClientes?.length === 0
                                 ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
-                                    React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                                    React.createElement("span", {className: "text-5xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))),
                                     React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado"),
                                     React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Faça upload de dados no módulo BI para ver os clientes aqui")
                                 )
@@ -1488,7 +1489,7 @@
                                     
                                     return clientesFiltrados.length === 0
                                         ? React.createElement("div", {className: "bg-white rounded-xl p-8 shadow text-center"},
-                                            React.createElement("span", {className: "text-3xl block mb-2"}, "🔍"),
+                                            React.createElement("span", {className: "text-3xl block mb-2"}, React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
                                             React.createElement("p", {className: "text-gray-500"}, "Nenhum cliente encontrado com \"", localizacaoFiltro, "\"")
                                         )
                                         : clientesFiltrados.map(cliente => React.createElement("div", {
@@ -1499,13 +1500,13 @@
                                             React.createElement("div", {className: "bg-gradient-to-r from-teal-50 to-white p-4 border-b"},
                                                 React.createElement("div", {className: "flex items-center justify-between"},
                                                     React.createElement("div", {className: "flex items-center gap-3"},
-                                                        React.createElement("span", {className: "text-2xl"}, "🏢"),
+                                                        React.createElement("span", {className: "text-2xl"}, React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" }))),
                                                         React.createElement("div", null,
                                                             React.createElement("p", {className: "font-bold text-teal-800 text-lg"}, 
                                                                 cliente.cod_cliente, " - ", cliente.nome_cliente
                                                             ),
                                                             cliente.centro_custo && React.createElement("p", {className: "text-sm font-semibold text-purple-600"}, 
-                                                                "📦 ", cliente.centro_custo
+                                                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), cliente.centro_custo
                                                             ),
                                                             React.createElement("p", {className: "text-sm text-gray-500"}, 
                                                                 cliente.enderecos?.length || 0, " endereço(s) de coleta"
@@ -1513,7 +1514,7 @@
                                                         )
                                                     ),
                                                     React.createElement("span", {className: "px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-semibold"},
-                                                        "📍 ", cliente.enderecos?.length || 0
+                                                        React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), cliente.enderecos?.length || 0
                                                     )
                                                 )
                                             ),
@@ -1526,20 +1527,20 @@
                                                     React.createElement("div", {className: "flex flex-col md:flex-row md:items-center justify-between gap-4"},
                                                         // Info do endereço
                                                         React.createElement("div", {className: "flex-1"},
-                                                            React.createElement("p", {className: "font-semibold text-gray-800"}, "📌 ", end.endereco || "Sem endereço"),
+                                                            React.createElement("p", {className: "font-semibold text-gray-800"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), end.endereco || "Sem endereço"),
                                                             React.createElement("p", {className: "text-sm text-gray-600"}, 
                                                                 [end.bairro, end.cidade, end.estado].filter(Boolean).join(" - ") || "Localização não especificada"
                                                             ),
                                                             React.createElement("div", {className: "flex items-center gap-4 mt-2"},
                                                                 React.createElement("span", {className: "text-xs text-gray-500"}, 
-                                                                    "📦 ", end.total_entregas || 0, " entregas"
+                                                                    React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), end.total_entregas || 0, " entregas"
                                                                 ),
                                                                 end.latitude && end.longitude
                                                                     ? React.createElement("span", {className: "text-xs text-green-600 flex items-center gap-1"},
-                                                                        "✅ Coordenadas: ", end.latitude?.toFixed(4), ", ", end.longitude?.toFixed(4)
+                                                                        React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Coordenadas: "), end.latitude?.toFixed(4), ", ", end.longitude?.toFixed(4)
                                                                     )
                                                                     : React.createElement("span", {className: "text-xs text-orange-500"},
-                                                                        "⚠️ Sem coordenadas"
+                                                                        "Sem coordenadas"
                                                                     )
                                                             )
                                                         ),
@@ -1550,14 +1551,14 @@
                                                                 target: "_blank",
                                                                 rel: "noopener noreferrer",
                                                                 className: "px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-semibold hover:bg-cyan-600 flex items-center gap-2 shadow"
-                                                            }, "🚗 Waze"),
+                                                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-car" })), "Waze")),
                                                             React.createElement("button", {
                                                                 onClick: () => copiarParaClipboard(
                                                                     gerarLinkWaze(end.endereco + " " + (end.cidade || ""), end.latitude, end.longitude),
                                                                     "Waze"
                                                                 ),
                                                                 className: "px-3 py-2 bg-cyan-100 text-cyan-700 rounded-lg text-sm font-semibold hover:bg-cyan-200"
-                                                            }, "📋")
+                                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })))
                                                         )
                                                     )
                                                 ))
@@ -1572,8 +1573,8 @@
                         // Legenda
                         React.createElement("div", {className: "p-4 border-b bg-gray-50 flex items-center gap-6"},
                             React.createElement("span", {className: "text-sm text-gray-600 font-semibold"}, "Legenda:"),
-                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, "🏢 Clientes"),
-                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, "⭐ Cliente 767")
+                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes")),
+                            React.createElement("span", {className: "flex items-center gap-1 text-sm"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-star" })), "Cliente 767"))
                         ),
                         // Container do mapa
                         React.createElement("div", {
@@ -1593,13 +1594,13 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "📝 Relatório Diário"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Relatório Diário")),
                             React.createElement("p", {className: "text-gray-600"}, "Registre suas atividades e observações do dia")
                         ),
                         React.createElement("button", {
                             onClick: abrirNovoRelatorio,
                             className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
-                        }, "➕ Criar Relatório")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Relatório"))
                     ),
                     
                     // Lista de relatórios
@@ -1610,13 +1611,13 @@
                         )
                         : relatoriosDiarios?.length === 0
                             ? React.createElement("div", {className: "bg-white rounded-xl p-12 shadow text-center"},
-                                React.createElement("span", {className: "text-6xl block mb-4"}, "📋"),
+                                React.createElement("span", {className: "text-6xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))),
                                 React.createElement("p", {className: "text-gray-500 text-lg"}, "Nenhum relatório encontrado"),
                                 React.createElement("p", {className: "text-sm text-gray-400 mt-2"}, "Clique em \"+ Criar Relatório\" para começar"),
                                 React.createElement("button", {
                                     onClick: abrirNovoRelatorio,
                                     className: "mt-6 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700"
-                                }, "➕ Criar Primeiro Relatório")
+                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Primeiro Relatório"))
                             )
                             : React.createElement("div", {className: "space-y-4"},
                                 relatoriosDiarios.map(rel => React.createElement("div", {
@@ -1651,12 +1652,12 @@
                                                     onClick: () => abrirEditarRelatorio(rel),
                                                     className: "p-2 text-blue-600 hover:bg-blue-50 rounded-lg",
                                                     title: "Editar"
-                                                }, "✏️"),
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                                                 React.createElement("button", {
                                                     onClick: () => excluirRelatorio(rel.id),
                                                     className: "p-2 text-red-600 hover:bg-red-50 rounded-lg",
                                                     title: "Excluir"
-                                                }, "🗑️")
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                                             )
                                         )
                                     ),
@@ -1677,7 +1678,7 @@
                                     // Seção de Visualizações
                                     React.createElement("div", {className: "px-4 pb-4 border-t pt-3 bg-gray-50"},
                                         React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
-                                            React.createElement("span", {className: "text-sm text-gray-500 font-medium"}, "👁️ Visualizações:"),
+                                            React.createElement("span", {className: "text-sm text-gray-500 font-medium"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Visualizações:")),
                                             rel.visualizacoes && rel.visualizacoes.length > 0
                                                 ? React.createElement("div", {className: "flex items-center gap-1 flex-wrap"},
                                                     rel.visualizacoes.slice(0, 10).map((vis, idx) => 
@@ -1715,11 +1716,11 @@
                 React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col"},
                     // Header do modal
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center justify-between"},
-                        React.createElement("h3", {className: "text-lg font-bold"}, relatorioEdit ? "✏️ Editar Relatório" : "📝 Novo Relatório"),
+                        React.createElement("h3", {className: "text-lg font-bold"}, relatorioEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Relatório") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Novo Relatório")),
                         React.createElement("button", {
                             onClick: () => setShowRelatorioModal(false),
                             className: "text-white/80 hover:text-white text-2xl"
-                        }, "✕")
+                        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                     ),
                     
                     // Info do usuário e data
@@ -1763,7 +1764,7 @@
                         // Barra de formatação
                         React.createElement("div", {className: "flex flex-wrap items-center gap-2 p-2 bg-gray-100 rounded-lg"},
                             React.createElement("span", {className: "text-sm text-gray-500 mr-2"}, "Emojis:"),
-                            ['✅', '❌', '👤', '💜', '⚠️', '🚨', '✍🏼', '🔥', '🛵', '💰', '📍', '🖊️'].map(emoji => 
+                            ['', '', '', '', '', '', '', '', '', '', '', ''].map(emoji => 
                                 React.createElement("button", {
                                     key: emoji,
                                     type: "button",
@@ -1817,12 +1818,12 @@
                                 },
                                     relatorioForm.imagem 
                                         ? React.createElement("div", {className: "text-teal-600"},
-                                            React.createElement("span", {className: "text-2xl"}, "📎"),
+                                            React.createElement("span", {className: "text-2xl"}, React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" }))),
                                             React.createElement("p", {className: "font-semibold"}, relatorioForm.imagem.name),
                                             React.createElement("p", {className: "text-sm text-gray-500"}, "Clique para trocar")
                                         )
                                         : React.createElement("div", {className: "text-gray-500"},
-                                            React.createElement("span", {className: "text-3xl"}, "📷"),
+                                            React.createElement("span", {className: "text-3xl"}, React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" }))),
                                             React.createElement("p", null, "Clique para selecionar uma imagem"),
                                             React.createElement("p", {className: "text-sm"}, "PNG, JPG até 5MB")
                                         )
@@ -1843,7 +1844,7 @@
                             onClick: (e) => { e.preventDefault(); e.stopPropagation(); salvarRelatorio(e); return false; },
                             disabled: !relatorioForm.titulo.trim(),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        }, relatorioEdit ? "💾 Salvar Alterações" : "📝 Criar Relatório")
+                        }, relatorioEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Criar Relatório"))
                     )
                 )
             ),
@@ -1876,7 +1877,7 @@
                     // Header
                     React.createElement("div", {className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"},
                         React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, "🎯 Acompanhamento de Incentivos, Promoções e Novas Operações"),
+                            React.createElement("h2", {className: "text-2xl font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Acompanhamento de Incentivos, Promoções e Novas Operações")),
                             React.createElement("p", {className: "text-gray-600"}, "Gerencie demandas operacionais e acompanhe custos")
                         ),
                         React.createElement("button", {
@@ -1898,7 +1899,7 @@
                                 setIncentivoModal(true); 
                             },
                             className: "px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-2 shadow-lg"
-                        }, "➕ Criar Demanda")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Demanda"))
                     ),
                     
                     // Cards de estatísticas
@@ -1927,7 +1928,7 @@
                         React.createElement("div", {className: "bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 shadow border-l-4 border-emerald-600 col-span-2 md:col-span-5"},
                             React.createElement("div", {className: "flex items-center justify-between"},
                                 React.createElement("div", null,
-                                    React.createElement("p", {className: "text-sm text-emerald-700 font-medium"}, "💰 Total Investido no Mês"),
+                                    React.createElement("p", {className: "text-sm text-emerald-700 font-medium"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Total Investido no Mês")),
                                     React.createElement("p", {className: "text-xs text-emerald-600"}, "Soma dos incentivos + promoções do mês selecionado")
                                 ),
                                 React.createElement("p", {className: "text-3xl font-bold text-emerald-700"}, 
@@ -1966,7 +1967,7 @@
                                     setIncentivosCalendarioMes(novaData);
                                 },
                                 className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                            }, "◀"),
+                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowleft" }))),
                             React.createElement("h3", {className: "text-xl font-bold text-white"},
                                 new Date(incentivosCalendarioMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())
                             ),
@@ -1977,7 +1978,7 @@
                                     setIncentivosCalendarioMes(novaData);
                                 },
                                 className: "p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                            }, "▶")
+                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })))
                         ),
                         
                         // Dias da semana
@@ -2065,7 +2066,7 @@
                                                             },
                                                             title: 'Nova Operação: ' + item.nome_cliente
                                                         }, 
-                                                            '🏢 ' + item.nome_cliente
+                                                            '' + item.nome_cliente
                                                         );
                                                     }
                                                     
@@ -2098,7 +2099,7 @@
                                                         },
                                                         title: item.titulo + (item.status === 'pausado' ? ' (Pausado)' : '')
                                                     }, 
-                                                        (item.tipo === 'incentivo' ? '⭐' : '🏷️') + ' ' + item.titulo
+                                                        (item.tipo === 'incentivo' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-star" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" }))) + ' ' + item.titulo
                                                     );
                                                 }),
                                                 todosItensNoDia.length > 3 && React.createElement("div", {
@@ -2117,11 +2118,11 @@
                     // Lista de todas as demandas (incentivos + promoções + operações)
                     React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
                         React.createElement("div", {className: "p-4 bg-gray-50 border-b flex items-center justify-between"},
-                            React.createElement("h3", {className: "font-bold text-gray-800"}, "📋 Todas as Demandas"),
+                            React.createElement("h3", {className: "font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Todas as Demandas")),
                             React.createElement("div", {className: "flex gap-2 text-xs"},
-                                React.createElement("span", {className: "px-2 py-1 bg-teal-100 text-teal-700 rounded"}, "🏷️ Promoção"),
-                                React.createElement("span", {className: "px-2 py-1 bg-yellow-100 text-yellow-700 rounded"}, "⭐ Incentivo"),
-                                React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded"}, "🏢 Nova Operação")
+                                React.createElement("span", {className: "px-2 py-1 bg-teal-100 text-teal-700 rounded"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Promoção")),
+                                React.createElement("span", {className: "px-2 py-1 bg-yellow-100 text-yellow-700 rounded"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-star" })), "Incentivo")),
+                                React.createElement("span", {className: "px-2 py-1 bg-purple-100 text-purple-700 rounded"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Nova Operação"))
                             )
                         ),
                         (function() {
@@ -2138,7 +2139,7 @@
                             
                             if (todasDemandas.length === 0) {
                                 return React.createElement("div", {className: "p-8 text-center"},
-                                    React.createElement("span", {className: "text-5xl block mb-4"}, "📭"),
+                                    React.createElement("span", {className: "text-5xl block mb-4"}, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))),
                                     React.createElement("p", {className: "text-gray-500"}, "Nenhuma demanda cadastrada"),
                                     React.createElement("p", {className: "text-sm text-gray-400"}, "Clique em \"Criar Demanda\" para criar a primeira")
                                 );
@@ -2170,25 +2171,25 @@
                                                     }),
                                                     React.createElement("div", {className: "flex-1"},
                                                         React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
-                                                            React.createElement("span", {className: "text-lg"}, "🏢"),
+                                                            React.createElement("span", {className: "text-lg"}, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" }))),
                                                             React.createElement("h4", {className: "font-bold text-gray-800"}, item.nome_cliente),
                                                             React.createElement("span", {className: "px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold"}, "Nova Operação"),
-                                                            contador.status === 'hoje' && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold animate-pulse"}, "🚀 HOJE!"),
-                                                            contador.status === 'amanha' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏰ Amanhã"),
-                                                            contador.status === 'iniciado' && React.createElement("span", {className: "px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold"}, "✅ Iniciado")
+                                                            contador.status === 'hoje' && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold animate-pulse"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "HOJE!")),
+                                                            contador.status === 'amanha' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Amanhã")),
+                                                            contador.status === 'iniciado' && React.createElement("span", {className: "px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Iniciado"))
                                                         ),
                                                         // Informações da operação
                                                         React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
-                                                            React.createElement("span", null, "📅 Início: ", new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
-                                                            React.createElement("span", null, "📍 ", item.regiao),
-                                                            React.createElement("span", null, "🏍️ ", item.quantidade_motos, " moto(s)"),
-                                                            item.possui_garantido && React.createElement("span", {className: "text-green-600"}, "💰 Garantido")
+                                                            React.createElement("span", null, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Início: "), new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
+                                                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), item.regiao),
+                                                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), item.quantidade_motos, " moto(s)"),
+                                                            item.possui_garantido && React.createElement("span", {className: "text-green-600"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Garantido"))
                                                         ),
                                                         // Card da operação
                                                         React.createElement("div", {className: "mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg"},
                                                             React.createElement("div", {className: "flex items-center justify-between flex-wrap gap-2"},
                                                                 React.createElement("div", null,
-                                                                    React.createElement("span", {className: "text-sm text-purple-800 font-medium"}, "📌 Endereço: "),
+                                                                    React.createElement("span", {className: "text-sm text-purple-800 font-medium"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), "Endereço: ")),
                                                                     React.createElement("span", {className: "text-sm text-gray-700"}, item.endereco?.substring(0, 50), item.endereco?.length > 50 ? '...' : '')
                                                                 ),
                                                                 contador.dias > 0 && React.createElement("div", {className: "text-right"},
@@ -2198,9 +2199,9 @@
                                                             ),
                                                             React.createElement("div", {className: "mt-2 pt-2 border-t border-purple-200 flex gap-4 text-xs"},
                                                                 React.createElement("span", {className: "text-purple-700"}, "Modelo: ", 
-                                                                    item.modalidade === 'hub' ? '🌐 Hub' : item.modalidade === 'hibrida' ? '🔀 Híbrida' : item.modalidade === 'clt' ? '🪪 CLT' : item.modalidade === 'dedicado' ? '🎯 Dedicado' : item.modelo === 'nuvem' ? '☁️ Nuvem' : item.modelo === 'dedicado' ? '🎯 Dedicado' : '⚡ Flash'
+                                                                    item.modalidade === 'hub' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Hub") : item.modalidade === 'hibrida' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shuffle" })), "Híbrida") : item.modalidade === 'clt' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-idcard" })), "CLT") : item.modalidade === 'dedicado' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Dedicado") : item.modelo === 'nuvem' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-cloud" })), "Nuvem") : item.modelo === 'dedicado' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Dedicado") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Flash")
                                                                 ),
-                                                                item.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, "📦 Baú obrigatório")
+                                                                item.obrigatoriedade_bau && React.createElement("span", {className: "text-orange-600"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Baú obrigatório"))
                                                             )
                                                         )
                                                     )
@@ -2210,7 +2211,7 @@
                                                     onClick: () => x({...p, opTab: 'novas-operacoes'}),
                                                     className: "p-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200",
                                                     title: "Ver na aba Novas Operações"
-                                                }, "👁️")
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })))
                                             )
                                         );
                                     }
@@ -2230,33 +2231,33 @@
                                                 React.createElement("div", {className: "flex-1"},
                                                     React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
                                                         React.createElement("span", {className: "text-lg"}, 
-                                                            item.tipo === 'incentivo' ? '⭐' : '🏷️'
+                                                            item.tipo === 'incentivo' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-star" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" }))
                                                         ),
                                                         React.createElement("h4", {className: "font-bold text-gray-800"}, item.titulo),
                                                         // Status badges
-                                                        isAtivo && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold"}, "🟢 Ativo"),
-                                                        isVencendo && React.createElement("span", {className: "px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold"}, "⚠️ Vencendo"),
-                                                        item.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, "⏸️ Pausado"),
-                                                        isEncerrado && item.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, "✓ Encerrado")
+                                                        isAtivo && React.createElement("span", {className: "px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Ativo")),
+                                                        isVencendo && React.createElement("span", {className: "px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Vencendo")),
+                                                        item.status === 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })), "Pausado")),
+                                                        isEncerrado && item.status !== 'pausado' && React.createElement("span", {className: "px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Encerrado"))
                                                     ),
                                                     
                                                     // Informações básicas
                                                     React.createElement("div", {className: "flex flex-wrap gap-3 mt-2 text-sm text-gray-500"},
-                                                        React.createElement("span", null, "📅 ", new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR'), " → ", new Date(item.data_fim?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
-                                                        item.hora_inicio && item.hora_fim && React.createElement("span", null, "🕐 ", item.hora_inicio?.slice(0,5), " - ", item.hora_fim?.slice(0,5))
+                                                        React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), new Date(item.data_inicio?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR'), " → ", new Date(item.data_fim?.split('T')[0] + "T12:00:00").toLocaleDateString('pt-BR')),
+                                                        item.hora_inicio && item.hora_fim && React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), item.hora_inicio?.slice(0,5), " - ", item.hora_fim?.slice(0,5))
                                                     ),
                                                     
                                                     // Card para tipo PROMOÇÃO
                                                     item.tipo === 'promocao' && React.createElement("div", {className: "mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg"},
                                                         React.createElement("div", {className: "flex items-center justify-between flex-wrap gap-2"},
                                                             React.createElement("div", null,
-                                                                React.createElement("span", {className: "text-sm text-teal-800 font-medium"}, "💵 Valor/Benefício: "),
+                                                                React.createElement("span", {className: "text-sm text-teal-800 font-medium"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valor/Benefício: ")),
                                                                 React.createElement("span", {className: "font-bold text-teal-900"}, item.valor || '-')
                                                             )
                                                         ),
                                                         // Clientes vinculados
                                                         (item.clientes_nomes || []).length > 0 && React.createElement("div", {className: "mt-2 pt-2 border-t border-teal-200"},
-                                                            React.createElement("span", {className: "text-xs text-teal-700"}, "🏢 Clientes: "),
+                                                            React.createElement("span", {className: "text-xs text-teal-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes: ")),
                                                             React.createElement("span", {className: "text-xs text-gray-600"}, 
                                                                 (item.clientes_nomes || []).map(c => c.nome_display).join(', ')
                                                             )
@@ -2267,7 +2268,7 @@
                                                     item.tipo === 'incentivo' && React.createElement("div", {className: "mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"},
                                                         React.createElement("div", {className: "flex items-center justify-between flex-wrap gap-2"},
                                                             React.createElement("div", null,
-                                                                React.createElement("span", {className: "text-sm text-yellow-800 font-medium"}, "💰 Valor por OS: "),
+                                                                React.createElement("span", {className: "text-sm text-yellow-800 font-medium"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valor por OS: ")),
                                                                 React.createElement("span", {className: "font-bold text-yellow-900"}, "R$ ", parseFloat(item.valor_incentivo || 0).toFixed(2))
                                                             ),
                                                             item.calculo ? React.createElement("div", {className: "flex items-center gap-4"},
@@ -2281,11 +2282,11 @@
                                                                         "R$ ", (item.calculo.valor_total || 0).toFixed(2)
                                                                     )
                                                                 )
-                                                            ) : React.createElement("span", {className: "text-sm text-yellow-600 italic"}, "⏳ Aguardando dados do BI...")
+                                                            ) : React.createElement("span", {className: "text-sm text-yellow-600 italic"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando dados do BI..."))
                                                         ),
                                                         // Clientes vinculados
                                                         (item.clientes_nomes || []).length > 0 && React.createElement("div", {className: "mt-2 pt-2 border-t border-yellow-200"},
-                                                            React.createElement("span", {className: "text-xs text-yellow-700"}, "🏢 Clientes: "),
+                                                            React.createElement("span", {className: "text-xs text-yellow-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes: ")),
                                                             React.createElement("span", {className: "text-xs text-gray-600"}, 
                                                                 (item.clientes_nomes || []).map(c => c.nome_display).join(', ')
                                                             )
@@ -2315,11 +2316,11 @@
                                                         setIncentivoModal(true);
                                                     },
                                                     className: "p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                                                }, "✏️"),
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                                                 React.createElement("button", {
                                                     onClick: () => deletarIncentivo(item.id),
                                                     className: "p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                                                }, "🗑️")
+                                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                                             )
                                         )
                                     );
@@ -2340,7 +2341,7 @@
                 },
                     // Header do modal
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white"},
-                        React.createElement("h2", {className: "text-xl font-bold"}, incentivoEdit ? "✏️ Editar Demanda" : "➕ Nova Demanda"),
+                        React.createElement("h2", {className: "text-xl font-bold"}, incentivoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Demanda") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Nova Demanda")),
                         React.createElement("p", {className: "text-teal-100 text-sm"}, "Configure os detalhes da demanda")
                     ),
                     
@@ -2367,8 +2368,8 @@
                                     onChange: e => setIncentivoForm(f => ({...f, tipo: e.target.value})),
                                     className: "w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500"
                                 },
-                                    React.createElement("option", {value: "promocao"}, "🏷️ Promoção"),
-                                    React.createElement("option", {value: "incentivo"}, "⭐ Incentivo")
+                                    React.createElement("option", {value: "promocao"}, "Promoção"),
+                                    React.createElement("option", {value: "incentivo"}, "Incentivo")
                                 )
                             ),
                             React.createElement("div", null,
@@ -2412,7 +2413,7 @@
                         // ========== CAMPOS ESPECÍFICOS PARA TIPO INCENTIVO ==========
                         incentivoForm.tipo === 'incentivo' && React.createElement("div", {className: "bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-4"},
                             React.createElement("div", {className: "flex items-center gap-2 text-yellow-800 font-semibold"},
-                                React.createElement("span", null, "⭐"),
+                                React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-star" }))),
                                 React.createElement("span", null, "Configurações do Incentivo")
                             ),
                             
@@ -2464,7 +2465,7 @@
                                 React.createElement("div", {className: "relative mb-2"},
                                     React.createElement("input", {
                                         type: "text",
-                                        placeholder: "🔍 Buscar cliente por nome ou código...",
+                                        placeholder: "Buscar cliente por nome ou código...",
                                         className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm",
                                         onChange: e => {
                                             const busca = e.target.value.toLowerCase();
@@ -2554,7 +2555,7 @@
                                             })
                                     ),
                                 (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("p", {className: "text-xs text-yellow-700 mt-2"}, 
-                                    "✓ ", (incentivoForm.clientes_vinculados || []).length, " cliente(s) selecionado(s)"
+                                    React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), (incentivoForm.clientes_vinculados || []).length, " cliente(s) selecionado(s)"
                                 )
                             )
                         ),
@@ -2562,7 +2563,7 @@
                         // ========== CAMPOS ESPECÍFICOS PARA TIPO PROMOÇÃO ==========
                         incentivoForm.tipo === 'promocao' && React.createElement("div", {className: "bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-4"},
                             React.createElement("div", {className: "flex items-center gap-2 text-teal-800 font-semibold"},
-                                React.createElement("span", null, "🏷️"),
+                                React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" }))),
                                 React.createElement("span", null, "Configurações da Promoção")
                             ),
                             
@@ -2586,7 +2587,7 @@
                                 React.createElement("div", {className: "relative mb-2"},
                                     React.createElement("input", {
                                         type: "text",
-                                        placeholder: "🔍 Buscar cliente por nome ou código...",
+                                        placeholder: "Buscar cliente por nome ou código...",
                                         className: "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 text-sm",
                                         onChange: e => {
                                             const busca = e.target.value.toLowerCase();
@@ -2676,7 +2677,7 @@
                                             })
                                     ),
                                 (incentivoForm.clientes_vinculados || []).length > 0 && React.createElement("p", {className: "text-xs text-teal-700 mt-2"}, 
-                                    "✓ ", (incentivoForm.clientes_vinculados || []).length, " cliente(s) selecionado(s)"
+                                    React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), (incentivoForm.clientes_vinculados || []).length, " cliente(s) selecionado(s)"
                                 )
                             )
                         ),
@@ -2692,7 +2693,7 @@
                                         ((incentivoForm.status || incentivoEdit?.status) === 'ativo' 
                                             ? "bg-green-600 text-white" 
                                             : "bg-green-100 text-green-700 hover:bg-green-200")
-                                }, "🟢 Ativo"),
+                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" })), "Ativo")),
                                 React.createElement("button", {
                                     type: "button",
                                     onClick: () => setIncentivoForm(f => ({...f, status: 'pausado'})),
@@ -2700,7 +2701,7 @@
                                         ((incentivoForm.status || incentivoEdit?.status) === 'pausado' 
                                             ? "bg-yellow-500 text-white" 
                                             : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200")
-                                }, "⏸️ Pausado")
+                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })), "Pausado"))
                             )
                         )
                     ),
@@ -2719,7 +2720,7 @@
                                 (incentivoForm.tipo === 'incentivo' && (!incentivoForm.hora_inicio || !incentivoForm.hora_fim || !incentivoForm.valor_incentivo || (incentivoForm.clientes_vinculados || []).length === 0)) ||
                                 (incentivoForm.tipo === 'promocao' && (!incentivoForm.valor || (incentivoForm.clientes_vinculados || []).length === 0)),
                             className: "flex-1 px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        }, incentivoEdit ? "💾 Salvar Alterações" : "➕ Criar Demanda")
+                        }, incentivoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Demanda"))
                     )
                 )
             ),
@@ -2732,7 +2733,7 @@
                     React.createElement("button", {
                         onClick: () => setRelatorioImagemAmpliada(null),
                         className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
-                    }, "✕"),
+                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))),
                     React.createElement("img", {
                         src: relatorioImagemAmpliada,
                         className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",

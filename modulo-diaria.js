@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // modulo-diaria.js — Painel ADMIN da Diária (sub-aba das filas)
 // Auto-contido: config por central (o PADRÃO) + escala (as EXCEÇÕES) + registros do dia.
 // Exposto como window.ModuloDiariaAdmin. Sem JSX, sem Tabler/Lucide (emojis/SVG inline).
@@ -165,7 +166,7 @@
       // ── CONFIG (o PADRÃO) ──
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
         e('div', { className: 'flex items-center justify-between pb-3 border-b border-gray-100' },
-          e('div', { className: 'flex items-center gap-2' }, e('span', { className: 'text-xl' }, '📅'), e('div', null,
+          e('div', { className: 'flex items-center gap-2' }, e('span', { className: 'text-xl' }, e("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" }))), e('div', null,
             e('div', { className: 'font-bold text-gray-800' }, 'Diária'),
             e('div', { className: 'text-xs text-gray-500' }, cfg.central_nome))),
           e('button', {
@@ -177,7 +178,7 @@
 
         // Aviso do XOR — antes de clicar, não depois.
         (cfg.garantido_ativo && !cfg.diaria_ativa) && e('div', { className: 'mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 leading-relaxed' },
-          e('strong', null, '⚠️ O Garantido está ligado nesta central. '),
+          e('strong', null, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "O Garantido está ligado nesta central. ")),
           'Ligar a Diária vai desligá-lo automaticamente — uma central é ou uma ou outra, nunca as duas.'
         ),
 

@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO SCORE V2 (MOTOBOY) ====================
 // Arquivo: modulo-score-v2-motoboy.js
 //
@@ -51,15 +52,15 @@
             })();
         }, [apiUrl]); // só roda 1x por mount
 
-        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
-        if (erro) return h('div', { className: 'text-center py-12 text-red-500 text-sm' }, '❌ ' + erro);
+        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."));
+        if (erro) return h('div', { className: 'text-center py-12 text-red-500 text-sm' }, '' + erro);
         if (!dados) return null;
 
         // Região não configurada
         if (!dados.regiao_configurada) {
             return h('div', { className: 'max-w-md mx-auto p-4' },
                 h('div', { className: 'bg-gray-100 border border-gray-200 rounded-xl p-6 text-center' },
-                    h('div', { className: 'text-5xl mb-3' }, '🔒'),
+                    h('div', { className: 'text-5xl mb-3' }, h("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" }))),
                     h('h2', { className: 'text-lg font-bold text-gray-700 mb-2' }, 'Score indisponível'),
                     h('p', { className: 'text-sm text-gray-600' }, dados.mensagem || 'Score ainda não está disponível na sua região.')
                 )
@@ -84,14 +85,14 @@
 
             // Mudança de nível recente
             mudou && subiu && h('div', { className: 'bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center' },
-                h('div', { className: 'text-3xl mb-2' }, '🎉'),
+                h('div', { className: 'text-3xl mb-2' }, h("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, h("use", { href: "#i-party" }))),
                 h('p', { className: 'text-sm font-bold text-green-900' }, 'Você subiu para Nível ' + nivel + '!')
             ),
 
             // Bônus lançado neste período
             bonus && bonus.lancado && h('div', { className: 'bg-blue-50 border-2 border-blue-300 rounded-xl p-4' },
                 h('div', { className: 'flex items-start gap-3' },
-                    h('div', { className: 'text-2xl' }, '💰'),
+                    h('div', { className: 'text-2xl' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" }))),
                     h('div', null,
                         h('p', { className: 'text-sm font-bold text-blue-900' }, 'Saque liberado!'),
                         h('p', { className: 'text-xs text-blue-700 mt-1' },
@@ -103,7 +104,7 @@
                 )
             ),
             bonus && !bonus.lancado && bonus.motivo === 'ja_lancado_no_periodo' && h('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-600' },
-                '✅ Saque grátis deste período já foi liberado anteriormente.'
+                'Saque grátis deste período já foi liberado anteriormente.'
             ),
 
             // Progresso pro próximo nível
@@ -117,7 +118,7 @@
 
             // Info nivel atual
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs text-purple-900' },
-                h('p', { className: 'font-medium mb-1' }, '📊 Sobre o Score'),
+                h('p', { className: 'font-medium mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Sobre o Score")),
                 h('p', null, 'Avaliação rolling de 28 dias. Quanto mais você entrega no horário e nas faixas certas, maior seu nível.'),
                 h('p', { className: 'mt-1' }, 'Sorteios mensais entre todos do nível na sua região!')
             )
@@ -126,7 +127,7 @@
 
     function CardNivelAtual({ nivel, stats, thresholds }) {
         const cor = nivel === 3 ? 'from-yellow-400 to-yellow-600' : nivel === 2 ? 'from-amber-400 to-amber-600' : 'from-orange-400 to-orange-600';
-        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
+        const emoji = nivel === 3 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : nivel === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" }));
         const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
 
         // Defaults pra metas (caso backend não mande thresholds)
@@ -144,10 +145,10 @@
 
         // Mensagem de incentivo conforme nível
         const mensagem = nivel === 3
-            ? '🔒 Mantenha sua performance para continuar como Ouro'
+            ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Mantenha sua performance para continuar como Ouro")
             : nivel === 2
-                ? '🔒 Mantenha sua performance para continuar como Prata'
-                : '🎯 Suba para Prata e desbloqueie saque grátis mensal';
+                ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Mantenha sua performance para continuar como Prata")
+                : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-target" })), "Suba para Prata e desbloqueie saque grátis mensal");
 
         const fmtPrazo = (v) => (parseFloat(v) || 0).toFixed(2).replace('.', ',') + '%';
 
@@ -181,7 +182,7 @@
         const nomeProx = progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze';
         return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
             h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                '🎯 Progresso para ' + nomeProx
+                'Progresso para ' + nomeProx
             ),
             h('div', { className: 'space-y-3' },
                 progresso.requisitos.map((r, i) => h(BarraReq, { key: i, req: r }))
@@ -194,14 +195,14 @@
         const corBarra = req.ok ? 'bg-green-500' : 'bg-purple-500';
         return h('div', null,
             h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                h('span', { className: 'font-medium text-gray-700' }, (req.ok ? '✅ ' : '🔸 ') + req.label),
+                h('span', { className: 'font-medium text-gray-700' }, (req.ok ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))) + req.label),
                 h('span', { className: 'text-gray-600 font-mono' }, req.atual + sufixo + ' / ' + req.meta + sufixo)
             ),
             h('div', { className: 'w-full bg-gray-200 rounded-full h-2 overflow-hidden' },
                 h('div', { className: 'h-full ' + corBarra + ' transition-all', style: { width: req.pct + '%' } })
             ),
             req.faixa && req.atual >= req.meta && req.atual >= 90 && h('p', { className: 'text-[10px] text-amber-600 mt-1' },
-                '⚠️ Acima de 90% → você pula pro Ouro!'
+                'Acima de 90% → você pula pro Ouro!'
             )
         );
     }
@@ -223,39 +224,39 @@
 
         const niveis = [
             {
-                num: 1, nome: 'Bronze', emoji: '🥉',
+                num: 1, nome: 'Bronze', emoji: '',
                 criterios: ['Disponível para todos'],
                 bonus: ['Sem bônus extra'],
             },
             {
-                num: 2, nome: 'Prata', emoji: '🥈',
+                num: 2, nome: 'Prata', emoji: '',
                 criterios: [
                     '≥ ' + t.n2.entregas_min + ' entregas em 28 dias',
                     '≥ ' + t.n2.dias_16h_min + ' entregas após 16h',
                     '≥ ' + t.n2.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [
-                    '💰 1 saque grátis/mês de até ' + fmt(b.saque_n2),
-                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
+                    '1 saque grátis/mês de até ' + fmt(b.saque_n2),
+                    'Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
                 ],
             },
             {
-                num: 3, nome: 'Ouro', emoji: '🥇',
+                num: 3, nome: 'Ouro', emoji: '',
                 criterios: [
                     '≥ ' + t.n3.entregas_min + ' entregas em 28 dias',
                     '≥ ' + t.n3.dias_16h_min + ' entregas após 16h',
                     '≥ ' + t.n3.pct_prazo_min + '% no prazo',
                 ],
                 bonus: [
-                    '💰 1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
-                    '🎲 Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
+                    '1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
+                    'Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
                 ],
             },
         ];
 
         return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
             h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                '🎁 O que você ganha em cada nível'
+                'O que você ganha em cada nível'
             ),
             h('div', { className: 'space-y-3' },
                 niveis.map(n => h(CardRoadmap, {
@@ -283,10 +284,10 @@
                         h('div', { className: 'font-bold text-sm text-gray-900' },
                             nivel.nome
                         ),
-                        isAtual && h('div', { className: 'text-[10px] font-bold text-purple-700 uppercase' }, '⭐ Você está aqui')
+                        isAtual && h('div', { className: 'text-[10px] font-bold text-purple-700 uppercase' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-star" })), "Você está aqui"))
                     )
                 ),
-                isAlcancado && !isAtual && h('span', { className: 'text-xs text-green-700 font-bold' }, '✓')
+                isAlcancado && !isAtual && h('span', { className: 'text-xs text-green-700 font-bold' }, h("svg", { className: "ico", style: { width: 14, height: 14, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })))
             ),
             h('div', { className: 'text-xs space-y-1 mt-2' },
                 h('div', { className: 'font-semibold text-gray-700' }, 'Critérios:'),
@@ -337,12 +338,12 @@
                 onClick: toggle,
                 className: 'w-full p-4 flex items-center justify-between hover:bg-gray-50'
             },
-                h('span', { className: 'font-bold text-sm text-gray-900' }, '📋 Minhas Entregas (28 dias)'),
-                h('span', { className: 'text-gray-400 text-sm' }, aberto ? '▲' : '▼')
+                h('span', { className: 'font-bold text-sm text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Entregas (28 dias)")),
+                h('span', { className: 'text-gray-400 text-sm' }, aberto ? '' : '')
             ),
             aberto && h('div', { className: 'p-4 border-t border-gray-200' },
-                loading && h('div', { className: 'text-center text-gray-500 text-sm py-4' }, '⏳ Carregando...'),
-                erro && h('div', { className: 'text-center text-red-500 text-sm py-4' }, '❌ ' + erro),
+                loading && h('div', { className: 'text-center text-gray-500 text-sm py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")),
+                erro && h('div', { className: 'text-center text-red-500 text-sm py-4' }, '' + erro),
                 dados && dados.entregas.length === 0 && h('div', { className: 'text-center text-gray-400 text-sm py-4' },
                     'Nenhuma entrega nos últimos 28 dias.'
                 ),
@@ -375,8 +376,8 @@
             h('div', { className: 'flex gap-1 mb-3 text-xs' },
                 [
                     { id: 'todos', label: 'Todas (' + totais.geral + ')', cor: 'bg-gray-200 text-gray-700' },
-                    { id: 'no_prazo', label: '✓ No prazo (' + totais.no_prazo + ')', cor: 'bg-green-100 text-green-800' },
-                    { id: 'fora_prazo', label: '✗ Fora (' + totais.fora_prazo + ')', cor: 'bg-red-100 text-red-800' },
+                    { id: 'no_prazo', label: 'No prazo (' + totais.no_prazo + ')', cor: 'bg-green-100 text-green-800' },
+                    { id: 'fora_prazo', label: 'Fora (' + totais.fora_prazo + ')', cor: 'bg-red-100 text-red-800' },
                 ].map(f => h('button', {
                     key: f.id,
                     onClick: () => setFiltro(f.id),
@@ -411,7 +412,7 @@
             )
         },
             h('span', { className: 'text-base' },
-                noPrazo ? '✅' : foraPrazo ? '❌' : '⏳'
+                noPrazo ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : foraPrazo ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" }))
             ),
             h('div', { className: 'flex-1 min-w-0' },
                 h('div', { className: 'font-medium text-gray-900 truncate' },
@@ -479,7 +480,7 @@
         return h('div', { className: 'fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4' },
             h('div', { className: 'bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full p-5 max-h-[85vh] overflow-y-auto' },
                 h('div', { className: 'flex justify-center mb-3' },
-                    h('div', { className: 'w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-2xl' }, '🎯')
+                    h('div', { className: 'w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-2xl' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-target" })))
                 ),
                 h('h2', { className: 'text-center text-lg font-bold text-gray-900' }, 'Bora ajustar pra próxima?'),
                 h('p', { className: 'text-center text-sm text-gray-600 mt-1 mb-4' },
@@ -574,7 +575,7 @@
 
     function WelcomeModal({ dados, onFechar, onMount }) {
         const { nivel, stats, progresso, bonus, subiu } = dados;
-        const emoji = nivel === 3 ? '🥇' : nivel === 2 ? '🥈' : '🥉';
+        const emoji = nivel === 3 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : nivel === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" }));
         const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
 
         return h('div', { className: 'fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4' },
@@ -582,12 +583,12 @@
                 h('div', { className: 'text-center mb-4' },
                     h('div', { className: 'text-5xl mb-2' }, emoji),
                     h('h2', { className: 'text-lg font-bold text-gray-900' },
-                        subiu ? '🎉 Parabéns, você subiu!' : 'Bem-vindo de volta!'
+                        subiu ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-party" })), "Parabéns, você subiu!") : 'Bem-vindo de volta!'
                     ),
                     h('p', { className: 'text-sm text-gray-600 mt-1' }, 'Você está em ' + nome)
                 ),
                 bonus && bonus.lancado && h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-3 mb-3' },
-                    h('p', { className: 'text-sm font-bold text-green-900' }, '💰 Saque grátis disponível!'),
+                    h('p', { className: 'text-sm font-bold text-green-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Saque grátis disponível!")),
                     h('p', { className: 'text-xs text-green-700 mt-1' },
                         'Você tem direito a 1 saque grátis até ' + fmtBRL(bonus.valor) +
                         ' (' + (bonus.tipo === 'saque_semanal' ? 'esta semana' : 'este mês') + ').'
@@ -595,11 +596,11 @@
                 ),
                 progresso && h('div', { className: 'mb-4' },
                     h('h3', { className: 'text-xs font-bold text-gray-700 mb-2' },
-                        '📊 Falta pouco pro ' + (progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze')
+                        'Falta pouco pro ' + (progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze')
                     ),
                     h('div', { className: 'space-y-2' }, progresso.requisitos.map((r, i) => h('div', { key: i },
                         h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                            h('span', { className: 'text-gray-700' }, (r.ok ? '✅ ' : '🔸 ') + r.label),
+                            h('span', { className: 'text-gray-700' }, (r.ok ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))) + r.label),
                             h('span', { className: 'text-gray-500 font-mono' }, r.atual + (r.sufixo || ''))
                         ),
                         h('div', { className: 'w-full bg-gray-200 rounded-full h-1.5' },

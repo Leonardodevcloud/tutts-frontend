@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO AGENTE RPA — CORREÇÃO DE ENDEREÇOS ====================
 // Arquivo: modulo-agente.js
 // Admin: só histórico  |  User/Motoboy: formulário com GPS nativo + foto fachada
@@ -58,7 +59,7 @@
       erro:         { bg: 'bg-red-100',     text: 'text-red-800',     label: 'Erro'         },
       falhou:       { bg: 'bg-orange-100',  text: 'text-orange-800',  label: 'Falhou'       },
       // Reprovada na validacao B/C/E — nunca virou job do Playwright.
-      barrado:      { bg: 'bg-red-100',     text: 'text-red-800',     label: '🛑 Barrado'   },
+      barrado:      { bg: 'bg-red-100',     text: 'text-red-800',     label: 'Barrado'   },
       bloqueado_cliente: { bg: 'bg-gray-200', text: 'text-gray-700',  label: 'Cliente bloqueado' },
     };
     const s = map[status] || { bg: 'bg-gray-100', text: 'text-gray-600', label: status };
@@ -176,7 +177,7 @@
         },
         (err) => {
           const msgs = {
-            1: '⚠️ Permissão de localização negada.\n\nSe aparecer "Este site não pode pedir permissões", feche apps com bolha flutuante (WhatsApp, Messenger, filtro de tela, etc) e tente novamente.',
+            1: 'Permissão de localização negada.\n\nSe aparecer "Este site não pode pedir permissões", feche apps com bolha flutuante (WhatsApp, Messenger, filtro de tela, etc) e tente novamente.',
             2: 'Localização indisponível. Verifique se o GPS está ativado.',
             3: 'Tempo esgotado ao obter localização. Tente novamente.',
           };
@@ -609,7 +610,7 @@
         h('div', { style: { position: 'absolute', inset: '10px', border: '2px solid #7C3AED', borderRadius: '50%', opacity: 0.4 } }),
         h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7C3AED', animation: 'spin 1.5s linear infinite' } }),
         h('div', { style: { position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #7C3AED, transparent)', opacity: 0.6, animation: 'agentScan 2s linear infinite' } }),
-        h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, '📍')
+        h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })))
       ),
       h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#e2e0f0', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
         // GPS_UNICO_V1: o texto falava da "foto enviada" — que nao existe desde o
@@ -626,7 +627,7 @@
     // Fase: OS/ponto já solicitado
     if (fase === 'os_duplicada') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '⚠️')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })))
       ),
       h('h2', { className: 'text-xl font-bold text-orange-700 mb-4' }, 'Solicitação já existente'),
       h('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6 max-w-md' },
@@ -642,7 +643,7 @@
     // Fase: endereço já corrigido anteriormente
     if (fase === 'ja_corrigido') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '🔒')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })))
       ),
       h('h2', { className: 'text-xl font-bold text-orange-700 mb-4' }, 'Endereço já alterado'),
       h('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6 max-w-md' },
@@ -685,7 +686,7 @@
 
       const VARIANTES = {
         presenca: {
-          icone: '🛑',
+          icone: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })),
           bolha: 'bg-red-100',
           titulo: 'Você não está no endereço desse CNPJ',
           corTitulo: 'text-red-700',
@@ -693,10 +694,10 @@
           caixa: 'bg-red-50 border border-red-200',
           corTexto: 'text-red-800',
           instrucao: 'Se for esse mesmo o CNPJ, vá até a porta do estabelecimento e envie sua localização de novo.',
-          botao: '✏️  Corrigir o CNPJ',
+          botao: ' Corrigir o CNPJ',
         },
         cnpj_nao_encontrado: {
-          icone: '🔎',
+          icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })),
           bolha: 'bg-red-100',
           titulo: 'Não achamos esse CNPJ',
           corTitulo: 'text-red-700',
@@ -704,7 +705,7 @@
           caixa: 'bg-red-50 border border-red-200',
           corTexto: 'text-red-800',
           instrucao: 'Esse CNPJ não consta na Receita Federal. Confira os dígitos na nota fiscal — é fácil trocar um número.',
-          botao: '✏️  Corrigir o CNPJ',
+          botao: ' Corrigir o CNPJ',
         },
         // FRONT_ACCURACY_V1 — 4a variante: o backend nao consegue decidir porque o
         // APARELHO nao sabe onde ele esta.
@@ -719,7 +720,7 @@
         // O motivo vem do backend com o numero real (±96m) — mais convincente que
         // qualquer texto nosso: e o aparelho DELE admitindo o erro.
         gps_impreciso: {
-          icone: '🛰️',
+          icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" })),
           bolha: 'bg-sky-100',
           titulo: 'Não conseguimos te localizar direito',
           corTitulo: 'text-sky-700',
@@ -730,7 +731,7 @@
           botao: '↻  Tentar de novo',
         },
         indisponivel: {
-          icone: '🔌',
+          icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-power" })),
           bolha: 'bg-amber-100',
           titulo: 'Não deu pra checar agora',
           corTitulo: 'text-amber-700',
@@ -782,7 +783,7 @@
           target: '_blank', rel: 'noopener noreferrer',
           className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white inline-flex items-center justify-center gap-2',
           style: { background: 'linear-gradient(135deg, #16a34a, #22c55e)' },
-        }, '💬  Falar com o suporte'),
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Falar com o suporte")),
       );
     }
 
@@ -796,7 +797,7 @@
       const waLink = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
       return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
         h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' },
-          h('span', { className: 'text-4xl' }, '🚫')
+          h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })))
         ),
         h('h2', { className: 'text-xl font-bold text-red-700 mb-4' }, 'Ajuste não permitido'),
         h('div', { className: 'bg-red-50 border border-red-300 rounded-xl p-5 mb-6 max-w-md' },
@@ -808,7 +809,7 @@
           href: waLink, target: '_blank', rel: 'noopener noreferrer',
           className: 'px-8 py-3 rounded-xl font-semibold text-white mb-3 inline-flex items-center gap-2',
           style: { background: 'linear-gradient(135deg, #16a34a, #22c55e)' },
-        }, '💬 Falar com o suporte'),
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Falar com o suporte")),
         h('button', { onClick: resetar, className: 'px-8 py-2 rounded-xl font-semibold text-gray-500' }, '↩ Voltar')
       );
     }
@@ -818,7 +819,7 @@
       className: 'flex flex-col items-center justify-center py-10 px-6 text-center'
     },
       h('div', { className: 'w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '⚠️')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })))
       ),
       h('h2', { className: 'text-xl font-bold text-yellow-700 mb-4' }, 'Atenção'),
       h('div', { className: 'bg-yellow-50 border border-yellow-300 rounded-xl p-5 mb-6 max-w-md' },
@@ -839,7 +840,7 @@
         },
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
         style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
-      }, '✅ Entendi, prosseguir')
+      }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Entendi, prosseguir"))
     );
 
     if (fase === 'sucesso') return h('div', { className: 'flex flex-col items-center justify-center py-10 px-6 text-center' },
@@ -853,7 +854,7 @@
         className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6',
         style: { animation: 'successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }
       },
-        h('span', { className: 'text-4xl' }, '✅')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })))
       ),
       h('div', { style: { animation: 'successSlide 0.4s ease-out 0.2s both', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
       h('h2', { className: 'text-2xl font-bold text-green-700 mb-2' }, 'Endereço corrigido com sucesso!'),
@@ -890,7 +891,7 @@
             }, validacaoReceita.receita.situacao),
             validacaoReceita.salvo_no_banco && h('span', {
               className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-200 text-purple-800'
-            }, '💾 Salvo na base')
+            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvo na base"))
           )
         )
       ),
@@ -898,7 +899,7 @@
       // Antes x Depois
       valoresOS && (valoresOS.antes || valoresOS.depois) && h('div', { className: 'w-full max-w-sm mb-6' },
         valoresOS.antes && h('div', { className: 'bg-orange-50 border border-orange-200 rounded-xl p-4 mb-3' },
-          h('p', { className: 'text-xs font-bold text-orange-600 mb-2' }, '📊 ANTES'),
+          h('p', { className: 'text-xs font-bold text-orange-600 mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "ANTES")),
           h('div', { className: 'flex justify-around' },
             valoresOS.antes.km && h('div', { className: 'text-center' },
               h('p', { className: 'text-lg font-bold text-orange-700' }, `${valoresOS.antes.km} km`),
@@ -911,7 +912,7 @@
           )
         ),
         valoresOS.depois && h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-4' },
-          h('p', { className: 'text-xs font-bold text-green-600 mb-2' }, '📊 DEPOIS'),
+          h('p', { className: 'text-xs font-bold text-green-600 mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "DEPOIS")),
           h('div', { className: 'flex justify-around' },
             valoresOS.depois.km && h('div', { className: 'text-center' },
               h('p', { className: 'text-lg font-bold text-green-700' }, `${valoresOS.depois.km} km`),
@@ -934,7 +935,7 @@
 
     if (fase === 'erro' && !loading) return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '❌')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
       ),
       h('h2', { className: 'text-xl font-bold text-red-700 mb-2' }, 'Erro ao processar correção'),
       h('p', { className: 'text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 mb-8 max-w-md' }, detalheErro),
@@ -947,7 +948,7 @@
 
     if (fase === 'timeout') return h('div', { className: 'flex flex-col items-center justify-center py-16 px-6 text-center' },
       h('div', { className: 'w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-6' },
-        h('span', { className: 'text-4xl' }, '⏱️')
+        h('span', { className: 'text-4xl' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })))
       ),
       h('h2', { className: 'text-xl font-bold text-yellow-700 mb-2' }, 'Processamento em andamento'),
       h('p', { className: 'text-gray-500 mb-8' }, 'Verifique o histórico em breve para ver o resultado.'),
@@ -1075,7 +1076,7 @@
       h('div', { className: 'text-center mb-8' },
         h('div', { className: 'w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center',
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
-          h('span', { className: 'text-3xl' }, '📍')
+          h('span', { className: 'text-3xl' }, h("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })))
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
       ),
@@ -1083,7 +1084,7 @@
       // Alerta de aviso
       h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' },
         h('div', { className: 'flex items-start gap-3' },
-          h('span', { className: 'text-red-500 text-lg mt-0.5 flex-shrink-0' }, '🚨'),
+          h('span', { className: 'text-red-500 text-lg mt-0.5 flex-shrink-0' }, h("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" }))),
           h('div', null,
             h('p', { className: 'text-sm text-red-800 leading-relaxed' },
               h('strong', null, 'Atenção ao preenchimento!'),
@@ -1124,7 +1125,7 @@
         },
           h('div', { className: 'flex items-start justify-between gap-2' },
             h('div', { className: 'flex items-start gap-2 min-w-0' },
-              h('span', { className: 'mt-0.5' }, gps ? (gpsRuim ? '📡' : '📍') : gpsLoading ? '⏳' : '⚠️'),
+              h('span', { className: 'mt-0.5' }, gps ? (gpsRuim ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))) : gpsLoading ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" }))),
               h('div', { className: 'min-w-0' },
                 h('p', {
                   className: `text-sm font-semibold ${
@@ -1140,7 +1141,7 @@
                 }, `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`),
                 // O endereco da rua: é assim que ele confere que o aparelho não
                 // está mentindo, sem a gente mostrar nada da Receita.
-                gps && enderecoGeo && h('p', { className: 'text-xs text-gray-600 mt-0.5 truncate' }, `📍 ${enderecoGeo}`),
+                gps && enderecoGeo && h('p', { className: 'text-xs text-gray-600 mt-0.5 truncate' }, `${enderecoGeo}`),
                 gps && !enderecoGeo && geoLoading && h('p', { className: 'text-xs text-gray-400 mt-0.5' }, 'buscando endereço...'),
                 gpsErro && h('p', { className: 'text-xs text-red-600' }, gpsErro)
               )
@@ -1150,7 +1151,7 @@
               disabled: gpsLoading,
               className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition hover:opacity-80 flex-shrink-0',
               style: { background: gps && !gpsRuim ? '#16a34a' : '#2563eb' },
-            }, gpsLoading ? '...' : '🔄 Atualizar')
+            }, gpsLoading ? '...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
           ),
           // A instrucao só aparece quando ele PODE fazer algo com ela.
           //
@@ -1241,7 +1242,7 @@
         // SVG inline: sem Tabler, sem Lucide, sem Font Awesome — so Tailwind e SVG,
         // igual ao resto do sistema.
         h('div', null,
-          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, '🧾 CNPJ de quem RECEBE *'),
+          h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "CNPJ de quem RECEBE *")),
           h('p', { className: 'text-xs text-gray-500 mb-3' },
             'Na nota, procure o quadro ',
             h('strong', null, 'DESTINATÁRIO'),
@@ -1303,8 +1304,8 @@
                     : 'border-blue-300 bg-blue-50 text-blue-700')) +
               (disabled ? ' cursor-not-allowed opacity-60' : ''),
           }),
-          cnpjManual && !validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-red-500 mt-1.5' }, '⚠️ CNPJ inválido — confira os dígitos'),
-          cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, '✓ CNPJ válido — vamos consultar a Receita Federal')
+          cnpjManual && !validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-red-500 mt-1.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "CNPJ inválido — confira os dígitos")),
+          cnpjManual && validarCNPJ(cnpjManual) && h('p', { className: 'text-xs text-green-600 mt-1.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "CNPJ válido — vamos consultar a Receita Federal"))
         ),
 
         // AGENTE_BCE_V1 (markup) — o bloco da foto da fachada saiu inteiro:
@@ -1327,7 +1328,7 @@
                 h('div', { className: 'w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin' }),
                 'Processando...'
               )
-            : h(React.Fragment, null, h('span', null, '🚀'), 'Enviar Correção')
+            : h(React.Fragment, null, h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" }))), 'Enviar Correção')
         )
       ),
 
@@ -1644,12 +1645,12 @@
           onClick: () => trocarGrupo('aprovados'),
           className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'aprovados' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
           style: filtros.grupo === 'aprovados' ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)' } : {},
-        }, '✅ Ajustes Aprovados'),
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Ajustes Aprovados")),
         h('button', {
           onClick: () => trocarGrupo('barradas'),
           className: `flex-1 md:flex-none px-5 py-2.5 rounded-xl text-sm font-semibold transition ${filtros.grupo === 'barradas' ? 'text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
           style: filtros.grupo === 'barradas' ? { background: 'linear-gradient(135deg, #b91c1c, #ef4444)' } : {},
-        }, '🚫 Solicitações Barradas'),
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })), "Solicitações Barradas")),
         // ADMIN_BCE_V1 (subaba): a sub-aba "🔓 Falha/Liberação IA" saiu.
         // O grupo padrao ja e 'aprovados', entao nada quebra ao remover o botao.
         // O ramo `grupo === 'liberacao_ia'` do historico.routes.js (com o LEFT JOIN
@@ -1680,7 +1681,7 @@
           onClick: aplicarFiltros,
           className: 'col-span-2 md:col-span-1 rounded-xl text-sm font-semibold text-white py-2 transition hover:opacity-90',
           style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
-        }, '🔍 Filtrar')
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtrar"))
       ),
 
       // Loading
@@ -1726,7 +1727,7 @@
                     r.status === 'sucesso' && r.frete_recalculado === false && h('div', {
                       className: 'mt-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 text-center',
                       title: 'Endereço corrigido, mas o frete NÃO foi recalculado automaticamente. Necessário recalcular manualmente.',
-                    }, '⚠️ Frete pendente'),
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Frete pendente")),
                     // ADMIN_BCE_V1 (motivo): 'barrado' entra aqui. A caixa de motivo ja
                     // fazia exatamente o que a barrada precisa (mostra erro/detalhe_erro),
                     // e o detalhe_erro da barrada guarda a frase que o motoboy leu.
@@ -1734,7 +1735,7 @@
                       className: 'mt-1 text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-1 max-w-[220px] break-words leading-tight',
                       title: r.erro || r.detalhe_erro,
                     },
-                      h('div', { className: 'font-bold mb-0.5' }, '⚠️ Motivo:'),
+                      h('div', { className: 'font-bold mb-0.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Motivo:")),
                       h('div', { className: 'font-normal' }, r.erro || r.detalhe_erro),
                       r.etapa_atual ? h('div', { className: 'font-normal text-red-500 mt-0.5 italic' },
                         'Etapa: ' + r.etapa_atual) : null
@@ -1781,7 +1782,7 @@
                       ? h('button', {
                           onClick: (e) => { e.stopPropagation(); abrirFoto(r.id); },
                           className: 'text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
-                        }, '📷 Ver')
+                        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Ver"))
                       : h('span', { className: 'text-xs text-gray-300' }, '—')
                   ),
                   h('td', { className: 'px-3 py-3' },
@@ -1790,12 +1791,12 @@
                         onClick: (e) => { e.stopPropagation(); abrirMapa(r); },
                         className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
                         style: { background: '#2563eb' },
-                      }, '🗺️ Mapa'),
+                      }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Mapa")),
                       h('button', {
                         onClick: (e) => { e.stopPropagation(); excluir(r.id); },
                         className: 'px-3 py-1 text-xs font-semibold rounded-lg text-white transition hover:opacity-80',
                         style: { background: '#dc2626' },
-                      }, '🗑️ Excluir')
+                      }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Excluir"))
                     )
                   )
                 ),
@@ -1804,17 +1805,17 @@
                     h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3 text-xs' },
                       // Endereço antigo detalhado
                       h('div', { className: 'p-2 bg-orange-50 rounded-lg' },
-                        h('p', { className: 'font-semibold text-orange-700 mb-1' }, '📍 Endereço Antigo'),
+                        h('p', { className: 'font-semibold text-orange-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Endereço Antigo")),
                         h('p', { className: 'text-orange-600' }, r.endereco_antigo || 'Não capturado')
                       ),
                       // Endereço novo detalhado
                       h('div', { className: 'p-2 bg-green-50 rounded-lg' },
-                        h('p', { className: 'font-semibold text-green-700 mb-1' }, '✅ Endereço Corrigido'),
+                        h('p', { className: 'font-semibold text-green-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Endereço Corrigido")),
                         h('p', { className: 'text-green-600' }, r.endereco_corrigido || 'Não disponível')
                       ),
                       // Erro se existir
                       r.detalhe_erro && h('div', { className: 'p-2 bg-red-50 rounded-lg col-span-2' },
-                        h('p', { className: 'font-semibold text-red-700 mb-1' }, '🔍 Detalhe do erro'),
+                        h('p', { className: 'font-semibold text-red-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Detalhe do erro")),
                         h('pre', { className: 'text-red-600 whitespace-pre-wrap font-mono' }, r.detalhe_erro)
                       ),
                       // ADMIN_BCE_V1 (bloco IA) — o card "🤖 Validação IA" saiu inteiro.
@@ -1843,7 +1844,7 @@
                         const ativa = receitaOk && receita.ativa;
                         return h('div', { className: 'p-3 bg-indigo-50 rounded-lg col-span-2' },
                           h('div', { className: 'flex items-center justify-between mb-2' },
-                            h('p', { className: 'font-semibold text-indigo-700' }, '🧾 Validação NF + Receita Federal'),
+                            h('p', { className: 'font-semibold text-indigo-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Validação NF + Receita Federal")),
                             // ADMIN_BCE_V1 (selo nf): o selo "🚫 Sem foto da NF" saiu.
                             // Foto de NF nao existe mais desde 2026-04 (v5, CNPJ digitado):
                             // o selo aparecia em 100% das linhas novas avisando de um campo
@@ -1853,14 +1854,14 @@
                             r.tem_foto_nf && h('button', {
                               onClick: (e) => { e.stopPropagation(); abrirFotoNf(r.id); },
                               className: 'text-xs px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold'
-                            }, '📷 Ver foto da NF')
+                            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Ver foto da NF"))
                           ),
                           // Dados extraídos: IA (foto) ou CNPJ digitado pelo motoboy
                           h('div', { className: 'bg-white rounded p-2 mb-2' },
                             h('p', { className: 'text-[10px] font-bold text-gray-500 mb-1' },
                               vnf.origem === 'cnpj_manual'
-                                ? '⌨️ CNPJ DIGITADO PELO MOTOBOY'
-                                : '📄 EXTRAÍDO DA NF (IA)'
+                                ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-keyboard" })), "CNPJ DIGITADO PELO MOTOBOY")
+                                : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "EXTRAÍDO DA NF (IA)")
                             ),
                             h('div', { className: 'grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-700' },
                               dados.cnpj_formatado && h('div', null, h('span', { className: 'font-semibold' }, 'CNPJ: '), dados.cnpj_formatado),
@@ -1875,7 +1876,7 @@
                             className: 'rounded p-2 mb-2 ' + (ativa ? 'bg-blue-50 border border-blue-200' : (receitaOk ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'))
                           },
                             h('div', { className: 'flex items-center gap-2 mb-1' },
-                              h('p', { className: 'text-[10px] font-bold ' + (ativa ? 'text-blue-700' : (receitaOk ? 'text-yellow-700' : 'text-red-700')) }, '🏛️ RECEITA FEDERAL'),
+                              h('p', { className: 'text-[10px] font-bold ' + (ativa ? 'text-blue-700' : (receitaOk ? 'text-yellow-700' : 'text-red-700')) }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "RECEITA FEDERAL")),
                               receitaOk && h('span', {
                                 className: 'inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ' +
                                   (ativa ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
@@ -1887,7 +1888,7 @@
                               receita.razao_social && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Razão social: '), receita.razao_social),
                               receita.nome_fantasia && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Nome fantasia: '), receita.nome_fantasia),
                               receita.endereco && h('div', { className: 'col-span-2' }, h('span', { className: 'font-semibold' }, 'Endereço: '), receita.endereco),
-                              receita.telefone && h('div', null, h('span', { className: 'font-semibold' }, '📞 '), receita.telefone),
+                              receita.telefone && h('div', null, h('span', { className: 'font-semibold' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" }))), receita.telefone),
                               receita.cep && h('div', null, h('span', { className: 'font-semibold' }, 'CEP: '), receita.cep)
                             )
                           ),
@@ -1924,10 +1925,10 @@
                           // ══════════════════════════════════════════════════════════════
                           cruz && (cruz.caminho_aprovacao || cruz.motivo_bloqueio || typeof cruz.distancia_metros === 'number') && h('div', { className: 'bg-white rounded p-2' },
                             h('div', { className: 'flex items-center justify-between mb-1' },
-                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, '🧮 VALIDAÇÃO'),
+                              h('p', { className: 'text-[10px] font-bold text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-hash" })), "VALIDAÇÃO")),
                               cruz.salvo_no_banco && h('span', {
                                 className: 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-200 text-purple-800'
-                              }, '💾 Salvo')
+                              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvo"))
                             ),
                             // ADMIN_BCE_V1 (cruzamento): distancia + veredito.
                             // O grid de scores acima e generico (Object.entries), entao ja
@@ -1938,17 +1939,17 @@
                             typeof cruz.distancia_metros === 'number' && h('div', {
                               className: 'flex justify-between bg-gray-50 rounded px-2 py-1 mt-1 text-[10px]',
                             },
-                              h('span', { className: 'text-gray-600' }, '📍 distancia Receita↔GPS'),
+                              h('span', { className: 'text-gray-600' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "distancia Receita↔GPS")),
                               h('span', {
                                 className: 'font-bold ' + (cruz.distancia_metros <= (cruz.limite_metros || 100) ? 'text-green-600' : 'text-red-600'),
                               }, `${cruz.distancia_metros} m` + (cruz.limite_metros ? ` (limite ${cruz.limite_metros} m)` : ''))
                             ),
                             cruz.motivo_bloqueio && h('p', {
                               className: 'text-[10px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 mt-1.5',
-                            }, '🛑 ', cruz.motivo_bloqueio),
+                            }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })), cruz.motivo_bloqueio),
                             cruz.caminho_aprovacao && h('p', {
                               className: 'text-[10px] text-green-700 mt-1.5',
-                            }, '✅ Liberado por: ', cruz.caminho_aprovacao),
+                            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Liberado por: "), cruz.caminho_aprovacao),
                             cruz.mensagem_motoboy && h('p', { className: 'text-[10px] text-gray-600 mt-1.5 italic' }, '↳ ', cruz.mensagem_motoboy)
                           )
                         );
@@ -1959,20 +1960,20 @@
                         const d = r.valores_depois;
                         if (!a && !d) return null;
                         return h('div', { className: 'p-3 bg-blue-50 rounded-lg col-span-2' },
-                          h('p', { className: 'font-semibold text-blue-700 mb-2' }, '📊 Valores Antes × Depois'),
+                          h('p', { className: 'font-semibold text-blue-700 mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Valores Antes × Depois")),
                           h('div', { className: 'grid grid-cols-2 gap-3' },
                             h('div', { className: 'bg-orange-50 border border-orange-200 rounded-lg p-2' },
                               h('p', { className: 'text-[10px] font-bold text-orange-600 mb-1' }, 'ANTES'),
-                              a && a.km && h('p', { className: 'text-xs text-orange-700' }, '🛣️ ', h('strong', null, a.km), ' km'),
-                              a && a.valor_profissional && h('p', { className: 'text-xs text-orange-700' }, '💰 Profissional: R$ ', h('strong', null, a.valor_profissional)),
-                              a && a.valor_servico && h('p', { className: 'text-xs text-orange-700' }, '💰 Serviço: R$ ', h('strong', null, a.valor_servico)),
+                              a && a.km && h('p', { className: 'text-xs text-orange-700' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), h('strong', null, a.km), ' km'),
+                              a && a.valor_profissional && h('p', { className: 'text-xs text-orange-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Profissional: R$ "), h('strong', null, a.valor_profissional)),
+                              a && a.valor_servico && h('p', { className: 'text-xs text-orange-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Serviço: R$ "), h('strong', null, a.valor_servico)),
                               !a && h('p', { className: 'text-xs text-gray-400' }, 'Não capturado')
                             ),
                             h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-2' },
                               h('p', { className: 'text-[10px] font-bold text-green-600 mb-1' }, 'DEPOIS'),
-                              d && d.km && h('p', { className: 'text-xs text-green-700' }, '🛣️ ', h('strong', null, d.km), ' km'),
-                              d && d.valor_profissional && h('p', { className: 'text-xs text-green-700' }, '💰 Profissional: R$ ', h('strong', null, d.valor_profissional)),
-                              d && d.valor_servico && h('p', { className: 'text-xs text-green-700' }, '💰 Serviço: R$ ', h('strong', null, d.valor_servico)),
+                              d && d.km && h('p', { className: 'text-xs text-green-700' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), h('strong', null, d.km), ' km'),
+                              d && d.valor_profissional && h('p', { className: 'text-xs text-green-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Profissional: R$ "), h('strong', null, d.valor_profissional)),
+                              d && d.valor_servico && h('p', { className: 'text-xs text-green-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Serviço: R$ "), h('strong', null, d.valor_servico)),
                               !d && h('p', { className: 'text-xs text-gray-400' }, 'Não capturado')
                             )
                           )
@@ -2000,11 +2001,11 @@
                 h(BadgeStatus, { status: r.status }),
                 r.status === 'sucesso' && r.frete_recalculado === false && h('span', {
                   className: 'text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1 py-0.5',
-                }, '⚠️')
+                }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })))
               )
             ),
             r.usuario_nome && h('div', { className: 'text-xs text-gray-600 mb-1' },
-              h('span', { className: 'font-semibold' }, '🏍️ '),
+              h('span', { className: 'font-semibold' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" }))),
               r.usuario_nome,
               h('span', { className: 'text-gray-400 ml-1' }, `(Cód: ${r.cod_profissional || '—'})`)
             ),
@@ -2020,23 +2021,23 @@
               h('button', {
                 onClick: () => abrirFoto(r.id),
                 className: 'text-xs px-3 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold',
-              }, '📷 Ver foto')
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Ver foto"))
             ),
             r.detalhe_erro && h('div', {
               className: 'mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600 cursor-pointer',
               onClick: () => setExpandido(expandido === r.id ? null : r.id),
-            }, expandido === r.id ? r.detalhe_erro : '🔴 Ver detalhe do erro'),
+            }, expandido === r.id ? r.detalhe_erro : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })), "Ver detalhe do erro")),
             h('div', { className: 'flex gap-2 mt-3' },
               (r.latitude || r.motoboy_lat || r.endereco_antigo_lat || r.endereco_antigo) && h('button', {
                 onClick: () => abrirMapa(r),
                 className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
                 style: { background: '#2563eb' },
-              }, '🗺️ Mapa'),
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Mapa")),
               h('button', {
                 onClick: () => excluir(r.id),
                 className: 'flex-1 py-2 text-sm font-semibold rounded-xl text-white',
                 style: { background: '#dc2626' },
-              }, '🗑️ Excluir')
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Excluir"))
             )
           ))
         )
@@ -2088,7 +2089,7 @@
             h('button', {
               onClick: () => setMapaModal(null),
               className: 'w-10 h-10 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-lg font-bold hover:bg-gray-300',
-            }, '✕')
+            }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
           ),
           h(MapaTracado, { registro: mapaModal, API_URL, fetchAuth })
         )
@@ -2103,7 +2104,7 @@
           h('button', {
             onClick: () => setFotoModal(null),
             className: 'absolute -top-3 -right-3 w-10 h-10 bg-white text-gray-800 rounded-full flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 z-10',
-          }, '✕'),
+          }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
           h('img', {
             src: fotoModal,
             className: 'w-full rounded-xl shadow-2xl',
@@ -2166,13 +2167,13 @@
       // Header
       h('div', { className: 'flex items-center justify-between mb-5' },
         h('div', null,
-          h('h2', { className: 'text-lg font-bold text-gray-900' }, '📋 Minhas Solicitações'),
+          h('h2', { className: 'text-lg font-bold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Solicitações")),
           h('p', { className: 'text-xs text-gray-400 mt-0.5' }, `${total} solicitação(ões) no total`)
         ),
         h('button', {
           onClick: () => carregar(page),
           className: 'text-xs px-3 py-1.5 rounded-lg font-semibold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition',
-        }, '🔄 Atualizar')
+        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
       ),
 
       // Loading
@@ -2184,7 +2185,7 @@
       // Lista vazia
       !loading && dados.length === 0 && h('div', { className: 'text-center py-16' },
         h('div', { className: 'w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4' },
-          h('span', { className: 'text-3xl' }, '📭')
+          h('span', { className: 'text-3xl' }, h("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })))
         ),
         h('p', { className: 'text-gray-500 font-medium' }, 'Nenhuma solicitação ainda'),
         h('p', { className: 'text-gray-400 text-sm mt-1' }, 'Suas correções de endereço aparecerão aqui.')
@@ -2210,7 +2211,7 @@
 
             // Coordenada
             h('div', { className: 'flex items-start gap-2' },
-              h('span', { className: 'text-gray-400 text-xs mt-0.5 flex-shrink-0' }, '📍'),
+              h('span', { className: 'text-gray-400 text-xs mt-0.5 flex-shrink-0' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
               h('div', null,
                 h('p', { className: 'text-xs font-medium text-gray-500' }, 'Coordenada enviada'),
                 h('p', { className: 'text-xs text-gray-700 font-mono' }, formatCoord(r))
@@ -2219,7 +2220,7 @@
 
             // Endereço corrigido (se disponível)
             r.endereco_corrigido && h('div', { className: 'flex items-start gap-2' },
-              h('span', { className: 'text-green-500 text-xs mt-0.5 flex-shrink-0' }, '✅'),
+              h('span', { className: 'text-green-500 text-xs mt-0.5 flex-shrink-0' }, h("svg", { className: "ico", style: { width: 14, height: 14, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" }))),
               h('div', null,
                 h('p', { className: 'text-xs font-medium text-gray-500' }, 'Endereço ajustado'),
                 h('p', { className: 'text-xs text-green-700 font-medium' }, r.endereco_corrigido)
@@ -2228,7 +2229,7 @@
 
             // Erro (se existir)
             r.status === 'erro' && r.detalhe_erro && h('div', { className: 'flex items-start gap-2' },
-              h('span', { className: 'text-red-500 text-xs mt-0.5 flex-shrink-0' }, '❌'),
+              h('span', { className: 'text-red-500 text-xs mt-0.5 flex-shrink-0' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
               h('div', null,
                 h('p', { className: 'text-xs font-medium text-gray-500' }, 'Motivo do erro'),
                 h('p', { className: 'text-xs text-red-600' }, r.detalhe_erro)
@@ -2241,7 +2242,7 @@
               h('button', {
                 onClick: () => abrirFoto(r.id),
                 className: 'text-xs px-3 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition',
-              }, '📷 Ver foto')
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Ver foto"))
             )
           )
         ))
@@ -2271,7 +2272,7 @@
           h('button', {
             onClick: () => setFotoModal(null),
             className: 'absolute -top-3 -right-3 w-10 h-10 bg-white text-gray-800 rounded-full flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 z-10',
-          }, '✕'),
+          }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
           h('img', {
             src: fotoModal,
             className: 'w-full rounded-xl shadow-2xl',
@@ -2337,10 +2338,10 @@
     };
 
     const labelStatus = {
-      sucesso: '✅ Sucesso',
-      falhou: '❌ Falhou',
-      processando: '⏳ Processando',
-      pendente: '⏸️ Pendente',
+      sucesso: 'Sucesso',
+      falhou: 'Falhou',
+      processando: 'Processando',
+      pendente: 'Pendente',
     };
     const corStatus = {
       sucesso:     'bg-green-100 text-green-800 border-green-300',
@@ -2360,14 +2361,14 @@
       // Cabeçalho com contadores
       h('div', { className: 'flex justify-between items-center mb-4' },
         h('div', null,
-          h('h2', { className: 'text-xl font-bold text-gray-800' }, '🔓 Liberações de OS'),
+          h('h2', { className: 'text-xl font-bold text-gray-800' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Liberações de OS")),
           h('p', { className: 'text-sm text-gray-500' }, `Total: ${total} registro(s)`)
         ),
         h('button', {
           onClick: () => carregar(page, filtros),
           disabled: loading,
           className: 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold disabled:opacity-50',
-        }, loading ? 'Carregando...' : '🔄 Atualizar')
+        }, loading ? 'Carregando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
       ),
 
       // Filtros
@@ -2429,7 +2430,7 @@
           ? h('div', { className: 'p-10 text-center text-gray-500' }, 'Carregando...')
           : dados.length === 0
             ? h('div', { className: 'p-10 text-center text-gray-500' },
-                h('p', { className: 'text-4xl mb-2' }, '📭'),
+                h('p', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" }))),
                 h('p', null, 'Nenhuma liberação encontrada com esses filtros.')
               )
             : h('div', { className: 'overflow-x-auto' },
@@ -2464,8 +2465,8 @@
                       ),
                       h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, fmtData(r.criado_em)),
                       h('td', { className: 'px-3 py-2 text-xs' },
-                        r.status === 'sucesso' && r.mensagem_retorno && h('span', { className: 'text-green-600' }, '✓ ', r.mensagem_retorno),
-                        r.status === 'falhou' && r.erro && h('div', { className: 'text-red-600 max-w-md break-words' }, '⚠️ ', r.erro),
+                        r.status === 'sucesso' && r.mensagem_retorno && h('span', { className: 'text-green-600' }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), r.mensagem_retorno),
+                        r.status === 'falhou' && r.erro && h('div', { className: 'text-red-600 max-w-md break-words' }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), r.erro),
                         r.status === 'processando' && h('span', { className: 'text-blue-600' },
                           r.etapa_atual ? `${r.etapa_atual} (${r.progresso || 0}%)` : 'Em andamento...'
                         )
@@ -2939,7 +2940,7 @@
             h('p', { className: 'text-[13px] font-bold text-slate-900' }, 'Profissionais'),
             h('p', { className: 'text-[11px] text-slate-400 mt-0.5' },
               'ordenado por volume · ',
-              h('span', { className: 'text-rose-600 font-medium' }, '▲'),
+              h('span', { className: 'text-rose-600 font-medium' }, ''),
               ' marca aproveitamento abaixo de 60% com 10+ tentativas')
           ),
           profs.length === 0
@@ -2967,7 +2968,7 @@
                         h('td', { className: 'px-3 py-2.5' },
                           h('div', { className: 'flex items-center gap-2' },
                             flag
-                              ? h('span', { className: 'text-rose-600 text-[10px]', title: 'aproveitamento fora da curva' }, '▲')
+                              ? h('span', { className: 'text-rose-600 text-[10px]', title: 'aproveitamento fora da curva' }, '')
                               : h('span', { className: 'inline-block w-[10px]' }),
                             h('div', null,
                               h('div', { className: 'font-medium text-slate-900' }, p.usuario_nome || '—'),
@@ -3021,12 +3022,12 @@
 
     const ABAS = isAdmin
       ? [
-          { id: 'historico',   label: '📋 Histórico' },
-          { id: 'liberacoes',  label: '🔓 Liberação de OS' },  // 2026-04 v3
-          { id: 'analytics',   label: '📊 Analytics' },
-          { id: 'bloqueados',  label: '🚫 Clientes Bloqueados' }, // 2026-07
+          { id: 'historico',   label: 'Histórico' },
+          { id: 'liberacoes',  label: 'Liberação de OS' },  // 2026-04 v3
+          { id: 'analytics',   label: 'Analytics' },
+          { id: 'bloqueados',  label: 'Clientes Bloqueados' }, // 2026-07
         ]
-      : [{ id: 'formulario', label: '📍 Correção' }, { id: 'meu-historico', label: '📋 Minhas Solicitações' }];
+      : [{ id: 'formulario', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Correção") }, { id: 'meu-historico', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Solicitações") }];
 
     return h('div', { className: `${HeaderCompacto ? 'min-h-screen' : 'overflow-y-auto'} bg-gray-50 flex flex-col` },
 
@@ -3161,11 +3162,11 @@
 
     return h('div', { className: 'max-w-3xl mx-auto px-4 py-6' },
       h('div', { className: 'mb-6' },
-        h('h2', { className: 'text-lg font-bold text-gray-800 mb-1' }, '🚫 Clientes Bloqueados para Ajuste'),
+        h('h2', { className: 'text-lg font-bold text-gray-800 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })), "Clientes Bloqueados para Ajuste")),
         h('p', { className: 'text-sm text-gray-500' }, 'Corridas cujo Ponto 1 bater com um destes clientes NÃO poderão ser ajustadas pelo motoboy.')
       ),
       h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-5 flex items-center gap-3 flex-wrap' },
-        h('span', { className: 'text-sm font-semibold text-gray-700' }, '💬 Nº do suporte:'),
+        h('span', { className: 'text-sm font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Nº do suporte:")),
         editandoNum
           ? h(React.Fragment, null,
               h('input', { value: numeroSuporte, onChange: (e) => setNumeroSuporte(e.target.value), className: 'border rounded-lg px-3 py-1.5 text-sm flex-1', placeholder: '5571XXXXXXXX' }),
@@ -3200,7 +3201,7 @@
                     onClick: () => alternar(c),
                     className: `text-xs px-2.5 py-1 rounded-lg font-semibold ${c.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`,
                   }, c.ativo ? 'Ativo' : 'Inativo'),
-                  h('button', { onClick: () => excluir(c), className: 'text-xs px-2 py-1 text-red-600 font-semibold' }, '🗑')
+                  h('button', { onClick: () => excluir(c), className: 'text-xs px-2 py-1 text-red-600 font-semibold' }, h("svg", { className: "ico", style: { width: 14, height: 14, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })))
                 ))
               )
           )

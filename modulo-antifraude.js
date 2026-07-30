@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO ANTI-FRAUDE ====================
 // Arquivo: modulo-antifraude.js
 // Admin-only: Dashboard, Alertas, Configurações, Varredura
@@ -16,11 +17,11 @@
   }
 
   const TIPO_LABELS = {
-    nf_duplicada_motoboy: { label: 'NF Duplicada (Motoboy)', icon: '🏍️', cor: 'bg-red-100 text-red-700' },
-    nf_duplicada_cliente: { label: 'NF Duplicada (Cliente)', icon: '🏢', cor: 'bg-orange-100 text-orange-700' },
-    nf_mesmo_dia: { label: 'NF Repetida no Dia', icon: '📅', cor: 'bg-yellow-100 text-yellow-700' },
-    motoboy_reincidente: { label: 'Motoboy Reincidente', icon: '⚠️', cor: 'bg-red-100 text-red-800' },
-    cliente_reincidente: { label: 'Cliente Reincidente', icon: '⚠️', cor: 'bg-orange-100 text-orange-800' },
+    nf_duplicada_motoboy: { label: 'NF Duplicada (Motoboy)', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), cor: 'bg-red-100 text-red-700' },
+    nf_duplicada_cliente: { label: 'NF Duplicada (Cliente)', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), cor: 'bg-orange-100 text-orange-700' },
+    nf_mesmo_dia: { label: 'NF Repetida no Dia', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), cor: 'bg-yellow-100 text-yellow-700' },
+    motoboy_reincidente: { label: 'Motoboy Reincidente', icon: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), cor: 'bg-red-100 text-red-800' },
+    cliente_reincidente: { label: 'Cliente Reincidente', icon: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), cor: 'bg-orange-100 text-orange-800' },
   };
 
   const SEV_LABELS = {
@@ -65,10 +66,10 @@
       // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
         [
-          { label: 'Total Alertas', value: data.total_alertas, icon: '🚨', bg: 'bg-red-50', tc: 'text-red-600' },
-          { label: 'Pendentes', value: data.alertas_pendentes, icon: '⏳', bg: 'bg-yellow-50', tc: 'text-yellow-600' },
-          { label: 'Última Varredura', value: data.ultima_varredura ? fmtDT(data.ultima_varredura.finalizado_em) : 'Nunca', icon: '🔍', bg: 'bg-blue-50', tc: 'text-blue-600', small: true },
-          { label: 'OSs Analisadas', value: data.ultima_varredura?.os_analisadas || 0, icon: '📊', bg: 'bg-purple-50', tc: 'text-purple-600' },
+          { label: 'Total Alertas', value: data.total_alertas, icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), bg: 'bg-red-50', tc: 'text-red-600' },
+          { label: 'Pendentes', value: data.alertas_pendentes, icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), bg: 'bg-yellow-50', tc: 'text-yellow-600' },
+          { label: 'Última Varredura', value: data.ultima_varredura ? fmtDT(data.ultima_varredura.finalizado_em) : 'Nunca', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), bg: 'bg-blue-50', tc: 'text-blue-600', small: true },
+          { label: 'OSs Analisadas', value: data.ultima_varredura?.os_analisadas || 0, icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), bg: 'bg-purple-50', tc: 'text-purple-600' },
         ].map(k => h('div', { key: k.label, className: `${k.bg} rounded-xl border border-gray-100 shadow-sm p-4` },
           h('div', { className: 'flex items-center gap-2 mb-2' },
             h('span', { className: 'text-xl' }, k.icon),
@@ -80,10 +81,10 @@
 
       // Alertas por tipo
       data.por_tipo.length > 0 && h('div', { className: 'bg-white rounded-xl border shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, '📊 Alertas por Tipo'),
+        h('h3', { className: 'text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Alertas por Tipo")),
         h('div', { className: 'space-y-2' },
           data.por_tipo.map(t => {
-            const info = TIPO_LABELS[t.tipo] || { label: t.tipo, icon: '❓', cor: 'bg-gray-100 text-gray-600' };
+            const info = TIPO_LABELS[t.tipo] || { label: t.tipo, icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-help" })), cor: 'bg-gray-100 text-gray-600' };
             const pct = data.total_alertas > 0 ? (parseInt(t.total) / data.total_alertas) * 100 : 0;
             return h('div', { key: t.tipo, className: 'flex items-center gap-3' },
               h('span', { className: 'w-5 text-center' }, info.icon),
@@ -102,10 +103,10 @@
         // Motoboys
         h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
           h('div', { className: 'p-4 border-b bg-red-50' },
-            h('h3', { className: 'text-sm font-bold text-red-700 uppercase tracking-wide' }, '🏍️ Motoboys com mais alertas')
+            h('h3', { className: 'text-sm font-bold text-red-700 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), "Motoboys com mais alertas"))
           ),
           data.top_motoboys.length === 0
-            ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, '✅ Nenhum alerta de motoboy')
+            ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Nenhum alerta de motoboy"))
             : h('div', { className: 'divide-y divide-gray-100' },
                 data.top_motoboys.map((m, i) => h('div', { key: i, className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50' },
                   h('div', { className: 'flex items-center gap-3' },
@@ -122,10 +123,10 @@
         // Clientes
         h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
           h('div', { className: 'p-4 border-b bg-orange-50' },
-            h('h3', { className: 'text-sm font-bold text-orange-700 uppercase tracking-wide' }, '🏢 Clientes com mais alertas')
+            h('h3', { className: 'text-sm font-bold text-orange-700 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Clientes com mais alertas"))
           ),
           data.top_clientes.length === 0
-            ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, '✅ Nenhum alerta de cliente')
+            ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Nenhum alerta de cliente"))
             : h('div', { className: 'divide-y divide-gray-100' },
                 data.top_clientes.map((c, i) => h('div', { key: i, className: 'flex items-center justify-between px-4 py-3 hover:bg-gray-50' },
                   h('div', { className: 'flex items-center gap-3' },
@@ -141,15 +142,15 @@
       // Varreduras recentes
       h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
         h('div', { className: 'p-4 border-b bg-gray-50 flex items-center justify-between' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase tracking-wide' }, '🔄 Varreduras Recentes'),
-          h('button', { onClick: carregar, className: 'text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold' }, '🔄 Atualizar')
+          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Varreduras Recentes")),
+          h('button', { onClick: carregar, className: 'text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
         ),
         data.varreduras_recentes.length === 0
           ? h('div', { className: 'p-6 text-center text-gray-400 text-sm' }, 'Nenhuma varredura executada')
           : h('div', { className: 'divide-y divide-gray-100' },
               data.varreduras_recentes.map(v => h('div', { key: v.id, className: 'flex items-center justify-between px-4 py-3' },
                 h('div', { className: 'flex items-center gap-3' },
-                  h('span', { className: 'text-lg' }, v.status === 'concluido' ? '✅' : v.status === 'executando' ? '⏳' : '❌'),
+                  h('span', { className: 'text-lg' }, v.status === 'concluido' ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : v.status === 'executando' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
                   h('div', null,
                     h('p', { className: 'text-sm font-medium text-gray-800' }, '#' + v.id + ' — ' + (v.tipo === 'cron' ? 'Automática' : 'Manual')),
                     h('p', { className: 'text-xs text-gray-400' }, fmtDT(v.iniciado_em) + (v.iniciado_por ? ' por ' + v.iniciado_por : ''))
@@ -228,15 +229,15 @@
         ),
         h('select', { value: filtros.severidade, onChange: e => setFiltros(f => ({ ...f, severidade: e.target.value })), className: 'rounded-xl border border-gray-200 px-3 py-2 text-sm' },
           h('option', { value: '' }, 'Todas severidades'),
-          h('option', { value: 'alta' }, '🔴 Alta'),
-          h('option', { value: 'media' }, '🟡 Média')
+          h('option', { value: 'alta' }, 'Alta'),
+          h('option', { value: 'media' }, 'Média')
         ),
         h('select', { value: filtros.status, onChange: e => setFiltros(f => ({ ...f, status: e.target.value })), className: 'rounded-xl border border-gray-200 px-3 py-2 text-sm' },
           h('option', { value: '' }, 'Todos status'),
           Object.entries(STATUS_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label))
         ),
         h('input', { value: filtros.profissional, onChange: e => setFiltros(f => ({ ...f, profissional: e.target.value })), placeholder: 'Buscar motoboy/cliente...', className: 'rounded-xl border border-gray-200 px-3 py-2 text-sm' }),
-        h('button', { onClick: () => carregar(1, filtros), className: 'rounded-xl text-sm font-semibold text-white py-2 bg-red-600 hover:bg-red-700' }, '🔍 Filtrar')
+        h('button', { onClick: () => carregar(1, filtros), className: 'rounded-xl text-sm font-semibold text-white py-2 bg-red-600 hover:bg-red-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtrar"))
       ),
 
       // Total
@@ -250,9 +251,9 @@
 
       // Cards de alertas
       !loading && h('div', { className: 'space-y-3' },
-        dados.length === 0 && h('div', { className: 'text-center py-16 text-gray-400' }, '✅ Nenhum alerta encontrado'),
+        dados.length === 0 && h('div', { className: 'text-center py-16 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Nenhum alerta encontrado")),
         dados.map(a => {
-          const tipoInfo = TIPO_LABELS[a.tipo] || { label: a.tipo, icon: '❓', cor: 'bg-gray-100 text-gray-600' };
+          const tipoInfo = TIPO_LABELS[a.tipo] || { label: a.tipo, icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-help" })), cor: 'bg-gray-100 text-gray-600' };
           const sevInfo = SEV_LABELS[a.severidade] || SEV_LABELS.media;
           const statusInfo = STATUS_LABELS[a.status] || STATUS_LABELS.pendente;
 
@@ -286,15 +287,15 @@
                 a.status === 'pendente' && h('button', {
                   onClick: () => { setModalAlerta(a); setNovoStatus('analisado'); setObservacao(''); },
                   className: 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700',
-                }, '🔍 Analisar'),
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Analisar")),
                 a.status !== 'confirmado_fraude' && h('button', {
                   onClick: () => { setModalAlerta(a); setNovoStatus('confirmado_fraude'); setObservacao(''); },
                   className: 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700',
-                }, '🚨 Confirmar Fraude'),
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Confirmar Fraude")),
                 a.status !== 'falso_positivo' && h('button', {
                   onClick: () => { setModalAlerta(a); setNovoStatus('falso_positivo'); setObservacao(''); },
                   className: 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700',
-                }, '✅ Falso Positivo')
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Falso Positivo"))
               )
             )
           );
@@ -312,9 +313,9 @@
       modalAlerta && h('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setModalAlerta(null) },
         h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-md p-6', onClick: e => e.stopPropagation() },
           h('h3', { className: 'text-lg font-bold mb-4' },
-            novoStatus === 'confirmado_fraude' ? '🚨 Confirmar Fraude' :
-            novoStatus === 'falso_positivo' ? '✅ Marcar como Falso Positivo' :
-            '🔍 Analisar Alerta'
+            novoStatus === 'confirmado_fraude' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Confirmar Fraude") :
+            novoStatus === 'falso_positivo' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Marcar como Falso Positivo") :
+            'Analisar Alerta'
           ),
           h('p', { className: 'text-sm text-gray-600 mb-4' }, modalAlerta.titulo),
           h('textarea', {
@@ -406,7 +407,7 @@
       // Card principal
       h('div', { className: 'bg-white rounded-2xl border shadow-sm p-6 text-center' },
         h('div', { className: 'w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-red-50' },
-          h('span', { className: 'text-4xl' }, executando ? '⏳' : '🛡️')
+          h('span', { className: 'text-4xl' }, executando ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-shield" })))
         ),
         h('h2', { className: 'text-xl font-bold text-gray-900 mb-2' }, 'Varredura Anti-Fraude'),
         h('p', { className: 'text-sm text-gray-500 mb-4 max-w-md mx-auto' },
@@ -441,7 +442,7 @@
             h('span', { className: 'text-xs font-semibold text-purple-700' }, 'Progresso')
           ),
           h('p', { className: 'text-sm text-purple-800 font-medium' }, status.detalhes),
-          status.os_analisadas > 0 && h('p', { className: 'text-xs text-purple-600 mt-1' }, '📊 ' + status.os_analisadas + ' OS(s) analisadas')
+          status.os_analisadas > 0 && h('p', { className: 'text-xs text-purple-600 mt-1' }, '' + status.os_analisadas + ' OS(s) analisadas')
         ),
         h('button', {
           onClick: iniciarVarredura,
@@ -450,17 +451,17 @@
             (executando ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'),
         }, executando
             ? h('span', { className: 'flex items-center gap-2 justify-center' },
-                h('span', { className: 'animate-spin' }, '⏳'), 'Analisando...')
-            : '🚀 Executar Varredura'
+                h('span', { className: 'animate-spin' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" }))), 'Analisando...')
+            : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), "Executar Varredura")
         ),
-        h('p', { className: 'text-xs text-gray-400 mt-3' }, '💡 A varredura também roda automaticamente a cada upload no módulo BI')
+        h('p', { className: 'text-xs text-gray-400 mt-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" })), "A varredura também roda automaticamente a cada upload no módulo BI"))
       ),
 
       // Status da última varredura
       status && h('div', { className: 'bg-white rounded-xl border shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide' }, '📋 Última Varredura'),
+        h('h3', { className: 'text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Última Varredura")),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 text-sm' },
-          h('div', null, h('p', { className: 'text-gray-400 text-xs' }, 'Status'), h('p', { className: 'font-semibold' }, status.status === 'concluido' ? '✅ Concluída' : status.status === 'executando' ? '⏳ Executando' : '❌ Erro')),
+          h('div', null, h('p', { className: 'text-gray-400 text-xs' }, 'Status'), h('p', { className: 'font-semibold' }, status.status === 'concluido' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Concluída") : status.status === 'executando' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Executando") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), "Erro"))),
           h('div', null, h('p', { className: 'text-gray-400 text-xs' }, 'Tipo'), h('p', { className: 'font-semibold' }, status.tipo === 'cron' ? 'Automática' : 'Manual')),
           h('div', null, h('p', { className: 'text-gray-400 text-xs' }, 'OSs Analisadas'), h('p', { className: 'font-semibold' }, status.os_analisadas || 0)),
           h('div', null, h('p', { className: 'text-gray-400 text-xs' }, 'Alertas Gerados'), h('p', { className: 'font-bold text-red-600' }, status.alertas_gerados || 0)),
@@ -476,12 +477,12 @@
       // Relatório WhatsApp
       h('div', { className: 'bg-white rounded-xl border shadow-sm p-5' },
         h('div', { className: 'flex items-center justify-between mb-3' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase tracking-wide' }, '📱 Relatório para WhatsApp'),
-          h('button', { onClick: gerarRelatorio, className: 'text-xs px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold' }, '📝 Gerar')
+          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Relatório para WhatsApp")),
+          h('button', { onClick: gerarRelatorio, className: 'text-xs px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Gerar"))
         ),
         relatorio && h('div', null,
           h('pre', { className: 'bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap font-sans mb-3 max-h-96 overflow-y-auto border' }, relatorio),
-          h('button', { onClick: copiarRelatorio, className: 'px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 text-sm' }, '📋 Copiar Relatório')
+          h('button', { onClick: copiarRelatorio, className: 'px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Copiar Relatório"))
         )
       )
     );
@@ -536,7 +537,7 @@
 
     return h('div', { className: 'max-w-2xl mx-auto p-4 space-y-4' },
       h('div', { className: 'bg-white rounded-2xl border shadow-sm p-6' },
-        h('h2', { className: 'text-lg font-bold text-gray-900 mb-6 flex items-center gap-2' }, '⚙️ Configurações Anti-Fraude'),
+        h('h2', { className: 'text-lg font-bold text-gray-900 mb-6 flex items-center gap-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), "Configurações Anti-Fraude")),
         h('div', { className: 'space-y-5' },
           campos.map(c => {
             const val = config[c.chave]?.valor || '';
@@ -563,7 +564,7 @@
         h('button', {
           onClick: salvar, disabled: saving,
           className: 'mt-6 w-full py-3 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 disabled:opacity-50',
-        }, saving ? 'Salvando...' : '💾 Salvar Configurações')
+        }, saving ? 'Salvando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar Configurações"))
       )
     );
   }
@@ -582,9 +583,9 @@
     }, []);
 
     const ABAS = [
-      { id: 'dashboard', label: '📊 Dashboard' },
-      { id: 'alertas', label: '🚨 Alertas' },
-      { id: 'varredura', label: '🔍 Varredura' },
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'alertas', label: 'Alertas' },
+      { id: 'varredura', label: 'Varredura' },
     ];
 
     return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },

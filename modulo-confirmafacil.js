@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO CONFIRMA FÁCIL ====================
 // modulo-confirmafacil.js — v4
 // NFs Recebidas: listagem completa com filtros + drawer de detalhes
@@ -86,7 +87,7 @@
     if (s.status === 'entregue') return null; // SLA encerrado: não polui a lista
     const [cls, pulse] = SLA_VIS[s.status] || ['bg-gray-100 text-gray-500', false];
     let txt, sub;
-    if (s.status === 'agendado') { txt = '🕗 ' + hmBRT(s.inicioMs); sub = 'vence ' + hmBRT(s.deadlineMs); }
+    if (s.status === 'agendado') { txt = '' + hmBRT(s.inicioMs); sub = 'vence ' + hmBRT(s.deadlineMs); }
     else if (s.status === 'estourado') { txt = '+' + fmtRemSla(-s.rem); sub = 'estourado · venceu ' + hmBRT(s.deadlineMs); }
     else { txt = fmtRemSla(s.rem); sub = 'vence ' + hmBRT(s.deadlineMs) + (s.status === 'atencao' ? ' · atenção' : s.status === 'iminente' ? ' · iminente' : ''); }
     return h('div', { className: 'mt-1' },
@@ -104,13 +105,13 @@
   // REENTREGA e DEVOLVIDO nao vem do CF: sao escritos por nos, no
   // confirmafacil.service.js (Cod. 19/26 -> REENTREGA, Cod. 52 -> DEVOLVIDO).
   const STATUS_CF_MAP = {
-    'A_EMBARCAR':     ['bg-amber-100 text-amber-800',  '📦 A embarcar'],
-    'NAO ENTREGUE':   ['bg-blue-100 text-blue-800',    '🚚 Em trânsito'],
-    'ENTREGUE':       ['bg-green-100 text-green-800',  '✅ Entregue'],
-    'REENTREGA':      ['bg-orange-100 text-orange-800','🔄 Reentrega'],
+    'A_EMBARCAR':     ['bg-amber-100 text-amber-800',  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), "A embarcar")],
+    'NAO ENTREGUE':   ['bg-blue-100 text-blue-800',    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-truck" })), "Em trânsito")],
+    'ENTREGUE':       ['bg-green-100 text-green-800',  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Entregue")],
+    'REENTREGA':      ['bg-orange-100 text-orange-800',h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Reentrega")],
     'DEVOLVIDO':      ['bg-red-100 text-red-800',      '↩️ Devolvido'],
-    'ARQUIVADO':      ['bg-red-100 text-red-800',      '🗄️ Cancelada'],
-    'DESCONHECIDO':   ['bg-gray-100 text-gray-600',    '❓ Desconhecido'],
+    'ARQUIVADO':      ['bg-red-100 text-red-800',      h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), "Cancelada")],
+    'DESCONHECIDO':   ['bg-gray-100 text-gray-600',    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-help" })), "Desconhecido")],
   };
 
   function BadgeStatusCF({ status }) {
@@ -120,9 +121,9 @@
 
   function BadgeStatus({ status }) {
     const m = {
-      'enviado':    ['bg-blue-100 text-blue-800',  '📤 Enviado'],
-      'finalizado': ['bg-green-100 text-green-800','✅ Finalizado'],
-      'cancelado':  ['bg-red-100 text-red-800',    '❌ Cancelado'],
+      'enviado':    ['bg-blue-100 text-blue-800',  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-upload" })), "Enviado")],
+      'finalizado': ['bg-green-100 text-green-800',h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizado")],
+      'cancelado':  ['bg-red-100 text-red-800',    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), "Cancelado")],
     };
     const [cls, label] = m[status] || ['bg-gray-100 text-gray-600', status || '—'];
     return h('span', { className: 'text-xs font-medium px-2 py-0.5 rounded-full ' + cls }, label);
@@ -147,20 +148,20 @@
     }, [solicitacaoId]);
 
     const TRILHA_MAP = {
-      'finalizado_ponto': { icon:'✅', bg:'bg-green-100 text-green-700',  label:'Entregue no ponto' },
-      'finalizado':       { icon:'🏁', bg:'bg-green-100 text-green-700',  label:'OS finalizada' },
-      'coletado':         { icon:'📦', bg:'bg-amber-100 text-amber-700',  label:'Coletado' },
-      'chegou':           { icon:'📍', bg:'bg-blue-100 text-blue-700',    label:'Chegou ao local' },
-      'ausente':          { icon:'🚪', bg:'bg-orange-100 text-orange-700',label:'Destinatário ausente' },
-      'fechado':          { icon:'🔒', bg:'bg-orange-100 text-orange-700',label:'Estabelecimento fechado' },
-      'recusou':          { icon:'❌', bg:'bg-red-100 text-red-700',      label:'Recusou receber' },
+      'finalizado_ponto': { icon:h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), bg:'bg-green-100 text-green-700',  label:'Entregue no ponto' },
+      'finalizado':       { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-flag" })), bg:'bg-green-100 text-green-700',  label:'OS finalizada' },
+      'coletado':         { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), bg:'bg-amber-100 text-amber-700',  label:'Coletado' },
+      'chegou':           { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), bg:'bg-blue-100 text-blue-700',    label:'Chegou ao local' },
+      'ausente':          { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-logout" })), bg:'bg-orange-100 text-orange-700',label:'Destinatário ausente' },
+      'fechado':          { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), bg:'bg-orange-100 text-orange-700',label:'Estabelecimento fechado' },
+      'recusou':          { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), bg:'bg-red-100 text-red-700',      label:'Recusou receber' },
       'nao_entregue':     { icon:'↩️', bg:'bg-red-100 text-red-700',      label:'Não entregue' },
-      'retorno':          { icon:'🔄', bg:'bg-purple-100 text-purple-700',label:'Retorno' },
-      'em_andamento':     { icon:'🚚', bg:'bg-blue-100 text-blue-700',    label:'Em andamento' },
-      'aceito':           { icon:'👤', bg:'bg-gray-100 text-gray-600',    label:'OS aceita pelo motoboy' },
-      'cancelado':        { icon:'🚫', bg:'bg-red-100 text-red-700',      label:'Cancelado' },
+      'retorno':          { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), bg:'bg-purple-100 text-purple-700',label:'Retorno' },
+      'em_andamento':     { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-truck" })), bg:'bg-blue-100 text-blue-700',    label:'Em andamento' },
+      'aceito':           { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), bg:'bg-gray-100 text-gray-600',    label:'OS aceita pelo motoboy' },
+      'cancelado':        { icon:h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-ban" })), bg:'bg-red-100 text-red-700',      label:'Cancelado' },
     };
-    const getTrilha = s => TRILHA_MAP[s] || { icon:'🔔', bg:'bg-gray-100 text-gray-600', label: s || '—' };
+    const getTrilha = s => TRILHA_MAP[s] || { icon:h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), bg:'bg-gray-100 text-gray-600', label: s || '—' };
 
     return h('div', {
       className: 'fixed inset-0 z-50 flex',
@@ -183,7 +184,7 @@
         ),
 
         loading
-          ? h('div', { className: 'flex items-center justify-center flex-1 text-gray-400' }, '⏳ Carregando...')
+          ? h('div', { className: 'flex items-center justify-center flex-1 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
           : !dados
             ? h('div', { className: 'p-6 text-center text-gray-400' }, 'Erro ao carregar')
             : h('div', { className: 'flex-1 overflow-y-auto p-4 space-y-5' },
@@ -193,12 +194,12 @@
                   dados.sc?.status && h(BadgeStatus, { status: dados.sc.status }),
                   dados.trilha?.some(t => t.sucesso) &&
                     h('span', { className: 'text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700' },
-                      '✓ CF Cod.' + dados.trilha.find(t => t.sucesso)?.cod_ocorrencia),
+                      'CF Cod.' + dados.trilha.find(t => t.sucesso)?.cod_ocorrencia),
                 ),
 
                 // Fotos do protocolo
                 h('div', null,
-                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2' }, '📸 Fotos do protocolo'),
+                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Fotos do protocolo")),
                   dados.fotos?.length > 0
                     ? h('div', { className: 'grid grid-cols-3 gap-2' },
                         dados.fotos.map((url, i) =>
@@ -212,7 +213,7 @@
                         )
                       )
                     : h('div', { className: 'bg-gray-50 rounded-xl p-4 text-center border border-dashed border-gray-200' },
-                        h('p', { className: 'text-2xl mb-1' }, '📷'),
+                        h('p', { className: 'text-2xl mb-1' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" }))),
                         h('p', { className: 'text-xs font-medium text-gray-500' }, 'Nenhuma foto ainda'),
                         h('p', { className: 'text-xs text-gray-400 mt-0.5' }, 'As fotos aparecem quando o motoboy finalizar a entrega no app')
                       )
@@ -220,7 +221,7 @@
 
                 // Recebedor
                 (dados.nomeRecebedor || dados.docRecebedor) && h('div', { className: 'bg-gray-50 rounded-xl p-3 text-sm space-y-1.5' },
-                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1' }, '👤 Recebedor'),
+                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Recebedor")),
                   dados.nomeRecebedor && h('div', { className: 'flex justify-between' },
                     h('span', { className: 'text-gray-500' }, 'Nome'),
                     h('span', { className: 'font-medium text-gray-800' }, dados.nomeRecebedor)
@@ -233,7 +234,7 @@
 
                 // Pontos da corrida
                 dados.pontos?.length > 0 && h('div', null,
-                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2' }, '📍 Pontos da corrida'),
+                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Pontos da corrida")),
                   h('div', { className: 'space-y-2' },
                     dados.pontos.map((p, i) =>
                       h('div', { key: i, className: 'flex gap-3 items-start' },
@@ -250,7 +251,7 @@
 
                 // Trilha de status
                 dados.trilha?.length > 0 && h('div', null,
-                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3' }, '🕐 Trilha de status CF'),
+                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Trilha de status CF")),
                   h('div', { className: 'relative' },
                     h('div', { className: 'absolute left-[11px] top-1 bottom-1 w-px bg-gray-200' }),
                     h('div', { className: 'space-y-4' },
@@ -264,8 +265,8 @@
                               h('p', { className: 'text-xs text-gray-400' }, fmtD(t.criado_em))
                             ),
                             t.sucesso
-                              ? h('p', { className: 'text-xs text-green-600' }, '✅ CF recebeu · Cod. ' + t.cod_ocorrencia)
-                              : h('p', { className: 'text-xs text-red-500' }, '❌ ' + (t.erro_msg || 'Falhou')),
+                              ? h('p', { className: 'text-xs text-green-600' }, 'CF recebeu · Cod. ' + t.cod_ocorrencia)
+                              : h('p', { className: 'text-xs text-red-500' }, '' + (t.erro_msg || 'Falhou')),
                             t.numero_nf && h('p', { className: 'text-xs text-gray-400' }, 'NF ' + t.numero_nf)
                           )
                         );
@@ -276,7 +277,7 @@
 
                 // Sem eventos
                 dados.trilha?.length === 0 && h('div', { className: 'text-center py-6 text-gray-400' },
-                  h('p', { className: 'text-sm' }, '📭 Nenhum status enviado ao CF ainda'),
+                  h('p', { className: 'text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Nenhum status enviado ao CF ainda")),
                   h('p', { className: 'text-xs mt-1' }, 'Use "Testar CF" para simular')
                 )
               ),
@@ -288,16 +289,16 @@
             dados.sc.tutts_url_rastreamento && h('a', {
               href: dados.sc.tutts_url_rastreamento, target: '_blank', rel: 'noopener noreferrer',
               className: 'flex-1 text-center text-xs py-2 border border-gray-200 rounded-xl hover:border-purple-300 text-gray-600',
-            }, '🗺️ Rastrear no mapa'),
+            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Rastrear no mapa")),
             dados.sc.tutts_os_numero && h('a', {
               href: 'https://tutts.com.br/expresso/expressoat/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
               target: '_blank', rel: 'noopener noreferrer',
               className: 'flex-1 text-center text-xs py-2 border border-purple-200 rounded-xl hover:border-purple-400 text-purple-700 bg-purple-50',
-            }, '🔗 Ver na Mapp')
+            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "Ver na Mapp"))
           ),
           h('div', { className: 'flex flex-col gap-2' },
             h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-1.5 rounded-lg' },
-              '🕐 Correção manual de horário (opcional)'
+              'Correção manual de horário (opcional)'
             ),
             h('label', { className: 'text-xs text-gray-500' }, 'Horário real da finalização'),
             h('input', {
@@ -323,7 +324,7 @@
                 }).finally(() => setEnviando(false));
               },
               className: 'w-full text-sm py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60',
-            }, enviando ? '⏳ Enviando...' : '✅ Finalizar no CF'),
+            }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizar no CF")),
 
             h('button', {
               disabled: enviando,
@@ -340,7 +341,7 @@
                 }).finally(() => setEnviando(false));
               },
               className: 'w-full text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
-            }, '📸 Enviar protocolo (fotos)'),
+            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Enviar protocolo (fotos)")),
 
             h('p', { className: 'text-[11px] text-gray-400 text-center' }, 'Toda correção fica registrada na auditoria.'),
 
@@ -362,7 +363,7 @@
                   }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
                 },
                 className: 'w-full text-sm py-2 text-gray-600 border border-gray-200 rounded-xl hover:border-red-300 hover:text-red-600 disabled:opacity-60',
-              }, '🗄️ Cancelar só na central (não mexe na Mapp)')
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), "Cancelar só na central (não mexe na Mapp)"))
             )
           )
         )
@@ -409,11 +410,11 @@
     if (total === 0 && !carregando) return null; // nada canceladas: badge some
 
     const VIS = {
-      cancelada: ['bg-green-100 text-green-800', '✅', 'OS cancelada'],
-      alocado:   ['bg-amber-100 text-amber-800', '🛵', 'Motoboy alocado'],
-      falhou:    ['bg-red-100 text-red-800',     '⚠️', 'Falhou'],
-      nada:      ['bg-gray-100 text-gray-500',   '🕑', 'Nada a cancelar'],
-      manual:    ['bg-blue-100 text-blue-700',   '✋', 'Resolvido manual'],
+      cancelada: ['bg-green-100 text-green-800', '', 'OS cancelada'],
+      alocado:   ['bg-amber-100 text-amber-800', '', 'Motoboy alocado'],
+      falhou:    ['bg-red-100 text-red-800',     '', 'Falhou'],
+      nada:      ['bg-gray-100 text-gray-500',   '', 'Nada a cancelar'],
+      manual:    ['bg-blue-100 text-blue-700',   '', 'Resolvido manual'],
     };
 
     const marcarManual = (idEmb) => {
@@ -427,16 +428,16 @@
       aberto && h('div', { className: 'mb-3 w-[420px] max-w-[92vw] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden' },
         h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-red-50' },
           h('div', { className: 'flex items-center gap-2' },
-            h('span', null, '🗄️'),
+            h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" }))),
             h('span', { className: 'font-semibold text-sm text-red-800' }, 'Notas canceladas no CF')
           ),
           h('button', { onClick: () => setAberto(false), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
         ),
         // resumo
         h('div', { className: 'flex gap-1.5 px-4 py-2.5 border-b border-gray-100 text-xs flex-wrap' },
-          resumo.cancelada > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-green-50 text-green-700' }, '✅ ' + resumo.cancelada + ' canceladas'),
-          resumo.alocado > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-amber-50 text-amber-700' }, '🛵 ' + resumo.alocado + ' alocadas'),
-          resumo.falhou > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-red-50 text-red-700' }, '⚠️ ' + resumo.falhou + ' falhou'),
+          resumo.cancelada > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-green-50 text-green-700' }, '' + resumo.cancelada + ' canceladas'),
+          resumo.alocado > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-amber-50 text-amber-700' }, '' + resumo.alocado + ' alocadas'),
+          resumo.falhou > 0 && h('span', { className: 'px-2 py-0.5 rounded-full bg-red-50 text-red-700' }, '' + resumo.falhou + ' falhou'),
         ),
         // lista
         h('div', { className: 'max-h-[340px] overflow-y-auto' },
@@ -453,7 +454,7 @@
               ),
               h('div', { className: 'text-right flex-shrink-0' },
                 it.resolvido
-                  ? h('div', { className: 'text-[11px] text-blue-600 font-medium' }, '✋ resolvido')
+                  ? h('div', { className: 'text-[11px] text-blue-600 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-hand" })), "resolvido"))
                   : pendente
                     ? h('button', { onClick: () => marcarManual(it.id_embarque),
                         className: 'text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Cancelei na Mapp')
@@ -472,7 +473,7 @@
       // pilula
       h('button', { onClick: () => setAberto(!aberto),
         className: 'flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-white text-sm font-medium ' + (pend > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-800') },
-        h('span', null, '🗄️'),
+        h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" }))),
         h('span', null, total + ' cancelada' + (total !== 1 ? 's' : '')),
         pend > 0 && h('span', { className: 'bg-white text-red-600 text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center' }, pend)
       )
@@ -643,12 +644,12 @@
         h('button', {
           onClick: sincronizar, disabled: sincronizando,
           className: 'px-4 py-2 border border-purple-300 text-purple-700 text-sm font-medium rounded-xl hover:bg-purple-50 disabled:opacity-50',
-        }, sincronizando ? '⏳ Sincronizando...' : '🔄 Sincronizar'),
+        }, sincronizando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Sincronizando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Sincronizar")),
         h('button', {
           onClick: reprocessar, disabled: reprocessando,
           className: 'px-4 py-2 border border-amber-300 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-50 disabled:opacity-50',
           title: 'Limpa o backoff e dispara o ciclo agora — reprocessa as notas recusadas (ex.: faltava modalidade)'
-        }, reprocessando ? '⏳ Reprocessando...' : '♻️ Reprocessar barradas')
+        }, reprocessando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Reprocessando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Reprocessar barradas"))
       ),
 
       // Filtros
@@ -687,13 +688,13 @@
             h('select', { value: statusCF, onChange: e => setStatusCF(e.target.value),
               className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
               h('option', { value: '' }, 'Todos'),
-              h('option', { value: 'A_EMBARCAR' }, '📦 A embarcar'),
-              h('option', { value: 'NAO ENTREGUE' }, '🚚 Em trânsito'),
-              h('option', { value: 'ENTREGUE' }, '✅ Entregue'),
-              h('option', { value: 'REENTREGA' }, '🔄 Reentrega'),
+              h('option', { value: 'A_EMBARCAR' }, 'A embarcar'),
+              h('option', { value: 'NAO ENTREGUE' }, 'Em trânsito'),
+              h('option', { value: 'ENTREGUE' }, 'Entregue'),
+              h('option', { value: 'REENTREGA' }, 'Reentrega'),
               h('option', { value: 'DEVOLVIDO' }, '↩️ Devolvido'),
               // [cf-canc-v1] ARQUIVADO = cancelada (era 'CANCELADO', que nao existe)
-              h('option', { value: 'ARQUIVADO' }, '🗄️ Cancelada'),
+              h('option', { value: 'ARQUIVADO' }, 'Cancelada'),
             )
           ),
           h('div', null,
@@ -701,11 +702,11 @@
             h('select', { value: slaFiltro, onChange: e => setSlaFiltro(e.target.value),
               className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
               h('option', { value: '' }, 'Todos'),
-              h('option', { value: 'no_prazo' }, '🟢 No prazo'),
-              h('option', { value: 'atencao' }, '🟡 Atenção (≤30m)'),
-              h('option', { value: 'iminente' }, '🟠 Iminente (≤15m)'),
-              h('option', { value: 'estourado' }, '🔴 Estourado'),
-              h('option', { value: 'agendado' }, '🕗 Agendado')
+              h('option', { value: 'no_prazo' }, 'No prazo'),
+              h('option', { value: 'atencao' }, 'Atenção (≤30m)'),
+              h('option', { value: 'iminente' }, 'Iminente (≤15m)'),
+              h('option', { value: 'estourado' }, 'Estourado'),
+              h('option', { value: 'agendado' }, 'Agendado')
             )
           ),
           h('div', { className: 'flex-1 min-w-[200px]' },
@@ -718,7 +719,7 @@
           h('button', {
             onClick: () => carregar(0), disabled: loading,
             className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50',
-          }, loading ? '⏳' : '🔍 Buscar')
+          }, loading ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar"))
         )
       ),
 
@@ -728,14 +729,14 @@
           h('span', { className: 'relative inline-block w-9 h-5 rounded-full transition-colors ' + (slaModo ? 'bg-purple-600' : 'bg-gray-300') },
             h('span', { className: 'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow', style: { transform: slaModo ? 'translateX(16px)' : 'translateX(0)', transition: 'transform .15s' } })
           ),
-          h('span', { className: 'text-sm font-medium text-gray-700' }, '🏁 Ver SLA das finalizadas')
+          h('span', { className: 'text-sm font-medium text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-flag" })), "Ver SLA das finalizadas"))
         ),
         slaModo && h('span', { className: 'ml-auto text-xs text-gray-500' },
           'Dia ' + ((de || ate || hojeBRT()).split('-').reverse().slice(0, 2).join('/')) + ' · segue o filtro De/Até acima')
       ),
 
       slaModo && h('div', { className: 'flex flex-wrap gap-2' },
-        [['todas', 'Todas', slaBase.length], ['dentro', '🟢 Dentro do prazo', slaDentro], ['fora', '🔴 Fora do prazo', slaFora]].map(function (o) {
+        [['todas', 'Todas', slaBase.length], ['dentro', h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })), "Dentro do prazo"), slaDentro], ['fora', h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })), "Fora do prazo"), slaFora]].map(function (o) {
           const id = o[0];
           return h('button', { key: id, onClick: () => setSlaFilt(id),
             className: 'text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ' + (slaFilt === id ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'),
@@ -767,7 +768,7 @@
                     h('td', { className: 'px-4 py-2.5 tabular-nums text-gray-700 whitespace-nowrap' }, fmtFinSla(r.entregue_em)),
                     h('td', { className: 'px-4 py-2.5 text-right' },
                       h('span', { className: 'inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ' + (noPrazo ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700') },
-                        noPrazo ? '✅ no prazo' : '⚠️ estourada')
+                        noPrazo ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "no prazo") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "estourada"))
                     )
                   );
                 }))
@@ -779,13 +780,13 @@
       // Cards KPI por status
       !slaModo && h('div', { className: 'grid grid-cols-6 gap-3' },
         [
-          { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: '📋', filter: '' },
-          { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: '📦', filter: 'A_EMBARCAR' },
+          { label: 'Total', val: total, bg: 'bg-gray-50', txt: 'text-gray-800', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), filter: '' },
+          { label: 'A embarcar', val: contadores['A_EMBARCAR'] || 0, bg: 'bg-amber-50', txt: 'text-amber-800', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), filter: 'A_EMBARCAR' },
           // [cf-canc-v1] EM_TRANSITO nunca existiu — o CF chama de 'NAO ENTREGUE'.
-          { label: 'Em trânsito', val: contadores['EM_TRANSITO'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: '🚚', filter: 'NAO ENTREGUE' },
-          { label: 'Entregue', val: contadores['ENTREGUE'] || 0, bg: 'bg-green-50', txt: 'text-green-800', icon: '✅', filter: 'ENTREGUE' },
-          { label: 'Canceladas', val: contadores['CANCELADO'] || 0, bg: 'bg-red-50', txt: 'text-red-800', icon: '🗄️', filter: 'ARQUIVADO' },
-          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-gray-50', txt: 'text-gray-700', icon: '⚠️', filter: '__SEM_OS__' },
+          { label: 'Em trânsito', val: contadores['EM_TRANSITO'] || 0, bg: 'bg-blue-50', txt: 'text-blue-800', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-truck" })), filter: 'NAO ENTREGUE' },
+          { label: 'Entregue', val: contadores['ENTREGUE'] || 0, bg: 'bg-green-50', txt: 'text-green-800', icon: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), filter: 'ENTREGUE' },
+          { label: 'Canceladas', val: contadores['CANCELADO'] || 0, bg: 'bg-red-50', txt: 'text-red-800', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), filter: 'ARQUIVADO' },
+          { label: 'Sem corrida', val: totalSemOS, bg: 'bg-gray-50', txt: 'text-gray-700', icon: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), filter: '__SEM_OS__' },
         ].map(({ label, val, bg, txt, icon, filter }) =>
           h('div', {
             key: label,
@@ -809,15 +810,15 @@
         h('div', { className: 'flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100' },
           h('span', { className: 'text-xs text-gray-500' }, total + ' NFs · página ' + (pagina + 1) + (pagTotal > 1 ? ' de ' + pagTotal : '')),
           h('div', { className: 'flex gap-2' },
-            h('button', { onClick: () => carregar(0), className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300' }, '🔄')
+            h('button', { onClick: () => carregar(0), className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })))
           )
         ),
 
         loading
-          ? h('div', { className: 'flex items-center justify-center h-32 text-gray-400 text-sm' }, '⏳ Carregando...')
+          ? h('div', { className: 'flex items-center justify-center h-32 text-gray-400 text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
           : nfs.length === 0
             ? h('div', { className: 'flex flex-col items-center justify-center h-32 text-gray-400' },
-                h('span', { className: 'text-3xl mb-2' }, '📭'),
+                h('span', { className: 'text-3xl mb-2' }, h("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" }))),
                 h('p', { className: 'text-sm' }, 'Nenhuma NF encontrada'),
                 h('p', { className: 'text-xs mt-1' }, 'Ajuste os filtros e busque novamente')
               )
@@ -857,7 +858,7 @@
                         h('td', { className: 'px-3 py-3 space-y-1' },
                           h(BadgeStatusCF, { status: v.status_cf }),
                           v.dias_atraso > 0 && h('span', { className: 'text-xs text-red-500 font-medium block' }, v.dias_atraso + 'd atraso'),
-                          v.ultimo_cf_sucesso && h('span', { className: 'text-xs text-green-600 block' }, '✓ CF notificado')
+                          v.ultimo_cf_sucesso && h('span', { className: 'text-xs text-green-600 block' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "CF notificado"))
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.tutts_os_numero
@@ -866,13 +867,13 @@
                                   onClick: () => setOsAberta(v.solicitacao_id),
                                   className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-semibold',
                                   title: 'Ver detalhes da corrida',
-                                }, '🔍 ' + v.tutts_os_numero),
+                                }, '' + v.tutts_os_numero),
                                 slaChipEl(v)
                               )
                             : h('button', {
                                 onClick: () => setNfParaCriar(v),
                                 className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-medium',
-                              }, '🚀 Criar corrida')
+                              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), "Criar corrida"))
                         ),
 
                       )
@@ -901,7 +902,7 @@
         h('div', { className: 'bg-white rounded-2xl shadow-xl w-full max-w-md p-6' },
           h('div', { className: 'flex items-center justify-between mb-4' },
             h('div', null,
-              h('h3', { className: 'text-base font-semibold text-gray-900' }, '🚀 Criar Corrida'),
+              h('h3', { className: 'text-base font-semibold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), "Criar Corrida")),
               h('p', { className: 'text-sm text-gray-500' }, 'NF ' + nfParaCriar.numero_nf + ' · ' + (nfParaCriar.nome_embarcador || ''))
             ),
             h('button', { onClick: () => setNfParaCriar(null), className: 'text-gray-400 hover:text-gray-700 text-2xl leading-none' }, '×')
@@ -916,10 +917,10 @@
             clientesCorrida.map(c => h('option', { key: c.id, value: c.id }, c.nome || c.empresa))
           ),
           h('div', { className: 'bg-gray-50 rounded-xl p-3 text-xs text-gray-500 mb-4 space-y-1' },
-            h('p', null, '📍 Coleta: ' + (nfParaCriar.nome_embarcador || nfParaCriar.cnpj_embarcador)),
-            h('p', null, '📦 Entrega: ' + nfParaCriar.destinatario_nome),
-            h('p', null, '🏙️ ' + [nfParaCriar.destinatario_cidade, nfParaCriar.destinatario_uf].filter(Boolean).join(' / ')),
-            nfParaCriar.centro_custo_mapp && h('p', null, '💼 Centro de custo: ' + nfParaCriar.centro_custo_mapp)
+            h('p', null, 'Coleta: ' + (nfParaCriar.nome_embarcador || nfParaCriar.cnpj_embarcador)),
+            h('p', null, 'Entrega: ' + nfParaCriar.destinatario_nome),
+            h('p', null, '' + [nfParaCriar.destinatario_cidade, nfParaCriar.destinatario_uf].filter(Boolean).join(' / ')),
+            nfParaCriar.centro_custo_mapp && h('p', null, 'Centro de custo: ' + nfParaCriar.centro_custo_mapp)
           ),
           h('div', { className: 'flex gap-3' },
             h('button', { onClick: () => setNfParaCriar(null), className: 'flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50' }, 'Cancelar'),
@@ -946,7 +947,7 @@
                 finally { setCriandoCorrida(false); }
               },
               className: 'flex-1 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 font-medium',
-            }, criandoCorrida ? '⏳ Criando...' : '🚀 Criar Corrida')
+            }, criandoCorrida ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Criando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), "Criar Corrida"))
           )
         )
       ),
@@ -1011,7 +1012,7 @@
     return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4', onClick: e => e.target === e.currentTarget && onFechar() },
       h('div', { className: 'bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto' },
         h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' },
-          h('h3', { className: 'text-base font-semibold text-gray-800' }, embarcador ? '✏️ Editar Embarcador' : '➕ Nova Filial'),
+          h('h3', { className: 'text-base font-semibold text-gray-800' }, embarcador ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar Embarcador") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Nova Filial")),
           h('button', { onClick: onFechar, className: 'text-gray-400 hover:text-gray-600 text-xl leading-none' }, '×')
         ),
         h('div', { className: 'p-5 space-y-4' },
@@ -1026,7 +1027,7 @@
             )
           ),
           h('div', { className: 'border-t border-gray-100 pt-3' },
-            h('p', { className: 'text-xs font-semibold text-purple-700 uppercase tracking-wide mb-3' }, '📍 Endereço de Coleta')
+            h('p', { className: 'text-xs font-semibold text-purple-700 uppercase tracking-wide mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Endereço de Coleta"))
           ),
           h('div', null,
             h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' },
@@ -1083,7 +1084,7 @@
             h('p', { className: 'text-[11px] text-gray-400 mt-1' },
               opcoesCategoria.length > 0
                 ? 'Vale pro poller automático e pra criação manual de corrida.'
-                : '⚠️ Cliente sem categorias cadastradas — digite a sigla da Mapp (ex: M = Motofrete).'
+                : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Cliente sem categorias cadastradas — digite a sigla da Mapp (ex: M = Motofrete).")
             )
           )
         ),
@@ -1149,14 +1150,14 @@
 
     return h('div', { className: 'space-y-5' },
       h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-semibold text-gray-700 mb-3' }, '🏢 Cliente'),
+        h('h3', { className: 'text-sm font-semibold text-gray-700 mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente")),
         h('select', { value: clienteSel, onChange: e => setClienteSel(e.target.value), className: 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
           h('option', { value: '' }, 'Selecione o cliente...'),
           clientes.map(c => h('option', { key: c.id, value: c.id }, c.nome || c.empresa || c.email))
         )
       ),
       clienteSel && h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-semibold text-gray-700 mb-4' }, '🔑 Credenciais ConfirmaFácil'),
+        h('h3', { className: 'text-sm font-semibold text-gray-700 mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-key" })), "Credenciais ConfirmaFácil")),
         h('div', { className: 'grid grid-cols-2 gap-4' },
           ...[
             { l: 'Email CF', c: 'cf_email', t: 'email', f: true },
@@ -1175,37 +1176,37 @@
           )
         ),
         h('div', { className: 'flex items-center gap-3 mt-4' },
-          h('button', { onClick: salvarConfig, disabled: loading, className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, loading ? 'Salvando...' : '💾 Salvar'),
-          config && h('button', { onClick: testar, disabled: testando, className: 'px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50' }, testando ? 'Testando...' : '🔌 Testar'),
+          h('button', { onClick: salvarConfig, disabled: loading, className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, loading ? 'Salvando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar")),
+          config && h('button', { onClick: testar, disabled: testando, className: 'px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50' }, testando ? 'Testando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-power" })), "Testar")),
           config?.ultimo_polling && h('span', { className: 'text-xs text-gray-400' }, 'Último polling: ' + fmtD(config.ultimo_polling))
         )
       ),
       clienteSel && config && h('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-5' },
         h('div', { className: 'flex items-center justify-between mb-4' },
-          h('h3', { className: 'text-sm font-semibold text-gray-700' }, '🏭 Filiais e endereços de coleta'),
+          h('h3', { className: 'text-sm font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Filiais e endereços de coleta")),
           h('button', { onClick: () => setModalEmb('novo'), className: 'px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700' }, '+ Nova Filial')
         ),
         embs.length === 0
-          ? h('p', { className: 'text-sm text-gray-400 text-center py-6' }, '📭 Nenhuma filial configurada ainda')
+          ? h('p', { className: 'text-sm text-gray-400 text-center py-6' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Nenhuma filial configurada ainda"))
           : h('div', { className: 'space-y-3' },
               embs.map(emb => h('div', { key: emb.id, className: 'border border-gray-100 rounded-xl p-4 hover:border-purple-200' },
                 h('div', { className: 'flex items-start justify-between gap-4' },
                   h('div', null,
                     h('p', { className: 'font-medium text-sm text-gray-800' }, emb.nome_embarcador || fmtCNPJ(emb.cnpj_embarcador)),
                     h('p', { className: 'text-xs text-gray-500 font-mono' }, fmtCNPJ(emb.cnpj_embarcador)),
-                    h('p', { className: 'text-xs text-gray-600 mt-1' }, '📍 ' + ([emb.coleta_rua, emb.coleta_numero, emb.coleta_cidade, emb.coleta_uf].filter(Boolean).join(', ') || '—')),
+                    h('p', { className: 'text-xs text-gray-600 mt-1' }, '' + ([emb.coleta_rua, emb.coleta_numero, emb.coleta_cidade, emb.coleta_uf].filter(Boolean).join(', ') || '—')),
                     h('div', { className: 'flex flex-wrap gap-1.5 mt-1' },
-                      emb.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 font-mono px-2 py-0.5 rounded inline-block' }, '💼 ' + emb.centro_custo_mapp),
+                      emb.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 font-mono px-2 py-0.5 rounded inline-block' }, '' + emb.centro_custo_mapp),
                       // [cf-cat-emb-front-v1] categoria fixa da filial
-                      emb.categoria_mapp && h('span', { className: 'text-xs bg-amber-50 text-amber-700 font-mono px-2 py-0.5 rounded inline-block' }, '🏷️ ' + emb.categoria_mapp)
+                      emb.categoria_mapp && h('span', { className: 'text-xs bg-amber-50 text-amber-700 font-mono px-2 py-0.5 rounded inline-block' }, '' + emb.categoria_mapp)
                     )
                   ),
                   h('div', { className: 'flex gap-2' },
-                    h('button', { onClick: () => setModalEmb(emb), className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300' }, '✏️'),
+                    h('button', { onClick: () => setModalEmb(emb), className: 'text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-purple-300' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" }))),
                     h('button', {
                       onClick: async () => { if (!confirm('Desativar?')) return; await fetchAuth(API_URL + '/confirmafacil/embarcadores/' + emb.id, { method: 'DELETE' }); setEmbs(prev => prev.filter(e => e.id !== emb.id)); showToast('Desativado', 'success'); },
                       className: 'text-xs px-3 py-1.5 border border-red-100 rounded-lg hover:border-red-300 text-red-500'
-                    }, '🗑️')
+                    }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })))
                   )
                 )
               ))
@@ -1459,15 +1460,15 @@
           ),
           h('div', { className: 'flex flex-wrap gap-2 mt-3' },
             h('span', { className: 'text-[11px] font-bold px-2 py-1 rounded-lg ' + (f.margem <= 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') },
-              '🎯 Margem hoje: ' + (f.margem <= 0 ? '0 — no limite' : f.margem)),
-            h('span', { className: 'text-[11px] font-bold px-2 py-1 rounded-lg bg-blue-50 text-blue-700' }, '📉 Projeção: ' + f.proj.toFixed(1) + '%')
+              'Margem hoje: ' + (f.margem <= 0 ? '0 — no limite' : f.margem)),
+            h('span', { className: 'text-[11px] font-bold px-2 py-1 rounded-lg bg-blue-50 text-blue-700' }, 'Projeção: ' + f.proj.toFixed(1) + '%')
           )
         );
       }) : h('div', { className: 'text-gray-400 text-sm py-8 text-center md:col-span-2 bg-white border border-gray-200 rounded-2xl' }, 'Nenhuma corrida com SLA hoje.')
     );
 
     const lista = h('div', { className: 'space-y-2 mt-5' },
-      h('div', { className: 'font-bold text-gray-900 flex items-center gap-2 mb-1' }, '🚨 Em risco agora',
+      h('div', { className: 'font-bold text-gray-900 flex items-center gap-2 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Em risco agora"),
         h('span', { className: 'text-[11px] bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full' }, riscos.length)
       ),
       riscos.length ? riscos.map(r => {
@@ -1475,9 +1476,9 @@
         const estourou = rem <= 0, crit = rem <= 5 * 60000;
         return h('div', { key: r.solicitacao_id, className: 'bg-white border rounded-xl p-3 flex items-center justify-between gap-3 ' + (estourou || crit ? 'border-red-200 bg-red-50/40' : 'border-gray-200') },
           h('div', null,
-            h('div', { className: 'text-xs font-bold text-purple-700' }, '🔍 OS ' + (r.os || '—') + ' · ' + (r.filial || '')),
+            h('div', { className: 'text-xs font-bold text-purple-700' }, 'OS ' + (r.os || '—') + ' · ' + (r.filial || '')),
             h('div', { className: 'font-semibold text-sm text-gray-800' }, r.cliente || ''),
-            h('div', { className: 'text-[11px] text-gray-500' }, '📍 ' + (r.destino || ''))
+            h('div', { className: 'text-[11px] text-gray-500' }, '' + (r.destino || ''))
           ),
           h('div', { className: 'text-right' },
             h('div', { className: 'text-lg font-extrabold ' + (estourou || crit ? 'text-red-600 animate-pulse' : 'text-orange-600') },
@@ -1485,7 +1486,7 @@
             h('div', { className: 'text-[10px] text-gray-400' }, 'vence ' + hmBRT(dl))
           )
         );
-      }) : h('div', { className: 'text-gray-400 text-sm py-5 text-center bg-white border border-gray-200 rounded-xl' }, 'Nenhuma corrida em risco no momento. 🎉')
+      }) : h('div', { className: 'text-gray-400 text-sm py-5 text-center bg-white border border-gray-200 rounded-xl' }, 'Nenhuma corrida em risco no momento. ')
     );
 
     return h('div', { className: 'space-y-3' },
@@ -1497,7 +1498,7 @@
           h('button', { onClick: () => setVista('historico'),
             className: 'text-sm px-4 py-1.5 rounded-lg ' + (vista === 'historico' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500') }, 'Histórico')
         ),
-        vista === 'diario' && h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, '📲 Enviar teste')
+        vista === 'diario' && h('button', { onClick: testarAlerta, className: 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Enviar teste"))
       ),
       vista === 'diario'
         ? h('div', { className: 'space-y-2' },
@@ -1509,7 +1510,7 @@
               dataDia
                 ? h('button', { onClick: () => setDataDia(''),
                     className: 'text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100' }, '↩ Voltar pra hoje')
-                : h('span', { className: 'text-[11px] text-green-600 flex items-center gap-1' }, '● ao vivo (atualiza a cada 1 min)')
+                : h('span', { className: 'text-[11px] text-green-600 flex items-center gap-1' }, 'ao vivo (atualiza a cada 1 min)')
             ),
             h('div', { className: 'text-[11px] text-gray-400' }, 'Meta diária por filial · risco a ≤15 min · SLA do ConfirmaFácil · alerta automático no WhatsApp'),
             painel, lista
@@ -1528,12 +1529,12 @@
     return h('div', { className: 'p-4 md:p-6 max-w-6xl mx-auto space-y-5' },
       h('div', { className: 'flex items-center justify-between' },
         h('div', null,
-          h('h1', { className: 'text-xl font-bold text-gray-900' }, '🔗 ConfirmaFácil'),
+          h('h1', { className: 'text-xl font-bold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "ConfirmaFácil")),
           h('p', { className: 'text-sm text-gray-500 mt-0.5' }, 'Integração de NFs e rastreamento de entregas')
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
-        [{ id: 'nfs', label: '📄 NFs Recebidas' }, { id: 'risco', label: '🛡️ Risco de SLA' }, { id: 'config', label: '⚙️ Configuração' }].map(a =>
+        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'config', label: 'Configuração' }].map(a =>
           h('button', {
             key: a.id, onClick: () => setAba(a.id),
             className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (aba === a.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'),

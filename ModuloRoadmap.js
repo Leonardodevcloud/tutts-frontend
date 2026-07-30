@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ============================================================
 // MÓDULO ROADMAP - FRONTEND v1
 // Tela interna admin: Roadmap + Bugs + Sugestões (3 abas)
@@ -15,29 +16,29 @@
 
   const STATUS_CONFIG = {
     roadmap: [
-      { id: 'em_avaliacao',       label: '💡 Em avaliação',      cor: '#888780', bg: '#F1EFE8', txt: '#444441' },
-      { id: 'planejado',          label: '📋 Planejado',         cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'em_desenvolvimento', label: '🚧 Em desenvolvimento',cor: '#185FA5', bg: '#E6F1FB', txt: '#0C447C' },
-      { id: 'concluido',          label: '✅ Concluído',         cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'cancelado',          label: '❌ Cancelado',         cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'em_avaliacao',       label: 'Em avaliação',      cor: '#888780', bg: '#F1EFE8', txt: '#444441' },
+      { id: 'planejado',          label: 'Planejado',         cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
+      { id: 'em_desenvolvimento', label: 'Em desenvolvimento',cor: '#185FA5', bg: '#E6F1FB', txt: '#0C447C' },
+      { id: 'concluido',          label: 'Concluído',         cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
+      { id: 'cancelado',          label: 'Cancelado',         cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
     ],
     bug: [
-      { id: 'aberto',           label: '🔴 Aberto',           cor: '#A32D2D', bg: '#FCEBEB', txt: '#791F1F' },
-      { id: 'em_correcao',      label: '🟡 Em correção',      cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'resolvido',        label: '✅ Resolvido',        cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'nao_reproduzivel', label: '⚪ Não reproduzível', cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'aberto',           label: 'Aberto',           cor: '#A32D2D', bg: '#FCEBEB', txt: '#791F1F' },
+      { id: 'em_correcao',      label: 'Em correção',      cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
+      { id: 'resolvido',        label: 'Resolvido',        cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
+      { id: 'nao_reproduzivel', label: 'Não reproduzível', cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
     ],
     sugestao: [
-      { id: 'pendente', label: '💡 Pendente', cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'aceita',   label: '✓ Aceita',    cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'recusada', label: '✗ Recusada',  cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'pendente', label: 'Pendente', cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
+      { id: 'aceita',   label: 'Aceita',    cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
+      { id: 'recusada', label: 'Recusada',  cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
     ],
   };
 
   const GRAVIDADE_CONFIG = {
-    baixo:   { label: '🟢 Baixo',   cor: '#1D9E75' },
-    medio:   { label: '🟡 Médio',   cor: '#BA7517' },
-    critico: { label: '🔴 Crítico', cor: '#A32D2D' },
+    baixo:   { label: 'Baixo',   cor: '#1D9E75' },
+    medio:   { label: 'Médio',   cor: '#BA7517' },
+    critico: { label: 'Crítico', cor: '#A32D2D' },
   };
 
   const PRIORIDADE_CONFIG = {
@@ -353,7 +354,7 @@
       // HEADER
       e('div', { className: 'mb-6' },
         e('h2', { className: 'text-2xl font-semibold text-gray-900 mb-1 flex items-center gap-2' },
-          e('span', null, '⚡'),
+          e('span', null, e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" }))),
           e('span', null, 'Desenvolvimentos')
         ),
         e('p', { className: 'text-sm text-gray-500' }, 'Acompanhe o que vem, reporte bugs e sugira melhorias')
@@ -361,9 +362,9 @@
 
       // TABS
       e('div', { className: 'flex gap-1 border-b border-gray-200 mb-5' },
-        renderTab(e, tab, 'roadmap',  '🚀 Roadmap',   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#534AB7'),
-        renderTab(e, tab, 'bug',      '🐛 Bugs',      sumarStatus(contadores.bug),      () => setTab('bug'),      '#A32D2D'),
-        renderTab(e, tab, 'sugestao', '💡 Sugestões', sumarStatus(contadores.sugestao), () => setTab('sugestao'), '#BA7517'),
+        renderTab(e, tab, 'roadmap',  e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Roadmap"),   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#534AB7'),
+        renderTab(e, tab, 'bug',      e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Bugs"),      sumarStatus(contadores.bug),      () => setTab('bug'),      '#A32D2D'),
+        renderTab(e, tab, 'sugestao', e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Sugestões"), sumarStatus(contadores.sugestao), () => setTab('sugestao'), '#BA7517'),
       ),
 
       // KPIs (só no roadmap)
@@ -390,8 +391,8 @@
           style: { background: corDoTab(tab) }
         },
           tab === 'roadmap' ? '+ Novo item' :
-          tab === 'bug' ? '🐛 Reportar bug' :
-          '💡 Sugerir ideia'
+          tab === 'bug' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Reportar bug") :
+          'Sugerir ideia'
         )
       ),
 
@@ -401,7 +402,7 @@
         : itensFiltrados.length === 0
           ? e('div', { className: 'text-center py-16 text-gray-400 bg-gray-50 rounded-xl' },
               e('div', { className: 'text-3xl mb-2' },
-                tab === 'roadmap' ? '🗺️' : tab === 'bug' ? '🐛' : '💡'
+                tab === 'roadmap' ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-map" })) : tab === 'bug' ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })) : e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" }))
               ),
               e('p', { className: 'text-sm' }, 'Nada por aqui ainda.')
             )
@@ -636,7 +637,7 @@
           // Anexos
           (item.anexos_count || 0) > 0 && e('div', { className: 'mb-1' },
             e('p', { className: 'text-[10px] font-semibold text-gray-500 mb-1.5' },
-              `📎 Anexos (${item.anexos_count})`),
+              `Anexos (${item.anexos_count})`),
             anexos === null
               ? e('p', { className: 'text-[11px] text-gray-400' }, 'Carregando anexos…')
               : anexosErro
@@ -655,7 +656,7 @@
                       className: 'flex items-center justify-between bg-gray-50 border border-gray-100 px-2.5 py-1.5 rounded text-[11px] mb-1'
                     },
                       e('span', { className: 'text-gray-600 truncate', style: { maxWidth: '70%' } },
-                        `${a.mime_type === 'application/pdf' ? '📄' : '📃'} ${a.nome_arquivo}`),
+                        `${a.mime_type === 'application/pdf' ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-filetext" })) : e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-filetext" }))} ${a.nome_arquivo}`),
                       e('button', {
                         onClick: (ev) => { ev.stopPropagation(); baixarAnexoRoadmap(a, api, fetchAuth, showToast); },
                         className: 'text-blue-600 hover:underline font-medium'
@@ -667,7 +668,7 @@
 
         // Dica de expandir/recolher
         e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#534AB7' } },
-          e('span', { style: { display: 'inline-block', transform: expandido ? 'rotate(180deg)' : 'none' } }, '▾'),
+          e('span', { style: { display: 'inline-block', transform: expandido ? 'rotate(180deg)' : 'none' } }, ''),
           e('span', null, expandido ? 'Recolher' : 'Ver detalhes')
         )
       ),
@@ -675,8 +676,8 @@
       // Linha 4: meta info compacta (só quando recolhido — no expandido já tem o bloco de detalhes)
       !expandido && (item.data_prevista || (item.anexos_count || 0) > 0 || item.motivo_recusa) &&
         e('div', { className: 'text-[10px] text-gray-500 mt-1.5 mb-1.5 flex items-center gap-2 flex-wrap' },
-          item.tipo === 'roadmap' && item.data_prevista && e('span', null, `📅 ${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
-          (item.anexos_count || 0) > 0 && e('span', null, `📎 ${item.anexos_count}`),
+          item.tipo === 'roadmap' && item.data_prevista && e('span', null, `${new Date(item.data_prevista).toLocaleDateString('pt-BR')}`),
+          (item.anexos_count || 0) > 0 && e('span', null, `${item.anexos_count}`),
           item.motivo_recusa && e('span', { className: 'italic truncate', style: { maxWidth: '100%' } }, item.motivo_recusa.slice(0, 50) + (item.motivo_recusa.length > 50 ? '…' : ''))
         ),
 
@@ -821,9 +822,9 @@
 
   function obterAcaoPrincipal(item, actions) {
     if (item.tipo === 'roadmap') {
-      if (item.status === 'em_avaliacao')       return { label: '📋 Planejar', cor: '#BA7517', onClick: () => actions.onTransicao('planejado') };
-      if (item.status === 'planejado')          return { label: '🚧 Iniciar', cor: '#185FA5', onClick: () => actions.onTransicao('em_desenvolvimento') };
-      if (item.status === 'em_desenvolvimento') return { label: '✓ Concluir', cor: '#1D9E75', onClick: () => actions.onTransicao('concluido') };
+      if (item.status === 'em_avaliacao')       return { label: 'Planejar', cor: '#BA7517', onClick: () => actions.onTransicao('planejado') };
+      if (item.status === 'planejado')          return { label: 'Iniciar', cor: '#185FA5', onClick: () => actions.onTransicao('em_desenvolvimento') };
+      if (item.status === 'em_desenvolvimento') return { label: 'Concluir', cor: '#1D9E75', onClick: () => actions.onTransicao('concluido') };
       // concluido / cancelado: principal = reabrir
       if (item.status === 'concluido' || item.status === 'cancelado') {
         return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('em_avaliacao') };
@@ -831,13 +832,13 @@
     }
     if (item.tipo === 'bug') {
       if (item.status === 'aberto')         return { label: '→ Em correção', cor: '#BA7517', onClick: () => actions.onTransicao('em_correcao') };
-      if (item.status === 'em_correcao')    return { label: '✓ Resolvido', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') };
+      if (item.status === 'em_correcao')    return { label: 'Resolvido', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') };
       if (item.status === 'resolvido' || item.status === 'nao_reproduzivel') {
         return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') };
       }
     }
     if (item.tipo === 'sugestao') {
-      if (item.status === 'pendente') return { label: '✓ Aceitar', cor: '#1D9E75', onClick: actions.onAceitar };
+      if (item.status === 'pendente') return { label: 'Aceitar', cor: '#1D9E75', onClick: actions.onAceitar };
       if (item.status === 'recusada') return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('pendente') };
       // 'aceita' não tem principal
     }
@@ -849,34 +850,34 @@
 
     if (item.tipo === 'roadmap') {
       if (item.status === 'em_avaliacao') {
-        sec.push({ label: '🚧 Iniciar desenvolvimento', onClick: () => actions.onTransicao('em_desenvolvimento') });
-        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
+        sec.push({ label: 'Iniciar desenvolvimento', onClick: () => actions.onTransicao('em_desenvolvimento') });
+        sec.push({ label: 'Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       } else if (item.status === 'planejado') {
         sec.push({ label: '↺ Voltar p/ avaliação', cor: '#6B7280', onClick: () => actions.onTransicao('em_avaliacao') });
-        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
+        sec.push({ label: 'Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       } else if (item.status === 'em_desenvolvimento') {
         sec.push({ label: '↺ Voltar p/ planejado', cor: '#6B7280', onClick: () => actions.onTransicao('planejado') });
-        sec.push({ label: '✗ Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
+        sec.push({ label: 'Cancelar', cor: '#6B7280', onClick: () => actions.onTransicao('cancelado') });
       }
     }
     if (item.tipo === 'bug') {
       if (item.status === 'aberto') {
-        sec.push({ label: '✓ Resolvido (sem correção)', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') });
-        sec.push({ label: '⚪ Não reproduzível', cor: '#6B7280', onClick: () => actions.onTransicao('nao_reproduzivel') });
+        sec.push({ label: 'Resolvido (sem correção)', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') });
+        sec.push({ label: 'Não reproduzível', cor: '#6B7280', onClick: () => actions.onTransicao('nao_reproduzivel') });
       } else if (item.status === 'em_correcao') {
         sec.push({ label: '↺ Voltar p/ aberto', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') });
       }
     }
     if (item.tipo === 'sugestao' && item.status === 'pendente') {
-      sec.push({ label: '✗ Recusar', cor: '#A32D2D', onClick: () => actions.onTransicao('recusada') });
+      sec.push({ label: 'Recusar', cor: '#A32D2D', onClick: () => actions.onTransicao('recusada') });
     }
 
     // Universais (em todos os cards)
     if ((item.anexos_count || 0) > 0) {
-      sec.push({ label: '📎 Ver anexos', cor: '#185FA5', onClick: actions.onDetalhe });
+      sec.push({ label: 'Ver anexos', cor: '#185FA5', onClick: actions.onDetalhe });
     }
-    sec.push({ label: '✏️ Editar', onClick: actions.onEdit });
-    sec.push({ label: '🗑️ Excluir', cor: '#A32D2D', onClick: actions.onDelete });
+    sec.push({ label: 'Editar', onClick: actions.onEdit });
+    sec.push({ label: 'Excluir', cor: '#A32D2D', onClick: actions.onDelete });
 
     return sec;
   }
@@ -891,7 +892,7 @@
     const ehEdicao = !!modalForm.item;
     const titulo = ehEdicao
       ? (tipo === 'bug' ? 'Editar bug' : tipo === 'sugestao' ? 'Editar sugestão' : 'Editar item')
-      : (tipo === 'bug' ? '🐛 Reportar bug' : tipo === 'sugestao' ? '💡 Sugerir ideia' : '+ Novo item de roadmap');
+      : (tipo === 'bug' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Reportar bug") : tipo === 'sugestao' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Sugerir ideia") : '+ Novo item de roadmap');
 
     return e('div', {
       className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4',
@@ -996,7 +997,7 @@
               key: i,
               className: 'flex items-center justify-between bg-gray-50 px-3 py-1.5 rounded text-xs'
             },
-              e('span', null, `📎 ${a.nome} (${(a.tamanho/1024).toFixed(0)}KB)`),
+              e('span', null, `${a.nome} (${(a.tamanho/1024).toFixed(0)}KB)`),
               e('button', { onClick: () => removerAnexoPendente(i), className: 'text-red-500', disabled: formEnviando }, '×')
             ))
           )
@@ -1009,7 +1010,7 @@
             onClick: submeterForm, disabled: formEnviando,
             className: 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50',
             style: { background: corDoTab(tipo) }
-          }, formEnviando ? '⏳ Salvando...' : (ehEdicao ? 'Salvar' : 'Criar'))
+          }, formEnviando ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Salvando...") : (ehEdicao ? 'Salvar' : 'Criar'))
         )
       )
     );
@@ -1090,7 +1091,7 @@
                   key: a.id,
                   className: 'flex items-center justify-between bg-gray-50 px-3 py-2 rounded text-xs'
                 },
-                  e('span', null, `📎 ${a.nome_arquivo} (${(a.tamanho_bytes/1024).toFixed(0)}KB)`),
+                  e('span', null, `${a.nome_arquivo} (${(a.tamanho_bytes/1024).toFixed(0)}KB)`),
                   e('button', { onClick: () => baixar(a), className: 'text-blue-600 hover:underline' }, 'Baixar')
                 ))
               )

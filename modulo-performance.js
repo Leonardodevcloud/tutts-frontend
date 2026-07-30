@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ================================================================
 // MÓDULO PERFORMANCE DIÁRIA - Tutts v2.0
 // Arquivo: modulo-performance.js
@@ -63,7 +64,7 @@
         h('div', { className: 'mb-3' },
           h('div', { className: 'flex items-center gap-2' },
             h('p', { className: 'text-sm font-bold text-gray-900 truncate flex-1' }, card.nome_display),
-            processando && h('span', { className: 'flex items-center gap-1 text-xs text-purple-600 font-semibold animate-pulse' }, '⏳'),
+            processando && h('span', { className: 'flex items-center gap-1 text-xs text-purple-600 font-semibold animate-pulse' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" }))),
           ),
           card.centro_custo
             ? h('p', { className: 'text-xs text-purple-600 font-medium truncate' }, card.centro_custo)
@@ -86,11 +87,11 @@
                 total > 0 && h('div', { style: { width: `${(snap.sem_dados / total) * 100}%`, background: '#d1d5db' } }),
               ),
               h('div', { className: 'flex justify-between text-xs' },
-                h('span', { className: 'text-green-600 font-semibold' }, `✓ ${snap.no_prazo}`),
-                h('span', { className: 'text-red-500 font-semibold' }, `✗ ${snap.fora_prazo}`),
-                h('span', { className: 'text-gray-400' }, `⬜ ${snap.sem_dados}`),
+                h('span', { className: 'text-green-600 font-semibold' }, `${snap.no_prazo}`),
+                h('span', { className: 'text-red-500 font-semibold' }, `${snap.fora_prazo}`),
+                h('span', { className: 'text-gray-400' }, `${snap.sem_dados}`),
               ),
-              processando && h('p', { className: 'text-xs text-purple-500 mt-2 text-center animate-pulse font-medium' }, '🔄 Atualizando...'),
+              processando && h('p', { className: 'text-xs text-purple-500 mt-2 text-center animate-pulse font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizando...")),
             )
           : h('div', { className: 'text-center py-4' },
               h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados'),
@@ -160,7 +161,7 @@
       // Barra SLA
       snap && h('div', { className: 'bg-white border rounded-xl p-4' },
         h('div', { className: 'flex items-center justify-between mb-2' },
-          h('span', { className: 'text-sm font-bold text-gray-700' }, '📊 SLA Geral'),
+          h('span', { className: 'text-sm font-bold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "SLA Geral")),
           h('span', { className: `text-xl font-black ${c.text}` }, `${pct}%`),
         ),
         h('div', { className: 'w-full h-4 rounded-full overflow-hidden bg-gray-100 flex' },
@@ -173,7 +174,7 @@
       // Tabela de OS
       h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
         h('div', { className: 'px-4 py-3 border-b flex items-center justify-between flex-wrap gap-2' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `📋 Detalhamento por OS (${registros.length})`),
+          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `Detalhamento por OS (${registros.length})`),
           h('div', { className: 'flex items-center gap-2' },
             h('input', {
               type: 'text', placeholder: 'Buscar OS, cliente, profissional...', value: busca,
@@ -186,7 +187,7 @@
         // Chips filtro
         h('div', { className: 'px-4 py-2 flex gap-2 border-b' },
           ['todos', 'no_prazo', 'fora_prazo', 'sem_dados'].map(f => {
-            const labels = { todos: 'Todos', no_prazo: '✓ No Prazo', fora_prazo: '✗ Fora', sem_dados: '⬜ Sem Dados' };
+            const labels = { todos: 'Todos', no_prazo: 'No Prazo', fora_prazo: 'Fora', sem_dados: 'Sem Dados' };
             const ativo = filtro === f;
             return h('button', {
               key: f, onClick: () => setFiltro(f),
@@ -212,7 +213,7 @@
             h('tbody', {},
               ...filtrados.slice(0, 200).map((r, i) => {
                 const slaClass = r.sem_dados ? 'text-gray-400' : r.sla_no_prazo ? 'text-green-600' : 'text-red-600';
-                const slaLabel = r.sem_dados ? '—' : r.sla_no_prazo ? '✓ No prazo' : '✗ Fora';
+                const slaLabel = r.sem_dados ? '—' : r.sla_no_prazo ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "No prazo") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), "Fora");
                 return h('tr', { key: i, className: `border-t hover:bg-gray-50 ${r.sla_no_prazo === false ? 'bg-red-50/30' : ''}` },
                   h('td', { className: 'px-3 py-2 font-mono text-purple-700 text-xs' }, r.os),
                   h('td', { className: 'px-3 py-2 text-gray-600 text-xs max-w-[200px] truncate' }, r.nome_cliente || r.cliente_txt || ''),
@@ -390,15 +391,15 @@
           h('input', { type: 'date', value: periodo.fim, onChange: e => setPeriodo(p => ({ ...p, fim: e.target.value })),
             className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
         ),
-        h('button', { onClick: carregar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '🔄 Recarregar'),
+        h('button', { onClick: carregar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Recarregar")),
         cards.length > 0 && h('button', { onClick: () => executarTodosInterno(true), disabled: totalAtivos > 0,
           className: `px-4 py-2 rounded-lg text-sm font-semibold ${totalAtivos > 0 ? 'bg-gray-200 text-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'}` },
-          totalAtivos > 0 ? `⏳ Processando (${totalAtivos})...` : `🚀 Forçar Atualização`),
+          totalAtivos > 0 ? `Processando (${totalAtivos})...` : `Forçar Atualização`),
         // Info cron + última atualização
         h('div', { className: 'flex flex-col gap-0.5 ml-2' },
-          h('span', { className: 'text-xs text-gray-400' }, '⏰ Atualização automática: 1h (8h-19h)'),
+          h('span', { className: 'text-xs text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Atualização automática: 1h (8h-19h)")),
           cards.length > 0 && cards[0].snapshot && h('span', { className: 'text-xs text-gray-400' },
-            '📊 Última: ', fmtDT(cards.reduce((latest, c) => {
+            h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Última: "), fmtDT(cards.reduce((latest, c) => {
               if (!c.snapshot) return latest;
               return !latest || new Date(c.snapshot.criado_em) > new Date(latest) ? c.snapshot.criado_em : latest;
             }, null))
@@ -408,10 +409,10 @@
 
       // Cards
       loading
-        ? h('div', { className: 'text-center py-10' }, h('span', { className: 'text-gray-400' }, '⏳ Carregando...'))
+        ? h('div', { className: 'text-center py-10' }, h('span', { className: 'text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")))
         : cards.length === 0
           ? h('div', { className: 'bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center' },
-              h('p', { className: 'text-4xl mb-3' }, '⚙️'),
+              h('p', { className: 'text-4xl mb-3' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" }))),
               h('p', { className: 'text-gray-600 font-semibold' }, 'Nenhum cliente configurado'),
               h('p', { className: 'text-gray-400 text-sm mt-1' }, 'Vá na aba "Configurações" para adicionar clientes ao monitoramento'),
             )
@@ -558,7 +559,7 @@
                 className: 'border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400 pr-8',
               }),
               filtros.codCliente && h('button', { onClick: (e) => { e.stopPropagation(); setFiltros(f => ({ ...f, codCliente: '', centroCusto: '' })); setBuscaCliente(''); },
-                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm' }, '✕'),
+                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
             ),
             dropAberto && h('div', { className: 'absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-50' },
               clientesFiltrados.length === 0
@@ -579,7 +580,7 @@
             !filtros.codCliente
               ? h('select', { disabled: true, className: 'border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400' }, h('option', {}, 'Selecione um cliente'))
               : ccLoading
-                ? h('div', { className: 'border rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50' }, '⏳')
+                ? h('div', { className: 'border rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })))
                 : h('select', { value: filtros.centroCusto, onChange: e => setFiltros(f => ({ ...f, centroCusto: e.target.value })),
                     className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
                     h('option', { value: '' }, 'Todos os centros'),
@@ -588,10 +589,10 @@
           ),
           h('button', { onClick: onExecutar, disabled: loading,
             className: `ml-auto px-5 py-2 rounded-lg text-sm font-semibold ${loading ? 'bg-gray-200 text-gray-400' : 'bg-purple-600 hover:bg-purple-700 text-white'}` },
-            loading ? '⏳ Executando...' : '🔍 Buscar Performance'),
+            loading ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Executando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar Performance")),
         ),
         jobAtual && h('div', { className: `mt-3 text-xs ${jobAtual.status === 'executando' ? 'text-blue-600' : jobAtual.status === 'concluido' ? 'text-green-600' : 'text-yellow-600'}` },
-          jobAtual.status === 'executando' ? '🤖 Playwright em execução...' : jobAtual.status === 'pendente' ? '⏳ Na fila...' : ''),
+          jobAtual.status === 'executando' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Playwright em execução...") : jobAtual.status === 'pendente' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Na fila...") : ''),
       ),
 
       // Resultados
@@ -696,7 +697,7 @@
     return h('div', { className: 'space-y-5' },
       // Adicionar
       h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase mb-4' }, '➕ Adicionar Cliente ao Monitoramento'),
+        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Adicionar Cliente ao Monitoramento")),
         h('div', { className: 'flex flex-wrap gap-4 items-end' },
           // Cliente dropdown
           h('div', { className: 'flex flex-col gap-1 relative', ref: dropRef, style: { minWidth: '300px' } },
@@ -709,7 +710,7 @@
                 className: 'border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400 pr-8',
               }),
               form.codCliente && h('button', { onClick: () => { setForm({ codCliente: '', centroCusto: '' }); setBuscaCliente(''); },
-                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm' }, '✕'),
+                className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" }))),
             ),
             dropAberto && h('div', { className: 'absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-50' },
               clientesFiltrados.slice(0, 50).map(c =>
@@ -727,23 +728,23 @@
             !form.codCliente
               ? h('select', { disabled: true, className: 'border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400' }, h('option', {}, 'Selecione cliente'))
               : ccLoading
-                ? h('div', { className: 'border rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50' }, '⏳')
+                ? h('div', { className: 'border rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })))
                 : h('select', { value: form.centroCusto, onChange: e => setForm(f => ({ ...f, centroCusto: e.target.value })),
                     className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
                     h('option', { value: '' }, 'Todos os centros'),
                     ...centrosCusto.map(cc => h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo)),
                   ),
           ),
-          h('button', { onClick: adicionar, className: 'px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '➕ Adicionar'),
+          h('button', { onClick: adicionar, className: 'px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Adicionar")),
         ),
       ),
 
       // Lista
       h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
         h('div', { className: 'px-5 py-3 border-b bg-gray-50' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `📋 Clientes Monitorados (${configs.length})`),
+          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `Clientes Monitorados (${configs.length})`),
         ),
-        loading ? h('div', { className: 'p-6 text-center text-gray-400' }, '⏳ Carregando...')
+        loading ? h('div', { className: 'p-6 text-center text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
         : configs.length === 0
           ? h('div', { className: 'p-6 text-center text-gray-400' }, 'Nenhum cliente configurado')
           : h('div', { className: 'divide-y' },
@@ -753,7 +754,7 @@
                     h('p', { className: 'text-sm font-semibold text-gray-900' }, cfg.mascara || cfg.nome_display || `Cliente ${cfg.cod_cliente}`),
                     h('p', { className: 'text-xs text-gray-500' }, `Cód: ${cfg.cod_cliente}${cfg.centro_custo ? ` · CC: ${cfg.centro_custo}` : ' · Todos os centros'}`),
                   ),
-                  h('button', { onClick: () => remover(cfg.id), className: 'px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg font-semibold' }, '🗑️ Remover'),
+                  h('button', { onClick: () => remover(cfg.id), className: 'px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg font-semibold' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Remover")),
                 )
               ),
             ),
@@ -781,9 +782,9 @@
 
     return h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
       h('div', { className: 'px-5 py-3 border-b bg-gray-50' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, '🗂️ Histórico de Jobs'),
+        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Histórico de Jobs")),
       ),
-      loading ? h('div', { className: 'p-6 text-center text-gray-400' }, '⏳')
+      loading ? h('div', { className: 'p-6 text-center text-gray-400' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })))
       : h('div', { className: 'overflow-x-auto' },
           h('table', { className: 'w-full text-sm' },
             h('thead', {}, h('tr', { className: 'bg-gray-50 text-xs uppercase text-gray-500' },

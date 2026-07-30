@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO SCORE V2 (ADMIN) ====================
 // Arquivo: modulo-score-v2.js
 // Tela admin pra configurar score por região + ver sorteios + motoboys.
@@ -29,7 +30,7 @@
 
         return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
             h('div', { className: 'flex items-center gap-3 mb-5' },
-                h('div', { className: 'w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-xl shadow-sm' }, '🏆'),
+                h('div', { className: 'w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-xl shadow-sm' }, h("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" }))),
                 h('div', null,
                     h('h2', { className: 'text-lg font-semibold text-gray-900 leading-tight' }, 'Score dos profissionais'),
                     h('p', { className: 'text-xs text-gray-500' }, 'Gamificação por praça')
@@ -37,11 +38,11 @@
             ),
             h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 overflow-x-auto' },
                 [
-                    { id: 'configuracoes', label: 'Configurações', icon: '⚙️' },
-                    { id: 'aproveitamento', label: 'Aproveitamento', icon: '📉' },
-                    { id: 'motoboys', label: 'Categorias', icon: '🏅' },
-                    { id: 'ranking', label: 'Ranking', icon: '📅' },
-                    { id: 'sorteios', label: 'Sorteios', icon: '🎁' },
+                    { id: 'configuracoes', label: 'Configurações', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })) },
+                    { id: 'aproveitamento', label: 'Aproveitamento', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trenddown" })) },
+                    { id: 'motoboys', label: 'Categorias', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) },
+                    { id: 'ranking', label: 'Ranking', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })) },
+                    { id: 'sorteios', label: 'Sorteios', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-gift" })) },
                 ].map(t => h('button', {
                     key: t.id,
                     onClick: () => setTab(t.id),
@@ -85,7 +86,7 @@
                     const comRegra = (cfgs || []).filter(c => c.regra_aproveitamento_ativa);
                     setConfigs(comRegra);
                     if (comRegra.length > 0 && !regiaoSel) setRegiaoSel(comRegra[0].regiao);
-                } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+                } catch (err) { showToastRef.current('' + err.message, 'error'); }
             })();
         }, []);
 
@@ -105,7 +106,7 @@
                 const r = await fetchApiRef.current('/score-v2/admin/corridas-motoboys?' + p.join('&'));
                 setMotoboys((r && r.motoboys) || []);
             } catch (err) {
-                showToastRef.current('❌ ' + err.message, 'error');
+                showToastRef.current('' + err.message, 'error');
                 setMotoboys([]);
             } finally { setLoadingMb(false); }
         }, []);
@@ -120,7 +121,7 @@
                 const r = await fetchApiRef.current('/score-v2/admin/corridas-motoboy/' + codProf + q);
                 setCorridas((r && r.corridas) || []);
             } catch (err) {
-                showToastRef.current('❌ ' + err.message, 'error');
+                showToastRef.current('' + err.message, 'error');
                 setCorridas([]);
             } finally { setLoadingCorr(false); }
         }, []);
@@ -143,7 +144,7 @@
         if (configs.length === 0) {
             return h('div', { className: 'max-w-2xl mx-auto p-6 text-center' },
                 h('div', { className: 'bg-white rounded-xl border border-gray-200 p-8' },
-                    h('p', { className: 'text-4xl mb-2' }, '📉'),
+                    h('p', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-trenddown" }))),
                     h('p', { className: 'text-sm font-medium text-gray-700' }, 'Nenhuma praça com a regra de aproveitamento ativa'),
                     h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Ative a regra no botão "Editar" de uma praça, na aba Configurações.')
                 )
@@ -211,7 +212,7 @@
         return h('div', { className: 'max-w-full mx-auto p-4' },
             // cabecalho: praca + periodo
             h('div', { className: 'flex items-center gap-2 mb-3 flex-wrap' },
-                h('span', { className: 'text-base font-semibold text-gray-800' }, '📊 Corridas por motoboy'),
+                h('span', { className: 'text-base font-semibold text-gray-800' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Corridas por motoboy")),
                 h('select', {
                     value: regiaoSel,
                     onChange: (e) => setRegiaoSel(e.target.value),
@@ -345,7 +346,7 @@
                 setConfigs(cfgs || []);
                 setRegioesDisp(regs || []);
             } catch (err) {
-                showToastRef.current('❌ ' + err.message, 'error');
+                showToastRef.current('' + err.message, 'error');
             } finally {
                 setLoading(false);
             }
@@ -415,7 +416,7 @@
             !configs.some(c => c.regiao.toUpperCase() === r.regiao.toUpperCase())
         );
 
-        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...');
+        if (loading) return h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."));
 
         return h('div', null,
             // 🆕 2026-07: cabeçalho com recálculo global de todas as praças
@@ -427,7 +428,7 @@
                 h('button', {
                     onClick: recalcularTudo,
                     className: 'px-3 py-2 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50'
-                }, '🔄 Recalcular todas as praças')
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Recalcular todas as praças"))
             ),
 
             // 🚀 2026-05: Painel de regiões sem score — redesign com busca + chips cinzas com badge
@@ -493,18 +494,18 @@
                 className: 'w-full flex items-center justify-between gap-2 p-4 hover:bg-gray-50 transition-colors text-left'
             },
                 h('div', { className: 'flex items-center gap-2' },
-                    h('span', { className: 'text-base' }, '📍'),
+                    h('span', { className: 'text-base' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
                     h('span', { className: 'text-sm font-semibold text-gray-900' }, 'Configurar nova praça')
                 ),
                 h('div', { className: 'flex items-center gap-2' },
                     h('span', { className: 'text-[11px] font-medium bg-purple-50 text-purple-700 rounded-full', style: { padding: '4px 10px' } },
                         regioes.length + ' praças · ' + totalMotoboys.toLocaleString('pt-BR')),
-                    h('span', { className: 'text-gray-400', style: { fontSize: '11px', transition: 'transform .2s', transform: aberto ? 'rotate(180deg)' : 'none', display: 'inline-block' } }, '▼')
+                    h('span', { className: 'text-gray-400', style: { fontSize: '11px', transition: 'transform .2s', transform: aberto ? 'rotate(180deg)' : 'none', display: 'inline-block' } }, '')
                 )
             ),
             aberto && h('div', { className: 'px-4 pb-4' },
                 h('div', { className: 'relative mb-3' },
-                    h('span', { className: 'absolute text-gray-400', style: { left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px' } }, '🔍'),
+                    h('span', { className: 'absolute text-gray-400', style: { left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" }))),
                     h('input', {
                         type: 'text', value: busca, placeholder: 'Buscar praça...',
                         onChange: e => setBusca(e.target.value),
@@ -565,7 +566,7 @@
             h('div', { className: 'flex items-start justify-between gap-3 mb-4 flex-wrap' },
                 h('div', null,
                     h('div', { className: 'flex items-center gap-2' },
-                        h('span', { className: 'text-base' }, '📍'),
+                        h('span', { className: 'text-base' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
                         h('h3', { className: 'font-semibold text-gray-900' }, cfg.regiao),
                         h('span', { className: 'px-2.5 py-0.5 rounded-full text-[11px] font-medium ' + (ativo ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500') },
                             ativo ? 'Ativo' : 'Inativo'
@@ -581,18 +582,18 @@
                         onClick: onReavaliar,
                         className: 'px-3 py-1.5 text-gray-600 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50',
                         title: 'Re-avaliar todos os motoboys da região agora'
-                    }, '🔄 Reavaliar'),
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Reavaliar")),
                     ativo
-                        ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 text-gray-500 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50' }, '⏸ Desativar')
-                        : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium hover:bg-emerald-50' }, '▶ Reativar'),
-                    h('button', { onClick: onEditar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700' }, '✏️ Editar')
+                        ? h('button', { onClick: onDesativar, className: 'px-3 py-1.5 text-gray-500 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-power" })), "Desativar"))
+                        : h('button', { onClick: onAtivar, className: 'px-3 py-1.5 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium hover:bg-emerald-50' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-play" })), "Reativar")),
+                    h('button', { onClick: onEditar, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar"))
                 )
             ),
             h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2.5' },
-                miniCard({ bar: '#b45309', bg: '#fff', txt: '#92400e', num: '#1f2937' }, '🥉', 'Bronze', counts[1], 'base da praça'),
-                miniCard({ bar: '#64748b', bg: '#fff', txt: '#475569', num: '#1f2937' }, '🥈', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
-                miniCard({ bar: '#f67602', bg: '#fef6ee', txt: '#854f0b', num: '#633806' }, '🥇', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
-                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#6d28d9', num: '#4c1d95' }, '👥', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
+                miniCard({ bar: '#b45309', bg: '#fff', txt: '#92400e', num: '#1f2937' }, '', 'Bronze', counts[1], 'base da praça'),
+                miniCard({ bar: '#64748b', bg: '#fff', txt: '#475569', num: '#1f2937' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
+                miniCard({ bar: '#f67602', bg: '#fef6ee', txt: '#854f0b', num: '#633806' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
+                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#6d28d9', num: '#4c1d95' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
             )
         );
     }
@@ -661,7 +662,7 @@
                 // Header
                 h('div', { className: 'px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0' },
                     h('div', { className: 'flex items-center gap-2.5' },
-                        h('span', { className: 'text-xl' }, '⚙️'),
+                        h('span', { className: 'text-xl' }, h("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" }))),
                         h('div', null,
                             h('div', { className: 'text-[15px] font-bold text-gray-900 leading-tight' }, cfg.id ? 'Editar regras' : 'Configurar praça'),
                             h('div', { className: 'text-xs text-gray-400' }, form.regiao)
@@ -701,12 +702,12 @@
                             h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Hora de corte do pico (h)'), numInput('hora_corte_pico', 1, 0, 23))
                         ),
                         h('div', { className: 'grid grid-cols-2 gap-2.5 pt-3 border-t border-purple-100' },
-                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥈 Prata — % no prazo'), numInput('pct_prata', 0.1, 0, 100)),
-                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥈 Prata — dias no pico'), numInput('dias_pico_prata', 1, 0))
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })), "Prata — % no prazo")), numInput('pct_prata', 0.1, 0, 100)),
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })), "Prata — dias no pico")), numInput('dias_pico_prata', 1, 0))
                         ),
                         h('div', { className: 'grid grid-cols-2 gap-2.5' },
-                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥇 Ouro — % no prazo'), numInput('pct_ouro', 0.1, 0, 100)),
-                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, '🥇 Ouro — dias no pico'), numInput('dias_pico_ouro', 1, 0))
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })), "Ouro — % no prazo")), numInput('pct_ouro', 0.1, 0, 100)),
+                            h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })), "Ouro — dias no pico")), numInput('dias_pico_ouro', 1, 0))
                         ),
                         h('div', { className: 'text-[11px] text-gray-500 bg-gray-50 rounded-lg p-2 leading-relaxed' },
                             'O nível é o ', h('b', null, 'menor'), ' entre o que a qualidade dá e o que a presença permite. Sem os dias no pico, trava embaixo — por melhor que seja o % no prazo.'
@@ -718,7 +719,7 @@
                     h('div', { className: 'border border-gray-200 rounded-xl p-3.5' },
                         h('label', { className: 'flex items-start justify-between gap-3 cursor-pointer' },
                             h('div', { className: 'flex gap-2.5' },
-                                h('span', { className: 'text-base leading-none mt-0.5' }, '📉'),
+                                h('span', { className: 'text-base leading-none mt-0.5' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-trenddown" }))),
                                 h('div', null,
                                     h('div', { className: 'text-[13px] font-semibold text-gray-800' }, 'Alerta de aproveitamento semanal'),
                                     h('div', { className: 'text-[11px] text-gray-400' }, 'Todo sábado avalia os últimos 7 dias. Quem fica abaixo do mínimo é sinalizado no painel e avisado no app.')
@@ -738,14 +739,14 @@
                     ),
                     // Dica
                     h('div', { className: 'bg-blue-50 rounded-xl p-3 text-[11px] text-blue-900 leading-relaxed' },
-                        h('span', { className: 'font-semibold' }, '💡 '),
+                        h('span', { className: 'font-semibold' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" }))),
                         'Ao salvar, todos os motoboys da praça são recalculados em background com os novos critérios. Pra conferir a contagem por categoria, use a aba "Motoboys por Categoria".'
                     )
                 ),
                 // Footer
                 h('div', { className: 'px-5 py-3.5 border-t border-gray-100 flex gap-2.5 flex-shrink-0' },
                     h('button', { onClick: onCancelar, className: 'flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-[13px] hover:bg-gray-50' }, 'Cancelar'),
-                    h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-xl font-semibold text-[13px] hover:bg-purple-700 flex items-center justify-center gap-1.5' }, '💾 Salvar e recalcular praça')
+                    h('button', { onClick: () => onSalvar(form), className: 'flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-xl font-semibold text-[13px] hover:bg-purple-700 flex items-center justify-center gap-1.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar e recalcular praça"))
                 )
             )
         );
@@ -785,7 +786,7 @@
                     setMotoboys([]);
                     setTotal(0);
                 }
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('' + err.message, 'error'); }
             finally { setLoading(false); }
         }, [filtroNivel]);
 
@@ -840,7 +841,7 @@
                 h('input', {
                     type: 'text',
                     value: busca,
-                    placeholder: '🔍 Buscar por motoboy, código ou região...',
+                    placeholder: 'Buscar por motoboy, código ou região...',
                     onChange: e => setBusca(e.target.value),
                     className: 'flex-1 min-w-[220px] px-3 py-2 border rounded-lg text-sm'
                 }),
@@ -859,7 +860,7 @@
                 )
             ),
 
-            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")) :
             grupos.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm bg-white rounded-lg border border-gray-200' }, 'Nenhum motoboy encontrado.') :
 
             // Grid 2 colunas com cards por região
@@ -872,7 +873,7 @@
                     },
                         // Header região + total
                         h('div', { className: 'flex items-center justify-between mb-2' },
-                            h('span', { className: 'text-sm font-semibold text-gray-800' }, '📍 ' + g.regiao),
+                            h('span', { className: 'text-sm font-semibold text-gray-800' }, '' + g.regiao),
                             h('span', { className: 'text-[10px] text-gray-400' }, g.total.toLocaleString('pt-BR') + ' total')
                         ),
                         // 3 mini-cards de categoria
@@ -900,7 +901,7 @@
                                     className: 'flex items-center justify-between text-xs px-1.5 py-1 rounded ' + (idx === 0 ? 'bg-yellow-50' : '')
                                 },
                                     h('span', { className: 'truncate flex-1 ' + (idx === 0 ? 'font-medium text-gray-900' : 'text-gray-700') },
-                                        (idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : '🥉 '),
+                                        (idx === 0 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : idx === 1 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" }))),
                                         formatarPodioNome(m.nome_prof || ('#' + m.cod_prof))
                                     ),
                                     h('span', { className: 'font-semibold ' + (idx === 0 ? 'text-gray-900' : 'text-gray-500') }, m.entregas_periodo)
@@ -958,7 +959,7 @@
                 // Header modal
                 h('div', { className: 'bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-white flex items-center justify-between flex-shrink-0' },
                     h('div', null,
-                        h('h2', { className: 'text-lg font-bold' }, '📍 ' + regiaoModal.regiao),
+                        h('h2', { className: 'text-lg font-bold' }, '' + regiaoModal.regiao),
                         h('p', { className: 'text-purple-200 text-sm' },
                             regiaoModal.total.toLocaleString('pt-BR') + ' motoboys · ',
                             'Ouro: ' + (regiaoModal.porNivel[3] || 0) + ' · ',
@@ -1021,7 +1022,7 @@
                                     className: 'border-b border-gray-100 hover:bg-purple-50/40 ' + bgClasse
                                 },
                                     h('td', { className: 'px-3 py-2 text-gray-600 text-center w-12' },
-                                        idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' :
+                                        idx === 0 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : idx === 1 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : idx === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) :
                                             h('span', { className: 'text-xs font-medium text-gray-500' }, idx + 1)
                                     ),
                                     h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
@@ -1079,7 +1080,7 @@
         useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
         const carregar = useCallback(async (m) => {
-            if (!/^\d{4}-\d{2}$/.test(m)) { showToastRef.current('⚠️ Mês no formato YYYY-MM', 'warning'); return; }
+            if (!/^\d{4}-\d{2}$/.test(m)) { showToastRef.current('Mês no formato YYYY-MM', 'warning'); return; }
             setLoading(true); setErro('');
             try {
                 const data = await fetchApiRef.current('/score-v2/admin/ranking/' + m);
@@ -1089,7 +1090,7 @@
                 if (lista.length === 0) {
                     setErro('Nenhuma colocação congelada para ' + m + '. O congelamento começou em junho/2026 — meses anteriores não têm registro.');
                 }
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); setRanking([]); }
+            } catch (err) { showToastRef.current('' + err.message, 'error'); setRanking([]); }
             finally { setLoading(false); }
         }, []);
 
@@ -1104,17 +1105,17 @@
             className: 'px-2 py-0.5 rounded text-xs font-bold ' +
                 (nivel === 3 ? 'bg-yellow-100 text-yellow-800' : nivel === 2 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600')
         }, nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze');
-        const medalha = (pos) => pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : ('' + pos);
+        const medalha = (pos) => pos === 1 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : pos === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : pos === 3 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : ('' + pos);
 
         return h('div', null,
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
-                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, '📅 Classificação congelada no fechamento do mês. Disponível a partir de junho/2026.'),
+                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Classificação congelada no fechamento do mês. Disponível a partir de junho/2026.")),
                 h('div', { className: 'flex gap-2 items-end flex-wrap' },
                     h('div', null,
                         h('label', { className: 'text-xs text-purple-700 block' }, 'Mês (período)'),
                         h('input', { type: 'month', value: mes, onChange: e => setMes(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' })
                     ),
-                    h('button', { onClick: () => carregar(mes), className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, '🔍 Buscar'),
+                    h('button', { onClick: () => carregar(mes), className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar")),
                     regioes.length > 0 && h('div', null,
                         h('label', { className: 'text-xs text-purple-700 block' }, 'Região'),
                         h('select', { value: regiaoFiltro, onChange: e => setRegiaoFiltro(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' },
@@ -1124,12 +1125,12 @@
                     )
                 )
             ),
-            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")) :
             erro ? h('div', { className: 'text-center py-12 text-gray-400 text-sm px-4' }, erro) :
             Object.keys(porRegiao).length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Sem dados.') :
             h('div', null, Object.entries(porRegiao).map(([regiao, lista]) =>
                 h('div', { key: regiao, className: 'bg-white rounded-lg border border-gray-200 overflow-x-auto mb-4' },
-                    h('div', { className: 'px-3 py-2 bg-gray-50 border-b font-bold text-sm text-gray-700' }, '📍 ' + regiao + ' — ' + mesBusca + ' (' + lista.length + ' motoboys)'),
+                    h('div', { className: 'px-3 py-2 bg-gray-50 border-b font-bold text-sm text-gray-700' }, '' + regiao + ' — ' + mesBusca + ' (' + lista.length + ' motoboys)'),
                     h('table', { className: 'w-full text-sm' },
                         h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
                             h('tr', null, ['#', 'Motoboy', 'Categoria', 'Entregas', '% Prazo'].map((c, i) =>
@@ -1167,7 +1168,7 @@
             try {
                 const data = await fetchApiRef.current('/score-v2/admin/sorteios');
                 setSorteios(data || []);
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('' + err.message, 'error'); }
             finally { setLoading(false); }
         }, []);
 
@@ -1175,14 +1176,14 @@
 
         const sortearAgora = async () => {
             if (!mesManual.match(/^\d{4}-\d{2}$/)) {
-                showToastRef.current('⚠️ Informe mês no formato YYYY-MM', 'warning'); return;
+                showToastRef.current('Informe mês no formato YYYY-MM', 'warning'); return;
             }
             if (!confirm(`Disparar sorteio manual para ${mesManual}?\n\nVai sortear 1 vencedor por (região × nível) ativo. Operação idempotente — não duplica se já foi sorteado.`)) return;
             try {
                 const r = await fetchApiRef.current('/score-v2/admin/sortear-agora', { method: 'POST', body: JSON.stringify({ mes_referencia: mesManual }) });
-                showToastRef.current(`✅ ${r.sorteios.length} sorteios realizados`, 'success');
+                showToastRef.current(`${r.sorteios.length} sorteios realizados`, 'success');
                 carregar();
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('' + err.message, 'error'); }
         };
 
         const togglePart = async (id) => {
@@ -1191,22 +1192,22 @@
             try {
                 const data = await fetchApiRef.current('/score-v2/admin/sorteios/' + id + '/participantes');
                 setParticipantes((data && data.participantes) || []);
-            } catch (err) { showToastRef.current('❌ ' + err.message, 'error'); }
+            } catch (err) { showToastRef.current('' + err.message, 'error'); }
             finally { setLoadingPart(false); }
         };
 
         return h('div', null,
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
-                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, '🤖 Sorteio automático: dia 1 de cada mês 00:05 (sorteia o mês anterior)'),
+                h('p', { className: 'text-xs text-purple-900 mb-2 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Sorteio automático: dia 1 de cada mês 00:05 (sorteia o mês anterior)")),
                 h('div', { className: 'flex gap-2 items-end' },
                     h('div', null,
                         h('label', { className: 'text-xs text-purple-700' }, 'Disparo manual (mês)'),
                         h('input', { type: 'text', placeholder: 'YYYY-MM', value: mesManual, onChange: e => setMesManual(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' })
                     ),
-                    h('button', { onClick: sortearAgora, className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, '🎲 Sortear')
+                    h('button', { onClick: sortearAgora, className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-shuffle" })), "Sortear"))
                 )
             ),
-            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, '⏳ Carregando...') :
+            loading ? h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")) :
             sorteios.length === 0 ? h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Nenhum sorteio realizado ainda.') :
             h('div', { className: 'bg-white rounded-lg border border-gray-200 overflow-x-auto' },
                 h('table', { className: 'w-full text-sm' },
@@ -1224,19 +1225,19 @@
                             h('td', { className: 'px-3 py-2' },
                                 h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
                             ),
-                            h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '🏆 ' + (s.vencedor_nome || s.vencedor_cod_prof)),
+                            h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '' + (s.vencedor_nome || s.vencedor_cod_prof)),
                             h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
-                            h('td', { className: 'px-3 py-2 text-gray-600' }, (expandido === s.id ? '▾ ' : '▸ ') + s.total_participantes),
+                            h('td', { className: 'px-3 py-2 text-gray-600' }, (expandido === s.id ? '' : '') + s.total_participantes),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(s.sorteado_em))
                         ),
                         expandido === s.id && h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
                             h('td', { colSpan: 7, className: 'px-3 py-2' },
-                                loadingPart ? h('span', { className: 'text-xs text-gray-500' }, '⏳ Carregando participantes...') :
+                                loadingPart ? h('span', { className: 'text-xs text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando participantes...")) :
                                 participantes.length === 0 ? h('span', { className: 'text-xs text-gray-400' }, 'Nenhum participante registrado (sorteios anteriores a junho/2026 não têm a lista).') :
                                 h('div', null,
                                     h('p', { className: 'text-xs font-bold text-gray-600 mb-1' }, 'Participantes (' + participantes.length + '):'),
                                     h('div', { className: 'flex flex-wrap gap-1' }, participantes.map(p =>
-                                        h('span', { key: p.cod_prof, className: 'px-2 py-0.5 rounded text-xs ' + (p.foi_vencedor ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-700') }, (p.foi_vencedor ? '🏆 ' : '') + (p.nome_prof || p.cod_prof))
+                                        h('span', { key: p.cod_prof, className: 'px-2 py-0.5 rounded text-xs ' + (p.foi_vencedor ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-700') }, (p.foi_vencedor ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" })) : '') + (p.nome_prof || p.cod_prof))
                                     ))
                                 )
                             )

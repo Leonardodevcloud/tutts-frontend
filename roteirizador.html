@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutts Roteirizador</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-map"/></svg></text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -78,6 +78,9 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+<!-- ROTA_JSX_ICONS_V1 -->
+<svg id="tutts-icons" style="display:none" aria-hidden="true"><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-filetext" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></symbol><symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /> <path d="M15 18H9" /> <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /> <circle cx="17" cy="18" r="2" /> <circle cx="7" cy="18" r="2" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol></svg>
+
     <div id="root"></div>
     
     <script type="text/babel">
@@ -819,8 +822,8 @@
             };
             
             const emojiDirecao = {
-                'Norte': '⬆️', 'Nordeste': '↗️', 'Leste': '➡️', 'Sudeste': '↘️',
-                'Sul': '⬇️', 'Sudoeste': '↙️', 'Oeste': '⬅️', 'Noroeste': '↖️'
+                'Norte': '', 'Nordeste': '↗️', 'Leste': '', 'Sudeste': '↘️',
+                'Sul': '', 'Sudoeste': '↙️', 'Oeste': '', 'Noroeste': '↖️'
             };
             
             return (
@@ -829,7 +832,7 @@
                     <header className="bg-purple-900 text-white px-3 md:px-4 py-2 md:py-3 shadow-lg">
                         <div className="max-w-7xl mx-auto flex items-center justify-between">
                             <div className="flex items-center gap-2 md:gap-3">
-                                <span className="text-xl md:text-2xl">🗺️</span>
+                                <span className="text-xl md:text-2xl"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-map"/></svg></span>
                                 <div>
                                     <h1 className="font-bold text-sm md:text-lg">Tutts Roteirizador</h1>
                                     <p className="text-purple-300 text-xs hidden md:block">Olá, {usuario.nome}</p>
@@ -840,13 +843,13 @@
                                     onClick={() => setMostrarHistorico(!mostrarHistorico)}
                                     className="px-2 md:px-3 py-1 md:py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs md:text-sm"
                                 >
-                                    📋 <span className="hidden md:inline">Histórico</span>
+                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-clipboard"/></svg> <span className="hidden md:inline">Histórico</span>
                                 </button>
                                 <button 
                                     onClick={onLogout}
                                     className="px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-xs md:text-sm"
                                 >
-                                    🚪 <span className="hidden md:inline">Sair</span>
+                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-logout"/></svg> <span className="hidden md:inline">Sair</span>
                                 </button>
                             </div>
                         </div>
@@ -858,7 +861,7 @@
                             onClick={() => setAbaMobile('lista')}
                             className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'lista' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-500'}`}
                         >
-                            📝 Endereços ({enderecos.length})
+                            <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-filetext"/></svg> Endereços ({enderecos.length})
                         </button>
                         <button
                             onClick={() => {
@@ -867,7 +870,7 @@
                             }}
                             className={`flex-1 py-3 text-sm font-medium ${abaMobile === 'mapa' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-500'}`}
                         >
-                            🗺️ Mapa
+                            <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-map"/></svg> Mapa
                         </button>
                     </div>
                     
@@ -883,7 +886,7 @@
                                             value={termoBusca}
                                             onChange={(e) => setTermoBusca(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && buscarEndereco()}
-                                            placeholder="🔍 Digite o endereço e pressione Enter"
+                                            placeholder="Digite o endereço e pressione Enter"
                                             className="flex-1 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:border-purple-500"
                                         />
                                         <button
@@ -891,7 +894,7 @@
                                             disabled={buscando}
                                             className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
                                         >
-                                            {buscando ? '...' : '🔍'}
+                                            {buscando ? '...' : ''}
                                         </button>
                                     </div>
                                     
@@ -900,7 +903,7 @@
                                         type="text"
                                         value={obsEndereco}
                                         onChange={(e) => setObsEndereco(e.target.value)}
-                                        placeholder="📝 Observação (ex: Cliente João, Loja 5)"
+                                        placeholder="Observação (ex: Cliente João, Loja 5)"
                                         className="w-full mt-2 px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:border-purple-500 bg-white"
                                     />
                                     
@@ -913,7 +916,7 @@
                                                     onClick={() => adicionarEndereco(sug)}
                                                     className="px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 text-sm"
                                                 >
-                                                    📍 {sug.endereco}
+                                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> {sug.endereco}
                                                 </div>
                                             ))}
                                         </div>
@@ -932,14 +935,14 @@
                                     {/* Indicador de partida padrão */}
                                     {partidaPadrao && (
                                         <div className="mb-2 px-2 py-1 bg-green-50 border border-green-200 rounded text-xs text-green-700 flex items-center justify-between">
-                                            <span>🏠 Partida padrão configurada</span>
-                                            <button onClick={removerPartidaPadrao} className="text-red-500 hover:text-red-700">✕</button>
+                                            <span><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-home"/></svg> Partida padrão configurada</span>
+                                            <button onClick={removerPartidaPadrao} className="text-red-500 hover:text-red-700"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-x"/></svg></button>
                                         </div>
                                     )}
                                     
                                     {enderecos.length === 0 ? (
                                         <div className="text-center py-8 text-gray-400">
-                                            📍 Adicione endereços para criar a rota
+                                            <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Adicione endereços para criar a rota
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
@@ -947,11 +950,11 @@
                                                 <div key={end.id} className={`p-2 rounded-lg border ${idx === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
                                                     <div className="flex items-center gap-2">
                                                         <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${idx === 0 ? 'bg-green-500' : 'bg-purple-600'}`}>
-                                                            {idx === 0 ? '🏣' : idx}
+                                                            {idx === 0 ? '' : idx}
                                                         </span>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="text-xs font-medium text-gray-800 truncate">{end.endereco}</div>
-                                                            {end.obs && <div className="text-xs text-purple-600 truncate">📝 {end.obs}</div>}
+                                                            {end.obs && <div className="text-xs text-purple-600 truncate"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-filetext"/></svg> {end.obs}</div>}
                                                         </div>
                                                         <div className="flex gap-1">
                                                             {idx === 0 && (
@@ -959,11 +962,11 @@
                                                                     onClick={() => setMostrarConfigPartida(!mostrarConfigPartida)} 
                                                                     className="text-gray-400 hover:text-green-600"
                                                                     title="Configurar partida padrão"
-                                                                >⚙️</button>
+                                                                ><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-settings"/></svg></button>
                                                             )}
                                                             {idx > 0 && <button onClick={() => moverEndereco(idx, -1)} className="text-gray-400 hover:text-purple-600">▲</button>}
                                                             {idx < enderecos.length - 1 && <button onClick={() => moverEndereco(idx, 1)} className="text-gray-400 hover:text-purple-600">▼</button>}
-                                                            <button onClick={() => removerEndereco(end.id)} className="text-gray-400 hover:text-red-600">✕</button>
+                                                            <button onClick={() => removerEndereco(end.id)} className="text-gray-400 hover:text-red-600"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-x"/></svg></button>
                                                         </div>
                                                     </div>
                                                     {/* Menu de config da partida */}
@@ -972,7 +975,7 @@
                                                             <button 
                                                                 onClick={() => salvarPartidaPadrao(end)}
                                                                 className="flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600"
-                                                            >✓ Salvar como padrão</button>
+                                                            ><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-check"/></svg> Salvar como padrão</button>
                                                             {partidaPadrao && (
                                                                 <button 
                                                                     onClick={removerPartidaPadrao}
@@ -996,31 +999,31 @@
                                     
                                     <label className="flex items-center gap-2 mb-3 cursor-pointer text-sm">
                                         <input type="checkbox" checked={modoMultiplas} onChange={(e) => setModoMultiplas(e.target.checked)} className="w-4 h-4" />
-                                        <span>🚚 Dividir em múltiplas rotas</span>
+                                        <span><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-truck"/></svg> Dividir em múltiplas rotas</span>
                                     </label>
                                     
                                     {modoMultiplas && (
                                         <div className="mb-3 p-2 bg-purple-50 rounded-lg">
                                             {/* Modo de divisão */}
-                                            <div className="text-xs font-bold text-purple-700 mb-2">📐 Dividir por:</div>
+                                            <div className="text-xs font-bold text-purple-700 mb-2"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Dividir por:</div>
                                             <div className="flex gap-1 mb-3">
                                                 <button
                                                     onClick={() => setModoDivisao('paradas')}
                                                     className={`flex-1 px-2 py-1 rounded text-xs font-medium ${modoDivisao === 'paradas' ? 'bg-purple-600 text-white' : 'bg-white text-purple-600 border border-purple-300'}`}
                                                 >
-                                                    📦 Paradas/Rota
+                                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-package"/></svg> Paradas/Rota
                                                 </button>
                                                 <button
                                                     onClick={() => setModoDivisao('rotas')}
                                                     className={`flex-1 px-2 py-1 rounded text-xs font-medium ${modoDivisao === 'rotas' ? 'bg-purple-600 text-white' : 'bg-white text-purple-600 border border-purple-300'}`}
                                                 >
-                                                    🚚 Qtd. Rotas
+                                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-truck"/></svg> Qtd. Rotas
                                                 </button>
                                             </div>
                                             
                                             {modoDivisao === 'paradas' ? (
                                                 <>
-                                                    <div className="text-xs font-bold text-purple-700 mb-2">📦 Paradas por rota:</div>
+                                                    <div className="text-xs font-bold text-purple-700 mb-2"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-package"/></svg> Paradas por rota:</div>
                                                     <div className="flex gap-1 flex-wrap">
                                                         {[2, 3, 4, 5, 6, 8, 10].map(num => (
                                                             <button
@@ -1035,7 +1038,7 @@
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="text-xs font-bold text-purple-700 mb-2">🚚 Quantidade de rotas:</div>
+                                                    <div className="text-xs font-bold text-purple-700 mb-2"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-truck"/></svg> Quantidade de rotas:</div>
                                                     <div className="flex gap-1 flex-wrap">
                                                         {[2, 3, 4, 5, 6, 7, 8, 10].map(num => (
                                                             <button
@@ -1051,12 +1054,12 @@
                                                 </>
                                             )}
                                             
-                                            <div className="text-xs font-bold text-purple-700 mt-3 mb-2">🧭 Modo de agrupamento:</div>
+                                            <div className="text-xs font-bold text-purple-700 mt-3 mb-2"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Modo de agrupamento:</div>
                                             <div className="flex gap-1 flex-wrap">
                                                 {[
-                                                    { id: 'hibrido', label: '🔀 Híbrido', desc: 'Melhor equilíbrio' },
-                                                    { id: 'proximidade', label: '📍 Proximidade', desc: 'Mais próximos' },
-                                                    { id: 'direcao', label: '🧭 Direção', desc: 'Por região' }
+                                                    { id: 'hibrido', label: 'Híbrido', desc: 'Melhor equilíbrio' },
+                                                    { id: 'proximidade', label: 'Proximidade', desc: 'Mais próximos' },
+                                                    { id: 'direcao', label: 'Direção', desc: 'Por região' }
                                                 ].map(modo => (
                                                     <button
                                                         key={modo.id}
@@ -1072,8 +1075,8 @@
                                             {enderecos.length > 1 && (
                                                 <div className="text-xs text-purple-600 mt-2 p-2 bg-white rounded border border-purple-200">
                                                     {modoDivisao === 'paradas' 
-                                                        ? `📊 ${Math.ceil((enderecos.length - 1) / paradasPorRota)} rota(s) • ~${paradasPorRota} paradas cada`
-                                                        : `📊 ${quantidadeRotas} rota(s) • ~${Math.ceil((enderecos.length - 1) / quantidadeRotas)} paradas cada`
+                                                        ? `${Math.ceil((enderecos.length - 1) / paradasPorRota)} rota(s) • ~${paradasPorRota} paradas cada`
+                                                        : `${quantidadeRotas} rota(s) • ~${Math.ceil((enderecos.length - 1) / quantidadeRotas)} paradas cada`
                                                     }
                                                 </div>
                                             )}
@@ -1085,7 +1088,7 @@
                                         disabled={loading || enderecos.length < 2}
                                         className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-sm hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
                                     >
-                                        {loading ? '⏳ Calculando...' : modoMultiplas ? `🚚 Gerar ${modoDivisao === 'rotas' ? quantidadeRotas : Math.ceil((enderecos.length - 1) / paradasPorRota)} Rotas` : '🚀 Otimizar Rota'}
+                                        {loading ? 'Calculando...' : modoMultiplas ? `Gerar ${modoDivisao === 'rotas' ? quantidadeRotas : Math.ceil((enderecos.length - 1) / paradasPorRota)} Rotas` : 'Otimizar Rota'}
                                     </button>
                                 </div>
                             </div>
@@ -1106,10 +1109,10 @@
                                                 <button 
                                                     onClick={() => setResultado({...resultado, expandido: !resultado.expandido})}
                                                     className="text-xs text-gray-400 hover:text-purple-600 ml-1"
-                                                >{resultado.expandido ? '▲' : '▼'}</button>
+                                                >{resultado.expandido ? '' : ''}</button>
                                             </div>
                                             <div className="flex gap-1">
-                                                <button onClick={() => abrirMaps(resultado.ordem)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">📍 Maps</button>
+                                                <button onClick={() => abrirMaps(resultado.ordem)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Maps</button>
                                                 <button 
                                                     onClick={() => {
                                                         if (partidaPadrao) {
@@ -1126,7 +1129,7 @@
                                                         showToast('🚀 Rota disparada!', 'success');
                                                     }}
                                                     className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
-                                                >🚀 Disparar</button>
+                                                ><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-rocket"/></svg> Disparar</button>
                                             </div>
                                         </div>
                                         {resultado.expandido && (
@@ -1134,7 +1137,7 @@
                                                 {resultado.ordem.filter(p => !p.isRetorno).map((p, idx) => (
                                                     <div key={idx} className="flex items-start gap-2 text-xs">
                                                         <span className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 ${idx === 0 ? 'bg-green-500' : 'bg-purple-600'}`}>
-                                                            {idx === 0 ? '🏣' : idx}
+                                                            {idx === 0 ? '' : idx}
                                                         </span>
                                                         <span className="text-gray-600 break-all">{p.endereco}</span>
                                                     </div>
@@ -1148,7 +1151,7 @@
                                 {rotasGeradas.length > 0 && (
                                     <div className="bg-white rounded-lg shadow-lg p-2 rotas-container">
                                         <div className="flex items-center justify-between mb-2 px-1 pb-1 border-b border-purple-100">
-                                            <span className="text-sm font-bold text-purple-700">🚚 {rotasGeradas.length} Rotas</span>
+                                            <span className="text-sm font-bold text-purple-700"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-truck"/></svg> {rotasGeradas.length} Rotas</span>
                                             <span className="text-xs text-gray-500">
                                                 {rotasGeradas.reduce((acc, r) => acc + parseFloat(r.km || 0), 0).toFixed(1)} km total
                                             </span>
@@ -1171,10 +1174,10 @@
                                                                     setRotasGeradas(novasRotas);
                                                                 }}
                                                                 className="text-xs text-gray-400 hover:text-purple-600 ml-1"
-                                                            >{rota.expandido ? '▲' : '▼'}</button>
+                                                            >{rota.expandido ? '' : ''}</button>
                                                         </div>
                                                         <div className="flex gap-1">
-                                                            <button onClick={() => abrirMaps(rota.pontos)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">📍 Maps</button>
+                                                            <button onClick={() => abrirMaps(rota.pontos)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Maps</button>
                                                             <button 
                                                                 onClick={() => {
                                                                     const pontosRota = rota.pontos.filter(p => !p.isRetorno).slice(1);
@@ -1196,7 +1199,7 @@
                                                                     showToast(`🚀 Rota ${rota.id} disparada!`, 'success');
                                                                 }}
                                                                 className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
-                                                            >🚀 Disparar</button>
+                                                            ><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-rocket"/></svg> Disparar</button>
                                                         </div>
                                                     </div>
                                                     {rota.expandido && (
@@ -1207,11 +1210,11 @@
                                                                         className="w-4 h-4 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0"
                                                                         style={{ background: idx === 0 ? '#10b981' : rota.cor }}
                                                                     >
-                                                                        {idx === 0 ? '🏣' : idx}
+                                                                        {idx === 0 ? '' : idx}
                                                                     </span>
                                                                     <div className="flex-1 min-w-0">
                                                                         <span className="text-gray-600 break-all">{p.endereco}</span>
-                                                                        {p.obs && <span className="ml-1 text-purple-600 font-medium">• 📝 {p.obs}</span>}
+                                                                        {p.obs && <span className="ml-1 text-purple-600 font-medium">• {p.obs}</span>}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1235,7 +1238,7 @@
                             }}
                             className="md:hidden fixed bottom-4 right-4 w-14 h-14 bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40 hover:bg-purple-700 active:scale-95 transition-transform"
                         >
-                            {abaMobile === 'lista' ? '🗺️' : '📝'}
+                            {abaMobile === 'lista' ? '' : ''}
                         </button>
                     )}
                     
@@ -1244,8 +1247,8 @@
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarHistorico(false)}>
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                                 <div className="bg-purple-900 text-white px-4 py-3 flex items-center justify-between">
-                                    <span className="font-bold">📋 Histórico de Rotas</span>
-                                    <button onClick={() => setMostrarHistorico(false)} className="text-white/70 hover:text-white">✕</button>
+                                    <span className="font-bold"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-clipboard"/></svg> Histórico de Rotas</span>
+                                    <button onClick={() => setMostrarHistorico(false)} className="text-white/70 hover:text-white"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-x"/></svg></button>
                                 </div>
                                 <div className="p-4 overflow-y-auto max-h-[60vh]">
                                     {historico.length === 0 ? (
@@ -1333,7 +1336,7 @@
                 return (
                     <div className="min-h-screen gradient-bg flex items-center justify-center">
                         <div className="text-white text-center">
-                            <div className="text-4xl mb-4">🗺️</div>
+                            <div className="text-4xl mb-4"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-map"/></svg></div>
                             <div className="animate-pulse">Carregando...</div>
                         </div>
                     </div>

@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // modulo-vagas.js — Painel ADMIN da trava de vagas (sub-aba das filas)
 // Exposto como window.ModuloVagasAdmin. Sem JSX, sem Tabler/Lucide.
 //
@@ -77,7 +78,7 @@
       // ── CONFIG + CONTADOR ──
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
         e('div', { className: 'flex items-center gap-2 pb-3 border-b border-gray-100' },
-          e('span', { className: 'text-xl' }, '🔒'),
+          e('span', { className: 'text-xl' }, e("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
           e('div', null,
             e('div', { className: 'font-bold text-gray-800' }, 'Trava de vagas'),
             e('div', { className: 'text-xs text-gray-500' }, central.nome))
@@ -160,7 +161,7 @@
                         // se só tem 8 na fila?" antes de virar chamado.
                         naFila
                           ? e('span', { className: 'text-gray-500' }, o.status_fila === 'em_rota' ? 'em rota' : 'na fila (pos. ' + o.posicao + ')')
-                          : e('span', { className: 'text-amber-600 font-medium' }, '⚠️ saiu da fila — vaga continua ocupada')
+                          : e('span', { className: 'text-amber-600 font-medium' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "saiu da fila — vaga continua ocupada"))
                       ))
                   ),
                   e('button', {

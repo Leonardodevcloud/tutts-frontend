@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ══════════════════════════════════════════════════
 // Módulo: Análise Gerencial Semanal v2 (com Config)
 // ══════════════════════════════════════════════════
@@ -209,7 +210,7 @@
         h('button', {
           onClick: function() { setExpanded(true); },
           className: 'text-xs text-purple-600 hover:text-purple-800 font-semibold px-3 py-1.5 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors'
-        }, '📊 Ver evolução semanal por loja (' + lojas.length + ' lojas, ' + semanas.length + ' semanas)')
+        }, 'Ver evolução semanal por loja (' + lojas.length + ' lojas, ' + semanas.length + ' semanas)')
       );
     }
 
@@ -232,8 +233,8 @@
     return h('div', { className: 'bg-white rounded-xl shadow-sm p-4 mt-2 mb-4' },
       h('div', { className: 'flex items-center justify-between mb-3' },
         h('div', { className: 'flex items-center gap-2' },
-          h('span', { className: 'text-sm font-bold text-gray-700' }, '📈 Evolução Semanal'),
-          h('button', { onClick: function() { setExpanded(false); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+          h('span', { className: 'text-sm font-bold text-gray-700' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Evolução Semanal")),
+          h('button', { onClick: function() { setExpanded(false); }, className: 'text-xs text-gray-400 hover:text-red-500' }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
         ),
         // Metric toggle
         h('div', { className: 'flex gap-1' },
@@ -342,7 +343,7 @@
 
   function Secao(p) {
     return h('div', { className: 'mt-8 mb-4' },
-      h('div', { className: 'flex items-center gap-2 mb-1' }, h('span', { className: 'text-xl' }, p.icone || '📊'), h('h2', { className: 'text-lg font-extrabold text-gray-900' }, p.titulo)),
+      h('div', { className: 'flex items-center gap-2 mb-1' }, h('span', { className: 'text-xl' }, p.icone || ''), h('h2', { className: 'text-lg font-extrabold text-gray-900' }, p.titulo)),
       p.sub ? h('p', { className: 'text-xs text-gray-500' }, p.sub) : null
     );
   }
@@ -427,7 +428,7 @@
             h('h3', { className: 'font-bold text-gray-900' }, titulo),
             h('span', { className: 'text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold' }, items.length)
           ),
-          h('span', { className: 'text-gray-400 text-lg transition-transform ' + (isOpen ? 'rotate-180' : '') }, '▾')
+          h('span', { className: 'text-gray-400 text-lg transition-transform ' + (isOpen ? 'rotate-180' : '') }, '')
         ),
         // Conteúdo expansível
         isOpen ? h('div', { className: 'border-t border-gray-100 px-5 pb-4' },
@@ -446,7 +447,7 @@
                   h('button', {
                     onClick: function() { remover(item.id); },
                     className: 'text-red-300 hover:text-red-500 hover:bg-red-50 rounded-full w-7 h-7 flex items-center justify-center transition-colors flex-shrink-0',
-                  }, '✕')
+                  }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                 );
               })
             )
@@ -459,22 +460,22 @@
       // ── Seletor de Grupo + Adicionar ──
       h('div', { className: 'bg-white rounded-xl shadow-sm p-5 mb-6' },
         h('div', { className: 'flex items-center justify-between mb-4' },
-          h('h3', { className: 'font-bold text-gray-900' }, '⚙️ Configurar Grupos de SLA'),
+          h('h3', { className: 'font-bold text-gray-900' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Configurar Grupos de SLA")),
           h('div', { className: 'flex bg-gray-100 rounded-lg p-0.5' },
             h('button', {
               onClick: function() { setGrupo('porto_seco'); },
               className: 'px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ' + (grupo === 'porto_seco' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'),
-            }, '🚚 Porto Seco'),
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), "Porto Seco")),
             h('button', {
               onClick: function() { setGrupo('outros'); },
               className: 'px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ' + (grupo === 'outros' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'),
-            }, '📋 Outros')
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Outros"))
           )
         ),
 
         // Busca
         h('div', { className: 'relative mb-3' },
-          h('span', { className: 'absolute left-3 top-2.5 text-gray-400 text-sm' }, '🔍'),
+          h('span', { className: 'absolute left-3 top-2.5 text-gray-400 text-sm' }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
           h('input', {
             type: 'text', placeholder: 'Buscar cliente por código ou nome...',
             value: search, onChange: function(e) { setSearch(e.target.value); },
@@ -515,14 +516,14 @@
                     h('div', { className: 'flex items-center gap-2' },
                       h('span', { className: 'text-xs font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded' }, cod),
                       h('span', { className: 'font-medium text-gray-800 text-sm truncate' }, nome),
-                      isChecked ? h('span', { className: 'text-xs text-green-600' }, '✓') : null
+                      isChecked ? h('span', { className: 'text-xs text-green-600' }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))) : null
                     )
                   ),
                   // Expand arrow se tem CC
                   temCC ? h('button', {
                     onClick: function() { toggleExpand(cod); },
                     className: 'text-gray-400 hover:text-gray-600 px-2 py-1 text-xs',
-                  }, (cl.centros.length) + ' CC ' + (isExp ? '▴' : '▾')) : null
+                  }, (cl.centros.length) + ' CC ' + (isExp ? '' : '')) : null
                 ),
                 // Centros de custo expandidos
                 isExp && temCC ? h('div', { className: 'bg-gray-50/50 pl-11 pr-4 pb-2' },
@@ -557,8 +558,8 @@
       ),
 
       // ── Cards expansíveis dos grupos ──
-      GrupoCard('SLA Porto Seco', '🚚', psItems, openPS, function() { setOpenPS(!openPS); }),
-      GrupoCard('SLA Outros Monitorados', '📋', outItems, openOut, function() { setOpenOut(!openOut); })
+      GrupoCard('SLA Porto Seco', '', psItems, openPS, function() { setOpenPS(!openPS); }),
+      GrupoCard('SLA Outros Monitorados', '', outItems, openOut, function() { setOpenOut(!openOut); })
     );
   }
 
@@ -610,14 +611,14 @@
         // Toolbar
         h('div', { className: 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4' },
           h('div', null,
-            h('h1', { className: 'text-xl font-bold text-gray-900' }, '📊 Análise Gerencial Semanal'),
+            h('h1', { className: 'text-xl font-bold text-gray-900' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Análise Gerencial Semanal")),
             h('p', { className: 'text-sm text-gray-500 mt-0.5' }, 'Relatório consolidado de operações')
           ),
           h('div', { className: 'flex items-center gap-3' },
             // Tabs
             h('div', { className: 'flex bg-white border border-gray-200 rounded-lg overflow-hidden' },
-              h('button', { onClick: function() { setTab('relatorio'); }, className: 'px-4 py-2 text-sm font-semibold ' + (tab === 'relatorio' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50') }, '📈 Relatório'),
-              h('button', { onClick: function() { setTab('config'); }, className: 'px-4 py-2 text-sm font-semibold ' + (tab === 'config' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50') }, '⚙️ Config')
+              h('button', { onClick: function() { setTab('relatorio'); }, className: 'px-4 py-2 text-sm font-semibold ' + (tab === 'relatorio' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50') }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Relatório")),
+              h('button', { onClick: function() { setTab('config'); }, className: 'px-4 py-2 text-sm font-semibold ' + (tab === 'config' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50') }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Config"))
             ),
             // Semana selector (só no relatório)
             tab === 'relatorio' ? h('select', {
@@ -643,7 +644,7 @@
 
         h('div', null,
           // KPIs
-          h(Secao, { icone: '📈', titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
           h('div', { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3' },
             h(KpiCard, { label: 'Entregas', valor: fN(k.entregas), cor: '#7c3aed', sub: k.var_entregas != null ? setaV(k.var_entregas) + '%' : null, subCor: corV(k.var_entregas) }),
             h(KpiCard, { label: 'No Prazo', valor: fP(k.prazo_pct), cor: k.prazo_pct >= 85 ? '#10b981' : '#f59e0b', sub: k.var_prazo_pp != null ? (k.var_prazo_pp >= 0 ? '+' : '') + fD(k.var_prazo_pp) + ' pp' : null, subCor: corV(k.var_prazo_pp) }),
@@ -653,11 +654,11 @@
             h(KpiCard, { label: 'Entregadores', valor: fN(k.entregadores), cor: '#a855f7' })
           ),
           // SLA 767
-          h(Secao, { icone: '🏢', titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_767 || [], empty: 'Sem dados do cliente 767 nesta semana' })),
           (d.evolucao_semanal || {})[767] ? h(EvolucaoChart, { data: d.evolucao_semanal[767] }) : null,
           // Porto Seco
-          h(Secao, { icone: '🚚', titulo: 'SLA Porto Seco', sub: (d.config_count || {}).porto_seco + ' clientes configurados' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), titulo: 'SLA Porto Seco', sub: (d.config_count || {}).porto_seco + ' clientes configurados' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_porto_seco || [] })),
           // Porto Seco: evolução consolidada de todos os clientes
           (function() {
@@ -669,7 +670,7 @@
             return allLojas.length > 0 ? h(EvolucaoChart, { data: { semanas: allSemanas, lojas: allLojas } }) : null;
           })(),
           // Outros
-          h(Secao, { icone: '📋', titulo: 'SLA Outros Monitorados', sub: (d.config_count || {}).outros + ' clientes configurados' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), titulo: 'SLA Outros Monitorados', sub: (d.config_count || {}).outros + ' clientes configurados' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_outros || [] })),
           // Outros: evolução individual por cliente
           (function() {
@@ -678,13 +679,13 @@
             return outClientes.map(function(cod) { return ev[cod] ? h(EvolucaoChart, { key: cod, data: ev[cod] }) : null; });
           })(),
           // Ticket
-          h(Secao, { icone: '💰', titulo: 'Ticket Médio Líquido por Cliente', sub: 'Comparativo 4 semanas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), titulo: 'Ticket Médio Líquido por Cliente', sub: 'Comparativo 4 semanas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(CompTable, { semanas: (d.ticket_medio||{}).semanas, clientes: (d.ticket_medio||{}).clientes, tipo: 'ticket', demandaClientes: (d.demanda||{}).clientes })),
           // Demanda
-          h(Secao, { icone: '📦', titulo: 'Variação de Demanda', sub: 'Entregas por cliente — 4 semanas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), titulo: 'Variação de Demanda', sub: 'Entregas por cliente — 4 semanas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(CompTable, { semanas: (d.demanda||{}).semanas, clientes: (d.demanda||{}).clientes, tipo: 'demanda' })),
           // Garantido
-          h(Secao, { icone: '🎯', titulo: 'Mínimo Garantido' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), titulo: 'Mínimo Garantido' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(GarantidoTable, { rows: d.garantido || [] })),
           // Footer
           h('div', { className: 'text-center mt-8 text-xs text-gray-400 pb-4' }, 'Gerado em ' + new Date().toLocaleString('pt-BR') + ' · Central Tutts')

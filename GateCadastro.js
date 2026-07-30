@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ============================================================
 // GATE DE CADASTRO DO MOTOBOY - v1 (2026-05)
 // Tela obrigatória: selfie ao vivo + WhatsApp validado.
@@ -210,7 +211,7 @@
                 e('button', {
                   onClick: tirarFoto,
                   style: { flex: 1, background: ROXO, color: '#fff', border: 0, height: '46px', borderRadius: '10px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }
-                }, '📸 Tirar foto'),
+                }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-camera" })), "Tirar foto")),
                 e('button', {
                   onClick: fecharCamera,
                   style: { background: 'transparent', border: '1px solid #d1d5db', color: '#6b7280', height: '46px', padding: '0 16px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }
@@ -227,12 +228,12 @@
                     alt: 'Sua selfie',
                     style: { width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #fff' }
                   }),
-                  e('span', { style: { fontSize: '13px', color: '#E1F5EE', fontWeight: 500 } }, '✓ Foto capturada')
+                  e('span', { style: { fontSize: '13px', color: '#E1F5EE', fontWeight: 500 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Foto capturada"))
                 ),
                 e('button', {
                   onClick: abrirCamera,
                   style: { width: '100%', background: 'transparent', border: '1px solid #d1d5db', color: '#6b7280', height: '40px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '8px' }
-                }, '📷 Tirar outra foto')
+                }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-camera" })), "Tirar outra foto"))
               )
             : e('div', null,
                 e('div', {
@@ -245,7 +246,7 @@
                 },
                   e('div', {
                     style: { width: '120px', height: '120px', borderRadius: '50%', border: '2px dashed ' + ROXO_CLARO, display: 'flex', alignItems: 'center', justifyContent: 'center' }
-                  }, e('span', { style: { fontSize: '40px' } }, '📷')),
+                  }, e('span', { style: { fontSize: '40px' } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-camera" })))),
                   e('span', { style: { fontSize: '12px', color: '#CECBF6' } }, 'Toque para abrir a câmera')
                 ),
                 erroCamera && e('p', { style: { fontSize: '12px', color: '#A32D2D', margin: '8px 0 0' } }, erroCamera)
@@ -270,9 +271,9 @@
         }),
         (() => {
           if (waEstado === 'verificando') return e('div', { style: { fontSize: '12px', color: '#9ca3af', marginTop: '6px' } }, 'Verificando...');
-          if (waEstado === 'ok') return e('div', { style: { fontSize: '12px', color: '#0F6E56', marginTop: '6px', fontWeight: 500 } }, '✓ WhatsApp confirmado');
-          if (waEstado === 'sem_whatsapp') return e('div', { style: { fontSize: '12px', color: '#A32D2D', marginTop: '6px' } }, '✕ Esse número não tem WhatsApp');
-          if (waEstado === 'invalido') return e('div', { style: { fontSize: '12px', color: '#A32D2D', marginTop: '6px' } }, '✕ Número inválido');
+          if (waEstado === 'ok') return e('div', { style: { fontSize: '12px', color: '#0F6E56', marginTop: '6px', fontWeight: 500 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "WhatsApp confirmado"));
+          if (waEstado === 'sem_whatsapp') return e('div', { style: { fontSize: '12px', color: '#A32D2D', marginTop: '6px' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Esse número não tem WhatsApp"));
+          if (waEstado === 'invalido') return e('div', { style: { fontSize: '12px', color: '#A32D2D', marginTop: '6px' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Número inválido"));
           return e('div', { style: { fontSize: '12px', color: '#9ca3af', marginTop: '6px' } }, 'Vamos confirmar se tem WhatsApp');
         })(),
 

@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO COLETA DE ENDEREÇOS ====================
 // Arquivo: modulo-coleta.js
 // Base colaborativa: motoboys cadastram endereços, admin valida, todos usam.
@@ -195,7 +196,7 @@
         if (regioes.length === 0) {
             return h('div', { className: 'max-w-md mx-auto p-4 mt-8' },
                 h('div', { className: 'bg-yellow-50 border-2 border-yellow-300 rounded-xl p-5 text-center' },
-                    h('div', { className: 'text-5xl mb-3' }, '📍'),
+                    h('div', { className: 'text-5xl mb-3' }, h("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
                     h('div', { className: 'font-bold text-yellow-800 mb-1' }, 'Sem regiões vinculadas'),
                     h('div', { className: 'text-sm text-yellow-700' }, 'Entre em contato com o admin para ser incluído em uma região e ter acesso aos endereços dos clientes.')
                 )
@@ -320,7 +321,7 @@
                     className: 'rounded-xl p-6 text-center ' +
                         (aprovado ? 'bg-green-50 border-2 border-green-300' : 'bg-blue-50 border-2 border-blue-300')
                 },
-                    h('div', { className: 'text-6xl mb-3' }, aprovado ? '✅' : '⏳'),
+                    h('div', { className: 'text-6xl mb-3' }, aprovado ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" }))),
                     h('div', { className: 'font-bold text-lg mb-2' },
                         aprovado ? 'Aprovado Automaticamente!' : 'Em Análise'
                     ),
@@ -331,18 +332,18 @@
 
                     // Mostra qual critério aprovou (quando aplicável)
                     resultado.caminho_aprovacao && h('div', { className: 'bg-white border border-green-300 rounded-lg p-2 mb-3 text-xs text-left' },
-                        h('div', { className: 'font-bold text-green-700 mb-1' }, '🎯 Aprovado por:'),
-                        resultado.caminho_aprovacao === 'fachada' && '📷 Fachada confirmada pelo Google',
+                        h('div', { className: 'font-bold text-green-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-target" })), "Aprovado por:")),
+                        resultado.caminho_aprovacao === 'fachada' && h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Fachada confirmada pelo Google"),
                         resultado.caminho_aprovacao === 'endereco_nf' &&
-                            ('📍 Endereço da NF bate com sua localização' +
+                            ('Endereço da NF bate com sua localização' +
                                 (resultado.scores?.distancia_nf_metros !== null
                                     ? ' (' + resultado.scores.distancia_nf_metros + 'm)' : '')),
-                        resultado.caminho_aprovacao === 'nome_match' && '🔗 Nome da NF bate com a fachada'
+                        resultado.caminho_aprovacao === 'nome_match' && h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "Nome da NF bate com a fachada")
                     ),
 
                     // Dados extraídos da NF
                     (dn.cnpj_formatado || dn.razao_social) && h('div', { className: 'bg-white border border-gray-200 rounded-lg p-3 mb-3 text-left' },
-                        h('div', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' }, '📄 Extraído da NF'),
+                        h('div', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Extraído da NF")),
                         dn.razao_social && h('div', { className: 'text-sm font-medium text-gray-800' }, dn.razao_social),
                         dn.nome_fantasia && dn.nome_fantasia !== dn.razao_social &&
                             h('div', { className: 'text-xs text-gray-600' }, dn.nome_fantasia),
@@ -353,7 +354,7 @@
                     h('div', {
                         className: 'text-lg font-bold mb-4 ' + (aprovado ? 'text-green-700' : 'text-blue-700')
                     },
-                        aprovado ? '💰 R$ 1,00 confirmado' : '💰 R$ 1,00 previsto'
+                        aprovado ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "R$ 1,00 confirmado") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "R$ 1,00 previsto")
                     ),
                     h('button', {
                         onClick: limparForm,
@@ -370,7 +371,7 @@
             h('div', { className: 'bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4' },
                 h('div', { className: 'flex items-center justify-between' },
                     h('div', null,
-                        h('div', { className: 'text-xs text-purple-600 font-semibold uppercase tracking-wide' }, '📍 Sua região'),
+                        h('div', { className: 'text-xs text-purple-600 font-semibold uppercase tracking-wide' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Sua região")),
                         h('div', { className: 'text-lg font-bold text-purple-900 mt-0.5' },
                             regiaoAtual ? regiaoAtual.nome : '—'
                         ),
@@ -389,7 +390,7 @@
 
             // Nome do cliente (CAPS)
             h('div', { className: 'bg-white rounded-xl shadow p-4' },
-                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-1 block' }, '🏪 Nome do Cliente *'),
+                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-1 block' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Nome do Cliente *")),
                 h('input', {
                     type: 'text',
                     value: nomeCliente,
@@ -402,13 +403,13 @@
 
             // GPS
             h('div', { className: 'bg-white rounded-xl shadow p-4' },
-                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-2 block' }, '📍 Localização *'),
+                h('label', { className: 'text-xs font-bold text-gray-600 uppercase mb-2 block' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Localização *")),
                 h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-2 mb-3' },
-                    h('div', { className: 'text-xs text-red-700 font-medium' }, '⚠️ Só capture se estiver EXATAMENTE na frente do local!')
+                    h('div', { className: 'text-xs text-red-700 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Só capture se estiver EXATAMENTE na frente do local!"))
                 ),
                 gps ? h('div', { className: 'space-y-2' },
                     h('div', { className: 'bg-green-50 border border-green-300 rounded-lg p-3' },
-                        h('div', { className: 'text-xs text-green-700 font-bold mb-1' }, '✅ Localização capturada'),
+                        h('div', { className: 'text-xs text-green-700 font-bold mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Localização capturada")),
                         h('div', { className: 'text-xs text-gray-600 font-mono' }, gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6)),
                         h('div', { className: 'text-xs text-gray-500 mt-0.5' }, 'Precisão: ~' + gps.accuracy + 'm')
                     ),
@@ -416,20 +417,20 @@
                         onClick: capturarGps,
                         disabled: capturandoGps,
                         className: 'w-full py-2 border border-purple-300 text-purple-700 rounded-lg text-sm hover:bg-purple-50'
-                    }, '🔄 Recapturar')
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Recapturar"))
                 ) : h('button', {
                     onClick: capturarGps,
                     disabled: capturandoGps,
                     className: 'w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50'
-                }, capturandoGps ? '⏳ Capturando...' : '📍 Capturar localização atual')
+                }, capturandoGps ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Capturando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Capturar localização atual"))
             ),
 
             // Foto da NF (OBRIGATÓRIA — em destaque)
             h('div', { className: 'bg-white rounded-xl shadow p-4 border-2 ' + (fotoNF ? 'border-green-300' : 'border-orange-300') },
                 h('div', { className: 'flex items-center justify-between mb-2' },
-                    h('label', { className: 'text-xs font-bold text-gray-700 uppercase' }, '📄 Nota Fiscal *'),
+                    h('label', { className: 'text-xs font-bold text-gray-700 uppercase' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Nota Fiscal *")),
                     h('span', { className: 'text-xs px-2 py-0.5 rounded-full ' + (fotoNF ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700 font-bold') },
-                        fotoNF ? '✅ Anexada' : 'OBRIGATÓRIA'
+                        fotoNF ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Anexada") : 'OBRIGATÓRIA'
                     )
                 ),
                 h('div', { className: 'text-xs text-gray-600 mb-2' }, 'Foto da NF, DANFE ou cupom fiscal — usada pra extrair CNPJ e razão social do estabelecimento.'),
@@ -438,7 +439,7 @@
                     h('button', {
                         onClick: () => { setFotoNF(null); setFotoNFPreview(null); if (fileInputNFRef.current) fileInputNFRef.current.value = ''; },
                         className: 'w-full py-2 border border-red-300 text-red-700 rounded-lg text-sm'
-                    }, '🗑️ Remover NF')
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Remover NF"))
                 ) : h('div', null,
                     h('input', {
                         type: 'file',
@@ -452,14 +453,14 @@
                     h('label', {
                         htmlFor: 'foto-nf',
                         className: 'block w-full py-3 border-2 border-dashed border-orange-400 bg-orange-50 rounded-lg text-center text-orange-800 font-medium cursor-pointer hover:bg-orange-100'
-                    }, '📄 Tirar foto da Nota Fiscal')
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Tirar foto da Nota Fiscal"))
                 )
             ),
 
             // Foto da Fachada (OPCIONAL)
             h('div', { className: 'bg-white rounded-xl shadow p-4' },
                 h('div', { className: 'flex items-center justify-between mb-1' },
-                    h('label', { className: 'text-xs font-bold text-gray-600 uppercase' }, '📸 Foto da Fachada'),
+                    h('label', { className: 'text-xs font-bold text-gray-600 uppercase' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Foto da Fachada")),
                     h('span', { className: 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600' }, 'Opcional')
                 ),
                 h('div', { className: 'text-xs text-gray-500 mb-2' }, 'Com a fachada, sua chance de aprovação automática aumenta.'),
@@ -468,7 +469,7 @@
                     h('button', {
                         onClick: () => { setFoto(null); setFotoPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; },
                         className: 'w-full py-2 border border-red-300 text-red-700 rounded-lg text-sm'
-                    }, '🗑️ Remover foto')
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Remover foto"))
                 ) : h('div', null,
                     h('input', {
                         type: 'file',
@@ -482,7 +483,7 @@
                     h('label', {
                         htmlFor: 'foto-fachada',
                         className: 'block w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-600 cursor-pointer hover:border-purple-400'
-                    }, '📷 Tirar foto da fachada')
+                    }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Tirar foto da fachada"))
                 )
             ),
 
@@ -491,7 +492,7 @@
                 onClick: enviar,
                 disabled: enviando || !regiaoId || !nomeCliente.trim() || !gps || !fotoNF,
                 className: 'w-full py-4 bg-green-600 text-white rounded-xl font-bold shadow-lg hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed'
-            }, enviando ? '⏳ Analisando NF...' : '✅ Enviar Cadastro')
+            }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Analisando NF...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Enviar Cadastro"))
         );
     }
 
@@ -562,18 +563,18 @@
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-3' },
             h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-800 mb-2' },
-                '💡 Aqui você consulta os endereços dos clientes da sua região. ',
+                h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" })), "Aqui você consulta os endereços dos clientes da sua região. "),
                 'Use os botões para abrir no Maps ou Waze.'
             ),
             h('input', {
                 type: 'text',
                 value: filtro,
                 onChange: e => setFiltro(e.target.value),
-                placeholder: '🔍 Filtrar por nome ou endereço...',
+                placeholder: 'Filtrar por nome ou endereço...',
                 className: 'w-full px-3 py-2 border rounded-lg text-sm'
             }),
 
-            loading && h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...'),
+            loading && h('div', { className: 'text-center py-8 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")),
 
             // 2026-04: Seção "meus_pendentes" REMOVIDA — motoboy não cadastra mais.
 
@@ -593,23 +594,23 @@
                         },
                             // Nome do estabelecimento
                             h('div', { className: 'font-bold text-sm text-purple-800' },
-                                '🏢 ' + nomePrincipal,
+                                '' + nomePrincipal,
                                 mostraRazao && h('span', { className: 'font-normal text-xs text-gray-500 ml-1' }, '(' + e.razao_social + ')')
                             ),
 
                             // Endereço completo
                             h('div', { className: 'text-xs text-gray-700 mt-1 break-words' },
-                                '📍 ' + (e.endereco_completo || '-')
+                                '' + (e.endereco_completo || '-')
                             ),
 
                             // Cliente / "Procurar por"
                             e.procurar_por_padrao && h('div', { className: 'text-xs text-gray-700 mt-1' },
-                                '👤 Procurar por: ', h('span', { className: 'font-medium' }, e.procurar_por_padrao)
+                                h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Procurar por: "), h('span', { className: 'font-medium' }, e.procurar_por_padrao)
                             ),
 
                             // Telefone (clicável pra ligar)
                             e.telefone_padrao && h('div', { className: 'text-xs text-gray-700 mt-1' },
-                                '📞 ',
+                                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })),
                                 h('a', {
                                     href: 'tel:' + (e.telefone_padrao || '').replace(/\D/g, ''),
                                     className: 'text-blue-600 underline'
@@ -620,26 +621,26 @@
                             e.observacao_padrao && h('div', {
                                 className: 'text-xs text-gray-700 mt-1 bg-yellow-50 border border-yellow-200 rounded p-2'
                             },
-                                '📝 ', h('span', { className: 'whitespace-pre-wrap' }, e.observacao_padrao)
+                                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), h('span', { className: 'whitespace-pre-wrap' }, e.observacao_padrao)
                             ),
 
                             // Região
-                            e.regiao_nome && h('div', { className: 'text-xs text-gray-500 mt-1' }, '🗂️ ' + e.regiao_nome),
+                            e.regiao_nome && h('div', { className: 'text-xs text-gray-500 mt-1' }, '' + e.regiao_nome),
 
                             // Botões de navegação
                             h('div', { className: 'flex gap-1 mt-2 pt-2 border-t border-gray-100' },
                                 e.tem_foto && e.pendente_id && h('button', {
                                     onClick: () => abrirFoto(e.pendente_id),
                                     className: 'flex-1 py-1.5 text-xs bg-gray-100 text-gray-700 rounded'
-                                }, '📷 Foto'),
+                                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Foto")),
                                 h('button', {
                                     onClick: () => abrirMaps(e.latitude, e.longitude),
                                     className: 'flex-1 py-1.5 text-xs bg-blue-100 text-blue-700 rounded'
-                                }, '🗺️ Maps'),
+                                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Maps")),
                                 h('button', {
                                     onClick: () => abrirWaze(e.latitude, e.longitude),
                                     className: 'flex-1 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded'
-                                }, '🚗 Waze')
+                                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-car" })), "Waze"))
                             )
                         );
                     })
@@ -649,17 +650,17 @@
                     onClick: carregarMais,
                     disabled: loadingMore,
                     className: 'w-full mt-3 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm disabled:bg-gray-400 disabled:cursor-not-allowed'
-                }, loadingMore ? '⏳ Carregando...' : 'Carregar mais (' + Math.min(PAGE_SIZE, total - aprovados.length) + ')'),
+                }, loadingMore ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...") : 'Carregar mais (' + Math.min(PAGE_SIZE, total - aprovados.length) + ')'),
                 // Mensagem quando chegou no fim
                 !hasMore && total > PAGE_SIZE && h('div', {
                     className: 'text-center text-xs text-gray-400 mt-3 pb-2'
-                }, '✓ Todos os ' + total + ' endereços carregados')
+                }, 'Todos os ' + total + ' endereços carregados')
             ),
 
             !loading && aprovados.length === 0 && meusPendentes.length === 0 && h('div', {
                 className: 'text-center py-8 text-gray-400'
             },
-                h('div', { className: 'text-4xl mb-2' }, '📭'),
+                h('div', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" }))),
                 h('div', { className: 'text-sm' }, filtro ? 'Nenhum resultado' : 'Nenhum endereço ainda')
             ),
 
@@ -672,7 +673,7 @@
                 h('button', {
                     onClick: () => setModalFoto(null),
                     className: 'absolute top-4 right-4 text-white text-3xl'
-                }, '✕')
+                }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
             )
         );
     }
@@ -689,7 +690,7 @@
                 .finally(() => setLoading(false));
         }, []);
 
-        if (loading) return h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...');
+        if (loading) return h('div', { className: 'text-center py-8 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."));
         if (!dados) return null;
 
         const { saldo, historico } = dados;
@@ -699,19 +700,19 @@
             // Cards de saldo
             h('div', { className: 'grid grid-cols-2 gap-3' },
                 h('div', { className: 'bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl p-4 shadow-lg' },
-                    h('div', { className: 'text-xs opacity-90 mb-1' }, '✅ Confirmado'),
+                    h('div', { className: 'text-xs opacity-90 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Confirmado")),
                     h('div', { className: 'text-2xl font-bold' }, fmt(saldo.total_confirmado)),
                     h('div', { className: 'text-xs opacity-80 mt-1' }, saldo.qtd_confirmada + ' endereço(s)')
                 ),
                 h('div', { className: 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl p-4 shadow-lg' },
-                    h('div', { className: 'text-xs opacity-90 mb-1' }, '⏳ Previsto'),
+                    h('div', { className: 'text-xs opacity-90 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Previsto")),
                     h('div', { className: 'text-2xl font-bold' }, fmt(saldo.total_previsto)),
                     h('div', { className: 'text-xs opacity-80 mt-1' }, saldo.qtd_prevista + ' endereço(s)')
                 )
             ),
 
             h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-800' },
-                '💡 Valores acumulados. Pagamento será combinado posteriormente.'
+                'Valores acumulados. Pagamento será combinado posteriormente.'
             ),
 
             // Histórico
@@ -731,8 +732,8 @@
                                     className: 'text-xs mt-0.5 ' +
                                         (g.status === 'confirmado' ? 'text-green-600' :
                                          g.status === 'previsto' ? 'text-blue-600' : 'text-gray-500')
-                                }, g.status === 'confirmado' ? '✅ Confirmado' :
-                                   g.status === 'previsto' ? '⏳ Aguardando validação' : '💳 Pago')
+                                }, g.status === 'confirmado' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Confirmado") :
+                                   g.status === 'previsto' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Aguardando validação") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-card" })), "Pago"))
                             ),
                             h('div', {
                                 className: 'font-bold ' +
@@ -753,10 +754,10 @@
             h('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 mb-4' },
                 h('div', { className: 'flex gap-1 p-1' },
                     [
-                        { id: 'fila', label: '⏳ Fila de Validação' },
-                        { id: 'cadastrados', label: '📚 Cadastrados' },
-                        { id: 'regioes', label: '🌎 Regiões' },
-                        { id: 'stats', label: '📊 Estatísticas' }
+                        { id: 'fila', label: h("span",{className:"inline-flex items-center gap-1.5"},h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })),"Fila de Validação") },
+                        { id: 'cadastrados', label: h("span",{className:"inline-flex items-center gap-1.5"},h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })),"Cadastrados") },
+                        { id: 'regioes', label: h("span",{className:"inline-flex items-center gap-1.5"},h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })),"Regiões") },
+                        { id: 'stats', label: h("span",{className:"inline-flex items-center gap-1.5"},h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })),"Estatísticas") }
                     ].map(t => h('button', {
                         key: t.id,
                         onClick: () => setTab(t.id),
@@ -840,9 +841,9 @@
         };
 
         return h('div', null,
-            loading ? h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...')
+            loading ? h('div', { className: 'text-center py-8 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
             : pendentes.length === 0 ? h('div', { className: 'text-center py-12 bg-white rounded-lg' },
-                h('div', { className: 'text-5xl mb-2' }, '🎉'),
+                h('div', { className: 'text-5xl mb-2' }, h("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, h("use", { href: "#i-party" }))),
                 h('div', { className: 'text-sm text-gray-600' }, 'Nenhum endereço pendente de validação!')
             )
             : h('div', { className: 'bg-white rounded-lg shadow overflow-hidden' },
@@ -870,7 +871,7 @@
                             h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, p.regiao_nome),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-700', title: p.endereco_formatado || '' },
                                 p.endereco_formatado
-                                    ? h('div', null, '📍 ' + p.endereco_formatado)
+                                    ? h('div', null, '' + p.endereco_formatado)
                                     : h('span', { className: 'text-gray-400 italic' }, 'Sem endereço')
                             ),
                             h('td', { className: 'px-3 py-2 text-sm' },
@@ -884,10 +885,10 @@
                             h('td', { className: 'px-3 py-2 text-sm' },
                                 h('div', { className: 'flex gap-1' },
                                     p.tem_foto_nf
-                                        ? h('span', { title: 'Tem nota fiscal' }, '📄')
+                                        ? h('span', { title: 'Tem nota fiscal' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })))
                                         : h('span', { className: 'text-gray-300', title: 'Sem NF' }, '·'),
                                     p.tem_foto
-                                        ? h('span', { title: 'Tem foto da fachada' }, '📷')
+                                        ? h('span', { title: 'Tem foto da fachada' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })))
                                         : h('span', { className: 'text-gray-300', title: 'Sem fachada' }, '·')
                                 )
                             ),
@@ -916,7 +917,7 @@
                 },
                     h('div', { className: 'flex items-center justify-between mb-4' },
                         h('h3', { className: 'font-bold text-lg' }, 'Revisar Cadastro #' + detalhe.id),
-                        h('button', { onClick: () => setDetalhe(null), className: 'text-gray-400' }, '✕')
+                        h('button', { onClick: () => setDetalhe(null), className: 'text-gray-400' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
                     ),
                     h('div', { className: 'grid md:grid-cols-2 gap-4' },
                         h('div', null,
@@ -926,22 +927,22 @@
                                     onClick: () => setTabFoto('nf'),
                                     className: 'flex-1 px-2 py-1 rounded text-xs font-medium ' +
                                         (tabFoto === 'nf' ? 'bg-white shadow text-gray-900' : 'text-gray-600')
-                                }, '📄 Nota Fiscal' + (detalhe.tem_foto_nf ? '' : ' (sem)')),
+                                }, 'Nota Fiscal' + (detalhe.tem_foto_nf ? '' : ' (sem)')),
                                 h('button', {
                                     onClick: () => setTabFoto('fachada'),
                                     className: 'flex-1 px-2 py-1 rounded text-xs font-medium ' +
                                         (tabFoto === 'fachada' ? 'bg-white shadow text-gray-900' : 'text-gray-600')
-                                }, '📷 Fachada' + (detalhe.tem_foto ? '' : ' (sem)'))
+                                }, 'Fachada' + (detalhe.tem_foto ? '' : ' (sem)'))
                             ),
                             tabFoto === 'nf'
                                 ? (fotoNFAtual
                                     ? h('img', { src: fotoNFAtual, className: 'w-full rounded-lg max-h-[500px] object-contain bg-gray-50' })
                                     : h('div', { className: 'bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm' },
-                                        detalhe.tem_foto_nf ? '⏳ Carregando NF...' : 'Sem foto da NF'))
+                                        detalhe.tem_foto_nf ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando NF...") : 'Sem foto da NF'))
                                 : (fotoAtual
                                     ? h('img', { src: fotoAtual, className: 'w-full rounded-lg max-h-[500px] object-contain bg-gray-50' })
                                     : h('div', { className: 'bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm' },
-                                        detalhe.tem_foto ? '⏳ Carregando fachada...' : 'Sem foto da fachada'))
+                                        detalhe.tem_foto ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando fachada...") : 'Sem foto da fachada'))
                         ),
                         h('div', { className: 'space-y-3' },
                             h('div', null,
@@ -967,7 +968,7 @@
                             (detalhe.cnpj || detalhe.razao_social || detalhe.numero_nf) && h('div', {
                                 className: 'bg-orange-50 border border-orange-200 rounded-lg p-2'
                             },
-                                h('div', { className: 'text-xs font-bold text-orange-800 uppercase mb-1' }, '📄 Extraído da NF'),
+                                h('div', { className: 'text-xs font-bold text-orange-800 uppercase mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Extraído da NF")),
                                 detalhe.razao_social && h('div', { className: 'text-sm font-medium text-gray-800' }, detalhe.razao_social),
                                 detalhe.nome_fantasia && detalhe.nome_fantasia !== detalhe.razao_social &&
                                     h('div', { className: 'text-xs text-gray-600' }, '↳ ', detalhe.nome_fantasia),
@@ -990,7 +991,7 @@
                                     href: `https://www.google.com/maps/search/?api=1&query=${detalhe.latitude},${detalhe.longitude}`,
                                     target: '_blank',
                                     className: 'text-xs text-blue-600 hover:underline'
-                                }, '🗺️ Ver no Google Maps')
+                                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Ver no Google Maps"))
                             ),
                             h('div', null,
                                 h('div', { className: 'text-xs text-gray-500' }, 'Endereço formatado (Google reverse)'),
@@ -1025,19 +1026,19 @@
                                 onClick: rejeitar,
                                 disabled: processando,
                                 className: 'flex-1 py-2 bg-red-600 text-white rounded text-sm disabled:opacity-50'
-                            }, processando ? '⏳' : '🗑️ Confirmar rejeição')
+                            }, processando ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Confirmar rejeição"))
                         )
                     ) : h('div', { className: 'flex gap-2 mt-4 pt-4 border-t' },
                         h('button', {
                             onClick: () => setAcao('rejeitando'),
                             disabled: processando,
                             className: 'flex-1 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium'
-                        }, '❌ Rejeitar'),
+                        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), "Rejeitar")),
                         h('button', {
                             onClick: aprovar,
                             disabled: processando || !nomeEdit.trim(),
                             className: 'flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium disabled:opacity-50'
-                        }, processando ? '⏳' : '✅ Aprovar')
+                        }, processando ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })) : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Aprovar"))
                     )
                 )
             )
@@ -1105,7 +1106,7 @@
             // Banner explicativo do fluxo
             h('div', { className: 'bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-4 mb-4' },
                 h('div', { className: 'flex items-start gap-3' },
-                    h('div', { className: 'text-2xl' }, '💡'),
+                    h('div', { className: 'text-2xl' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" }))),
                     h('div', { className: 'flex-1' },
                         h('h3', { className: 'font-bold text-purple-900 mb-1' }, 'Como funciona o fluxo'),
                         h('p', { className: 'text-sm text-purple-800 mb-2' },
@@ -1116,16 +1117,16 @@
                             ' configurado, e todos os clientes vinculados àquele grupo passam a enxergá-los.'
                         ),
                         h('div', { className: 'flex items-center gap-2 flex-wrap text-xs mb-2' },
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏍️ Motoboys do CRM'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), "Motoboys do CRM")),
                             h('span', { className: 'text-purple-500' }, '→ match de região →'),
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '📍 Região'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Região")),
                             h('span', { className: 'text-purple-500' }, '→ cadastram →'),
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '📚 Grupo'),
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Grupo")),
                             h('span', { className: 'text-purple-500' }, '→'),
-                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, '🏢 Clientes')
+                            h('span', { className: 'bg-white border border-purple-300 rounded px-2 py-1 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Clientes"))
                         ),
                         h('p', { className: 'text-xs text-purple-700' },
-                            '⚙️ A vinculação ', h('strong', null, 'cliente → grupo'),
+                            h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), "A vinculação "), h('strong', null, 'cliente → grupo'),
                             ' é feita em ', h('strong', null, 'Configurações → Grupos de Endereços'),
                             '. Motoboys são vinculados ', h('strong', null, 'automaticamente'),
                             ' pela Região/Cidade do CRM (mesma lógica do módulo de Indicações/Promoções).'
@@ -1140,7 +1141,7 @@
                     className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm'
                 }, '+ Nova Região')
             ),
-            loading ? h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...')
+            loading ? h('div', { className: 'text-center py-8 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
             : regioes.length === 0 ? h('div', { className: 'text-center py-12 bg-white rounded-lg' },
                 h('div', { className: 'text-gray-400 text-sm' }, 'Nenhuma região cadastrada')
             )
@@ -1153,7 +1154,7 @@
                     },
                         h('div', { className: 'flex items-start justify-between gap-2 mb-2' },
                             h('div', { className: 'flex-1 min-w-0' },
-                                h('div', { className: 'font-bold text-purple-800' }, '📍 ' + r.nome),
+                                h('div', { className: 'font-bold text-purple-800' }, '' + r.nome),
                                 h('div', { className: 'text-xs text-gray-500' }, (r.cidade || '') + (r.uf ? ' - ' + r.uf : ''))
                             ),
                             !r.ativo && h('span', { className: 'text-xs bg-gray-200 px-1.5 py-0.5 rounded' }, 'INATIVO')
@@ -1164,14 +1165,14 @@
                             onClick: () => setVerClientesDoGrupo({ grupo_id: r.grupo_enderecos_id, nome: r.grupo_nome }),
                             className: 'w-full text-left bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-2 my-2 hover:from-purple-100 hover:to-indigo-100 transition-colors'
                         },
-                            h('div', { className: 'text-xs text-purple-600 font-medium' }, '📚 Grupo'),
+                            h('div', { className: 'text-xs text-purple-600 font-medium' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Grupo")),
                             h('div', { className: 'text-sm font-bold text-purple-900 truncate' }, r.grupo_nome || '(sem grupo)'),
                             h('div', { className: 'text-xs text-purple-700 mt-0.5' },
-                                '🏢 ', h('strong', null, qtdClientes), ' cliente(s) receberão os endereços ',
+                                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), h('strong', null, qtdClientes), ' cliente(s) receberão os endereços ',
                                 h('span', { className: 'text-purple-500 underline' }, 'ver')
                             )
                         ) : h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-2 my-2 text-xs text-red-700' },
-                            '⚠️ Sem grupo vinculado — endereços não serão salvos'
+                            'Sem grupo vinculado — endereços não serão salvos'
                         ),
 
                         h('div', { className: 'grid grid-cols-3 gap-1 text-center text-xs my-2' },
@@ -1192,15 +1193,15 @@
                             h('button', {
                                 onClick: () => setGerenciarMotoboys(r),
                                 className: 'flex-1 py-1 bg-blue-100 text-blue-700 rounded text-xs'
-                            }, '👥 Ver ' + (r.total_motoboys || 0) + ' motoboy(s)'),
+                            }, 'Ver ' + (r.total_motoboys || 0) + ' motoboy(s)'),
                             h('button', {
                                 onClick: () => setEditarRegiao({ ...r }),
                                 className: 'flex-1 py-1 bg-gray-100 text-gray-700 rounded text-xs'
-                            }, '✏️ Editar'),
+                            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar")),
                             h('button', {
                                 onClick: () => excluir(r),
                                 className: 'flex-1 py-1 bg-red-100 text-red-700 rounded text-xs'
-                            }, '🗑️')
+                            }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })))
                         )
                     );
                 })
@@ -1215,7 +1216,7 @@
                     onClick: e => e.stopPropagation(),
                     className: 'bg-white rounded-xl shadow-2xl w-full max-w-md p-5'
                 },
-                    h('h3', { className: 'font-bold mb-4' }, editarRegiao.id ? '✏️ Editar Região' : '+ Nova Região'),
+                    h('h3', { className: 'font-bold mb-4' }, editarRegiao.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar Região") : '+ Nova Região'),
                     h('div', { className: 'space-y-3' },
                         h('div', null,
                             h('label', { className: 'text-xs font-medium' }, 'Nome da Região *'),
@@ -1232,7 +1233,7 @@
                                 regioesCrm.map(r => h('option', { key: r, value: r }))
                             ),
                             h('p', { className: 'text-xs text-gray-500 mt-1' },
-                                '💡 ', h('strong', null, regioesCrm.length), ' regiões disponíveis no CRM. ',
+                                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" })), h('strong', null, regioesCrm.length), ' regiões disponíveis no CRM. ',
                                 'O nome deve bater com a Região/Cidade dos motoboys no CRM pra funcionar.'
                             )
                         ),
@@ -1287,7 +1288,7 @@
                         h('button', {
                             onClick: salvar,
                             className: 'flex-1 py-2 bg-purple-600 text-white rounded text-sm'
-                        }, '💾 Salvar')
+                        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar"))
                     )
                 )
             ),
@@ -1331,13 +1332,13 @@
             },
                 h('div', { className: 'flex items-center justify-between mb-4' },
                     h('div', null,
-                        h('h3', { className: 'font-bold' }, '📚 ' + (nomeGrupo || 'Grupo')),
+                        h('h3', { className: 'font-bold' }, '' + (nomeGrupo || 'Grupo')),
                         h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Clientes que receberão os endereços aprovados')
                     ),
-                    h('button', { onClick: onClose, className: 'text-gray-400' }, '✕')
+                    h('button', { onClick: onClose, className: 'text-gray-400' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
                 ),
 
-                loading ? h('div', { className: 'text-center py-6 text-gray-400' }, '⏳ Carregando...')
+                loading ? h('div', { className: 'text-center py-6 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
                 : !dados ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, 'Erro ao carregar')
                 : h('div', null,
                     h('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3' },
@@ -1350,7 +1351,7 @@
                     ),
                     !dados.clientes || dados.clientes.length === 0
                     ? h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
-                        '⚠️ Nenhum cliente vinculado a este grupo ainda. Vincule em ',
+                        h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Nenhum cliente vinculado a este grupo ainda. Vincule em "),
                         h('strong', null, 'Configurações → Grupos de Endereços'),
                         ' ou editando o cliente API individualmente.'
                     )
@@ -1360,8 +1361,8 @@
                             className: 'bg-gray-50 rounded p-2 border border-gray-200'
                         },
                             h('div', { className: 'font-medium text-sm' }, c.nome || '(sem nome)'),
-                            c.empresa && h('div', { className: 'text-xs text-gray-600' }, '🏢 ' + c.empresa),
-                            c.email && h('div', { className: 'text-xs text-gray-500' }, '✉️ ' + c.email)
+                            c.empresa && h('div', { className: 'text-xs text-gray-600' }, '' + c.empresa),
+                            c.email && h('div', { className: 'text-xs text-gray-500' }, '' + c.email)
                         ))
                     )
                 )
@@ -1402,24 +1403,24 @@
             },
                 h('div', { className: 'flex items-center justify-between mb-3' },
                     h('div', null,
-                        h('h3', { className: 'font-bold' }, '👥 Motoboys em "' + regiao.nome + '"'),
+                        h('h3', { className: 'font-bold' }, 'Motoboys em "' + regiao.nome + '"'),
                         h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Vinculação automática via CRM')
                     ),
-                    h('button', { onClick: onClose, className: 'text-gray-400' }, '✕')
+                    h('button', { onClick: onClose, className: 'text-gray-400' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
                 ),
 
                 // Banner explicativo
                 h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 text-xs text-blue-800' },
-                    '💡 Esta lista é gerada automaticamente. Motoboys cujo campo ',
+                    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" })), "Esta lista é gerada automaticamente. Motoboys cujo campo "),
                     h('strong', null, 'Região ou Cidade'),
                     ' no CRM bate com "', h('strong', null, regiao.nome), '" aparecem aqui.'
                 ),
 
                 motoboys === null
-                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, '⏳ Carregando...')
+                ? h('div', { className: 'text-center py-6 text-gray-400 text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."))
                 : motoboys.length === 0
                 ? h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
-                    '⚠️ Nenhum motoboy do CRM tem Região ou Cidade "', h('strong', null, regiao.nome),
+                    h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Nenhum motoboy do CRM tem Região ou Cidade \""), h('strong', null, regiao.nome),
                     '". Verifique se o nome da região aqui bate exatamente com o cadastro no CRM.'
                 )
                 : h('div', null,
@@ -1427,7 +1428,7 @@
                         type: 'text',
                         value: busca,
                         onChange: e => setBusca(e.target.value),
-                        placeholder: '🔍 Filtrar por nome ou código...',
+                        placeholder: 'Filtrar por nome ou código...',
                         className: 'w-full px-3 py-2 border rounded text-sm mb-2'
                     }),
                     h('h4', { className: 'text-xs font-bold text-gray-500 uppercase mb-2' },
@@ -1587,13 +1588,13 @@
             // Banner de explicação
             h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800' },
                 h('strong', null, 'ℹ️ Todos os endereços cadastrados no sistema. '),
-                'Endereços com origem 🏍️ vieram da Coleta colaborativa (motoboys). Origem 🏢 são favoritos cadastrados manualmente por clientes.'
+                'Endereços com origem vieram da Coleta colaborativa (motoboys). Origem são favoritos cadastrados manualmente por clientes.'
             ),
 
             // Filtros
             h('form', { onSubmit: aplicarFiltros, className: 'bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap gap-2 items-end' },
                 h('div', { className: 'flex-1 min-w-[200px]' },
-                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '🔍 Buscar'),
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar")),
                     h('input', {
                         type: 'text', value: filtros.q,
                         onChange: e => setFiltros({ ...filtros, q: e.target.value }),
@@ -1602,7 +1603,7 @@
                     })
                 ),
                 h('div', null,
-                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '📚 Grupo'),
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Grupo")),
                     h('select', {
                         value: filtros.grupo_id,
                         onChange: e => setFiltros({ ...filtros, grupo_id: e.target.value }),
@@ -1613,15 +1614,15 @@
                     )
                 ),
                 h('div', null,
-                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, '👤 Origem'),
+                    h('label', { className: 'text-xs font-medium text-gray-600 block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Origem")),
                     h('select', {
                         value: filtros.origem,
                         onChange: e => setFiltros({ ...filtros, origem: e.target.value }),
                         className: 'px-3 py-1.5 border rounded text-sm bg-white'
                     },
                         h('option', { value: '' }, 'Todas'),
-                        h('option', { value: 'motoboy' }, '🏍️ Motoboy'),
-                        h('option', { value: 'cliente' }, '🏢 Cliente')
+                        h('option', { value: 'motoboy' }, 'Motoboy'),
+                        h('option', { value: 'cliente' }, 'Cliente')
                     )
                 ),
                 h('button', {
@@ -1637,17 +1638,17 @@
                     h('strong', null, enderecos.length)
                 ),
                 h('div', { className: 'bg-purple-50 px-3 py-2 rounded shadow flex-1' },
-                    h('span', { className: 'text-purple-700' }, '🏍️ Motoboy: '),
+                    h('span', { className: 'text-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), "Motoboy: ")),
                     h('strong', null, totalMotoboy)
                 ),
                 h('div', { className: 'bg-blue-50 px-3 py-2 rounded shadow flex-1' },
-                    h('span', { className: 'text-blue-700' }, '🏢 Cliente: '),
+                    h('span', { className: 'text-blue-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente: ")),
                     h('strong', null, totalCliente)
                 ),
                 h('button', {
                     onClick: () => setEditando({ apelido: '', endereco_completo: '', rua: '', numero: '', bairro: '', cidade: '', uf: '', cep: '', latitude: null, longitude: null, grupo_enderecos_id: null, origem: 'admin' }),
                     className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 shadow whitespace-nowrap'
-                }, '➕ Novo Endereço')
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Novo Endereço"))
             ),
 
             // Tabela
@@ -1669,7 +1670,7 @@
                                     enderecos.map(e => h('tr', { key: e.id, className: 'border-b hover:bg-gray-50' },
                                         h('td', { className: 'px-3 py-2 text-lg' },
                                             h('span', { title: e.origem === 'motoboy' ? 'Cadastrado pela Coleta' : 'Favorito de cliente' },
-                                                e.origem === 'motoboy' ? '🏍️' : '🏢'
+                                                e.origem === 'motoboy' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" }))
                                             )
                                         ),
                                         h('td', { className: 'px-3 py-2 text-sm font-medium' },
@@ -1711,11 +1712,11 @@
                                                 h('button', {
                                                     onClick: () => setEditando({ ...e }),
                                                     className: 'px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200'
-                                                }, '✏️'),
+                                                }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" }))),
                                                 h('button', {
                                                     onClick: () => setConfirmarExclusao(e),
                                                     className: 'px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200'
-                                                }, '🗑️')
+                                                }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })))
                                             )
                                         )
                                     ))
@@ -1735,15 +1736,15 @@
                 },
                     h('div', { className: 'flex items-center justify-between p-4 border-b' },
                         h('div', null,
-                            h('h3', { className: 'font-bold text-lg' }, editando.id ? '✏️ Editar Endereço' : '➕ Novo Endereço'),
-                            editando.id && h('p', { className: 'text-xs text-gray-500' }, 'ID #' + editando.id + ' · Origem: ' + (editando.origem === 'motoboy' ? '🏍️ Coleta' : editando.origem === 'admin' ? '👤 Admin' : '🏢 Cliente'))
+                            h('h3', { className: 'font-bold text-lg' }, editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar Endereço") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Novo Endereço")),
+                            editando.id && h('p', { className: 'text-xs text-gray-500' }, 'ID #' + editando.id + ' · Origem: ' + (editando.origem === 'motoboy' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), "Coleta") : editando.origem === 'admin' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Admin") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente")))
                         ),
                         h('button', { onClick: () => setEditando(null), className: 'text-gray-400 hover:text-gray-600 text-xl' }, '×')
                     ),
                     h('div', { className: 'p-4' },
                         // Busca Google
                         h('div', { className: 'mb-4' },
-                            h('label', { className: 'text-xs font-medium text-gray-600 mb-1 block' }, '🔍 Buscar endereço no Google'),
+                            h('label', { className: 'text-xs font-medium text-gray-600 mb-1 block' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar endereço no Google")),
                             h('div', { className: 'flex gap-2' },
                                 h('input', {
                                     type: 'text', placeholder: 'Digite endereço, rua, número, bairro...',
@@ -1755,7 +1756,7 @@
                                 h('button', {
                                     onClick: () => { var inp = document.getElementById('coleta-busca-endereco'); if (inp) buscarEnderecoGoogle(inp.value); },
                                     className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700'
-                                }, '🔍 Buscar')
+                                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Buscar"))
                             ),
                             h('p', { className: 'text-xs text-gray-400 mt-1' }, 'Busque o endereço e arraste o pin no mapa para ajustar a posição exata')
                         ),
@@ -1774,7 +1775,7 @@
                                             var map = L.map(container).setView([lat, lng], 15);
                                             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map);
                                             var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-                                            marker.bindPopup('📍 Arraste para ajustar').openPopup();
+                                            marker.bindPopup('Arraste para ajustar').openPopup();
                                             marker.on('dragend', function(ev) {
                                                 var pos = ev.target.getLatLng();
                                                 setEditando(function(prev) { return Object.assign({}, prev, { latitude: pos.lat.toFixed(7), longitude: pos.lng.toFixed(7) }); });
@@ -1786,7 +1787,7 @@
                                     }
                                 }),
                                 editando.latitude && h('div', { className: 'text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg mt-2 flex items-center justify-between' },
-                                    h('span', null, '📍 ', parseFloat(editando.latitude || 0).toFixed(6), ', ', parseFloat(editando.longitude || 0).toFixed(6)),
+                                    h('span', null, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), parseFloat(editando.latitude || 0).toFixed(6), ', ', parseFloat(editando.longitude || 0).toFixed(6)),
                                     h('a', {
                                         href: 'https://www.google.com/maps?q=' + editando.latitude + ',' + editando.longitude,
                                         target: '_blank',
@@ -1846,7 +1847,7 @@
                     ),
                     h('div', { className: 'flex gap-2 p-4 border-t' },
                         h('button', { onClick: () => setEditando(null), className: 'flex-1 px-4 py-2 bg-gray-100 rounded-lg font-medium text-sm' }, 'Cancelar'),
-                        h('button', { onClick: salvarEdicao, className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, editando.id ? '💾 Salvar' : '➕ Criar Endereço')
+                        h('button', { onClick: salvarEdicao, className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700' }, editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Criar Endereço"))
                     )
                 )
             ),
@@ -1860,7 +1861,7 @@
                     onClick: e => e.stopPropagation(),
                     className: 'bg-white rounded-xl shadow-xl max-w-md w-full p-6'
                 },
-                    h('div', { className: 'text-4xl mb-3 text-center' }, '⚠️'),
+                    h('div', { className: 'text-4xl mb-3 text-center' }, h("svg", { className: "ico", style: { width: 38, height: 38, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" }))),
                     h('h3', { className: 'text-lg font-bold text-center mb-2' }, 'Excluir endereço?'),
                     h('p', { className: 'text-sm text-gray-600 text-center mb-1' }, h('strong', null, confirmarExclusao.apelido)),
                     h('p', { className: 'text-xs text-gray-500 text-center mb-4' }, confirmarExclusao.endereco_completo),
@@ -1876,7 +1877,7 @@
                         h('button', {
                             onClick: () => excluir(confirmarExclusao.id),
                             className: 'flex-1 px-4 py-2 bg-red-600 text-white rounded font-medium text-sm'
-                        }, '🗑️ Excluir')
+                        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Excluir"))
                     )
                 )
             )
@@ -1895,7 +1896,7 @@
                 .finally(() => setLoading(false));
         }, []);
 
-        if (loading) return h('div', { className: 'text-center py-8 text-gray-400' }, '⏳ Carregando...');
+        if (loading) return h('div', { className: 'text-center py-8 text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando..."));
         if (!stats) return null;
 
         const fmt = v => 'R$ ' + parseFloat(v || 0).toFixed(2).replace('.', ',');

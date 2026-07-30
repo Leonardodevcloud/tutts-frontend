@@ -1,3 +1,4 @@
+/* DEEMOJI_V1 */
 // ==================== MÓDULO SUCESSO DO CLIENTE ====================
 // Arquivo: modulo-cs.js
 // Self-contained: gerencia próprio estado e fetch
@@ -12,13 +13,13 @@
   const h = React.createElement;
 
   const TABS = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'clientes', label: 'Clientes', icon: '🏢' },
-    { id: 'interacoes', label: 'Interações', icon: '📝' },
-    { id: 'ocorrencias', label: 'Ocorrências', icon: '🚨' },
-    { id: 'agenda', label: 'Agenda', icon: '📅' },
-    { id: 'emails', label: 'Emails', icon: '📧' },
-    { id: 'emails-automacao', label: 'Automação E-mail', icon: '⚡' },
+    { id: 'dashboard', label: 'Dashboard', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })) },
+    { id: 'clientes', label: 'Clientes', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })) },
+    { id: 'interacoes', label: 'Interações', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })) },
+    { id: 'ocorrencias', label: 'Ocorrências', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })) },
+    { id: 'agenda', label: 'Agenda', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })) },
+    { id: 'emails', label: 'Emails', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })) },
+    { id: 'emails-automacao', label: 'Automação E-mail', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-zap" })) },
   ];
 
   const CORES_HEALTH = {
@@ -76,12 +77,12 @@
     if (!aberto) return null;
     return h('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4', onClick: e => { if (e.target === e.currentTarget) fechar(); } },
       h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full ' + largura + ' max-h-[90vh] overflow-y-auto' },
-        h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, titulo), h('button', { onClick: fechar, className: 'p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600' }, '✕')),
+        h('div', { className: 'flex items-center justify-between p-5 border-b border-gray-100' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, titulo), h('button', { onClick: fechar, className: 'p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))),
         h('div', { className: 'p-5' }, children)
       )
     );
   }
-  function EmptyState({ icone = '📭', titulo, descricao, acao }) {
+  function EmptyState({ icone = '', titulo, descricao, acao }) {
     return h('div', { className: 'flex flex-col items-center justify-center py-16 text-center' },
       h('span', { className: 'text-5xl mb-4' }, icone), h('h3', { className: 'text-lg font-semibold text-gray-900 mb-2' }, titulo),
       descricao && h('p', { className: 'text-sm text-gray-500 max-w-md' }, descricao), acao && h('div', { className: 'mt-4' }, acao)
@@ -238,29 +239,29 @@
         h('input', { type: 'date', value: periodo.inicio, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
         h('span', { className: 'text-gray-400' }, 'até'),
         h('input', { type: 'date', value: periodo.fim, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
-        h('button', { onClick: carregar, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '🔄 Atualizar')
+        h('button', { onClick: carregar, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Atualizar"))
       ),
-      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '👥 Carteira de Clientes'),
+      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })), "Carteira de Clientes")),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
-          h(KpiCard, { titulo: 'Total de Clientes', valor: kc.total_clientes || 0, icone: '🏢', cor: 'blue' }),
-          h(KpiCard, { titulo: 'Ativos', valor: kc.ativos || 0, icone: '✅', cor: 'green' }),
-          h(KpiCard, { titulo: 'Em Risco', valor: kc.em_risco || 0, icone: '⚠️', cor: 'amber' }),
-          h(KpiCard, { titulo: 'Health Score Médio', valor: (kc.health_score_medio || 0) + '/100', icone: '💚', cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
+          h(KpiCard, { titulo: 'Total de Clientes', valor: kc.total_clientes || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), cor: 'blue' }),
+          h(KpiCard, { titulo: 'Ativos', valor: kc.ativos || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), cor: 'green' }),
+          h(KpiCard, { titulo: 'Em Risco', valor: kc.em_risco || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), cor: 'amber' }),
+          h(KpiCard, { titulo: 'Health Score Médio', valor: (kc.health_score_medio || 0) + '/100', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-heart" })), cor: parseFloat(kc.health_score_medio) >= 60 ? 'green' : 'amber' })
         )
       ),
-      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, '📦 Operação (BI)'),
+      h('div', null, h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), "Operação (BI)")),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-4' },
-          h(KpiCard, { titulo: 'Entregas', valor: parseInt(kop.total_entregas || 0).toLocaleString('pt-BR'), icone: '🚚', cor: 'blue' }),
-          h(KpiCard, { titulo: 'Taxa de Prazo', valor: (kop.taxa_prazo_global || 0) + '%', icone: '⏱️', cor: parseFloat(kop.taxa_prazo_global) >= 85 ? 'green' : 'amber' }),
-          h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(kop.faturamento_total), icone: '💰', cor: 'green' }),
-          h(KpiCard, { titulo: 'Clientes Ativos BI', valor: kop.clientes_ativos_bi || 0, icone: '📊', cor: 'purple' }),
-          h(KpiCard, { titulo: 'Tempo Médio', valor: (kop.tempo_medio_entrega || 0) + ' min', icone: '🕐', cor: 'gray' })
+          h(KpiCard, { titulo: 'Entregas', valor: parseInt(kop.total_entregas || 0).toLocaleString('pt-BR'), icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-truck" })), cor: 'blue' }),
+          h(KpiCard, { titulo: 'Taxa de Prazo', valor: (kop.taxa_prazo_global || 0) + '%', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), cor: parseFloat(kop.taxa_prazo_global) >= 85 ? 'green' : 'amber' }),
+          h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(kop.faturamento_total), icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), cor: 'green' }),
+          h(KpiCard, { titulo: 'Clientes Ativos BI', valor: kop.clientes_ativos_bi || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), cor: 'purple' }),
+          h(KpiCard, { titulo: 'Tempo Médio', valor: (kop.tempo_medio_entrega || 0) + ' min', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), cor: 'gray' })
         )
       ),
       // Distribuição + Risco
       h('div', { className: 'grid md:grid-cols-2 gap-6' },
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '💚 Distribuição Health Score'),
+          h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-heart" })), "Distribuição Health Score")),
           distribuicao_health.length > 0 ? h('div', { className: 'space-y-3' }, ...distribuicao_health.map(function(f, i) {
             return h('div', { key: i, className: 'flex items-center gap-3' },
               h('div', { className: 'w-3 h-3 rounded-full flex-shrink-0', style: { backgroundColor: f.cor } }),
@@ -271,22 +272,22 @@
           })) : h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados')
         ),
         h('div', { className: 'bg-white rounded-xl border border-red-100 p-5' },
-          h('h3', { className: 'text-sm font-semibold text-red-500 uppercase tracking-wider mb-4' }, '⚠️ Clientes em Risco'),
+          h('h3', { className: 'text-sm font-semibold text-red-500 uppercase tracking-wider mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Clientes em Risco")),
           clientes_risco.length > 0 ? h('div', { className: 'space-y-3' }, ...clientes_risco.map(function(cli, i) {
             return h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-red-50/50 rounded-lg' },
               h(HealthRing, { score: cli.health_score, size: 44 }),
               h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || 'Cliente ' + cli.cod_cliente), h('p', { className: 'text-xs text-gray-500' }, (cli.total_entregas_30d || 0) + ' ent · ' + (cli.taxa_prazo_30d || 0) + '% prazo')),
               h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#F59E0B' : '#EF4444' })
             );
-          })) : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, '🎉 Nenhum cliente em risco!')
+          })) : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-party" })), "Nenhum cliente em risco!"))
         )
       ),
       // Interações recentes
       h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, '🕐 Interações Recentes'),
+        h('h3', { className: 'text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Interações Recentes")),
         interacoes_recentes.length > 0 ? h('div', { className: 'divide-y divide-gray-100' }, ...interacoes_recentes.map(function(int, i) {
           return h('div', { key: i, className: 'flex items-center gap-3 py-3' },
-            h('span', { className: 'text-lg' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : '📝'),
+            h('span', { className: 'text-lg' }, int.tipo === 'visita' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })) : int.tipo === 'reuniao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })) : int.tipo === 'ligacao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })) : int.tipo === 'whatsapp' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
             h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, int.titulo), h('p', { className: 'text-xs text-gray-500' }, (int.nome_fantasia || 'Cliente') + ' · ' + (int.criado_por_nome || ''))),
             h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, diasAtras(int.data_interacao))
           );
@@ -390,18 +391,18 @@
       h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 space-y-3' },
         // Chips ativos
         h('div', { className: 'flex items-center gap-2 flex-wrap min-h-[28px]' },
-          h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔍 Filtros'),
-          filtroLabel && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium cursor-pointer hover:bg-purple-200', onClick: function() { selCliente(''); } }, '🏢 ' + filtroCliente + ' - ' + filtroLabel, h('span', { className: 'ml-1 opacity-60' }, '✕')),
-          filtroCentroCusto && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium cursor-pointer hover:bg-blue-200', onClick: function() { setFiltroCentroCusto(''); } }, '📁 ' + filtroCentroCusto, h('span', { className: 'ml-1 opacity-60' }, '✕')),
-          filtroStatus && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium cursor-pointer hover:bg-amber-200', onClick: function() { setFiltroStatus(''); } }, filtroStatus, h('span', { className: 'ml-1 opacity-60' }, '✕')),
-          (filtroCliente || filtroCentroCusto || filtroStatus) && h('button', { className: 'text-xs text-gray-400 hover:text-red-500 ml-auto', onClick: function() { setFiltroCliente(''); setFiltroCentroCusto(''); setFiltroStatus(''); } }, '🗑️ Limpar filtros')
+          h('span', { className: 'text-sm font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtros")),
+          filtroLabel && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium cursor-pointer hover:bg-purple-200', onClick: function() { selCliente(''); } }, '' + filtroCliente + ' - ' + filtroLabel, h('span', { className: 'ml-1 opacity-60' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))),
+          filtroCentroCusto && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium cursor-pointer hover:bg-blue-200', onClick: function() { setFiltroCentroCusto(''); } }, '' + filtroCentroCusto, h('span', { className: 'ml-1 opacity-60' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))),
+          filtroStatus && h('span', { className: 'inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium cursor-pointer hover:bg-amber-200', onClick: function() { setFiltroStatus(''); } }, filtroStatus, h('span', { className: 'ml-1 opacity-60' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))),
+          (filtroCliente || filtroCentroCusto || filtroStatus) && h('button', { className: 'text-xs text-gray-400 hover:text-red-500 ml-auto', onClick: function() { setFiltroCliente(''); setFiltroCentroCusto(''); setFiltroStatus(''); } }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Limpar filtros"))
         ),
 
         // Campos
         h('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-3' },
           // 1. Cliente (searchable dropdown)
           h('div', { className: 'md:col-span-2 relative', ref: dropRef },
-            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '🏢 Cliente'),
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente")),
             h('div', { className: 'relative' },
               h('input', {
                 type: 'text',
@@ -411,11 +412,11 @@
                 onFocus: function() { setDropAberto(true); },
                 className: 'w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8 ' + (filtroCliente ? 'border-purple-300 bg-purple-50/30' : 'border-gray-200')
               }),
-              h('span', { className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none' }, dropAberto ? '▲' : '▼')
+              h('span', { className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none' }, dropAberto ? '' : '')
             ),
             dropAberto && h('div', { className: 'absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-72 overflow-y-auto' },
               h('div', { className: 'px-3 py-2.5 text-sm cursor-pointer hover:bg-purple-50 ' + (!filtroCliente ? 'bg-purple-50 font-semibold text-purple-700' : 'text-gray-700'), onClick: function() { selCliente(''); } }, 'Todos os clientes'),
-              filtrosLoading ? h('div', { className: 'px-3 py-4 text-sm text-gray-400 text-center' }, '⏳ Carregando...') :
+              filtrosLoading ? h('div', { className: 'px-3 py-4 text-sm text-gray-400 text-center' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")) :
               clientesFiltrados.length === 0 ? h('div', { className: 'px-3 py-4 text-sm text-gray-400 text-center' }, 'Nenhum resultado') :
               clientesFiltrados.map(function(c) {
                 var cod = String(c.cod_cliente), nome = getNome(c.cod_cliente, c.nome_fantasia || c.nome_cliente);
@@ -428,7 +429,7 @@
                     h('p', { className: 'text-sm truncate ' + (sel ? 'font-semibold text-purple-700' : 'text-gray-800') }, cod + ' - ' + nome),
                     h('p', { className: 'text-[10px] text-gray-400' }, (c.total_entregas || 0) + ' entregas' + (temCC ? ' · ' + filtrosData.cliente_centros[cod].length + ' CC' : ''))
                   ),
-                  sel && h('span', { className: 'text-purple-600 text-xs' }, '✓')
+                  sel && h('span', { className: 'text-purple-600 text-xs' }, h("svg", { className: "ico", style: { width: 14, height: 14, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })))
                 );
               })
             )
@@ -436,7 +437,7 @@
 
           // 2. Centro de Custo
           h('div', null,
-            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '📁 Centro de Custo'),
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Centro de Custo")),
             h('select', {
               value: filtroCentroCusto,
               onChange: function(e) { setFiltroCentroCusto(e.target.value); },
@@ -450,13 +451,13 @@
 
           // 3. Status
           h('div', null,
-            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, '📊 Status'),
+            h('label', { className: 'block text-xs font-medium text-gray-500 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Status")),
             h('select', { value: filtroStatus, onChange: function(e) { setFiltroStatus(e.target.value); }, className: 'w-full px-3 py-2.5 border rounded-lg text-sm ' + (filtroStatus ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200') },
               h('option', { value: '' }, 'Todos os status'),
-              h('option', { value: 'ativo' }, '✅ Ativo'),
-              h('option', { value: 'em_risco' }, '⚠️ Em Risco'),
-              h('option', { value: 'inativo' }, '🔴 Inativo'),
-              h('option', { value: 'churned' }, '⚫ Churned')
+              h('option', { value: 'ativo' }, 'Ativo'),
+              h('option', { value: 'em_risco' }, 'Em Risco'),
+              h('option', { value: 'inativo' }, 'Inativo'),
+              h('option', { value: 'churned' }, 'Churned')
             )
           )
         )
@@ -464,13 +465,13 @@
 
       // Toolbar
       h('div', { className: 'flex items-center justify-between' },
-        h('p', { className: 'text-sm text-gray-500' }, loading ? '⏳ Carregando...' : clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '') + ' encontrado' + (clientes.length !== 1 ? 's' : '')),
-        h('button', { onClick: syncBi, disabled: syncing, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5' }, syncing ? '⏳ Sincronizando...' : '📥 Sync BI')
+        h('p', { className: 'text-sm text-gray-500' }, loading ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...") : clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '') + ' encontrado' + (clientes.length !== 1 ? 's' : '')),
+        h('button', { onClick: syncBi, disabled: syncing, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5' }, syncing ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Sincronizando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-download" })), "Sync BI"))
       ),
 
       // Lista (grid 2 colunas em desktop)
       loading ? h(Skeleton, { linhas: 6 }) :
-      clientes.length === 0 ? h(EmptyState, { titulo: 'Nenhum cliente encontrado', descricao: filtroCliente ? 'Este cliente não foi sincronizado. Clique em "Sync BI".' : 'Clique em "Sync BI" para importar.', icone: '🏢' }) :
+      clientes.length === 0 ? h(EmptyState, { titulo: 'Nenhum cliente encontrado', descricao: filtroCliente ? 'Este cliente não foi sincronizado. Clique em "Sync BI".' : 'Clique em "Sync BI" para importar.', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })) }) :
       h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-3' },
         ...clientes.map(function(cli) {
           var cod = cli.cod_cliente, nome = getNome(cod, cli.nome_fantasia);
@@ -484,11 +485,11 @@
                   h('span', { className: 'text-xs text-gray-400 flex-shrink-0' }, '#' + cod)
                 ),
                 h('div', { className: 'flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500' },
-                  h('span', null, '🚚 ' + parseInt(cli.total_entregas_30d || 0).toLocaleString('pt-BR')),
-                  h('span', { className: parseFloat(cli.taxa_prazo_30d) >= 90 ? 'text-emerald-600 font-medium' : parseFloat(cli.taxa_prazo_30d) < 80 ? 'text-red-600 font-medium' : '' }, '⏱️ ' + (cli.taxa_prazo_30d || 0) + '%'),
-                  h('span', null, '💰 ' + formatCurrency(cli.valor_total_30d)),
-                  temCC && h('span', { className: 'text-blue-500' }, '📁 ' + filtrosData.cliente_centros[String(cod)].length + ' CC'),
-                  cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, '🚨 ' + cli.ocorrencias_abertas)
+                  h('span', null, '' + parseInt(cli.total_entregas_30d || 0).toLocaleString('pt-BR')),
+                  h('span', { className: parseFloat(cli.taxa_prazo_30d) >= 90 ? 'text-emerald-600 font-medium' : parseFloat(cli.taxa_prazo_30d) < 80 ? 'text-red-600 font-medium' : '' }, '' + (cli.taxa_prazo_30d || 0) + '%'),
+                  h('span', null, '' + formatCurrency(cli.valor_total_30d)),
+                  temCC && h('span', { className: 'text-blue-500' }, '' + filtrosData.cliente_centros[String(cod)].length + ' CC'),
+                  cli.ocorrencias_abertas > 0 && h('span', { className: 'text-red-500 font-medium' }, '' + cli.ocorrencias_abertas)
                 )
               ),
               h('div', { className: 'flex flex-col items-end gap-1 flex-shrink-0' },
@@ -754,31 +755,31 @@
       // Filtros: Período + Centro de Custo
       h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
         h('div', { className: 'flex flex-wrap items-center gap-3' },
-          h('span', { className: 'text-sm font-semibold text-gray-700' }, '🔍 Filtros'),
+          h('span', { className: 'text-sm font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtros")),
           // Período
           h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-xs text-gray-500' }, '📅'),
+            h('span', { className: 'text-xs text-gray-500' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" }))),
             h('input', { type: 'date', value: periodo.inicio, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { inicio: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' }),
             h('span', { className: 'text-gray-400 text-xs' }, 'até'),
             h('input', { type: 'date', value: periodo.fim, onChange: function(e) { setPeriodo(function(p) { return Object.assign({}, p, { fim: e.target.value }); }); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500' })
           ),
           // Centro de Custo (se houver)
           centrosDisp.length > 0 && h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-xs text-gray-500' }, '📁'),
+            h('span', { className: 'text-xs text-gray-500' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
             h('select', { value: centroSel, onChange: function(e) { setCentroSel(e.target.value); }, className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500' },
               h('option', { value: '' }, 'Todos os centros de custo'),
               centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })
             ),
-            centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+            centroSel && h('button', { onClick: function() { setCentroSel(''); }, className: 'text-xs text-gray-400 hover:text-red-500' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
           ),
           // Categoria / Veículo (multi-select checkboxes)
           categoriasDisp.length > 0 && h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-xs text-gray-500' }, '🏷️'),
+            h('span', { className: 'text-xs text-gray-500' }, h("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, h("use", { href: "#i-tag" }))),
             h('div', { className: 'relative' },
               h('button', {
                 onClick: function() { setCatDropAberto(function(v) { return !v; }); },
                 className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 flex items-center gap-1 min-w-[160px]'
-              }, categoriasSel.length > 0 ? categoriasSel.length + ' categoria' + (categoriasSel.length > 1 ? 's' : '') : 'Todas as categorias', h('span', { className: 'ml-auto text-gray-400 text-xs' }, catDropAberto ? '▲' : '▼')),
+              }, categoriasSel.length > 0 ? categoriasSel.length + ' categoria' + (categoriasSel.length > 1 ? 's' : '') : 'Todas as categorias', h('span', { className: 'ml-auto text-gray-400 text-xs' }, catDropAberto ? '' : '')),
               catDropAberto && h('div', {
                 style: { position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: '4px', width: '240px', maxHeight: '220px', overflowY: 'auto', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '6px 0' }
               },
@@ -800,33 +801,33 @@
                 })
               )
             ),
-            categoriasSel.length > 0 && h('button', { onClick: function() { setCategoriasSel([]); }, className: 'text-xs text-gray-400 hover:text-red-500' }, '✕')
+            categoriasSel.length > 0 && h('button', { onClick: function() { setCategoriasSel([]); }, className: 'text-xs text-gray-400 hover:text-red-500' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
           ),
           // Chips
           periodo.inicio && h('span', { className: 'text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full' }, formatDate(periodo.inicio) + ' a ' + formatDate(periodo.fim)),
-          centroSel && h('span', { className: 'text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full' }, '📁 ' + centroSel),
+          centroSel && h('span', { className: 'text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full' }, '' + centroSel),
           categoriasSel.length > 0 && categoriasSel.map(function(cat) {
-            return h('span', { key: cat, className: 'text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full cursor-pointer hover:bg-yellow-200', onClick: function() { setCategoriasSel(function(p) { return p.filter(function(c) { return c !== cat; }); }); } }, '🏷️ ' + cat + ' ✕');
+            return h('span', { key: cat, className: 'text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full cursor-pointer hover:bg-yellow-200', onClick: function() { setCategoriasSel(function(p) { return p.filter(function(c) { return c !== cat; }); }); } }, '' + cat + ' ');
           })
         )
       ),
 
       // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-6 gap-3' },
-        h(KpiCard, { titulo: 'Entregas', valor: parseInt(m.total_entregas || 0).toLocaleString(), icone: '🚚', cor: 'blue' }),
-        h(KpiCard, { titulo: 'Taxa Prazo', valor: (m.taxa_prazo || 0) + '%', icone: '⏱️', cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
-        h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(m.valor_total), icone: '💰', cor: 'green' }),
-        h(KpiCard, { titulo: 'Tempo Médio', valor: (m.tempo_medio || 0) + 'min', icone: '🕐', cor: 'gray' }),
-        h(KpiCard, { titulo: 'Profissionais', valor: m.profissionais_unicos || 0, icone: '🏍️', cor: 'purple' }),
-        h(KpiCard, { titulo: 'Retornos', valor: m.total_retornos || 0, icone: '🔄', cor: parseInt(m.total_retornos) > 5 ? 'red' : 'gray' })
+        h(KpiCard, { titulo: 'Entregas', valor: parseInt(m.total_entregas || 0).toLocaleString(), icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-truck" })), cor: 'blue' }),
+        h(KpiCard, { titulo: 'Taxa Prazo', valor: (m.taxa_prazo || 0) + '%', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), cor: parseFloat(m.taxa_prazo) >= 85 ? 'green' : 'amber' }),
+        h(KpiCard, { titulo: 'Faturamento', valor: formatCurrency(m.valor_total), icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), cor: 'green' }),
+        h(KpiCard, { titulo: 'Tempo Médio', valor: (m.tempo_medio || 0) + 'min', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), cor: 'gray' }),
+        h(KpiCard, { titulo: 'Profissionais', valor: m.profissionais_unicos || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), cor: 'purple' }),
+        h(KpiCard, { titulo: 'Retornos', valor: m.total_retornos || 0, icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), cor: parseInt(m.total_retornos) > 5 ? 'red' : 'gray' })
       ),
 
       // Ações
       h('div', { className: 'flex flex-wrap gap-2' },
-        h('button', { onClick: function() { setShowNovaInteracao(true); }, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, '📝 Nova Interação'),
-        h('button', { onClick: function() { setShowNovaOcorrencia(true); }, className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, '🚨 Nova Ocorrência'),
+        h('button', { onClick: function() { setShowNovaInteracao(true); }, className: 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Nova Interação")),
+        h('button', { onClick: function() { setShowNovaOcorrencia(true); }, className: 'px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Nova Ocorrência")),
         h('div', { className: 'flex-1' }),
-        !raioXLoading && h('button', { onClick: gerarRaioX, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 shadow-lg' }, '🔬 Raio-X IA')
+        !raioXLoading && h('button', { onClick: gerarRaioX, className: 'px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold hover:from-purple-700 hover:to-indigo-700 shadow-lg' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-microscope" })), "Raio-X IA"))
       ),
 
       // Raio-X Loading Animation
@@ -835,18 +836,18 @@
       // Raio-X result
       raioXResult && h('div', { className: 'bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-6 shadow-inner' },
         h('div', { className: 'flex items-center gap-2 mb-4 flex-wrap' },
-          h('span', { className: 'text-2xl' }, '🔬'), h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
+          h('span', { className: 'text-2xl' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-microscope" }))), h('h3', { className: 'text-lg font-bold text-indigo-900' }, 'Raio-X Inteligente'),
           // Botão Editar / Cancelar
           raioXResult.id && h('button', {
             className: 'ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-md ' + (raioXEditando ? 'bg-gray-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'),
             onClick: toggleEditarRaioX
-          }, raioXEditando ? '✕ Cancelar Edição' : '✏️ Editar Relatório'),
+          }, raioXEditando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })), "Cancelar Edição") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar Relatório")),
           // Botão Salvar (só aparece em modo edição)
           raioXEditando && raioXResult.id && h('button', {
             className: 'px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-emerald-700 disabled:opacity-50',
             onClick: salvarEdicaoRaioX,
             disabled: raioXSalvando
-          }, raioXSalvando ? '⏳ Salvando...' : '💾 Salvar Alterações'),
+          }, raioXSalvando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Salvando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar Alterações")),
           // Botão Baixar PDF Relatório (texto editável — reflete edições) — PRINCIPAL
           raioXResult.id && h('button', { className: 'ml-2 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-bold shadow-md', onClick: function() {
             var token = getToken(), url = apiUrl + '/cs/raio-x/pdf-texto/' + raioXResult.id;
@@ -854,7 +855,7 @@
               .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.blob(); })
               .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Relatorio_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
               .catch(function(e) { alert('Erro: ' + e.message); });
-          } }, '📝 Baixar PDF'),
+          } }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Baixar PDF")),
           // Botão Baixar PDF Apresentação (slides visuais — dados brutos) — SECUNDÁRIO
           raioXResult.id && h('button', { className: 'ml-1 px-3 py-1.5 border border-purple-300 text-purple-600 rounded-lg text-xs font-medium hover:bg-purple-50', onClick: function() {
             var token = getToken(), url = apiUrl + '/cs/raio-x/pdf/' + raioXResult.id;
@@ -862,21 +863,21 @@
               .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.blob(); })
               .then(function(blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'RaioX_Apresentacao_' + codCliente + '.pdf'; a.click(); URL.revokeObjectURL(a.href); })
               .catch(function(e) { alert('Erro: ' + e.message); });
-          } }, '📊 Apresentação'),
+          } }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Apresentação")),
           // Botão Gerar Versão Cliente (novo)
           raioXResult.id && h('button', {
             className: 'ml-1 px-3 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-fuchsia-700 hover:to-pink-700 disabled:opacity-50',
             onClick: gerarRaioXCliente,
             disabled: raioXClienteGerando,
             title: 'Gera um relatório voltado ao cliente, com textos corporativos e visual polido'
-          }, raioXClienteGerando ? '⏳ Gerando...' : (raioXClienteResult ? '🔄 Regerar Cliente' : '👔 Gerar Versão Cliente')),
+          }, raioXClienteGerando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Gerando...") : (raioXClienteResult ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Regerar Cliente") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Gerar Versão Cliente"))),
           // Botão Enviar por Email (só habilitado quando existe versão cliente)
           raioXResult.id && h('button', {
             className: 'ml-1 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-bold shadow-md hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed',
             onClick: abrirModalEmail,
             disabled: raioXEnviandoEmail || !raioXClienteResult,
             title: raioXClienteResult ? 'Enviar relatório cliente por email' : 'Gere a versão cliente primeiro'
-          }, raioXEnviandoEmail ? '⏳ Enviando...' : '📧 Enviar por Email'),
+          }, raioXEnviandoEmail ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Enviar por Email")),
           h('span', { className: 'text-xs text-indigo-400 ml-auto' }, 'Gerado ' + formatDateTime(raioXResult.gerado_em) + ' · ' + raioXResult.tokens + ' tokens')
         ),
         // Tabs: Interno ↔ Cliente (só aparecem se ambos existem)
@@ -884,16 +885,16 @@
           h('button', {
             onClick: function() { setRaioXTab('interno'); },
             className: 'px-4 py-1.5 rounded-md text-xs font-bold transition ' + (raioXTab === 'interno' ? 'bg-indigo-600 text-white shadow' : 'text-gray-500 hover:text-gray-700')
-          }, '🔬 Interno'),
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-microscope" })), "Interno")),
           h('button', {
             onClick: function() { setRaioXTab('cliente'); },
             className: 'px-4 py-1.5 rounded-md text-xs font-bold transition ' + (raioXTab === 'cliente' ? 'bg-fuchsia-600 text-white shadow' : 'text-gray-500 hover:text-gray-700')
-          }, '👔 Versão Cliente'),
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Versão Cliente")),
           h('span', { className: 'text-xs text-gray-400 px-3 flex items-center' }, raioXTab === 'cliente' ? (raioXClienteResult.tokens + ' tokens · gerado ' + formatDateTime(raioXClienteResult.gerado_em)) : '')
         ),
         // Aviso de modo edição
         raioXEditando && h('div', { className: 'mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2' },
-          h('span', { className: 'text-amber-600 text-sm' }, '✏️'),
+          h('span', { className: 'text-amber-600 text-sm' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" }))),
           h('span', { className: 'text-amber-800 text-sm font-medium' }, 'Modo de edição ativo — edite o texto abaixo e clique em "Salvar Alterações".')
         ),
         // Conteúdo: tab interno renderiza o raio-x interno normal; tab cliente renderiza o HTML do relatório cliente
@@ -919,28 +920,28 @@
       // Interações + Ocorrências
       h('div', { className: 'grid md:grid-cols-2 gap-6' },
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📝 Últimas Interações'),
+          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Últimas Interações")),
           interacoes.length > 0 ? h('div', { className: 'space-y-3' }, ...interacoes.map(function(int, i) {
             return h('div', { key: i, className: 'flex gap-3 p-3 bg-gray-50 rounded-lg' },
-              h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
+              h('span', { className: 'text-lg mt-0.5' }, int.tipo === 'visita' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })) : int.tipo === 'reuniao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })) : int.tipo === 'ligacao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })) : int.tipo === 'whatsapp' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })) : int.tipo === 'pos_venda' ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
               h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, int.titulo), int.descricao && h('p', { className: 'text-xs text-gray-500 mt-1 line-clamp-2' }, int.descricao), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(int.data_interacao) + ' · ' + (int.criado_por_nome || '')))
             );
           })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, 'Nenhuma interação')
         ),
         h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '🚨 Ocorrências Abertas'),
+          h('h3', { className: 'font-semibold text-gray-700 mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "Ocorrências Abertas")),
           ocorrencias.length > 0 ? h('div', { className: 'space-y-3' }, ...ocorrencias.map(function(oc, i) {
             return h('div', { key: i, className: 'flex gap-3 p-3 rounded-lg ' + (oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50') },
-              h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : '🟡'),
+              h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'alta' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))),
               h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo), h('div', { className: 'flex items-center gap-2 mt-1' }, h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: '#3B82F6' })), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura)))
             );
-          })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, '✅ Nenhuma ocorrência!')
+          })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Nenhuma ocorrência!"))
         )
       ),
 
       // Histórico Raio-X
       raio_x_historico.length > 0 && h('div', { className: 'bg-white rounded-xl border border-gray-200 p-5' },
-        h('h3', { className: 'font-semibold text-gray-700 mb-4' }, '📋 Histórico de Raio-X'),
+        h('h3', { className: 'font-semibold text-gray-700 mb-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Histórico de Raio-X")),
         h('div', { className: 'space-y-2' }, ...raio_x_historico.map(function(rx, i) {
           return h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50', onClick: async function() {
             try { var res = await fetchApi('/cs/raio-x/' + rx.id); if (res.success) setRaioXResult({ id: rx.id, analise: res.raio_x.analise_texto, gerado_em: res.raio_x.created_at, tokens: res.raio_x.tokens_utilizados }); } catch (e) { console.error(e); }
@@ -953,40 +954,40 @@
       ),
 
       // Modais
-      h(Modal, { aberto: showNovaInteracao, fechar: function() { setShowNovaInteracao(false); }, titulo: '📝 Nova Interação' },
+      h(Modal, { aberto: showNovaInteracao, fechar: function() { setShowNovaInteracao(false); }, titulo: 'Nova Interação' },
         h('div', { className: 'space-y-4' },
           h('div', { className: 'grid grid-cols-2 gap-4' },
-            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: interacaoForm.tipo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'visita' }, '📍 Visita'), h('option', { value: 'reuniao' }, '👥 Reunião'), h('option', { value: 'ligacao' }, '📞 Ligação'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'), h('option', { value: 'email' }, '📧 E-mail'), h('option', { value: 'anotacao' }, '📝 Anotação'))),
-            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: interacaoForm.centro_custo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: interacaoForm.tipo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'visita' }, 'Visita'), h('option', { value: 'reuniao' }, 'Reunião'), h('option', { value: 'ligacao' }, 'Ligação'), h('option', { value: 'pos_venda' }, 'Pós-Venda'), h('option', { value: 'whatsapp' }, 'WhatsApp'), h('option', { value: 'email' }, 'E-mail'), h('option', { value: 'anotacao' }, 'Anotação'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Centro de Custo")), h('select', { value: interacaoForm.centro_custo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
           ),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: interacaoForm.titulo, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, placeholder: 'Ex: Reunião de alinhamento', className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: interacaoForm.descricao, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Resultado'), h('input', { type: 'text', value: interacaoForm.resultado, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { resultado: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Próxima Ação'), h('input', { type: 'text', value: interacaoForm.proxima_acao, onChange: function(e) { setInteracaoForm(function(f) { return Object.assign({}, f, { proxima_acao: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
-          h('button', { onClick: salvarInteracao, disabled: !interacaoForm.titulo, className: 'w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50' }, '💾 Salvar')
+          h('button', { onClick: salvarInteracao, disabled: !interacaoForm.titulo, className: 'w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar"))
         )
       ),
-      h(Modal, { aberto: showNovaOcorrencia, fechar: function() { setShowNovaOcorrencia(false); }, titulo: '🚨 Nova Ocorrência' },
+      h(Modal, { aberto: showNovaOcorrencia, fechar: function() { setShowNovaOcorrencia(false); }, titulo: 'Nova Ocorrência' },
         h('div', { className: 'space-y-4' },
           h('div', { className: 'grid grid-cols-3 gap-4' },
             h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Tipo'), h('select', { value: ocorrenciaForm.tipo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { tipo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'reclamacao' }, 'Reclamação'), h('option', { value: 'problema_entrega' }, 'Problema Entrega'), h('option', { value: 'atraso' }, 'Atraso'), h('option', { value: 'financeiro' }, 'Financeiro'), h('option', { value: 'operacional' }, 'Operacional'), h('option', { value: 'sugestao' }, 'Sugestão'), h('option', { value: 'elogio' }, 'Elogio'))),
-            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'), h('select', { value: ocorrenciaForm.severidade, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { severidade: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'baixa' }, '🟢 Baixa'), h('option', { value: 'media' }, '🟡 Média'), h('option', { value: 'alta' }, '🟠 Alta'), h('option', { value: 'critica' }, '🔴 Crítica'))),
-            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, '📁 Centro de Custo'), h('select', { value: ocorrenciaForm.centro_custo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Severidade'), h('select', { value: ocorrenciaForm.severidade, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { severidade: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: 'baixa' }, 'Baixa'), h('option', { value: 'media' }, 'Média'), h('option', { value: 'alta' }, 'Alta'), h('option', { value: 'critica' }, 'Crítica'))),
+            h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Centro de Custo")), h('select', { value: ocorrenciaForm.centro_custo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { centro_custo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' }, h('option', { value: '' }, 'Todos os centros'), centrosDisp.map(function(cc) { return h('option', { key: cc.centro_custo, value: cc.centro_custo }, cc.centro_custo); })))
           ),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Título *'), h('input', { type: 'text', value: ocorrenciaForm.titulo, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { titulo: e.target.value }); }); }, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg' })),
           h('div', null, h('label', { className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Descrição'), h('textarea', { value: ocorrenciaForm.descricao, onChange: function(e) { setOcorrenciaForm(function(f) { return Object.assign({}, f, { descricao: e.target.value }); }); }, rows: 3, className: 'w-full px-3 py-2 border border-gray-200 rounded-lg resize-none' })),
-          h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, '💾 Registrar')
+          h('button', { onClick: salvarOcorrencia, disabled: !ocorrenciaForm.titulo, className: 'w-full py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Registrar"))
         )
       ),
       // Modal de Envio de Email do Raio-X Cliente (form + animações sending/success)
-      h(Modal, { aberto: showEmailModal, fechar: fecharModalEmail, titulo: emailStatus === 'success' ? '✅ Enviado!' : emailStatus === 'sending' ? '📤 Enviando...' : '📧 Enviar Relatório por Email', largura: 'max-w-xl' },
+      h(Modal, { aberto: showEmailModal, fechar: fecharModalEmail, titulo: emailStatus === 'success' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Enviado!") : emailStatus === 'sending' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-upload" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Enviar Relatório por Email"), largura: 'max-w-xl' },
         emailStatus === 'sending' ?
           h('div', { className: 'flex flex-col items-center py-10' },
             h('div', { className: 'relative w-24 h-24' },
               h('div', { className: 'absolute inset-0 rounded-full border-4 border-emerald-100' }),
               h('div', { className: 'absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin' }),
               h('div', { className: 'absolute inset-0 flex items-center justify-center' },
-                h('span', { className: 'text-4xl animate-pulse' }, '📧')
+                h('span', { className: 'text-4xl animate-pulse' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })))
               )
             ),
             h('p', { className: 'mt-6 text-lg font-bold text-gray-700' }, 'Enviando email...'),
@@ -1009,7 +1010,7 @@
         :
           h('div', { className: 'space-y-4' },
             emailStatus === 'error' && emailError && h('div', { className: 'p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2' },
-              h('span', { className: 'text-red-500 text-lg leading-none' }, '⚠️'),
+              h('span', { className: 'text-red-500 text-lg leading-none' }, h("svg", { className: "ico", style: { width: 20, height: 20, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" }))),
               h('div', { className: 'flex-1' },
                 h('p', { className: 'text-sm font-semibold text-red-800' }, 'Falha ao enviar'),
                 h('p', { className: 'text-xs text-red-600 mt-0.5' }, emailError)
@@ -1054,7 +1055,7 @@
                 onClick: enviarEmailRaioX,
                 disabled: !emailForm.para,
                 className: 'flex-[2] py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50'
-              }, '📧 Enviar Email')
+              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Enviar Email"))
             )
           )
       )
@@ -1071,18 +1072,18 @@
     useEffect(function() { (async function() { setLoading(true); try { var p = new URLSearchParams({ limit: '50' }); if (filtroTipo) p.set('tipo', filtroTipo); var r = await fetchApi('/cs/interacoes?' + p); if (r.success) setInteracoes(r.interacoes || []); } catch (e) { console.error(e); } setLoading(false); })(); }, [fetchApi, filtroTipo]);
     return h('div', { className: 'space-y-4' },
       h('div', { className: 'flex items-center gap-3' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Todas as Interações'),
-        h('select', { value: filtroTipo, onChange: function(e) { setFiltroTipo(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos os tipos'), h('option', { value: 'visita' }, '📍 Visitas'), h('option', { value: 'reuniao' }, '👥 Reuniões'), h('option', { value: 'ligacao' }, '📞 Ligações'), h('option', { value: 'pos_venda' }, '✅ Pós-Venda'), h('option', { value: 'whatsapp' }, '💬 WhatsApp'))
+        h('select', { value: filtroTipo, onChange: function(e) { setFiltroTipo(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos os tipos'), h('option', { value: 'visita' }, 'Visitas'), h('option', { value: 'reuniao' }, 'Reuniões'), h('option', { value: 'ligacao' }, 'Ligações'), h('option', { value: 'pos_venda' }, 'Pós-Venda'), h('option', { value: 'whatsapp' }, 'WhatsApp'))
       ),
-      loading ? h(Skeleton, { linhas: 5 }) : interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação', icone: '📝' }) :
+      loading ? h(Skeleton, { linhas: 5 }) : interacoes.length === 0 ? h(EmptyState, { titulo: 'Nenhuma interação', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })) }) :
       h('div', { className: 'space-y-2' }, ...interacoes.map(function(int, i) {
         return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
-          h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? '📍' : int.tipo === 'reuniao' ? '👥' : int.tipo === 'ligacao' ? '📞' : int.tipo === 'whatsapp' ? '💬' : int.tipo === 'pos_venda' ? '✅' : '📝'),
+          h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })) : int.tipo === 'reuniao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })) : int.tipo === 'ligacao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })) : int.tipo === 'whatsapp' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })) : int.tipo === 'pos_venda' ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
           h('div', { className: 'flex-1 min-w-0' },
             h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#6366F1' })),
             h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || 'Cliente ' + int.cod_cliente),
             int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
-            int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, '✅ ' + int.resultado),
-            int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, '📅 Próxima: ' + int.proxima_acao)
+            int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, '' + int.resultado),
+            int.proxima_acao && h('p', { className: 'text-xs text-blue-600 mt-1' }, 'Próxima: ' + int.proxima_acao)
           ),
           h('div', { className: 'text-right whitespace-nowrap' }, h('p', { className: 'text-xs text-gray-400' }, formatDateTime(int.data_interacao)), h('p', { className: 'text-xs text-gray-400' }, int.criado_por_nome))
         );
@@ -1103,20 +1104,20 @@
 
     return h('div', { className: 'space-y-4' },
       h('div', { className: 'flex items-center gap-3' }, h('h3', { className: 'text-lg font-bold text-gray-900' }, 'Gestão de Ocorrências'),
-        h('select', { value: filtroStatus, onChange: function(e) { setFiltroStatus(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos'), h('option', { value: 'aberta' }, '🔵 Abertas'), h('option', { value: 'em_andamento' }, '🟡 Em Andamento'), h('option', { value: 'resolvida' }, '🟢 Resolvidas'), h('option', { value: 'fechada' }, '⚫ Fechadas'))
+        h('select', { value: filtroStatus, onChange: function(e) { setFiltroStatus(e.target.value); }, className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white ml-auto' }, h('option', { value: '' }, 'Todos'), h('option', { value: 'aberta' }, 'Abertas'), h('option', { value: 'em_andamento' }, 'Em Andamento'), h('option', { value: 'resolvida' }, 'Resolvidas'), h('option', { value: 'fechada' }, 'Fechadas'))
       ),
-      loading ? h(Skeleton, { linhas: 5 }) : ocorrencias.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ocorrência', icone: '✅', descricao: 'Tudo limpo!' }) :
+      loading ? h(Skeleton, { linhas: 5 }) : ocorrencias.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ocorrência', icone: h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), descricao: 'Tudo limpo!' }) :
       h('div', { className: 'space-y-2' }, ...ocorrencias.map(function(oc, i) {
         return h('div', { key: i, className: 'bg-white rounded-xl border p-4 ' + (oc.severidade === 'critica' ? 'border-red-300' : oc.severidade === 'alta' ? 'border-orange-200' : 'border-gray-200') },
           h('div', { className: 'flex items-start gap-3' },
-            h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? '🔴' : oc.severidade === 'alta' ? '🟠' : oc.severidade === 'media' ? '🟡' : '🟢'),
+            h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'alta' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'media' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))),
             h('div', { className: 'flex-1 min-w-0' },
               h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' }, h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo), h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#3B82F6' : oc.status === 'resolvida' ? '#10B981' : '#F59E0B' })),
               h('p', { className: 'text-sm text-gray-600' }, oc.nome_fantasia || 'Cliente ' + oc.cod_cliente),
               oc.descricao && h('p', { className: 'text-sm text-gray-500 mt-1' }, oc.descricao),
               h('div', { className: 'flex items-center gap-2 mt-2' },
-                oc.status === 'aberta' && h('button', { onClick: function() { atualizarSt(oc.id, 'em_andamento'); }, className: 'text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200' }, '▶ Iniciar'),
-                (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: function() { atualizarSt(oc.id, 'resolvida'); }, className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, '✅ Resolver')
+                oc.status === 'aberta' && h('button', { onClick: function() { atualizarSt(oc.id, 'em_andamento'); }, className: 'text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-play" })), "Iniciar")),
+                (oc.status === 'aberta' || oc.status === 'em_andamento') && h('button', { onClick: function() { atualizarSt(oc.id, 'resolvida'); }, className: 'text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Resolver"))
               )
             ),
             h('span', { className: 'text-xs text-gray-400 whitespace-nowrap' }, formatDateTime(oc.data_abertura))
@@ -1134,8 +1135,8 @@
     var _l = useState(true), loading = _l[0], setLoading = _l[1];
     useEffect(function() { (async function() { setLoading(true); try { var r = await fetchApi('/cs/interacoes/agenda?dias=30'); if (r.success) setAgenda(r.agenda || []); } catch (e) { console.error(e); } setLoading(false); })(); }, [fetchApi]);
     return h('div', { className: 'space-y-4' },
-      h('h3', { className: 'text-lg font-bold text-gray-900' }, '📅 Próximas Ações Agendadas (30 dias)'),
-      loading ? h(Skeleton, { linhas: 5 }) : agenda.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ação agendada', icone: '📅', descricao: 'Registre interações com próximas ações.' }) :
+      h('h3', { className: 'text-lg font-bold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Próximas Ações Agendadas (30 dias)")),
+      loading ? h(Skeleton, { linhas: 5 }) : agenda.length === 0 ? h(EmptyState, { titulo: 'Nenhuma ação agendada', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), descricao: 'Registre interações com próximas ações.' }) :
       h('div', { className: 'space-y-2' }, ...agenda.map(function(a, i) {
         return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4' },
           h('div', { className: 'text-center min-w-[60px]' }, h('p', { className: 'text-2xl font-bold text-blue-600' }, new Date(a.data_proxima_acao).getDate()), h('p', { className: 'text-xs text-gray-500' }, new Date(a.data_proxima_acao).toLocaleDateString('pt-BR', { month: 'short' }))),
@@ -1172,7 +1173,7 @@
       .replace(/(https?:\/\/[^\s<]+)/g, function(url) {
         var decoded = url.replace(/&amp;/g, '&');
         if (decoded.indexOf('mapa-calor') !== -1) {
-          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">🗺️ Abrir Mapa de Calor Interativo</a>';
+          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">Abrir Mapa de Calor Interativo</a>';
         }
         return '<a href="' + decoded + '" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">' + decoded.substring(0, 60) + '...</a>';
       })
@@ -1303,7 +1304,7 @@
       // ─── Header com filtros e auto-refresh ───
       h('div', { className: 'flex flex-wrap items-center justify-between gap-3' },
         h('div', null,
-          h('h3', { className: 'text-lg font-bold text-gray-900' }, '📧 Emails Enviados'),
+          h('h3', { className: 'text-lg font-bold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Emails Enviados")),
           h('p', { className: 'text-xs text-gray-500' }, 'Rastreamento em tempo real via webhook Resend')
         ),
         h('div', { className: 'flex items-center gap-2 text-sm' },
@@ -1390,7 +1391,7 @@
 
       // ─── Master-detail layout ───
       loading ? h(Skeleton, { linhas: 6 }) :
-      emails.length === 0 ? h(EmptyState, { icone: '📭', titulo: 'Nenhum email enviado no período', descricao: 'Envie um Raio-X pra ver o histórico aqui.' }) :
+      emails.length === 0 ? h(EmptyState, { icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), titulo: 'Nenhum email enviado no período', descricao: 'Envie um Raio-X pra ver o histórico aqui.' }) :
       h('div', { className: 'grid grid-cols-1 lg:grid-cols-5 gap-4' },
         // ─── Lista (esquerda, 2/5) ───
         h('div', { className: 'lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden' },
@@ -1426,7 +1427,7 @@
                     h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded' }, 'cliente') :
                     h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded' }, 'interno'),
                   (em.total_aberturas || 0) > 0 && h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 text-gray-600 rounded' }, em.total_aberturas + '× ↺'),
-                  (em.total_cliques || 0) > 0 && h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 text-gray-600 rounded' }, em.total_cliques + '× 🖱')
+                  (em.total_cliques || 0) > 0 && h('span', { className: 'text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 text-gray-600 rounded' }, em.total_cliques + '× ')
                 ),
                 em.bounce_msg && h('p', { className: 'text-[11px] text-red-600 mt-1 truncate' }, em.bounce_msg)
               );
@@ -1437,7 +1438,7 @@
         // ─── Detalhe (direita, 3/5) ───
         h('div', { className: 'lg:col-span-3' },
           !selecionado ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm' },
-            '👈 Selecione um email pra ver o detalhe e a linha do tempo'
+            'Selecione um email pra ver o detalhe e a linha do tempo'
           ) :
           detLoading ? h(Skeleton, { linhas: 8 }) :
           !detalhe ? null :
@@ -1542,7 +1543,7 @@
           onClick: function(e) { e.stopPropagation(); }
         },
           h('div', { className: 'px-4 py-3 border-b border-gray-200 flex justify-between items-center' },
-            h('p', { className: 'text-sm font-medium text-gray-900' }, '📧 Visualização do email enviado'),
+            h('p', { className: 'text-sm font-medium text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Visualização do email enviado")),
             h('button', {
               onClick: function() { setHtmlModal(null); },
               className: 'text-gray-400 hover:text-gray-600 text-xl leading-none'
@@ -1577,7 +1578,7 @@
         onClick: onRemove,
         className: 'cursor-pointer text-gray-400 hover:text-red-500 text-[10px] ml-0.5',
         title: 'Remover'
-      }, '✕')
+      }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
     );
   }
 
@@ -1623,8 +1624,8 @@
   function StatusBadgeUltimoEnvio({ status, em }) {
     if (!em) return h('span', { className: 'text-[11px] text-gray-400' }, 'Nunca enviado');
     var quando = formatDateTime(em);
-    if (status === 'success') return h('span', { className: 'text-[11px] text-emerald-700' }, '✓ Último envio: ' + quando);
-    if (status === 'failed') return h('span', { className: 'text-[11px] text-red-600' }, '✕ Falhou: ' + quando);
+    if (status === 'success') return h('span', { className: 'text-[11px] text-emerald-700' }, 'Último envio: ' + quando);
+    if (status === 'failed') return h('span', { className: 'text-[11px] text-red-600' }, 'Falhou: ' + quando);
     return h('span', { className: 'text-[11px] text-gray-500' }, quando);
   }
 
@@ -1682,7 +1683,7 @@
             onClick: function() { if (confirm('Disparar relatório agora pra ' + dest.length + ' destinatário(s)?\n\n(Roda em background, pode levar 60s)')) onDispararAgora(config.id); },
             disabled: saving || !config.ativa || dest.length === 0,
             className: 'text-[11px] px-2.5 py-1 rounded-md border border-purple-200 text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed'
-          }, '⚡ Disparar agora'),
+          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-zap" })), "Disparar agora")),
           config.ultimo_envio_resend_id && h('a', {
             href: 'https://resend.com/emails/' + config.ultimo_envio_resend_id,
             target: '_blank',
@@ -1697,7 +1698,7 @@
       ),
       config.ultimo_envio_status === 'failed' && config.ultimo_envio_erro && h('div', {
         className: 'mt-2 p-2 bg-red-50 border border-red-200 rounded text-[11px] text-red-700'
-      }, '❌ Erro no último envio: ' + config.ultimo_envio_erro)
+      }, 'Erro no último envio: ' + config.ultimo_envio_erro)
     );
   }
 
@@ -1746,7 +1747,7 @@
           temMultiplosCentros && h('span', {
             onClick: function() { setOpen(!open); },
             className: 'cursor-pointer text-gray-400 hover:text-gray-700 text-lg select-none px-1'
-          }, open ? '▾' : '▸')
+          }, open ? '' : '')
         )
       ),
       // Quando tem 1 centro só: render direto sem expandir
@@ -1878,7 +1879,7 @@
       h('div', { className: 'bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col' },
         h('div', { className: 'p-4 border-b border-gray-200 flex items-center justify-between' },
           h('h3', { className: 'font-semibold text-gray-900' }, 'Configurar automação de cliente'),
-          h('button', { onClick: fechar, className: 'text-gray-400 hover:text-gray-700' }, '✕')
+          h('button', { onClick: fechar, className: 'text-gray-400 hover:text-gray-700' }, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })))
         ),
         h('div', { className: 'p-4 flex-1 overflow-y-auto' },
           // ETAPA 1: busca de cliente
@@ -2098,7 +2099,7 @@
       setSavingDia(true);
       try {
         var r = await fetchApi('/cs/email-automacao/config', { method: 'PUT', body: JSON.stringify({ dia_envio: dia }) });
-        if (r.success) { setToast('✓ Dia atualizado'); setTimeout(function() { setToast(null); }, 2000); carregar(); }
+        if (r.success) { setToast('Dia atualizado'); setTimeout(function() { setToast(null); }, 2000); carregar(); }
         else alert('Erro: ' + (r.error || 'falha'));
       } catch (e) { alert('Erro: ' + e.message); }
       setSavingDia(false);
@@ -2108,7 +2109,7 @@
       try {
         var r = await fetchApi('/cs/email-automacao/' + id + '/disparar-agora', { method: 'POST', body: '{}' });
         if (r.success) {
-          setToast('⚡ Disparo iniciado em background — atualiza em ~60s');
+          setToast('Disparo iniciado em background — atualiza em ~60s');
           setTimeout(function() { setToast(null); }, 5000);
           setTimeout(carregar, 60000);
         } else alert('Erro: ' + (r.error || 'falha'));
@@ -2131,7 +2132,7 @@
       h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4' },
         h('div', { className: 'flex items-center justify-between gap-4 flex-wrap' },
           h('div', null,
-            h('h2', { className: 'text-lg font-semibold text-gray-900' }, '⚡ Automação E-mail'),
+            h('h2', { className: 'text-lg font-semibold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-zap" })), "Automação E-mail")),
             h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Envio mensal automático do relatório do raio-x cliente')
           ),
           h('div', { className: 'flex items-center gap-3' },
@@ -2210,7 +2211,7 @@
       // Modal de adicionar
       h(ModalConfigurarCliente, { aberto: modal, fechar: function() { setModal(false); }, fetchApi: fetchApi, onSalvo: function() {
         carregar();
-        setToast('✓ Configuração salva');
+        setToast('Configuração salva');
         setTimeout(function() { setToast(null); }, 2500);
       } })
     );
