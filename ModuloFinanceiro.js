@@ -1,3 +1,4 @@
+/* FIN_DEEMOJI_FULL_V1 */
 /* FIN_HOME_REDESIGN_V1 */
 // MÓDULO FINANCEIRO - TUTTS v2.0
 (function() {
@@ -285,7 +286,7 @@
 
         return React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-6 border-l-4 border-slate-500' },
             React.createElement('h3', { className: 'font-bold text-gray-800 mb-1 flex items-center gap-2' },
-                React.createElement('span', null, '⚙️'),
+                React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })),
                 'Sistema de Saques'
             ),
             React.createElement('p', { className: 'text-sm text-gray-500 mb-4' },
@@ -337,7 +338,7 @@
                     React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
                         React.createElement('span', { className: 'font-semibold text-gray-800' }, 'Saques automáticos'),
                         autoOn
-                            ? React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold animate-pulse' }, '⚡ MODO AUTO')
+                            ? React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold animate-pulse' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "MODO AUTO"))
                             : React.createElement('span', { className: 'text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full font-semibold' }, 'MANUAL')
                     ),
                     React.createElement('p', { className: 'text-xs text-gray-700 leading-relaxed' },
@@ -390,7 +391,7 @@
                     onClick: (e) => e.stopPropagation(),
                 },
                     React.createElement('h3', { className: 'text-2xl font-bold text-amber-700 mb-3 flex items-center gap-2' },
-                        React.createElement('span', null, '⚠️'),
+                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })),
                         'Ligar saques automáticos?'
                     ),
                     React.createElement('div', { className: 'space-y-3 text-sm text-gray-700 mb-4' },
@@ -441,7 +442,7 @@
                             disabled: !!salvando || textoConfirm.trim().toUpperCase() !== 'CONFIRMAR',
                             onClick: confirmarLigarAuto,
                             className: 'flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed',
-                        }, salvando ? 'Salvando...' : '⚡ Ativar modo auto')
+                        }, salvando ? 'Salvando...' : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Ativar modo auto"))
                     )
                 )
             )
@@ -776,9 +777,9 @@
                         <td>${e.user_cod}</td>
                         <td>R$ ${parseFloat(e.requested_amount).toFixed(2)}</td>
                         <td>R$ ${parseFloat(e.final_amount).toFixed(2)}</td>
-                        <td>${e.status === 'aprovado' || (e.status === 'pago_stark' && !e.has_gratuity) ? '✅' :
-                              e.status === 'aprovado_gratuidade' || (e.status === 'pago_stark' && e.has_gratuity) ? '🎁' :
-                              e.status === 'rejeitado' ? '❌' : '⏳'}</td>
+                        <td>${e.status === 'aprovado' || (e.status === 'pago_stark' && !e.has_gratuity) ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
+                              e.status === 'aprovado_gratuidade' || (e.status === 'pago_stark' && e.has_gratuity) ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })) :
+                              e.status === 'rejeitado' ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }))}</td>
                         </tr>
                     `).join('')}
                     </tbody>
@@ -819,7 +820,7 @@
             React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-4' },
                 React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-3 mb-3' },
                     React.createElement('div', { className: 'flex flex-wrap items-center gap-2' },
-                        React.createElement('span', { className: 'font-semibold text-gray-700 text-sm' }, '📅 Período:'),
+                        React.createElement('span', { className: 'font-semibold text-gray-700 text-sm' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Período:")),
                         React.createElement('input', {
                             type: 'date', value: dataIni,
                             onChange: e => setDataIni(e.target.value),
@@ -836,7 +837,7 @@
                         onClick: gerarPdf,
                         disabled: loading || dados.length === 0,
                         className: 'px-5 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed',
-                    }, '📄 Gerar PDF')
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Gerar PDF"))
                 ),
                 // Atalhos rápidos
                 React.createElement('div', { className: 'flex flex-wrap gap-2 items-center' },
@@ -880,7 +881,7 @@
             // Comparativo (só se mês inteiro)
             ehMesInteiro && comparativo && React.createElement('div', { className: 'bg-white rounded-xl shadow p-4 mb-4' },
                 React.createElement('div', { className: 'flex items-center justify-between flex-wrap gap-2 mb-2' },
-                    React.createElement('h3', { className: 'font-bold text-gray-800' }, '📊 Comparativo com mês anterior'),
+                    React.createElement('h3', { className: 'font-bold text-gray-800' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Comparativo com mês anterior")),
                     React.createElement('span', { className: 'text-xs text-gray-500' },
                         formatarDataBR(formatarData(comparativo.mesAntIni)), ' a ', formatarDataBR(formatarData(comparativo.mesAntFim))
                     )
@@ -974,7 +975,7 @@
                 return React.createElement('div', { className: 'bg-white rounded-xl shadow p-5 mb-4' },
                     React.createElement('div', { className: 'flex items-center justify-between mb-3 flex-wrap gap-2' },
                         React.createElement('div', null,
-                            React.createElement('h3', { className: 'font-bold text-gray-800' }, '📈 Evolução do período'),
+                            React.createElement('h3', { className: 'font-bold text-gray-800' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Evolução do período")),
                             React.createElement('p', { className: 'text-xs text-gray-500 mt-0.5' },
                                 'Granularidade ', serie.tipo === 'diario' ? 'diária' : 'semanal',
                                 ' · ', serie.pontos.length, ' ponto(s)'
@@ -1062,7 +1063,7 @@
             React.createElement('div', { className: 'grid md:grid-cols-2 gap-4 mb-4' },
                 // Mais Solicitam
                 React.createElement('div', { className: 'bg-white rounded-xl shadow p-5' },
-                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, '🏆 Top 10 - Mais Solicitam Saques'),
+                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trophy" })), "Top 10 - Mais Solicitam Saques")),
                     tops.topSolicitam.length === 0
                         ? React.createElement('p', { className: 'text-gray-500 text-center py-4' }, 'Nenhum dado no período')
                         : React.createElement('div', { className: 'space-y-2' },
@@ -1092,7 +1093,7 @@
                 ),
                 // Com Gratuidade
                 React.createElement('div', { className: 'bg-white rounded-xl shadow p-5' },
-                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, '🎁 Top 10 - Saques com Gratuidade'),
+                    React.createElement('h3', { className: 'text-lg font-bold text-gray-800 mb-3' }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Top 10 - Saques com Gratuidade")),
                     tops.topGratuidade.length === 0
                         ? React.createElement('p', { className: 'text-gray-500 text-center py-4' }, 'Nenhum dado no período')
                         : React.createElement('div', { className: 'space-y-2' },
@@ -1285,9 +1286,9 @@
             const traduzirStatus = (status) => {
                 const map = { "aprovado": "Aprovado", "aprovado_gratuidade": "Aprovado c/ Gratuidade", "rejeitado": "Rejeitado", "aguardando_aprovacao": "Aguardando", "aguardando_pagamento_stark": "💳 Aguard. Pgto Stark", "pago_stark": "✅ PAGO VIA STARK BANK" };
                 // Sobrescrever com status Stark se existir
-                if (e && e.stark_status === 'em_lote') return "🏦 Lote Gerado - Aguard. Pagamento";
-                if (e && e.stark_status === 'processando') return "⏳ Processando Pix";
-                if (e && e.stark_status === 'pago') return "✅ PAGO VIA STARK BANK";
+                if (e && e.stark_status === 'em_lote') return "Lote Gerado - Aguard. Pagamento";
+                if (e && e.stark_status === 'processando') return "Processando Pix";
+                if (e && e.stark_status === 'pago') return "PAGO VIA STARK BANK";
                 return map[status] || status || "-";
             };
             
@@ -1374,7 +1375,7 @@
                 React.createElement("div", {className: "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in"},
                     // Header
                     React.createElement("div", {className: "bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 flex items-center gap-3"},
-                        React.createElement("span", {className: "text-3xl"}, "📢"),
+                        React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })),
                         React.createElement("div", null,
                             React.createElement("h3", {className: "text-lg font-bold"}, "Novo Relatório Diário"),
                             React.createElement("p", {className: "text-teal-100 text-sm"}, 
@@ -1424,7 +1425,7 @@
                         React.createElement("button", {
                             onClick: () => marcarRelatorioComoLido(relatorioNaoLido.id),
                             className: "w-full px-6 py-4 bg-teal-600 text-white rounded-xl font-bold text-lg hover:bg-teal-700 flex items-center justify-center gap-2 shadow-lg"
-                        }, "✅ Estou Ciente")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Estou Ciente"))
                     )
                 )
             ),
@@ -1437,7 +1438,7 @@
                     React.createElement("button", {
                         onClick: () => setRelatorioImagemAmpliada(null),
                         className: "absolute -top-10 right-0 text-white text-3xl hover:text-gray-300"
-                    }, "✕"),
+                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))),
                     React.createElement("img", {
                         src: relatorioImagemAmpliada,
                         className: "max-w-full max-h-[85vh] rounded-lg shadow-2xl",
@@ -1457,16 +1458,16 @@
                 className: "bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
             }, React.createElement("div", {
                 className: "bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white"
-            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, "⚠️ Atenção!"),
+            }, React.createElement("h2", {className: "text-xl font-bold flex items-center gap-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Atenção!")),
                 React.createElement("p", {className: "text-orange-100 text-sm"}, "Você possui tarefas pendentes")
             ), React.createElement("div", {className: "p-4 max-h-60 overflow-y-auto"},
-                React.createElement("p", {className: "text-gray-600 mb-3"}, "📋 ", todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
+                React.createElement("p", {className: "text-gray-600 mb-3"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), todoPendentesNotif.length, " tarefa(s) precisam da sua atenção:"),
                 React.createElement("div", {className: "space-y-2"},
                     todoPendentesNotif.slice(0, 5).map(t => React.createElement("div", {
                         key: t.id,
                         className: "bg-orange-50 border-l-4 border-orange-500 p-3 rounded"
                     }, React.createElement("p", {className: "font-semibold text-gray-800"}, t.titulo),
-                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, "📅 Vence: ", new Date(t.data_prazo).toLocaleDateString("pt-BR"))
+                        t.data_prazo && React.createElement("p", {className: "text-xs text-orange-600"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Vence: "), new Date(t.data_prazo).toLocaleDateString("pt-BR"))
                     ))
                 ),
                 todoPendentesNotif.length > 5 && React.createElement("p", {className: "text-sm text-gray-500 mt-2"}, "... e mais ", todoPendentesNotif.length - 5, " tarefa(s)")
@@ -1478,7 +1479,7 @@
                 React.createElement("button", {
                     onClick: () => { setTodoNotifModal(false); he("todo"); },
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                }, "📋 Ir para Tarefas")
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Ir para Tarefas"))
             ))),
             // ========== HEADER COM NAVEGAÇÃO - FINANCEIRO ==========
             React.createElement(HeaderCompacto, {
@@ -1500,7 +1501,7 @@
                 className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
             }, React.createElement("h3", {
                 className: "text-xl font-bold text-red-600 mb-4"
-            }, "⚠️ Confirmar Exclusão"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Confirmar Exclusão")), React.createElement("p", {
                 className: "text-gray-700 mb-2"
             }, "Tem certeza que deseja excluir esta solicitação?"), React.createElement("div", {
                 className: "bg-gray-50 rounded-lg p-4 mb-4"
@@ -1523,7 +1524,7 @@
                 },
                     React.createElement("p", {
                         className: "text-red-800 font-bold text-sm mb-1"
-                    }, "⚠️ ATENÇÃO — Saque em processamento"),
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ATENÇÃO — Saque em processamento")),
                     React.createElement("p", {
                         className: "text-red-700 text-xs leading-relaxed"
                     },
@@ -1584,7 +1585,7 @@
                     }
                 })(p.deleteConfirm.id),
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "🗑️ Excluir")))), 
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir"))))), 
             
             // =============================================
             // HOME FINANCEIRO - Página Inicial do Módulo
@@ -1930,7 +1931,7 @@
                 withdrawalCounts: wc, // 🔧 contadores agregados pros badges (Todas/Aprovadas/etc)
             }) : React.createElement("div", {
                 style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
-            }, "⚠️ Componente SolicitacoesV2 não foi carregado. Verifique se ModuloFinanceiroSolicitacoesV2.js está no index.html antes do ModuloFinanceiro.js."))
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Componente SolicitacoesV2 não foi carregado. Verifique se ModuloFinanceiroSolicitacoesV2.js está no index.html antes do ModuloFinanceiro.js.")))
             , "limites" === p.finTab && window.LimitesComponent && React.createElement(window.LimitesComponent, {
                 fetchAuth: fetchAuth, API_URL: API_URL, ja: ja, er: er, v: v, y: y
             }), "validacao" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
@@ -1948,11 +1949,11 @@
                 className: "px-4 py-2 border rounded-lg"
             }, React.createElement("option", {
                 value: "solicitacao"
-            }, "📅 Data da Solicitação"), React.createElement("option", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data da Solicitação")), React.createElement("option", {
                 value: "lancamento"
-            }, "📝 Data de Lançamento"), React.createElement("option", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Data de Lançamento")), React.createElement("option", {
                 value: "debito"
-            }, "💳 Data do Débito"))), React.createElement("div", null, React.createElement("label", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Data do Débito")))), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Data Início"), React.createElement("input", {
                 type: "date",
@@ -1982,7 +1983,7 @@
                     carregarValidacao(p.validacaoTipo || "solicitacao", e, e);
                 },
                 className: "px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-            }, "📆 Hoje"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Hoje")), React.createElement("button", {
                 onClick: () => {
                     const now = new Date();
                     const hoje = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
@@ -1990,10 +1991,10 @@
                     carregarValidacao(p.validacaoTipo || "solicitacao", hoje, hoje);
                 },
                 className: "px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-            }, "🔄 Limpar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Limpar")), React.createElement("button", {
                 onClick: exportarValidacaoExcel,
                 className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-            }, "📥 Exportar Excel"))), validacaoLoading ? React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando validação...")) : (() => {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Exportar Excel")))), validacaoLoading ? React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando validação...")) : (() => {
                 const e = p.validacaoTipo || "solicitacao",
                     t = p.validacaoDataInicio,
                     a = p.validacaoDataFim,
@@ -2029,37 +2030,37 @@
                     className: "bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6"
                 }, React.createElement("p", {
                     className: "text-blue-800 font-semibold"
-                }, "solicitacao" === e ? "📅 Filtrando por Data da Solicitação" : "lancamento" === e ? "📝 Filtrando por Data de Lançamento" : "💳 Filtrando por Data do Débito", t && a && t === a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")}`, t && a && t !== a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")} até ${new Date(a+"T12:00:00").toLocaleDateString("pt-BR")}`, !t && !a && " - Todos os períodos")), React.createElement("div", {
+                }, "solicitacao" === e ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Filtrando por Data da Solicitação") : "lancamento" === e ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Filtrando por Data de Lançamento") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Filtrando por Data do Débito"), t && a && t === a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")}`, t && a && t !== a && ` - ${new Date(t+"T12:00:00").toLocaleDateString("pt-BR")} até ${new Date(a+"T12:00:00").toLocaleDateString("pt-BR")}`, !t && !a && " - Todos os períodos")), React.createElement("div", {
                     className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4"
                 }, React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-gray-500"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
-                }, "📥 Total Recebidas"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Total Recebidas")), React.createElement("p", {
                     className: "text-3xl font-bold text-gray-700"
                 }, r)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-green-500"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
-                }, "✅ Total Aprovadas"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Total Aprovadas")), React.createElement("p", {
                     className: "text-3xl font-bold text-green-600"
                 }, c)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-blue-500"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
-                }, "✅ Sem Gratuidade"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Sem Gratuidade")), React.createElement("p", {
                     className: "text-3xl font-bold text-blue-600"
                 }, s)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-purple-500"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
-                }, "🎁 Com Gratuidade"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Com Gratuidade")), React.createElement("p", {
                     className: "text-3xl font-bold text-purple-600"
                 }, n)), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-4 border-l-4 border-red-500"
                 }, React.createElement("p", {
                     className: "text-sm text-gray-600"
-                }, "❌ Rejeitadas"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas")), React.createElement("p", {
                     className: "text-3xl font-bold text-red-600"
                 }, o))), React.createElement("div", {
                     className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
@@ -2067,7 +2068,7 @@
                     className: "bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
                     className: "text-sm opacity-90"
-                }, "💵 Valor Total Aprovado"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Valor Total Aprovado")), React.createElement("p", {
                     className: "text-4xl font-bold mt-2"
                 }, er(u)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
@@ -2075,7 +2076,7 @@
                     className: "bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
                     className: "text-sm opacity-90"
-                }, "💰 Lucro com Saque (4,5%)"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Lucro com Saque (4,5%)")), React.createElement("p", {
                     className: "text-4xl font-bold mt-2"
                 }, er(i)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
@@ -2083,7 +2084,7 @@
                     className: "bg-gradient-to-r from-gray-600 to-gray-800 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
                     className: "text-sm opacity-90"
-                }, "🏦 Custo Stark Bank"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Custo Stark Bank")), React.createElement("p", {
                     className: "text-4xl font-bold mt-2"
                 }, er(custoStark)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
@@ -2091,7 +2092,7 @@
                     className: "bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow p-6 text-white"
                 }, React.createElement("p", {
                     className: "text-sm opacity-90"
-                }, "📉 Deixou de Arrecadar"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trenddown" })), "Deixou de Arrecadar")), React.createElement("p", {
                     className: "text-4xl font-bold mt-2"
                 }, er(custoTotal)), React.createElement("p", {
                     className: "text-xs opacity-75 mt-2"
@@ -2104,7 +2105,7 @@
                     React.createElement("div", {className: "flex flex-wrap items-end gap-4"},
                         // Filtro por Data de Solicitação
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "📅 Data Solicitação"),
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Solicitação")),
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataSolicitacao || "",
@@ -2119,7 +2120,7 @@
                         ),
                         // Filtro por Data de Realização
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, "✅ Data Realização"),
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Data Realização")),
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataRealizacao || "",
@@ -2146,13 +2147,13 @@
                                 onClick: () => { setConciliacaoPagina(1); x({...p, concApenasGratuidade: !p.concApenasGratuidade}); },
                                 className: "px-4 py-2 rounded-lg text-sm font-semibold " + 
                                     (p.concApenasGratuidade ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                            }, "🎁 Apenas Gratuidades")
+                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Apenas Gratuidades"))
                         ),
                         // Botão Limpar Filtros
                         (p.concDataSolicitacao || p.concDataRealizacao || p.concApenasGratuidade) && React.createElement("button", {
                             onClick: () => { setConciliacaoPagina(1); setConciliacaoData(null); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}); },
                             className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
-                        }, "✕ Limpar Filtros")
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar Filtros"))
                     )
                 ),
                 // Cards dinâmicos baseados nos filtros
@@ -2212,7 +2213,7 @@
                             className: "bg-white rounded-xl shadow p-4"
                         }, React.createElement("p", {
                             className: "text-sm text-gray-600"
-                        }, "🎁 Gratuidades"), React.createElement("p", {
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Gratuidades")), React.createElement("p", {
                             className: "text-2xl font-bold text-blue-600"
                         }, totalGratuidades))
                     );
@@ -2321,12 +2322,12 @@
                     className: "px-4 py-3 text-center"
                 }, e.stark_status === 'pago' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full"
-                }, "✅ PAGO VIA STARK") : e.stark_status === 'processando' ? React.createElement("span", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "PAGO VIA STARK")) : e.stark_status === 'processando' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full"
-                }, "⏳ Processando") : e.stark_status === 'erro' ? React.createElement("span", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Processando")) : e.stark_status === 'erro' ? React.createElement("span", {
                     className: "inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full cursor-help",
                     title: traduzirErroStarkFE(e.stark_erro)
-                }, "❌ ", traduzirErroStarkFE(e.stark_erro).substring(0, 25) + (traduzirErroStarkFE(e.stark_erro).length > 25 ? '...' : '')) : React.createElement("span", {
+                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), traduzirErroStarkFE(e.stark_erro).substring(0, 25) + (traduzirErroStarkFE(e.stark_erro).length > 25 ? '...' : '')) : React.createElement("span", {
                     className: "text-xs text-gray-400"
                 }, "Manual")), React.createElement("td", {
                     className: "px-4 py-3 text-center"
@@ -2388,12 +2389,12 @@
                             onClick: () => setConciliacaoPagina(1),
                             disabled: conciliacaoPagina === 1,
                             className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
-                        }, "⏮️"),
+                        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowleft" }))),
                         React.createElement("button", {
                             onClick: () => setConciliacaoPagina(pg => Math.max(1, pg - 1)),
                             disabled: conciliacaoPagina === 1,
                             className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === 1 ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
-                        }, "◀️ Anterior"),
+                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowleft" })), "Anterior")),
                         React.createElement("span", { className: "px-4 py-1 bg-purple-100 text-purple-700 rounded font-bold" },
                             `${conciliacaoPagina} / ${totalPaginas}`
                         ),
@@ -2406,7 +2407,7 @@
                             onClick: () => setConciliacaoPagina(totalPaginas),
                             disabled: conciliacaoPagina === totalPaginas,
                             className: "px-3 py-1 rounded text-sm font-semibold " + (conciliacaoPagina === totalPaginas ? "bg-gray-100 text-gray-400" : "bg-gray-200 text-gray-700 hover:bg-gray-300")
-                        }, "⏭️")
+                        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowright" })))
                     )
                 );
             })()
@@ -2416,7 +2417,7 @@
                 className: "flex gap-4 items-center"
             }, React.createElement("input", {
                 type: "text",
-                placeholder: "🔍 Buscar por código do profissional...",
+                placeholder: "Buscar por código do profissional...",
                 value: p.searchCod || "",
                 onChange: e => x({
                     ...p,
@@ -2428,10 +2429,10 @@
                 onClick: () => { if (p.searchCod) carregarResumo(p.searchCod); },
                 disabled: resumoLoading || !p.searchCod,
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
-            }, resumoLoading ? "⏳ Buscando..." : "🔍 Buscar"), p.searchCod && React.createElement("button", {
+            }, resumoLoading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Buscando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Buscar")), p.searchCod && React.createElement("button", {
                 onClick: () => { x({ ...p, searchCod: "" }); setResumoData(null); },
                 className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
-            }, "✕ Limpar"))), p.searchCod && resumoData && (() => {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar")))), p.searchCod && resumoData && (() => {
                 const e = resumoData;
                 return React.createElement(React.Fragment, null, React.createElement("div", {
                     className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
@@ -2477,37 +2478,37 @@
                         resumoFilter: ""
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + (p.resumoFilter ? "bg-gray-100 hover:bg-gray-200" : "bg-purple-600 text-white")
-                }, "📋 Todas (", e.length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Todas ("), e.length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "aguardando_aprovacao"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aguardando_aprovacao" === p.resumoFilter ? "bg-yellow-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, "⏳ Aguardando (", e.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando ("), e.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "aprovado"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.resumoFilter ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, "✅ Aprovadas (", e.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas ("), e.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "aprovado_gratuidade"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.resumoFilter ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, "🎁 Aprov. Gratuidade (", e.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Aprov. Gratuidade ("), e.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "rejeitado"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.resumoFilter ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, "❌ Rejeitadas (", e.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas ("), e.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "inativo"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("inativo" === p.resumoFilter ? "bg-orange-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, "⚠️ Inativo (", e.filter(e => "inativo" === e.status).length, ")"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Inativo ("), e.filter(e => "inativo" === e.status).length, ")"))), React.createElement("div", {
                     className: "overflow-x-auto"
                 }, React.createElement("table", {
                     className: "w-full text-sm"
@@ -2588,29 +2589,29 @@
                         className: "px-4 py-3"
                     }, React.createElement("span", {
                         className: "px-2 py-1 rounded text-xs font-bold " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aprovado" === e.status ? "bg-green-500 text-white" : "aprovado_gratuidade" === e.status ? "bg-blue-500 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-400 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
-                    }, "pago_stark" === e.status ? "✅ PAGO VIA STARK" : "aguardando_pagamento_stark" === e.status ? "💳 Aguard. Pgto Stark" : "aguardando_aprovacao" === e.status ? "⏳ Aguardando" : "aprovado" === e.status ? "✅ Aprovado" : "aprovado_gratuidade" === e.status ? "🎁 c/ Gratuidade" : "rejeitado" === e.status ? "❌ Rejeitado" : "⚠️ Inativo"), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
+                    }, "pago_stark" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "PAGO VIA STARK") : "aguardando_pagamento_stark" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Aguard. Pgto Stark") : "aguardando_aprovacao" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando") : "aprovado" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovado") : "aprovado_gratuidade" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "c/ Gratuidade") : "rejeitado" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitado") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Inativo")), e.reject_reason && "rejeitado" === e.status && React.createElement("p", {
                         className: "text-xs text-red-600 mt-1"
                     }, "Motivo: ", e.reject_reason), e.admin_name && "aguardando_aprovacao" !== e.status && React.createElement("p", {
                         className: "text-xs text-purple-600 mt-1 font-medium"
-                    }, "👤 ", e.admin_name)))
+                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), e.admin_name)))
                 }))))))
             })(), !p.searchCod && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("p", {
                 className: "text-gray-500 text-lg"
-            }, "🔍 Digite o código do profissional e clique Buscar")),
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Digite o código do profissional e clique Buscar"))),
             p.searchCod && !resumoData && !resumoLoading && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("p", {
                 className: "text-gray-500 text-lg"
-            }, "🔍 Clique em Buscar para pesquisar")),
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Clique em Buscar para pesquisar"))),
             resumoLoading && React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-8 text-center"
             }, React.createElement("div", {className: "w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"}),
             React.createElement("p", {className: "text-purple-600"}, "Buscando dados do servidor..."))), "gratuidades" === p.finTab && React.createElement(
                 window.ModuloGratuidadesV2Component || (() => React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-8 text-center"
-                }, React.createElement("p", { className: "text-amber-700 font-semibold" }, "⚠️ ModuloGratuidadesV2 não carregado"),
+                }, React.createElement("p", { className: "text-amber-700 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ModuloGratuidadesV2 não carregado")),
                    React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Confira se o script está incluído no index.html antes do ModuloFinanceiro.js"))),
                 { API_URL: API_URL, fetchAuth: fetchAuth, ja: ja, confirm: typeof confirmar === 'function' ? confirmar : undefined }
             ), "restritos" === p.finTab && React.createElement("div", {
@@ -2619,7 +2620,7 @@
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "text-lg font-semibold mb-4"
-            }, "➕ Adicionar Restrição"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Restrição")), React.createElement("div", {
                 className: "grid md:grid-cols-4 gap-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-xs font-semibold mb-1 text-gray-600"
@@ -2668,11 +2669,11 @@
                 onClick: Gl,
                 disabled: c || !p.restUserName,
                 className: "w-full px-4 py-2 bg-red-600 text-white rounded-lg font-semibold disabled:opacity-50"
-            }, "🚫 Adicionar"))), p.restUserCod && !p.restUserName && p.restUserCod.length >= 3 && React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Adicionar")))), p.restUserCod && !p.restUserName && p.restUserCod.length >= 3 && React.createElement("p", {
                 className: "text-red-500 text-xs mt-2"
-            }, "⚠️ Usuário não encontrado com este código"), p.restUserName && React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Usuário não encontrado com este código")), p.restUserName && React.createElement("p", {
                 className: "text-green-600 text-xs mt-2"
-            }, "✅ Usuário encontrado: ", p.restUserName)), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Usuário encontrado: "), p.restUserName)), React.createElement("div", {
                 className: "bg-white rounded-xl shadow overflow-hidden"
             }, React.createElement("table", {
                 className: "w-full text-sm"
@@ -2734,7 +2735,7 @@
                 className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
             }, React.createElement("h3", {
                 className: "text-xl font-bold text-red-600 mb-4"
-            }, "❌ Rejeitar Indicação"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar Indicação")), React.createElement("div", {
                 className: "bg-gray-50 rounded-lg p-4 mb-4"
             }, React.createElement("p", {
                 className: "text-sm"
@@ -2798,13 +2799,13 @@
                 })(p.modalRejeitar.id),
                 disabled: !p.motivoRejeicao || c,
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
-            }, c ? "..." : "❌ Rejeitar")))), React.createElement("div", {
+            }, c ? "..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar"))))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-4"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-green-800"
-            }, p.editPromo ? "✏️ Editar Promoção" : "📣 Cadastrar Nova Promoção"), p.editPromo && React.createElement("button", {
+            }, p.editPromo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Promoção") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })), "Cadastrar Nova Promoção")), p.editPromo && React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     editPromo: null,
@@ -2813,7 +2814,7 @@
                     promoDetalhes: ""
                 }),
                 className: "text-sm text-gray-500 hover:text-gray-700"
-            }, "✕ Cancelar edição")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Cancelar edição"))), React.createElement("div", {
                 className: "grid md:grid-cols-2 gap-4 mb-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
@@ -2858,11 +2859,11 @@
                 onClick: p.editPromo ? Ol : Ml,
                 disabled: c,
                 className: "w-full md:w-auto px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 " + (p.editPromo ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700")
-            }, c ? "..." : p.editPromo ? "💾 Salvar Alterações" : "➕ Criar Promoção")), React.createElement("div", {
+            }, c ? "..." : p.editPromo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Promoção"))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📋 Promoções Cadastradas"), 0 === (l.role === "user" ? promocoesFiltradas : ee).length ? React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Promoções Cadastradas")), 0 === (l.role === "user" ? promocoesFiltradas : ee).length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-4"
             }, l.role === "user" && cidadeUsuarioLogado 
                 ? "Nenhuma promoção disponível para " + cidadeUsuarioLogado 
@@ -2875,7 +2876,7 @@
                 className: "flex justify-between items-center mb-1"
             }, React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-green-500 text-white" : "bg-gray-500 text-white")
-            }, "ativa" === e.status ? "✅" : "⏸️"), React.createElement("div", {
+            }, "ativa" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" }))), React.createElement("div", {
                 className: "flex gap-1"
             }, React.createElement("button", {
                 onClick: () => x({
@@ -2886,7 +2887,7 @@
                     promoDetalhes: e.detalhes || ""
                 }),
                 className: "text-xs text-blue-500 hover:text-blue-700"
-            }, "✏️"), React.createElement("button", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
                 onClick: async () => {
                     await fetchAuth(`${API_URL}/promocoes/${e.id}`, {
                         method: "PATCH",
@@ -2899,9 +2900,9 @@
                     }), gl()
                 },
                 className: "text-xs text-gray-500 hover:text-gray-700"
-            }, "ativa" === e.status ? "⏸️" : "▶️"))), React.createElement("p", {
+            }, "ativa" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" }))))), React.createElement("p", {
                 className: "font-semibold text-sm"
-            }, "📍 ", e.regiao), React.createElement("p", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), e.regiao), React.createElement("p", {
                 className: "text-lg font-bold text-green-600"
             }, er(e.valor_bonus)), e.detalhes && React.createElement("p", {
                 className: "text-xs text-gray-600 mt-1 whitespace-pre-wrap line-clamp-3",
@@ -2938,11 +2939,11 @@
                 className: "flex justify-between items-center mb-4"
             }, React.createElement("h3", {
                 className: "font-semibold"
-            }, "👥 Indicações Recebidas"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })), "Indicações Recebidas")), React.createElement("button", {
                 onClick: () => verificarCadastrosIndicados(ae),
                 disabled: cadastroIndicadosLoading,
                 className: "px-3 py-1 text-xs rounded-lg font-semibold " + (cadastroIndicadosLoading ? "bg-gray-100 text-gray-400" : "bg-purple-100 text-purple-700 hover:bg-purple-200")
-            }, cadastroIndicadosLoading ? "⏳ Verificando..." : "🔄 Verificar Cadastros")), 0 === ae.length ? React.createElement("p", {
+            }, cadastroIndicadosLoading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Verificando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Verificar Cadastros"))), 0 === ae.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
             }, "Nenhuma indicação recebida") : React.createElement("div", {
                 className: "overflow-x-auto"
@@ -3020,7 +3021,7 @@
                     target: "_blank",
                     rel: "noopener noreferrer",
                     className: "text-green-600 hover:text-green-800 font-semibold text-xs flex items-center gap-1 whitespace-nowrap"
-                }, "📱 ", e.indicado_contato)), (() => {
+                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), e.indicado_contato)), (() => {
                     const celLimpo = a;
                     const info = cadastroIndicados[celLimpo];
                     const loading = cadastroIndicadosLoading && !info;
@@ -3031,10 +3032,10 @@
                         : info 
                             ? info.cadastrado 
                                 ? React.createElement("div", {className: "flex flex-col items-center", title: `${info.nome || ''} - Cód: ${info.codigo || 'N/A'}\n${info.status || ''}\nCadastro: ${info.dataCadastro || 'N/A'}`},
-                                    React.createElement("span", {className: "text-green-600 text-lg font-bold"}, "✅"),
+                                    React.createElement("svg", { className: "ico", style: { width: 20, height: 20, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
                                     info.codigo && React.createElement("span", {className: "text-[9px] text-gray-500"}, info.codigo)
                                 )
-                                : React.createElement("span", {className: "text-red-500 text-lg font-bold", title: "Não cadastrado no app Tutts"}, "❌")
+                                : React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))
                             : React.createElement("span", {className: "text-gray-300 text-xs"}, "-")
                     );
                 })(), React.createElement("td", {
@@ -3049,7 +3050,7 @@
                     className: "px-2 py-2 text-center whitespace-nowrap"
                 }, React.createElement("span", {
                     className: "px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap " + ("pendente" === e.status ? "bg-yellow-500 text-white" : "aprovada" === e.status ? "bg-green-500 text-white" : "rejeitada" === e.status ? "bg-red-500 text-white" : "bg-gray-400 text-white")
-                }, "pendente" === e.status ? "⏳ Pendente" : "aprovada" === e.status ? "✅ Aprovada" : "rejeitada" === e.status ? "❌ Rejeitada" : "⏰ Expirada"), ("aprovada" === e.status || "rejeitada" === e.status) && e.resolved_by && React.createElement("p", {
+                }, "pendente" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendente") : "aprovada" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovada") : "rejeitada" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Expirada")), ("aprovada" === e.status || "rejeitada" === e.status) && e.resolved_by && React.createElement("p", {
                     className: "text-[9px] text-gray-500 mt-0.5"
                 }, e.resolved_by)), React.createElement("td", {
                     className: "px-2 py-2 text-center"
@@ -3117,14 +3118,14 @@
                     })(e.id),
                     className: "px-1.5 py-1 bg-gray-300 text-gray-700 rounded text-[10px] font-semibold hover:bg-red-500 hover:text-white whitespace-nowrap",
                     title: "rejeitada" === e.status && e.motivo_rejeicao ? "Motivo: " + e.motivo_rejeicao : "Excluir"
-                }, "🗑️"))))
+                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))
             })))))), "promo-novatos" === p.finTab && React.createElement(React.Fragment, null, p.modalRejeitarNovatos && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl p-6 w-full max-w-md"
             }, React.createElement("h3", {
                 className: "text-lg font-bold mb-4"
-            }, "❌ Rejeitar Inscrição"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar Inscrição")), React.createElement("p", {
                 className: "text-sm text-gray-600 mb-3"
             }, "Profissional: ", React.createElement("strong", null, p.modalRejeitarNovatos.user_name), React.createElement("br", null), "Cliente: ", React.createElement("strong", null, p.modalRejeitarNovatos.cliente)), React.createElement("div", {
                 className: "mb-4"
@@ -3152,7 +3153,7 @@
                 onClick: () => rejeitarInscNovato(p.modalRejeitarNovatos.id),
                 disabled: !p.motivoRejeicaoNovato || c,
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
-            }, c ? "..." : "❌ Rejeitar")))), React.createElement("div", {
+            }, c ? "..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar"))))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow border border-gray-200 overflow-hidden mb-6"
             },
                 /* Header com toggle de ativo */
@@ -3162,7 +3163,7 @@
                 },
                     React.createElement("div", { className: "flex items-center justify-between gap-3 flex-wrap" },
                         React.createElement("div", { className: "flex items-center gap-3" },
-                            React.createElement("span", { className: "text-2xl" }, "🎯"),
+                            React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })),
                             React.createElement("div", null,
                                 React.createElement("p", { className: "font-semibold text-gray-800 text-base" }, "Quiz de procedimentos"),
                                 React.createElement("p", { className: "text-xs text-gray-500" }, "Configure imagens, perguntas e prêmio")
@@ -3288,7 +3289,7 @@
                                         Ne({ ...fe, imagens: t });
                                     },
                                     className: "absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-[10px] hover:bg-red-500"
-                                }, "✕"),
+                                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))),
                                 React.createElement("input", {
                                     type: "file",
                                     accept: "image/*",
@@ -3366,7 +3367,7 @@
                                     className: "flex gap-2 items-start px-2 py-2 rounded-md",
                                     style: { background: "#E6F1FB", borderLeft: "3px solid #185FA5" }
                                 },
-                                    React.createElement("span", { style: { color: "#185FA5" }, className: "mt-0.5" }, "💡"),
+                                    React.createElement("span", { style: { color: "#185FA5" }, className: "mt-0.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" }))),
                                     React.createElement("input", {
                                         type: "text",
                                         value: (fe.dicas && fe.dicas[idx]) || "",
@@ -3393,7 +3394,7 @@
                             disabled: c,
                             style: { background: c ? "#D3D1C7" : "#534AB7" },
                             className: "text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:cursor-not-allowed"
-                        }, c ? "Salvando..." : "💾 Salvar")
+                        }, c ? "Salvando..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar"))
                     )
                 )
             ), React.createElement("div", {
@@ -3402,7 +3403,7 @@
                 className: "flex justify-between items-center mb-4"
             }, React.createElement("h3", {
                 className: "font-bold text-lg text-purple-700"
-            }, "📊 Histórico do Quiz"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Histórico do Quiz")), React.createElement("div", {
                 className: "flex gap-2"
             }, React.createElement("span", {
                 className: "px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold"
@@ -3474,7 +3475,7 @@
                 className: "px-3 py-2 text-center"
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded-full text-xs font-bold " + (e.passou ? "bg-green-500 text-white" : "bg-red-400 text-white")
-            }, e.passou ? "✅ Contemplado" : "❌ Não passou")), React.createElement("td", {
+            }, e.passou ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Contemplado") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Não passou"))), React.createElement("td", {
                 className: "px-3 py-2 text-center"
             }, e.passou ? React.createElement("span", {
                 className: "font-bold text-green-600"
@@ -3484,13 +3485,13 @@
                 className: "my-6 border-gray-300"
             }), React.createElement("h3", {
                 className: "text-lg font-bold text-gray-700 mb-4"
-            }, "📋 Promoções por Cliente/Região"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Promoções por Cliente/Região")), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("div", {
                 className: "flex justify-between items-center mb-4"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-green-800"
-            }, p.editPromoNovatos ? "✏️ Editar Promoção" : "🚀 Cadastrar Nova Promoção"), p.editPromoNovatos && React.createElement("button", {
+            }, p.editPromoNovatos ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Promoção") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Cadastrar Nova Promoção")), p.editPromoNovatos && React.createElement("button", {
                 onClick: () => {
                     x({
                         ...p,
@@ -3505,7 +3506,7 @@
                     setClientesBINovatos([]);
                 },
                 className: "text-sm text-gray-500 hover:text-gray-700"
-            }, "✕ Cancelar edição")), 
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Cancelar edição"))), 
             
             // Linha 1: Região e Apelido
             React.createElement("div", {
@@ -3525,7 +3526,7 @@
                 },
                 className: "w-full px-4 py-2 border rounded-lg bg-white"
             }, React.createElement("option", { value: "" }, "Selecione uma região..."),
-               React.createElement("option", { value: "Todas" }, "🌍 Todas as Regiões"),
+               React.createElement("option", { value: "Todas" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Todas as Regiões")),
                regioesNovatos.map(regiao => React.createElement("option", { key: regiao, value: regiao }, regiao))
             )), React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
@@ -3581,7 +3582,7 @@
             
             clientesSelecionados.length > 0 && React.createElement("p", {
                 className: "text-xs text-green-600 mt-1"
-            }, "✅ ", clientesSelecionados.length, " cliente(s) selecionado(s)")),
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), clientesSelecionados.length, " cliente(s) selecionado(s)")),
             
             // Linha 3: Valor, Meta e Detalhes
             React.createElement("div", {
@@ -3628,13 +3629,13 @@
                 onClick: p.editPromoNovatos ? Tl : Pl,
                 disabled: c || clientesSelecionados.length === 0,
                 className: "px-6 py-2 text-white rounded-lg font-semibold disabled:opacity-50 " + (p.editPromoNovatos ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700")
-            }, c ? "..." : p.editPromoNovatos ? "💾 Salvar Alterações" : "➕ Criar Promoção"), React.createElement("p", {
+            }, c ? "..." : p.editPromoNovatos ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Alterações") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Promoção")), React.createElement("p", {
                 className: "text-xs text-gray-500"
-            }, "⏱️ Inscrições expiram automaticamente em 15 dias"))), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Inscrições expiram automaticamente em 15 dias")))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6 mb-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "📋 Promoções Novatos Cadastradas"), 0 === ce.length ? React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Promoções Novatos Cadastradas")), 0 === ce.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-4"
             }, "Nenhuma promoção cadastrada") : React.createElement("div", {
                 className: "grid md:grid-cols-3 gap-3"
@@ -3645,7 +3646,7 @@
                 className: "flex justify-between items-center mb-1"
             }, React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + ("ativa" === e.status ? "bg-green-500 text-white" : "bg-gray-500 text-white")
-            }, "ativa" === e.status ? "✅" : "⏸️"), React.createElement("div", {
+            }, "ativa" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" }))), React.createElement("div", {
                 className: "flex gap-1"
             }, React.createElement("button", {
                 onClick: async () => {
@@ -3670,7 +3671,7 @@
                 },
                 className: "text-xs text-blue-500 hover:text-blue-700",
                 title: "Editar"
-            }, "✏️"), React.createElement("button", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
                 onClick: async () => {
                     await fetchAuth(`${API_URL}/promocoes-novatos/${e.id}`, {
                         method: "PATCH",
@@ -3684,7 +3685,7 @@
                 },
                 className: "text-xs text-gray-500 hover:text-gray-700",
                 title: "ativa" === e.status ? "Desativar" : "Ativar"
-            }, "ativa" === e.status ? "⏸️" : "▶️"), React.createElement("button", {
+            }, "ativa" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" }))), React.createElement("button", {
                 onClick: () => (async e => {
                     if (confirm("Tem certeza que deseja excluir esta promoção?")) {
                         s(!0);
@@ -3706,11 +3707,11 @@
                 })(e.id),
                 className: "text-xs text-red-500 hover:text-red-700",
                 title: "Excluir"
-            }, "🗑️"))), React.createElement("p", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))), React.createElement("p", {
                 className: "font-semibold text-sm"
-            }, "📍 ", e.regiao), React.createElement("p", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), e.regiao), React.createElement("p", {
                 className: "text-sm text-gray-700 font-bold"
-            }, "🏷️ ", e.apelido || e.cliente), 
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), e.apelido || e.cliente), 
             // Mostrar clientes vinculados
             e.clientes_vinculados && e.clientes_vinculados.length > 0 && React.createElement("div", {
                 className: "mt-1"
@@ -3728,7 +3729,7 @@
                 className: "text-lg font-bold text-green-600"
             }, er(e.valor_bonus)), React.createElement("p", {
                 className: "text-xs text-blue-600 font-semibold"
-            }, "🎯 Meta: ", e.quantidade_entregas || 50, " entregas"), e.detalhes && React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), "Meta: "), e.quantidade_entregas || 50, " entregas"), e.detalhes && React.createElement("p", {
                 className: "text-xs text-gray-600 mt-1 whitespace-pre-wrap line-clamp-2",
                 title: e.detalhes
             }, e.detalhes))))), React.createElement("div", {
@@ -3777,7 +3778,7 @@
                 className: "bg-white rounded-xl shadow p-6"
             }, React.createElement("h3", {
                 className: "font-semibold mb-4"
-            }, "🚀 Inscrições Promo"), 0 === ne.length ? React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Inscrições Promo")), 0 === ne.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
             }, "Nenhuma inscrição recebida") : React.createElement("div", {
                 className: "overflow-x-auto"
@@ -3902,7 +3903,7 @@
                 }, metaAtingida ? (
                     e.credito_lancado ? React.createElement("div", null, React.createElement("span", {
                         className: "text-xs text-blue-600 font-bold"
-                    }, "💰 Lançado"), e.lancado_por && React.createElement("p", {
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Lançado")), e.lancado_por && React.createElement("p", {
                         className: "text-xs text-gray-400"
                     }, e.lancado_por)) : React.createElement("button", {
                         onClick: async () => {
@@ -3925,7 +3926,7 @@
                         },
                         className: "px-3 py-1.5 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 font-semibold",
                         disabled: c
-                    }, "💰 Lançar")
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Lançar"))
                 ) : React.createElement("span", {
                     className: "text-xs text-gray-400"
                 }, "-")),
@@ -3953,7 +3954,7 @@
                     className: "p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors",
                     disabled: c,
                     title: "Excluir inscrição"
-                }, "🗑️")))
+                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))
             })))))), "loja" === p.finTab && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "bg-white rounded-xl shadow mb-6"
             }, React.createElement("div", {
@@ -3964,7 +3965,7 @@
                     mt(e), "estoque" === e && Ja(), "produtos" === e && (Ha(), Ja()), "pedidos" === e && Wa(), "sugestoes" === e && Ya()
                 },
                 className: "flex-1 px-4 py-3 text-sm font-semibold relative " + (nt === e ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600 hover:bg-gray-50")
-            }, "produtos" === e && "🏷️ Produtos", "estoque" === e && "📦 Estoque", "pedidos" === e && "🛍️ Pedidos", "sugestoes" === e && React.createElement(React.Fragment, null, "💡 Sugestões", ut.filter(e => "pendente" === e.status).length > 0 && React.createElement("span", {
+            }, "produtos" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Produtos"), "estoque" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Estoque"), "pedidos" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Pedidos"), "sugestoes" === e && React.createElement(React.Fragment, null, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Sugestões"), ut.filter(e => "pendente" === e.status).length > 0 && React.createElement("span", {
                 className: "absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
             }, ut.filter(e => "pendente" === e.status).length))))), React.createElement("div", {
                 className: "p-6"
@@ -3972,7 +3973,7 @@
                 className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
             }, React.createElement("div", null, React.createElement("h2", {
                 className: "text-xl font-bold text-gray-800"
-            }, "📦 Controle de Estoque"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Controle de Estoque")), React.createElement("p", {
                 className: "text-sm text-gray-500"
             }, "Gerencie produtos, entradas e saídas")), React.createElement("div", {
                 className: "flex gap-2"
@@ -3983,19 +3984,19 @@
                     xt("lista")
                 },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("lista" === pt ? "bg-white shadow text-purple-700" : "text-gray-600 hover:text-gray-800")
-            }, "📋 Produtos"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Produtos")), React.createElement("button", {
                 onClick: () => {
                     xt("movimentacoes"), Qa()
                 },
                 className: "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all " + ("movimentacoes" === pt ? "bg-white shadow text-purple-700" : "text-gray-600 hover:text-gray-800")
-            }, "📊 Histórico")), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Histórico"))), React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     lojaEstoqueModal: !0,
                     lojaEstoqueEdit: null
                 }),
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "➕ Novo Item"))), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Item")))), React.createElement("div", {
                 className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4"
@@ -4055,7 +4056,7 @@
                     className: "flex flex-col items-end gap-1"
                 }, React.createElement("span", {
                     className: "px-3 py-1 rounded-full text-xs font-bold " + ("ativo" === e.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
-                }, "ativo" === e.status ? "✅ Ativo" : "❌ Inativo"), l && React.createElement("span", {
+                }, "ativo" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Ativo") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Inativo")), l && React.createElement("span", {
                     className: "px-2 py-0.5 bg-red-500 text-white text-xs rounded-full"
                 }, "SEM ESTOQUE"), a && !l && React.createElement("span", {
                     className: "px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full"
@@ -4084,7 +4085,7 @@
                         lojaMovTipo: "entrada"
                     }),
                     className: "px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold hover:bg-green-200 flex items-center gap-1"
-                }, "📥 Entrada"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Entrada")), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         lojaMovModal: !0,
@@ -4092,28 +4093,28 @@
                         lojaMovTipo: "saida"
                     }),
                     className: "px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 flex items-center gap-1"
-                }, "📤 Saída"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Saída")), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         lojaEstoqueModal: !0,
                         lojaEstoqueEdit: e
                     }),
                     className: "px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200"
-                }, "✏️ Editar"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar")), React.createElement("button", {
                     onClick: async () => {
                         confirm("Excluir este item do estoque?") && (await fetchAuth(`${API_URL}/loja/estoque/${e.id}`, {
                             method: "DELETE"
                         }), Ja(), ja("🗑️ Item excluído!", "success"))
                     },
                     className: "px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200"
-                }, "🗑️"))))
+                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))
             })), "movimentacoes" === pt && React.createElement("div", {
                 className: "bg-white rounded-xl shadow"
             }, React.createElement("div", {
                 className: "p-4 border-b"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800"
-            }, "📊 Histórico de Movimentações"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Histórico de Movimentações")), React.createElement("p", {
                 className: "text-sm text-gray-500"
             }, "Todas as entradas e saídas do estoque")), React.createElement("div", {
                 className: "overflow-x-auto"
@@ -4158,7 +4159,7 @@
                 className: "px-4 py-3 text-center"
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded-full text-xs font-bold " + ("entrada" === e.tipo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")
-            }, "entrada" === e.tipo ? "📥 Entrada" : "📤 Saída")), React.createElement("td", {
+            }, "entrada" === e.tipo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Entrada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Saída"))), React.createElement("td", {
                 className: "px-4 py-3 text-center font-semibold"
             }, e.tamanho || "-"), React.createElement("td", {
                 className: "px-4 py-3 text-center"
@@ -4176,7 +4177,7 @@
                 className: "p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold mb-4"
-            }, p.lojaEstoqueEdit ? "✏️ Editar Item" : "➕ Novo Item no Estoque"), React.createElement("div", {
+            }, p.lojaEstoqueEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Item") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Item no Estoque")), React.createElement("div", {
                 className: "space-y-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
@@ -4231,11 +4232,11 @@
                     lojaEstoqueImagem: ""
                 }),
                 className: "absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
-            }, "✕")), React.createElement("label", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))), React.createElement("label", {
                 className: "block cursor-pointer"
             }, React.createElement("div", {
                 className: "px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-center font-semibold hover:bg-purple-200 transition-colors text-sm"
-            }, p.uploadingEstoqueImage ? "⏳ Enviando..." : "📷 Fazer Upload"), React.createElement("input", {
+            }, p.uploadingEstoqueImage ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Enviando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Fazer Upload")), React.createElement("input", {
                 type: "file",
                 accept: "image/*",
                 className: "hidden",
@@ -4414,7 +4415,7 @@
                     })
                 },
                 className: "px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
-            }, "🗑️"))), React.createElement("button", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))), React.createElement("button", {
                 type: "button",
                 onClick: () => {
                     const e = [...p.lojaEstoqueNumeracoes ?? p.lojaEstoqueEdit?.tamanhos?.map(e => ({
@@ -4433,7 +4434,7 @@
                     })
                 },
                 className: "w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-200"
-            }, "➕ Adicionar Numeração")))), !(p.lojaEstoqueTemTamanho ?? p.lojaEstoqueEdit?.tem_tamanho) && React.createElement("div", null, React.createElement("label", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Numeração"))))), !(p.lojaEstoqueTemTamanho ?? p.lojaEstoqueEdit?.tem_tamanho) && React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
             }, "Quantidade em Estoque *"), React.createElement("input", {
                 type: "number",
@@ -4540,7 +4541,7 @@
                     }), Ja(), Qa()
                 },
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, p.lojaEstoqueEdit ? "💾 Salvar" : "➕ Adicionar"))))), p.lojaMovModal && React.createElement("div", {
+            }, p.lojaEstoqueEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar")))))), p.lojaMovModal && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-2xl shadow-2xl max-w-md w-full"
@@ -4548,7 +4549,7 @@
                 className: `p-4 rounded-t-2xl ${"entrada"===p.lojaMovTipo?"bg-green-600":"bg-red-600"} text-white`
             }, React.createElement("h2", {
                 className: "text-xl font-bold"
-            }, "entrada" === p.lojaMovTipo ? "📥 Registrar Entrada" : "📤 Registrar Saída"), React.createElement("p", {
+            }, "entrada" === p.lojaMovTipo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Registrar Entrada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Registrar Saída")), React.createElement("p", {
                 className: "text-sm opacity-80"
             }, p.lojaMovItem?.nome)), React.createElement("div", {
                 className: "p-6 space-y-4"
@@ -4629,11 +4630,11 @@
                     }), Ja(), Qa()
                 },
                 className: "flex-1 px-4 py-2 text-white rounded-lg font-semibold " + ("entrada" === p.lojaMovTipo ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700")
-            }, "entrada" === p.lojaMovTipo ? "📥 Confirmar Entrada" : "📤 Confirmar Saída")))))), "produtos" === nt && React.createElement(React.Fragment, null, React.createElement("div", {
+            }, "entrada" === p.lojaMovTipo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Confirmar Entrada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Confirmar Saída"))))))), "produtos" === nt && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "flex justify-between items-center mb-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold text-gray-800"
-            }, "🏷️ Produtos à Venda"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Produtos à Venda")), React.createElement("button", {
                 onClick: () => {
                     Ja(), x({
                         ...p,
@@ -4642,7 +4643,7 @@
                     })
                 },
                 className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "➕ Novo Produto")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Produto"))), React.createElement("div", {
                 className: "grid md:grid-cols-2 lg:grid-cols-3 gap-4"
             }, 0 === Ke.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8 col-span-full"
@@ -4683,14 +4684,14 @@
                     lojaProdutoEdit: e
                 }),
                 className: "flex-1 px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200"
-            }, "✏️ Editar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar")), React.createElement("button", {
                 onClick: async () => {
                     confirm("Excluir este produto?") && (await fetchAuth(`${API_URL}/loja/produtos/${e.id}`, {
                         method: "DELETE"
                     }), Ha(), ja("🗑️ Produto excluído!", "success"))
                 },
                 className: "px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
-            }, "🗑️")))))), p.lojaProdutoModal && React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))), p.lojaProdutoModal && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
@@ -4698,7 +4699,7 @@
                 className: "p-6"
             }, React.createElement("h2", {
                 className: "text-xl font-bold mb-4"
-            }, p.lojaProdutoEdit ? "✏️ Editar Produto" : "➕ Novo Produto à Venda"), React.createElement("div", {
+            }, p.lojaProdutoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editar Produto") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Novo Produto à Venda")), React.createElement("div", {
                 className: "space-y-4"
             }, React.createElement("div", null, React.createElement("label", {
                 className: "block text-sm font-semibold mb-1"
@@ -4782,13 +4783,13 @@
                     lojaProdutoImagem: ""
                 }),
                 className: "absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
-            }, "✕")), React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))), React.createElement("div", {
                 className: "flex gap-2"
             }, React.createElement("label", {
                 className: "flex-1 cursor-pointer"
             }, React.createElement("div", {
                 className: "px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-center font-semibold hover:bg-purple-200 transition-colors"
-            }, p.uploadingImage ? "⏳ Enviando..." : "📷 Fazer Upload"), React.createElement("input", {
+            }, p.uploadingImage ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Enviando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Fazer Upload")), React.createElement("input", {
                 type: "file",
                 accept: "image/*",
                 className: "hidden",
@@ -4852,7 +4853,7 @@
                 className: "flex justify-between items-center mb-3"
             }, React.createElement("h3", {
                 className: "font-bold text-purple-800"
-            }, "💰 Opções de Parcelamento"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Opções de Parcelamento")), React.createElement("button", {
                 type: "button",
                 onClick: () => {
                     const e = p.lojaProdutoParcelas ?? (p.lojaProdutoEdit?.parcelas_config ? [...p.lojaProdutoEdit.parcelas_config] : []);
@@ -4865,7 +4866,7 @@
                     })
                 },
                 className: "px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
-            }, "➕ Adicionar")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar"))), React.createElement("div", {
                 className: "space-y-2"
             }, 0 === ((p.lojaProdutoParcelas ?? p.lojaProdutoEdit?.parcelas_config) || []).length ? React.createElement("p", {
                 className: "text-sm text-gray-500 text-center py-3 bg-white rounded-lg"
@@ -4928,7 +4929,7 @@
                     })
                 },
                 className: "p-2 text-red-500 hover:bg-red-50 rounded"
-            }, "🗑️")))))), React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))), React.createElement("div", {
                 className: "flex gap-3 mt-6"
             }, React.createElement("button", {
                 onClick: () => x({
@@ -4983,9 +4984,9 @@
                     }), Ha()
                 },
                 className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, p.lojaProdutoEdit ? "💾 Salvar" : "➕ Adicionar")))))), "pedidos" === nt && React.createElement(React.Fragment, null, React.createElement("h2", {
+            }, p.lojaProdutoEdit ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar"))))))), "pedidos" === nt && React.createElement(React.Fragment, null, React.createElement("h2", {
                 className: "text-xl font-bold text-gray-800 mb-6"
-            }, "🛍️ Pedidos"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Pedidos")), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
                 className: "w-full text-sm"
@@ -5039,7 +5040,7 @@
                 className: "px-3 py-3 text-center"
             }, React.createElement("span", {
                 className: "px-2 py-1 rounded text-xs font-bold " + ("pendente" === e.status ? "bg-yellow-100 text-yellow-700" : "aprovado" === e.status ? "bg-green-100 text-green-700" : "rejeitado" === e.status ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700")
-            }, "pendente" === e.status ? "⏳" : "aprovado" === e.status ? "✅" : "❌"), e.observacao && "rejeitado" === e.status && React.createElement("p", {
+            }, "pendente" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })) : "aprovado" === e.status ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))), e.observacao && "rejeitado" === e.status && React.createElement("p", {
                 className: "text-xs text-red-600 mt-1 max-w-[100px] truncate",
                 title: e.observacao
             }, e.observacao)), React.createElement("td", {
@@ -5090,7 +5091,7 @@
                 },
                 className: "px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700",
                 title: "Aprovar"
-            }, "✅"), React.createElement("button", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("button", {
                 onClick: async () => {
                     const t = prompt("Motivo da rejeição:");
                     t && (await fetchAuth(`${API_URL}/loja/pedidos/${e.id}`, {
@@ -5108,20 +5109,20 @@
                 },
                 className: "px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700",
                 title: "Rejeitar"
-            }, "❌")), React.createElement("button", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))), React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     lojaPedidoDeleteConfirm: e
                 }),
                 className: "px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700",
                 title: "Excluir"
-            }, "🗑️")))))))), p.lojaPedidoDeleteConfirm && React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))))), p.lojaPedidoDeleteConfirm && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
             }, React.createElement("h3", {
                 className: "text-xl font-bold text-red-600 mb-4"
-            }, "⚠️ Excluir Pedido"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Excluir Pedido")), React.createElement("p", {
                 className: "text-gray-700 mb-4"
             }, "Tem certeza que deseja excluir este pedido?"), React.createElement("div", {
                 className: "bg-gray-50 rounded-lg p-4 mb-4"
@@ -5153,19 +5154,19 @@
                     }), Wa(), ja("🗑️ Pedido excluído!", "success")
                 },
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "🗑️ Excluir"))))), "sugestoes" === nt && React.createElement(React.Fragment, null, React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir")))))), "sugestoes" === nt && React.createElement(React.Fragment, null, React.createElement("div", {
                 className: "flex justify-between items-center mb-6"
             }, React.createElement("div", null, React.createElement("h2", {
                 className: "text-xl font-bold text-gray-800"
-            }, "💡 Sugestões de Produtos"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Sugestões de Produtos")), React.createElement("p", {
                 className: "text-sm text-gray-500"
             }, "Veja o que os profissionais gostariam de ter na loja")), React.createElement("div", {
                 className: "flex gap-2 text-sm"
             }, React.createElement("span", {
                 className: "px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full font-semibold"
-            }, "⏳ ", ut.filter(e => "pendente" === e.status).length, " Pendentes"), React.createElement("span", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), ut.filter(e => "pendente" === e.status).length, " Pendentes"), React.createElement("span", {
                 className: "px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold"
-            }, "✅ ", ut.filter(e => "respondido" === e.status).length, " Respondidas"))), React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), ut.filter(e => "respondido" === e.status).length, " Respondidas"))), React.createElement("div", {
                 className: "space-y-4"
             }, 0 === ut.length ? React.createElement("p", {
                 className: "text-gray-500 text-center py-8"
@@ -5184,7 +5185,7 @@
                 className: "text-xs text-gray-500"
             }, "COD: ", e.user_cod), React.createElement("span", {
                 className: "px-2 py-0.5 rounded-full text-xs font-bold " + ("pendente" === e.status ? "bg-yellow-200 text-yellow-800" : "respondido" === e.status ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800")
-            }, "pendente" === e.status ? "⏳ Pendente" : "respondido" === e.status ? "✅ Respondido" : "❌ Recusado")), React.createElement("p", {
+            }, "pendente" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendente") : "respondido" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Respondido") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Recusado"))), React.createElement("p", {
                 className: "text-gray-700 bg-white p-3 rounded-lg border"
             }, e.sugestao), React.createElement("p", {
                 className: "text-xs text-gray-500 mt-2"
@@ -5206,21 +5207,21 @@
                     lojaSugestaoResposta: ""
                 }),
                 className: "px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700"
-            }, "✅ Responder"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Responder")), React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     lojaSugestaoRecusar: e,
                     lojaSugestaoResposta: ""
                 }),
                 className: "px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700"
-            }, "❌ Recusar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Recusar")), React.createElement("button", {
                 onClick: async () => {
                     confirm("Excluir esta sugestão?") && (await fetchAuth(`${API_URL}/loja/sugestoes/${e.id}`, {
                         method: "DELETE"
                     }), Ya(), ja("🗑️ Sugestão excluída!", "success"))
                 },
                 className: "px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-300"
-            }, "🗑️")))))), p.lojaSugestaoResponder && React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))), p.lojaSugestaoResponder && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-2xl shadow-2xl max-w-md w-full"
@@ -5228,7 +5229,7 @@
                 className: "bg-green-600 p-4 rounded-t-2xl text-white"
             }, React.createElement("h2", {
                 className: "text-xl font-bold"
-            }, "✅ Responder Sugestão")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Responder Sugestão"))), React.createElement("div", {
                 className: "p-6"
             }, React.createElement("div", {
                 className: "bg-gray-50 p-3 rounded-lg mb-4"
@@ -5272,7 +5273,7 @@
                     }), Ya()
                 },
                 className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-            }, "✅ Enviar Resposta"))))), p.lojaSugestaoRecusar && React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Enviar Resposta")))))), p.lojaSugestaoRecusar && React.createElement("div", {
                 className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-2xl shadow-2xl max-w-md w-full"
@@ -5280,7 +5281,7 @@
                 className: "bg-red-600 p-4 rounded-t-2xl text-white"
             }, React.createElement("h2", {
                 className: "text-xl font-bold"
-            }, "❌ Recusar Sugestão")), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Recusar Sugestão"))), React.createElement("div", {
                 className: "p-6"
             }, React.createElement("div", {
                 className: "bg-gray-50 p-3 rounded-lg mb-4"
@@ -5324,7 +5325,7 @@
                     }), Ya()
                 },
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "❌ Confirmar Recusa"))))))))), "relatorios" === p.finTab && React.createElement(window.__RelatoriosFinanceiroV2 || (() => null), {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Confirmar Recusa")))))))))), "relatorios" === p.finTab && React.createElement(window.__RelatoriosFinanceiroV2 || (() => null), {
                 fetchAuth, API_URL, er, ja
             }), "horarios" === p.finTab && React.createElement(React.Fragment, null,
                 // 🔧 NOVO 2026-04: Seção de toggles do financeiro (saques habilitados / saques automáticos)
@@ -5342,7 +5343,7 @@
                 className: "bg-white rounded-xl shadow p-4"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800 mb-4"
-            }, "🕐 Horários de Atendimento"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Horários de Atendimento")), React.createElement("p", {
                 className: "text-sm text-gray-600 mb-4"
             }, "Configure os horários de funcionamento para cada dia da semana."), React.createElement("div", {
                 className: "space-y-2"
@@ -5387,7 +5388,7 @@
                 className: "bg-white rounded-xl shadow p-4"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800 mb-4"
-            }, "📅 Horários Especiais (Feriados, Datas específicas)"), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Horários Especiais (Feriados, Datas específicas)")), React.createElement("div", {
                 className: "bg-blue-50 p-4 rounded-lg mb-4"
             }, React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-5 gap-3"
@@ -5487,7 +5488,7 @@
                         }
                     })(e.id),
                     className: "px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                }, "🗑️ Remover"))
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Remover")))
             }))))), "avisos" === p.finTab && React.createElement(React.Fragment, null, qe.loading ? React.createElement("div", {
                 className: "flex items-center justify-center py-12"
             }, React.createElement("div", {
@@ -5500,7 +5501,7 @@
                 className: "bg-white rounded-xl shadow p-4"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800 mb-4"
-            }, "📢 Criar Novo Aviso"), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })), "Criar Novo Aviso")), React.createElement("p", {
                 className: "text-sm text-gray-600 mb-4"
             }, "Os avisos criados aqui serão exibidos para os usuários na tela de Saque Emergencial."), React.createElement("div", {
                 className: "bg-yellow-50 p-4 rounded-lg"
@@ -5526,11 +5527,11 @@
                 value: "info"
             }, "ℹ️ Informativo (Azul)"), React.createElement("option", {
                 value: "warning"
-            }, "⚠️ Atenção (Amarelo)"), React.createElement("option", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Atenção (Amarelo)")), React.createElement("option", {
                 value: "error"
-            }, "🚨 Urgente (Vermelho)"), React.createElement("option", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Urgente (Vermelho)")), React.createElement("option", {
                 value: "success"
-            }, "✅ Positivo (Verde)"))), React.createElement("textarea", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Positivo (Verde)")))), React.createElement("textarea", {
                 placeholder: "Mensagem do aviso...",
                 value: p.novoAvisoMensagem || "",
                 onChange: e => x(t => ({
@@ -5560,11 +5561,11 @@
                 className: "bg-white rounded-xl shadow p-4"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800 mb-4"
-            }, "✅ Avisos Ativos (", qe.avisos.filter(e => e.ativo).length, ")"), 0 === qe.avisos.filter(e => e.ativo).length ? React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Avisos Ativos ("), qe.avisos.filter(e => e.ativo).length, ")"), 0 === qe.avisos.filter(e => e.ativo).length ? React.createElement("div", {
                 className: "text-center py-8 text-gray-500"
             }, React.createElement("p", {
                 className: "text-4xl mb-2"
-            }, "📭"), React.createElement("p", null, "Nenhum aviso ativo no momento.")) : React.createElement("div", {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" }))), React.createElement("p", null, "Nenhum aviso ativo no momento.")) : React.createElement("div", {
                 className: "space-y-3"
             }, qe.avisos.filter(e => e.ativo).map(e => React.createElement("div", {
                 key: e.id,
@@ -5577,11 +5578,11 @@
                 className: "flex items-center gap-2 mb-2"
             }, React.createElement("span", {
                 className: "text-lg"
-            }, "error" === e.tipo ? "🚨" : "warning" === e.tipo ? "⚠️" : "success" === e.tipo ? "✅" : "ℹ️"), React.createElement("span", {
+            }, "error" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : "warning" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : "success" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : "ℹ️"), React.createElement("span", {
                 className: "font-bold"
             }, e.titulo), e.exibir_fora_horario && React.createElement("span", {
                 className: "px-2 py-0.5 bg-orange-200 text-orange-700 text-[10px] rounded-full font-semibold"
-            }, "🕐 Só fora do horário")), React.createElement("p", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Só fora do horário"))), React.createElement("p", {
                 className: "text-sm text-gray-700"
             }, e.mensagem), React.createElement("p", {
                 className: "text-xs text-gray-400 mt-2"
@@ -5590,10 +5591,10 @@
             }, React.createElement("button", {
                 onClick: () => fl(e),
                 className: "px-3 py-1.5 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600"
-            }, "⏸️ Desativar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-power" })), "Desativar")), React.createElement("button", {
                 onClick: () => Nl(e.id),
                 className: "px-3 py-1.5 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
-            }, "🗑️ Excluir"))))))), React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir")))))))), React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4"
             }, React.createElement("h3", {
                 className: "font-bold text-gray-800 mb-4"
@@ -5614,7 +5615,7 @@
                 className: "flex items-center gap-2 mb-1"
             }, React.createElement("span", {
                 className: "text-sm"
-            }, "error" === e.tipo ? "🚨" : "warning" === e.tipo ? "⚠️" : "success" === e.tipo ? "✅" : "ℹ️"), React.createElement("span", {
+            }, "error" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : "warning" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : "success" === e.tipo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : "ℹ️"), React.createElement("span", {
                 className: "font-semibold text-sm text-gray-600"
             }, e.titulo), React.createElement("span", {
                 className: "px-1.5 py-0.5 bg-gray-400 text-white text-[10px] rounded"
@@ -5627,10 +5628,10 @@
             }, React.createElement("button", {
                 onClick: () => fl(e),
                 className: "px-2 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600"
-            }, "▶️ Ativar"), React.createElement("button", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })), "Ativar")), React.createElement("button", {
                 onClick: () => Nl(e.id),
                 className: "px-2 py-1 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
-            }, "🗑️"))))))))), "backup" === p.finTab && React.createElement(React.Fragment, null, (() => {
+            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))))))), "backup" === p.finTab && React.createElement(React.Fragment, null, (() => {
                 const e = (e, t) => {
                         const a = JSON.stringify(e, null, 2),
                             l = new Blob([a], {
@@ -5784,7 +5785,7 @@
                     className: "bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white"
                 }, React.createElement("h2", {
                     className: "text-2xl font-bold flex items-center gap-2"
-                }, "💾 Backup e Exportação de Dados"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Backup e Exportação de Dados")), React.createElement("p", {
                     className: "text-blue-100 mt-2"
                 }, "Exporte seus dados para manter backups seguros ou analisar em outras ferramentas.")), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-6"
@@ -5796,101 +5797,101 @@
                     className: "text-sm text-gray-600 mt-1"
                 }, "Exporta todos os dados do sistema em um único arquivo JSON."), React.createElement("div", {
                     className: "flex gap-4 mt-2 text-xs text-gray-500"
-                }, React.createElement("span", null, "📋 ", q.length, " solicitações"), React.createElement("span", null, "👥 ", A.length, " usuários"), React.createElement("span", null, "🎁 ", Q.length, " gratuidades"), React.createElement("span", null, "🚫 ", Z.length, " restritos"), React.createElement("span", null, "🤝 ", ae.length, " indicações"))), React.createElement("button", {
+                }, React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), q.length, " solicitações"), React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })), A.length, " usuários"), React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), Q.length, " gratuidades"), React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), Z.length, " restritos"), React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-handshake" })), ae.length, " indicações"))), React.createElement("button", {
                     onClick: () => e(n, `backup_completo_${a}.json`),
                     className: "px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2"
-                }, "⬇️ Baixar Backup Completo"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowdown" })), "Baixar Backup Completo")))), React.createElement("div", {
                     className: "grid grid-cols-1 md:grid-cols-2 gap-4"
                 }, React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "📋 Solicitações de Saque"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Solicitações de Saque")), React.createElement("p", {
                     className: "text-sm text-gray-600 mb-3"
                 }, q.length, " registros"), React.createElement("div", {
                     className: "flex gap-2"
                 }, React.createElement("button", {
                     onClick: () => t(q, l, `solicitacoes_${a}.csv`),
                     className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
-                }, "📊 CSV"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "CSV")), React.createElement("button", {
                     onClick: () => e(q, `solicitacoes_${a}.json`),
                     className: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
-                }, "📄 JSON"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "JSON")))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "👥 Usuários"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })), "Usuários")), React.createElement("p", {
                     className: "text-sm text-gray-600 mb-3"
                 }, A.length, " registros"), React.createElement("div", {
                     className: "flex gap-2"
                 }, React.createElement("button", {
                     onClick: () => t(A, r, `usuarios_${a}.csv`),
                     className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
-                }, "📊 CSV"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "CSV")), React.createElement("button", {
                     onClick: () => e(A, `usuarios_${a}.json`),
                     className: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
-                }, "📄 JSON"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "JSON")))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "🎁 Gratuidades"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Gratuidades")), React.createElement("p", {
                     className: "text-sm text-gray-600 mb-3"
                 }, Q.length, " registros"), React.createElement("div", {
                     className: "flex gap-2"
                 }, React.createElement("button", {
                     onClick: () => t(Q, o, `gratuidades_${a}.csv`),
                     className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
-                }, "📊 CSV"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "CSV")), React.createElement("button", {
                     onClick: () => e(Q, `gratuidades_${a}.json`),
                     className: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
-                }, "📄 JSON"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "JSON")))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "🚫 Lista de Restritos"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Lista de Restritos")), React.createElement("p", {
                     className: "text-sm text-gray-600 mb-3"
                 }, Z.length, " registros"), React.createElement("div", {
                     className: "flex gap-2"
                 }, React.createElement("button", {
                     onClick: () => t(Z, c, `restritos_${a}.csv`),
                     className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
-                }, "📊 CSV"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "CSV")), React.createElement("button", {
                     onClick: () => e(Z, `restritos_${a}.json`),
                     className: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
-                }, "📄 JSON"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "JSON")))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "🤝 Indicações"), React.createElement("p", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-handshake" })), "Indicações")), React.createElement("p", {
                     className: "text-sm text-gray-600 mb-3"
                 }, ae.length, " registros"), React.createElement("div", {
                     className: "flex gap-2"
                 }, React.createElement("button", {
                     onClick: () => t(ae, s, `indicacoes_${a}.csv`),
                     className: "flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 text-sm"
-                }, "📊 CSV"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "CSV")), React.createElement("button", {
                     onClick: () => e(ae, `indicacoes_${a}.json`),
                     className: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm"
-                }, "📄 JSON"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "JSON")))), React.createElement("div", {
                     className: "bg-white rounded-xl shadow p-5"
                 }, React.createElement("h3", {
                     className: "font-bold text-gray-800 flex items-center gap-2 mb-3"
-                }, "🔍 Solicitações por Status"), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Solicitações por Status")), React.createElement("div", {
                     className: "space-y-2"
                 }, React.createElement("button", {
                     onClick: () => t(q.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status), l, `aprovados_${a}.csv`),
                     className: "w-full px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 text-sm text-left"
-                }, "✅ Aprovados (", q.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovados ("), q.filter(e => "aprovado" === e.status || "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => t(q.filter(e => "aguardando_aprovacao" === e.status), l, `pendentes_${a}.csv`),
                     className: "w-full px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-semibold hover:bg-yellow-200 text-sm text-left"
-                }, "⏳ Pendentes (", q.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes ("), q.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
                     onClick: () => t(q.filter(e => "rejeitado" === e.status), l, `rejeitados_${a}.csv`),
                     className: "w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 text-sm text-left"
-                }, "❌ Rejeitados (", q.filter(e => "rejeitado" === e.status).length, ")")))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitados ("), q.filter(e => "rejeitado" === e.status).length, ")")))), React.createElement("div", {
                     className: "bg-amber-50 border border-amber-200 rounded-xl p-4"
                 }, React.createElement("h4", {
                     className: "font-semibold text-amber-800 flex items-center gap-2"
-                }, "💡 Dicas de Backup"), React.createElement("ul", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Dicas de Backup")), React.createElement("ul", {
                     className: "text-sm text-amber-700 mt-2 space-y-1"
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
             })())), "stark-bank" === p.finTab && React.createElement(React.Fragment, null,
@@ -5915,13 +5916,13 @@
             ), "saldo-plific" === p.finTab && React.createElement("div", {className: "max-w-7xl mx-auto p-6 space-y-6"},
     // Header
     React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white"},
-        React.createElement("h2", {className: "text-2xl font-bold mb-2"}, "💳 Saldo Plific"),
+        React.createElement("h2", {className: "text-2xl font-bold mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Saldo Plific")),
         React.createElement("p", {className: "text-purple-100"}, "Consulte e gerencie saldos dos profissionais")
     ),
     
     // Consulta Individual
     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, "🔍 Consulta Individual"),
+        React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Consulta Individual")),
         React.createElement("div", {className: "flex gap-3 items-end flex-wrap"},
             React.createElement("div", {className: "flex-1 min-w-[200px]"},
                 React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "ID do Profissional"),
@@ -5937,7 +5938,7 @@
                 onClick: function() { consultarSaldoPlific(plificState.idBusca); },
                 disabled: plificState.loading,
                 className: "px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            }, plificState.loading ? "Consultando..." : "🔍 Consultar")
+            }, plificState.loading ? "Consultando..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Consultar"))
         ),
         plificState.consultaIndividual && plificState.consultaIndividual.profissional && React.createElement("div", {className: "mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"},
             React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-5 gap-4"},
@@ -5961,7 +5962,7 @@
                     React.createElement("button", {
                         onClick: function() { setModalDebitoPlific(plificState.consultaIndividual.profissional); setDebitoFormPlific({valor: "", descricao: ""}); },
                         className: "px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-                    }, "💳 Lançar Débito")
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Lançar Débito"))
                 )
             )
         )
@@ -5971,7 +5972,7 @@
     React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
         React.createElement("div", {className: "flex items-center justify-between mb-4 flex-wrap gap-2"},
             React.createElement("div", null,
-                React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, "📊 Histórico de Saldos"),
+                React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Histórico de Saldos")),
                 plificState.total > 0 && React.createElement("p", {className: "text-sm text-gray-500"}, 
                     plificState.total + " profissionais | Soma total: R$ " + (plificState.somaTotal || 0).toFixed(2).replace(".", ",")
                 )
@@ -5981,11 +5982,11 @@
                     onClick: function() { consultarSaldosLotePlific(1); },
                     disabled: plificState.loadingLote,
                     className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                }, plificState.loadingLote ? "⏳ Carregando..." : "🔄 Atualizar"),
+                }, plificState.loadingLote ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Carregando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar")),
                 plificState.consultaLote.length > 0 && React.createElement("button", {
                     onClick: exportarSaldosCSVPlific,
                     className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                }, "📥 CSV")
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "CSV"))
             )
         ),
         plificState.loadingLote ? React.createElement("div", {className: "text-center py-12"},
@@ -6020,7 +6021,7 @@
                                     React.createElement("button", {
                                         onClick: function() { setModalDebitoPlific({...prof, id: prof.codigo}); setDebitoFormPlific({valor: "", descricao: ""}); },
                                         className: "px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-xs font-medium"
-                                    }, "💳 Débito")
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Débito"))
                                 )
                             );
                         })
@@ -6046,7 +6047,7 @@
                 )
             )
         ) : React.createElement("div", {className: "text-center py-12 text-gray-500"},
-            React.createElement("div", {className: "text-5xl mb-4"}, "📊"),
+            React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })),
             React.createElement("p", {className: "font-medium"}, "Histórico de Saldos"),
             React.createElement("p", {className: "text-sm mt-2"}, "Clique em \"Atualizar\" para carregar os saldos de todos os profissionais"),
             React.createElement("p", {className: "text-xs mt-1 text-gray-400"}, "Ordenado do maior para o menor saldo")
@@ -6056,7 +6057,7 @@
     // Modal de Débito
     modalDebitoPlific && React.createElement("div", {className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50", onClick: function() { setModalDebitoPlific(null); }},
         React.createElement("div", {className: "bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4", onClick: function(e) { e.stopPropagation(); }},
-            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4"}, "💳 Lançar Débito"),
+            React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Lançar Débito")),
             React.createElement("div", {className: "bg-gray-50 rounded-lg p-3 mb-4"},
                 React.createElement("p", {className: "text-sm text-gray-600"}, "Profissional:"),
                 React.createElement("p", {className: "font-semibold text-lg"}, modalDebitoPlific.nome || "ID " + (modalDebitoPlific.idProf || modalDebitoPlific.id || modalDebitoPlific.codigo)),
@@ -6099,7 +6100,7 @@
                     },
                     disabled: !debitoFormPlific.valor || !debitoFormPlific.descricao || plificState.loadingDebito,
                     className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                }, plificState.loadingDebito ? "Processando..." : "💳 Confirmar Débito")
+                }, plificState.loadingDebito ? "Processando..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-card" })), "Confirmar Débito"))
             )
         )
     ),
@@ -6207,7 +6208,7 @@
         return React.createElement("div", { className: "max-w-7xl mx-auto p-6 space-y-6" },
             // Header
             React.createElement("div", { className: "bg-gradient-to-r from-orange-600 to-red-600 rounded-xl p-6 text-white" },
-                React.createElement("h2", { className: "text-2xl font-bold mb-2" }, "🔓 Liberação de Limites"),
+                React.createElement("h2", { className: "text-2xl font-bold mb-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "Liberação de Limites")),
                 React.createElement("p", { className: "text-orange-100" }, "Gerencie solicitações de limite extra de saque dos motoboys. Reset toda terça-feira.")
             ),
             // Contadores
@@ -6233,7 +6234,7 @@
             React.createElement("div", { className: "bg-white rounded-xl shadow p-4" },
                 React.createElement("div", { className: "flex gap-2 flex-wrap" },
                     ["pendente", "liberado", "rejeitado", "expirado", ""].map(function(st) {
-                        var label = st === "pendente" ? "⏳ Pendentes" : st === "liberado" ? "✅ Liberados" : st === "rejeitado" ? "❌ Rejeitados" : st === "expirado" ? "⏰ Expirados" : "📋 Todos";
+                        var label = st === "pendente" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes") : st === "liberado" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Liberados") : st === "rejeitado" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitados") : st === "expirado" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Expirados") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Todos");
                         var active = limiteFiltro === st;
                         return React.createElement("button", {
                             key: st || "all",
@@ -6246,7 +6247,7 @@
             // Lista
             React.createElement("div", { className: "bg-white rounded-xl shadow overflow-hidden" },
                 limitesState.loading ? React.createElement("div", { className: "p-8 text-center" },
-                    React.createElement("p", { className: "text-gray-500" }, "⏳ Carregando...")
+                    React.createElement("p", { className: "text-gray-500" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Carregando..."))
                 ) : limitesState.lista.length === 0 ? React.createElement("div", { className: "p-8 text-center" },
                     React.createElement("p", { className: "text-gray-400 text-lg" }, "📭 Nenhuma solicitação " + (limiteFiltro || "")),
                     React.createElement("p", { className: "text-gray-300 text-sm mt-1" }, "As solicitações aparecerão aqui em tempo real")
@@ -6288,7 +6289,7 @@
                                         // Badge tipo_limite
                                         React.createElement("span", {
                                             className: "text-[10px] px-2 py-0.5 rounded-full font-bold " + (isSemanal ? "bg-purple-100 text-purple-700" : "bg-orange-100 text-orange-700")
-                                        }, isSemanal ? "📅 Limite Semanal" : "📆 Limite Diário"),
+                                        }, isSemanal ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Limite Semanal") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Limite Diário")),
                                         urgente && React.createElement("span", { className: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold animate-pulse" }, "🔴 URGENTE")
                                     ),
                                     React.createElement("div", { className: "flex flex-wrap gap-3 text-xs text-gray-500" },
@@ -6301,18 +6302,18 @@
                                 React.createElement("div", { className: "flex items-center gap-2" },
                                     React.createElement("span", {
                                         className: "px-3 py-1 rounded-full text-xs font-bold " + (isPendente ? "bg-orange-100 text-orange-700" : isLiberado ? "bg-green-100 text-green-700" : item.status === 'rejeitado' ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")
-                                    }, isPendente ? "⏳ Pendente" : isLiberado ? "✅ Liberado" : item.status === 'rejeitado' ? "❌ Rejeitado" : "⏰ Expirado"),
+                                    }, isPendente ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendente") : isLiberado ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Liberado") : item.status === 'rejeitado' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitado") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Expirado")),
                                     item.admin_name && React.createElement("span", { className: "text-xs text-gray-400" }, "por " + item.admin_name),
                                     isPendente && React.createElement("button", {
                                         onClick: function() { liberarLimite(item.id); },
                                         disabled: liberandoId === item.id,
                                         className: "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition-all shadow-sm"
-                                    }, liberandoId === item.id ? "..." : "✅ Liberar"),
+                                    }, liberandoId === item.id ? "..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Liberar")),
                                     isPendente && React.createElement("button", {
                                         onClick: function() { rejeitarLimite(item.id); },
                                         disabled: liberandoId === item.id,
                                         className: "px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-200 disabled:opacity-50 transition-all"
-                                    }, "✗")
+                                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                                 )
                             )
                         );
@@ -6652,8 +6653,8 @@
                     React.createElement("p", { className: "text-gray-500 mt-1 text-sm" }, "Stark Bank — Pagamentos em lote para motoboys")
                 ),
                 React.createElement("div", { className: "flex gap-2" },
-                    React.createElement("button", { onClick: sincronizarStatus, className: "px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs md:text-sm font-medium" }, "🔄 Sincronizar"),
-                    React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs md:text-sm" }, "🔄 Atualizar")
+                    React.createElement("button", { onClick: sincronizarStatus, className: "px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs md:text-sm font-medium" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Sincronizar")),
+                    React.createElement("button", { onClick: function() { carregarSaldo(); carregarPendentes(st.pendentesPage); }, className: "px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs md:text-sm" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar"))
                 )
             ),
             
@@ -6671,12 +6672,12 @@
                 ),
                 React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 " + (st.status && st.status.sdk_operacional ? "border-green-500" : "border-red-500") },
                     React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Status SDK"),
-                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.status && st.status.sdk_operacional ? "text-green-600" : "text-red-600") }, st.status ? (st.status.sdk_operacional ? "✅ Online" : "❌ Offline") : "..."),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.status && st.status.sdk_operacional ? "text-green-600" : "text-red-600") }, st.status ? (st.status.sdk_operacional ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Online") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Offline")) : "..."),
                     React.createElement("p", { className: "text-[10px] md:text-xs text-gray-400 mt-1" }, st.status && st.status.estatisticas ? "Total pagos: " + (st.status.estatisticas.pagos || 0) : "")
                 ),
                 React.createElement("div", { className: "bg-white rounded-xl p-3 md:p-5 shadow border-l-4 " + (st.pendentesTotal === 0 ? "border-gray-300" : saldoOk ? "border-emerald-500" : "border-red-500") },
                     React.createElement("p", { className: "text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" }, "Cobertura do Lote"),
-                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.pendentesTotal === 0 ? "text-gray-400" : saldoOk ? "text-emerald-600" : "text-red-600") }, st.pendentesTotal === 0 ? "—" : saldoOk ? "✅ OK" : "⚠️ Insuf."),
+                    React.createElement("p", { className: "text-lg md:text-2xl font-bold " + (st.pendentesTotal === 0 ? "text-gray-400" : saldoOk ? "text-emerald-600" : "text-red-600") }, st.pendentesTotal === 0 ? "—" : saldoOk ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "OK") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Insuf.")),
                     !saldoOk && st.pendentesTotal > 0 && saldoDisp !== null ? React.createElement("p", { className: "text-[10px] md:text-xs text-red-500 mt-1" }, "Faltam " + formatarMoeda(st.pendentesValorTotal - saldoDisp)) : null
                 )
             ),
@@ -6699,7 +6700,7 @@
                         React.createElement("label", { className: "block text-xs text-gray-500 mb-1" }, "Data Fim"),
                         React.createElement("input", { type: "date", value: filtros.data_fim, onChange: function(e) { setFiltros(function(p) { return Object.assign({}, p, { data_fim: e.target.value }); }); }, className: "border border-gray-300 rounded-lg px-3 py-2 text-sm w-full" })
                     ),
-                    React.createElement("button", { onClick: function() { carregarPendentes(1); }, className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium" }, "🔍 Filtrar"),
+                    React.createElement("button", { onClick: function() { carregarPendentes(1); }, className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtrar")),
                     React.createElement("button", { onClick: function() { var f = { data_inicio: '', data_fim: '' }; setFiltros(f); carregarPendentes(1, f); }, className: "px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-xs md:text-sm whitespace-nowrap" }, "Limpar filtros (últimos 30 dias)")
                 ),
                 
@@ -6709,12 +6710,12 @@
                         React.createElement("input", { type: "checkbox", checked: st.pendentes.length > 0 && st.pendentes.every(function(s) { return sel[s.id]; }), onChange: toggleTodos, className: "w-5 h-5 rounded border-gray-300 accent-emerald-600" }),
                         React.createElement("span", { className: "text-xs md:text-sm text-gray-600" }, idsSelecionados.length > 0 ? idsSelecionados.length + " selecionado(s) — " + formatarMoeda(valorSelecionado) : "Selecionar todos (" + st.pendentes.length + ")")
                     ),
-                    React.createElement("button", { onClick: iniciarPagamento, disabled: st.executando || !(st.status && st.status.sdk_operacional), className: "w-full sm:w-auto px-4 md:px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-sm md:text-base" }, "🔐 Executar Pagamento")
+                    React.createElement("button", { onClick: iniciarPagamento, disabled: st.executando || !(st.status && st.status.sdk_operacional), className: "w-full sm:w-auto px-4 md:px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-sm md:text-base" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "Executar Pagamento"))
                 ),
                 
                 // Lotes em accordion
                 st.pendentesLoading ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
-                : st.pendentes.length === 0 ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" }, React.createElement("p", { className: "text-5xl mb-3" }, "✅"), React.createElement("p", { className: "text-gray-500 text-lg" }, "Nenhum saque no período selecionado"))
+                : st.pendentes.length === 0 ? React.createElement("div", { className: "text-center py-10 bg-white rounded-xl shadow" }, React.createElement("svg", { className: "ico", style: { width: 48, height: 48, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), React.createElement("p", { className: "text-gray-500 text-lg" }, "Nenhum saque no período selecionado"))
                 : (function() {
                     // Agrupar por stark_lote_id real (do banco) — fallback para lote virtual se não tiver
                     var sortedPendentes = st.pendentes.slice().sort(function(a, b) { return parseFloat(b.final_amount || 0) - parseFloat(a.final_amount || 0); });
@@ -6917,7 +6918,7 @@
                 React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden" },
                     // Header - verde se tudo ok, amarelo se teve rejeitados
                     React.createElement("div", { className: "p-6 text-white text-center " + (modalResultado.rejeitados > 0 ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-500 to-green-500") },
-                        React.createElement("span", { className: "text-5xl" }, modalResultado.rejeitados > 0 ? "⚠️" : "✅"),
+                        React.createElement("span", { className: "text-5xl" }, modalResultado.rejeitados > 0 ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
                         React.createElement("h3", { className: "text-xl font-bold mt-3" }, modalResultado.rejeitados > 0 ? "Pagamento Parcial" : "Pagamento Enviado!"),
                         React.createElement("p", { className: "text-sm opacity-90 mt-1" }, "Lote #" + modalResultado.loteId)
                     ),
@@ -6939,7 +6940,7 @@
                         
                         // Lista de rejeitados (se houver)
                         modalResultado.rejeitados > 0 && modalResultado.detalhesRejeitados.length > 0 && React.createElement("div", { className: "bg-red-50 border border-red-200 rounded-xl p-4" },
-                            React.createElement("p", { className: "text-sm font-bold text-red-700 mb-3 flex items-center gap-2" }, "❌ Solicitações rejeitadas:"),
+                            React.createElement("p", { className: "text-sm font-bold text-red-700 mb-3 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Solicitações rejeitadas:")),
                             React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto" },
                                 modalResultado.detalhesRejeitados.map(function(rej, i) {
                                     return React.createElement("div", { key: i, className: "flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-red-100" },
@@ -6974,7 +6975,7 @@
                 React.createElement("div", { className: "bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden max-h-[90vh] overflow-y-auto" },
                     // Header do modal
                     React.createElement("div", { className: "bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white text-center" },
-                        React.createElement("span", { className: "text-4xl" }, "🔐"),
+                        React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })),
                         React.createElement("h3", { className: "text-xl font-bold mt-2" }, "Confirmação de Segurança"),
                         React.createElement("p", { className: "text-emerald-100 text-sm mt-1" }, "Pagamento via Stark Bank")
                     ),
@@ -7014,12 +7015,12 @@
                                 className: "w-full text-center text-3xl font-bold tracking-[12px] border-2 border-gray-300 rounded-xl py-4 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none",
                                 autoFocus: true
                             }),
-                            React.createElement("p", { className: "text-xs text-gray-400" }, "⏱ Válido por 5 minutos"),
+                            React.createElement("p", { className: "text-xs text-gray-400" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Válido por 5 minutos")),
                             React.createElement("button", {
                                 onClick: validarTokenEExecutar,
                                 disabled: modal2fa.validando || modal2fa.tokenDigitado.length !== 6,
                                 className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50"
-                            }, modal2fa.validando ? "⏳ Validando e executando..." : "✅ Confirmar e Pagar"),
+                            }, modal2fa.validando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Validando e executando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Confirmar e Pagar")),
                             React.createElement("button", {
                                 onClick: solicitarToken,
                                 disabled: modal2fa.enviando,
@@ -7029,7 +7030,7 @@
                         
                         // Etapa: Executando
                         modal2fa.etapa === 'executando' && React.createElement("div", { className: "text-center py-4" },
-                            React.createElement("div", { className: "animate-spin text-4xl mb-3" }, "⏳"),
+                            React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
                             React.createElement("p", { className: "text-gray-600 font-medium" }, "Executando pagamentos..."),
                             React.createElement("p", { className: "text-gray-400 text-sm mt-1" }, "Não feche esta janela")
                         ),
@@ -7498,11 +7499,11 @@
                 React.createElement("button", {
                     onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'novo', loteDetalhe: null }); }); },
                     className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'novo' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100")
-                }, "📤 Novo Acerto"),
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Novo Acerto")),
                 React.createElement("button", {
                     onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'aprovacao', loteDetalhe: null }); }); carregarLotesAprovacao(); carregarSaldo(); },
                     className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'aprovacao' ? "bg-amber-100 text-amber-700" : "text-gray-500 hover:bg-gray-100")
-                }, "⏳ Em Aprovação"),
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Em Aprovação")),
                 React.createElement("button", {
                     onClick: function() { setSt(function(p) { return Object.assign({}, p, { subTab: 'historico', loteDetalhe: null }); }); carregarHistorico(); },
                     className: "px-4 py-2 rounded-lg text-sm font-medium transition-colors " + (st.subTab === 'historico' ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:bg-gray-100")
@@ -7515,14 +7516,14 @@
                 // Upload (se não tem dados carregados)
                 !st.dados && React.createElement("div", { className: "bg-white rounded-xl shadow p-8 text-center space-y-4" },
                     React.createElement("div", { className: "w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto" },
-                        React.createElement("span", { className: "text-4xl" }, "📤")
+                        React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" }))
                     ),
                     React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, "Upload da Planilha de Faturamento"),
                     React.createElement("p", { className: "text-gray-500 text-sm" }, "Envie o arquivo .xlsx com os dados dos profissionais para processar o acerto"),
                     React.createElement("label", {
                         className: "inline-block px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-700 transition-colors"
                     },
-                        st.uploading ? "⏳ Processando..." : "📎 Selecionar Planilha (.xlsx)",
+                        st.uploading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Processando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" })), "Selecionar Planilha (.xlsx)"),
                         React.createElement("input", { type: "file", accept: ".xlsx,.xls", onChange: handleUpload, className: "hidden", disabled: st.uploading })
                     ),
                     React.createElement("p", { className: "text-xs text-gray-400" }, "Coluna F = Código/Nome do profissional | Coluna Q = Saldo a pagar | Coluna M = Pix (fallback)")
@@ -7573,7 +7574,7 @@
                                 React.createElement("span", { className: "font-bold text-gray-800" }, formatarMoeda(valorSelecionado))
                             ),
                             st.saldoStark >= valorSelecionado
-                                ? React.createElement("span", { className: "text-emerald-600 font-bold text-sm" }, "✅ Saldo suficiente")
+                                ? React.createElement("span", { className: "text-emerald-600 font-bold text-sm" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Saldo suficiente"))
                                 : React.createElement("span", { className: "text-red-600 font-bold text-sm" }, "❌ Saldo insuficiente (faltam " + formatarMoeda(valorSelecionado - st.saldoStark) + ")")
                         )
                     ),
@@ -7606,10 +7607,10 @@
                                 todosProfs.sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
                                     var ehSemPix = prof.status === 'sem_pix';
                                     var origemBadge = prof.pix_origem === 'mapp'
-                                        ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? "✅ Mapp" : "⚠️ Mapp")
+                                        ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Mapp") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mapp"))
                                         : prof.pix_origem === 'sistema'
-                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, "🔄 Sistema")
-                                            : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, "❌ Nenhuma");
+                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Sistema"))
+                                            : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Nenhuma"));
 
                                     return React.createElement("tr", {
                                         key: prof.cod_prof + '-' + i,
@@ -7633,10 +7634,10 @@
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
                                             prof.pix_key ? (function() {
                                                 var dr = dictResults[prof.cod_prof];
-                                                if (dr && dr.loading) return React.createElement("span", { className: "text-xs text-gray-400 animate-pulse" }, "⏳");
+                                                if (dr && dr.loading) return React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }));
                                                 if (dr && dr.success === true) return React.createElement("span", { className: "text-xs text-emerald-600 font-medium cursor-help", title: (dr.dict && dr.dict.nome ? dr.dict.nome : '') + (dr.validado_em ? ' — Validado em ' + new Date(dr.validado_em).toLocaleDateString('pt-BR') : '') }, "✅ " + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ')[0] : 'OK'));
-                                                if (dr && dr.success === false) return React.createElement("span", { className: "text-xs text-red-500 font-medium cursor-pointer", title: dr.erro || 'Inválida', onClick: function() { validarPixDict(prof); } }, "❌ Reintentar");
-                                                return React.createElement("button", { onClick: function() { validarPixDict(prof); }, className: "text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition-colors" }, "🔍 Validar");
+                                                if (dr && dr.success === false) return React.createElement("span", { className: "text-xs text-red-500 font-medium cursor-pointer", title: dr.erro || 'Inválida', onClick: function() { validarPixDict(prof); } }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Reintentar"));
+                                                return React.createElement("button", { onClick: function() { validarPixDict(prof); }, className: "text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition-colors" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Validar"));
                                             })() : React.createElement("span", { className: "text-xs text-gray-300" }, "—")
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
@@ -7698,8 +7699,8 @@
                                         className: "text-lg font-bold " + (st.saldoStark >= parseFloat(st.loteDetalhe.lote.valor_total) ? "text-emerald-600" : "text-red-600")
                                     }, formatarMoeda(st.saldoStark)),
                                     st.saldoStark >= parseFloat(st.loteDetalhe.lote.valor_total)
-                                        ? React.createElement("p", { className: "text-xs text-emerald-600" }, "✅ Suficiente")
-                                        : React.createElement("p", { className: "text-xs text-red-600" }, "❌ Insuficiente")
+                                        ? React.createElement("p", { className: "text-xs text-emerald-600" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Suficiente"))
+                                        : React.createElement("p", { className: "text-xs text-red-600" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Insuficiente"))
                                 )
                             )
                         )
@@ -7755,7 +7756,7 @@
                         ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
                         : st.lotesAprovacao.length === 0
                             ? React.createElement("div", { className: "bg-white rounded-xl shadow p-10 text-center" },
-                                React.createElement("span", { className: "text-5xl block mb-4" }, "📭"),
+                                React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" })),
                                 React.createElement("p", { className: "text-gray-400 text-lg" }, "Nenhum lote aguardando aprovação"),
                                 React.createElement("p", { className: "text-gray-400 text-sm mt-2" }, "Faça upload de uma planilha na aba \"Novo Acerto\" para começar")
                             )
@@ -7818,7 +7819,7 @@
                                         onClick: sincronizarAcerto,
                                         disabled: sincronizando,
                                         className: "px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-xs font-medium disabled:opacity-50"
-                                    }, sincronizando ? "⏳ Sincronizando..." : "🔄 Sincronizar"),
+                                    }, sincronizando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Sincronizando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Sincronizar")),
                                 st.loteDetalhe.lote.saldo_antes && React.createElement("div", { className: "text-right text-sm" },
                                     React.createElement("p", { className: "text-gray-400" }, "Saldo antes: " + formatarMoeda(st.loteDetalhe.lote.saldo_antes))
                                 )
@@ -7910,7 +7911,7 @@
                     React.createElement("div", {
                         className: "bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white text-center"
                     },
-                        React.createElement("span", { className: "text-4xl" }, "🔐"),
+                        React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })),
                         React.createElement("h3", { className: "text-xl font-bold mt-2" }, "Confirmação — Acerto Profissional"),
                         modal2fa.loteId && React.createElement("p", { className: "text-emerald-100 text-sm mt-1" }, "Lote #" + modal2fa.loteId)
                     ),
@@ -7943,7 +7944,7 @@
                                 onClick: validarEExecutar,
                                 disabled: modal2fa.validando || modal2fa.tokenDigitado.length !== 6,
                                 className: "w-full py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50 transition-colors"
-                            }, modal2fa.validando ? "⏳ Executando pagamentos..." : "✅ Confirmar e Pagar")
+                            }, modal2fa.validando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Executando pagamentos...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Confirmar e Pagar"))
                         ),
 
                         // Etapa: executando
@@ -7981,7 +7982,7 @@
                     React.createElement("div", {
                         className: "p-6 text-white text-center " + (modalRes.enviados === 0 && modalRes.rejeitados > 0 ? "bg-gradient-to-r from-red-500 to-red-600" : modalRes.rejeitados > 0 ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-500 to-green-500")
                     },
-                        React.createElement("span", { className: "text-5xl" }, modalRes.enviados === 0 && modalRes.rejeitados > 0 ? "❌" : modalRes.rejeitados > 0 ? "⚠️" : "✅"),
+                        React.createElement("span", { className: "text-5xl" }, modalRes.enviados === 0 && modalRes.rejeitados > 0 ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) : modalRes.rejeitados > 0 ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
                         React.createElement("h3", { className: "text-xl font-bold mt-3" },
                             modalRes.enviados === 0 && modalRes.rejeitados > 0 ? "Acerto Falhou"
                             : modalRes.rejeitados > 0 ? "Acerto Parcial"
@@ -8014,7 +8015,7 @@
                         modalRes.rejeitados > 0 && modalRes.detalhesRejeitados.length > 0 && React.createElement("div", {
                             className: "bg-red-50 border border-red-200 rounded-xl p-4"
                         },
-                            React.createElement("p", { className: "text-sm font-bold text-red-700 mb-3 flex items-center gap-2" }, "❌ Profissionais rejeitados:"),
+                            React.createElement("p", { className: "text-sm font-bold text-red-700 mb-3 flex items-center gap-2" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Profissionais rejeitados:")),
                             React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto" },
                                 modalRes.detalhesRejeitados.map(function(r, i) {
                                     return React.createElement("div", {
@@ -8039,7 +8040,7 @@
                         modalRes.rejeitados === 0 && modalRes.enviados > 0 && React.createElement("div", {
                             className: "bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center"
                         },
-                            React.createElement("p", { className: "text-emerald-700" }, "✅ Todos os pagamentos foram enviados com sucesso!"),
+                            React.createElement("p", { className: "text-emerald-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Todos os pagamentos foram enviados com sucesso!")),
                             React.createElement("p", { className: "text-xs text-emerald-500 mt-1" }, "O status será atualizado via webhook quando confirmados pelo banco.")
                         ),
 
@@ -8215,16 +8216,16 @@
                         onClick: sincronizarConciliacao,
                         disabled: sincConciliacao,
                         className: "px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium disabled:opacity-50"
-                    }, sincConciliacao ? "⏳ Sincronizando..." : "🔄 Sincronizar Stark"),
+                    }, sincConciliacao ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Sincronizando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Sincronizar Stark")),
                     React.createElement("button", {
                         onClick: function() { carregarDados(); },
                         className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
-                    }, "🔄 Atualizar"),
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar")),
                     React.createElement("button", {
                         onClick: exportarCSV,
                         disabled: itensFiltrados.length === 0,
                         className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm disabled:opacity-50"
-                    }, "📥 Exportar CSV")
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Exportar CSV"))
                 )
             ),
 
@@ -8258,7 +8259,7 @@
             React.createElement("div", { className: "bg-white rounded-xl shadow p-4" },
                 React.createElement("div", { className: "flex flex-wrap items-end gap-3" },
                     React.createElement("div", null,
-                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "📅 Data Início"),
+                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Início")),
                         React.createElement("input", {
                             type: "date", value: st.filtroDataInicio,
                             onChange: function(e) { setSt(function(p) { return Object.assign({}, p, { filtroDataInicio: e.target.value }); }); },
@@ -8266,7 +8267,7 @@
                         })
                     ),
                     React.createElement("div", null,
-                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "📅 Data Fim"),
+                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Fim")),
                         React.createElement("input", {
                             type: "date", value: st.filtroDataFim,
                             onChange: function(e) { setSt(function(p) { return Object.assign({}, p, { filtroDataFim: e.target.value }); }); },
@@ -8274,7 +8275,7 @@
                         })
                     ),
                     React.createElement("div", null,
-                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "📦 Lote"),
+                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), "Lote")),
                         React.createElement("select", {
                             value: st.filtroLote,
                             onChange: function(e) { setSt(function(p) { return Object.assign({}, p, { filtroLote: e.target.value }); }); },
@@ -8289,7 +8290,7 @@
                         )
                     ),
                     React.createElement("div", null,
-                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, "📋 Status"),
+                        React.createElement("label", { className: "block text-xs font-semibold text-gray-600 mb-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Status")),
                         React.createElement("select", {
                             value: st.filtroStatus,
                             onChange: function(e) { setSt(function(p) { return Object.assign({}, p, { filtroStatus: e.target.value }); }); },
@@ -8305,7 +8306,7 @@
                     React.createElement("button", {
                         onClick: function() { carregarDados(); },
                         className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
-                    }, "🔍 Filtrar"),
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtrar")),
                     (st.filtroDataInicio || st.filtroDataFim || st.filtroLote || st.filtroStatus) && React.createElement("button", {
                         onClick: function() {
                             var limpo = { filtroDataInicio: '', filtroDataFim: '', filtroLote: '', filtroStatus: '' };
@@ -8313,7 +8314,7 @@
                             carregarDados(limpo);
                         },
                         className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
-                    }, "✕ Limpar"),
+                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar")),
                     st.loading && React.createElement("div", { className: "flex items-center gap-2 text-purple-600" },
                         React.createElement("div", { className: "w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" }),
                         React.createElement("span", { className: "text-sm" }, "Buscando...")
@@ -8324,7 +8325,7 @@
             // Busca local
             React.createElement("div", { className: "bg-white rounded-xl shadow p-4" },
                 React.createElement("input", {
-                    type: "text", placeholder: "🔍 Buscar por código, nome ou chave Pix...",
+                    type: "text", placeholder: "Buscar por código, nome ou chave Pix...",
                     value: st.busca,
                     onChange: function(e) { setSt(function(p) { return Object.assign({}, p, { busca: e.target.value }); }); },
                     className: "w-full px-4 py-2 border rounded-lg text-sm focus:border-purple-500 outline-none"
@@ -8336,7 +8337,7 @@
                 ? React.createElement("div", { className: "text-center py-10 text-gray-400" }, "Carregando...")
                 : itensFiltrados.length === 0
                     ? React.createElement("div", { className: "bg-white rounded-xl shadow p-10 text-center" },
-                        React.createElement("span", { className: "text-5xl block mb-4" }, "📭"),
+                        React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-mail" })),
                         React.createElement("p", { className: "text-gray-400 text-lg" }, "Nenhum pagamento de acerto encontrado"),
                         React.createElement("p", { className: "text-gray-400 text-sm mt-2" }, "Ajuste os filtros ou realize um acerto primeiro")
                     )
