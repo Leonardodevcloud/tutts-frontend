@@ -1640,6 +1640,7 @@
     // REDESPACHO_MODAL_V1 (state) — o confirm() nativo do "Redespachar" virou modal.
     const [redespachoRapidoModal, setRedespachoRapidoModal] = useState(null); // null | {entrega, erro?}
     const [redespachandoRapido, setRedespachandoRapido] = useState(false);
+    const [provDropAberto, setProvDropAberto] = useState(false); // RDA_QUICK_DROPSTATE_V3
     // Modal de cotação manual (Opção C)
     const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
     const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
@@ -2140,7 +2141,7 @@
     // "enviando", o operador clicava de novo achando que tinha travado. Numa acao
     // que cancela e recontrata corrida, clique duplo custa dinheiro.
     function redespachoRapido(e) {
-      setRedespachoRapidoModal({ entrega: e, providerCode: '' }); // RDA_QUICK_INIT_V2
+      setRedespachoRapidoModal({ entrega: e, providerCode: '' }); setProvDropAberto(false); // RDA_QUICK_RESET_V3
     }
 
     async function confirmarRedespachoRapido() {
@@ -2510,18 +2511,36 @@
           ),
 
           h('div', { className: 'p-5 space-y-3' },
-            // RDA_QUICK_RENDER_V2: seletor de provedor no proprio botao Redespachar.
+            // RDA_QUICK_DROP_V3: dropdown com o logo oficial de cada provedor.
             h('div', null,
               h('label', { className: 'block text-[11px] font-semibold text-gray-500 mb-1 uppercase' }, 'Provedor'),
-              h('select', {
-                value: redespachoRapidoModal.providerCode || '',
-                onChange: e => setRedespachoRapidoModal({ ...redespachoRapidoModal, providerCode: e.target.value }),
-                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white',
-              },
-                h('option', { value: '' }, 'Mesmo da corrida' + (_rrProv ? ' (' + _rrProv.nome + ')' : '')),
-                h('option', { value: 'uber' }, 'Uber Direct'),
-                h('option', { value: 'noventanove' }, '99Entrega'),
-              ),
+              (function () {
+                var _cur = redespachoRapidoModal.providerCode || '';
+                var _opts = [
+                  { value: '', code: (_rrProv ? _rrProv.code : null), label: 'Mesmo da corrida' + (_rrProv ? ' (' + _rrProv.nome + ')' : '') },
+                  { value: 'uber', code: 'uber', label: 'Uber Direct' },
+                  { value: 'noventanove', code: 'noventanove', label: '99Entrega' },
+                ];
+                var _sel = _opts.filter(function (o) { return o.value === _cur; })[0] || _opts[0];
+                var _logo = function (code) { return code ? h(ProviderLogo, { code: code, size: 24 }) : h('span', { className: 'w-6 h-6 flex-shrink-0' }); };
+                var _chev = h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: { width: 16, height: 16, color: '#9ca3af', flexShrink: 0, transform: provDropAberto ? 'rotate(180deg)' : 'none' }, 'aria-hidden': 'true' }, h('path', { d: 'm6 9 6 6 6-6' }));
+                return h('div', { className: 'border border-gray-300 rounded-lg bg-white overflow-hidden' },
+                  h('button', { type: 'button', onClick: function () { setProvDropAberto(function (v) { return !v; }); }, className: 'w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50' },
+                    _logo(_sel.code),
+                    h('span', { className: 'flex-1 text-sm text-gray-800 truncate' }, _sel.label),
+                    _chev,
+                  ),
+                  provDropAberto && h('div', { className: 'border-t border-gray-200' },
+                    _opts.map(function (o) {
+                      return h('button', { key: o.value || 'mesmo', type: 'button', onClick: function () { setRedespachoRapidoModal(Object.assign({}, redespachoRapidoModal, { providerCode: o.value })); setProvDropAberto(false); }, className: 'w-full flex items-center gap-2.5 px-3 py-2 text-left ' + (o.value === _cur ? 'bg-purple-50' : 'hover:bg-gray-50') },
+                        _logo(o.code),
+                        h('span', { className: 'flex-1 text-sm ' + (o.value === _cur ? 'text-purple-700 font-medium' : 'text-gray-700') }, o.label),
+                        o.value === _cur && h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: { width: 16, height: 16, color: '#7c3aed', flexShrink: 0 }, 'aria-hidden': 'true' }, h('path', { d: 'M20 6 9 17l-5-5' }))
+                      );
+                    })
+                  )
+                );
+              })(),
             ),
             // Quem sai. E o unico efeito irreversivel do botao, entao vem primeiro
             // e com cara e nome — nao como texto solto no meio de um paragrafo.
