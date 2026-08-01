@@ -2516,11 +2516,18 @@
               h('label', { className: 'block text-[11px] font-semibold text-gray-500 mb-1 uppercase' }, 'Provedor'),
               (function () {
                 var _cur = redespachoRapidoModal.providerCode || '';
-                var _opts = [
-                  { value: '', code: (_rrProv ? _rrProv.code : null), label: 'Mesmo da corrida' + (_rrProv ? ' (' + _rrProv.nome + ')' : '') },
-                  { value: 'uber', code: 'uber', label: 'Uber Direct' },
-                  { value: 'noventanove', code: 'noventanove', label: '99Entrega' },
-                ];
+                // RDA_FILTRO_V4: so oferece provedores validos pra esta corrida
+                // (permitidos pela regra E ativos no Hub). "Mesmo da corrida" sempre entra.
+                var _regraProvs = (Array.isArray(_rrEnt.regra_providers_preferidos) && _rrEnt.regra_providers_preferidos.length) ? _rrEnt.regra_providers_preferidos : null;
+                var _ativosCodes = Array.isArray(providersAtivos) ? providersAtivos.map(function (p) { return p.provider_code; }) : null;
+                var _permite = function (code) {
+                  if (_regraProvs && _regraProvs.indexOf(code) === -1) return false;
+                  if (_ativosCodes && _ativosCodes.indexOf(code) === -1) return false;
+                  return true;
+                };
+                var _opts = [{ value: '', code: (_rrProv ? _rrProv.code : null), label: 'Mesmo da corrida' + (_rrProv ? ' (' + _rrProv.nome + ')' : '') }];
+                if (_permite('uber')) _opts.push({ value: 'uber', code: 'uber', label: 'Uber Direct' });
+                if (_permite('noventanove')) _opts.push({ value: 'noventanove', code: 'noventanove', label: '99Entrega' });
                 var _sel = _opts.filter(function (o) { return o.value === _cur; })[0] || _opts[0];
                 var _logo = function (code) { return code ? h(ProviderLogo, { code: code, size: 24 }) : h('span', { className: 'w-6 h-6 flex-shrink-0' }); };
                 var _chev = h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: { width: 16, height: 16, color: '#9ca3af', flexShrink: 0, transform: provDropAberto ? 'rotate(180deg)' : 'none' }, 'aria-hidden': 'true' }, h('path', { d: 'm6 9 6 6 6-6' }));
