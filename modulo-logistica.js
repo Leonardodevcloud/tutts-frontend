@@ -2126,7 +2126,7 @@
 
     // Redespacho: cancela a delivery atual no provedor e cria nova com novo endereço
     function abrirRedespacho(e) {
-      setRedespachoAberto({ entrega: e, motivo: '' });
+      setRedespachoAberto({ entrega: e, motivo: '', providerCode: '', excluir: true }); // RDA_INIT_V1
     }
 
     // REDESPACHO_BTN_V1 — cancela a corrida atual e chama outro entregador.
@@ -2194,9 +2194,13 @@
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${redespachoAberto.entrega.id}/redispatch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            motivo: (redespachoAberto.motivo || '').trim() || 'Redespacho solicitado',
-          }),
+          body: JSON.stringify(Object.assign(
+            { // RDA_BODY_V1
+              motivo: (redespachoAberto.motivo || '').trim() || 'Redespacho solicitado',
+              excluirEntregador: redespachoAberto.excluir !== false,
+            },
+            redespachoAberto.providerCode ? { providerCode: redespachoAberto.providerCode } : {}
+          )),
         });
         const json = await res.json();
         if (res.ok && json.success) {
@@ -2585,6 +2589,25 @@
               h('div', { className: 'text-sm text-gray-500 bg-gray-50 rounded p-2 border border-gray-200' },
                 redespachoAberto.entrega.endereco_entrega || '—'),
             ),
+
+            // RDA_RENDER_V1 - escolha do provedor + exclusao do entregador atual
+            h('div', null,
+              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Provedor'),
+              h('select', {
+                value: redespachoAberto.providerCode || '',
+                onChange: e => setRedespachoAberto({ ...redespachoAberto, providerCode: e.target.value }),
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white',
+              },
+                h('option', { value: '' }, 'Mesmo da corrida' + (provedorInfo(redespachoAberto.entrega) ? ' (' + provedorInfo(redespachoAberto.entrega).nome + ')' : '')),
+                h('option', { value: 'uber' }, 'Uber Direct'),
+                h('option', { value: 'noventanove' }, '99Entrega'),
+              ),
+              h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Em "Mesmo da corrida", mantem o provedor atual.'),
+            ),
+
+            h('label', { className: 'flex items-center gap-2 text-sm text-gray-600' },
+              h('input', { type: 'checkbox', className: 'w-4 h-4', checked: redespachoAberto.excluir !== false, onChange: e => setRedespachoAberto({ ...redespachoAberto, excluir: e.target.checked }) }),
+              'Excluir o entregador atual desta OS'),
 
             h('div', null,
               h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Motivo (opcional)'),
@@ -3804,6 +3827,9 @@
         trecho_endereco: '',
         cliente_identificador: '',
         usar_uber: true,
+        providers_preferidos: ['uber'], // PROV_A_NOVOFORM_V1
+        estrategia: 'provider_unico',
+        vehicle_type_preferido: '',
         regioes_permitidas_csv: '',
         horario_inicio: '',
         horario_fim: '',
@@ -3832,6 +3858,9 @@
         // usar_uber nao e coluna real — deriva de providers_preferidos pro checkbox
         // refletir certo e NAO zerar os providers ao salvar.
         usar_uber: (r.providers_preferidos || []).includes('uber'),
+        providers_preferidos: (r.providers_preferidos && r.providers_preferidos.length) ? r.providers_preferidos : ['uber'], // PROV_B_EDITAR_V1
+        estrategia: r.estrategia || 'provider_unico',
+        vehicle_type_preferido: r.vehicle_type_preferido || '',
         // Compat: regras antigas só tinham cliente_nome (que era o trecho).
         // Se trecho_endereco estiver vazio, preenche com cliente_nome pra não perder o match.
         trecho_endereco: r.trecho_endereco || r.cliente_nome || '',
@@ -3867,7 +3896,10 @@
       const payload = {
         cliente_nome: editando.cliente_nome.trim(),
         trecho_endereco: editando.trecho_endereco.trim(),
-        cliente_identificador: editando.cliente_identificador?.trim() || null,
+        usar_uber: !!editando.usar_uber,
+        providers_preferidos: (editando.providers_preferidos && editando.providers_preferidos.length) ? editando.providers_preferidos : (editando.usar_uber ? ['uber'] : []), // PROV_C_SALVAR_V1
+        estrategia: editando.estrategia || 'provider_unico',
+        vehicle_type_preferido: editando.vehicle_type_preferido || null,
         usar_uber: !!editando.usar_uber,
         regioes_permitidas: editando.regioes_permitidas_csv,
         horario_inicio: editando.horario_inicio || null,
@@ -4167,10 +4199,42 @@
               })(),
             ),
 
-            h('div', { className: 'flex items-center gap-6 pt-2 border-t' },
-              h('label', { className: 'inline-flex items-center text-sm' },
-                h('input', { type: 'checkbox', checked: !!editando.usar_uber, onChange: e => up('usar_uber', e.target.checked), className: 'mr-2' }),
-                'Usar Uber'),
+            // PROV_D_RENDER_V1 - bloco multi-provider (substitui o checkbox Usar Uber)
+            h('div', { className: 'pt-2 border-t space-y-3' },
+              h('div', null,
+                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Provedores do Hub'),
+                h('div', { className: 'flex flex-wrap gap-2' },
+                  h('label', { className: 'inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer ' + ((editando.providers_preferidos || ['uber']).includes('uber') ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-600') },
+                    h('input', { type: 'checkbox', className: 'w-4 h-4', checked: (editando.providers_preferidos || ['uber']).includes('uber'),
+                      onChange: e => setEditando(prev => { const cur = Array.isArray(prev.providers_preferidos) ? prev.providers_preferidos.slice() : ['uber']; const next = e.target.checked ? (cur.includes('uber') ? cur : cur.concat('uber')) : cur.filter(p => p !== 'uber'); return { ...prev, providers_preferidos: next, usar_uber: next.includes('uber') }; }) }),
+                    'Uber Direct'),
+                  h('label', { className: 'inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer ' + ((editando.providers_preferidos || []).includes('noventanove') ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-600') },
+                    h('input', { type: 'checkbox', className: 'w-4 h-4', checked: (editando.providers_preferidos || []).includes('noventanove'),
+                      onChange: e => setEditando(prev => { const cur = Array.isArray(prev.providers_preferidos) ? prev.providers_preferidos.slice() : []; const next = e.target.checked ? (cur.includes('noventanove') ? cur : cur.concat('noventanove')) : cur.filter(p => p !== 'noventanove'); return { ...prev, providers_preferidos: next }; }) }),
+                    '99Entrega'),
+                ),
+                h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Marque um ou mais. Sem nenhum marcado, a regra nao despacha no Hub.'),
+              ),
+              h('div', { className: 'grid grid-cols-2 gap-3' },
+                h('div', null,
+                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Estrategia'),
+                  h('select', { value: editando.estrategia || 'provider_unico', onChange: e => up('estrategia', e.target.value), className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white' },
+                    h('option', { value: 'provider_unico' }, 'Provedor unico'),
+                    h('option', { value: 'melhor_preco' }, 'Melhor preco'),
+                    h('option', { value: 'melhor_eta' }, 'Melhor ETA'),
+                    h('option', { value: 'fallback' }, 'Fallback'),
+                  ),
+                  h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Com 1 provedor, qualquer estrategia vira provedor unico.'),
+                ),
+                h('div', null,
+                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Veiculo'),
+                  h('select', { value: editando.vehicle_type_preferido || '', onChange: e => up('vehicle_type_preferido', e.target.value), className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white' },
+                    h('option', { value: '' }, 'Padrao do provedor'),
+                    h('option', { value: 'motorcycle' }, 'Moto'),
+                    h('option', { value: 'car' }, 'Carro'),
+                  ),
+                ),
+              ),
               h('label', { className: 'inline-flex items-center text-sm' },
                 h('input', { type: 'checkbox', checked: !!editando.ativo, onChange: e => up('ativo', e.target.checked), className: 'mr-2' }),
                 'Regra ativa'),
