@@ -2140,7 +2140,7 @@
     // "enviando", o operador clicava de novo achando que tinha travado. Numa acao
     // que cancela e recontrata corrida, clique duplo custa dinheiro.
     function redespachoRapido(e) {
-      setRedespachoRapidoModal({ entrega: e });
+      setRedespachoRapidoModal({ entrega: e, providerCode: '' }); // RDA_QUICK_INIT_V2
     }
 
     async function confirmarRedespachoRapido() {
@@ -2150,10 +2150,12 @@
       try {
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${e.id}/redispatch`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          // providerCode omitido de proposito: o backend usa o provedor da
-          // propria entrega. Mandar daqui so criaria uma segunda fonte de
-          // verdade pra mesma decisao.
-          body: JSON.stringify({ motivo: 'Redespacho manual', excluirEntregador: true }),
+          // RDA_QUICK_BODY_V2: providerCode so vai quando o operador troca no
+          // seletor. Vazio = backend usa o provedor da propria entrega.
+          body: JSON.stringify(Object.assign(
+            { motivo: 'Redespacho manual', excluirEntregador: true },
+            redespachoRapidoModal.providerCode ? { providerCode: redespachoRapidoModal.providerCode } : {}
+          )),
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
@@ -2499,7 +2501,7 @@
               h('h3', { className: 'text-base font-bold text-white leading-tight' },
                 `Redespachar OS ${_rrEnt.codigo_os}`),
               h('p', { className: 'text-[11px] text-purple-100 mt-0.5' },
-                'Chamar outro entregador no mesmo provedor'),
+                'Chama outro entregador. Da pra trocar de provedor.'), // RDA_QUICK_SUB_V2
             ),
             _rrProv && h('span', {
               className: 'ml-auto flex-shrink-0',
@@ -2508,6 +2510,19 @@
           ),
 
           h('div', { className: 'p-5 space-y-3' },
+            // RDA_QUICK_RENDER_V2: seletor de provedor no proprio botao Redespachar.
+            h('div', null,
+              h('label', { className: 'block text-[11px] font-semibold text-gray-500 mb-1 uppercase' }, 'Provedor'),
+              h('select', {
+                value: redespachoRapidoModal.providerCode || '',
+                onChange: e => setRedespachoRapidoModal({ ...redespachoRapidoModal, providerCode: e.target.value }),
+                className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white',
+              },
+                h('option', { value: '' }, 'Mesmo da corrida' + (_rrProv ? ' (' + _rrProv.nome + ')' : '')),
+                h('option', { value: 'uber' }, 'Uber Direct'),
+                h('option', { value: 'noventanove' }, '99Entrega'),
+              ),
+            ),
             // Quem sai. E o unico efeito irreversivel do botao, entao vem primeiro
             // e com cara e nome — nao como texto solto no meio de um paragrafo.
             _rrEnt.entregador_nome && h('div', {
