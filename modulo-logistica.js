@@ -904,7 +904,7 @@
     // order cancellation is not supported." Depois da coleta a 99 recusa o
     // cancelamento, a corrida segue viva sendo COBRADA, e o redespacho
     // pagaria duas. A fronteira e a COLETA, nao o aceite.
-    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico);
+    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico) && String(e.provider_code || e.provider || '').toLowerCase() !== 'uber'; // UBER_NO_REDISPATCH_V1
     const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     const duracao = calcularDuracao(e.created_at, e.finalizado_at);
@@ -1374,7 +1374,7 @@
     const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber);
     // REDESPACHO_BTN_V1: ver comentario em CardEntrega — a 99 nao cancela
     // depois da coleta.
-    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico);
+    const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico) && String(e.provider_code || e.provider || '').toLowerCase() !== 'uber'; // UBER_NO_REDISPATCH_V1
     const temEntregador = !!e.entregador_nome && !estaProcurando(e);
 
     function copiarTel() {

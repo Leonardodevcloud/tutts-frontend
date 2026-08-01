@@ -3466,7 +3466,7 @@
                                                                 A 99 nao cancela depois da coleta: a corrida seguiria viva
                                                                 e cobrada, e o redespacho pagaria duas. Some em vez de
                                                                 ficar cinza — botao que nunca liga so gera pergunta. */}
-                                                            {c.hub && c.hub.via_hub && !c.hub.terminal && c.hub.etapa <= 2 && (
+                                                            {c.hub && c.hub.via_hub && !c.hub.terminal && c.hub.etapa <= 2 && c.hub.provider !== 'uber' && (
                                                                 <button
                                                                     onClick={() => redespacharCorrida(c)}
                                                                     disabled={redespachando === c.tutts_os_numero}
