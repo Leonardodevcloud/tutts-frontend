@@ -537,7 +537,7 @@
                 h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
                   h('span', { className: 'flex items-center gap-1.5 min-w-0' },
                     h(ProviderLogo, { code: (e.provider_code || e.provider || null), size: 18 }),
-                    h('span', { className: 'text-sm font-bold cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os}`)
+                    h('span', { className: 'text-sm font-bold cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-a', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' })))
                   ),
                   h('div', { className: 'flex items-center gap-1.5' },
                     h(Badge, { entrega: e }),
@@ -953,7 +953,7 @@
       h('div', { className: 'flex items-start justify-between gap-3 pb-3 border-b border-gray-100' },
         h('div', { className: 'flex flex-col gap-1 min-w-0 flex-1' },
           h('div', { className: 'flex items-center gap-3 flex-wrap' },
-            h('span', { className: 'text-lg md:text-xl font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os}`),
+            h('span', { className: 'text-lg md:text-xl font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-b', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' }))),
             h(Badge, { entrega: e }),
             h('span', {
               className: 'inline-flex items-center gap-1.5',
@@ -1422,7 +1422,7 @@
       ),
       // cabeçalho
       h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
-        h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os}`),
+        h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-c', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' }))),
         h(Badge, { entrega: e }),
         h('span', { className: 'ml-auto inline-flex items-center gap-1.5 flex-shrink-0' },
           h(ProviderLogo, { code: prov.code, size: 15 })),
