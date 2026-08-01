@@ -3914,7 +3914,7 @@
         preco_valor_fixo: r.preco_valor_fixo ?? '',
         preco_km_base: r.preco_km_base ?? '',
         preco_valor_km_adicional: r.preco_valor_km_adicional ?? '',
-        preco_faixas_km: (Array.isArray(r.preco_faixas_km) ? r.preco_faixas_km : []).map(function (f) { return { ate_km: f.ate_km == null ? '' : String(f.ate_km), valor_km: f.valor_km == null ? '' : String(f.valor_km) }; }), // FAIXAS_EDITAR_V1
+        preco_faixas_km: (Array.isArray(r.preco_faixas_km) ? r.preco_faixas_km : []).map(function (f) { return { inicio_km: f.inicio_km == null ? '' : String(f.inicio_km), valor_km: f.valor_km == null ? '' : String(f.valor_km) }; }), // FAIXAS_EDITAR_V2
         nome_remetente: r.nome_remetente || '',
         package_type: r.package_type || '',
         package_weight: r.package_weight || '',
@@ -3952,7 +3952,7 @@
         preco_valor_fixo: editando.preco_valor_fixo === '' ? null : parseFloat(editando.preco_valor_fixo || ''),
         preco_km_base: editando.preco_km_base === '' ? null : parseFloat(editando.preco_km_base || ''),
         preco_valor_km_adicional: editando.preco_valor_km_adicional === '' ? null : parseFloat(editando.preco_valor_km_adicional || ''),
-        preco_faixas_km: (Array.isArray(editando.preco_faixas_km) ? editando.preco_faixas_km : []).map(function (f) { return { ate_km: (f.ate_km === '' || f.ate_km == null) ? null : parseFloat(String(f.ate_km).replace(',', '.')), valor_km: (f.valor_km === '' || f.valor_km == null) ? null : parseFloat(String(f.valor_km).replace(',', '.')) }; }).filter(function (f) { return f.valor_km != null && f.valor_km >= 0; }), // FAIXAS_SALVAR_V1
+        preco_faixas_km: (Array.isArray(editando.preco_faixas_km) ? editando.preco_faixas_km : []).map(function (f) { return { inicio_km: (f.inicio_km === '' || f.inicio_km == null) ? null : parseInt(String(f.inicio_km).replace(',', '.'), 10), valor_km: (f.valor_km === '' || f.valor_km == null) ? null : parseFloat(String(f.valor_km).replace(',', '.')) }; }).filter(function (f) { return f.inicio_km != null && f.valor_km != null && f.valor_km >= 0; }), // FAIXAS_SALVAR_V2
         // [preco-retorno-v1] adicional fixo cobrado quando a corrida vira devolução
         preco_retorno_valor: editando.preco_retorno_modo === 'pct' ? null
           : (editando.preco_retorno_valor === '' || editando.preco_retorno_valor == null
@@ -4195,23 +4195,20 @@
               h('p', { className: 'text-[11px] text-purple-600' },
                 'Deixe todos em branco pra usar a tabela padrão global. Se preenchido, substitui o padrão inteiramente pra este cliente.'),
 
-              (function () { // FAIXAS_RENDER_V1
+              (function () { // FAIXAS_RENDER_V2
                 var faixas = Array.isArray(editando.preco_faixas_km) ? editando.preco_faixas_km : [];
-                var base = (editando.preco_km_base == null || editando.preco_km_base === '') ? 'base' : editando.preco_km_base;
                 var setFaixas = function (arr) { setEditando(function (prev) { return Object.assign({}, prev, { preco_faixas_km: arr }); }); };
                 var upFaixa = function (i, campo, val) { var c = faixas.map(function (x) { return Object.assign({}, x); }); c[i][campo] = val; setFaixas(c); };
-                var addFaixa = function () { setFaixas(faixas.concat([{ ate_km: '', valor_km: '' }])); };
+                var addFaixa = function () { setFaixas(faixas.concat([{ inicio_km: '', valor_km: '' }])); };
                 var rmFaixa = function (i) { setFaixas(faixas.filter(function (_x, j) { return j !== i; })); };
                 return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
                   h('div', { className: 'flex items-center justify-between mb-2' },
                     h('span', { className: 'text-xs font-semibold text-purple-800 uppercase' }, 'Faixas por km (opcional)'),
                     h('span', { className: 'text-[10px] text-purple-500' }, 'vazio = usa "por km adicional" acima')),
                   faixas.map(function (f, i) {
-                    var de = i === 0 ? base : ((faixas[i - 1] && faixas[i - 1].ate_km !== '' && faixas[i - 1].ate_km != null) ? faixas[i - 1].ate_km : '?');
                     return h('div', { key: i, className: 'flex items-center gap-1.5 mb-1.5' },
-                      h('span', { className: 'text-[11px] text-purple-500', style: { minWidth: 46, textAlign: 'right' } }, 'de ' + de),
-                      h('span', { className: 'text-[11px] text-purple-600' }, 'ate'),
-                      h('input', { type: 'number', step: '0.5', min: '0', value: f.ate_km == null ? '' : f.ate_km, onChange: function (e) { upFaixa(i, 'ate_km', e.target.value); }, placeholder: 'acima', className: 'w-14 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
+                      h('span', { className: 'text-[11px] text-purple-500' }, 'a partir de'),
+                      h('input', { type: 'number', step: '1', min: '0', value: f.inicio_km == null ? '' : f.inicio_km, onChange: function (e) { upFaixa(i, 'inicio_km', e.target.value); }, placeholder: 'km', className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
                       h('span', { className: 'text-[11px] text-purple-600' }, 'km'),
                       h('span', { className: 'text-[11px] text-purple-500', style: { marginLeft: 'auto' } }, 'R$'),
                       h('input', { type: 'number', step: '0.1', min: '0', value: f.valor_km == null ? '' : f.valor_km, onChange: function (e) { upFaixa(i, 'valor_km', e.target.value); }, className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
@@ -4219,7 +4216,7 @@
                       h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'p-1 rounded hover:bg-purple-100', title: 'remover' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#b91c1c' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
                   }),
                   h('button', { type: 'button', onClick: addFaixa, className: 'mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50' }, h('svg', { className: 'ico', style: { width: 13, height: 13, display: 'inline', verticalAlign: '-2px', marginRight: 3 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar faixa'),
-                  h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'Cada faixa vai de onde a anterior parou ate o "ate" dela. Deixe "ate" vazio na ultima = acima de.'));
+                  h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima.'));
               })(),
 
               // [preco-retorno-v1] Adicional cobrado quando a corrida vira devolução.

@@ -1317,7 +1317,7 @@
                                                         valor_fixo: pj && pj.valor_fixo != null ? String(pj.valor_fixo) : "",
                                                         km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
                                                         valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
-                                                        faixas_km: (pj && Array.isArray(pj.faixas_km)) ? pj.faixas_km.map(function (f) { return { ate_km: f.ate_km == null ? "" : String(f.ate_km), valor_km: f.valor_km == null ? "" : String(f.valor_km) }; }) : [], // FAIXAS_CFG_INIT_V1
+                                                        faixas_km: (pj && Array.isArray(pj.faixas_km)) ? pj.faixas_km.map(function (f) { return { inicio_km: f.inicio_km == null ? "" : String(f.inicio_km), valor_km: f.valor_km == null ? "" : String(f.valor_km) }; }) : [], // FAIXAS_CFG_INIT_V2
                                                         retorno_valor: pj && pj.retorno_valor != null ? String(pj.retorno_valor) : "",
                                                         retorno_percentual: pj && pj.retorno_percentual != null ? String(pj.retorno_percentual) : "",
                                                         retorno_modo: pj && pj.retorno_percentual != null ? "pct" : "fixo",
@@ -2311,7 +2311,7 @@
                                    ? null : parseFloat(String(mp.retorno_valor).replace(",", ".")),
                                retorno_percentual: mp.retorno_modo !== "pct" || mp.retorno_percentual === "" || mp.retorno_percentual == null
                                    ? null : parseFloat(String(mp.retorno_percentual).replace(",", ".")),
-                               faixas_km: Array.isArray(mp.faixas_km) ? mp.faixas_km.map(function (f) { return { ate_km: (f.ate_km === "" || f.ate_km == null) ? null : parseFloat(String(f.ate_km).replace(",", ".")), valor_km: (f.valor_km === "" || f.valor_km == null) ? null : parseFloat(String(f.valor_km).replace(",", ".")) }; }).filter(function (f) { return f.valor_km != null && f.valor_km >= 0; }) : null}; // FAIXAS_CFG_SAVE_V1
+                               faixas_km: Array.isArray(mp.faixas_km) ? mp.faixas_km.map(function (f) { return { inicio_km: (f.inicio_km === "" || f.inicio_km == null) ? null : parseInt(String(f.inicio_km).replace(",", "."), 10), valor_km: (f.valor_km === "" || f.valor_km == null) ? null : parseFloat(String(f.valor_km).replace(",", ".")) }; }).filter(function (f) { return f.inicio_km != null && f.valor_km != null && f.valor_km >= 0; }) : null}; // FAIXAS_CFG_SAVE_V2
                         var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + mp.id + "/preco-hub", {
                             method: "PUT",
                             headers: {"Content-Type": "application/json"},
@@ -2385,23 +2385,20 @@
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
                             ),
-                            (function () { // FAIXAS_CFG_RENDER_V1
+                            (function () { // FAIXAS_CFG_RENDER_V2
                                 var faixas = Array.isArray(mp.faixas_km) ? mp.faixas_km : [];
-                                var base = (mp.km_base == null || mp.km_base === "") ? "base" : mp.km_base;
                                 var setFaixas = function (arr) { x({...p, modalPreco: {...mp, faixas_km: arr}}); };
                                 var upF = function (i, campo, val) { var c = faixas.map(function (y) { return {...y}; }); c[i][campo] = val; setFaixas(c); };
-                                var addF = function () { setFaixas(faixas.concat([{ate_km: "", valor_km: ""}])); };
+                                var addF = function () { setFaixas(faixas.concat([{inicio_km: "", valor_km: ""}])); };
                                 var rmF = function (i) { setFaixas(faixas.filter(function (_y, j) { return j !== i; })); };
                                 return React.createElement("div", {className: "border-t pt-3 mb-4"},
                                     React.createElement("div", {className: "flex items-center justify-between mb-2"},
                                         React.createElement("span", {className: "text-[11px] font-semibold tracking-wide text-gray-500 uppercase"}, "Faixas por km (opcional)"),
                                         React.createElement("span", {className: "text-[10px] text-gray-400"}, "vazio = usa por km adic.")),
                                     faixas.map(function (f, i) {
-                                        var de = i === 0 ? base : ((faixas[i - 1] && faixas[i - 1].ate_km !== "" && faixas[i - 1].ate_km != null) ? faixas[i - 1].ate_km : "?");
                                         return React.createElement("div", {key: i, className: "flex items-center gap-1.5 mb-1.5"},
-                                            React.createElement("span", {className: "text-[11px] text-gray-500", style: {minWidth: 46, textAlign: "right"}}, "de " + de),
-                                            React.createElement("span", {className: "text-[11px] text-gray-600"}, "ate"),
-                                            React.createElement("input", {type: "number", step: "0.5", min: "0", value: f.ate_km == null ? "" : f.ate_km, onChange: function (e) { upF(i, "ate_km", e.target.value); }, placeholder: "acima", className: "w-14 px-1.5 py-1 border rounded text-sm text-center"}),
+                                            React.createElement("span", {className: "text-[11px] text-gray-500"}, "a partir de"),
+                                            React.createElement("input", {type: "number", step: "1", min: "0", value: f.inicio_km == null ? "" : f.inicio_km, onChange: function (e) { upF(i, "inicio_km", e.target.value); }, placeholder: "km", className: "w-16 px-1.5 py-1 border rounded text-sm text-center"}),
                                             React.createElement("span", {className: "text-[11px] text-gray-600"}, "km"),
                                             React.createElement("span", {className: "text-[11px] text-gray-500", style: {marginLeft: "auto"}}, "R$"),
                                             React.createElement("input", {type: "number", step: "0.1", min: "0", value: f.valor_km == null ? "" : f.valor_km, onChange: function (e) { upF(i, "valor_km", e.target.value); }, className: "w-16 px-1.5 py-1 border rounded text-sm text-center"}),
@@ -2409,7 +2406,7 @@
                                             React.createElement("button", {type: "button", onClick: function () { rmF(i); }, className: "p-1 rounded hover:bg-gray-100", title: "remover"}, React.createElement("svg", {className: "ico", style: {width: 14, height: 14, color: "#b91c1c"}, "aria-hidden": "true"}, React.createElement("use", {href: "#i-trash"}))));
                                     }),
                                     React.createElement("button", {type: "button", onClick: addF, className: "mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50"}, React.createElement("svg", {className: "ico", style: {width: 13, height: 13, display: "inline", verticalAlign: "-2px", marginRight: 3}, "aria-hidden": "true"}, React.createElement("use", {href: "#i-plus"})), "Adicionar faixa"),
-                                    React.createElement("p", {className: "text-[10px] text-gray-400 mt-1"}, "Cada faixa vai de onde a anterior parou ate o ate dela. Ultima com ate vazio = acima de."));
+                                    React.createElement("p", {className: "text-[10px] text-gray-400 mt-1"}, "Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima."));
                             })(),
                             (function() {
                                 // [retorno-percentual-v1] radio fixo/percentual + previa do calculo
