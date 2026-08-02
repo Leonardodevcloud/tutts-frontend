@@ -1643,6 +1643,7 @@
     const [provDropAberto, setProvDropAberto] = useState(false); // RDA_QUICK_DROPSTATE_V3
     // Modal de cotação manual (Opção C)
     const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
+    const [cancelarModal, setCancelarModal] = useState(null); // CANCEL_MODAL_V2: null | {entrega, jaColetou, enviando}
     const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
     // Mini-modal pra pedir código da OS (substitui prompt() nativo do navegador)
     const [pedirCodigoModal, setPedirCodigoModal] = useState(null); // null | {valor: string}
@@ -1915,45 +1916,46 @@
     }
 
     async function cancelarEntrega(entregaOuId) {
-      // Aceita a entrega inteira (novo) ou so o id (compat).
-      const entregaObj = (entregaOuId && typeof entregaOuId === 'object') ? entregaOuId : null;
-      const id = entregaObj ? entregaObj.id : entregaOuId;
-      const st = entregaObj ? entregaObj.status_canonico : null;
-
-      // Doc oficial da 99 (Cancel Order): "If the courier has picked up the
-      // package, order cancellation is not supported." A fronteira e a COLETA,
-      // nao o aceite — depois que aceita (waiting/COURIER_ASSIGNED) e antes de
-      // coletar, a 99 AINDA cancela. So a partir de PICKED_UP (delivering) e que
-      // a 99 recusa e a corrida fica viva sendo cobrada.
+      // CANCEL_MODAL_V2: abre o modal de escopo (so central | central + Mapp) no
+      // lugar do confirm() nativo. O cancelamento de fato roda em executarCancelamento.
+      const entregaObj = (entregaOuId && typeof entregaOuId === 'object') ? entregaOuId : { id: entregaOuId };
+      const st = entregaObj.status_canonico || null;
       const JA_COLETOU = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'];
+      setCancelarModal({ entrega: entregaObj, jaColetou: !!(st && JA_COLETOU.includes(st)), enviando: false });
+    }
 
-      if (st && JA_COLETOU.includes(st)) {
-        const aviso =
-          'ATENCAO: o entregador da 99 JA COLETOU o pacote.\n\n' +
-          'A 99 NAO permite cancelar depois da coleta (regra deles) — a entrega\n' +
-          'sera concluida e COBRADA. Cancelar aqui so marca como cancelado no seu\n' +
-          'painel; a corrida continua viva na 99.\n\n' +
-          'Tem certeza que quer cancelar mesmo assim?';
-        if (!confirm(aviso)) return;
-      } else {
-        if (!confirm('Cancelar entrega no provedor e reabrir na Mapp?')) return;
-      }
+    async function executarCancelamento(entrega, escopo) {
+      const id = entrega.id;
+      setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
       try {
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${id}/cancel`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ motivo: 'Cancelamento manual' })
+          body: JSON.stringify({ motivo: 'Cancelamento manual', escopo: escopo })
         });
         if (res.ok) {
           let info = {};
           try { info = await res.json(); } catch (_e) {}
           if (info.providerCancelado === false) {
             showToast('Cancelado no painel, mas a 99 NAO confirmou: ' + (info.providerCancelMsg || 'cancele manualmente no app da 99'), 'error');
+          } else if (escopo === 'ambos' && info.tutts && info.tutts.ok === false) {
+            showToast('Cancelada na central, mas na Tutts nao deu (' + (info.tutts.motivo || 'erro') + '). A OS foi reaberta na Mapp.', 'warning');
+          } else if (escopo === 'ambos') {
+            showToast('Cancelada na central e na Tutts', 'success');
           } else {
-            showToast('Entrega cancelada', 'success');
+            showToast('Cancelada so na central (segue aberta na Mapp)', 'success');
           }
+          setCancelarModal(null);
           carregar();
+        } else {
+          let err = {};
+          try { err = await res.json(); } catch (_e) {}
+          showToast(err.error || 'Erro ao cancelar', 'error');
+          setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; });
         }
-      } catch { showToast('Erro ao cancelar', 'error'); }
+      } catch (_e) {
+        showToast('Erro ao cancelar', 'error');
+        setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; });
+      }
     }
 
     // Filtragem + ordenação client-side
@@ -2489,6 +2491,44 @@
       // ── REDESPACHO_MODAL_V1 (markup) — confirmacao do botao "Redespachar" ──
       // Roxo de proposito: e a cor do botao que abriu. Ambar ja e "Editar
       // endereco" e vermelho e "Cancelar" — tres acoes diferentes, tres cores.
+      cancelarModal && h('div', {
+        className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4',
+        onClick: (ev) => { if (ev.target === ev.currentTarget && !cancelarModal.enviando) setCancelarModal(null); },
+      },
+        h('div', { className: 'bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden' },
+          h('div', { className: 'bg-gradient-to-r from-red-600 to-red-700 px-5 py-4 flex items-center gap-3' },
+            h('span', { className: 'w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white flex-shrink-0' },
+              h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
+            h('div', { className: 'min-w-0' },
+              h('h3', { className: 'text-base font-bold text-white leading-tight' }, `Cancelar OS ${cancelarModal.entrega.codigo_os || ''}`),
+              h('p', { className: 'text-[11px] text-red-100 mt-0.5' }, 'Como tu quer cancelar essa corrida?')),
+          ),
+          h('div', { className: 'p-5 space-y-3' },
+            cancelarModal.jaColetou && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' },
+              h('b', null, 'Atencao: '), 'o entregador da 99 ja coletou. A 99 nao cancela depois da coleta -- a corrida segue viva e cobrada. Aqui so marca como cancelada no painel.'),
+            h('button', {
+              type: 'button', disabled: cancelarModal.enviando,
+              onClick: () => executarCancelamento(cancelarModal.entrega, 'central'),
+              className: 'w-full text-left border border-gray-200 rounded-xl p-3 hover:bg-gray-50 disabled:opacity-50',
+            },
+              h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Cancelar so na central'),
+              h('div', { className: 'text-[12px] text-gray-500 mt-0.5' }, 'A OS volta a ficar aberta na Mapp pra um motoboy pegar. O Hub nao re-aciona.')),
+            h('button', {
+              type: 'button', disabled: cancelarModal.enviando,
+              onClick: () => executarCancelamento(cancelarModal.entrega, 'ambos'),
+              className: 'w-full text-left border border-red-200 rounded-xl p-3 hover:bg-red-50 disabled:opacity-50',
+            },
+              h('div', { className: 'text-sm font-semibold text-red-700' }, 'Cancelar na central e na Mapp'),
+              h('div', { className: 'text-[12px] text-gray-500 mt-0.5' }, 'Cancela tambem na Tutts -- a OS some de vez (nao fica na Mapp).')),
+            h('div', { className: 'flex justify-end pt-1' },
+              h('button', {
+                type: 'button', disabled: cancelarModal.enviando,
+                onClick: () => setCancelarModal(null),
+                className: 'text-[13px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50',
+              }, cancelarModal.enviando ? 'Cancelando...' : 'Voltar')),
+          ),
+        )),
+
       redespachoRapidoModal && h('div', {
         className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget && !redespachandoRapido) setRedespachoRapidoModal(null); },
