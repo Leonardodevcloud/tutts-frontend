@@ -2460,10 +2460,22 @@
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ pontos }),
                     });
-                    if (!resp.ok) return null;
+                    if (!resp.ok) {
+                        console.warn('[cotacao] HTTP', resp.status);
+                        showToast('Nao consegui cotar agora (HTTP ' + resp.status + ')', 'warning');
+                        return null;
+                    }
                     const d = await resp.json();
-                    return d && d.cotou ? d : null;
-                } catch (e) { return null; }
+                    if (d && d.cotou) return d;
+                    // COTACAO_MOTIVO_VISIVEL_V1: nao some mais em silencio -- diz por que nao cotou.
+                    console.warn('[cotacao] cotou=false motivo=', d && d.motivo, '| detalhe=', d && d.detalhe);
+                    showToast('Cotacao indisponivel: ' + ((d && d.motivo) || 'desconhecido'), 'warning');
+                    return null;
+                } catch (e) {
+                    console.warn('[cotacao] erro', e);
+                    showToast('Falha ao cotar a corrida', 'error');
+                    return null;
+                }
             };
 
             const enviarSolicitacao = async (opts = {}) => {
