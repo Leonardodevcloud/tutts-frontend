@@ -4077,52 +4077,56 @@
 
       // Padrão global de margem — piso do despacho automático
       h(CardWorkerControl, { API_URL, fetchAuth, showToast }),
-      h(CardGuardrailGlobal, { API_URL, fetchAuth, showToast }),
 
       // Lista de regras
-      h('div', { className: 'bg-white rounded-xl border shadow-sm overflow-hidden' },
-        regras.length === 0
-          ? h('div', { className: 'p-12 text-center text-gray-400' },
-              h('div', { className: 'text-4xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-mail' }))),
-              h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
-              h('p', { className: 'text-xs mt-1' }, 'Enquanto não houver regras, o worker não vai despachar nada automaticamente.'))
-          : h('table', { className: 'w-full text-sm' },
-              h('thead', { className: 'bg-gray-50 text-xs uppercase text-gray-600' },
-                h('tr', null,
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Status'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Cliente'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Trecho do endereço'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Regiões'),
-                  h('th', { className: 'px-4 py-3 text-left' }, 'Horário'),
-                  h('th', { className: 'px-4 py-3 text-right' }, 'Ações'),
-                )),
-              h('tbody', null,
-                regras.map(r => h('tr', { key: r.id, className: 'border-t hover:bg-gray-50' },
-                  h('td', { className: 'px-4 py-3' },
-                    h('button', {
-                      onClick: () => toggleAtivo(r),
-                      className: `px-2 py-0.5 rounded-full text-xs font-bold ${r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`,
-                    }, r.ativo ? 'Ativa' : 'Inativa')),
-                  h('td', { className: 'px-4 py-3' },
-                    h('div', { className: 'font-semibold text-gray-800' }, r.cliente_nome)),
-                  h('td', { className: 'px-4 py-3 text-xs' },
-                    h('div', { className: 'font-mono text-gray-700' }, r.trecho_endereco || r.cliente_nome),
-                    r.cliente_identificador && h('div', { className: 'text-[11px] text-gray-500 mt-0.5' }, `+ alt: ${r.cliente_identificador}`)),
-                  h('td', { className: 'px-4 py-3 text-xs' },
+      // REGRAS_CARDS_V1: lista de regras em cards (era tabela inline)
+      regras.length === 0
+        ? h('div', { className: 'bg-white rounded-xl border shadow-sm p-12 text-center text-gray-400' },
+            h('div', { className: 'text-4xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-list' }))),
+            h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
+            h('p', { className: 'text-xs mt-1' }, 'Enquanto nao houver regras, o worker nao vai despachar nada automaticamente.'))
+        : h('div', { className: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5' },
+            regras.map(function (r) {
+              var fmt = function (v) { var n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? v : n.toFixed(2).replace('.', ','); };
+              var temFaixas = Array.isArray(r.preco_faixas_km) && r.preco_faixas_km.length > 0;
+              var temRetorno = (r.preco_retorno_valor != null && r.preco_retorno_valor !== '') || (r.preco_retorno_percentual != null && r.preco_retorno_percentual !== '');
+              var provs = (r.providers_preferidos && r.providers_preferidos.length > 0) ? r.providers_preferidos : ['todos'];
+              var provNome = function (p) { return (p === '99' || p === 'noventanove') ? '99' : (p === 'uber' ? 'Uber' : (p === 'tutts' ? 'Tutts' : p)); };
+              return h('div', { key: r.id, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col ' + (r.ativo ? '' : 'opacity-70') },
+                h('div', { className: 'h-1 ' + (r.ativo ? 'bg-gradient-to-r from-purple-600 to-purple-400' : 'bg-gray-300') }),
+                h('div', { className: 'px-4 pt-3.5 pb-2 flex items-start gap-2' },
+                  h('div', { className: 'font-bold text-[15px] text-gray-800 leading-tight flex-1' }, r.cliente_nome),
+                  h('button', { onClick: function () { toggleAtivo(r); }, className: 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ' + (r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400') }, r.ativo ? 'Ativa' : 'Inativa')
+                ),
+                h('div', { className: 'px-4 pb-3.5 flex flex-col gap-2 flex-1' },
+                  h('div', { className: 'flex gap-2 text-[12.5px] text-gray-600 items-start' },
+                    h('svg', { className: 'ico flex-shrink-0', style: { width: 15, height: 15, color: '#7c3aed', marginTop: 1 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })),
+                    h('span', { className: 'leading-snug' }, r.trecho_endereco || r.cliente_nome)),
+                  r.cliente_identificador && h('div', { className: 'text-[11px] text-gray-400 pl-6 -mt-1' }, '+ alt: ' + r.cliente_identificador),
+                  h('div', { className: 'flex gap-2 text-[12.5px] items-center' },
+                    h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Regiao'),
                     (r.regioes_permitidas && r.regioes_permitidas.length > 0)
-                      ? r.regioes_permitidas.join(', ')
-                      : h('span', { className: 'text-amber-600 font-semibold' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' })), 'qualquer região'))),
-                  h('td', { className: 'px-4 py-3 text-xs' },
-                    (r.horario_inicio && r.horario_fim)
-                      ? `${r.horario_inicio} – ${r.horario_fim}`
-                      : h('span', { className: 'text-gray-400' }, 'sempre')),
-                  h('td', { className: 'px-4 py-3 text-right' },
-                    h('button', { onClick: () => editarRegra(r), className: 'text-purple-600 text-xs hover:underline mr-3' }, 'Editar'),
-                    h('button', { onClick: () => excluir(r), className: 'text-red-600 text-xs hover:underline' }, 'Excluir'))
-                ))
-              )
-            )
-      ),
+                      ? h('span', { className: 'text-gray-600 truncate' }, r.regioes_permitidas.join(', '))
+                      : h('span', { className: 'text-amber-600 font-semibold' }, 'qualquer regiao')),
+                  h('div', { className: 'flex gap-2 text-[12.5px] items-center' },
+                    h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Horario'),
+                    h('span', { className: 'text-gray-600' }, (r.horario_inicio && r.horario_fim) ? (r.horario_inicio + ' \u2013 ' + r.horario_fim) : 'sempre')),
+                  (r.preco_valor_fixo != null && r.preco_valor_fixo !== '') && h('div', { className: 'bg-purple-50 border border-purple-100 rounded-xl px-3 py-2 mt-0.5' },
+                    h('div', { className: 'flex justify-between items-center' },
+                      h('span', { className: 'font-bold text-purple-700 text-[15px]' }, 'R$ ' + fmt(r.preco_valor_fixo)),
+                      h('span', { className: 'text-[11.5px] text-gray-500' }, 'fixo ate ' + (r.preco_km_base || 0) + 'km')),
+                    h('div', { className: 'text-[11.5px] text-gray-500' }, temFaixas ? 'faixas por km' : ('+ R$ ' + fmt(r.preco_valor_km_adicional) + ' / km excedente'))),
+                  h('div', { className: 'flex gap-1.5 flex-wrap mt-0.5' },
+                    temFaixas && h('span', { className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700' }, 'faixas'),
+                    temRetorno && h('span', { className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700' }, 'retorno'),
+                    provs.map(function (p) { return h('span', { key: p, className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-white border border-gray-200 text-gray-600' }, provNome(p)); }))
+                ),
+                h('div', { className: 'border-t border-gray-100 flex' },
+                  h('button', { onClick: function () { editarRegra(r); }, className: 'flex-1 py-2.5 text-[13px] font-bold text-purple-700 hover:bg-gray-50' }, 'Editar'),
+                  h('button', { onClick: function () { excluir(r); }, className: 'flex-1 py-2.5 text-[13px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 border-l border-gray-100' }, 'Excluir'))
+              );
+            })
+          ),
 
       // Modal de edição
       editando && h('div', {
