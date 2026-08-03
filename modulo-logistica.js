@@ -3889,6 +3889,8 @@
     const [regras, setRegras] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editando, setEditando] = useState(null); // null | 'novo' | {id, ...}
+    const [abaRegra, setAbaRegra] = useState('ident'); // REGRAS_ABAS_V1
+    useEffect(function () { if (editando) setAbaRegra('ident'); }, [editando && editando.id]);
 
     const carregar = useCallback(async () => {
       setLoading(true);
@@ -4138,9 +4140,20 @@
             h('h3', { className: 'font-bold text-gray-800' },
               editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar regra") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Nova regra")),
           ),
+          // REGRAS_ABAS_BAR_V1
+          h('div', { className: 'flex gap-1 px-4 border-b bg-gray-50' },
+            [['ident', 'Identificacao'], ['cobertura', 'Cobertura'], ['preco', 'Preco'], ['despacho', 'Despacho']].map(function (t, i) {
+              var on = abaRegra === t[0];
+              return h('button', { key: t[0], type: 'button', onClick: function () { setAbaRegra(t[0]); },
+                className: 'relative px-4 py-2.5 text-[13px] font-bold ' + (on ? 'text-purple-700' : 'text-gray-400 hover:text-gray-600') },
+                h('span', { className: 'inline-flex items-center gap-1.5' },
+                  h('span', { className: 'w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ' + (on ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500') }, String(i + 1)),
+                  t[1]),
+                on && h('span', { className: 'absolute left-3 right-3 rounded h-0.5 bg-purple-600', style: { bottom: '-1px' } }));
+            })),
           h('div', { className: 'p-5 space-y-3' },
 
-            h('div', null,
+            (abaRegra === 'ident') && h('div', null,
               h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome do cliente *'),
               h('input', {
                 type: 'text', value: editando.cliente_nome || '',
@@ -4154,7 +4167,7 @@
 
             // [regras-modal-v4] os dois trechos de match ficam lado a lado: sao
             // irmaos (principal + alternativa), e juntos encurtam o modal.
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+            (abaRegra === 'ident') && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
                 h('input', {
@@ -4180,7 +4193,7 @@
               ),
             ),
 
-            h('div', null,
+            (abaRegra === 'cobertura') && h('div', null,
               h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Regiões permitidas (CSV)'),
               h('input', {
                 type: 'text', value: editando.regioes_permitidas_csv || '',
@@ -4192,7 +4205,7 @@
                 h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura sejam travadas na Mapp."))
             ),
 
-            h('div', { className: 'grid grid-cols-2 gap-3' },
+            (abaRegra === 'cobertura') && h('div', { className: 'grid grid-cols-2 gap-3' },
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Horário início'),
                 h('input', { type: 'time', value: editando.horario_inicio || '', onChange: e => up('horario_inicio', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
@@ -4201,7 +4214,7 @@
                 h('input', { type: 'time', value: editando.horario_fim || '', onChange: e => up('horario_fim', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
             ),
 
-            h('div', { className: 'grid grid-cols-2 gap-3' },
+            (abaRegra === 'preco') && h('div', { className: 'grid grid-cols-2 gap-3' },
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor mínimo (R$)'),
                 h('input', { type: 'number', step: '0.01', value: editando.valor_minimo || '', onChange: e => up('valor_minimo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
@@ -4211,7 +4224,7 @@
             ),
 
             // Tabela de preço por distância — override do cliente
-            h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-4' },
+            (abaRegra === 'preco') && h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-4' },
               h('div', { className: 'mb-3' }, // COD_CLIENTE_TUTTS_RENDER_V1
                 h('label', { className: 'text-xs font-semibold text-purple-800 uppercase block mb-1' }, 'Cod. cliente na Tutts (cancelar OS da Mapp)'),
                 h('input', {
@@ -4325,7 +4338,7 @@
             ),
 
             // PROV_D_RENDER_V1 - bloco multi-provider (substitui o checkbox Usar Uber)
-            h('div', { className: 'pt-2 border-t space-y-3' },
+            (abaRegra === 'despacho') && h('div', { className: 'pt-2 border-t space-y-3' },
               h('div', null,
                 h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Provedores do Hub'),
                 h('div', { className: 'flex flex-wrap gap-2' },
@@ -4365,7 +4378,7 @@
                 'Regra ativa'),
             ),
 
-            h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' },
               h('div', null,
                 h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Alterar valor do cliente na Mapp'),
                 h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
@@ -4379,7 +4392,7 @@
             ),
 
             // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
-            h('div', { className: 'pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' },
               h('div', { className: 'flex items-center justify-between gap-3 mb-2' },
                 h('div', null,
                   h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-lock' })), 'Acesso do cliente ao painel')),
@@ -4426,7 +4439,7 @@
               ),
             ),
 
-            h('div', { className: 'pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' },
               h('div', { className: 'flex items-center gap-2 mb-1' },
                 h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-message' })), 'Mensagem pro entregador (99)'))),
               h('p', { className: 'text-[11px] text-gray-500 mb-3' },
