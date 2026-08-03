@@ -3918,6 +3918,7 @@
         valor_maximo: '',
         preco_valor_fixo: '',
         preco_km_base: '',
+        cod_cliente_tutts: '', // COD_CLIENTE_TUTTS_NOVOFORM_V1
         preco_valor_km_adicional: '',
         preco_faixas_km: [], // FAIXAS_NOVOFORM_V1
         ativo: true,
@@ -3953,6 +3954,7 @@
         valor_maximo: r.valor_maximo || '',
         preco_valor_fixo: r.preco_valor_fixo ?? '',
         preco_km_base: r.preco_km_base ?? '',
+        cod_cliente_tutts: r.cod_cliente_tutts ?? '', // COD_CLIENTE_TUTTS_EDITAR_V1
         preco_valor_km_adicional: r.preco_valor_km_adicional ?? '',
         preco_faixas_km: (Array.isArray(r.preco_faixas_km) ? r.preco_faixas_km : []).map(function (f) { return { inicio_km: f.inicio_km == null ? '' : String(f.inicio_km), valor_km: f.valor_km == null ? '' : String(f.valor_km) }; }), // FAIXAS_EDITAR_V2
         nome_remetente: r.nome_remetente || '',
@@ -3991,6 +3993,7 @@
         valor_maximo: editando.valor_maximo === '' ? null : parseFloat(editando.valor_maximo),
         preco_valor_fixo: editando.preco_valor_fixo === '' ? null : parseFloat(editando.preco_valor_fixo || ''),
         preco_km_base: editando.preco_km_base === '' ? null : parseFloat(editando.preco_km_base || ''),
+        cod_cliente_tutts: (editando.cod_cliente_tutts && String(editando.cod_cliente_tutts).trim()) || null, // COD_CLIENTE_TUTTS_SALVAR_V1
         preco_valor_km_adicional: editando.preco_valor_km_adicional === '' ? null : parseFloat(editando.preco_valor_km_adicional || ''),
         preco_faixas_km: (Array.isArray(editando.preco_faixas_km) ? editando.preco_faixas_km : []).map(function (f) { return { inicio_km: (f.inicio_km === '' || f.inicio_km == null) ? null : parseInt(String(f.inicio_km).replace(',', '.'), 10), valor_km: (f.valor_km === '' || f.valor_km == null) ? null : parseFloat(String(f.valor_km).replace(',', '.')) }; }).filter(function (f) { return f.inicio_km != null && f.valor_km != null && f.valor_km >= 0; }), // FAIXAS_SALVAR_V2
         // [preco-retorno-v1] adicional fixo cobrado quando a corrida vira devolução
@@ -4205,6 +4208,16 @@
 
             // Tabela de preço por distância — override do cliente
             h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-4' },
+              h('div', { className: 'mb-3' }, // COD_CLIENTE_TUTTS_RENDER_V1
+                h('label', { className: 'text-xs font-semibold text-purple-800 uppercase block mb-1' }, 'Cod. cliente na Tutts (cancelar OS da Mapp)'),
+                h('input', {
+                  type: 'text',
+                  value: editando.cod_cliente_tutts || '',
+                  onChange: (e) => setEditando(function (prev) { return Object.assign({}, prev, { cod_cliente_tutts: e.target.value }); }),
+                  placeholder: 'ex: 6ea2ef73...',
+                  className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm bg-white',
+                }),
+                h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'So pra OS que vem direto da Mapp (sem portal). O token vem da env TUTTS_CANCEL_TOKEN.')),
               h('div', { className: 'text-xs font-semibold text-purple-800 uppercase mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" })), "Tabela de preço por distância — override deste cliente")),
               h('div', { className: 'grid grid-cols-3 gap-3 mb-2' },
                 h('div', null,
