@@ -1679,7 +1679,7 @@
         // datas passadas). Antes so o status ia, e a data era filtrada no front
         // sobre os 50 recentes — datas passadas voltavam vazias.
         const qs = [];
-        if (filtroStatus) qs.push(`status=${encodeURIComponent(filtroStatus)}`);
+        // FILTRO_STATUS_CLIENTSIDE_V1: status agora e filtrado no client (instantaneo, sem re-fetch)
         if (dataFiltro)   qs.push(`data=${encodeURIComponent(dataFiltro)}`);
         const url = `${API_URL}/logistics/deliveries${qs.length ? `?${qs.join('&')}` : ''}`;
         const res = await fetchAuth(url);
@@ -1718,7 +1718,7 @@
         } catch (_) { /* secao de tentativas e best-effort */ }
       } catch { if (!silencioso) showToast('Erro ao carregar entregas', 'error'); }
       finally { if (!silencioso) setLoading(false); }
-    }, [fetchAuth, API_URL, filtroStatus, dataFiltro]);
+    }, [fetchAuth, API_URL, dataFiltro]); // FILTRO_STATUS_CLIENTSIDE_V1
 
     // Carga inicial + auto-refresh a cada 30s — mantém os status em dia
     // sem o operador precisar recarregar a tela na mão (o poller/webhook
@@ -2029,6 +2029,11 @@
         });
       }
 
+      // FILTRO_STATUS_CLIENTSIDE_V1: filtro de status no client (era re-fetch no servidor)
+      if (filtroStatus) {
+        lista = lista.filter(e => e.status_canonico === filtroStatus);
+      }
+
       // Ordenação
       const ordenado = [...lista].sort((a, b) => {
         if (ordenacao === 'recente') return new Date(b.created_at) - new Date(a.created_at);
@@ -2041,7 +2046,7 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente, filtroStatus]);
 
     // Resumo — total de margem da lista filtrada
     // FILTRO_CLIENTE_KANBAN: lista distinta de clientes presente nas entregas carregadas
