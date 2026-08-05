@@ -19137,6 +19137,14 @@ const hideLoadingScreen = () => {
                                 ocorrencia: e["Ocorrência"],
                                 velocidade_media: e["Velocidade Média"]
                             })).filter(e => e.os);
+                            // UPLOAD_DEBUG_V1: mostra no console quantas linhas trazem cada coluna de dinamica.
+                            try {
+                              var _dbgP = o.filter(function (x) { return Number(x.valor_adic_prof) > 0; }).length;
+                              var _dbgD = o.filter(function (x) { return Number(x.preco_dinamico) > 0; }).length;
+                              var _dbgC = o.filter(function (x) { return Number(x.valor_adic_cliente) > 0; }).length;
+                              console.log('[UPLOAD_DEBUG] linhas=' + o.length + ' | incentivo_prof>0=' + _dbgP + ' | preco_dinamico>0=' + _dbgD + ' | adic_cliente>0=' + _dbgC);
+                              console.log('[UPLOAD_DEBUG] exemplo linha[0].valor_adic_prof =', o[0] && o[0].valor_adic_prof);
+                            } catch (_e) { console.warn('[UPLOAD_DEBUG] falhou', _e); }
                             
                             ha(`Enviando ${o.length} entregas de ${arquivo.name}...`);
                             
