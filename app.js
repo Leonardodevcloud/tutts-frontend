@@ -19121,6 +19121,8 @@ const hideLoadingScreen = () => {
                                 distancia: e["Distância"],
                                 valor_prof: e["Valor prof."],
                                 valor_adic_prof: _findCol(e, 'valoradicionadoprofissional'), // VALOR_ADIC_PROF_FRONT_V1
+                                preco_dinamico: _findCol(e, 'precodinamicovalor'), // DINAMICA_FRONT_V1
+                                valor_adic_cliente: _findCol(e, 'valoradicionadocliente'),
                                 valor_liquido: e["Valor liquido"] || e["Valor Liquido"] || e["Valor líquido"],
                                 finalizado: e.Finalizado,
                                 tempo_espera_minutos: e["Tempo de espera (minutos)"] || e["Tempo espera"],

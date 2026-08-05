@@ -564,6 +564,70 @@
   }
 
   // ═══ COMPONENTE PRINCIPAL ═══
+  // DINAMICA_FRONT_V1: secao "Dinamica aplicada" (incentivo ao profissional na semana).
+  function SecaoDinamica(props) {
+    var fetchApi = props.fetchApi, sel = props.selSemana;
+    var _d = useState(null), dyn = _d[0], setDyn = _d[1];
+    var _l = useState(false), load = _l[0], setLoad = _l[1];
+    useEffect(function() {
+      if (!sel) { setDyn(null); return; }
+      setLoad(true);
+      fetchApi('/gerencial/dinamica?data_inicio=' + sel.data_inicio + '&data_fim=' + sel.data_fim)
+        .then(function(j) { setDyn(j); setLoad(false); })
+        .catch(function() { setDyn(null); setLoad(false); });
+    }, [sel ? sel.data_inicio : null, fetchApi]);
+
+    var fmt = function(v) { return 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var t = (dyn && dyn.totais) || {};
+    var lista = (dyn && dyn.clientes) || [];
+    var maxInc = lista.reduce(function(m, c) { return Math.max(m, c.incentivo || 0); }, 0) || 1;
+    var pctTxt = function(p) { return (p != null) ? (String(p).replace('.', ',') + '%') : '-'; };
+
+    var header = h(Secao, { icone: h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), titulo: 'Dinamica aplicada', sub: 'Incentivo pago ao profissional na semana' });
+
+    if (load) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Carregando...'));
+    if (lista.length === 0) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Nenhum cliente com dinamica aplicada nesta semana'));
+
+    var kpi = function(lab, val, destaque) {
+      return h('div', { className: destaque ? 'rounded-xl p-4 text-white' : 'bg-white rounded-xl border border-gray-200 p-4', style: destaque ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : null },
+        h('div', { className: 'text-[11px] font-bold uppercase', style: { color: destaque ? '#e9d5ff' : '#9ca3af' } }, lab),
+        h('div', { className: 'text-2xl font-extrabold', style: { color: destaque ? '#fff' : '#1f2937' } }, val));
+    };
+    var th = function(txt, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' py-2.5 px-3 text-[11px] font-bold uppercase text-gray-400' }, txt); };
+
+    return h('div', null,
+      header,
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 mb-4' },
+        kpi('Total investido em incentivo', fmt(t.incentivo), true),
+        kpi('Clientes com dinamica', String(t.clientes || 0), false),
+        kpi('OS com incentivo', String(t.os_incent || 0), false),
+        kpi('% sobre faturamento', pctTxt(t.pct), false)
+      ),
+      h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' },
+        h('table', { className: 'w-full border-collapse text-sm' },
+          h('thead', null, h('tr', { className: 'bg-gray-50 border-b' },
+            th('Cliente', false), th('OS c/ incentivo', true), th('Preco dinamico', true), th('Adicional cliente', true), th('Incentivo (prof.)', true), th('% do fat.', true)
+          )),
+          h('tbody', null, lista.map(function(c) {
+            var w = Math.round((c.incentivo || 0) / maxInc * 100);
+            var pctCls = (c.pct || 0) >= 3.5 ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700';
+            return h('tr', { key: c.cod_cliente, className: 'border-b border-gray-100 hover:bg-purple-50' },
+              h('td', { className: 'py-2.5 px-3' }, h('span', { className: 'font-semibold text-gray-800' }, c.nome), h('span', { className: 'text-gray-400 text-xs ml-1' }, c.cod_cliente)),
+              h('td', { className: 'py-2.5 px-3 text-right text-gray-600' }, String(c.os_incent || 0)),
+              h('td', { className: 'py-2.5 px-3 text-right text-gray-400' }, fmt(c.preco_dinamico)),
+              h('td', { className: 'py-2.5 px-3 text-right text-gray-400' }, fmt(c.adic_cliente)),
+              h('td', { className: 'py-2.5 px-3 text-right' },
+                h('span', { className: 'font-bold text-purple-700' }, fmt(c.incentivo)),
+                h('span', { className: 'inline-block align-middle ml-2 rounded', style: { width: 60, height: 5, background: '#ede9fe', position: 'relative' } },
+                  h('span', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: w + '%', background: 'linear-gradient(90deg,#7c3aed,#a78bfa)', borderRadius: 3 } }))),
+              h('td', { className: 'py-2.5 px-3 text-right' }, h('span', { className: 'text-xs font-bold px-2 py-0.5 rounded-full ' + pctCls }, pctTxt(c.pct)))
+            );
+          }))
+        )
+      )
+    );
+  }
+
   window.ModuloGerencialComponent = function(props) {
     var usuario = props.usuario, apiUrl = props.API_URL, getToken = props.getToken;
     var HeaderCompacto = props.HeaderCompacto, Toast = props.Toast, LoadingOverlay = props.LoadingOverlay;
@@ -687,6 +751,8 @@
           // Garantido
           h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), titulo: 'Mínimo Garantido' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(GarantidoTable, { rows: d.garantido || [] })),
+          // Dinamica aplicada (DINAMICA_FRONT_V1)
+          h(SecaoDinamica, { fetchApi: fetchApi, selSemana: selSemana }),
           // Footer
           h('div', { className: 'text-center mt-8 text-xs text-gray-400 pb-4' }, 'Gerado em ' + new Date().toLocaleString('pt-BR') + ' · Central Tutts')
         )
