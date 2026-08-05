@@ -19077,6 +19077,9 @@ const hideLoadingScreen = () => {
                             const sheet = a.Sheets[a.SheetNames[0]];
                             const r = XLSX.utils.sheet_to_json(sheet);
                             
+                            // VALOR_ADIC_PROF_FRONT_V1: busca normalizada de coluna (ignora acento, caixa, espaco e parenteses).
+                            const _normCol = function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ''); };
+                            const _findCol = function (e, alvo) { for (const k in e) { if (_normCol(k) === alvo) return e[k]; } return undefined; };
                             const o = r.map(e => ({
                                 os: e.OS,
                                 num_pedido: e["Nº Pedido"],
@@ -19117,6 +19120,7 @@ const hideLoadingScreen = () => {
                                 valor: e.Valor,
                                 distancia: e["Distância"],
                                 valor_prof: e["Valor prof."],
+                                valor_adic_prof: _findCol(e, 'valoradicionadoprofissional'), // VALOR_ADIC_PROF_FRONT_V1
                                 valor_liquido: e["Valor liquido"] || e["Valor Liquido"] || e["Valor líquido"],
                                 finalizado: e.Finalizado,
                                 tempo_espera_minutos: e["Tempo de espera (minutos)"] || e["Tempo espera"],
