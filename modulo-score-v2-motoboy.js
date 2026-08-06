@@ -114,7 +114,7 @@
             progresso && h(CardRequisitos, { progresso, nivel }),
 
             // 🎁 Roadmap de bonificações (usa thresholds reais da região)
-            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores, modelo: dados.modelo }), // ROADMAP_REAL_V1
+            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores, modelo: dados.modelo, extrasCfg: dados.bonus_extras }), // ROADMAP_REAL_V1 + BONUS_EXTRAS_MB_V1
 
             // 📋 Lista das entregas dos últimos 28 dias (lazy load)
             h(MinhasEntregas, { apiUrl, fetchAuth, token }),
@@ -241,7 +241,8 @@
     // ============================================================
     // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: Bronze, Prata, Ouro)
     // ============================================================
-    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores, modelo }) {
+    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores, modelo, extrasCfg }) {
+        const _ex = (extrasCfg && typeof extrasCfg === 'object') ? extrasCfg : { n2: [], n3: [] }; // BONUS_EXTRAS_MB_V1
         // ROADMAP_REAL_V1: usa o MODELO real da praça (min_elegivel, pct por nivel,
         // dias no pico) em vez dos thresholds antigos — pra bater com o card de nivel.
         const m = modelo || { min_elegivel: 40, pct_prata: 85, pct_ouro: 92, dias_pico_prata: 12, dias_pico_ouro: 18, hora_corte: 16 };
@@ -294,12 +295,18 @@
                     nivel: n,
                     isAtual: n.num === nivelAtual,
                     isAlcancado: n.num <= nivelAtual,
+                    extras: n.num === 2 ? (_ex.n2 || []) : (n.num === 3 ? (_ex.n3 || []) : []),
                 }))
             )
         );
     }
 
-    function CardRoadmap({ nivel, isAtual, isAlcancado }) {
+    function _icoExtra(tipo) {
+        var href = tipo === 'valor' ? '#i-wallet' : tipo === 'item' ? '#i-briefcase' : '#i-star';
+        return h('svg', { className: 'ico', style: { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: href }));
+    }
+    function CardRoadmap({ nivel, isAtual, isAlcancado, extras }) {
+        const _extras = Array.isArray(extras) ? extras : []; // BONUS_EXTRAS_MB_V1
         return h('div', {
             className: 'border-2 rounded-lg p-3 ' + (
                 isAtual ? 'border-purple-500 bg-purple-50 shadow' :
@@ -323,7 +330,16 @@
                 h('div', { className: 'font-semibold text-gray-700' }, 'Critérios:'),
                 nivel.criterios.map((c, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, '• ' + c)),
                 h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus:'),
-                nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b))
+                nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b)),
+                _extras.length > 0 && h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus extras:'),
+                _extras.map((bx, i) => h('div', { key: 'ex' + i, className: 'flex items-start gap-2 ml-2 mt-1' },
+                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#059669' : bx.tipo === 'item' ? '#2563eb' : '#7c3aed' } }, _icoExtra(bx.tipo)),
+                    h('div', null,
+                        h('div', { className: 'text-gray-800 font-semibold text-[11px]' },
+                            (bx.titulo || '') + ((bx.tipo === 'valor' && bx.valor != null) ? (' — R$ ' + (parseFloat(bx.valor) || 0).toFixed(2).replace('.', ',')) : '')),
+                        bx.descricao && h('div', { className: 'text-gray-500 text-[10px] leading-snug' }, bx.descricao)
+                    )
+                ))
             )
         );
     }

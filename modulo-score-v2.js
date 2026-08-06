@@ -644,6 +644,14 @@
         const cardCategoria = (nivel) => {
             const isOuro = nivel === 3;
             const pk = isOuro ? 'n3' : 'n2';
+            // BONUS_EXTRAS_FRONT_V1: lista de bonus extras desta categoria
+            const _bx = form.bonus_extras || { n2: [], n3: [] };
+            const extras = Array.isArray(_bx[pk]) ? _bx[pk] : [];
+            const setExtras = (arr) => setForm({ ...form, bonus_extras: { ...(form.bonus_extras || { n2: [], n3: [] }), [pk]: arr } });
+            const addExtra = () => setExtras([...extras, { tipo: 'valor', titulo: '', valor: null, descricao: '' }]);
+            const updExtra = (i, campo, val) => setExtras(extras.map((x, idx) => idx === i ? { ...x, [campo]: val } : x));
+            const delExtra = (i) => setExtras(extras.filter((_, idx) => idx !== i));
+            const inp = (val, ph, oc, tipo) => h('input', { type: tipo || 'text', value: val == null ? '' : val, placeholder: ph, onChange: oc, className: 'w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200' });
             const badge = h('span', {
                 className: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full ' + (isOuro ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600')
             }, isOuro ? 'OURO' : 'PRATA');
@@ -658,6 +666,37 @@
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Sorteio mensal (R$)'), numInput('sorteio_valor_' + pk, 0.01, 0)),
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0)),
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
+                ),
+                // BONUS_EXTRAS_FRONT_V1: editor da lista de bonus extras
+                h('div', { className: 'pt-3 border-t border-gray-100' },
+                    h('div', { className: 'flex items-center justify-between mb-2' },
+                        h('span', { className: 'text-[12px] font-bold text-gray-800' }, 'Bônus extras'),
+                        h('span', { className: 'text-[10px] text-gray-400' }, 'aparecem pro motoboy se preenchidos')
+                    ),
+                    extras.length === 0 && h('p', { className: 'text-[11px] text-gray-400 mb-2' }, 'Nenhum bônus extra nesta categoria.'),
+                    h('div', { className: 'space-y-2' },
+                        extras.map((bx, i) => h('div', { key: i, className: 'border border-gray-150 rounded-lg p-2 bg-gray-50/60' },
+                            h('div', { className: 'flex gap-2 items-start' },
+                                h('select', {
+                                    value: bx.tipo || 'valor',
+                                    onChange: e => updExtra(i, 'tipo', e.target.value),
+                                    className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white outline-none focus:border-purple-400', style: { minWidth: 96 }
+                                },
+                                    h('option', { value: 'valor' }, 'Valor (R$)'),
+                                    h('option', { value: 'item' }, 'Item'),
+                                    h('option', { value: 'texto' }, 'Texto livre')
+                                ),
+                                h('div', { className: 'flex-1' }, inp(bx.titulo, 'Título do bônus', e => updExtra(i, 'titulo', e.target.value))),
+                                h('button', { type: 'button', onClick: () => delExtra(i), className: 'text-red-500 bg-red-50 rounded-lg w-8 h-8 flex-shrink-0 flex items-center justify-center hover:bg-red-100' },
+                                    h('svg', { className: 'ico', style: { width: 15, height: 15 }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' })))
+                            ),
+                            (bx.tipo === 'valor') && h('div', { className: 'mt-2', style: { maxWidth: 160 } },
+                                inp(bx.valor, 'Valor (R$)', e => updExtra(i, 'valor', e.target.value === '' ? null : parseFloat(e.target.value)), 'number')),
+                            h('div', { className: 'mt-2' }, inp(bx.descricao, 'Descrição (opcional)', e => updExtra(i, 'descricao', e.target.value)))
+                        ))
+                    ),
+                    h('button', { type: 'button', onClick: addExtra, className: 'mt-2 w-full text-purple-600 border border-dashed border-purple-300 bg-purple-50/50 rounded-lg py-2 text-xs font-bold hover:bg-purple-100/60' },
+                        '+ Adicionar bônus')
                 )
             );
         };
