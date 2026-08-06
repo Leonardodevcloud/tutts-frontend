@@ -1314,6 +1314,8 @@
                                                         id: cliente.id,
                                                         nome: cliente.nome,
                                                         ativo: pj ? (pj.ativo !== false) : true,
+                                                        alterar_mapp: pj ? (pj.alterar_mapp !== false) : true,
+                                                        restaurar_cancel: pj ? (pj.restaurar_cancel !== false) : true,
                                                         valor_fixo: pj && pj.valor_fixo != null ? String(pj.valor_fixo) : "",
                                                         km_base: pj && pj.km_base != null ? String(pj.km_base) : "",
                                                         valor_km_adicional: pj && pj.valor_km_adicional != null ? String(pj.valor_km_adicional) : "",
@@ -2304,6 +2306,8 @@
                         var body = limpar
                             ? {limpar: true}
                             : {ativo: mp.ativo !== false,
+                               alterar_mapp: mp.alterar_mapp !== false,
+                               restaurar_cancel: mp.restaurar_cancel !== false,
                                valor_fixo: mp.valor_fixo === "" ? null : parseFloat(String(mp.valor_fixo).replace(",", ".")),
                                km_base: mp.km_base === "" ? null : parseFloat(String(mp.km_base).replace(",", ".")),
                                valor_km_adicional: mp.valor_km_adicional === "" ? null : parseFloat(String(mp.valor_km_adicional).replace(",", ".")),
@@ -2384,6 +2388,22 @@
                                 campo("Valor fixo (R$)", "valor_fixo", "cobrado até a base"),
                                 campo("Distância base (km)", "km_base", "km inclusos"),
                                 campo("Por km adic. (R$)", "valor_km_adicional", "a partir do excedente")
+                            ),
+                            React.createElement("div", {className: "border-t pt-3 mb-4"}, // MAPP_TOGGLE_CLIENTE_FRONT_V1
+                                React.createElement("div", {className: "flex items-center justify-between mb-2"},
+                                    React.createElement("span", {className: "text-sm text-gray-700"}, "Alterar valores na Mapp (cliente + motoboy)",
+                                        React.createElement("span", {className: "block text-[11px] text-gray-400"}, "Ligado: o Hub grava os valores na Mapp no despacho")),
+                                    React.createElement("button", {type: "button", onClick: function(){ up("alterar_mapp", mp.alterar_mapp === false); },
+                                        className: "relative w-11 h-6 rounded-full transition-colors flex-shrink-0 " + (mp.alterar_mapp !== false ? "bg-purple-600" : "bg-gray-300")},
+                                        React.createElement("span", {className: "absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all " + (mp.alterar_mapp !== false ? "right-0.5" : "left-0.5")}))
+                                ),
+                                React.createElement("div", {className: "flex items-center justify-between"},
+                                    React.createElement("span", {className: "text-sm text-gray-700"}, "Devolver valores originais ao cancelar",
+                                        React.createElement("span", {className: "block text-[11px] text-gray-400"}, "Ligado: no cancelamento a Mapp volta aos valores originais")),
+                                    React.createElement("button", {type: "button", onClick: function(){ up("restaurar_cancel", mp.restaurar_cancel === false); },
+                                        className: "relative w-11 h-6 rounded-full transition-colors flex-shrink-0 " + (mp.restaurar_cancel !== false ? "bg-purple-600" : "bg-gray-300")},
+                                        React.createElement("span", {className: "absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all " + (mp.restaurar_cancel !== false ? "right-0.5" : "left-0.5")}))
+                                )
                             ),
                             (function () { // FAIXAS_CFG_RENDER_V2
                                 var faixas = Array.isArray(mp.faixas_km) ? mp.faixas_km : [];
