@@ -439,6 +439,7 @@
                     regiao: r.regiao, ativo: true, niveis_ativos: [2, 3],
                     sorteio_valor_n2: 50, sorteio_valor_n3: 150,
                     saque_teto_n2: 500, saque_teto_n3: 500,
+                    saque_qtd_n2: 1, saque_qtd_n3: 1,
                 })
             }),
 
@@ -607,6 +608,8 @@
             sorteio_valor_n3: cfg.sorteio_valor_n3 != null ? Number(cfg.sorteio_valor_n3) : 150,
             saque_teto_n2: cfg.saque_teto_n2 != null ? Number(cfg.saque_teto_n2) : 500,
             saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
+            saque_qtd_n2: cfg.saque_qtd_n2 != null ? Number(cfg.saque_qtd_n2) : 1,
+            saque_qtd_n3: cfg.saque_qtd_n3 != null ? Number(cfg.saque_qtd_n3) : 1,
             n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
             n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 15,
             n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
@@ -645,6 +648,7 @@
                 className: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full ' + (isOuro ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600')
             }, isOuro ? 'OURO' : 'PRATA');
             const tetoLabel = isOuro ? 'Teto saque / sem (R$)' : 'Teto saque / mês (R$)';
+            const qtdLabel = isOuro ? 'Qtd saque / semana' : 'Qtd saque / mês'; // SAQUE_QTD_FRONT_V1
             return h('div', { className: 'border border-gray-200 rounded-xl p-3.5 space-y-3' },
                 h('div', { className: 'flex items-center gap-2' },
                     badge,
@@ -652,7 +656,8 @@
                 ),
                 h('div', { className: 'grid grid-cols-2 gap-2.5' },
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Sorteio mensal (R$)'), numInput('sorteio_valor_' + pk, 0.01, 0)),
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0))
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0)),
+                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
                 )
             );
         };

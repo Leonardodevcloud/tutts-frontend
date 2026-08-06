@@ -77,6 +77,8 @@
             sorteio_n3: dados.sorteio_valor_n3,
             saque_n2: dados.saque_teto_n2,
             saque_n3: dados.saque_teto_n3,
+            qtd_n2: dados.saque_qtd_n2, // SAQUE_QTD_FRONT_V1
+            qtd_n3: dados.saque_qtd_n3,
         };
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
@@ -264,7 +266,7 @@
                     '≥ ' + fmtPct(m.pct_prata) + '% no prazo',
                 ],
                 bonus: [
-                    '1 saque grátis/mês de até ' + fmt(b.saque_n2),
+                    (b.qtd_n2 || 1) + (Number(b.qtd_n2) === 1 ? ' saque grátis/mês de até ' : ' saques grátis/mês de até ') + fmt(b.saque_n2),
                     'Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
                 ],
             },
@@ -276,7 +278,7 @@
                     '≥ ' + fmtPct(m.pct_ouro) + '% no prazo',
                 ],
                 bonus: [
-                    '1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
+                    (b.qtd_n3 || 1) + (Number(b.qtd_n3) === 1 ? ' saque grátis/semana de até ' : ' saques grátis/semana de até ') + fmt(b.saque_n3),
                     'Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
                 ],
             },
