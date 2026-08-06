@@ -80,8 +80,9 @@
         };
 
         return h('div', { className: 'max-w-md mx-auto p-4 space-y-4' },
+            h(EstiloNivel), // SCORE_CARD_NIVEL_V1
             // Card de nível atual
-            h(CardNivelAtual, { nivel, stats, thresholds }),
+            h(CardNivelAtual, { nivel, stats, thresholds, progresso }),
 
             // Mudança de nível recente
             mudou && subiu && h('div', { className: 'bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center' },
@@ -107,8 +108,8 @@
                 'Saque grátis deste período já foi liberado anteriormente.'
             ),
 
-            // Progresso pro próximo nível
-            progresso && h(BarrasProgresso, { progresso }),
+            // Progresso pro próximo nível (card de requisitos novo)
+            progresso && h(CardRequisitos, { progresso, nivel }),
 
             // 🎁 Roadmap de bonificações (usa thresholds reais da região)
             h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores }),
@@ -125,84 +126,112 @@
         );
     };
 
-    function CardNivelAtual({ nivel, stats, thresholds }) {
-        const cor = nivel === 3 ? 'from-yellow-400 to-yellow-600' : nivel === 2 ? 'from-amber-400 to-amber-600' : 'from-orange-400 to-orange-600';
-        const emoji = nivel === 3 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : nivel === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" }));
+    // SCORE_CARD_NIVEL_V1: cores por categoria (metal), estilo das animacoes,
+    // hero (medalha viva) e card de requisitos. Substitui CardNivelAtual +
+    // BarrasProgresso + BarraReq (este ultimo tinha bug de [object Object]).
+    const TIER_COR = {
+        1: { grad: 'linear-gradient(135deg,#c88a4a 0%,#a56a34 55%,#824e24 100%)', medal: 'linear-gradient(135deg,#b87333,#8c5a2b)', sombra: '#8b5a2b', accent: '#c88a4a' },
+        2: { grad: 'linear-gradient(135deg,#c2c9d2 0%,#9aa2ae 55%,#79828f 100%)', medal: 'linear-gradient(135deg,#c9ced6,#9aa2ae)', sombra: '#7c8592', accent: '#8b93a1' },
+        3: { grad: 'linear-gradient(135deg,#f0c94e 0%,#d9a520 55%,#b98600 100%)', medal: 'linear-gradient(135deg,#f5d14e,#c99700)', sombra: '#c08a00', accent: '#d9a520' },
+    };
+
+    function EstiloNivel() {
+        return h('style', null,
+            '@keyframes sxSweep{0%{left:-60%}22%,100%{left:130%}}' +
+            '@keyframes sxMedal{from{transform:scale(.3) rotate(-25deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}' +
+            '@keyframes sxRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}' +
+            '@keyframes sxPop{from{transform:scale(0)}to{transform:scale(1)}}' +
+            '@keyframes sxGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}' +
+            '.sx-hero{position:relative;overflow:hidden}' +
+            '.sx-hero::before{content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-18deg);animation:sxSweep 3.6s ease-in-out .5s infinite;z-index:0}' +
+            '.sx-medal{animation:sxMedal .6s cubic-bezier(.34,1.56,.64,1) both}' +
+            '.sx-rise{animation:sxRise .5s cubic-bezier(.22,1,.36,1) both}' +
+            '.sx-pop{animation:sxPop .45s cubic-bezier(.34,1.56,.64,1) both}' +
+            '.sx-grow{transform-origin:left;animation:sxGrow 1s cubic-bezier(.22,1,.36,1) both}' +
+            '@media (prefers-reduced-motion:reduce){.sx-hero::before{display:none}.sx-medal,.sx-rise,.sx-pop,.sx-grow{animation:none;transform:none}}'
+        );
+    }
+
+    function CardNivelAtual({ nivel, stats, thresholds, progresso }) {
+        const cor = TIER_COR[nivel] || TIER_COR[1];
         const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
+        const proxNivel = progresso && progresso.proximo_nivel;
+        const proxNome = proxNivel === 3 ? 'Ouro' : proxNivel === 2 ? 'Prata' : null;
+        let progPct = 100;
+        if (progresso && progresso.requisitos && progresso.requisitos.length) {
+            const soma = progresso.requisitos.reduce((a, r) => a + Math.min(100, parseFloat(r.pct) || 0), 0);
+            progPct = Math.round(soma / progresso.requisitos.length);
+        }
+        const badge = nivel === 3 ? 'Nível máximo' : 'Nível ' + nivel + ' de 3';
+        const msg = nivel === 3 ? 'Mantenha a performance para continuar como Ouro'
+            : (proxNome ? ('Complete os requisitos e vire ' + proxNome) : 'Continue entregando pra subir de nível');
 
-        // Defaults pra metas (caso backend não mande thresholds)
-        const t = thresholds || {
-            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
-            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
-        };
-
-        // Metas exibidas: pra Bronze e Prata mostra a meta do PRÓXIMO nível,
-        // pra Ouro mostra a própria meta de manutenção (n3)
-        const metaRef = nivel === 1 ? t.n2 : t.n3;
-        const metaEntregas = metaRef.entregas_min;
-        const meta16h = metaRef.dias_16h_min;
-        const metaPrazo = metaRef.pct_prazo_min;
-
-        // Mensagem de incentivo conforme nível
-        const mensagem = nivel === 3
-            ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Mantenha sua performance para continuar como Ouro")
-            : nivel === 2
-                ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-lock" })), "Mantenha sua performance para continuar como Prata")
-                : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-target" })), "Suba para Prata e desbloqueie saque grátis mensal");
-
-        const fmtPrazo = (v) => (parseFloat(v) || 0).toFixed(2).replace('.', ',') + '%';
-
-        return h('div', { className: 'rounded-xl p-5 text-white bg-gradient-to-br ' + cor + ' shadow-lg' },
-            h('div', { className: 'text-center' },
-                h('div', { className: 'text-5xl mb-2' }, emoji),
-                h('h2', { className: 'text-xl font-bold' }, nome),
-                h('p', { className: 'text-xs opacity-90 mt-1' }, 'Seu nível atual')
-            ),
-            h('div', { className: 'grid grid-cols-3 gap-2 mt-4 text-center' },
-                h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, 'Entregas'),
-                    h('div', { className: 'text-base font-bold' }, stats.entregas + ' / ' + metaEntregas)
+        return h('div', { className: 'sx-hero sx-rise rounded-2xl p-5 text-white shadow-lg', style: { background: cor.grad, boxShadow: '0 10px 24px -8px ' + cor.sombra } },
+            h('div', { className: 'flex items-center gap-3', style: { position: 'relative', zIndex: 1 } },
+                h('div', { className: 'sx-medal', style: { width: 62, height: 62, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cor.medal, border: '3px solid rgba(255,255,255,.5)', boxShadow: 'inset 0 2px 6px rgba(255,255,255,.4), 0 3px 8px rgba(0,0,0,.2)' } },
+                    h('svg', { className: 'ico', style: { width: 30, height: 30 }, 'aria-hidden': 'true' }, h('use', { href: '#i-medal' }))
                 ),
                 h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, 'Após 16h'),
-                    h('div', { className: 'text-base font-bold' }, stats.dias_16h + ' / ' + meta16h)
-                ),
-                h('div', null,
-                    h('div', { className: 'text-xs opacity-80' }, '% Prazo'),
-                    h('div', { className: 'text-base font-bold' }, fmtPrazo(stats.pct_prazo) + ' / ' + metaPrazo + '%')
+                    h('div', { className: 'text-2xl font-extrabold', style: { lineHeight: 1 } }, nome),
+                    h('div', { className: 'text-xs opacity-90 mt-1' }, 'Seu nível atual'),
+                    h('span', { className: 'inline-block mt-1.5 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full', style: { background: 'rgba(255,255,255,.25)', letterSpacing: '.8px' } }, badge)
                 )
             ),
-            h('div', { className: 'mt-3 px-3 py-2 bg-white/20 rounded-lg text-center text-xs font-medium' },
-                mensagem
+            proxNome && h('div', { style: { position: 'relative', zIndex: 1, marginTop: 18 } },
+                h('div', { className: 'flex justify-between items-baseline mb-1.5' },
+                    h('span', { className: 'text-xs font-semibold', style: { opacity: .95 } }, 'Progresso para ' + proxNome),
+                    h('span', { className: 'text-sm font-extrabold' }, progPct + '%')
+                ),
+                h('div', { style: { height: 8, borderRadius: 999, background: 'rgba(0,0,0,.18)', overflow: 'hidden' } },
+                    h('div', { className: 'sx-grow', style: { height: '100%', borderRadius: 999, background: '#fff', width: progPct + '%' } })
+                )
+            ),
+            h('div', { className: 'flex items-center gap-2', style: { position: 'relative', zIndex: 1, marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '10px 12px' } },
+                h('svg', { className: 'ico', style: { width: 16, height: 16, flexShrink: 0 }, 'aria-hidden': 'true' }, h('use', { href: nivel === 3 ? '#i-lock' : '#i-target' })),
+                h('span', { className: 'text-xs font-semibold' }, msg)
             )
         );
     }
 
-    function BarrasProgresso({ progresso }) {
-        const nomeProx = progresso.proximo_nivel === 3 ? 'Ouro' : progresso.proximo_nivel === 2 ? 'Prata' : 'Bronze';
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-            h('h3', { className: 'text-sm font-bold text-gray-900 mb-3' },
-                'Progresso para ' + nomeProx
-            ),
-            h('div', { className: 'space-y-3' },
-                progresso.requisitos.map((r, i) => h(BarraReq, { key: i, req: r }))
-            )
-        );
-    }
+    function CardRequisitos({ progresso, nivel }) {
+        const cor = TIER_COR[nivel] || TIER_COR[1];
+        const proxNivel = progresso.proximo_nivel;
+        const proxNome = proxNivel === 3 ? 'Ouro' : proxNivel === 2 ? 'Prata' : null;
+        const reqs = progresso.requisitos || [];
 
-    function BarraReq({ req }) {
-        const sufixo = req.sufixo || '';
-        const corBarra = req.ok ? 'bg-green-500' : 'bg-purple-500';
-        return h('div', null,
-            h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                h('span', { className: 'font-medium text-gray-700' }, (req.ok ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))) + req.label),
-                h('span', { className: 'text-gray-600 font-mono' }, req.atual + sufixo + ' / ' + req.meta + sufixo)
-            ),
-            h('div', { className: 'w-full bg-gray-200 rounded-full h-2 overflow-hidden' },
-                h('div', { className: 'h-full ' + corBarra + ' transition-all', style: { width: req.pct + '%' } })
-            ),
-            req.faixa && req.atual >= req.meta && req.atual >= 90 && h('p', { className: 'text-[10px] text-amber-600 mt-1' },
-                'Acima de 90% → você pula pro Ouro!'
+        return h('div', { className: 'sx-rise bg-white rounded-2xl p-4 shadow-sm', style: { animationDelay: '.06s' } },
+            h('h3', { className: 'text-sm font-extrabold text-gray-900' }, proxNome ? 'O que falta pra subir de nível' : 'Requisitos do seu nível'),
+            h('p', { className: 'text-[11px] text-gray-500 mb-3', style: { marginBottom: 14 } }, proxNome ? ('Bata os ' + reqs.length + ' pra desbloquear ' + proxNome) : 'Mantenha todos pra continuar no topo'),
+            h('div', { className: 'space-y-4' },
+                reqs.map((r, i) => {
+                    const suf = r.sufixo || '';
+                    const ok = !!r.ok;
+                    const pct = Math.min(100, parseFloat(r.pct) || 0);
+                    const atualN = parseFloat(String(r.atual).replace(',', '.'));
+                    const metaN = parseFloat(String(r.meta).replace(',', '.'));
+                    const falta = (!ok && isFinite(atualN) && isFinite(metaN) && metaN > atualN)
+                        ? ('Faltam ' + (Math.round((metaN - atualN) * 100) / 100) + suf + ' pra ' + (proxNome || 'o próximo nível'))
+                        : null;
+                    return h('div', { key: i },
+                        h('div', { className: 'flex items-center justify-between mb-1.5' },
+                            h('span', { className: 'flex items-center gap-2 text-xs font-semibold text-gray-700' },
+                                h('span', { className: 'sx-pop', style: { width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: ok ? '#dcfce7' : '#fef3c7', animationDelay: (0.2 + i * 0.1) + 's' } },
+                                    h('svg', { className: 'ico', style: { width: 13, height: 13, color: ok ? '#16a34a' : '#d97706' }, 'aria-hidden': 'true' }, h('use', { href: ok ? '#i-check' : '#i-target' }))
+                                ),
+                                r.label
+                            ),
+                            h('span', { className: 'text-xs font-bold', style: { fontVariantNumeric: 'tabular-nums' } },
+                                h('span', { className: 'text-gray-900' }, r.atual + suf),
+                                h('span', { className: 'text-gray-400' }, ' / '),
+                                h('span', { className: 'text-gray-500' }, r.meta + suf)
+                            )
+                        ),
+                        h('div', { style: { height: 7, borderRadius: 999, background: '#eef0f3', overflow: 'hidden' } },
+                            h('div', { className: 'sx-grow', style: { height: '100%', borderRadius: 999, width: pct + '%', background: ok ? '#22c55e' : cor.accent } })
+                        ),
+                        falta && h('p', { className: 'text-[10px] mt-1 font-semibold', style: { color: '#b45309' } }, falta)
+                    );
+                })
             )
         );
     }
