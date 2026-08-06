@@ -4385,9 +4385,9 @@
 
             (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' },
               h('div', null,
-                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Alterar valor do cliente na Mapp'),
+                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Alterar valores na Mapp (cliente + motoboy)'),
                 h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
-                  'Ligado: o Hub envia o valor recalculado pra Mapp. Desligado: o valor deste cliente na Mapp nao e alterado.')
+                  'Ligado: o Hub envia pra Mapp o valor do cliente (preco da tabela) e o do motoboy (custo do provedor). Desligado: nao altera nada na Mapp.')
               ),
               h('button', {
                 type: 'button',
