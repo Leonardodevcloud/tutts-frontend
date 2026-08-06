@@ -663,7 +663,6 @@
                     h('span', { className: 'text-[11px] text-gray-400' }, 'bonificações desta categoria')
                 ),
                 h('div', { className: 'grid grid-cols-2 gap-2.5' },
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Sorteio mensal (R$)'), numInput('sorteio_valor_' + pk, 0.01, 0)),
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0)),
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
                 ),
@@ -682,6 +681,7 @@
                                     onChange: e => updExtra(i, 'tipo', e.target.value),
                                     className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white outline-none focus:border-purple-400', style: { minWidth: 96 }
                                 },
+                                    h('option', { value: 'sorteio' }, 'Sorteio mensal'),
                                     h('option', { value: 'valor' }, 'Valor (R$)'),
                                     h('option', { value: 'item' }, 'Item'),
                                     h('option', { value: 'texto' }, 'Texto livre')
@@ -690,7 +690,7 @@
                                 h('button', { type: 'button', onClick: () => delExtra(i), className: 'text-red-500 bg-red-50 rounded-lg w-8 h-8 flex-shrink-0 flex items-center justify-center hover:bg-red-100' },
                                     h('svg', { className: 'ico', style: { width: 15, height: 15 }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' })))
                             ),
-                            (bx.tipo === 'valor') && h('div', { className: 'mt-2', style: { maxWidth: 160 } },
+                            (bx.tipo === 'valor' || bx.tipo === 'sorteio') && h('div', { className: 'mt-2', style: { maxWidth: 160 } },
                                 inp(bx.valor, 'Valor (R$)', e => updExtra(i, 'valor', e.target.value === '' ? null : parseFloat(e.target.value)), 'number')),
                             h('div', { className: 'mt-2' }, inp(bx.descricao, 'Descrição (opcional)', e => updExtra(i, 'descricao', e.target.value)))
                         ))
@@ -702,7 +702,7 @@
         };
 
         return h('div', { className: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4' },
-            h('div', { className: 'bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col' },
+            h('div', { className: 'bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col' }, // SORTEIO_EXTRA_FRONT_V1
                 // Header
                 h('div', { className: 'px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0' },
                     h('div', { className: 'flex items-center gap-2.5' },
@@ -757,8 +757,10 @@
                             'O nível é o ', h('b', null, 'menor'), ' entre o que a qualidade dá e o que a presença permite. Sem os dias no pico, trava embaixo — por melhor que seja o % no prazo.'
                         )
                     ),
-                    form.niveis_ativos.includes(2) && cardCategoria(2),
-                    form.niveis_ativos.includes(3) && cardCategoria(3),
+                    h('div', { className: 'grid md:grid-cols-2 gap-3' },
+                        form.niveis_ativos.includes(2) && cardCategoria(2),
+                        form.niveis_ativos.includes(3) && cardCategoria(3)
+                    ),
                     // Aproveitamento semanal
                     h('div', { className: 'border border-gray-200 rounded-xl p-3.5' },
                         h('label', { className: 'flex items-start justify-between gap-3 cursor-pointer' },

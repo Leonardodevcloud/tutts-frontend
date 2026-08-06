@@ -268,8 +268,7 @@
                 ],
                 bonus: [
                     (b.qtd_n2 || 1) + (Number(b.qtd_n2) === 1 ? ' saque grátis/mês de até ' : ' saques grátis/mês de até ') + fmt(b.saque_n2),
-                    'Concorre a sorteio mensal de ' + fmt(b.sorteio_n2),
-                ],
+                ], // SORTEIO_EXTRA_FRONT_V1: sorteio agora e extra
             },
             {
                 num: 3, nome: 'Ouro', emoji: '',
@@ -280,7 +279,6 @@
                 ],
                 bonus: [
                     (b.qtd_n3 || 1) + (Number(b.qtd_n3) === 1 ? ' saque grátis/semana de até ' : ' saques grátis/semana de até ') + fmt(b.saque_n3),
-                    'Concorre a sorteio mensal de ' + fmt(b.sorteio_n3),
                 ],
             },
         ];
@@ -302,7 +300,7 @@
     }
 
     function _icoExtra(tipo) {
-        var href = tipo === 'valor' ? '#i-wallet' : tipo === 'item' ? '#i-briefcase' : '#i-star';
+        var href = tipo === 'valor' ? '#i-wallet' : tipo === 'item' ? '#i-briefcase' : tipo === 'sorteio' ? '#i-party' : '#i-star';
         return h('svg', { className: 'ico', style: { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: href }));
     }
     function CardRoadmap({ nivel, isAtual, isAlcancado, extras }) {
@@ -333,10 +331,10 @@
                 nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b)),
                 _extras.length > 0 && h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus extras:'),
                 _extras.map((bx, i) => h('div', { key: 'ex' + i, className: 'flex items-start gap-2 ml-2 mt-1' },
-                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#059669' : bx.tipo === 'item' ? '#2563eb' : '#7c3aed' } }, _icoExtra(bx.tipo)),
+                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#059669' : bx.tipo === 'item' ? '#2563eb' : bx.tipo === 'sorteio' ? '#ea580c' : '#7c3aed' } }, _icoExtra(bx.tipo)),
                     h('div', null,
                         h('div', { className: 'text-gray-800 font-semibold text-[11px]' },
-                            (bx.titulo || '') + ((bx.tipo === 'valor' && bx.valor != null) ? (' — R$ ' + (parseFloat(bx.valor) || 0).toFixed(2).replace('.', ',')) : '')),
+                            (bx.titulo || '') + (((bx.tipo === 'valor' || bx.tipo === 'sorteio') && bx.valor != null) ? (' — R$ ' + (parseFloat(bx.valor) || 0).toFixed(2).replace('.', ',')) : '')),
                         bx.descricao && h('div', { className: 'text-gray-500 text-[10px] leading-snug' }, bx.descricao)
                     )
                 ))
