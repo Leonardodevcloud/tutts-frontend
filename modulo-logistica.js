@@ -3930,6 +3930,7 @@
         preco_faixas_km: [], // FAIXAS_NOVOFORM_V1
         ativo: true,
         alterar_valor_mapp_ativo: true,
+        restaurar_valor_cancel_ativo: true,
         nome_remetente: '',
         package_type: '',
         package_weight: '',
@@ -4014,6 +4015,7 @@
           : null,
         ativo: !!editando.ativo,
         alterar_valor_mapp_ativo: editando.alterar_valor_mapp_ativo !== false,
+        restaurar_valor_cancel_ativo: editando.restaurar_valor_cancel_ativo !== false,
         nome_remetente: (editando.nome_remetente || '').trim(),
         package_type: editando.package_type || '',
         package_weight: editando.package_weight || '',
@@ -4394,6 +4396,18 @@
                 onClick: () => up('alterar_valor_mapp_ativo', editando.alterar_valor_mapp_ativo === false),
                 className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.alterar_valor_mapp_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.alterar_valor_mapp_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
+            ),
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' }, // RESTAURAR_CANCEL_TOGGLE_FRONT_V1
+              h('div', null,
+                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Devolver valores originais ao cancelar'),
+                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                  'Ligado: ao cancelar a corrida, a Mapp volta aos valores originais (loja + motoboy). Desligado: mantem os valores do Hub.')
+              ),
+              h('button', {
+                type: 'button',
+                onClick: () => up('restaurar_valor_cancel_ativo', editando.restaurar_valor_cancel_ativo === false),
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.restaurar_valor_cancel_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
+              }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.restaurar_valor_cancel_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
             ),
 
             // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
