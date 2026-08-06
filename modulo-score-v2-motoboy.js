@@ -112,7 +112,7 @@
             progresso && h(CardRequisitos, { progresso, nivel }),
 
             // 🎁 Roadmap de bonificações (usa thresholds reais da região)
-            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores }),
+            h(RoadmapBonificacoes, { nivelAtual: nivel, thresholds, bonusValores, modelo: dados.modelo }), // ROADMAP_REAL_V1
 
             // 📋 Lista das entregas dos últimos 28 dias (lazy load)
             h(MinhasEntregas, { apiUrl, fetchAuth, token }),
@@ -239,12 +239,11 @@
     // ============================================================
     // 🎁 ROADMAP DE BONIFICAÇÕES (3 cards: Bronze, Prata, Ouro)
     // ============================================================
-    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores }) {
-        // Defaults caso a response não traga (compat)
-        const t = thresholds || {
-            n2: { entregas_min: 80, dias_16h_min: 15, pct_prazo_min: 80 },
-            n3: { entregas_min: 150, dias_16h_min: 20, pct_prazo_min: 88 },
-        };
+    function RoadmapBonificacoes({ nivelAtual, thresholds, bonusValores, modelo }) {
+        // ROADMAP_REAL_V1: usa o MODELO real da praça (min_elegivel, pct por nivel,
+        // dias no pico) em vez dos thresholds antigos — pra bater com o card de nivel.
+        const m = modelo || { min_elegivel: 40, pct_prata: 85, pct_ouro: 92, dias_pico_prata: 12, dias_pico_ouro: 18, hora_corte: 16 };
+        const fmtPct = (v) => (parseFloat(v) || 0).toFixed(0);
         const b = bonusValores || {
             sorteio_n2: 50, sorteio_n3: 150,
             saque_n2: 500, saque_n3: 500,
@@ -260,9 +259,9 @@
             {
                 num: 2, nome: 'Prata', emoji: '',
                 criterios: [
-                    '≥ ' + t.n2.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n2.dias_16h_min + ' entregas após 16h',
-                    '≥ ' + t.n2.pct_prazo_min + '% no prazo',
+                    '≥ ' + m.min_elegivel + ' entregas no período',
+                    '≥ ' + m.dias_pico_prata + ' dias com entrega após ' + m.hora_corte + 'h',
+                    '≥ ' + fmtPct(m.pct_prata) + '% no prazo',
                 ],
                 bonus: [
                     '1 saque grátis/mês de até ' + fmt(b.saque_n2),
@@ -272,9 +271,9 @@
             {
                 num: 3, nome: 'Ouro', emoji: '',
                 criterios: [
-                    '≥ ' + t.n3.entregas_min + ' entregas em 28 dias',
-                    '≥ ' + t.n3.dias_16h_min + ' entregas após 16h',
-                    '≥ ' + t.n3.pct_prazo_min + '% no prazo',
+                    '≥ ' + m.min_elegivel + ' entregas no período',
+                    '≥ ' + m.dias_pico_ouro + ' dias com entrega após ' + m.hora_corte + 'h',
+                    '≥ ' + fmtPct(m.pct_ouro) + '% no prazo',
                 ],
                 bonus: [
                     '1 saque grátis/SEMANA de até ' + fmt(b.saque_n3),
