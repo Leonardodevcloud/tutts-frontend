@@ -816,18 +816,14 @@
 
     let contDisp = 0;
     return h('div', { className: 'pt-3 border-t border-gray-100' },
-      h('div', { className: 'flex items-center gap-2 mb-3' },
-        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' })), 'Tentativas de despacho')),
-        h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent))
+      /* MP_TRILHA_DROPDOWN_V4: trilha inteira colapsada num dropdown (fechada por padrao) */
+      h('button', { onClick: () => setTrilhaAberta(v => !v), className: 'w-full flex items-center gap-2 mb-1 text-left' },
+        h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 14, height: 14 } }, h('use', { href: '#i-refresh' })),
+        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, 'Tentativas de despacho'),
+        h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent)),
+        h('svg', { className: 'ico ml-auto text-purple-400', 'aria-hidden': 'true', style: { width: 14, height: 14, transform: trilhaAberta ? 'rotate(180deg)' : 'none' } }, h('use', { href: '#i-arrowdown' })),
       ),
-      // Botao no topo: o que esta escondido sao os passos ANTIGOS.
-      podeExpandir && h('button', {
-        onClick: () => setTrilhaAberta(v => !v),
-        className: 'w-full flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-700 bg-purple-50 border border-dashed border-purple-200 rounded-lg py-1.5 mb-2.5 hover:bg-purple-100',
-      }, trilhaAberta
-        ? 'ocultar anteriores'
-        : `ver ${ocultos} ${ocultos === 1 ? 'anterior' : 'anteriores'}`),
-      h('div', { className: 'pl-1' },
+      trilhaAberta && h('div', { className: 'pl-1 mt-2' },
         evs.map((ev, i) => {
           const hora = _fmtHora(_tsValido(ev.hora));
           const ehUltimo = i === evs.length - 1;
@@ -1421,7 +1417,7 @@
     return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
       ehProprio && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold' },
         h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' }))),
-        h('span', null, e.veio_do_hub ? 'Moto própria · tentou hub' : 'Moto própria'),
+        h('span', null, 'MOTO PRÓPRIA'), /* MP_FAIXA_MAIUSCULA_V4 */
       ),
       // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
       extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
@@ -1501,7 +1497,8 @@
             msgSemEntregador()),
       // rodapé (hora despachada)
       h('div', { className: 'px-3 pt-2 pb-1 text-[10px] text-gray-400' },
-        h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Despachada "), fmtDT(e.created_at)),
+        h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Despachada "), fmtDT(e.created_at),
+        (e.distancia_km != null) && h('span', { className: 'ml-2 text-gray-500' }, '\u00b7 ' + Number(e.distancia_km).toFixed(1).replace('.', ',') + ' km')), /* MP_KM_CARD_V4 */
       // 🆕 tentativas de despacho (so quando houve re-despacho/cancelamento)
       tentativas && h('div', { className: 'px-3' }, h(TentativasDespacho, { dados: tentativas })),
       // ações
@@ -1522,6 +1519,7 @@
         h('button', { onClick: () => onVerDetalhes && onVerDetalhes(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Detalhes'),
         podeCancelar && onRedespachar && h('button', { onClick: () => onRedespachar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50' }, 'Editar'),
         podeCancelar && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'),
+        ehProprio && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'), /* MP_CANCEL_BTN_V4 */
         // EXTRAVIADOS_DESFAZER_V1
         extraviado && onDesfazerExtravio && h('button', { onClick: () => onDesfazerExtravio(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Desfazer'),
       ),
@@ -1940,6 +1938,16 @@
     }
 
     async function executarCancelamento(entrega, escopo) {
+      /* MP_CANCEL_PROPRIO_V4: moto propria nao tem linha no hub — cancela por codigo_os */
+      if (entrega && entrega.is_moto_propria) {
+        setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
+        try {
+          const r = await fetchAuth(`${API_URL}/logistics/moto-propria/${entrega.codigo_os}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          if (r.ok) { showToast('Moto própria cancelada na Tutts', 'success'); setCancelarModal(null); carregar(); }
+          else { let er = {}; try { er = await r.json(); } catch (_e) {} showToast(er.error || er.motivo || 'Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
+        } catch (_e) { showToast('Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
+        return;
+      }
       const id = entrega.id;
       setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
       try {
