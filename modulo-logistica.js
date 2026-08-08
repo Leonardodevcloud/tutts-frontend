@@ -682,6 +682,7 @@
     const code = (entrega && (entrega.provider_code || entrega.provider)) || null;
     if (code === 'noventanove' || code === '99') return { code: 'noventanove', nome: '99Entrega', tipo: '99', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) };
     if (code === 'uber') return { code: 'uber', nome: 'Uber Direct', tipo: 'uber', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) };
+    if (code === 'proprio') return { code: 'proprio', nome: 'Moto própria', tipo: 'proprio', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })) }; // MOTO_PROPRIA_FRONT_V1
     return { code: code, nome: code || 'Sem provedor', tipo: 'na', icone: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-package" })) };
   }
 
@@ -693,6 +694,13 @@
   // Provider desconhecido → fallback com a inicial num círculo cinza.
   // ──────────────────────────────────────────────────────────
   const PROVIDER_SVGS = {
+    proprio:
+      '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="30" cy="30" r="30" fill="#770fa8"/>' +
+      '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="20" cy="38" r="6"/><circle cx="40" cy="38" r="6"/>' +
+      '<path d="M20 38l6-12h6l4 6h4"/><path d="M26 26h8"/></g>' +
+      '</svg>',
     uber:
       '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
       '<circle cx="30" cy="30" r="30" fill="black"/>' +
@@ -1351,6 +1359,7 @@
   // REDESPACHO_BTN_V1: onRedespachoRapido e prop nova (ver CardEntrega).
   function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, onChat, unread, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
     const e = entrega;
+    const ehProprio    = String(e.provider_code || '') === 'proprio'; // MOTO_PROPRIA_FRONT_V1
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     // EXTRAVIADOS_CARD_V1: so da pra extraviar o que ja foi coletado — antes
     // disso o pacote nem saiu da loja.
@@ -1358,7 +1367,7 @@
     const jaColetou = !!e.coletado_at ||
       ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF', 'DELIVERED', 'RETURNING', 'RETURNED']
         .includes(String(e.status_canonico || '').toUpperCase());
-    const podeExtraviar = jaColetou && !extraviado;
+    const podeExtraviar = jaColetou && !extraviado && !ehProprio;
     const valorUber    = parseFloat(e.valor_uber || e.valor_provider || 0);
     const valorHub     = parseFloat(e.valor_servico || 0);
     const margemHub    = Math.round((valorHub - valorUber) * 100) / 100;
@@ -1371,7 +1380,7 @@
 
     const TERMINAIS_CANON  = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
     const TERMINAIS_NATIVE = ['delivered', 'cancelado', 'canceled', 'entregue', 'finalizado', 'concluido', 'fallback_fila'];
-    const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber);
+    const podeCancelar  = !TERMINAIS_CANON.includes(e.status_canonico) && !TERMINAIS_NATIVE.includes(e.status_uber) && !ehProprio;
     // REDESPACHO_BTN_V1: ver comentario em CardEntrega — a 99 nao cancela
     // depois da coleta.
     const podeRedespachar = ANTES_DA_COLETA_CANON.includes(e.status_canonico) && String(e.provider_code || e.provider || '').toLowerCase() !== 'uber'; // UBER_NO_REDISPATCH_V1
@@ -1410,6 +1419,10 @@
     // (o v1 usava purple-200 = #e9d5ff, que e cor de FUNDO: some como borda)
     // Todos com o mesmo peso (2px): quem diferencia e a cor + a faixa no topo.
     return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
+      ehProprio && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold' },
+        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' }))),
+        h('span', null, e.veio_do_hub ? 'Moto própria · tentou hub' : 'Moto própria'),
+      ),
       // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
       extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
         h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
@@ -1475,10 +1488,10 @@
             h('div', { className: 'w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[10px] text-purple-700 flex-shrink-0', style: e.entregador_foto ? { display: 'none' } : {} }, iniciaisDoNome(e.entregador_nome)),
             h('div', { className: 'flex-1 min-w-0' },
               h('div', { className: 'text-xs font-semibold text-gray-800 truncate' }, e.entregador_nome),
-              h('div', { className: 'text-[10px] text-gray-400 truncate' }, fmtTelefoneBR(e.entregador_telefone) || '—'),
+              h('div', { className: 'text-[10px] text-gray-400 truncate' }, ehProprio ? 'motoboy próprio' : (fmtTelefoneBR(e.entregador_telefone) || '—')),
             ),
             h('div', { className: 'flex gap-1 flex-shrink-0' },
-              onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
+              !ehProprio && onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
               // EXTRAVIADOS_BTN_V1: discreto, mesmo padrao do Reportar.
               podeExtraviar && onExtraviar && h('button', { onClick: () => onExtraviar(e), title: 'Marcar como extraviado', className: 'text-[10px] px-2 py-1 bg-pink-50 rounded-md text-pink-600 hover:bg-pink-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
               e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
@@ -1501,10 +1514,11 @@
           (unread > 0) && h('span', { className: 'absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center', style: { background: '#f67602' } }, unread > 9 ? '9+' : String(unread))
         ),
         h('button', {
-          onClick: () => onVerTracking && onVerTracking(e),
+          onClick: () => ehProprio ? (e.tracking_url && window.open(e.tracking_url, '_blank', 'noopener,noreferrer')) : (onVerTracking && onVerTracking(e)),
           disabled: !(e.rastreio_token || e.tracking_url),
+          title: ehProprio ? 'Abrir rastreio nativo da Tutts' : null,
           className: `flex-1 text-[11px] font-semibold py-1.5 rounded-lg border ${(e.rastreio_token || e.tracking_url) ? 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100' : 'border-gray-100 text-gray-300 cursor-not-allowed'}`,
-        }, 'Tracking'),
+        }, ehProprio ? 'Abrir rastreio Tutts' : 'Tracking'),
         h('button', { onClick: () => onVerDetalhes && onVerDetalhes(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Detalhes'),
         podeCancelar && onRedespachar && h('button', { onClick: () => onRedespachar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50' }, 'Editar'),
         podeCancelar && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'),
@@ -1514,7 +1528,7 @@
       // REDESPACHO_BTN_V1 — linha propria, nome por extenso.
       // Corrida extraviada nao redespacha: o pacote sumiu, chamar outro
       // motoboy nao traz ele de volta.
-      podeRedespachar && !extraviado && onRedespachoRapido && h('div', { className: 'mt-1.5' },
+      !ehProprio && podeRedespachar && !extraviado && onRedespachoRapido && h('div', { className: 'mt-1.5' },
         h('button', {
           onClick: () => onRedespachoRapido(e),
           title: 'Cancela a corrida atual e chama outro entregador. O atual fica de fora desta OS.',
@@ -1681,6 +1695,7 @@
         const qs = [];
         // FILTRO_STATUS_CLIENTSIDE_V1: status agora e filtrado no client (instantaneo, sem re-fetch)
         if (dataFiltro)   qs.push(`data=${encodeURIComponent(dataFiltro)}`);
+        qs.push('incluir_proprios=1'); // MOTO_PROPRIA_FRONT_V1
         const url = `${API_URL}/logistics/deliveries${qs.length ? `?${qs.join('&')}` : ''}`;
         const res = await fetchAuth(url);
         const json = await res.json();

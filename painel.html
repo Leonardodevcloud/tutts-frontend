@@ -429,6 +429,13 @@
   };
 
   const PROVIDER_SVGS = {
+    proprio:
+      '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="30" cy="30" r="30" fill="#770fa8"/>' +
+      '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="20" cy="38" r="6"/><circle cx="40" cy="38" r="6"/>' +
+      '<path d="M20 38l6-12h6l4 6h4"/><path d="M26 26h8"/></g>' +
+      '</svg>',
     uber:
       '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
       '<circle cx="30" cy="30" r="30" fill="black"/>' +
@@ -568,31 +575,38 @@
 
   function cardHTML(e){
     var origem=window.location.origin;
+    var ehProprio = String(e.provider_code||'') === 'proprio'; // MOTO_PROPRIA_FRONT_V1
     var temEnt=!!e.entregador_nome;
     var proc=['PENDING','QUOTED','DISPATCHED'].indexOf(String(e.status_canonico||'').toUpperCase())>=0;
     var av=e.entregador_foto?('<img class="av" src="'+esc(e.entregador_foto)+'" onerror="this.style.display=\'none\'" />'):('<div class="av">'+esc(iniciais(e.entregador_nome))+'</div>');
     var telBloco='';
     if (temEnt){
       var acts=''; if (e.entregador_telefone){ acts='<button class="mini" onclick="__portal.ligar('+"'"+esc(e.entregador_telefone)+"'"+')">'+(isMobile()?'Ligar':'Copiar')+'</button>'; }
-      telBloco='<div class="ent">'+av+'<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div><div class="tel">'+esc(e.entregador_telefone||'')+'</div></div><div class="acts">'+acts+'</div></div>';
+      telBloco='<div class="ent">'+av+'<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div><div class="tel">'+(ehProprio?'motoboy próprio':esc(e.entregador_telefone||''))+'</div></div><div class="acts">'+acts+'</div></div>';
     } else { telBloco='<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>'; }
     var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
     var devol=e.return_code?'<span class="codigo codigo-devol">\u21a9\uFE0F Codigo de devolucao '+esc(e.return_code)+'</span>':'';
     var podeRastrear=!!e.rastreio_token;
-    var btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
+    var btnR;
+    if (ehProprio) { // MOTO_PROPRIA_FRONT_V1: abre o rastreio nativo da Tutts
+      btnR = e.tracking_url ? '<button class="btn-rastrear" onclick="window.open(\''+esc(e.tracking_url)+'\',\'_blank\')">Abrir rastreio Tutts</button>' : '<button class="btn-rastrear" disabled>Rastreio indisponivel</button>';
+    } else {
+      btnR='<button class="btn-rastrear" '+(podeRastrear?'onclick="window.open(\''+origem+'/r/'+esc(e.rastreio_token)+'\',\'_blank\')"':'disabled')+'>Rastrear entrega</button>';
+    }
     // REDESPACHO_LOJA_V1 - so ate a coleta.
     // Doc da 99 (Cancel Order): depois que o entregador coleta, o cancelamento
     // nao e suportado - a corrida seguiria viva e cobrada, e o redespacho
     // pagaria duas. Some em vez de ficar cinza: botao que nunca liga so gera
     // pergunta.
     var podeRedesp = ANTES_DA_COLETA_PORTAL.indexOf(String(e.status_canonico||'').toUpperCase())>=0 && !e.extraviado;
-    var btnRd = podeRedesp
+    var btnRd = (podeRedesp && !ehProprio)
       ? '<button class="btn-redesp" onclick="__portal.redespachar('+Number(e.id)+')">\u21bb Redespachar</button>'
       : '';
     var cls = e.extraviado ? 'card extr' : (e.entregador_frequente ? 'card freq' : 'card');
     var faixa = '';
     if(e.extraviado) faixa = '<div class="faixa faixa-extr">\uD83D\uDCE6 Extraviado</div>';
     else if(e.entregador_frequente) faixa = '<div class="faixa faixa-freq">\uD83D\uDC51 Parceiro frequente</div>';
+    else if(ehProprio) faixa = '<div class="faixa" style="background:#f3e8ff;color:#7e22ce">Moto própria'+(e.veio_do_hub?' · tentou hub':'')+'</div>';
     return '<div class="'+cls+'">'
       + faixa
       + '<div class="h"><span class="os">OS '+esc(e.codigo_os)+'</span>'+badge(e)+provLogo(e.provider_code)+'</div>'
@@ -602,7 +616,7 @@
       +   '<div class="pt"><span class="pin" style="background:#ef4444"></span><div style="min-width:0"><div class="lab">Entrega</div><div class="end">'+esc(e.endereco_entrega||'-')+'</div>'+chipsHTML(e)+devol+'</div></div>'
       + '</div>'
       + telBloco
-      + '<div class="hora">Despachada '+esc(fmtHora(e.created_at))+'</div>'
+      + '<div class="hora">'+(ehProprio?'Em rota desde ':'Despachada ')+esc(fmtHora(e.created_at))+'</div>'
       + trilhaHTML(e.codigo_os)
       + '<div class="foot">'+btnR+btnRd+'</div>'
       + '</div>';
