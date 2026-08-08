@@ -2535,19 +2535,27 @@
               h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
             h('div', { className: 'min-w-0' },
               h('h3', { className: 'text-base font-bold text-white leading-tight' }, `Cancelar OS ${cancelarModal.entrega.codigo_os || ''}`),
-              h('p', { className: 'text-[11px] text-red-100 mt-0.5' }, 'Como tu quer cancelar essa corrida?')),
+              h('p', { className: 'text-[11px] text-red-100 mt-0.5' }, cancelarModal.entrega.is_moto_propria ? 'Confirmar cancelamento da moto própria?' : 'Como tu quer cancelar essa corrida?')), /* MP_MODAL_SUB_V5 */
           ),
           h('div', { className: 'p-5 space-y-3' },
-            cancelarModal.jaColetou && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' },
+            /* MP_MODAL_ENXUTO_V5: moto propria tem modal simples (1 botao); hub mantem os 2 escopos */
+            cancelarModal.entrega.is_moto_propria && h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-[12px] text-purple-800' },
+              'Essa é uma corrida de ', h('b', null, 'moto própria'), '. Cancelar aqui cancela a OS direto na Tutts e ela sai do painel.'),
+            cancelarModal.entrega.is_moto_propria && h('button', {
+              type: 'button', disabled: cancelarModal.enviando,
+              onClick: () => executarCancelamento(cancelarModal.entrega, 'proprio'),
+              className: 'w-full text-center bg-red-600 text-white rounded-xl p-3 hover:bg-red-700 disabled:opacity-50 font-semibold text-sm',
+            }, cancelarModal.enviando ? 'Cancelando...' : 'Cancelar corrida na Tutts'),
+            !cancelarModal.entrega.is_moto_propria && cancelarModal.jaColetou && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' },
               h('b', null, 'Atencao: '), 'o entregador da 99 ja coletou. A 99 nao cancela depois da coleta -- a corrida segue viva e cobrada. Aqui so marca como cancelada no painel.'),
-            h('button', {
+            !cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'central'),
               className: 'w-full text-left border border-gray-200 rounded-xl p-3 hover:bg-gray-50 disabled:opacity-50',
             },
               h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Cancelar so na central'),
               h('div', { className: 'text-[12px] text-gray-500 mt-0.5' }, 'A OS volta a ficar aberta na Mapp pra um motoboy pegar. O Hub nao re-aciona.')),
-            h('button', {
+            !cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'ambos'),
               className: 'w-full text-left border border-red-200 rounded-xl p-3 hover:bg-red-50 disabled:opacity-50',
