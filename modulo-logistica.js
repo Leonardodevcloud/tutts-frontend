@@ -5109,7 +5109,9 @@
       h('path', { d: 'M18 42 Q27 50 42 50', stroke: '#f67602', strokeWidth: 3, fill: 'none', strokeLinecap: 'round' }),
       h('path', { d: 'M42 50 l-6 -2 l0 6 z', fill: '#f67602' }),
     );
-    const iconeCanal = (canal) => canal === 'tutts'
+    const iconeCanal = (canal) => /* MP_ICONE_CANAL_V1 */ (canal === 'Moto própria' || canal === 'proprio')
+      ? h('span', { title: 'Moto própria', style: { width: '20px', height: '20px', background: '#f3e8ff', border: '1px solid #d8b4fe', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#7c3aed' } }, h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 13, height: 13 } }, h('use', { href: '#i-bike' })))
+      : canal === 'tutts'
       ? h('span', { title: 'Tutts', style: { width: '20px', height: '20px', background: '#7c3aed', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } },
           h('img', { src: ICONE_TUTTS_JPG, style: { width: '100%', height: '100%', objectFit: 'contain', padding: '2px' } }))
       : h('span', { title: 'Hub', style: { width: '20px', height: '20px', background: '#fff', border: '1px solid #f0e0d0', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } }, hubSvg());

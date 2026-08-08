@@ -1055,7 +1055,7 @@
                  : e.prazo==='fora'     ? '<span class="rel-pz rel-pz-no">fora</span>'
                  : '<span class="rel-pz rel-pz-sd">—</span>';
           return '<tr>'
-            + '<td><b>'+esc(e.os)+'</b><div style="font-size:10px;color:#9ca3af">'+esc(e.provider||'')+'</div></td>'
+            + '<td><b>'+esc(e.os)+'</b><div style="font-size:10px;color:'+(e.is_moto_propria?'#7c3aed;font-weight:700':'#9ca3af')+'">'+esc(e.provider||'')+'</div></td>'
             + '<td style="white-space:nowrap">'+relFmtDataHora(e.criado_em)+'</td>'
             + '<td>'+esc(e.status||'')+'</td>'
             + '<td class="rel-end">'+esc(e.endereco_coleta||'—')+'<br>'+esc(e.endereco_entrega||'—')+'</td>'
