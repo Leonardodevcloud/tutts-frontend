@@ -1943,7 +1943,7 @@
         setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
         try {
           const r = await fetchAuth(`${API_URL}/logistics/moto-propria/${entrega.codigo_os}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-          if (r.ok) { showToast('Moto própria cancelada na Tutts', 'success'); setCancelarModal(null); carregar(); }
+          if (r.ok) { showToast('Removida do painel — cancele na Mapp manualmente', 'warning'); setCancelarModal(null); carregar(); } /* MP_TOAST_CENTRAL_V1 */
           else { let er = {}; try { er = await r.json(); } catch (_e) {} showToast(er.error || er.motivo || 'Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
         } catch (_e) { showToast('Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
         return;
@@ -2539,13 +2539,13 @@
           ),
           h('div', { className: 'p-5 space-y-3' },
             /* MP_MODAL_ENXUTO_V5: moto propria tem modal simples (1 botao); hub mantem os 2 escopos */
-            cancelarModal.entrega.is_moto_propria && h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-[12px] text-purple-800' },
-              'Essa é uma corrida de ', h('b', null, 'moto própria'), '. Cancelar aqui cancela a OS direto na Tutts e ela sai do painel.'),
+            cancelarModal.entrega.is_moto_propria && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' }, /* MP_MODAL_AVISO_MAPP_V1 */
+              h('b', null, 'Atenção: '), 'a moto própria já tem entregador. Aqui a corrida só sai do painel (central) — ela ', h('b', null, 'não é cancelada na Mapp'), '. Se precisar, ', h('b', null, 'cancele na Mapp manualmente'), '.'),
             cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'proprio'),
               className: 'w-full text-center bg-red-600 text-white rounded-xl p-3 hover:bg-red-700 disabled:opacity-50 font-semibold text-sm',
-            }, cancelarModal.enviando ? 'Cancelando...' : 'Cancelar corrida na Tutts'),
+            }, cancelarModal.enviando ? 'Removendo...' : 'Cancelar no painel'), /* MP_BTN_CENTRAL_V1 */
             !cancelarModal.entrega.is_moto_propria && cancelarModal.jaColetou && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' },
               h('b', null, 'Atencao: '), 'o entregador da 99 ja coletou. A 99 nao cancela depois da coleta -- a corrida segue viva e cobrada. Aqui so marca como cancelada no painel.'),
             !cancelarModal.entrega.is_moto_propria && h('button', {
