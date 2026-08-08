@@ -1987,7 +1987,13 @@
         for (const e of lista) {
           const os = e.codigo_os;
           const atual = maisRecentePorOs.get(os);
-          if (!atual || (Number(e.id) || 0) > (Number(atual.id) || 0)) {
+          // MOTO_PROPRIA_CONSOLIDA_V1: a moto propria (id 'mp-...') vence a linha
+          // cancelada do hub (id numerico) — ela e o estado ATUAL da corrida; as
+          // tentativas do hub seguem na trilha "Tentativas de despacho".
+          const _preferir = !atual
+            || (!!e.is_moto_propria && !atual.is_moto_propria)
+            || ((!!e.is_moto_propria === !!atual.is_moto_propria) && (Number(e.id) || 0) > (Number(atual.id) || 0));
+          if (_preferir) {
             maisRecentePorOs.set(os, e);
           }
         }
