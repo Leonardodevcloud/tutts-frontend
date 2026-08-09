@@ -1459,6 +1459,13 @@
           h('div', { className: 'min-w-0 flex-1' },
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
             h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
+            /* MP_GEOCOD_SELO_V1: corrida que saiu na central e teve o endereco de entrega geocodificado no Google */
+            e.entrega_geocodificada && h('span', {
+              className: 'inline-flex items-center gap-1 mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700',
+              title: 'O cliente não enviou a localização. O endereço foi geocodificado automaticamente no Google — confira antes de confiar 100%.',
+            },
+              h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 11, height: 11 } }, h('use', { href: '#i-pin' })),
+              'Endereço geocodificado'),
             // CLIENTE_FINAL_NF_CARD: nome do cliente final + NF (ja tratados no backend).
             // Clientes so-NF (1165/1178/1188) vem com cliente_final = null.
             (e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap items-center gap-1 mt-1' },
