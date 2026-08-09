@@ -336,6 +336,54 @@
     );
   }
 
+  // PUSH_BTN_V1: ativar notificacoes (Web Push). Usa window.TuttsPush (push-client.js)
+  // pra permissao/inscricao e o fetchAuth pra registrar no backend atrelado ao motoboy.
+  function BotaoAtivarNotificacoes({ API_URL, fetchAuth, usuario, showToast }) {
+    const h = React.createElement;
+    const { useState, useEffect } = React;
+    const [estado, setEstado] = useState('checando'); // checando|indisponivel|instalar_pwa|ativar|ativo
+    const [carregando, setCarregando] = useState(false);
+    useEffect(() => {
+      (async () => {
+        const TP = window.TuttsPush;
+        if (!TP || !TP.suportado()) { setEstado('indisponivel'); return; }
+        if (TP.precisaInstalarPWA()) { setEstado('instalar_pwa'); return; }
+        try { const sub = await TP.assinaturaAtual(); setEstado((sub && TP.permissao() === 'granted') ? 'ativo' : 'ativar'); }
+        catch (_e) { setEstado('ativar'); }
+      })();
+    }, []);
+    async function ativar() {
+      setCarregando(true);
+      try {
+        const TP = window.TuttsPush;
+        const rk = await fetchAuth(`${API_URL}/push/vapid-public`);
+        const dk = await rk.json().catch(() => ({}));
+        if (!dk.key) { showToast('Push nao configurado no servidor.', 'error'); setCarregando(false); return; }
+        const subscription = await TP.assinar(dk.key);
+        const r = await fetchAuth(`${API_URL}/push/subscribe`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription, cod_profissional: usuario ? usuario.codigo : null }),
+        });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); showToast(d.erro || 'Falha ao ativar.', 'error'); setCarregando(false); return; }
+        setEstado('ativo'); showToast('Notificacoes ativadas!', 'success');
+      } catch (e) { showToast(e.message || 'Erro ao ativar notificacoes.', 'error'); }
+      finally { setCarregando(false); }
+    }
+    if (estado === 'checando' || estado === 'indisponivel') return null;
+    if (estado === 'ativo') return h('div', { className: 'flex items-center justify-center gap-1.5 text-xs text-green-600 mb-4' },
+      h('svg', { className: 'ico', style: { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' })), 'Notificacoes ativas');
+    if (estado === 'instalar_pwa') return h('div', { className: 'mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' },
+      'Pra receber avisos no iPhone, instale o app: toque em Compartilhar e "Adicionar a Tela de Inicio".');
+    return h('button', {
+      type: 'button', onClick: ativar, disabled: carregando,
+      className: 'w-full mb-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border transition ' + (carregando ? 'opacity-60' : 'hover:bg-purple-50 active:scale-[0.99]'),
+      style: { borderColor: '#7c3aed', color: '#7c3aed' },
+    },
+      h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-bell' })),
+      carregando ? 'Ativando...' : 'Ativar notificacoes'
+    );
+  }
+
   function TabFormulario({ API_URL, fetchAuth, showToast, usuario }) {
     // GPS_UNICO_V1: localizacao_raw sai do form. Ela nunca foi digitada — era o
     // GPS copiado por um clique. Agora e montada no submit, do gps ao vivo.
@@ -1346,6 +1394,7 @@
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
       ),
+      h(BotaoAtivarNotificacoes, { API_URL, fetchAuth, usuario, showToast }), /* PUSH_BTN_MOUNT_V1 */
 
       // Alerta de aviso
       (modoCorrecao !== 'google') && h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' }, /* MODO_GATE_AVISO_V1 */
