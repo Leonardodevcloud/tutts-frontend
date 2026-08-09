@@ -1400,7 +1400,6 @@
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
       ),
-      h(BotaoAtivarNotificacoes, { API_URL, fetchAuth, usuario, showToast }), /* PUSH_BTN_MOUNT_V1 */
 
       // Alerta de aviso
       (modoCorrecao !== 'google') && h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' }, /* MODO_GATE_AVISO_V1 */
