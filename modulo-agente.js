@@ -48,6 +48,20 @@
     });
   }
 
+  // ADMIN_TEMPO_V1: quanto durou a correcao (criado_em -> finalizado_em).
+  function fmtDur(ini, fim) {
+    if (!ini || !fim) return '—';
+    const ms = new Date(fim).getTime() - new Date(ini).getTime();
+    if (!(ms >= 0)) return '—';
+    const s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60);
+    const rs = s % 60;
+    if (m < 60) return rs ? (m + 'm ' + rs + 's') : (m + 'm');
+    const h2 = Math.floor(m / 60);
+    return h2 + 'h ' + (m % 60) + 'm';
+  }
+
   function BadgeStatus({ status }) {
     // ADMIN_BCE_V1 (badge): 'barrado', 'falhou' e 'bloqueado_cliente' entraram no
     // mapa. Os tres ja existiam no banco (e 'falhou' aparece na tela desde 2026-04),
@@ -103,7 +117,7 @@
 
   // Correcao alternativa: geocodifica o texto do ponto no Google e corrige o PIN.
   // O motoboy confere no mini-mapa (pino Mapp x pino Google) e pode arrastar ate 100m.
-  function CorrigirGeocodeBotao({ API_URL, fetchAuth, showToast, osNumero, ponto, gps }) {
+  function CorrigirGeocodeBotao({ API_URL, fetchAuth, showToast, osNumero, ponto, gps, usuario }) {
     const h = React.createElement;
     const { useState, useRef, useEffect } = React;
     const LIMITE_M = 100;
@@ -184,7 +198,7 @@
       try {
         const res = await fetchAuth(`${API_URL}/agent/geocode-corrigir`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ os_numero: String(osNumero).trim(), ponto: parseInt(ponto, 10), latitude: posFinal.lat, longitude: posFinal.lng, motoboy_lat: gps ? gps.lat : null, motoboy_lng: gps ? gps.lng : null }),
+          body: JSON.stringify({ os_numero: String(osNumero).trim(), ponto: parseInt(ponto, 10), latitude: posFinal.lat, longitude: posFinal.lng, motoboy_lat: gps ? gps.lat : null, motoboy_lng: gps ? gps.lng : null, usuario_nome: usuario ? usuario.nome : null, cod_profissional: usuario ? usuario.codigo : null }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { showToast(data.erro || 'Falha ao aplicar.', 'error'); setAplicando(false); return; }
@@ -297,7 +311,7 @@
     );
   }
 
-  function TabFormulario({ API_URL, fetchAuth, showToast }) {
+  function TabFormulario({ API_URL, fetchAuth, showToast, usuario }) {
     // GPS_UNICO_V1: localizacao_raw sai do form. Ela nunca foi digitada — era o
     // GPS copiado por um clique. Agora e montada no submit, do gps ao vivo.
     const [form, setForm]           = useState({ os_numero: '', ponto: '' });
@@ -1558,7 +1572,7 @@
             : h(React.Fragment, null, h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" }))), 'Enviar Correção')
         ),
         /* GEOCODE_BTN_MOUNT_V1: correcao alternativa pelo Google (mini-mapa + arrastar 100m) */
-        (modoCorrecao !== 'gps') && h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto, gps: gps })
+        (modoCorrecao !== 'gps') && h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto, gps: gps, usuario: usuario })
       ),
 
         );
@@ -1926,7 +1940,7 @@
           h('table', { className: 'w-full text-sm' },
             h('thead', null,
               h('tr', { className: 'bg-gray-50 border-b border-gray-100' },
-                ['ID','Motoboy','OS','Ponto','Status','End. Antigo','End. Novo','Criado em','Foto','Ações'].map(col =>
+                ['ID','Motoboy','OS','Ponto','Status','End. Antigo','End. Novo','Criado em','Tempo','Foto','Ações'].map(col =>
                   h('th', { key: col, className: 'px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide' }, col)
                 )
               )
@@ -1997,6 +2011,7 @@
                       : '—'
                   ),
                   h('td', { className: 'px-3 py-3 text-gray-500 text-xs' }, fmtDT(r.criado_em)),
+                  h('td', { className: 'px-3 py-3 text-gray-600 text-xs whitespace-nowrap' }, fmtDur(r.criado_em, r.finalizado_em)), /* ADMIN_TEMPO_CELL_V1 */
                   // ADMIN_BCE_V1 (coluna foto): o botao so aparece se a linha TIVER foto.
                   //
                   // Antes ele era incondicional: toda linha mostrava "📷 Ver", e as novas
@@ -3312,7 +3327,7 @@
             )
           : h(React.Fragment, null,
               h('div', { style: { display: aba === 'formulario' ? 'block' : 'none' } },
-                h(TabFormulario, { API_URL, fetchAuth, showToast })
+                h(TabFormulario, { API_URL, fetchAuth, showToast, usuario })
               ),
               h('div', { style: { display: aba === 'meu-historico' ? 'block' : 'none' } },
                 h(TabMeuHistorico, { API_URL, fetchAuth, showToast })
