@@ -1318,7 +1318,7 @@
         //
         // O terceiro item e o que o botao "Enviar minha localização" fazia de util.
         // Continua existindo; o passo manual e que sumiu.
-        h('div', {
+        (modoCorrecao !== 'google') && h('div', { /* MODO_GATE_GPS_V1 */
           className: `p-3 rounded-xl border ${
             !gps ? (gpsErro ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
               : gpsRuim ? 'bg-red-50 border-red-200'
@@ -1443,7 +1443,7 @@
         //
         // SVG inline: sem Tabler, sem Lucide, sem Font Awesome — so Tailwind e SVG,
         // igual ao resto do sistema.
-        h('div', null,
+        (modoCorrecao !== 'google') && h('div', null, /* MODO_GATE_CNPJ_V1 */
           h('label', { className: 'block text-sm font-semibold text-gray-700 mb-0.5' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "CNPJ de quem RECEBE *")),
           h('p', { className: 'text-xs text-gray-500 mb-3' },
             'Na nota, procure o quadro ',
