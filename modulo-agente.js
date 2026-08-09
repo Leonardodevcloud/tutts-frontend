@@ -103,7 +103,7 @@
 
   // Correcao alternativa: geocodifica o texto do ponto no Google e corrige o PIN.
   // O motoboy confere no mini-mapa (pino Mapp x pino Google) e pode arrastar ate 100m.
-  function CorrigirGeocodeBotao({ API_URL, fetchAuth, showToast, osNumero, ponto, gps }) {
+  function CorrigirGeocodeBotao({ API_URL, fetchAuth, showToast, osNumero, ponto }) {
     const h = React.createElement;
     const { useState, useRef, useEffect } = React;
     const LIMITE_M = 100;
@@ -125,14 +125,8 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { showToast(data.erro || 'Falha no preview.', 'error'); setCarregando(false); return; }
-        // GPS_ANCORA_V1: Google impreciso -> ancora no GPS do motoboy (ele esta no
-        // ponto). Ele arrasta ate 100m do proprio GPS. Sem GPS, cai no aviso.
-        let pv = data;
-        if (!data.preciso && gps && Number.isFinite(gps.lat) && Number.isFinite(gps.lng)) {
-          pv = Object.assign({}, data, { google: { lat: gps.lat, lng: gps.lng }, preciso: true, fonteGps: true });
-        }
-        setPreview(pv);
-        if (pv.google) setPosFinal({ lat: pv.google.lat, lng: pv.google.lng });
+        setPreview(data);
+        if (data.google) setPosFinal({ lat: data.google.lat, lng: data.google.lng });
         setAberto(true);
       } catch (e) { showToast('Erro: ' + e.message, 'error'); }
       finally { setCarregando(false); }
@@ -219,10 +213,9 @@
             h('div', { className: 'text-xs text-gray-700 mb-3' }, (preview && preview.endereco) || '-'),
             (preview && preview.preciso)
               ? h(React.Fragment, null,
-                  preview.fonteGps && h('div', { className: 'mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' }, 'O Google nao achou preciso. Posicione a partir de onde voce esta (voce esta no ponto) - arraste ate 100 m.'),
                   h('div', { ref: mapRef, style: { height: '260px', borderRadius: '12px', border: '1px solid #eee', background: '#eef2f7' } }),
                   h('div', { className: 'flex gap-3 mt-2 text-[11px] text-gray-600' },
-                    h('span', null, 'Vermelho = Mapp atual'), h('span', null, preview.fonteGps ? 'Verde = sua localizacao (arraste ate 100 m)' : 'Verde = Google (arraste ate 100 m)')),
+                    h('span', null, 'Vermelho = Mapp atual'), h('span', null, 'Verde = Google (arraste ate 100 m)')),
                   statusMsg && h('div', { className: 'mt-2 text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' }, statusMsg),
                   h('div', { className: 'flex gap-2 mt-3' },
                     h('button', { type: 'button', onClick: () => setAberto(false), disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold' }, 'Cancelar'),
@@ -1540,7 +1533,7 @@
             : h(React.Fragment, null, h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" }))), 'Enviar Correção')
         ),
         /* GEOCODE_BTN_MOUNT_V1: correcao alternativa pelo Google (mini-mapa + arrastar 100m) */
-        (modoCorrecao !== 'gps') && h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto, gps: gps })
+        (modoCorrecao !== 'gps') && h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto })
       ),
 
         );
