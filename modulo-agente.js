@@ -229,10 +229,62 @@
     );
   }
 
+  // CORRECAO_MODO_TAB_V1: painel do admin pra escolher qual estilo de correcao
+  // fica habilitado pro motoboy (gps | google | ambos).
+  function TabCorrecaoConfig({ API_URL, fetchAuth, showToast }) {
+    const h = React.createElement;
+    const { useState, useEffect } = React;
+    const [modo, setModo] = useState(null);
+    const [salvando, setSalvando] = useState(false);
+    useEffect(() => {
+      (async () => {
+        try { const r = await fetchAuth(`${API_URL}/agent/correcao-modo`); const d = await r.json().catch(() => ({})); setModo((d && d.modo) || 'ambos'); }
+        catch (_e) { setModo('ambos'); }
+      })();
+    }, []);
+    async function salvar(novo) {
+      setSalvando(true);
+      try {
+        const r = await fetchAuth(`${API_URL}/agent/correcao-modo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modo: novo }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast(d.erro || 'Falha ao salvar.', 'error'); }
+        else { setModo(novo); showToast('Estilo de correcao atualizado.', 'success'); }
+      } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+      finally { setSalvando(false); }
+    }
+    const OPCOES = [
+      { id: 'gps',    titulo: 'GPS + Foto (atual)',   desc: 'O motoboy corrige estando no local, com GPS e foto da fachada.' },
+      { id: 'google', titulo: 'Geocode do Google',    desc: 'Corrige o pino pelo endereco (Google), com mini-mapa e arrastar ate 100 m.' },
+      { id: 'ambos',  titulo: 'Ambos',                desc: 'O motoboy escolhe qual usar na hora.' },
+    ];
+    if (modo === null) return h('div', { className: 'p-4 text-sm text-gray-400' }, 'Carregando...');
+    return h('div', { className: 'p-4 max-w-lg' },
+      h('div', { className: 'text-sm font-bold text-gray-800 mb-1' }, 'Estilo de correcao habilitado'),
+      h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Escolha o que o motoboy ve na tela de correcao.'),
+      OPCOES.map(op => h('button', {
+        key: op.id, type: 'button', disabled: salvando, onClick: () => salvar(op.id),
+        className: 'w-full text-left mb-2 p-3 rounded-xl border transition ' + (modo === op.id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'),
+      },
+        h('div', { className: 'flex items-center gap-2' },
+          h('span', { className: 'w-4 h-4 rounded-full border-2 flex-shrink-0 ' + (modo === op.id ? 'border-purple-600 bg-purple-600' : 'border-gray-300') }),
+          h('span', { className: 'text-sm font-bold text-gray-800' }, op.titulo)),
+        h('div', { className: 'text-xs text-gray-500 mt-1 ml-6' }, op.desc)
+      ))
+    );
+  }
+
   function TabFormulario({ API_URL, fetchAuth, showToast }) {
     // GPS_UNICO_V1: localizacao_raw sai do form. Ela nunca foi digitada — era o
     // GPS copiado por um clique. Agora e montada no submit, do gps ao vivo.
     const [form, setForm]           = useState({ os_numero: '', ponto: '' });
+    const [modoCorrecao, setModoCorrecao] = useState('ambos'); // CORRECAO_MODO_FRONT_V1
+    React.useEffect(() => {
+      let vivo = true;
+      (async () => {
+        try { const r = await fetchAuth(`${API_URL}/agent/correcao-modo`); const d = await r.json().catch(() => ({})); if (vivo && d && d.modo) setModoCorrecao(d.modo); } catch (_e) {}
+      })();
+      return () => { vivo = false; };
+    }, []);
     const [loading, setLoading]     = useState(false);
     const [solicitacaoId, setSolId] = useState(null);
     const [fase, setFase]           = useState('idle');
@@ -1464,7 +1516,7 @@
         // validacao nova. O ultimo campo do formulario agora e o CNPJ.
 
         // Botão enviar
-        h('button', {
+        (modoCorrecao !== 'google') && h('button', {
           // GPS_UNICO_V1: o botao respeita a trava de precisao. Ele destrava
           // sozinho quando o GPS melhora (watchPosition) — sem toque nenhum.
           onClick: handleSubmit,
@@ -1481,7 +1533,7 @@
             : h(React.Fragment, null, h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" }))), 'Enviar Correção')
         ),
         /* GEOCODE_BTN_MOUNT_V1: correcao alternativa pelo Google (mini-mapa + arrastar 100m) */
-        h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto })
+        (modoCorrecao !== 'gps') && h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto })
       ),
 
         );
@@ -3177,6 +3229,7 @@
           { id: 'historico',   label: 'Histórico' },
           { id: 'liberacoes',  label: 'Liberação de OS' },  // 2026-04 v3
           { id: 'analytics',   label: 'Analytics' },
+          { id: 'correcao_cfg', label: 'Correção' }, // CORRECAO_MODO_TAB_UI_V1
           { id: 'bloqueados',  label: 'Clientes Bloqueados' }, // 2026-07
         ]
       : [{ id: 'formulario', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })), "Correção") }, { id: 'meu-historico', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Solicitações") }];
@@ -3224,6 +3277,9 @@
               ),
               h('div', { style: { display: aba === 'analytics' ? 'block' : 'none' } },
                 h(TabAnalytics, { API_URL, fetchAuth, showToast })
+              ),
+              h('div', { style: { display: aba === 'correcao_cfg' ? 'block' : 'none' } },
+                h(TabCorrecaoConfig, { API_URL, fetchAuth, showToast })
               ),
               h('div', { style: { display: aba === 'bloqueados' ? 'block' : 'none' } },
                 h(TabClientesBloqueados, { API_URL, fetchAuth, showToast })
