@@ -348,8 +348,14 @@
         const TP = window.TuttsPush;
         if (!TP || !TP.suportado()) { setEstado('indisponivel'); return; }
         if (TP.precisaInstalarPWA()) { setEstado('instalar_pwa'); return; }
-        try { const sub = await TP.assinaturaAtual(); setEstado((sub && TP.permissao() === 'granted') ? 'ativo' : 'ativar'); }
-        catch (_e) { setEstado('ativar'); }
+        try {
+          const sub = await TP.assinaturaAtual();
+          if (sub && TP.permissao() === 'granted') {
+            setEstado('ativo');
+            // PUSH_SELFHEAL_V1: re-registra a inscricao com o cod atual (corrige cod nulo antigo)
+            try { await fetchAuth(`${API_URL}/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: (sub.toJSON ? sub.toJSON() : sub), cod_profissional: usuario ? usuario.codigo : null }) }); } catch (_e2) {}
+          } else { setEstado('ativar'); }
+        } catch (_e) { setEstado('ativar'); }
       })();
     }, []);
     async function ativar() {
