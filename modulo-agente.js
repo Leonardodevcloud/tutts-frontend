@@ -79,6 +79,156 @@
   // Coleta continua usando o compartilhado.
 
   // ── ABA: Formulário do motoboy ──────────────────────────────────────────────
+  // GEOCODE_CORRIGIR_FRONT_V1: carrega o Google Maps JS uma vez (chave via backend).
+  let _googleMapsPromise = null;
+  function carregarGoogleMaps(API_URL, fetchAuth) {
+    if (window.google && window.google.maps && window.google.maps.geometry) return Promise.resolve(window.google);
+    if (_googleMapsPromise) return _googleMapsPromise;
+    _googleMapsPromise = (async () => {
+      const res = await fetchAuth(`${API_URL}/agent/maps-key`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.key) throw new Error((data && data.erro) || 'sem chave do Google Maps');
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(data.key)}&libraries=geometry`;
+        s.async = true; s.defer = true;
+        s.onload = resolve; s.onerror = () => reject(new Error('falha ao carregar Google Maps'));
+        document.head.appendChild(s);
+      });
+      if (!window.google || !window.google.maps) throw new Error('Google Maps nao inicializou');
+      return window.google;
+    })();
+    return _googleMapsPromise;
+  }
+
+  // Correcao alternativa: geocodifica o texto do ponto no Google e corrige o PIN.
+  // O motoboy confere no mini-mapa (pino Mapp x pino Google) e pode arrastar ate 100m.
+  function CorrigirGeocodeBotao({ API_URL, fetchAuth, showToast, osNumero, ponto }) {
+    const h = React.createElement;
+    const { useState, useRef, useEffect } = React;
+    const LIMITE_M = 100;
+    const [aberto, setAberto] = useState(false);
+    const [carregando, setCarregando] = useState(false);
+    const [preview, setPreview] = useState(null);
+    const [posFinal, setPosFinal] = useState(null);
+    const [aplicando, setAplicando] = useState(false);
+    const [statusMsg, setStatusMsg] = useState('');
+    const mapRef = useRef(null);
+
+    async function abrir() {
+      if (!osNumero || !String(osNumero).trim() || !ponto) { showToast('Preencha OS e ponto primeiro.', 'error'); return; }
+      setCarregando(true); setPreview(null); setPosFinal(null); setStatusMsg('');
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/geocode-preview`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ os_numero: String(osNumero).trim(), ponto: parseInt(ponto, 10) }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { showToast(data.erro || 'Falha no preview.', 'error'); setCarregando(false); return; }
+        setPreview(data);
+        if (data.google) setPosFinal({ lat: data.google.lat, lng: data.google.lng });
+        setAberto(true);
+      } catch (e) { showToast('Erro: ' + e.message, 'error'); }
+      finally { setCarregando(false); }
+    }
+
+    useEffect(() => {
+      if (!aberto || !preview || !preview.preciso || !preview.google) return;
+      let cancelado = false;
+      (async () => {
+        try {
+          const g = await carregarGoogleMaps(API_URL, fetchAuth);
+          if (cancelado || !mapRef.current) return;
+          const MAPP = preview.mapp; const GOOGLE = preview.google;
+          const centro = MAPP ? { lat: (MAPP.lat + GOOGLE.lat) / 2, lng: (MAPP.lng + GOOGLE.lng) / 2 } : GOOGLE;
+          const map = new g.maps.Map(mapRef.current, { center: centro, zoom: 17, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
+          if (MAPP) new g.maps.Marker({ position: MAPP, map, title: 'Mapp (atual)', icon: { path: g.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+          new g.maps.Circle({ map, center: GOOGLE, radius: LIMITE_M, strokeColor: '#10b981', strokeOpacity: 0.6, strokeWeight: 1, fillColor: '#10b981', fillOpacity: 0.08 });
+          const mk = new g.maps.Marker({ position: GOOGLE, map, draggable: true, title: 'Google (arraste ate 100m)', icon: { path: g.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: '#10b981', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+          const geo = g.maps.geometry.spherical;
+          const origem = new g.maps.LatLng(GOOGLE.lat, GOOGLE.lng);
+          const capar = () => {
+            const pos = mk.getPosition();
+            const d = geo.computeDistanceBetween(origem, pos);
+            if (d > LIMITE_M) {
+              const heading = geo.computeHeading(origem, pos);
+              const borda = geo.computeOffset(origem, LIMITE_M, heading);
+              mk.setPosition(borda);
+              setPosFinal({ lat: borda.lat(), lng: borda.lng() });
+            } else {
+              setPosFinal({ lat: pos.lat(), lng: pos.lng() });
+            }
+          };
+          mk.addListener('drag', capar); mk.addListener('dragend', capar);
+        } catch (e) { showToast('Mapa: ' + e.message, 'error'); }
+      })();
+      return () => { cancelado = true; };
+    }, [aberto, preview]);
+
+    async function aplicar() {
+      if (!posFinal) return;
+      setAplicando(true); setStatusMsg('Enviando correcao...');
+      try {
+        const res = await fetchAuth(`${API_URL}/agent/geocode-corrigir`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ os_numero: String(osNumero).trim(), ponto: parseInt(ponto, 10), latitude: posFinal.lat, longitude: posFinal.lng }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { showToast(data.erro || 'Falha ao aplicar.', 'error'); setAplicando(false); return; }
+        setStatusMsg('Correcao na fila. O robo vai aplicar no Mapp...');
+        const id = data.id;
+        const t = setInterval(async () => {
+          try {
+            const r = await fetchAuth(`${API_URL}/agent/status/${id}`);
+            const s = await r.json().catch(() => ({}));
+            if (s.status === 'sucesso') { clearInterval(t); setStatusMsg(''); setAplicando(false); setAberto(false); showToast('Ponto corrigido pelo Google!', 'success'); }
+            else if (s.status === 'erro' || s.status === 'falhou') { clearInterval(t); setAplicando(false); setStatusMsg('Falhou: ' + (s.detalhe_erro || s.erro || 'erro no robo')); }
+            else { setStatusMsg('Aplicando no Mapp... (' + (s.progresso || 0) + '%)'); }
+          } catch (_e) { /* segue tentando */ }
+        }, 3000);
+      } catch (e) { showToast('Erro: ' + e.message, 'error'); setAplicando(false); }
+    }
+
+    return h(React.Fragment, null,
+      h('button', {
+        type: 'button', onClick: abrir, disabled: carregando,
+        className: 'w-full mt-2 py-3 rounded-xl font-bold text-white text-sm transition flex items-center justify-center gap-2 ' + (carregando ? 'opacity-60' : 'hover:opacity-90 active:scale-[0.98]'),
+        style: { background: 'linear-gradient(135deg,#0b8f5a,#10b981)' },
+      },
+        h('span', null, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' }))),
+        carregando ? 'Buscando no Google...' : 'Corrigir pelo Google'
+      ),
+      aberto && h('div', {
+        className: 'fixed inset-0 z-50 flex items-center justify-center p-4', style: { background: 'rgba(0,0,0,.5)' },
+        onClick: (e) => { if (e.target === e.currentTarget && !aplicando) setAberto(false); },
+      },
+        h('div', { className: 'bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl' },
+          h('div', { className: 'px-4 py-3 border-b flex items-center justify-between' },
+            h('div', { className: 'font-bold text-gray-800 text-sm' }, `Corrigir pino - OS ${osNumero} - Ponto ${ponto}`),
+            !aplicando && h('button', { type: 'button', onClick: () => setAberto(false), className: 'text-gray-400 hover:text-gray-600' },
+              h('svg', { className: 'ico', style: { width: 18, height: 18 }, 'aria-hidden': 'true' }, h('use', { href: '#i-x' })))
+          ),
+          h('div', { className: 'p-4' },
+            h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1' }, 'Endereco do ponto'),
+            h('div', { className: 'text-xs text-gray-700 mb-3' }, (preview && preview.endereco) || '-'),
+            (preview && preview.preciso)
+              ? h(React.Fragment, null,
+                  h('div', { ref: mapRef, style: { height: '260px', borderRadius: '12px', border: '1px solid #eee', background: '#eef2f7' } }),
+                  h('div', { className: 'flex gap-3 mt-2 text-[11px] text-gray-600' },
+                    h('span', null, 'Vermelho = Mapp atual'), h('span', null, 'Verde = Google (arraste ate 100 m)')),
+                  statusMsg && h('div', { className: 'mt-2 text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' }, statusMsg),
+                  h('div', { className: 'flex gap-2 mt-3' },
+                    h('button', { type: 'button', onClick: () => setAberto(false), disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold' }, 'Cancelar'),
+                    h('button', { type: 'button', onClick: aplicar, disabled: aplicando || !posFinal, className: 'flex-1 py-2.5 rounded-xl text-white text-sm font-bold ' + (aplicando ? 'opacity-60' : ''), style: { background: '#10b981' } }, aplicando ? 'Aplicando...' : 'Corrigir para este ponto'))
+                )
+              : h('div', { className: 'text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-3' },
+                  (preview && preview.motivo) || 'O Google nao achou o endereco com precisao. Corrija manual (GPS/foto).')
+          )
+        )
+      )
+    );
+  }
+
   function TabFormulario({ API_URL, fetchAuth, showToast }) {
     // GPS_UNICO_V1: localizacao_raw sai do form. Ela nunca foi digitada — era o
     // GPS copiado por um clique. Agora e montada no submit, do gps ao vivo.
@@ -1329,7 +1479,9 @@
                 'Processando...'
               )
             : h(React.Fragment, null, h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" }))), 'Enviar Correção')
-        )
+        ),
+        /* GEOCODE_BTN_MOUNT_V1: correcao alternativa pelo Google (mini-mapa + arrastar 100m) */
+        h(CorrigirGeocodeBotao, { API_URL, fetchAuth, showToast, osNumero: form.os_numero, ponto: form.ponto })
       ),
 
         );
