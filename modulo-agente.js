@@ -153,8 +153,8 @@
           const g = await carregarGoogleMaps(API_URL, fetchAuth);
           if (cancelado || !mapRef.current) return;
           const MAPP = preview.mapp; const GOOGLE = preview.google;
-          const centro = MAPP ? { lat: (MAPP.lat + GOOGLE.lat) / 2, lng: (MAPP.lng + GOOGLE.lng) / 2 } : GOOGLE;
-          const map = new g.maps.Map(mapRef.current, { center: centro, zoom: 17, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
+          const centro = GOOGLE; // MAP_ZOOM_GEOCODE_V1: foca no ponto identificado pelo geocode
+          const map = new g.maps.Map(mapRef.current, { center: centro, zoom: 18, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
           if (MAPP) new g.maps.Marker({ position: MAPP, map, title: 'Mapp (atual)', icon: { path: g.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
           new g.maps.Circle({ map, center: GOOGLE, radius: LIMITE_M, strokeColor: '#10b981', strokeOpacity: 0.6, strokeWeight: 1, fillColor: '#10b981', fillOpacity: 0.08 });
           const mk = new g.maps.Marker({ position: GOOGLE, map, draggable: true, title: 'Google (arraste ate 100m)', icon: { path: g.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: '#10b981', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
@@ -1300,15 +1300,16 @@
 
       // Cabeçalho
       h('div', { className: 'text-center mb-8' },
-        h('div', { className: 'w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center',
-          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
-          h('span', { className: 'text-3xl' }, h("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })))
+        h('div', { className: 'relative w-20 h-20 mx-auto mb-4' }, /* HERO_ICON_V2 */
+          h('div', { className: 'absolute inset-0 rounded-[1.75rem] blur-xl opacity-30', style: { background: 'linear-gradient(135deg, #7c3aed, #a855f7)' } }),
+          h('div', { className: 'relative w-20 h-20 rounded-[1.75rem] flex items-center justify-center shadow-xl ring-1 ring-white/40', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
+            h('svg', { className: 'ico', style: { width: 38, height: 38, color: '#ffffff' }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })))
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
       ),
 
       // Alerta de aviso
-      h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' },
+      (modoCorrecao !== 'google') && h('div', { className: 'mb-5 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl' }, /* MODO_GATE_AVISO_V1 */
         h('div', { className: 'flex items-start gap-3' },
           h('span', { className: 'text-red-500 text-lg mt-0.5 flex-shrink-0' }, h("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" }))),
           h('div', null,
