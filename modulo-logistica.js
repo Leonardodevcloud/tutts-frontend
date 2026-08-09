@@ -3975,6 +3975,7 @@
         ativo: true,
         alterar_valor_mapp_ativo: true,
         restaurar_valor_cancel_ativo: true,
+        forcar_geocode_google: false, /* REGRA_GEOCODE_GOOGLE_FRONT_V1 */
         nome_remetente: '',
         package_type: '',
         package_weight: '',
@@ -4060,6 +4061,7 @@
         ativo: !!editando.ativo,
         alterar_valor_mapp_ativo: editando.alterar_valor_mapp_ativo !== false,
         restaurar_valor_cancel_ativo: editando.restaurar_valor_cancel_ativo !== false,
+        forcar_geocode_google: editando.forcar_geocode_google === true, /* REGRA_GEOCODE_GOOGLE_FRONT_V1 */
         nome_remetente: (editando.nome_remetente || '').trim(),
         package_type: editando.package_type || '',
         package_weight: editando.package_weight || '',
@@ -4452,6 +4454,18 @@
                 onClick: () => up('restaurar_valor_cancel_ativo', editando.restaurar_valor_cancel_ativo === false),
                 className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.restaurar_valor_cancel_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.restaurar_valor_cancel_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
+            ),
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' }, // REGRA_GEOCODE_TOGGLE_UI_V1
+              h('div', null,
+                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Forçar geocode do Google'),
+                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                  'Ligado: o Hub ignora a lat/lng que a Mapp manda e geocodifica o endereço no Google pra cotar. Use quando a coord da Mapp desse cliente vier errada.')
+              ),
+              h('button', {
+                type: 'button',
+                onClick: () => up('forcar_geocode_google', editando.forcar_geocode_google !== true),
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.forcar_geocode_google === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+              }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.forcar_geocode_google === true ? 'right-0.5' : 'left-0.5'}` })),
             ),
 
             // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
