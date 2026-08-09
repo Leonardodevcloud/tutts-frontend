@@ -126,6 +126,7 @@
     const [preview, setPreview] = useState(null);
     const [posFinal, setPosFinal] = useState(null);
     const [aplicando, setAplicando] = useState(false);
+    const [sucesso, setSucesso] = useState(null); /* SUCESSO_ANIM_STATE_V1 */
     const [statusMsg, setStatusMsg] = useState('');
     const mapRef = useRef(null);
 
@@ -208,13 +209,36 @@
           try {
             const r = await fetchAuth(`${API_URL}/agent/status/${id}`);
             const s = await r.json().catch(() => ({}));
-            if (s.status === 'sucesso') { clearInterval(t); setStatusMsg(''); setAplicando(false); setAberto(false); showToast('Ponto corrigido pelo Google!', 'success'); }
+            if (s.status === 'sucesso') { clearInterval(t); setStatusMsg(''); setAplicando(false); setSucesso({ antes: s.valores_antes || null, depois: s.valores_depois || null }); showToast('Ponto corrigido pelo Google!', 'success'); }
             else if (s.status === 'erro' || s.status === 'falhou') { clearInterval(t); setAplicando(false); setStatusMsg('Falhou: ' + (s.detalhe_erro || s.erro || 'erro no robo')); }
             else { setStatusMsg('Aplicando no Mapp... (' + (s.progresso || 0) + '%)'); }
           } catch (_e) { /* segue tentando */ }
         }, 3000);
       } catch (e) { showToast('Erro: ' + e.message, 'error'); setAplicando(false); }
     }
+
+    // SUCESSO_ANIM_V1: animacao de conclusao (igual ao fluxo antigo) - check verde
+    // com pop, titulo, cards Antes/Depois (km + valor) e botao Concluir.
+    const _cardVal = (v, cor) => h('div', { className: 'flex justify-around' },
+      v && v.km && h('div', { className: 'text-center' },
+        h('p', { className: 'text-base font-bold ' + cor }, v.km + ' km'),
+        h('p', { className: 'text-[10px] opacity-70' }, 'Distancia')),
+      v && v.valor_profissional && h('div', { className: 'text-center' },
+        h('p', { className: 'text-base font-bold ' + cor }, 'R$ ' + v.valor_profissional),
+        h('p', { className: 'text-[10px] opacity-70' }, 'Profissional')));
+    const _sucessoAnim = sucesso && h('div', { className: 'p-6 flex flex-col items-center text-center' },
+      h('style', null, '@keyframes cgbPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}@keyframes cgbSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}'),
+      h('div', { className: 'w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5', style: { animation: 'cgbPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' } },
+        h('svg', { className: 'ico', style: { width: 40, height: 40, color: '#16a34a' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' }))),
+      h('div', { style: { animation: 'cgbSlide 0.4s ease-out 0.2s both', width: '100%' } },
+        h('h2', { className: 'text-xl font-bold text-green-700 mb-1' }, 'Endereco corrigido!'),
+        h('p', { className: 'text-gray-500 text-sm mb-4' }, 'OS ' + osNumero + ' - Ponto ' + ponto),
+        (sucesso.antes || sucesso.depois) && h('div', { className: 'w-full mb-5' },
+          sucesso.antes && h('div', { className: 'bg-orange-50 border border-orange-200 rounded-xl p-3 mb-2 text-orange-600' },
+            h('p', { className: 'text-[10px] font-bold mb-1' }, 'ANTES'), _cardVal(sucesso.antes, 'text-orange-700')),
+          sucesso.depois && h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-3 text-green-600' },
+            h('p', { className: 'text-[10px] font-bold mb-1' }, 'DEPOIS'), _cardVal(sucesso.depois, 'text-green-700'))),
+        h('button', { type: 'button', onClick: () => { setSucesso(null); setAberto(false); }, className: 'w-full py-3 rounded-xl font-bold text-white', style: { background: 'linear-gradient(135deg,#550776,#7c3aed)' } }, 'Concluir')));
 
     return h(React.Fragment, null,
       h('button', {
@@ -230,12 +254,13 @@
         onClick: (e) => { if (e.target === e.currentTarget && !aplicando) setAberto(false); },
       },
         h('div', { className: 'bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl' },
-          h('div', { className: 'px-4 py-3 border-b flex items-center justify-between' },
+          sucesso && _sucessoAnim,
+          (!sucesso) && h('div', { className: 'px-4 py-3 border-b flex items-center justify-between' },
             h('div', { className: 'font-bold text-gray-800 text-sm' }, `Corrigir pino - OS ${osNumero} - Ponto ${ponto}`),
             !aplicando && h('button', { type: 'button', onClick: () => setAberto(false), className: 'text-gray-400 hover:text-gray-600' },
               h('svg', { className: 'ico', style: { width: 18, height: 18 }, 'aria-hidden': 'true' }, h('use', { href: '#i-x' })))
           ),
-          h('div', { className: 'p-4' },
+          (!sucesso) && h('div', { className: 'p-4' },
             h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1' }, 'Endereco do ponto'),
             h('div', { className: 'text-xs text-gray-700 mb-3' }, (preview && preview.endereco) || '-'),
             (preview && preview.preciso)
