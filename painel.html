@@ -637,7 +637,13 @@
       var os = e && e.codigo_os;
       if(os == null){ continue; }
       var atual = porOs[os];
-      if(!atual || (Number(e.id)||0) > (Number(atual.id)||0)){ porOs[os] = e; }
+      if(!atual){ porOs[os] = e; continue; }
+      // MOTO_PROPRIA_CONSOLIDA_V1: a moto propria e o estado ATUAL (pos-hub) da OS,
+      // entao vence a linha do hub (que virou tentativa). id 'mp-...' nao e numerico.
+      var eMp = !!e.is_moto_propria, aMp = !!atual.is_moto_propria;
+      if(eMp && !aMp){ porOs[os] = e; continue; }
+      if(!eMp && aMp){ continue; }
+      if((Number(e.id)||0) > (Number(atual.id)||0)){ porOs[os] = e; }
     }
     var out = [];
     for(var k in porOs){ if(Object.prototype.hasOwnProperty.call(porOs,k)) out.push(porOs[k]); }
