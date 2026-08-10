@@ -509,19 +509,12 @@
     var idxAtual = terminalDepois ? -1 : idxUltSucesso;
     var totalTent = d.total_tentativas || 0;
 
-    // Fatia visivel: fechada mostra so os MAX_TRILHA ultimos.
+    // MOTO_PROPRIA_TRILHA_COLAPSADA_V1: fechada por padrao (nada visivel); toggle abre tudo.
     var aberta = trilhaAberta[os] === true;
-    var ocultos = (!aberta && evs.length > MAX_TRILHA) ? (evs.length - MAX_TRILHA) : 0;
-    var inicio = ocultos > 0 ? ocultos : 0;
+    var inicio = aberta ? 0 : evs.length;
 
-    var btnMais = '';
-    if (ocultos > 0) {
-      btnMais = '<button class="tl-mais" onclick="__portal.toggleTrilha(\'' + esc(os) + '\')">'
-              + '\u25BE ver ' + ocultos + (ocultos === 1 ? ' anterior' : ' anteriores') + '</button>';
-    } else if (aberta && evs.length > MAX_TRILHA) {
-      btnMais = '<button class="tl-mais" onclick="__portal.toggleTrilha(\'' + esc(os) + '\')">'
-              + '\u25B4 ocultar anteriores</button>';
-    }
+    var btnMais = '<button class="tl-mais" onclick="__portal.toggleTrilha(\'' + esc(os) + '\')">'
+              + (aberta ? '\u25B4 ocultar tentativas' : '\u25BE ver ' + evs.length + (evs.length === 1 ? ' tentativa' : ' tentativas')) + '</button>';
 
     // contDisp precisa contar desde o INICIO real pra numerar
     // "Despachado" x "Re-despachado" certo mesmo com a trilha fechada.
