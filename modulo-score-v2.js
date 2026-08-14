@@ -625,6 +625,14 @@
             dias_pico_prata: cfg.dias_pico_prata != null ? Number(cfg.dias_pico_prata) : 12,
             dias_pico_ouro: cfg.dias_pico_ouro != null ? Number(cfg.dias_pico_ouro) : 18,
             hora_corte_pico: cfg.hora_corte_pico != null ? Number(cfg.hora_corte_pico) : 16,
+            // BONUS_EXTRAS_FORM_INIT_V1: faltava inicializar do cfg -> bonus sumiam ao reabrir e o save zerava.
+            bonus_extras: (function () {
+                var b = cfg.bonus_extras;
+                if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
+                return (b && typeof b === 'object')
+                    ? { n2: Array.isArray(b.n2) ? b.n2 : [], n3: Array.isArray(b.n3) ? b.n3 : [] }
+                    : { n2: [], n3: [] };
+            })(),
         });
 
         const toggleNivel = (n) => {
