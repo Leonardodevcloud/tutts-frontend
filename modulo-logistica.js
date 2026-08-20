@@ -1532,6 +1532,20 @@
               e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
             ),
           )
+        : buscandoSimultaneo
+        ? h('div', { className: 'px-3 py-3 border-b border-gray-100' }, /* BUSCA_SIMULTANEA_CARDANIM_V1 */
+            h('div', { className: 'rounded-lg border border-purple-100 bg-purple-50/40 p-2.5' },
+              h('div', { className: 'flex items-center justify-center gap-1.5 mb-2 text-[11px] font-bold text-purple-700' },
+                h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-3 h-3 text-orange-500' }, h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' })),
+                'Buscando entregador \u2014 2 provedores'),
+              h('div', { className: 'flex gap-4 justify-center' },
+                ['uber', 'noventanove'].map(pc =>
+                  h('div', { key: pc, className: 'flex flex-col items-center gap-1' },
+                    h('div', { className: 'relative' },
+                      h('span', { className: 'absolute inset-0 rounded-full bg-purple-400 opacity-60 animate-ping' }),
+                      h('span', { className: 'relative inline-flex' }, h(ProviderLogo, { code: pc, size: 26 }))),
+                    h('div', { className: 'text-[9px] font-semibold text-purple-600 animate-pulse' }, 'chamando\u2026')))),
+              h('div', { className: 'text-center text-[9px] text-gray-400 mt-2' }, 'o primeiro que aceitar leva')))
         : h('div', { className: `px-3 py-2 border-b border-gray-100 text-[11px] text-center ${(coluna.id === 'falha' || coluna.id === 'cancel') ? 'text-red-600 bg-red-50' : 'text-gray-400 italic'}` },
             msgSemEntregador()),
       // rodapé (hora despachada)
@@ -2003,6 +2017,19 @@
         if (res.ok && json.success) {
           const n = (json.tentativas || []).length || providers.length;
           showToast(`Disparado em ${n} provedor(es) — buscando entregador`, 'success');
+          setCotacaoModal(null);
+          carregar();
+        } else if (res.status === 409) {
+          // BUSCA_SIMULTANEA_409_V1: OS ja tem entrega ativa (ou ja reservada na
+          // Mapp). O 409 do backend esta certo — o que faltava era avisar. Fecha
+          // o modal e atualiza (a OS esta viva, aparece no kanban).
+          const _r = json.resultado || {};
+          const _msg = _r.jaAtiva
+            ? `OS ${cotacaoModal.codigoOS} já está despachada/ativa — não dá pra disparar de novo`
+            : _r.reservaFalhou
+              ? `OS ${cotacaoModal.codigoOS} já está reservada na Mapp — não dá pra disparar`
+              : (json.error || `OS ${cotacaoModal.codigoOS} já está ativa`);
+          showToast(_msg, 'error');
           setCotacaoModal(null);
           carregar();
         } else if (res.status === 403) {
