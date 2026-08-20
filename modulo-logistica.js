@@ -1429,6 +1429,14 @@
         h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' }))),
         h('span', null, 'Parceiro frequente'),
       ),
+      // BUSCA_SIMULTANEA_BADGE_V1: faixa no topo enquanto a OS esta em corrida
+      // simultanea (grupo sem vencedor e nao-terminal).
+      (!!e.grupo_simultaneo && e.grupo_vencedor == null
+        && !['DELIVERED','CANCELED','RETURNED','FAILED','FALLBACK_QUEUE'].includes(String(e.status_canonico || '').toUpperCase())
+        && !ehProprio) && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-purple-700 to-violet-500 text-white text-[11px] font-bold' },
+        h('span', null, h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-3.5 h-3.5' }, h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' }))),
+        h('span', { className: 'animate-pulse' }, 'BUSCA SIMULT\u00c2NEA \u2014 buscando entregador'),
+      ),
       // cabeçalho
       h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
         h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-c', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' }))),
