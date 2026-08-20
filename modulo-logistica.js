@@ -2115,9 +2115,19 @@
           // MOTO_PROPRIA_CONSOLIDA_V1: a moto propria (id 'mp-...') vence a linha
           // cancelada do hub (id numerico) — ela e o estado ATUAL da corrida; as
           // tentativas do hub seguem na trilha "Tentativas de despacho".
+          // BUSCA_SIMULTANEA_CROSSFIX_V1: entre linhas do mesmo tipo, a VIVA vence
+          // a TERMINAL (ex.: grupo simultaneo cruzado -> Uber viva vence 99
+          // cancelada). Assim o card reflete a corrida real e o Cancelar mira
+          // nela — nao na linha ja cancelada de id maior. So depois desempata por id.
+          const _TERMINAIS_CONS = ['DELIVERED', 'CANCELED', 'RETURNED', 'FAILED', 'FALLBACK_QUEUE'];
+          const _vivo = (x) => !_TERMINAIS_CONS.includes(String(x && x.status_canonico || '').toUpperCase());
           const _preferir = !atual
             || (!!e.is_moto_propria && !atual.is_moto_propria)
-            || ((!!e.is_moto_propria === !!atual.is_moto_propria) && (Number(e.id) || 0) > (Number(atual.id) || 0));
+            || ((!!e.is_moto_propria === !!atual.is_moto_propria) && (
+                 (_vivo(e) !== _vivo(atual))
+                   ? _vivo(e)
+                   : ((Number(e.id) || 0) > (Number(atual.id) || 0))
+               ));
           if (_preferir) {
             maisRecentePorOs.set(os, e);
           }
