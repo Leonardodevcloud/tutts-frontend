@@ -1414,6 +1414,12 @@
     // — mesmo nivel de definicao da borda do parceiro frequente, so que roxo.
     // (o v1 usava purple-200 = #e9d5ff, que e cor de FUNDO: some como borda)
     // Todos com o mesmo peso (2px): quem diferencia e a cor + a faixa no topo.
+    // BUSCA_SIMULTANEA_LOGO_V1: em corrida simultanea (grupo sem vencedor),
+    // mostra os DOIS provedores pulsando no lugar do logo unico.
+    const buscandoSimultaneo = !!e.grupo_simultaneo && e.grupo_vencedor == null
+      && !['DELIVERED','CANCELED','RETURNED','FAILED','FALLBACK_QUEUE'].includes(String(e.status_canonico || '').toUpperCase())
+      && !ehProprio;
+
     return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
       ehProprio && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold' },
         h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' }))),
@@ -1431,9 +1437,7 @@
       ),
       // BUSCA_SIMULTANEA_BADGE_V1: faixa no topo enquanto a OS esta em corrida
       // simultanea (grupo sem vencedor e nao-terminal).
-      (!!e.grupo_simultaneo && e.grupo_vencedor == null
-        && !['DELIVERED','CANCELED','RETURNED','FAILED','FALLBACK_QUEUE'].includes(String(e.status_canonico || '').toUpperCase())
-        && !ehProprio) && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-purple-700 to-violet-500 text-white text-[11px] font-bold' },
+      buscandoSimultaneo && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-purple-700 to-violet-500 text-white text-[11px] font-bold' },
         h('span', null, h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-3.5 h-3.5' }, h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' }))),
         h('span', { className: 'animate-pulse' }, 'BUSCA SIMULT\u00c2NEA \u2014 buscando entregador'),
       ),
@@ -1441,8 +1445,13 @@
       h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
         h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-c', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' }))),
         h(Badge, { entrega: e }),
-        h('span', { className: 'ml-auto inline-flex items-center gap-1.5 flex-shrink-0' },
-          h(ProviderLogo, { code: prov.code, size: 15 })),
+        h('span', { className: 'ml-auto inline-flex items-center gap-1 flex-shrink-0' },
+          buscandoSimultaneo
+            ? ['uber', 'noventanove'].map(pc =>
+                h('span', { key: pc, className: 'relative inline-flex', title: 'Buscando neste provedor' },
+                  h('span', { className: 'absolute inset-0 rounded-full bg-purple-400 opacity-60 animate-ping' }),
+                  h('span', { className: 'relative inline-flex' }, h(ProviderLogo, { code: pc, size: 15 }))))
+            : h(ProviderLogo, { code: prov.code, size: 15 })),
       ),
       // cliente
       h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
