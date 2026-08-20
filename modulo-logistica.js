@@ -1931,8 +1931,59 @@
     }
 
     function fecharCotacaoModal() {
-      if (cotacaoModal?.state === 'cotando' || cotacaoModal?.state === 'despachando') return;
+      if (cotacaoModal?.state === 'cotando' || cotacaoModal?.state === 'despachando' || cotacaoModal?.state === 'disparando_simultaneo') return;
       setCotacaoModal(null);
+    }
+
+    // BUSCA_SIMULTANEA_UI_V1: dispara nos providers disponiveis ao MESMO tempo.
+    // O primeiro que pegar motoboy vence; o backend cancela os outros (webhook
+    // first-wins). Endpoint gated por BUSCA_SIMULTANEA_ATIVA (403 se off).
+    async function despacharSimultaneo() {
+      if (!cotacaoModal || cotacaoModal.state !== 'ok') return;
+      const veiculo = cotacaoModal.selecionado?.veiculo || 'motorcycle';
+      const pp = cotacaoModal.porProvider || {};
+      const providers = Object.values(pp)
+        .filter(b => (b.cotacoes || []).some(c => c.vehicle_type === veiculo && c.available))
+        .map(b => b.code);
+      if (providers.length === 0) { showToast('Nenhum provedor com cotação válida', 'error'); return; }
+      const _telDigitos = (cotacaoModal.telefone || '').replace(/\D/g, '');
+      if (_telDigitos.length < 10) { showToast('Informe o telefone do cliente (com DDD) antes de disparar', 'error'); return; }
+
+      setCotacaoModal({ ...cotacaoModal, state: 'disparando_simultaneo', providersDisparo: providers });
+      const t0 = Date.now();
+      try {
+        const res = await fetchAuth(`${API_URL}/logistics/deliveries/simultaneo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigoOS: cotacaoModal.codigoOS,
+            providers,
+            vehicleType: veiculo,
+            telefoneEntrega: cotacaoModal.telefone || '',
+            nomeRemetente: cotacaoModal.nomeRemetente || '',
+            nomeCliente: cotacaoModal.nomeCliente || '',
+            complementoEntrega: cotacaoModal.complementoEntrega || '',
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        // segura a animacao um minimo (feedback visual do disparo)
+        await new Promise(r => setTimeout(r, Math.max(0, 1200 - (Date.now() - t0))));
+        if (res.ok && json.success) {
+          const n = (json.tentativas || []).length || providers.length;
+          showToast(`Disparado em ${n} provedor(es) — buscando entregador`, 'success');
+          setCotacaoModal(null);
+          carregar();
+        } else if (res.status === 403) {
+          showToast('Busca simultânea desativada no servidor (BUSCA_SIMULTANEA_ATIVA)', 'error');
+          setCotacaoModal({ ...cotacaoModal, state: 'ok', providersDisparo: null });
+        } else {
+          showToast(json.error || 'Erro ao disparar busca simultânea', 'error');
+          setCotacaoModal({ ...cotacaoModal, state: 'ok', providersDisparo: null });
+        }
+      } catch {
+        showToast('Erro de rede na busca simultânea', 'error');
+        setCotacaoModal({ ...cotacaoModal, state: 'ok', providersDisparo: null });
+      }
     }
 
     async function cancelarEntrega(entregaOuId) {
@@ -2955,6 +3006,26 @@
                     className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700',
                   }, 'Tentar de novo'))
 
+            : (m.state === 'disparando_simultaneo')
+              ? h('div', { className: 'p-8' },
+                  h('div', { className: 'text-center mb-6' },
+                    h('div', { className: 'inline-flex items-center gap-2 text-sm font-bold text-purple-700' },
+                      h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-4 h-4 text-orange-500' },
+                        h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' })),
+                      `Buscando entregador \u2014 ${(m.providersDisparo || []).length} provedores`),
+                    h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'O primeiro que aceitar leva; os outros s\u00e3o cancelados')),
+                  h('div', { className: 'flex gap-4 justify-center' },
+                    (m.providersDisparo || []).map(code => {
+                      const disp = (m.porProvider && m.porProvider[code]) || {};
+                      const nome = disp.display_name || (code === 'uber' ? 'Uber Direct' : code === 'noventanove' ? '99Entrega' : code);
+                      return h('div', { key: code, className: 'relative flex flex-col items-center gap-2 border border-purple-100 rounded-xl px-6 py-4 bg-purple-50/40' },
+                        h('div', { className: 'relative' },
+                          h('span', { className: 'absolute inset-0 rounded-full bg-purple-400 opacity-60 animate-ping' }),
+                          h('div', { className: 'relative w-10 h-10 rounded-full bg-gray-900 text-white text-[10px] font-extrabold grid place-items-center' }, code === 'uber' ? 'Uber' : '99')),
+                        h('div', { className: 'text-xs font-bold text-gray-700 mt-1' }, nome),
+                        h('div', { className: 'text-[10px] font-semibold text-purple-600 animate-pulse' }, 'chamando\u2026'));
+                    })))
+
             : h('div', { className: 'p-5' },
                 // Seletor de veículo + countdown
                 h('div', { className: 'flex items-center gap-2 mb-4' },
@@ -3041,7 +3112,17 @@
                   h('span', null, 'Recomendado = maior margem para o veículo selecionado. O despacho automático do worker usa a estratégia configurada.')),
 
                 // Rodapé
-                h('div', { className: 'flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100' },
+                h('div', { className: 'flex items-center gap-2 mt-4 pt-3 border-t border-gray-100' },
+                  // BUSCA_SIMULTANEA_UI_V1: dispara nos 2 ao mesmo tempo (so com 2+ providers)
+                  (blocos.length > 1 && !expirou) && h('button', {
+                    onClick: despacharSimultaneo,
+                    title: 'Dispara nos provedores ao mesmo tempo; o primeiro que aceitar leva, os outros s\u00e3o cancelados',
+                    className: 'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-purple-700 to-violet-500 hover:brightness-110 shadow-sm',
+                  },
+                    h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-4 h-4' },
+                      h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' })),
+                    'Chamada simult\u00e2nea'),
+                  h('div', { className: 'flex-1' }),
                   expirou && h('button', {
                     onClick: recotarOS,
                     className: 'px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200',
