@@ -1664,6 +1664,10 @@
     const [filtroMargem, setFiltroMargem] = useState('todas'); // todas | positiva | negativa
     const [filtroProvider, setFiltroProvider] = useState('todos'); // todos | uber | noventanove
     const [filtroCliente, setFiltroCliente] = useState('todos'); // FILTRO_CLIENTE_KANBAN: todos | <nome> | __sem__
+    // MP_TOGGLE_VER_V1: mostrar/ocultar moto propria no painel. Lembra a escolha.
+    const [verProprios, setVerProprios] = useState(() => {
+      try { return localStorage.getItem('tutts_kanban_ver_proprios') !== '0'; } catch (_) { return true; }
+    });
     const [ordenacao, setOrdenacao] = useState('recente');     // recente | antiga | margem_maior | margem_menor
     const [viewMode] = useState('kanban');                     // Kanban fixo (Lista removida)
     // Chat 99: contadores de nao-lidas por OS (badge nos cards) + abrir chat na aba propria
@@ -2197,6 +2201,12 @@
         });
       }
 
+      // MP_TOGGLE_VER_V1: esconde moto propria quando o toggle esta off (deixa o
+      // painel so com Hub). Client-side -> instantaneo, sem refetch.
+      if (!verProprios) {
+        lista = lista.filter(e => !e.is_moto_propria);
+      }
+
       // FILTRO_STATUS_CLIENTSIDE_V1: filtro de status no client (era re-fetch no servidor)
       if (filtroStatus) {
         lista = lista.filter(e => e.status_canonico === filtroStatus);
@@ -2499,6 +2509,18 @@
           h('option', { value: 'margem_menor' }, 'Margem: menor primeiro'),
           h('option', { value: 'margem_maior' }, 'Margem: maior primeiro'),
         ),
+        // MP_TOGGLE_VER_V1: liga/desliga a exibicao de moto propria no painel.
+        h('button', {
+          onClick: () => setVerProprios(v => {
+            const nv = !v;
+            try { localStorage.setItem('tutts_kanban_ver_proprios', nv ? '1' : '0'); } catch (_) {}
+            return nv;
+          }),
+          title: 'Mostrar ou ocultar as corridas de moto propria no painel',
+          className: `px-3 py-2 rounded-lg text-sm font-semibold border inline-flex items-center gap-1.5 ${verProprios ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-400'}`,
+        },
+          h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })),
+          verProprios ? 'Moto própria: on' : 'Moto própria: off'),
       ),
 
       // ── Lista de cards ──
