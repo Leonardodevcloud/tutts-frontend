@@ -2015,8 +2015,20 @@
         // segura a animacao um minimo (feedback visual do disparo)
         await new Promise(r => setTimeout(r, Math.max(0, 1200 - (Date.now() - t0))));
         if (res.ok && json.success) {
-          const n = (json.tentativas || []).length || providers.length;
-          showToast(`Disparado em ${n} provedor(es) — buscando entregador`, 'success');
+          // BUSCA_SIMULTANEA_FALHAPROV_V1: avisa se algum provedor NAO criou a
+          // corrida (erros[] do backend), pra nao achar que buscou nos dois
+          // quando so um foi.
+          const _nomeProv = (p) => p === 'uber' ? 'Uber' : (p === 'noventanove' || p === '99') ? '99' : String(p || '?');
+          const _erros = Array.isArray(json.erros) ? json.erros.filter(e => e && e.provider) : [];
+          const _tent = json.tentativas || [];
+          const n = _tent.length || providers.length;
+          if (_erros.length > 0) {
+            const _ok = _tent.map(t => _nomeProv(t.provider_code || t.provider)).filter(Boolean).join(' + ') || `${n}`;
+            const _falhas = _erros.map(e => `${_nomeProv(e.provider)} (${String(e.erro || 'falhou').slice(0, 70)})`).join(' · ');
+            showToast(`Buscando em ${_ok}. Nao criou: ${_falhas}`, 'error');
+          } else {
+            showToast(`Disparado em ${n} provedor(es) — buscando entregador`, 'success');
+          }
           setCotacaoModal(null);
           carregar();
         } else if (res.status === 409) {
