@@ -815,6 +815,12 @@
     const podeExpandir = evs.length > MAX_TRILHA;
 
     let contDisp = 0;
+    // BUSCA_SIMULTANEA_TENT_V1: dispatch_success do MESMO grupo sao tentativas
+    // PARALELAS (busca simultanea), nao redespacho. Conta o grupo como UM
+    // despacho e rotula as irmas iguais (sem "Re-despachado").
+    const _grupoCount = {};
+    evs.forEach(x => { if (x.tipo === 'dispatch_success' && x.grupo) _grupoCount[x.grupo] = (_grupoCount[x.grupo] || 0) + 1; });
+    const _grupoContado = {};
     return h('div', { className: 'pt-3 border-t border-gray-100' },
       /* MP_TRILHA_DROPDOWN_V4: trilha inteira colapsada num dropdown (fechada por padrao) */
       h('button', { onClick: () => setTrilhaAberta(v => !v), className: 'w-full flex items-center gap-2 mb-1 text-left' },
@@ -831,9 +837,18 @@
           let providerCode = ev.provider && ev.provider !== 'none' ? ev.provider : null;
 
           if (ev.tipo === 'dispatch_success') {
-            contDisp++;
+            const ehSimult = ev.grupo && _grupoCount[ev.grupo] >= 2; // BUSCA_SIMULTANEA_TENT_V1
             icone = ''; dotCls = 'border-green-500 bg-green-500';
-            titulo = contDisp === 1 ? 'Despachado' : 'Re-despachado';
+            if (ehSimult) {
+              // o grupo inteiro conta como UM despacho (nao numera irmas)
+              if (!_grupoContado[ev.grupo]) { contDisp++; _grupoContado[ev.grupo] = true; }
+              titulo = contDisp === 1 ? 'Despachado' : 'Re-despachado';
+              detalhe = 'busca simult\u00e2nea';
+              detClsExtra = 'text-purple-700 bg-purple-50';
+            } else {
+              contDisp++;
+              titulo = contDisp === 1 ? 'Despachado' : 'Re-despachado';
+            }
           } else if (ev.tipo === 'canceled') {
             const sistema = ev.cancelado_por === 'sistema-bloqueio';
             icone = ''; dotCls = 'border-red-500 bg-red-500';
