@@ -45,6 +45,20 @@
         background-size:260% 100%;background-position:160% 0;animation:tlgSweep 3.8s 1.2s ease-in-out infinite}
       @keyframes tlgSweep{0%{background-position:170% 0;opacity:0}12%{opacity:1}55%{opacity:1}70%,100%{background-position:-70% 0;opacity:0}}
       @keyframes tlgHalo{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+      /* PORTAL_BUSCA_SIMULTANEA_V1 */
+      .bs-wrap{margin:4px 0;padding:10px;border:1px solid #ede9fe;background:#faf5ff;border-radius:10px}
+      .bs-head{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:#6d28d9;margin-bottom:8px}
+      .bs-provs{display:flex;gap:22px;justify-content:center}
+      .bs-prov{display:flex;flex-direction:column;align-items:center;gap:4px}
+      .bs-badge{position:relative;display:inline-flex;width:30px;height:30px}
+      .bs-ping{position:absolute;inset:0;border-radius:50%;background:#a78bfa;opacity:.55;animation:bsPing 1.5s cubic-bezier(0,0,.2,1) infinite}
+      .bs-logo{position:relative;width:30px;height:30px;border-radius:50%;background:#0a0a0a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+      .bs-logo.bs-99{font-size:12px}
+      .bs-logo.bs-uber{font-size:9px}
+      .bs-lbl{font-size:10px;font-weight:600;color:#7c3aed;animation:bsPulse 1.6s ease-in-out infinite}
+      .bs-foot{text-align:center;font-size:10px;color:#9ca3af;margin-top:8px}
+      @keyframes bsPing{0%{transform:scale(.8);opacity:.5}80%,100%{transform:scale(1.9);opacity:0}}
+      @keyframes bsPulse{0%,100%{opacity:1}50%{opacity:.45}}
       @keyframes tlgMarkIn{to{opacity:1;transform:scale(1)}}
       @keyframes tlgFloaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
       .tlg-htitle{font-family:'Sora','Inter',sans-serif;font-weight:800;font-size:clamp(24px,2.4vw,32px);line-height:1.1;letter-spacing:-.01em;margin-top:42px;opacity:0;animation:tlgFadeUp .8s .9s forwards}
@@ -576,6 +590,16 @@
     if (temEnt){
       var acts=''; if (e.entregador_telefone){ acts='<button class="mini" onclick="__portal.ligar('+"'"+esc(e.entregador_telefone)+"'"+')">'+(isMobile()?'Ligar':'Copiar')+'</button>'; }
       telBloco='<div class="ent">'+av+'<div style="min-width:0"><div class="nm">'+esc(e.entregador_nome)+'</div><div class="tel">'+(ehProprio?'motoboy próprio':esc(e.entregador_telefone||''))+'</div></div><div class="acts">'+acts+'</div></div>';
+    } else if (e.busca_simultanea){
+      // PORTAL_BUSCA_SIMULTANEA_V1: mesma vibe do admin — 2 provedores buscando.
+      telBloco='<div class="bs-wrap">'
+        + '<div class="bs-head">\u26a1 Buscando entregador \u2014 2 provedores</div>'
+        + '<div class="bs-provs">'
+        +   '<div class="bs-prov"><span class="bs-badge"><span class="bs-ping"></span><span class="bs-logo bs-uber">Uber</span></span><span class="bs-lbl">chamando\u2026</span></div>'
+        +   '<div class="bs-prov"><span class="bs-badge"><span class="bs-ping"></span><span class="bs-logo bs-99">99</span></span><span class="bs-lbl">chamando\u2026</span></div>'
+        + '</div>'
+        + '<div class="bs-foot">o primeiro que aceitar leva</div>'
+        + '</div>';
     } else { telBloco='<div class="sem">'+(proc?'Procurando entregador...':'Aguardando entregador')+'</div>'; }
     var pickup=e.pickup_code?'<span class="codigo">Codigo de coleta '+esc(e.pickup_code)+'</span>':'';
     var devol=e.return_code?'<span class="codigo codigo-devol">\u21a9\uFE0F Codigo de devolucao '+esc(e.return_code)+'</span>':'';
