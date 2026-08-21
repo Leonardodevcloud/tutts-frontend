@@ -624,6 +624,17 @@
   // ultima tentativa). O historico das tentativas continua na trilha do card.
   function consolidarPorOs(lista){
     if(!Array.isArray(lista)) return [];
+    // CONSOLIDA_ENTREGUE_V1: rank do estado — entregue/devolvido (resultado real)
+    // vence em-andamento, que vence cancelado/falhou. Assim o card do grupo
+    // simultaneo mostra o resultado real (entregue), nao a irma cancelada de id maior.
+    var _NAO_ACONTECEU = { 'CANCELED':1, 'FAILED':1, 'FALLBACK_QUEUE':1 };
+    var _FINALIZADO_REAL = { 'DELIVERED':1, 'RETURNED':1 };
+    function _rankStatusPortal(x){
+      var s = String(x && x.status_canonico || '').toUpperCase();
+      if(_NAO_ACONTECEU[s]) return 0;     // cancelado/falhou
+      if(_FINALIZADO_REAL[s]) return 2;   // entregue/devolvido (resultado real)
+      return 1;                            // em andamento (pending, dispatched, picked_up...)
+    }
     var porOs = {};
     for(var i=0;i<lista.length;i++){
       var e = lista[i];
@@ -636,6 +647,12 @@
       var eMp = !!e.is_moto_propria, aMp = !!atual.is_moto_propria;
       if(eMp && !aMp){ porOs[os] = e; continue; }
       if(!eMp && aMp){ continue; }
+      // CONSOLIDA_ENTREGUE_V1: em grupo simultaneo, uma linha pode ENTREGAR e a
+      // irma ser CANCELADA. O card tem que mostrar o RESULTADO REAL, nao a
+      // cancelada de id maior. Rank: em-andamento(2) > entregue/devolvido(1) >
+      // cancelado/falhou(0). So empata por id dentro do mesmo rank.
+      var re = _rankStatusPortal(e), ra = _rankStatusPortal(atual);
+      if(re !== ra){ if(re > ra){ porOs[os] = e; } continue; }
       if((Number(e.id)||0) > (Number(atual.id)||0)){ porOs[os] = e; }
     }
     var out = [];
