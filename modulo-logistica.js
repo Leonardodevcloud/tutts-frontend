@@ -4598,8 +4598,12 @@
                     h('option', { value: 'melhor_preco' }, 'Melhor preco'),
                     h('option', { value: 'melhor_eta' }, 'Melhor ETA'),
                     h('option', { value: 'fallback' }, 'Fallback'),
+                    h('option', { value: 'disparo_simultaneo' }, 'Disparo simultaneo (99 + Uber juntos)'), /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
                   ),
-                  h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Com 1 provedor, qualquer estrategia vira provedor unico.'),
+                  h('p', { className: 'text-[11px] text-gray-500 mt-1' },
+                    editando.estrategia === 'disparo_simultaneo'
+                      ? 'Disparo simultaneo: chama TODOS os provedores preferidos ao mesmo tempo — o primeiro que aceitar leva. Precisa de 2+ provedores; com 1 (ou flag desligada) vira melhor preco.' /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
+                      : 'Com 1 provedor, qualquer estrategia vira provedor unico.'),
                 ),
                 h('div', null,
                   h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Veiculo'),
