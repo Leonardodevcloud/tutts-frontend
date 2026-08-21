@@ -603,7 +603,7 @@ let SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}]
+      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}, {id: "portais-cliente", label: "Portais Cliente"}]
     },
     { id: "bi-monitoramento", label: "BI Monitoramento", icon: "📡", admin: true, abas: [] },
     { id: "todo", label: "TO-DO", icon: "📝",
@@ -18489,6 +18489,9 @@ const hideLoadingScreen = () => {
                 React.createElement("span", {className: "ml-4 text-sm text-purple-700"}, "Página ", profPaginaAtual, " de ", Math.ceil(Vt.length / 20))
             )), 
             
+            // ==================== ABA PORTAIS DO CLIENTE (BI) ====================
+            "portais-cliente" === Et && (window.BiPortaisCliente ? React.createElement(window.BiPortaisCliente, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de portais do cliente...")),
+
             // ==================== ABA GARANTIDO ====================
             // 🆕 V2 BI GARANTIDO (2026-04-30 - refator visual completo)
             // Backup do código antigo: BIGarantido.OLD.js
