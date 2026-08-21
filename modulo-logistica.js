@@ -4164,6 +4164,7 @@
         alterar_valor_mapp_ativo: true,
         restaurar_valor_cancel_ativo: true,
         forcar_geocode_google: false, /* REGRA_GEOCODE_GOOGLE_FRONT_V1 */
+        apenas_moto_propria: false, /* APENAS_MOTO_PROPRIA_UI_V1 */
         nome_remetente: '',
         package_type: '',
         package_weight: '',
@@ -4207,6 +4208,7 @@
         portal_ativo: !!r.portal_ativo,
         portal_tem_senha: !!r.portal_tem_senha,
         portal_senha: '',
+        apenas_moto_propria: r.apenas_moto_propria === true, /* APENAS_MOTO_PROPRIA_UI_V1 */
       });
     }
 
@@ -4257,6 +4259,7 @@
         // PORTAL_CLIENTE_PAYLOAD: acesso da loja
         portal_login: (editando.portal_login || '').trim(),
         portal_ativo: !!editando.portal_ativo,
+        apenas_moto_propria: editando.apenas_moto_propria === true, /* APENAS_MOTO_PROPRIA_UI_V1 */
       };
       // senha so vai se digitada (vazio = mantem a atual no backend)
       if ((editando.portal_senha || '').length > 0) payload.portal_senha = editando.portal_senha;
@@ -4658,6 +4661,22 @@
                 onClick: () => up('forcar_geocode_google', editando.forcar_geocode_google !== true),
                 className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.forcar_geocode_google === true ? 'bg-purple-600' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.forcar_geocode_google === true ? 'right-0.5' : 'left-0.5'}` })),
+            ),
+
+            // APENAS_MOTO_PROPRIA_UI_V1: regra so-moto-propria (nao despacha no Hub)
+            (abaRegra === 'despacho') && h('div', { className: `flex items-center justify-between gap-3 pt-3 border-t ${editando.apenas_moto_propria === true ? 'bg-purple-50 -mx-4 px-4 py-3 rounded-lg' : ''}` },
+              h('div', null,
+                h('div', { className: 'text-sm font-semibold text-gray-800 inline-flex items-center gap-1.5' },
+                  h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })),
+                  'Apenas moto própria (não despachar no Hub)'),
+                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                  'Ligado: a regra fica ativa só pra IDENTIFICAR as moto próprias deste cliente no painel — o Hub NUNCA despacha estas OS em 99/Uber. Use pra cliente que só usa motoboy próprio.')
+              ),
+              h('button', {
+                type: 'button',
+                onClick: () => up('apenas_moto_propria', editando.apenas_moto_propria !== true),
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.apenas_moto_propria === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+              }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.apenas_moto_propria === true ? 'right-0.5' : 'left-0.5'}` })),
             ),
 
             // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
