@@ -7,6 +7,8 @@
     { "source": "/r/(.*)", "destination": "/rastreio.html" },
     { "source": "/loja", "destination": "/painel.html" },
     { "source": "/loja/(.*)", "destination": "/painel.html" },
+    { "source": "/relatorios", "destination": "/relatorios.html" },
+    { "source": "/relatorios/(.*)", "destination": "/relatorios.html" },
     { "source": "/((?!.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.json|.*\\.ico|sw\\.js|manifest\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatórios · Tutts</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--roxo:#5b1a9e;--roxo2:#7c3aed;--laranja:#f5921e;--tinta:#16121f;--muted:#6b6577;--linha:#ece8f3;--ok:#1d9e75;--err:#e24b4a;--bg:#f7f5fb}
+  *{font-family:'Inter',sans-serif;box-sizing:border-box}
+  body{background:var(--bg);color:var(--tinta);margin:0}
+  .sora{font-family:'Sora',sans-serif}
+  .num{font-family:'Sora',sans-serif;font-variant-numeric:tabular-nums}
+  .card{background:#fff;border:1px solid var(--linha);border-radius:16px;box-shadow:0 1px 2px rgba(22,18,31,.04),0 8px 24px -18px rgba(91,26,158,.18)}
+  .hd-grad{background:linear-gradient(120deg,#4a1580 0%,var(--roxo) 45%,var(--roxo2) 100%)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px;padding:3px 10px;border-radius:999px;line-height:1.4}
+  .pill-ok{background:#e7f6ef;color:#137a56}.pill-err{background:#fdeceb;color:#c23b39}.pill-mut{background:#f1eef7;color:#6a5a86}
+  .tab{padding:12px 4px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;font-size:14px}
+  .tab.active{color:var(--roxo);border-color:var(--roxo)}
+  .field{border:1px solid var(--linha);border-radius:10px;padding:9px 12px;font-size:13px;background:#fff;width:100%;color:var(--tinta)}
+  .field:focus{outline:2px solid rgba(124,58,237,.25);border-color:var(--roxo2)}
+  .btn-primary{background:var(--roxo);color:#fff;font-weight:700;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;border:0}
+  .btn-primary:hover{background:#4a1580}.btn-primary:disabled{opacity:.6;cursor:default}
+  .btn-ghost{background:#fff;border:1px solid var(--linha);color:var(--tinta);font-weight:600;border-radius:10px;padding:9px 16px;font-size:13px;cursor:pointer}
+  .chip{border:1px solid var(--linha);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;background:#fff}
+  .chip.on{background:var(--roxo);color:#fff;border-color:var(--roxo)}
+  .kbadge{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:12px;background:linear-gradient(135deg,var(--roxo),var(--roxo2))}
+  table{border-collapse:separate;border-spacing:0;width:100%}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;text-align:left;padding:12px 14px;position:sticky;top:0;background:#faf9fd;white-space:nowrap}
+  th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--roxo)}
+  .sar{display:inline-block;width:10px;color:var(--roxo);font-size:10px}
+  td{padding:12px 14px;border-top:1px solid var(--linha);font-size:13px;vertical-align:middle}
+  tr:hover td{background:#faf8fe}
+  .chart-wrap{position:relative;width:100%}.chart-wrap canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+  .h-bar{height:200px}.h-donut{height:180px}
+  .hidden{display:none}
+  .scrollbar::-webkit-scrollbar{height:8px;width:8px}.scrollbar::-webkit-scrollbar-thumb{background:#e2dcef;border-radius:8px}
+  .spin{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .skel{background:linear-gradient(90deg,#efeaf6,#f6f2fb,#efeaf6);background-size:200% 100%;animation:sk 1.2s infinite;border-radius:8px}
+  @keyframes sk{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login" class="min-h-screen grid place-items-center px-5">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+      <div class="kbadge sora mx-auto mb-3" style="width:52px;height:52px;border-radius:14px;font-size:20px">t</div>
+      <div class="sora font-extrabold text-2xl">Relatórios Tutts</div>
+      <div class="text-[13px] text-[color:var(--muted)] mt-1">Acesse com o login do seu portal</div>
+    </div>
+    <div class="card p-6">
+      <label class="text-[12px] font-semibold text-[color:var(--muted)]">Login</label>
+      <input id="inLogin" class="field mt-1" placeholder="seu login" autocomplete="username">
+      <label class="text-[12px] font-semibold text-[color:var(--muted)] mt-4 block">Senha</label>
+      <input id="inSenha" type="password" class="field mt-1" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <div id="loginErro" class="text-[12px] mt-3 hidden" style="color:var(--err)"></div>
+      <button id="btnLogin" class="btn-primary w-full mt-5" onclick="fazerLogin()">Entrar</button>
+    </div>
+    <div class="text-center text-[11px] text-[color:var(--muted)] mt-4">Tutts · Analytics do cliente</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden">
+  <!-- header -->
+  <div class="bg-white border-b border-[color:var(--linha)]">
+    <div class="max-w-[1180px] mx-auto px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="kbadge" id="hdBadge">—</div>
+        <div>
+          <div class="sora font-bold text-[16px] leading-none" id="hdNome">Cliente</div>
+          <div class="text-[11px] text-[color:var(--muted)] mt-1" id="hdSub">carregando…</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="pill pill-mut"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--ok)"></span> Atualizado agora</div>
+        <button class="btn-ghost" onclick="sair()">Sair</button>
+      </div>
+    </div>
+    <div class="max-w-[1180px] mx-auto px-5 flex items-center gap-6">
+      <div class="tab active" id="tab-dash" onclick="setTab('dash')">Visão geral</div>
+      <div class="tab" id="tab-corridas" onclick="setTab('corridas')">Corridas</div>
+    </div>
+  </div>
+
+  <!-- filtros -->
+  <div class="max-w-[1180px] mx-auto px-5 pt-5">
+    <div class="card p-3 flex items-center gap-3 flex-wrap">
+      <div class="flex items-center gap-2">
+        <span class="text-[12px] font-semibold text-[color:var(--muted)]">Período</span>
+        <div class="flex gap-1" id="chipsPeriodo">
+          <button class="chip" data-p="hoje" onclick="setPeriodo(this)">Hoje</button>
+          <button class="chip on" data-p="7" onclick="setPeriodo(this)">7 dias</button>
+          <button class="chip" data-p="30" onclick="setPeriodo(this)">30 dias</button>
+          <button class="chip" data-p="mes" onclick="setPeriodo(this)">Mês</button>
+          <button class="chip" data-p="custom" onclick="setPeriodo(this)">Personalizado</button>
+        </div>
+      </div>
+      <div id="customRange" class="hidden items-center gap-2">
+        <input type="date" id="dDe" class="field" style="width:auto" onchange="aplicarCustom()">
+        <span class="text-[color:var(--muted)] text-[13px]">até</span>
+        <input type="date" id="dAte" class="field" style="width:auto" onchange="aplicarCustom()">
+      </div>
+      <div class="h-6 w-px bg-[color:var(--linha)]"></div>
+      <select class="field" style="width:auto" id="selCentro" onchange="recarregar()">
+        <option value="__todos__">Todos os centros de custo</option>
+      </select>
+      <div class="ml-auto text-[12px] text-[color:var(--muted)]" id="lblPeriodo"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="pane-dash" class="max-w-[1180px] mx-auto px-5 py-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="cards1"></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4" id="cards2"></div>
+    <div class="grid lg:grid-cols-3 gap-4 mt-4">
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="sora font-bold text-[15px]">Entregas por dia</h3>
+          <div class="flex gap-3 text-[11px]">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--ok)"></span>No prazo</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--err)"></span>Fora</span>
+          </div>
+        </div>
+        <div class="chart-wrap h-bar"><canvas id="chDia"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="sora font-bold text-[15px] mb-1">No prazo × fora</h3>
+        <div class="relative chart-wrap h-donut"><canvas id="chDonut"></canvas>
+          <div class="absolute inset-0 grid place-items-center pointer-events-none">
+            <div class="text-center"><div class="num text-3xl font-extrabold" id="donutPct" style="color:var(--ok)">—</div><div class="text-[11px] text-[color:var(--muted)]">no prazo</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4 mt-4">
+      <div class="card p-5"><h3 class="sora font-bold text-[15px] mb-1">Distribuição por distância</h3><p class="text-[12px] text-[color:var(--muted)] mb-2">corridas por faixa de km</p><div class="chart-wrap h-bar"><canvas id="chKm"></canvas></div></div>
+      <div class="card p-5"><h3 class="sora font-bold text-[15px] mb-1">Distribuição por tempo de entrega</h3><p class="text-[12px] text-[color:var(--muted)] mb-2">corridas por faixa de tempo</p><div class="chart-wrap h-bar"><canvas id="chTempo"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- CORRIDAS -->
+  <div id="pane-corridas" class="max-w-[1180px] mx-auto px-5 py-6 hidden">
+    <div class="card p-4 mb-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="relative flex-1 min-w-[220px]">
+          <input id="inBusca" class="field pl-9" placeholder="Buscar por OS, NF, cliente, endereço ou motoboy…" oninput="debBusca()">
+          <svg class="absolute left-3 top-2.5 w-4 h-4 text-[color:var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+        </div>
+        <div class="flex gap-1" id="chipsPrazo">
+          <button class="chip on" data-f="" onclick="setPrazo(this)">Todas</button>
+          <button class="chip" data-f="no_prazo" onclick="setPrazo(this)">No prazo</button>
+          <button class="chip" data-f="fora" onclick="setPrazo(this)">Fora do prazo</button>
+          <button class="chip" data-f="retorno" onclick="setPrazo(this)">Retorno</button>
+        </div>
+      </div>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto scrollbar" style="max-height:560px">
+        <table class="min-w-[1080px]">
+          <thead><tr id="theadRow"></tr></thead>
+          <tbody id="corpo"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-[color:var(--linha)] text-[12px] text-[color:var(--muted)]">
+        <span id="lblTotal">—</span>
+        <div class="flex items-center gap-1">
+          <button class="chip" onclick="irPagina(-1)">Anterior</button>
+          <span class="chip on" id="lblPagina">1</span>
+          <button class="chip" onclick="irPagina(1)">Próxima</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= config ================= */
+var API = 'https://tutts-backend-production.up.railway.app';
+var TK = 'tutts_bi_portal_token';
+function token(){ return localStorage.getItem(TK); }
+function setToken(t){ localStorage.setItem(TK,t); }
+function limparToken(){ localStorage.removeItem(TK); }
+function api(path, opt){
+  opt = opt || {}; opt.headers = opt.headers || {};
+  var t = token(); if(t) opt.headers['Authorization'] = 'Bearer '+t;
+  return fetch(API+path, opt).then(function(r){
+    if(r.status===401){ limparToken(); mostrarLogin(); throw new Error('401'); }
+    return r.json();
+  });
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+/* ================= login ================= */
+function mostrarLogin(){ document.getElementById('app').classList.add('hidden'); document.getElementById('login').classList.remove('hidden'); }
+function mostrarApp(){ document.getElementById('login').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); }
+function fazerLogin(){
+  var login=document.getElementById('inLogin').value.trim();
+  var senha=document.getElementById('inSenha').value;
+  var err=document.getElementById('loginErro'), btn=document.getElementById('btnLogin');
+  err.classList.add('hidden');
+  if(!login||!senha){ err.textContent='Preencha login e senha.'; err.classList.remove('hidden'); return; }
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  fetch(API+'/api/bi-portal/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login:login,senha:senha})})
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+    .then(function(res){
+      if(res.ok && res.j.token){ setToken(res.j.token); iniciarApp(); }
+      else { err.textContent='Login ou senha inválidos.'; err.classList.remove('hidden'); }
+    })
+    .catch(function(){ err.textContent='Não foi possível conectar. Tente de novo.'; err.classList.remove('hidden'); })
+    .finally(function(){ btn.disabled=false; btn.textContent='Entrar'; });
+}
+function sair(){ limparToken(); mostrarLogin(); }
+
+/* ================= estado / filtros ================= */
+var estado={ periodo:'7', de:null, ate:null, centro:'__todos__',
+  prazo:'', busca:'', sort:'data', dir:'desc', page:1, per:20 };
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function calcPeriodo(){
+  var hoje=new Date(); hoje.setHours(0,0,0,0);
+  var de=new Date(hoje), ate=new Date(hoje);
+  if(estado.periodo==='hoje'){}
+  else if(estado.periodo==='7'){ de.setDate(de.getDate()-6); }
+  else if(estado.periodo==='30'){ de.setDate(de.getDate()-29); }
+  else if(estado.periodo==='mes'){ de=new Date(hoje.getFullYear(),hoje.getMonth(),1); }
+  else if(estado.periodo==='custom'){ 
+    var vDe=document.getElementById('dDe').value, vAte=document.getElementById('dAte').value;
+    estado.de=vDe||null; estado.ate=vAte||null; atualizarLabel(); return; }
+  estado.de=fmtDate(de); estado.ate=fmtDate(ate); atualizarLabel();
+}
+function atualizarLabel(){
+  var l=document.getElementById('lblPeriodo');
+  if(estado.de&&estado.ate){ l.textContent=estado.de.split('-').reverse().join('/')+' — '+estado.ate.split('-').reverse().join('/'); }
+  else l.textContent='';
+}
+function qs(){
+  var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
+  if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro));
+  return p.length?('?'+p.join('&')):'';
+}
+function setPeriodo(el){
+  [].forEach.call(el.parentElement.children,function(c){c.classList.remove('on');}); el.classList.add('on');
+  estado.periodo=el.getAttribute('data-p');
+  var cr=document.getElementById('customRange');
+  if(estado.periodo==='custom'){ cr.classList.remove('hidden'); cr.classList.add('flex');
+    if(!document.getElementById('dDe').value){ var h=new Date(),d=new Date(); d.setDate(d.getDate()-6);
+      document.getElementById('dDe').value=fmtDate(d); document.getElementById('dAte').value=fmtDate(h); } }
+  else { cr.classList.add('hidden'); cr.classList.remove('flex'); }
+  calcPeriodo(); recarregar();
+}
+function aplicarCustom(){ if(estado.periodo==='custom'){ calcPeriodo(); recarregar(); } }
+function setTab(t){
+  document.getElementById('tab-dash').classList.toggle('active',t==='dash');
+  document.getElementById('tab-corridas').classList.toggle('active',t==='corridas');
+  document.getElementById('pane-dash').classList.toggle('hidden',t!=='dash');
+  document.getElementById('pane-corridas').classList.toggle('hidden',t!=='corridas');
+  if(t==='corridas' && !corridasCarregou){ carregarCorridas(); }
+}
+function recarregar(){ carregarMetrics(); carregarSeries(); estado.page=1; corridasCarregou=false;
+  if(!document.getElementById('pane-corridas').classList.contains('hidden')) carregarCorridas(); }
+
+/* ================= dashboard ================= */
+function card(label,valor,extra,cor){
+  return '<div class="card p-5"><div class="text-[12px] font-semibold text-[color:var(--muted)]">'+label+'</div>'+
+    '<div class="num text-3xl font-extrabold mt-1"'+(cor?(' style="color:'+cor+'"'):'')+'>'+valor+'</div>'+
+    (extra?('<div class="text-[12px] text-[color:var(--muted)] mt-2">'+extra+'</div>'):'')+'</div>';
+}
+function skelCards(n,el){ var h=''; for(var i=0;i<n;i++)h+='<div class="card p-5"><div class="skel h-3 w-20"></div><div class="skel h-8 w-24 mt-3"></div></div>'; document.getElementById(el).innerHTML=h; }
+function carregarMetrics(){
+  skelCards(4,'cards1'); skelCards(4,'cards2');
+  api('/api/bi-portal/metrics'+qs()).then(function(m){
+    document.getElementById('cards1').innerHTML =
+      card('Entregas', (m.entregas||0).toLocaleString('pt-BR'), '') +
+      card('No prazo', (m.no_prazo_pct||0).toString().replace('.',',')+'%', (m.no_prazo||0)+' de '+((m.no_prazo||0)+(m.fora||0))+' avaliadas', 'var(--ok)') +
+      card('Fora do prazo', (m.fora_prazo_pct||0).toString().replace('.',',')+'%', (m.fora||0)+' entregas', 'var(--err)') +
+      card('Retornos', (m.retornos||0).toLocaleString('pt-BR'), '');
+    var te=m.tempo_medio_entrega!=null?(m.tempo_medio_entrega+'<span class="text-lg font-bold text-[color:var(--muted)]"> min</span>'):'—';
+    var tc=m.tempo_medio_coleta!=null?(m.tempo_medio_coleta+'<span class="text-lg font-bold text-[color:var(--muted)]"> min</span>'):'—';
+    var dm=m.distancia_media!=null?((''+m.distancia_media).replace('.',',')+'<span class="text-lg font-bold text-[color:var(--muted)]"> km</span>'):'—';
+    document.getElementById('cards2').innerHTML =
+      card('Tempo médio de entrega', te, '') +
+      card('Tempo médio de coleta', tc, 'da atribuição à coleta') +
+      card('Distância média', dm, 'por corrida') +
+      card('Km rodados', (m.km_total||0).toLocaleString('pt-BR')+'<span class="text-lg font-bold text-[color:var(--muted)]"> km</span>', 'no período');
+    document.getElementById('donutPct').textContent=(m.no_prazo_pct||0).toString().replace('.',',')+'%';
+    desenharDonut(m.no_prazo_pct||0, m.fora_prazo_pct||0);
+  }).catch(function(){});
+}
+
+var charts={};
+function novo(id,cfg){ if(charts[id])charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
+function cor(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function baseChartInit(){ Chart.defaults.font.family='Inter'; Chart.defaults.color=cor('--muted'); Chart.defaults.font.size=11; }
+function desenharDonut(noPrazo,fora){
+  baseChartInit();
+  novo('chDonut',{type:'doughnut',data:{labels:['No prazo','Fora'],datasets:[{data:[noPrazo,fora],backgroundColor:[cor('--ok'),cor('--err')],borderWidth:0}]},
+    options:{cutout:'74%',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+}
+function carregarSeries(){
+  api('/api/bi-portal/series'+qs()).then(function(s){
+    baseChartInit();
+    var dias=(s.porDia||[]).map(function(r){ return r.dia; });
+    var np=(s.porDia||[]).map(function(r){ return Number(r.no_prazo)||0; });
+    var fo=(s.porDia||[]).map(function(r){ return Number(r.fora)||0; });
+    var labels=dias.map(function(d){ var p=String(d).slice(0,10).split('-'); return p[2]+'/'+p[1]; });
+    // >14 dias vira linha (não quebra); <=14 barras empilhadas
+    if(dias.length>14){
+      novo('chDia',{type:'line',data:{labels:labels,datasets:[
+        {label:'No prazo',data:np,borderColor:cor('--ok'),backgroundColor:'rgba(29,158,117,.12)',fill:true,tension:.35,pointRadius:0,borderWidth:2},
+        {label:'Fora',data:fo,borderColor:cor('--err'),backgroundColor:'rgba(226,75,74,.10)',fill:true,tension:.35,pointRadius:0,borderWidth:2}]},
+        options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},border:{display:false},ticks:{maxTicksLimit:12}},y:{grid:{color:cor('--linha')},border:{display:false}}},maintainAspectRatio:false}});
+    } else {
+      novo('chDia',{type:'bar',data:{labels:labels,datasets:[
+        {label:'No prazo',data:np,backgroundColor:cor('--ok'),borderRadius:6,stack:'s'},
+        {label:'Fora',data:fo,backgroundColor:cor('--err'),borderRadius:6,stack:'s'}]},
+        options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:cor('--linha')},border:{display:false}}},maintainAspectRatio:false}});
+    }
+    barra('chKm',(s.porKm||[]),['0-2','2-5','5-8','8-12','12-18','18+'],cor('--roxo2'));
+    barra('chTempo',(s.porTempo||[]),['<20','20-30','30-45','45-60','60-90','90+'],cor('--laranja'));
+  }).catch(function(){});
+}
+function barra(id,rows,ordem,color){
+  var map={}; rows.forEach(function(r){ map[r.faixa]=Number(r.qtd)||0; });
+  var data=ordem.map(function(f){ return map[f]||0; });
+  novo(id,{type:'bar',data:{labels:ordem,datasets:[{data:data,backgroundColor:color,borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:cor('--linha')},border:{display:false}}},maintainAspectRatio:false}});
+}
+
+/* ================= corridas ================= */
+var corridasCarregou=false, totalCorridas=0;
+var COLS=[['os','OS / NF',''],['cliente','Cliente final',''],['end','Entrega','nos'],['motoboy','Motoboy',''],
+  ['km','Km','r'],['tempo','Tempo','r'],['meta','Meta','r'],['delta','Folga / excedente','r'],['prazo','Prazo','']];
+function montarThead(){
+  document.getElementById('theadRow').innerHTML = COLS.map(function(c){
+    var sortable = c[0]!=='end';
+    var cls = (c[2]==='r'?'text-right ':'')+(sortable?'sortable':'');
+    var on = sortable?(' onclick="ordenar(\''+c[0]+'\')"'):'';
+    var ar = (estado.sort===c[0])?('<span class="sar">'+(estado.dir==='asc'?'▲':'▼')+'</span>'):'<span class="sar"></span>';
+    return '<th class="'+cls+'"'+on+'>'+c[1]+' '+(sortable?ar:'')+'</th>';
+  }).join('');
+}
+function ordenar(k){ if(estado.sort===k) estado.dir=(estado.dir==='asc'?'desc':'asc'); else { estado.sort=k; estado.dir='asc'; } estado.page=1; carregarCorridas(); }
+function setPrazo(el){ [].forEach.call(el.parentElement.children,function(c){c.classList.remove('on');}); el.classList.add('on'); estado.prazo=el.getAttribute('data-f'); estado.page=1; carregarCorridas(); }
+var debT; function debBusca(){ clearTimeout(debT); debT=setTimeout(function(){ estado.busca=document.getElementById('inBusca').value.trim(); estado.page=1; carregarCorridas(); },350); }
+function irPagina(d){ var np=estado.page+d; if(np<1)return; if(d>0 && estado.page*estado.per>=totalCorridas)return; estado.page=np; carregarCorridas(); }
+function corridasQS(){
+  var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
+  if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro));
+  if(estado.prazo)p.push('prazo='+estado.prazo);
+  if(estado.busca)p.push('q='+encodeURIComponent(estado.busca));
+  p.push('sort='+estado.sort); p.push('dir='+estado.dir); p.push('page='+estado.page); p.push('per='+estado.per);
+  return '?'+p.join('&');
+}
+function pillPrazo(s){ return s==='retorno'?'<span class="pill pill-mut">retorno</span>':(s==='fora'?'<span class="pill pill-err">fora do prazo</span>':'<span class="pill pill-ok">no prazo</span>'); }
+function celFolga(d,s){ if(s==='retorno'||d==null) return '<span class="text-[color:var(--muted)]">—</span>';
+  if(d>=0) return '<span class="num font-semibold" style="color:var(--ok)">+'+d+' min</span><div class="text-[10px] text-[color:var(--muted)]">sobrou</div>';
+  return '<span class="num font-semibold" style="color:var(--err)">−'+Math.abs(d)+' min</span><div class="text-[10px] text-[color:var(--muted)]">excedeu</div>'; }
+function carregarCorridas(){
+  corridasCarregou=true; montarThead();
+  document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-8">Carregando…</td></tr>';
+  api('/api/bi-portal/corridas'+corridasQS()).then(function(res){
+    totalCorridas=res.total||0;
+    var rows=res.corridas||[];
+    if(!rows.length){ document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-10">Nenhuma corrida no período com esses filtros.</td></tr>'; }
+    else document.getElementById('corpo').innerHTML=rows.map(function(r){
+      var ini=(r.motoboy||'?').split(' ').map(function(x){return x[0];}).slice(0,2).join('');
+      return '<tr>'+
+        '<td><div class="font-semibold num">OS '+esc(r.os)+'</div>'+(r.num_pedido?('<div class="text-[11px] text-[color:var(--muted)]">'+esc(r.num_pedido)+'</div>'):'')+'</td>'+
+        '<td>'+esc(r.cliente_final||'—')+'</td>'+
+        '<td class="text-[color:var(--muted)] max-w-[220px]">'+esc(r.endereco||'—')+'</td>'+
+        '<td>'+(r.motoboy?('<div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full grid place-items-center text-[10px] font-bold text-white" style="background:var(--roxo2)">'+esc(ini)+'</span>'+esc(r.motoboy.split(' ').slice(0,2).join(' '))+'</div>'):'—')+'</td>'+
+        '<td class="text-right num">'+(r.km!=null?((''+r.km).replace('.',',')):'—')+'</td>'+
+        '<td class="text-right num">'+(r.tempo_min!=null?(r.tempo_min+' min'):'—')+'</td>'+
+        '<td class="text-right num text-[color:var(--muted)]">'+(r.meta_min!=null?(r.meta_min+' min'):'—')+'</td>'+
+        '<td class="text-right">'+celFolga(r.delta_min,r.situacao)+'</td>'+
+        '<td>'+pillPrazo(r.situacao)+'</td></tr>';
+    }).join('');
+    var ini=totalCorridas?((estado.page-1)*estado.per+1):0;
+    var fim=Math.min(estado.page*estado.per,totalCorridas);
+    document.getElementById('lblTotal').textContent='Mostrando '+ini+'–'+fim+' de '+totalCorridas.toLocaleString('pt-BR')+' corridas';
+    document.getElementById('lblPagina').textContent=estado.page;
+  }).catch(function(){});
+}
+
+/* ================= init ================= */
+function iniciarApp(){
+  mostrarApp();
+  api('/api/bi-portal/me').then(function(me){
+    document.getElementById('hdNome').textContent=me.nome_exibicao||'Cliente';
+    document.getElementById('hdBadge').textContent=String(me.cod_cliente||'—').slice(0,4);
+    var ncent = me.centros_total? (me.centros_total+' centro(s) de custo') : 'Todos os centros';
+    document.getElementById('hdSub').textContent=ncent+' · dados via Tutts';
+    var sel=document.getElementById('selCentro');
+    (me.centros||[]).forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+    calcPeriodo(); carregarMetrics(); carregarSeries();
+  }).catch(function(){});
+}
+if(token()){ iniciarApp(); } else { mostrarLogin(); }
+</script>
+</body>
+</html>
