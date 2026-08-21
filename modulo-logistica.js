@@ -2228,7 +2228,7 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente, filtroStatus]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente, filtroStatus, verProprios]);
 
     // Resumo — total de margem da lista filtrada
     // FILTRO_CLIENTE_KANBAN: lista distinta de clientes presente nas entregas carregadas
