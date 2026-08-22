@@ -125,7 +125,7 @@
             <div class="tlg-shine"></div>
           </div>
         </div>
-        <h1 class="tlg-htitle">Suas entregas, em <span class="tlg-grad">dados que decidem.</span></h1>
+        <h1 class="tlg-htitle">Suas entregas em <span class="tlg-grad">dados que decidem.</span></h1>
       </div>
       <div style="height:30px"></div>
     </section>
@@ -196,6 +196,11 @@
       <div class="h-6 w-px bg-[color:var(--linha)]"></div>
       <select class="field" style="width:auto" id="selCentro" onchange="recarregar()">
         <option value="__todos__">Todos os centros de custo</option>
+      </select>
+      <select class="field" style="width:auto" id="selTipoOp" onchange="setTipoOp(this)">
+        <option value="">Todos os tipos</option>
+        <option value="app_externo">App Externo</option>
+        <option value="moto_propria">Moto Própria</option>
       </select>
       <div class="ml-auto text-[12px] text-[color:var(--muted)]" id="lblPeriodo"></div>
     </div>
@@ -305,7 +310,7 @@ function fazerLogin(){
 function sair(){ limparToken(); mostrarLogin(); }
 
 /* ================= estado / filtros ================= */
-var estado={ periodo:'7', de:null, ate:null, centro:'__todos__',
+var estado={ periodo:'7', de:null, ate:null, centro:'__todos__', tipo_operacao:'',
   prazo:'', busca:'', sort:'data', dir:'desc', page:1, per:20 };
 
 function fmtDate(d){ return d.toISOString().slice(0,10); }
@@ -329,6 +334,7 @@ function atualizarLabel(){
 function qs(){
   var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
   if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro));
+  if(estado.tipo_operacao)p.push('tipo_operacao='+estado.tipo_operacao);
   return p.length?('?'+p.join('&')):'';
 }
 function setPeriodo(el){
@@ -342,6 +348,7 @@ function setPeriodo(el){
   calcPeriodo(); recarregar();
 }
 function aplicarCustom(){ if(estado.periodo==='custom'){ calcPeriodo(); recarregar(); } }
+function setTipoOp(el){ estado.tipo_operacao=el.value; recarregar(); }
 function setTab(t){
   document.getElementById('tab-dash').classList.toggle('active',t==='dash');
   document.getElementById('tab-corridas').classList.toggle('active',t==='corridas');
@@ -363,7 +370,7 @@ function carregarMetrics(){
   skelCards(4,'cards1'); skelCards(4,'cards2');
   api('/api/bi-portal/metrics'+qs()).then(function(m){
     document.getElementById('cards1').innerHTML =
-      card('Entregas', (m.entregas||0).toLocaleString('pt-BR'), '') +
+      card('Entregas', (m.entregas||0).toLocaleString('pt-BR'), 'App Externo '+((m.app_externo||0).toLocaleString('pt-BR'))+' · Moto Própria '+((m.moto_propria||0).toLocaleString('pt-BR'))) +
       card('No prazo', (m.no_prazo_pct||0).toString().replace('.',',')+'%', (m.no_prazo||0)+' de '+((m.no_prazo||0)+(m.fora||0))+' avaliadas', 'var(--ok)') +
       card('Fora do prazo', (m.fora_prazo_pct||0).toString().replace('.',',')+'%', (m.fora||0)+' entregas', 'var(--err)') +
       card('Retornos', (m.retornos||0).toLocaleString('pt-BR'), '');
@@ -463,6 +470,7 @@ function irPagina(d){ var np=estado.page+d; if(np<1)return; if(d>0 && estado.pag
 function corridasQS(){
   var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
   if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro));
+  if(estado.tipo_operacao)p.push('tipo_operacao='+estado.tipo_operacao);
   if(estado.prazo)p.push('prazo='+estado.prazo);
   if(estado.busca)p.push('q='+encodeURIComponent(estado.busca));
   p.push('sort='+estado.sort); p.push('dir='+estado.dir); p.push('page='+estado.page); p.push('per='+estado.per);
