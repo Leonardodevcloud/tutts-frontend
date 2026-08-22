@@ -21613,7 +21613,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar")))),
             // CONTESTAÇÃO - Badge + chat inline
             e.contestacao_status === 'aberta' && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
-                React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 mb-2" },
                     React.createElement("span", { className: "text-sm font-bold text-purple-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "CONTESTAÇÃO ABERTA")),
                     React.createElement("button", {
                         onClick: async () => {
