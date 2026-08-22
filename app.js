@@ -2475,6 +2475,7 @@ const hideLoadingScreen = () => {
             cod_cliente: [],
             centro_custo: [],
             categoria: "",
+            tipo_operacao: "",
             status_prazo: "",
             status_prazo_prof: "",
             status_retorno: "",
@@ -7229,7 +7230,7 @@ const hideLoadingScreen = () => {
             clientesParaEnviar && clientesParaEnviar.length > 0 && e.append("cod_cliente", Array.isArray(clientesParaEnviar) ? clientesParaEnviar.join(",") : clientesParaEnviar);
             centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && e.append("centro_custo", Array.isArray(centrosCustoParaEnviar) ? centrosCustoParaEnviar.join(",") : centrosCustoParaEnviar);
             clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && e.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
-            ua.cod_prof && e.append("cod_prof", ua.cod_prof), (ua.categorias && ua.categorias.length > 0) && e.append("categoria", ua.categorias.join(",")), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno);
+            ua.cod_prof && e.append("cod_prof", ua.cod_prof), (ua.categorias && ua.categorias.length > 0) && e.append("categoria", ua.categorias.join(",")), ua.cidade && e.append("cidade", ua.cidade), ua.status_prazo && e.append("status_prazo", ua.status_prazo), ua.status_retorno && e.append("status_retorno", ua.status_retorno), ua.tipo_operacao && e.append("tipo_operacao", ua.tipo_operacao);
             console.log('🔍 [BI-CC-LOCAL] Request params finais:', e.toString());
             return e;
         }, carregarMapaCalor = async () => {
@@ -7596,7 +7597,7 @@ const hideLoadingScreen = () => {
                 console.log("📈 Filtros alterados, recarregando acompanhamento...");
                 carregarAcompanhamento();
             }
-        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias]);
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias, ua.tipo_operacao]);
         
         // useEffect para CARREGAR DADOS DO BI automaticamente quando entrar no módulo
         useEffect(() => {
@@ -7621,7 +7622,7 @@ const hideLoadingScreen = () => {
             if (Et === "dashboard" && mapaCalorVisivel && !ba) {
                 carregarMapaCalor();
             }
-        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias]);
+        }, [ua.data_inicio, ua.data_fim, ua.cod_cliente, ua.centro_custo, ua.categorias, ua.tipo_operacao]);
         
         // useEffect para RENDERIZAR o mapa quando os dados estiverem disponíveis
         useEffect(() => {
@@ -7652,6 +7653,7 @@ const hideLoadingScreen = () => {
                 if (_cats.length > 0) params.append("categoria", _cats.join(","));
                 if (ua.status_prazo) params.append("status_prazo", ua.status_prazo);
                 if (ua.status_retorno) params.append("status_retorno", ua.status_retorno);
+                if (ua.tipo_operacao) params.append("tipo_operacao", ua.tipo_operacao);
                 if (ua.cidade) params.append("cidade", ua.cidade);
                 
                 const response = await fetchAuth(`${API_URL}/bi/os-profissional/${codProf}?${params}`);
@@ -8029,7 +8031,7 @@ const hideLoadingScreen = () => {
                 // 🔧 FIX BI-CATEGORIA-MULTI: categorias array em vez de categoria string
                 const _catsLB = e.categorias || [];
                 _catsLB.length > 0 && t.append("categoria", _catsLB.join(","));
-                e.cod_prof && t.append("cod_prof", e.cod_prof), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
+                e.cod_prof && t.append("cod_prof", e.cod_prof), e.cidade && t.append("cidade", e.cidade), e.status_prazo && t.append("status_prazo", e.status_prazo), e.status_retorno && t.append("status_retorno", e.status_retorno), e.tipo_operacao && t.append("tipo_operacao", e.tipo_operacao), console.log("📊 loadBiDashboardComFiltros - params:", t.toString());
                 const a = await fetchAuth(`${API_URL}/bi/dashboard-completo?${t}&compact=1`),
                     l = await a.json();
                 console.log("📊 loadBiDashboardComFiltros - resposta:", l), console.log("📊 metricas:", l.metricas), console.log("📊 porCliente:", l.porCliente?.length, "registros"), console.log("📊 porProfissional:", l.porProfissional?.length, "registros"), Nt(l.metricas || {}), Bt(l.porCliente || []), Jt(l.porProfissional || []);
@@ -8162,6 +8164,7 @@ const hideLoadingScreen = () => {
                 e.cidade && osParams.append("cidade", e.cidade);
                 e.status_prazo && osParams.append("status_prazo", e.status_prazo);
                 e.status_retorno && osParams.append("status_retorno", e.status_retorno);
+                e.tipo_operacao && osParams.append("tipo_operacao", e.tipo_operacao);
                 console.log("📋 entregas-lista params:", osParams.toString());
                 const osResponse = await fetchAuth(`${API_URL}/bi/entregas-lista?${osParams}`);
                 const osData = await osResponse.json();
@@ -16295,7 +16298,8 @@ const hideLoadingScreen = () => {
                 (ua.categorias && ua.categorias.length > 0) || 
                 ua.regiao ||
                 ua.status_prazo ||
-                ua.status_retorno
+                ua.status_retorno ||
+                ua.tipo_operacao
             ) && React.createElement("div", {
                 className: "bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200 px-4 py-2"
             },
@@ -16360,6 +16364,11 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     
+                    // Tipo de Operacao (TIPO_OPERACAO_V1)
+                    ua.tipo_operacao && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs"},
+                        ua.tipo_operacao === "app_externo" ? "App Externo" : "Moto Própria"
+                    ),
+                    
                     // Status Prazo
                     ua.status_prazo && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_prazo === "dentro" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")},
                         ua.status_prazo === "dentro" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo")
@@ -16378,6 +16387,7 @@ const hideLoadingScreen = () => {
                                 cod_cliente: [],
                                 centro_custo: [],
                                 categoria: "",
+                                tipo_operacao: "",
                                 status_prazo: "",
                                 status_prazo_prof: "",
                                 status_retorno: "",
@@ -16698,7 +16708,15 @@ const hideLoadingScreen = () => {
                 }, cat));
             })), React.createElement("p", {
                 className: "text-xs text-blue-600 mt-1"
-            }, (ua.categorias || []).length > 0 ? `${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `${pa.length} disponíveis | Sem seleção = Todas`))), React.createElement("div", {
+            }, (ua.categorias || []).length > 0 ? `${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `${pa.length} disponíveis | Sem seleção = Todas`))),
+            React.createElement("div", {
+                className: "grid grid-cols-1 gap-4 mb-4"
+            }, React.createElement("div", {
+                className: "border rounded-lg p-3 bg-cyan-50"
+            }, React.createElement("h3", {
+                className: "font-semibold text-gray-700 mb-2 text-sm"
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), "Tipo de Operação")), React.createElement("div", { className: "flex gap-2" }, [{ v: "", l: "Todas" }, { v: "app_externo", l: "App Externo" }, { v: "moto_propria", l: "Moto Própria" }].map(function(opt) { return React.createElement("button", { key: opt.v || "todas", type: "button", onClick: function() { ga(Object.assign({}, ua, { tipo_operacao: opt.v })); }, className: "flex-1 px-3 py-2 rounded-lg text-sm font-semibold border-2 transition " + ((ua.tipo_operacao || "") === opt.v ? "border-cyan-500 bg-cyan-100 text-cyan-800" : "border-gray-200 bg-white text-gray-600 hover:border-cyan-300") }, opt.l); })))),
+            React.createElement("div", {
                 className: "grid grid-cols-1 md:grid-cols-2 gap-4"
             }, 
             // ===== CLIENTE - CHECKBOXES =====
@@ -16841,6 +16859,7 @@ const hideLoadingScreen = () => {
                         cod_cliente: [],
                         centro_custo: [],
                         categoria: "",
+                        tipo_operacao: "",
                         status_prazo: "",
                         status_prazo_prof: "",
                         status_retorno: "",
@@ -17146,6 +17165,11 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("p", {className: "text-[11px] text-gray-500 font-medium"},
                             "Realizadas — ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos"
+                        ),
+                        React.createElement("p", {className: "text-[11px] font-semibold mt-0.5"},
+                            React.createElement("span", {className: "text-cyan-700"}, "App Externo: ", nl(ft?.total_app_externo).toLocaleString("pt-BR")),
+                            React.createElement("span", {className: "text-gray-400"}, "  •  "),
+                            React.createElement("span", {className: "text-violet-700"}, "Moto Própria: ", nl(ft?.total_moto_propria).toLocaleString("pt-BR"))
                         )
                     )
                 ),
