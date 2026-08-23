@@ -217,13 +217,16 @@
 /* ---- extras do Roteirizador Tutts (funcional) v2 ---- */
 html,body{height:100%}
 #app{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-.col.centro{position:relative;padding:0}
-#map{position:absolute;inset:0;z-index:0}
-.centro-top{position:absolute;top:10px;left:10px;right:10px;z-index:500;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-  background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:8px 10px;box-shadow:0 4px 18px rgba(15,23,42,.08)}
+.col.centro{position:relative;padding:0;display:flex;flex-direction:column}
+#map{flex:1;min-height:0;z-index:0}
+.centro-top{z-index:500;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  background:#fff;border-bottom:1px solid var(--line);padding:9px 12px}
 .centro-top .resumo{flex:1;min-width:180px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--slate)}
 .centro-top .resumo b{color:var(--ink)}
 .centro-top .btn{box-shadow:none}
+.auto-toggle{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;background:#f4f6f9;border:1px solid var(--line);border-radius:20px;padding:4px 10px}
+.auto-toggle input{accent-color:#6d28d9;cursor:pointer}
+.auto-toggle.on{background:#efeafe;border-color:#d6c6f5;color:#6d28d9}
 .sim-banner{background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;text-align:center;letter-spacing:.3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:14px}
 .sim-banner.real{background:#7f1d1d}
 .sim-banner b{color:#fbbf24}
@@ -397,15 +400,15 @@ img.avatar{object-fit:cover}
 
   <!-- CENTRO: MAPA -->
   <div class="col centro">
-    <div id="map"></div>
     <div class="centro-top">
       <div class="resumo" id="resumoRota">Clique em <b>Calcular rota</b> para montar os roteiros.</div>
       <span id="avisoNovidades" onclick="calcular()" style="display:none;cursor:pointer;background:#fff4e5;color:#b26a00;border:1px solid #ffd699;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700">↻ <span id="novCount">0</span> novidade(s) — recalcular</span>
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer" title="Recalcula sozinho quando chega nota nova ou entra motoboy"><input type="checkbox" id="chkAuto" onchange="toggleAuto()"> auto</label>
+      <label class="auto-toggle" id="autoToggle" title="Recalcula sozinho quando chega nota nova ou entra motoboy"><input type="checkbox" id="chkAuto" onchange="toggleAuto()"> auto-recalcular</label>
       <button class="btn btn-primario" id="btnCalc" onclick="calcular()">Calcular rota</button>
       <button class="btn" id="btnRecalc" onclick="recalcularSelecao()" style="display:none">Recalcular sele&ccedil;&atilde;o</button>
       <button class="btn" id="btnDesp" onclick="despacharFake()" disabled>Despachar (simulado)</button>
     </div>
+    <div id="map"></div>
   </div>
 
   <!-- DIREITA: MOTOBOYS -->
@@ -584,10 +587,17 @@ img.avatar{object-fit:cover}
   function assinaturaMotos(){ return FROTA.filter(m=>m.status==='aguardando').map(m=>m.cod).sort().join(','); }
   function toggleAuto(){
     AUTO_RECALC=!!document.getElementById('chkAuto').checked;
+    try{ localStorage.setItem('rt_auto', AUTO_RECALC?'1':'0'); }catch(e){}
+    const at=document.getElementById('autoToggle'); if(at) at.classList.toggle('on', AUTO_RECALC);
     if(AUTO_RECALC){
       const av=document.getElementById('avisoNovidades'); if(av) av.style.display='none';
       calcular().catch(()=>{});   // ligar o auto ja recalcula na hora
     }
+  }
+  function restaurarAuto(){
+    let on=false; try{ on = localStorage.getItem('rt_auto')==='1'; }catch(e){}
+    const chk=document.getElementById('chkAuto'); const at=document.getElementById('autoToggle');
+    if(chk) chk.checked=on; AUTO_RECALC=on; if(at) at.classList.toggle('on', on);
   }
   function checarNovidades(){
     const sn=assinaturaNotas(), sm=assinaturaMotos();
@@ -688,6 +698,7 @@ img.avatar{object-fit:cover}
       coletaLL = (emb.coleta_lat!=null&&emb.coleta_lng!=null)? [Number(emb.coleta_lat),Number(emb.coleta_lng)] : null;
       COLETA_STATUS = ME.coleta_status || (coletaLL?'ok':'sem_endereco');
     }catch(e){ return; }
+    restaurarAuto();
     await Promise.all([carregarNotas(), carregarFrota()]);
     desenharBase();
     renderAlertas();
@@ -940,7 +951,7 @@ img.avatar{object-fit:cover}
           ${m.foto ? `<img class="avatar" src="${fotoSrc(m.foto)}" alt="${ini(m.nome||m.cod)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">` : `<div class="avatar">${ini(m.nome||m.cod)}</div>`}
           <div>
             <div class="nome">${m.nome||m.cod}</div>
-            <div class="st ${m.status==='aguardando'?'livre':'rua'}"><span class="d"></span>${m.status||'—'}${m.posicao?(' · pos '+m.posicao):''}</div>
+            <div class="st ${desp?'rua':'livre'}"><span class="d"></span>${desp?'em rota':('dispon\u00edvel'+(m.posicao?(' · posi\u00e7\u00e3o '+m.posicao):''))}</div>
           </div>
         </div>
         ${barraRota}
