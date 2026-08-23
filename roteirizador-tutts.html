@@ -664,17 +664,22 @@ img.avatar{object-fit:cover}
     });
     try{
       const r = await apiPost('/despachar', { atribuicoes, modo_teste: modoTeste });
-      const linhas = (r.resultados||[]).map(x=> x.ok
-        ? (x.nome+': OS '+(x.os||'?')+(x.profissionalNaoAlocado?' (gravada sem profissional)':''))
-        : (x.nome+': ERRO '+(x.erro||'falha')) );
+      const linhas = (r.resultados||[]).map(x=>{
+        const oss = (x.criadas||[]).map(c=>'OS '+c.os+' (NF '+c.nf+')').join(', ');
+        const errs = (x.falhas||[]).map(f=>'NF '+(f.nf||'?')+': '+(f.erro||'falha')).join('; ');
+        let s = x.nome+' — '+(x.criadas?x.criadas.length:0)+'/'+x.notas+' O.S.';
+        if(oss) s += ': '+oss;
+        if(x.profissionalNaoAlocado) s += ' [gravadas SEM profissional]';
+        if(errs) s += ' | erros: '+errs;
+        return s;
+      });
       const okAll = r.ok;
-      if(r.resultados && r.resultados.some(x=>x.ok)){
-        DESPACHADOS = new Set(r.resultados.filter(x=>x.ok).map(x=>x.cod));
-        renderFrota(); renderAlertas();
-      }
+      // motoboy vai pra "Em rota" se criou ao menos 1 O.S.
+      const despCods = (r.resultados||[]).filter(x=>(x.criadas&&x.criadas.length>0)).map(x=>x.cod);
+      if(despCods.length){ DESPACHADOS = new Set(despCods); renderFrota(); renderAlertas(); }
       fecharModalDespacho();
       document.getElementById('btnDesp').disabled = okAll;
-      alert((modoTeste?'MODO TESTE — ':'')+(okAll?'Corrida(s) criada(s):':'Resultado do despacho:')+'\n\n'+linhas.join('\n'));
+      alert((modoTeste?'MODO TESTE — ':'')+(okAll?'Corridas criadas (1 O.S. por nota):':'Resultado do despacho:')+'\n\n'+linhas.join('\n'));
     }catch(e){ alert('Falha ao despachar: '+(e.message||e)); }
     finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; }
   }
