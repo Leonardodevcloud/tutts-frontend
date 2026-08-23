@@ -377,6 +377,8 @@ img.avatar{object-fit:cover}
     <div id="map"></div>
     <div class="centro-top">
       <div class="resumo" id="resumoRota">Clique em <b>Calcular rota</b> para montar os roteiros.</div>
+      <span id="avisoNovidades" onclick="calcular()" style="display:none;cursor:pointer;background:#fff4e5;color:#b26a00;border:1px solid #ffd699;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700">\u21bb <span id="novCount">0</span> novidade(s) — recalcular</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer" title="Recalcula sozinho quando chega nota nova ou entra motoboy"><input type="checkbox" id="chkAuto" onchange="toggleAuto()"> auto</label>
       <button class="btn btn-primario" id="btnCalc" onclick="calcular()">Calcular rota</button>
       <button class="btn" id="btnRecalc" onclick="recalcularSelecao()" style="display:none">Recalcular sele&ccedil;&atilde;o</button>
       <button class="btn" id="btnDesp" onclick="despacharFake()" disabled>Despachar (simulado)</button>
@@ -428,7 +430,31 @@ img.avatar{object-fit:cover}
   let ATRIB_BV=null;            // { cod, nome, foto, nfs, km } do pacote bate-volta
   let PRAZO_NOTA={};            // id_embarque -> {status:'no_prazo'|'urgente'|'atrasaria', folgaMin}
   let DIRETA=new Set();         // id_embarque marcados para ENVIO DIRETO (sem calcular rota)
+  let JA_CALCULOU=false;        // event-driven: so alerta novidades apos o 1o calculo
+  let SIG_NOTAS='', SIG_MOTOS='';
+  let AUTO_RECALC=false; let _autoTimer=null;
   const letraRota = i => String.fromCharCode(65 + (i%26));
+
+  function assinaturaNotas(){ return NOTAS.filter(n=>n.geocodificado).map(n=>n.id_embarque).sort().join(','); }
+  function assinaturaMotos(){ return FROTA.filter(m=>m.status==='aguardando').map(m=>m.cod).sort().join(','); }
+  function toggleAuto(){ AUTO_RECALC=!!document.getElementById('chkAuto').checked; }
+  function checarNovidades(){
+    if(!JA_CALCULOU) { SIG_NOTAS=assinaturaNotas(); SIG_MOTOS=assinaturaMotos(); return; }
+    const sn=assinaturaNotas(), sm=assinaturaMotos();
+    const mudou = (sn!==SIG_NOTAS) || (sm!==SIG_MOTOS);
+    if(!mudou) return;
+    // conta diferencas de notas (novas no pool)
+    const antes=new Set(SIG_NOTAS?SIG_NOTAS.split(','):[]);
+    const novas=(sn?sn.split(','):[]).filter(x=>!antes.has(x)).length;
+    SIG_NOTAS=sn; SIG_MOTOS=sm;
+    if(AUTO_RECALC){
+      clearTimeout(_autoTimer);
+      _autoTimer=setTimeout(()=>{ if(TOKEN) calcular().catch(()=>{}); }, 3000); // debounce
+    } else {
+      const a=document.getElementById('avisoNovidades'), c=document.getElementById('novCount');
+      if(a){ a.style.display=''; if(c) c.textContent=(novas||'!'); }
+    }
+  }
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
@@ -524,7 +550,7 @@ img.avatar{object-fit:cover}
     document.getElementById('mtPool').textContent=d.total||0;
     document.getElementById('mtGeo').textContent=d.com_coordenada||0;
     document.getElementById('contNotas').textContent=d.total||0;
-    renderNotas();
+    renderNotas(); atualizarBarraDireta(); checarNovidades();
   }
 
   function renderNotas(){
@@ -639,6 +665,7 @@ img.avatar{object-fit:cover}
     const d = await apiGet('/frota'); FROTA=d.motoboys||[]; FROTA_AVISO=d.aviso||null;
     document.getElementById('contMotos').textContent=d.total||0;
     renderFrota();                              // renderiza JA (motoboy novo aparece na hora)
+    checarNovidades();
     atualizarStatusEmRota().then(()=>renderFrota()).catch(()=>{}); // status vem depois, sem travar
     }catch(e){ if(e.message!=='nao_autorizado') throw e; }
     finally{ _frotaBusy=false; }
@@ -888,10 +915,22 @@ img.avatar{object-fit:cover}
       });
 
       const notaById={}; NOTAS.forEach(n=>{ notaById[Number(n.id_embarque)]=n; });
-      let motos = FROTA.filter(m=>m.status==='aguardando')
-                       .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+      // ordem base = fila (posicao). EQUIDADE: pondera pelo acumulo do dia (menos carregado sobe).
+      const pesoEq = (CALC.params && CALC.params.peso_equidade!=null) ? Number(CALC.params.peso_equidade) : 0;
+      const ordenarMotos = (arr)=>{
+        const byPos = [...arr].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+        if(pesoEq<=0) return byPos;
+        const acc = m => ((m.curtas||0)+(m.longas||0));
+        // score combina posicao na fila e acumulo do dia (peso_equidade controla o mix)
+        return [...arr].sort((a,b)=>{
+          const sa = (a.posicao||9999)*(1-pesoEq) + acc(a)*10*pesoEq;
+          const sb = (b.posicao||9999)*(1-pesoEq) + acc(b)*10*pesoEq;
+          return sa-sb;
+        });
+      };
+      let motos = ordenarMotos(FROTA.filter(m=>m.status==='aguardando'));
       // se ninguem esta livre, ainda sugerimos por TODOS os motoboys (operador escolhe no modal)
-      if(!motos.length) motos = [...FROTA].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+      if(!motos.length) motos = ordenarMotos(FROTA);
 
       // atribui rotas normais aos PRIMEIROS da fila
       ATRIB={}; DESPACHADOS=new Set(); ATRIB_BV=null;
@@ -936,7 +975,11 @@ img.avatar{object-fit:cover}
         (idsBV.length?` · <span style="color:#b26a00">${idsBV.length} bate-volta</span>`:'') +
         (nAtrasa?` · <span style="color:var(--red)">${nAtrasa} atrasaria(m)</span>`:'') +
         (nUrg?` · <span style="color:#b26a00">${nUrg} no limite</span>`:'') +
+        (CALC.coesao_aplicada?` · <span style="color:#6d28d9">coes\u00e3o ativa</span>`:'') +
         (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'');
+      // event-driven: a partir daqui, novidades no pool/fila viram aviso
+      JA_CALCULOU=true; SIG_NOTAS=assinaturaNotas(); SIG_MOTOS=assinaturaMotos();
+      const av=document.getElementById('avisoNovidades'); if(av) av.style.display='none';
       document.getElementById('btnDesp').disabled = !(rotas.length>0 || ATRIB_BV);
       if(rb){ rb.style.display='none'; }
 
