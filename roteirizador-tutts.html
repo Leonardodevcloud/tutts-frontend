@@ -277,6 +277,8 @@ html,body{height:100%}
   padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .14s;font-family:inherit}
 .btn-ajustar:hover{background:#efeafe;border-color:#c9b6ef;box-shadow:0 2px 8px rgba(109,40,217,.12)}
 .btn-ajustar:active{transform:translateY(1px)}
+.sel-moto{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;font-family:inherit;cursor:pointer}
+.sel-moto:focus{outline:none;border-color:#c9b6ef;box-shadow:0 0 0 3px rgba(109,40,217,.1)}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
@@ -392,6 +394,7 @@ img.avatar{object-fit:cover}
       <button class="btn" onclick="fecharModalDespacho()">Fechar</button>
     </div>
     <div class="modal-body" id="modalDespBody"></div>
+    <div id="despAviso" style="display:none;padding:10px 20px;background:#fff9f0;border-top:1px solid #ffe3b8;color:#b26a00;font-size:12px;font-weight:600">Criando as corridas na Mapp\u2026 pode levar alguns segundos (a Mapp limita a 2 por segundo). N\u00e3o feche a janela.</div>
     <div class="modal-foot">
       <label style="margin-right:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--slate)">
         <input type="checkbox" id="chkModoTeste" checked>
@@ -461,7 +464,7 @@ img.avatar{object-fit:cover}
   let _pollFrota=null, _pollNotas=null;
   function iniciarPolling(){
     pararPolling();
-    _pollFrota = setInterval(()=>{ if(TOKEN && !document.hidden) carregarFrota().catch(()=>{}); }, 12000);
+    _pollFrota = setInterval(()=>{ if(TOKEN && !document.hidden) carregarFrota().catch(()=>{}); }, 8000);
     _pollNotas = setInterval(()=>{ if(TOKEN && !document.hidden) carregarNotas().then(()=>desenharBase()).catch(()=>{}); }, 60000);
   }
   function pararPolling(){ if(_pollFrota) clearInterval(_pollFrota); if(_pollNotas) clearInterval(_pollNotas); _pollFrota=_pollNotas=null; }
@@ -601,12 +604,9 @@ img.avatar{object-fit:cover}
     if(_frotaBusy) return; _frotaBusy=true;
     try{
     const d = await apiGet('/frota'); FROTA=d.motoboys||[]; FROTA_AVISO=d.aviso||null;
-    document.getElementById('mtLivres').textContent=d.aguardando||0;
     document.getElementById('contMotos').textContent=d.total||0;
-    document.getElementById('chipLivres').textContent='Livres · '+(d.aguardando||0);
-    document.getElementById('chipRua').textContent='Em rota · '+((d.total||0)-(d.aguardando||0));
-    await atualizarStatusEmRota();
-    renderFrota();
+    renderFrota();                              // renderiza JA (motoboy novo aparece na hora)
+    atualizarStatusEmRota().then(()=>renderFrota()).catch(()=>{}); // status vem depois, sem travar
     }catch(e){ if(e.message!=='nao_autorizado') throw e; }
     finally{ _frotaBusy=false; }
   }
@@ -852,8 +852,10 @@ img.avatar{object-fit:cover}
       });
 
       const notaById={}; NOTAS.forEach(n=>{ notaById[Number(n.id_embarque)]=n; });
-      const motos = FROTA.filter(m=>m.status==='aguardando')
-                         .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+      let motos = FROTA.filter(m=>m.status==='aguardando')
+                       .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+      // se ninguem esta livre, ainda sugerimos por TODOS os motoboys (operador escolhe no modal)
+      if(!motos.length) motos = [...FROTA].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
 
       // atribui rotas normais aos PRIMEIROS da fila
       ATRIB={}; DESPACHADOS=new Set(); ATRIB_BV=null;
@@ -922,11 +924,12 @@ img.avatar{object-fit:cover}
     const pend = reais.filter(o=>o.status!=='finalizado');
     const fin = reais.length - pend.length;
     if(!confirm('Ajustar a rota enviada?\n\n'+pend.length+' nota(s) voltam para o pool para refazer o roteiro.'+(fin?('\n'+fin+' j\u00e1 entregue(s) permanecem.'):'')+'\n\nATEN\u00c7\u00c3O: as O.S. na Mapp precisam ser canceladas por l\u00e1 (o cancelamento integrado entra na pr\u00f3xima fase).')) return;
+    const box=document.getElementById('resumoRota'); if(box) box.innerHTML='<span style="color:var(--muted)">Ajustando rota\u2026</span>';
     try{ await apiPost('/desvincular',{ cod }); }catch(e){ alert('Falha ao desvincular.'); return; }
-    // limpa localmente e recarrega do backend (a nota volta ao pool)
     delete ATRIB[cod]; DESPACHADOS.delete(cod); delete EM_ROTA_POR_COD[cod]; SEL_DIRTY=false;
     await carregarNotas(); await carregarFrota();
     renderMapa();
+    if(box) box.innerHTML='<span style="color:#16a34a">Rota ajustada \u2014 '+pend.length+' nota(s) de volta no pool.</span>';
   }
 
   function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
@@ -935,21 +938,28 @@ img.avatar{object-fit:cover}
   function abrirModalDespacho(){
     const body=document.getElementById('modalDespBody');
     const cods=Object.keys(ATRIB);
-    const blocoMoto = (a) => {
+    const optsMoto = (sel) => [...FROTA].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)))
+      .map(m=>`<option value="${m.cod}" ${String(m.cod)===String(sel)?'selected':''}>${(m.nome||m.cod)}${m.status!=='aguardando'?' (em rota)':''}</option>`).join('');
+    const blocoMoto = (a, selId, sugerido, isBV) => {
       const av = a.motoFoto
         ? `<img class="avatar" src="${fotoSrcG(a.motoFoto)}" alt="${iniG(a.motoNome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">`
         : `<div class="avatar">${iniG(a.motoNome)}</div>`;
       const linhas = a.nfs.map(nf=>`<tr><td class="nf">#${nf.numero_nf}</td><td>${nf.cliente||'—'}</td></tr>`).join('');
-      const badge = a.bv ? '<span class="rot" style="background:#fff4e5;color:#b26a00">\u21ba Bate-volta</span>' : ('<span class="rot">Rota '+a.rota+'</span>');
+      const badge = isBV ? '<span class="rot" style="background:#fff4e5;color:#b26a00">\u21ba Bate-volta</span>' : ('<span class="rot">Rota '+a.rota+'</span>');
       return `
-        <div class="desp-moto">${av}<div><div style="font-weight:700">${a.motoNome}</div><div style="font-size:12px;color:var(--muted)">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}${a.bv?' · \u00faltimo da fila':''}</div></div>${badge}</div>
+        <div class="desp-moto">${av}
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">${isBV?'Bate-volta \u2192 motoboy':'Rota '+a.rota+' \u2192 motoboy'}</div>
+            <select class="sel-moto" id="${selId}">${optsMoto(sugerido)}</select>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}</div>
+          </div>${badge}</div>
         <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
     };
-    let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Confira as notas de cada motoboy antes de confirmar. Ao confirmar, o roteiro vai para o motoboy e ele passa para <b>Em rota</b>.</p>';
-    html += cods.map(cod=>blocoMoto(Object.assign({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}))).join('');
+    let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Escolha o motoboy de cada rota e confira as notas. Ao confirmar, cria as corridas na Mapp.</p>';
+    html += cods.map((cod,i)=>blocoMoto({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}, 'dm-'+i, cod, false)).join('');
     if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
       html += '<div style="border-top:2px dashed #ffd699;margin:6px 0 12px"></div>';
-      html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs, bv:true });
+      html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs }, 'dm-bv', ATRIB_BV.cod, true);
     }
     body.innerHTML = html;
     document.getElementById('modalDespacho').classList.add('on');
@@ -957,15 +967,19 @@ img.avatar{object-fit:cover}
   function fecharModalDespacho(){ document.getElementById('modalDespacho').classList.remove('on'); }
 
   async function confirmarDespacho(){
-    const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Enviando…';
+    const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Criando na Mapp…';
+    const aviso=document.getElementById('despAviso'); if(aviso) aviso.style.display='';
     const modoTeste = !!(document.getElementById('chkModoTeste') && document.getElementById('chkModoTeste').checked);
-    const atribuicoes = Object.keys(ATRIB).map(cod=>{
+    const atribuicoes = Object.keys(ATRIB).map((cod,i)=>{
+      const sel=document.getElementById('dm-'+i); const codEsc = sel?sel.value:cod;
+      const moto = FROTA.find(m=>String(m.cod)===String(codEsc));
       const a = ATRIB[cod];
-      const ids = (a.nfs||[]).map(nf=>nf.id_embarque).filter(x=>x!=null);
-      return { cod, nome:a.motoNome, nfs: ids };
+      return { cod: codEsc, nome: moto?(moto.nome||codEsc):cod, nfs: (a.nfs||[]).map(nf=>nf.id_embarque).filter(x=>x!=null) };
     });
     if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
-      atribuicoes.push({ cod:ATRIB_BV.cod, nome:ATRIB_BV.nome, nfs: ATRIB_BV.nfs.map(nf=>nf.id_embarque).filter(x=>x!=null), bate_volta:true });
+      const sel=document.getElementById('dm-bv'); const codEsc = sel?sel.value:ATRIB_BV.cod;
+      const moto = FROTA.find(m=>String(m.cod)===String(codEsc));
+      atribuicoes.push({ cod: codEsc, nome: moto?(moto.nome||codEsc):ATRIB_BV.nome, nfs: ATRIB_BV.nfs.map(nf=>nf.id_embarque).filter(x=>x!=null), bate_volta:true });
     }
     try{
       const r = await apiPost('/despachar', { atribuicoes, modo_teste: modoTeste });
@@ -992,8 +1006,10 @@ img.avatar{object-fit:cover}
       document.getElementById('btnDesp').disabled = okAll;
       const catInfo = 'Categoria enviada: '+(r.categoria?('"'+r.categoria+'"'):'(nenhuma) \u2014 se a Mapp exige modalidade, configure a categoria do embarcador no ConfirmaF\u00e1cil');
       alert((modoTeste?'MODO TESTE — ':'')+(linhas.length?((okAll?'Corridas criadas (1 O.S. por nota):':'Resultado do despacho:')+'\n\n'+linhas.join('\n')):'Nada foi despachado.')+'\n\n'+catInfo);
+      // recarrega notas (as despachadas somem do pool) e frota (status ao vivo)
+      if(despCods.length){ carregarNotas().catch(()=>{}); carregarFrota().catch(()=>{}); }
     }catch(e){ alert('Falha ao despachar: '+(e.message||e)); }
-    finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; }
+    finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; const av=document.getElementById('despAviso'); if(av) av.style.display='none'; }
   }
 
   function renderAlertas(){
