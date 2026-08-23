@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteirizador Tutts — Acessos</title>
+<style>
+  :root{
+    --ink:#0f172a;--slate:#475569;--muted:#64748b;--muted2:#94a3b8;
+    --line:#e5e9f0;--line2:#cdd5e1;--bg:#eef1f6;--panel:#fff;
+    --accent:#7c3aed;--accent-esc:#6d28d9;--ok:#16a34a;--red:#c8453b;--amber:#b7791f;
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;padding:24px}
+  .wrap{max-width:1080px;margin:0 auto}
+  header.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .mk{width:38px;height:38px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:17px}
+  header.top h1{font-size:19px;line-height:1.1}
+  header.top .sub{color:var(--muted);font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 10px rgba(15,23,42,.04)}
+  .card h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;font-weight:600;color:var(--slate);margin-bottom:4px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:9px;font-size:14px;font-family:var(--sans);background:#fff}
+  .acoes{display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap}
+  .btn{border:1px solid var(--line2);background:#fff;color:var(--slate);border-radius:9px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sans)}
+  .btn:hover{background:var(--bg)}
+  .btn-primario{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn-primario:hover{background:var(--accent-esc)}
+  .btn-red{color:var(--red);border-color:#e6bcb8}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .msg{font-size:13px;font-weight:600;min-height:18px}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--red)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  td .cnpj{font-family:var(--mono);font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.on{background:#e7f3ec;color:var(--ok)} .pill.off{background:#f1f5f9;color:var(--muted)}
+  .bloqueio{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:16px 18px;font-size:13.5px;line-height:1.6}
+  .bloqueio a{color:var(--accent);font-weight:700}
+  .hidden{display:none!important}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mk">T</div>
+    <div>
+      <h1>Roteirizador Tutts — Acessos</h1>
+      <div class="sub">Cadastro de logins do roteirizador (1 login = 1 embarcador + 1 fila)</div>
+    </div>
+  </header>
+
+  <div id="bloqueio" class="bloqueio hidden">
+    Sua sess&atilde;o de administrador n&atilde;o foi encontrada. Abra o painel
+    <a href="https://centraltutts.online" target="_blank">Central Tutts</a>, fa&ccedil;a login como admin
+    <b>nesta mesma janela do navegador</b> e recarregue esta p&aacute;gina.
+  </div>
+
+  <div id="app" class="hidden">
+    <!-- NOVO ACESSO -->
+    <div class="card">
+      <h2>Novo acesso</h2>
+      <div class="grid">
+        <div>
+          <label>Embarcador (CNPJ)</label>
+          <select id="fEmb"><option value="">Carregando…</option></select>
+          <div class="hint">Vem dos embarcadores do ConfirmaF&aacute;cil.</div>
+        </div>
+        <div>
+          <label>Fila (central)</label>
+          <select id="fFila"><option value="">Carregando…</option></select>
+          <div class="hint">A frota do roteirizador vem desta fila.</div>
+        </div>
+        <div>
+          <label>Nome de exibi&ccedil;&atilde;o</label>
+          <input id="fNome" type="text" placeholder="Ex.: Auto Pe&ccedil;as Guar&aacute;">
+        </div>
+        <div>
+          <label>Login</label>
+          <input id="fLogin" type="text" placeholder="ex.: guara_sia" autocomplete="off">
+        </div>
+        <div>
+          <label>Senha</label>
+          <input id="fSenha" type="text" placeholder="senha inicial" autocomplete="off">
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn-primario" onclick="criar()">Criar acesso</button>
+        <span id="msgNovo" class="msg"></span>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div class="card">
+      <h2>Acessos cadastrados</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Login</th><th>Nome</th><th>Embarcador (CNPJ)</th><th>Fila</th><th>Status</th><th>&Uacute;ltimo acesso</th><th></th>
+          </tr></thead>
+          <tbody id="tbody"><tr><td colspan="7" style="color:var(--muted)">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API   = 'https://tutts-backend-production.up.railway.app';
+  const ADMIN = API + '/api/admin/roteirizador-tutts';
+  let FILAS=[], EMB=[];
+
+  function tok(){ try{ return localStorage.getItem('token')||''; }catch(e){ return ''; } }
+  async function adm(path, opts){
+    opts = opts||{};
+    const h = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+    const t = tok(); if(t) h['Authorization']='Bearer '+t;
+    const r = await fetch(ADMIN+path, Object.assign({credentials:'include'}, opts, {headers:h}));
+    if(r.status===401 || r.status===403){ bloquear(); throw new Error('auth'); }
+    return r.json();
+  }
+  function bloquear(){ document.getElementById('bloqueio').classList.remove('hidden'); document.getElementById('app').classList.add('hidden'); }
+  function soDig(v){ return String(v||'').replace(/\D/g,''); }
+  function fmtCnpj(c){ c=soDig(c); return c.length===14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5') : c; }
+  function nomeFila(id){ const f=FILAS.find(x=>String(x.id)===String(id)); return f?f.nome:(id?('#'+id):'—'); }
+
+  async function carregar(){
+    try{
+      EMB   = await adm('/embarcadores');
+      FILAS = await adm('/filas');
+    }catch(e){ return; }
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('bloqueio').classList.add('hidden');
+
+    const se=document.getElementById('fEmb');
+    se.innerHTML='<option value="">Selecione…</option>'+EMB.map(e=>`<option value="${e.cnpj_embarcador}">${(e.nome_embarcador||'(sem nome)')} — ${fmtCnpj(e.cnpj_embarcador)}</option>`).join('');
+    const sf=document.getElementById('fFila');
+    sf.innerHTML='<option value="">Selecione…</option>'+FILAS.map(f=>`<option value="${f.id}">${f.nome}${f.ativa?'':' (inativa)'}</option>`).join('');
+
+    listar();
+  }
+
+  async function listar(){
+    const tb=document.getElementById('tbody');
+    try{
+      const us = await adm('/usuarios');
+      if(!us.length){ tb.innerHTML='<tr><td colspan="7" style="color:var(--muted)">Nenhum acesso cadastrado ainda.</td></tr>'; return; }
+      tb.innerHTML = us.map(u=>`
+        <tr>
+          <td><b>${u.login}</b></td>
+          <td>${u.nome_exibicao||'—'}</td>
+          <td><span class="cnpj">${fmtCnpj(u.cnpj_embarcador)}</span></td>
+          <td>${nomeFila(u.central_id)}</td>
+          <td><span class="pill ${u.ativo?'on':'off'}">${u.ativo?'ativo':'inativo'}</span></td>
+          <td>${u.ultimo_acesso? new Date(u.ultimo_acesso).toLocaleString('pt-BR'):'—'}</td>
+          <td style="white-space:nowrap;text-align:right">
+            <button class="btn btn-sm" onclick="resetar(${u.id})">Trocar senha</button>
+            <button class="btn btn-sm" onclick="toggle(${u.id},${u.ativo?'false':'true'})">${u.ativo?'Desativar':'Ativar'}</button>
+            <button class="btn btn-sm btn-red" onclick="remover(${u.id},'${u.login.replace(/'/g,"")}')">Remover</button>
+          </td>
+        </tr>`).join('');
+    }catch(e){ tb.innerHTML='<tr><td colspan="7" class="msg err">Falha ao listar.</td></tr>'; }
+  }
+
+  async function criar(){
+    const m=document.getElementById('msgNovo'); m.className='msg'; m.textContent='';
+    const body={
+      login: document.getElementById('fLogin').value.trim(),
+      senha: document.getElementById('fSenha').value,
+      nome_exibicao: document.getElementById('fNome').value.trim(),
+      cnpj_embarcador: document.getElementById('fEmb').value,
+      central_id: document.getElementById('fFila').value || null
+    };
+    if(!body.login||!body.senha||!body.cnpj_embarcador){ m.className='msg err'; m.textContent='Login, senha e embarcador s\u00e3o obrigat\u00f3rios.'; return; }
+    try{
+      const r = await adm('/usuarios',{method:'POST',body:JSON.stringify(body)});
+      if(r.erro){ m.className='msg err'; m.textContent = r.erro==='login_ja_existe'?'Esse login j\u00e1 existe.':('Erro: '+r.erro); return; }
+      m.className='msg ok'; m.textContent='Acesso criado!';
+      document.getElementById('fLogin').value=''; document.getElementById('fSenha').value=''; document.getElementById('fNome').value='';
+      listar();
+    }catch(e){ if(e.message!=='auth'){ m.className='msg err'; m.textContent='Falha ao criar.'; } }
+  }
+
+  async function resetar(id){
+    const nova = prompt('Nova senha para este acesso:');
+    if(!nova) return;
+    try{ await adm('/usuarios/'+id,{method:'PUT',body:JSON.stringify({senha:nova})}); alert('Senha atualizada.'); }
+    catch(e){ if(e.message!=='auth') alert('Falha.'); }
+  }
+  async function toggle(id, ativar){
+    try{ await adm('/usuarios/'+id,{method:'PUT',body:JSON.stringify({ativo:ativar})}); listar(); }
+    catch(e){ if(e.message!=='auth') alert('Falha.'); }
+  }
+  async function remover(id, login){
+    if(!confirm('Remover o acesso "'+login+'"? Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.')) return;
+    try{ await adm('/usuarios/'+id,{method:'DELETE'}); listar(); }
+    catch(e){ if(e.message!=='auth') alert('Falha.'); }
+  }
+
+  carregar();
+</script>
+</body>
+</html>
