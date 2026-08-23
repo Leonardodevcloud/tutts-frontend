@@ -248,7 +248,7 @@ img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
 .loja-badge{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(15,23,42,.25);display:flex;align-items:center;justify-content:center}
-.raio-label span{background:rgba(255,255,255,.82);color:var(--accent);font-size:10px;font-weight:700;padding:0 5px;border-radius:6px;white-space:nowrap;border:1px solid rgba(124,58,237,.25)}
+.raio-label span{background:rgba(255,255,255,.95);color:#6d28d9;font-size:11px;font-weight:800;padding:1px 6px;border-radius:7px;white-space:nowrap;border:1px solid rgba(109,40,217,.45);box-shadow:0 1px 3px rgba(15,23,42,.15)}
 .app-hidden{display:none!important}
 </style>
 </head>
@@ -481,7 +481,7 @@ img.avatar{object-fit:cover}
   function desenharAneis(center){
     const raios=[5,10,15,20,25,30];
     raios.forEach(km=>{
-      L.circle(center,{radius:km*1000,color:'#7c3aed',weight:1,opacity:0.35,dashArray:'4 5',fill:false,interactive:false}).addTo(layerColeta);
+      L.circle(center,{radius:km*1000,color:'#6d28d9',weight:1.6,opacity:0.65,dashArray:'6 6',fill:false,interactive:false}).addTo(layerColeta);
       const latOff=(km*1000)/111320;
       const lbl=L.divIcon({className:'raio-label',html:'<span>'+(km===30?'30+':km)+' km</span>',iconSize:[36,14],iconAnchor:[18,7]});
       L.marker([center[0]+latOff,center[1]],{icon:lbl,interactive:false,keyboard:false}).addTo(layerColeta);
