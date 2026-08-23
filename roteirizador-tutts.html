@@ -244,6 +244,18 @@ html,body{height:100%}
 .nota .cli{font-size:11px;color:var(--muted);margin-top:2px}
 .nota .datas{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:11px;color:var(--slate)}
 .nota .datas b{color:var(--ink);font-weight:600}
+/* sinalizacao de roteiro na lista de notas */
+.nota.no-rota{border-color:#6d28d9;box-shadow:inset 0 0 0 1px #6d28d9;background:#faf7ff}
+.nota.fora-rota{opacity:.62}
+.nota .rot-tag{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;font-family:var(--mono)}
+.nota .rot-tag.in{background:#efeafe;color:#6d28d9}
+.nota .rot-tag.out{background:#eef1f5;color:#8a93a3}
+.nota .acoes{display:flex;gap:6px;margin-top:9px}
+.nota .btn-rot{flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;color:var(--slate);transition:all .12s}
+.nota .btn-rot:hover{border-color:var(--line2)}
+.nota .btn-rot.rem{color:#c0392b;border-color:#f3d6d2}
+.nota .btn-rot.add{color:#6d28d9;border-color:#e2d6f5}
+.rot-num{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:11px;color:#6d28d9;background:#efeafe;border-radius:6px;padding:1px 7px}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
@@ -333,6 +345,7 @@ img.avatar{object-fit:cover}
     <div class="centro-top">
       <div class="resumo" id="resumoRota">Clique em <b>Calcular rota</b> para montar os roteiros.</div>
       <button class="btn btn-primario" id="btnCalc" onclick="calcular()">Calcular rota</button>
+      <button class="btn" id="btnRecalc" onclick="recalcularSelecao()" style="display:none">Recalcular sele&ccedil;&atilde;o</button>
       <button class="btn" id="btnDesp" onclick="despacharFake()" disabled>Despachar (simulado)</button>
     </div>
   </div>
@@ -374,6 +387,9 @@ img.avatar{object-fit:cover}
   let TOKEN  = localStorage.getItem('rt_token') || '';
   let ME=null, NOTAS=[], FROTA=[], CALC=null, COLETA_STATUS=null, FROTA_AVISO=null;
   let ATRIB={}, DESPACHADOS=new Set(), ATRIB_RESUMO=[];
+  let SELECAO=new Set();        // id_embarque no roteiro
+  let ORDEM_ROTA={};            // id_embarque -> {rota:'A', parada:N}
+  let SEL_DIRTY=false;          // selecao editada manualmente (pede recalculo)
   const letraRota = i => String.fromCharCode(65 + (i%26));
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
@@ -470,24 +486,61 @@ img.avatar{object-fit:cover}
     document.getElementById('mtPool').textContent=d.total||0;
     document.getElementById('mtGeo').textContent=d.com_coordenada||0;
     document.getElementById('contNotas').textContent=d.total||0;
-    const L=document.getElementById('lista-notas');
+    renderNotas();
+  }
+
+  function renderNotas(){
+    const L=document.getElementById('lista-notas'); if(!L) return;
     if(!NOTAS.length){ L.innerHTML='<div class="rt-loading">Nenhuma nota do dia (emiss\u00e3o ou previs\u00e3o hoje) para este embarcador.</div>'; return; }
-    L.innerHTML = NOTAS.map(n=>`
-      <div class="nota">
+    const temRota = Object.keys(ORDEM_ROTA).length>0 || SELECAO.size>0;
+    L.innerHTML = NOTAS.map(n=>{
+      const id=Number(n.id_embarque);
+      const noRoteiro = SELECAO.has(id);
+      const ord = ORDEM_ROTA[id];
+      const cls = temRota ? (noRoteiro?'no-rota':'fora-rota') : '';
+      const tag = temRota
+        ? (noRoteiro
+            ? `<span class="rot-tag in">Rota ${ord?ord.rota:'?'}</span>${ord?('<span class="rot-num">parada '+ord.parada+'</span>'):'<span class="rot-num">novo</span>'}`
+            : `<span class="rot-tag out">fora do roteiro</span>`)
+        : '';
+      const acao = temRota
+        ? (noRoteiro
+            ? `<button class="btn-rot rem" onclick="removerDoRoteiro(${id})">Remover do roteiro</button>`
+            : `<button class="btn-rot add" onclick="adicionarAoRoteiro(${id})" ${n.geocodificado?'':'disabled title="sem coordenada"'}>Adicionar ao roteiro</button>`)
+        : '';
+      return `
+      <div class="nota ${cls}">
         <div class="top">
           <div class="num"><span class="hash">#</span>${n.numero_nf||n.id_embarque}</div>
-          <span class="badge-geo ${n.geocodificado?'ok':'no'}">${n.geocodificado?'no mapa':'sem coord'}</span>
+          ${tag || `<span class="badge-geo ${n.geocodificado?'ok':'no'}">${n.geocodificado?'no mapa':'sem coord'}</span>`}
         </div>
         <div class="end">${n.endereco||'—'}</div>
         <div class="cli">${n.destinatario||''}</div>
         <div class="meta">
           <span class="tag">${(n.cidade||'')}${n.uf?'/'+n.uf:''}</span>
+          ${temRota?`<span class="badge-geo ${n.geocodificado?'ok':'no'}" style="margin-left:auto">${n.geocodificado?'no mapa':'sem coord'}</span>`:''}
         </div>
         <div class="datas">
           <span>Emiss\u00e3o: <b>${fmtDT(n.data_emissao)}</b></span>
           <span>Previs\u00e3o: <b>${fmtDT(n.data_previsao)}</b></span>
         </div>
-      </div>`).join('');
+        ${acao?`<div class="acoes">${acao}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+
+  function removerDoRoteiro(id){ SELECAO.delete(Number(id)); SEL_DIRTY=true; onSelecaoMudou(); }
+  function adicionarAoRoteiro(id){ SELECAO.add(Number(id)); SEL_DIRTY=true; onSelecaoMudou(); }
+  function onSelecaoMudou(){
+    renderNotas(); renderMapa();
+    const b=document.getElementById('btnRecalc');
+    if(b){ b.style.display = SEL_DIRTY ? '' : 'none'; b.textContent='Recalcular sele\u00e7\u00e3o ('+SELECAO.size+')'; }
+    const r=document.getElementById('resumoRota');
+    if(r && SEL_DIRTY) r.innerHTML='<span style="color:var(--amber)">Sele\u00e7\u00e3o alterada \u2014 clique <b>Recalcular sele\u00e7\u00e3o</b> para refazer o tra\u00e7ado.</span>';
+  }
+  async function recalcularSelecao(){
+    if(!SELECAO.size){ alert('Selecione ao menos uma nota.'); return; }
+    await calcular([...SELECAO]);
   }
 
   let _frotaBusy=false;
@@ -574,19 +627,55 @@ img.avatar{object-fit:cover}
       L.marker(coletaLL,{icon:lojaIcon,zIndexOffset:1000}).addTo(layerColeta).bindPopup('<b>'+nomeLoja+'</b><br>Ponto de partida');
       pts.push(coletaLL);
     }
-    NOTAS.filter(n=>n.geocodificado).forEach(n=>{
-      const ll=[n.lat,n.lng]; pts.push(ll);
-      L.circleMarker(ll,{radius:6,color:'#6d4aff',weight:2,fillColor:'#fff',fillOpacity:1})
-        .addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||''));
-    });
-    if(pts.length>1){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
-    else if(coletaLL){ map.setView(coletaLL,12); }
+    desenharNotas(true);
   }
 
-  async function calcular(){
+  function pinNota(num, roxo, neutro){
+    const cor = roxo ? '#6d28d9' : '#9aa3b2';
+    const txt = (num===''||num==null) ? '' : String(num);
+    const html =
+      '<div style="position:relative;width:30px;height:38px;filter:drop-shadow(0 3px 5px rgba(15,23,42,.4))">'+
+      '<svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg">'+
+        '<defs><linearGradient id="g'+cor.slice(1)+'" x1="0" y1="0" x2="0" y2="1">'+
+          '<stop offset="0" stop-color="#8b3fd6"/><stop offset="1" stop-color="'+cor+'"/></linearGradient></defs>'+
+        '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+(roxo?('url(#g'+cor.slice(1)+')'):cor)+'" stroke="#fff" stroke-width="2.2"/>'+
+        (neutro?'<circle cx="15" cy="15" r="5.5" fill="#fff"/>':'')+
+      '</svg>'+
+      (txt?('<div style="position:absolute;top:5px;left:0;width:30px;text-align:center;color:#fff;font-weight:800;font-size:13px;font-family:ui-monospace,monospace">'+txt+'</div>'):'')+
+      '</div>';
+    return L.divIcon({className:'pin-nota', html, iconSize:[30,38], iconAnchor:[15,38], popupAnchor:[0,-34]});
+  }
+
+  function desenharNotas(fit){
+    if(!map) return;
+    layerNotas.clearLayers();
+    const pts = coletaLL ? [coletaLL] : [];
+    const temRota=Object.keys(ORDEM_ROTA).length>0 || SELECAO.size>0;
+    NOTAS.filter(n=>n.geocodificado).forEach(n=>{
+      const ll=[n.lat,n.lng]; pts.push(ll);
+      const id=Number(n.id_embarque);
+      const ord=ORDEM_ROTA[id];
+      const noRoteiro=SELECAO.has(id);
+      let mk;
+      if(temRota && noRoteiro){
+        mk=L.marker(ll,{icon:pinNota(ord?ord.parada:'+', true), zIndexOffset:600});
+      } else if(temRota && !noRoteiro){
+        mk=L.circleMarker(ll,{radius:6,color:'#aeb6c2',weight:2,fillColor:'#eef1f5',fillOpacity:1});
+      } else {
+        mk=L.marker(ll,{icon:pinNota('', true, true), zIndexOffset:400});
+      }
+      mk.addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):''));
+    });
+    if(fit){ if(pts.length>1){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} } else if(coletaLL){ map.setView(coletaLL,12); } }
+  }
+  function renderMapa(){ desenharNotas(false); }
+
+  async function calcular(apenasIds){
     const btn=document.getElementById('btnCalc'); btn.disabled=true; btn.textContent='Calculando…';
+    const rb=document.getElementById('btnRecalc'); if(rb) rb.disabled=true;
     try{
-      CALC = await apiPost('/calcular',{});
+      const body = (apenasIds && apenasIds.length) ? { apenas_ids: apenasIds } : {};
+      CALC = await apiPost('/calcular', body);
       if(CALC.erro){ document.getElementById('resumoRota').innerHTML='Erro: '+CALC.erro; return; }
       layerRotas.clearLayers();
       const rotas=CALC.rotas||[];
@@ -594,6 +683,17 @@ img.avatar{object-fit:cover}
         const cor=CORES[i%CORES.length];
         if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
       });
+
+      // SELECAO / ORDEM_ROTA a partir das rotas calculadas (parada = ordem no percurso)
+      SELECAO=new Set(); ORDEM_ROTA={}; SEL_DIRTY=false;
+      rotas.forEach((r,i)=>{
+        let parada=0;
+        (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{
+          parada++; const id=Number(s.id);
+          SELECAO.add(id); ORDEM_ROTA[id]={ rota:letraRota(i), parada };
+        });
+      });
+
       const s=CALC.resumo||{};
       const km=s.distance!=null?(s.distance/1000).toFixed(1):'—';
       const min=s.duration!=null?Math.round(s.duration/60):'—';
@@ -602,6 +702,7 @@ img.avatar{object-fit:cover}
         (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'') +
         ((CALC.nao_atribuidas&&CALC.nao_atribuidas.length)?` · <span style="color:var(--amber)">${CALC.nao_atribuidas.length} n\u00e3o atribu\u00edda(s)</span>`:'');
       document.getElementById('btnDesp').disabled = !(rotas.length>0);
+      if(rb){ rb.style.display='none'; }
 
       // atribui cada rota a um motoboy da fila (por ordem: aguardando, por posicao)
       ATRIB={}; DESPACHADOS=new Set();
@@ -612,17 +713,18 @@ img.avatar{object-fit:cover}
       rotas.forEach((r,i)=>{
         const jobs = (r.steps||[]).filter(s=>s.type==='job');
         const nfs = jobs.map(s=>{ const n=notaById[Number(s.id)]; return n?{numero_nf:(n.numero_nf||n.id_embarque),cliente:(n.destinatario||''),endereco:(n.endereco||'')}:{numero_nf:s.id,cliente:'',endereco:''}; });
-        const km = r.distance!=null?(r.distance/1000).toFixed(1):null;
+        const km2 = r.distance!=null?(r.distance/1000).toFixed(1):null;
         const m = motos[i];
-        if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nfs.length, km, nfs, motoNome:(m.nome||m.cod), motoFoto:(m.foto||null) }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nfs.length+' nota(s))'); }
+        if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nfs.length, km:km2, nfs, motoNome:(m.nome||m.cod), motoFoto:(m.foto||null) }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nfs.length+' nota(s))'); }
         else { atribs.push('Rota '+letraRota(i)+' \u2192 sem motoboy dispon\u00edvel ('+nfs.length+' nota(s))'); }
       });
       renderFrota();
       ATRIB_RESUMO = atribs;
+      renderNotas(); desenharNotas(false);
       renderAlertas();
       if(window.innerWidth<=900){ document.querySelector('.tabbar button[data-tab=mapa]').click(); }
     }catch(e){ document.getElementById('resumoRota').textContent='Falha ao calcular.'; }
-    finally{ btn.disabled=false; btn.textContent='Calcular rota'; }
+    finally{ btn.disabled=false; btn.textContent='Calcular rota'; if(rb) rb.disabled=false; }
   }
 
   function despacharFake(){
