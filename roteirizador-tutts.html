@@ -244,6 +244,8 @@ html,body{height:100%}
 .nota .cli{font-size:11px;color:var(--muted);margin-top:2px}
 .nota .datas{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:11px;color:var(--slate)}
 .nota .datas b{color:var(--ink);font-weight:600}
+img.avatar{object-fit:cover}
+.moto .avatar{overflow:hidden;flex-shrink:0}
 .app-hidden{display:none!important}
 </style>
 </head>
@@ -362,7 +364,7 @@ html,body{height:100%}
     }catch(e){ err.textContent='N\u00e3o foi poss\u00edvel conectar.'; }
     finally{ btn.disabled=false; btn.textContent='Entrar'; }
   }
-  function sair(){ localStorage.removeItem('rt_token'); TOKEN=''; document.getElementById('app').classList.add('app-hidden'); document.getElementById('loginWrap').style.display='flex'; }
+  function sair(){ pararPolling(); localStorage.removeItem('rt_token'); TOKEN=''; document.getElementById('app').classList.add('app-hidden'); document.getElementById('loginWrap').style.display='flex'; }
 
   async function entrar(){
     document.getElementById('loginWrap').style.display='none';
@@ -370,7 +372,17 @@ html,body{height:100%}
     if(!map) initMap();
     setTimeout(()=>{ if(map) map.invalidateSize(); }, 250);
     await carregarTudo();
+    iniciarPolling();
   }
+
+  // ---- tempo real (polling) ----
+  let _pollFrota=null, _pollNotas=null;
+  function iniciarPolling(){
+    pararPolling();
+    _pollFrota = setInterval(()=>{ if(TOKEN && !document.hidden) carregarFrota().catch(()=>{}); }, 12000);
+    _pollNotas = setInterval(()=>{ if(TOKEN && !document.hidden) carregarNotas().then(()=>desenharBase()).catch(()=>{}); }, 60000);
+  }
+  function pararPolling(){ if(_pollFrota) clearInterval(_pollFrota); if(_pollNotas) clearInterval(_pollNotas); _pollFrota=_pollNotas=null; }
 
   function initMap(){
     map = L.map('map',{zoomControl:true}).setView([-16.68,-49.25],11);
@@ -433,7 +445,10 @@ html,body{height:100%}
       </div>`).join('');
   }
 
+  let _frotaBusy=false;
   async function carregarFrota(){
+    if(_frotaBusy) return; _frotaBusy=true;
+    try{
     const d = await apiGet('/frota'); FROTA=d.motoboys||[];
     document.getElementById('mtLivres').textContent=d.aguardando||0;
     document.getElementById('contMotos').textContent=d.total||0;
@@ -442,16 +457,19 @@ html,body{height:100%}
     const M=document.getElementById('lista-motos');
     if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(d.aviso==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
     const ini = s => (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+    const fotoSrc = f => (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f));
     M.innerHTML = FROTA.map(m=>`
       <div class="moto">
         <div class="top">
-          <div class="avatar">${ini(m.nome||m.cod)}</div>
+          ${m.foto ? `<img class="avatar" src="${fotoSrc(m.foto)}" alt="" onerror="this.outerHTML='<div class=\\'avatar\\'>'+${JSON.stringify(ini(m.nome||m.cod))}+'</div>'">` : `<div class="avatar">${ini(m.nome||m.cod)}</div>`}
           <div>
             <div class="nome">${m.nome||m.cod}</div>
             <div class="st ${m.status==='aguardando'?'livre':'rua'}"><span class="d"></span>${m.status||'—'}${m.posicao?(' · pos '+m.posicao):''}</div>
           </div>
         </div>
       </div>`).join('');
+    }catch(e){ if(e.message!=='nao_autorizado') throw e; }
+    finally{ _frotaBusy=false; }
   }
 
   function desenharBase(){
