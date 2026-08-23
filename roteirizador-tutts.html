@@ -359,6 +359,10 @@ img.avatar{object-fit:cover}
     </div>
     <div class="modal-body" id="modalDespBody"></div>
     <div class="modal-foot">
+      <label style="margin-right:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--slate)">
+        <input type="checkbox" id="chkModoTeste" checked>
+        Modo teste (n&atilde;o envia ao profissional)
+      </label>
       <button class="btn" onclick="fecharModalDespacho()">Cancelar</button>
       <button class="btn btn-primario" id="btnConfirmarDesp" onclick="confirmarDespacho()">Confirmar despacho</button>
     </div>
@@ -649,23 +653,31 @@ img.avatar{object-fit:cover}
   function fecharModalDespacho(){ document.getElementById('modalDespacho').classList.remove('on'); }
 
   async function confirmarDespacho(){
-    const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Confirmando…';
+    const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Enviando…';
+    const modoTeste = !!(document.getElementById('chkModoTeste') && document.getElementById('chkModoTeste').checked);
+    // monta atribuicoes: por motoboy -> ids das NFs (id_embarque)
+    const notaByNf = {}; NOTAS.forEach(n=>{ notaByNf[String(n.numero_nf||n.id_embarque)] = n.id_embarque; });
+    const atribuicoes = Object.keys(ATRIB).map(cod=>{
+      const a = ATRIB[cod];
+      const ids = (a.nfs||[]).map(nf=>notaByNf[String(nf.numero_nf)]).filter(x=>x!=null);
+      return { cod, nome:a.motoNome, nfs: ids };
+    });
     try{
-      await apiPost('/despachar-fake',{
-        payload_vroom: CALC._payload||null,
-        resposta_vroom: {summary:CALC.resumo,routes:(CALC.rotas||[]).map(x=>({vehicle:x.vehicle,cost:x.cost,steps:(x.steps||[]).map(s=>({type:s.type,id:s.id}))}))},
-        qtd_notas: CALC.jobs, qtd_rotas:(CALC.rotas||[]).length
-      });
-      DESPACHADOS = new Set(Object.keys(ATRIB));
-      renderFrota();
-      renderAlertas();
+      const r = await apiPost('/despachar', { atribuicoes, modo_teste: modoTeste });
+      const linhas = (r.resultados||[]).map(x=> x.ok
+        ? (x.nome+': OS '+(x.os||'?')+(x.profissionalNaoAlocado?' (gravada sem profissional)':''))
+        : (x.nome+': ERRO '+(x.erro||'falha')) );
+      const okAll = r.ok;
+      if(r.resultados && r.resultados.some(x=>x.ok)){
+        DESPACHADOS = new Set(r.resultados.filter(x=>x.ok).map(x=>x.cod));
+        renderFrota(); renderAlertas();
+      }
       fecharModalDespacho();
-      document.getElementById('btnDesp').disabled=true;
-      ja_toast('Roteiro enviado (simulado). Motoboy(s) movido(s) para Em rota.');
-    }catch(e){ alert('Falha ao confirmar.'); }
+      document.getElementById('btnDesp').disabled = okAll;
+      alert((modoTeste?'MODO TESTE — ':'')+(okAll?'Corrida(s) criada(s):':'Resultado do despacho:')+'\n\n'+linhas.join('\n'));
+    }catch(e){ alert('Falha ao despachar: '+(e.message||e)); }
     finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; }
   }
-  function ja_toast(msg){ const r=document.getElementById('resumoRota'); if(r){ const old=r.innerHTML; r.innerHTML='<b style="color:var(--ok)">'+msg+'</b>'; setTimeout(()=>{ if(document.getElementById('resumoRota')) document.getElementById('resumoRota').innerHTML=old; }, 4000); } }
 
   function renderAlertas(){
     const box=document.getElementById('alertas'); if(!box) return;
