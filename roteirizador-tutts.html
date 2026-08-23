@@ -467,7 +467,7 @@ img.avatar{object-fit:cover}
     M.innerHTML = FROTA.map(m=>`
       <div class="moto">
         <div class="top">
-          ${m.foto ? `<img class="avatar" src="${fotoSrc(m.foto)}" alt="" onerror="this.outerHTML='<div class=\\'avatar\\'>'+${JSON.stringify(ini(m.nome||m.cod))}+'</div>'">` : `<div class="avatar">${ini(m.nome||m.cod)}</div>`}
+          ${m.foto ? `<img class="avatar" src="${fotoSrc(m.foto)}" alt="${ini(m.nome||m.cod)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">` : `<div class="avatar">${ini(m.nome||m.cod)}</div>`}
           <div>
             <div class="nome">${m.nome||m.cod}</div>
             <div class="st ${m.status==='aguardando'?'livre':'rua'}"><span class="d"></span>${m.status||'—'}${m.posicao?(' · pos '+m.posicao):''}</div>
