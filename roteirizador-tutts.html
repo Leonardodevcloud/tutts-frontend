@@ -396,7 +396,7 @@ img.avatar{object-fit:cover}
     <div id="map"></div>
     <div class="centro-top">
       <div class="resumo" id="resumoRota">Clique em <b>Calcular rota</b> para montar os roteiros.</div>
-      <span id="avisoNovidades" onclick="calcular()" style="display:none;cursor:pointer;background:#fff4e5;color:#b26a00;border:1px solid #ffd699;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700">\u21bb <span id="novCount">0</span> novidade(s) — recalcular</span>
+      <span id="avisoNovidades" onclick="calcular()" style="display:none;cursor:pointer;background:#fff4e5;color:#b26a00;border:1px solid #ffd699;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700">↻ <span id="novCount">0</span> novidade(s) — recalcular</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer" title="Recalcula sozinho quando chega nota nova ou entra motoboy"><input type="checkbox" id="chkAuto" onchange="toggleAuto()"> auto</label>
       <button class="btn btn-primario" id="btnCalc" onclick="calcular()">Calcular rota</button>
       <button class="btn" id="btnRecalc" onclick="recalcularSelecao()" style="display:none">Recalcular sele&ccedil;&atilde;o</button>
@@ -425,7 +425,7 @@ img.avatar{object-fit:cover}
       <button class="btn" onclick="fecharModalDespacho()">Fechar</button>
     </div>
     <div class="modal-body" id="modalDespBody"></div>
-    <div id="despAviso" style="display:none;padding:10px 20px;background:#fff9f0;border-top:1px solid #ffe3b8;color:#b26a00;font-size:12px;font-weight:600">Criando as corridas na Mapp\u2026 pode levar alguns segundos (a Mapp limita a 2 por segundo). N\u00e3o feche a janela.</div>
+    <div id="despAviso" style="display:none;padding:10px 20px;background:#fff9f0;border-top:1px solid #ffe3b8;color:#b26a00;font-size:12px;font-weight:600">Criando as corridas na Mapp… pode levar alguns segundos (a Mapp limita a 2 por segundo). Não feche a janela.</div>
     <div class="modal-foot">
       <label style="margin-right:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--slate)">
         <input type="checkbox" id="chkModoTeste" checked>
@@ -792,7 +792,8 @@ img.avatar{object-fit:cover}
     if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(FROTA_AVISO==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
     const ini = s => (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
     const fotoSrc = f => (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f));
-    const emRota = m => DESPACHADOS.has(m.cod) || m.status!=='aguardando';
+    const temOsAtiva = m => (EM_ROTA_POR_COD[m.cod]||[]).some(o=>o.status!=='finalizado'&&o.status!=='cancelado');
+    const emRota = m => DESPACHADOS.has(m.cod) || m.status!=='aguardando' || temOsAtiva(m);
     const disp = FROTA.filter(m=>!emRota(m));
     const rota = FROTA.filter(m=>emRota(m));
     // contadores + estado ativo do filtro
@@ -808,7 +809,7 @@ img.avatar{object-fit:cover}
 
     const card = m => {
       const a = ATRIB[m.cod];
-      const desp = DESPACHADOS.has(m.cod) || m.status!=='aguardando';
+      const desp = DESPACHADOS.has(m.cod) || m.status!=='aguardando' || temOsAtiva(m);
       const cur = m.curtas||0, lon = m.longas||0, tot = cur+lon;
       const cp = tot>0 ? Math.round(cur/tot*100) : 50;
       const barraRota = a ? `<div class="barra">
