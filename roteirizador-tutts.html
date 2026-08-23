@@ -879,11 +879,15 @@ img.avatar{object-fit:cover}
     bar.style.display='flex';
     document.getElementById('btnSalvarColeta').onclick=async ()=>{
       try{
-        await apiPost('/coleta-ponto',{ lat, lng });
-        coletaLL=[Number(lat),Number(lng)];
-        if(ME&&ME.embarcador){ ME.embarcador.coleta_lat=lat; ME.embarcador.coleta_lng=lng; }
+        const resp = await apiPost('/coleta-ponto',{ lat, lng });
+        const nlat = (resp&&resp.lat!=null)?Number(resp.lat):Number(lat);
+        const nlng = (resp&&resp.lng!=null)?Number(resp.lng):Number(lng);
+        coletaLL=[nlat,nlng];
+        if(ME&&ME.embarcador){ ME.embarcador.coleta_lat=nlat; ME.embarcador.coleta_lng=nlng; }
         bar.remove(); desenharBase();
-        const rr=document.getElementById('resumoRota'); if(rr) rr.innerHTML='<span style="color:#16a34a">Ponto da loja atualizado. Recalcule a rota.</span>';
+        if(map) map.setView(coletaLL, Math.max(map.getZoom(),16));
+        const rr=document.getElementById('resumoRota');
+        if(rr) rr.innerHTML='<span style="color:#16a34a">Ponto da loja '+(resp&&resp.snapped?'ajustado \u00e0 via mais pr\u00f3xima':'salvo')+'. Recalcule a rota.</span>';
       }catch(e){ alert('Falha ao salvar o ponto da loja.'); }
     };
     document.getElementById('btnCancelColeta').onclick=()=>{ bar.remove(); if(LOJA_MK&&coletaLL) LOJA_MK.setLatLng(coletaLL); };
