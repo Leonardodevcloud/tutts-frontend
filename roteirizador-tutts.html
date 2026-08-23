@@ -246,6 +246,9 @@ html,body{height:100%}
 .nota .datas b{color:var(--ink);font-weight:600}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
+.loja-icon,.raio-label{background:none!important;border:none!important}
+.loja-badge{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(15,23,42,.25);display:flex;align-items:center;justify-content:center}
+.raio-label span{background:rgba(255,255,255,.82);color:var(--accent);font-size:10px;font-weight:700;padding:0 5px;border-radius:6px;white-space:nowrap;border:1px solid rgba(124,58,237,.25)}
 .app-hidden{display:none!important}
 </style>
 </head>
@@ -333,7 +336,7 @@ img.avatar{object-fit:cover}
   const BASE = API + '/api/roteirizador-tutts';
   let TOKEN  = localStorage.getItem('rt_token') || '';
   let ME=null, NOTAS=[], FROTA=[], CALC=null;
-  let map=null, layerNotas=null, layerRotas=null, coletaLL=null;
+  let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
   const fmtDT = s => { try{ return s ? new Date(s).toLocaleString('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; }catch(_){ return '—'; } };
@@ -387,6 +390,7 @@ img.avatar{object-fit:cover}
   function initMap(){
     map = L.map('map',{zoomControl:true}).setView([-16.68,-49.25],11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+    layerColeta=L.layerGroup().addTo(map);
     layerNotas=L.layerGroup().addTo(map);
     layerRotas=L.layerGroup().addTo(map);
     window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
@@ -472,17 +476,36 @@ img.avatar{object-fit:cover}
     finally{ _frotaBusy=false; }
   }
 
+  function desenharAneis(center){
+    const raios=[5,10,15,20,25,30];
+    raios.forEach(km=>{
+      L.circle(center,{radius:km*1000,color:'#7c3aed',weight:1,opacity:0.35,dashArray:'4 5',fill:false,interactive:false}).addTo(layerColeta);
+      const latOff=(km*1000)/111320;
+      const lbl=L.divIcon({className:'raio-label',html:'<span>'+(km===30?'30+':km)+' km</span>',iconSize:[36,14],iconAnchor:[18,7]});
+      L.marker([center[0]+latOff,center[1]],{icon:lbl,interactive:false,keyboard:false}).addTo(layerColeta);
+    });
+  }
+
   function desenharBase(){
     if(!map) return;
     layerNotas.clearLayers();
+    if(layerColeta) layerColeta.clearLayers();
     const pts=[];
-    if(coletaLL){ L.marker(coletaLL).addTo(layerNotas).bindPopup('Coleta (dep\u00f3sito)'); pts.push(coletaLL); }
+    if(coletaLL){
+      desenharAneis(coletaLL);
+      const nomeLoja = (ME&&ME.embarcador&&(ME.embarcador.coleta_nome_fantasia||ME.embarcador.nome_embarcador))||'Loja / Coleta';
+      const lojaIcon=L.divIcon({className:'loja-icon',iconSize:[28,28],iconAnchor:[14,14],
+        html:'<div class="loja-badge"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10h16V9"/><path d="M9 19v-6h6v6"/></svg></div>'});
+      L.marker(coletaLL,{icon:lojaIcon,zIndexOffset:1000}).addTo(layerColeta).bindPopup('<b>'+nomeLoja+'</b><br>Ponto de partida');
+      pts.push(coletaLL);
+    }
     NOTAS.filter(n=>n.geocodificado).forEach(n=>{
       const ll=[n.lat,n.lng]; pts.push(ll);
       L.circleMarker(ll,{radius:6,color:'#6d4aff',weight:2,fillColor:'#fff',fillOpacity:1})
         .addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||''));
     });
-    if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
+    if(pts.length>1){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
+    else if(coletaLL){ map.setView(coletaLL,12); }
   }
 
   async function calcular(){
