@@ -214,24 +214,24 @@
     .cliente-sel{max-width:180px}
   }
 
-/* ---- extras do Roteirizador Tutts (funcional) ---- */
-#map{height:100%;width:100%}
+/* ---- extras do Roteirizador Tutts (funcional) v2 ---- */
+html,body{height:100%}
+#app{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .col.centro{position:relative;padding:0}
-.centro-top{position:absolute;top:10px;left:10px;right:10px;z-index:500;display:flex;gap:8px;flex-wrap:wrap;
+#map{position:absolute;inset:0;z-index:0}
+.centro-top{position:absolute;top:10px;left:10px;right:10px;z-index:500;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
   background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:8px 10px;box-shadow:0 4px 18px rgba(15,23,42,.08)}
-.centro-top .resumo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--slate)}
+.centro-top .resumo{flex:1;min-width:180px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--slate)}
 .centro-top .resumo b{color:var(--ink)}
-.centro-bot{position:absolute;bottom:12px;left:10px;right:10px;z-index:500;display:flex;gap:8px;justify-content:center}
-.centro-bot .btn{box-shadow:0 4px 18px rgba(15,23,42,.12)}
-.sim-banner{background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;text-align:center;letter-spacing:.3px}
+.centro-top .btn{box-shadow:none}
+.sim-banner{background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;text-align:center;letter-spacing:.3px;flex-shrink:0}
 .sim-banner b{color:#fbbf24}
 .badge-geo{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px}
 .badge-geo.ok{background:#e7f3ec;color:var(--ok)}
 .badge-geo.no{background:#fdeceb;color:var(--red)}
 .login-wrap{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
   background:radial-gradient(120% 120% at 100% 0,#f1eefb 0,#eef1f6 55%)}
-.login-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px 26px;width:340px;
-  box-shadow:0 20px 60px rgba(15,23,42,.18)}
+.login-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px 26px;width:340px;box-shadow:0 20px 60px rgba(15,23,42,.18)}
 .login-card .mk{width:40px;height:40px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:12px}
 .login-card h1{font-size:18px;margin-bottom:2px}
 .login-card p{color:var(--muted);font-size:12.5px;margin-bottom:18px}
@@ -242,6 +242,8 @@
 .login-err{color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px}
 .rt-loading{padding:16px;color:var(--muted);font-size:13px;text-align:center}
 .nota .cli{font-size:11px;color:var(--muted);margin-top:2px}
+.nota .datas{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:11px;color:var(--slate)}
+.nota .datas b{color:var(--ink);font-weight:600}
 .app-hidden{display:none!important}
 </style>
 </head>
@@ -297,18 +299,16 @@
   <div class="col esq">
     <div class="col-head">
       <div class="titulo"><h2>Corridas</h2><span class="cont" id="contNotas">0</span></div>
-      <div class="filtros"><span class="chip on">Dispon&iacute;veis (A_EMBARCAR)</span></div>
+      <div class="filtros"><span class="chip on">Do dia (A_EMBARCAR)</span></div>
     </div>
     <div class="lista" id="lista-notas"><div class="rt-loading">Carregando notas…</div></div>
   </div>
 
   <!-- CENTRO: MAPA -->
   <div class="col centro">
+    <div id="map"></div>
     <div class="centro-top">
       <div class="resumo" id="resumoRota">Clique em <b>Calcular rota</b> para montar os roteiros.</div>
-    </div>
-    <div id="map"></div>
-    <div class="centro-bot">
       <button class="btn btn-primario" id="btnCalc" onclick="calcular()">Calcular rota</button>
       <button class="btn" id="btnDesp" onclick="despacharFake()" disabled>Despachar (simulado)</button>
     </div>
@@ -334,7 +334,8 @@
   let map=null, layerNotas=null, layerRotas=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
-  // ---------- infra ----------
+  const fmtDT = s => { try{ return s ? new Date(s).toLocaleString('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; }catch(_){ return '—'; } };
+
   async function apiGet(path){
     const r = await fetch(BASE+path,{headers:{Authorization:'Bearer '+TOKEN}});
     if(r.status===401){ sair(); throw new Error('nao_autorizado'); }
@@ -346,7 +347,6 @@
     return r.json();
   }
 
-  // ---------- login ----------
   async function fazerLogin(){
     const err=document.getElementById('lgErr'); err.textContent='';
     const login=document.getElementById('lgLogin').value.trim();
@@ -356,10 +356,10 @@
     try{
       const r=await fetch(BASE+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({login,senha})});
       const d=await r.json();
-      if(!r.ok||!d.token){ err.textContent='Login ou senha inv&aacute;lidos.'; return; }
+      if(!r.ok||!d.token){ err.textContent='Login ou senha inv\u00e1lidos.'; return; }
       TOKEN=d.token; localStorage.setItem('rt_token',TOKEN);
       entrar();
-    }catch(e){ err.textContent='N&atilde;o foi poss&iacute;vel conectar.'; }
+    }catch(e){ err.textContent='N\u00e3o foi poss\u00edvel conectar.'; }
     finally{ btn.disabled=false; btn.textContent='Entrar'; }
   }
   function sair(){ localStorage.removeItem('rt_token'); TOKEN=''; document.getElementById('app').classList.add('app-hidden'); document.getElementById('loginWrap').style.display='flex'; }
@@ -368,19 +368,19 @@
     document.getElementById('loginWrap').style.display='none';
     document.getElementById('app').classList.remove('app-hidden');
     if(!map) initMap();
+    setTimeout(()=>{ if(map) map.invalidateSize(); }, 250);
     await carregarTudo();
   }
 
-  // ---------- mapa ----------
   function initMap(){
     map = L.map('map',{zoomControl:true}).setView([-16.68,-49.25],11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
     layerNotas=L.layerGroup().addTo(map);
     layerRotas=L.layerGroup().addTo(map);
-    setTimeout(()=>map.invalidateSize(),200);
+    window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
+    setTimeout(()=>map.invalidateSize(),300);
   }
 
-  // decodifica polyline (precision 5) do OSRM/VROOM
   function decodePoly(str,precision){
     let index=0,lat=0,lng=0,coords=[],shift=0,result=0,byte=null,factor=Math.pow(10,precision||5);
     while(index<str.length){
@@ -395,7 +395,6 @@
     return coords;
   }
 
-  // ---------- carregamento ----------
   async function carregarTudo(){
     try{
       ME = await apiGet('/me');
@@ -406,6 +405,7 @@
     }catch(e){ return; }
     await Promise.all([carregarNotas(), carregarFrota()]);
     desenharBase();
+    if(map) setTimeout(()=>map.invalidateSize(),150);
   }
 
   async function carregarNotas(){
@@ -414,7 +414,7 @@
     document.getElementById('mtGeo').textContent=d.com_coordenada||0;
     document.getElementById('contNotas').textContent=d.total||0;
     const L=document.getElementById('lista-notas');
-    if(!NOTAS.length){ L.innerHTML='<div class="rt-loading">Nenhuma nota A_EMBARCAR para este embarcador.</div>'; return; }
+    if(!NOTAS.length){ L.innerHTML='<div class="rt-loading">Nenhuma nota do dia (emiss\u00e3o ou previs\u00e3o hoje) para este embarcador.</div>'; return; }
     L.innerHTML = NOTAS.map(n=>`
       <div class="nota">
         <div class="top">
@@ -425,8 +425,10 @@
         <div class="cli">${n.destinatario||''}</div>
         <div class="meta">
           <span class="tag">${(n.cidade||'')}${n.uf?'/'+n.uf:''}</span>
-          ${n.valor?'<span class="tag">R$ '+Number(n.valor).toLocaleString('pt-BR')+'</span>':''}
-          ${n.data_previsao?'<span class="tag">prev '+new Date(n.data_previsao).toLocaleDateString('pt-BR')+'</span>':''}
+        </div>
+        <div class="datas">
+          <span>Emiss\u00e3o: <b>${fmtDT(n.data_emissao)}</b></span>
+          <span>Previs\u00e3o: <b>${fmtDT(n.data_previsao)}</b></span>
         </div>
       </div>`).join('');
   }
@@ -438,7 +440,7 @@
     document.getElementById('chipLivres').textContent='Livres · '+(d.aguardando||0);
     document.getElementById('chipRua').textContent='Na rua · '+((d.total||0)-(d.aguardando||0));
     const M=document.getElementById('lista-motos');
-    if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(d.aviso==='usuario_sem_fila'?'Usu&aacute;rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
+    if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(d.aviso==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
     const ini = s => (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
     M.innerHTML = FROTA.map(m=>`
       <div class="moto">
@@ -456,7 +458,7 @@
     if(!map) return;
     layerNotas.clearLayers();
     const pts=[];
-    if(coletaLL){ L.marker(coletaLL).addTo(layerNotas).bindPopup('Coleta (dep&oacute;sito)'); pts.push(coletaLL); }
+    if(coletaLL){ L.marker(coletaLL).addTo(layerNotas).bindPopup('Coleta (dep\u00f3sito)'); pts.push(coletaLL); }
     NOTAS.filter(n=>n.geocodificado).forEach(n=>{
       const ll=[n.lat,n.lng]; pts.push(ll);
       L.circleMarker(ll,{radius:6,color:'#6d4aff',weight:2,fillColor:'#fff',fillOpacity:1})
@@ -465,7 +467,6 @@
     if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
   }
 
-  // ---------- calcular / despachar ----------
   async function calcular(){
     const btn=document.getElementById('btnCalc'); btn.disabled=true; btn.textContent='Calculando…';
     try{
@@ -483,7 +484,7 @@
       document.getElementById('resumoRota').innerHTML =
         `<b>${rotas.length}</b> rota(s) · <b>${CALC.jobs}</b> notas · <b>${km}</b> km · <b>${min}</b> min · ${CALC.veiculos} moto(s) · cap ${CALC.capacidade}` +
         (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'') +
-        ((CALC.nao_atribuidas&&CALC.nao_atribuidas.length)?` · <span style="color:var(--amber)">${CALC.nao_atribuidas.length} n&atilde;o atribu&iacute;da(s)</span>`:'');
+        ((CALC.nao_atribuidas&&CALC.nao_atribuidas.length)?` · <span style="color:var(--amber)">${CALC.nao_atribuidas.length} n\u00e3o atribu\u00edda(s)</span>`:'');
       document.getElementById('btnDesp').disabled = !(rotas.length>0);
       renderAlertas();
       if(window.innerWidth<=900){ document.querySelector('.tabbar button[data-tab=mapa]').click(); }
@@ -501,7 +502,7 @@
         qtd_notas: CALC.jobs, qtd_rotas: (CALC.rotas||[]).length
       });
       alert(r.mensagem||'Despacho simulado registrado. Nenhuma corrida foi criada.');
-    }catch(e){ alert('Falha ao registrar simula&ccedil;&atilde;o.'); }
+    }catch(e){ alert('Falha ao registrar simula\u00e7\u00e3o.'); }
     finally{ btn.disabled=false; btn.textContent='Despachar (simulado)'; }
   }
 
@@ -510,12 +511,11 @@
     let html='';
     const sc = (CALC&&CALC.sem_coordenada)?CALC.sem_coordenada.length:NOTAS.filter(n=>!n.geocodificado).length;
     if(sc>0){
-      html+=`<div class="alerta amber"><div class="ico">!</div><div class="msg"><b>${sc} nota(s) sem coordenada.</b> N&atilde;o entraram no c&aacute;lculo — verifique o endere&ccedil;o de destino.</div></div>`;
+      html+=`<div class="alerta amber"><div class="ico">!</div><div class="msg"><b>${sc} nota(s) sem coordenada.</b> N\u00e3o entraram no c\u00e1lculo — verifique o endere\u00e7o de destino.</div></div>`;
     }
     box.innerHTML=html;
   }
 
-  // ---------- util UI (do mockup) ----------
   function tick(){ const c=document.getElementById('clock'); if(c) c.textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
   setInterval(tick,1000); tick();
   function tab(t,btn){
@@ -526,7 +526,6 @@
   }
   document.getElementById('lgSenha').addEventListener('keydown',e=>{ if(e.key==='Enter') fazerLogin(); });
 
-  // auto-entra se ja tem token
   if(TOKEN){ entrar(); }
 </script>
 </body>
