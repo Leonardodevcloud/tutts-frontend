@@ -255,6 +255,10 @@ html,body{height:100%}
 .nota .btn-rot:hover{border-color:var(--line2)}
 .nota .btn-rot.rem{color:#c0392b;border-color:#f3d6d2}
 .nota .btn-rot.add{color:#6d28d9;border-color:#e2d6f5}
+.nota.bv-rota{border-color:#f59e0b;box-shadow:inset 0 0 0 1px #f59e0b;background:#fff9f0}
+.rot-tag.bv{background:#fff4e5;color:#b26a00}
+.btn-rot.bv{color:#b26a00;border-color:#ffd699}
+.btn-rot.bvon{color:#b26a00;border-color:#f3e2c2}
 .rot-num{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:11px;color:#6d28d9;background:#efeafe;border-radius:6px;padding:1px 7px}
 .tag-dup{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:#fff4e5;color:#b26a00;border:1px solid #ffd699}
 .rota-det{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px}
@@ -398,6 +402,8 @@ img.avatar{object-fit:cover}
   let SELECAO=new Set();        // id_embarque no roteiro
   let ORDEM_ROTA={};            // id_embarque -> {rota:'A', parada:N}
   let SEL_DIRTY=false;          // selecao editada manualmente (pede recalculo)
+  let BATEVOLTA=new Set();      // id_embarque marcados como bate-volta (vao pro ultimo da fila)
+  let ATRIB_BV=null;            // { cod, nome, foto, nfs, km } do pacote bate-volta
   const letraRota = i => String.fromCharCode(65 + (i%26));
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
@@ -507,29 +513,35 @@ img.avatar{object-fit:cover}
     const grupoCount = {};
     NOTAS.forEach(n=>{ const k=normEnd(n.endereco); if(k) grupoCount[k]=(grupoCount[k]||0)+1; });
 
-    // selecionadas sobem pro topo (por parada); fora ficam embaixo; sem rota mantem ordem
-    const lista = temRota ? [...NOTAS].sort((a,b)=>{
-      const ia=SELECAO.has(Number(a.id_embarque)), ib=SELECAO.has(Number(b.id_embarque));
-      if(ia!==ib) return ia?-1:1;
-      if(ia&&ib){ const pa=ORDEM_ROTA[Number(a.id_embarque)], pb=ORDEM_ROTA[Number(b.id_embarque)]; return ((pa?pa.parada:999)-(pb?pb.parada:999)); }
-      return 0;
-    }) : NOTAS;
+    // selecionadas sobem pro topo (por parada); BV logo abaixo; fora ficam embaixo
+    const rank = n => { const id=Number(n.id_embarque);
+      if(BATEVOLTA.has(id)) return [1, 0];
+      if(SELECAO.has(id)){ const p=ORDEM_ROTA[id]; return [0, p?p.parada:999]; }
+      return [2, 0]; };
+    const lista = temRota ? [...NOTAS].sort((a,b)=>{ const ra=rank(a), rb=rank(b); return ra[0]-rb[0] || ra[1]-rb[1]; }) : NOTAS;
 
     L.innerHTML = lista.map(n=>{
       const id=Number(n.id_embarque);
+      const isBV = BATEVOLTA.has(id);
       const noRoteiro = SELECAO.has(id);
       const ord = ORDEM_ROTA[id];
-      const cls = temRota ? (noRoteiro?'no-rota':'fora-rota') : '';
+      const cls = isBV ? 'bv-rota' : (temRota ? (noRoteiro?'no-rota':'fora-rota') : '');
       const dup = grupoCount[normEnd(n.endereco)]>1;
-      const tag = temRota
-        ? (noRoteiro
-            ? `<span class="rot-tag in">Rota ${ord?ord.rota:'?'}</span>${ord?('<span class="rot-num">parada '+ord.parada+'</span>'):'<span class="rot-num">novo</span>'}`
-            : `<span class="rot-tag out">fora do roteiro</span>`)
-        : `<span class="badge-geo ${n.geocodificado?'ok':'no'}">${n.geocodificado?'no mapa':'sem coord'}</span>`;
-      const acao = temRota
+      const tag = isBV
+        ? `<span class="rot-tag bv">\u21ba bate-volta</span>`
+        : (temRota
+            ? (noRoteiro
+                ? `<span class="rot-tag in">Rota ${ord?ord.rota:'?'}</span>${ord?('<span class="rot-num">parada '+ord.parada+'</span>'):'<span class="rot-num">novo</span>'}`
+                : `<span class="rot-tag out">fora do roteiro</span>`)
+            : `<span class="badge-geo ${n.geocodificado?'ok':'no'}">${n.geocodificado?'no mapa':'sem coord'}</span>`);
+      // acoes: bate-volta sempre; + adicionar/remover do roteiro
+      const bvBtn = isBV
+        ? `<button class="btn-rot bv" onclick="tirarBateVolta(${id})">Tirar bate-volta</button>`
+        : `<button class="btn-rot bvon" onclick="marcarBateVolta(${id})" ${n.geocodificado?'':'disabled title="sem coordenada"'}>Bate-volta</button>`;
+      const rotBtn = (!isBV && temRota)
         ? (noRoteiro
             ? `<button class="btn-rot rem" onclick="removerDoRoteiro(${id})">Remover do roteiro</button>`
-            : `<button class="btn-rot add" onclick="adicionarAoRoteiro(${id})" ${n.geocodificado?'':'disabled title="sem coordenada"'}>Adicionar ao roteiro</button>`)
+            : `<button class="btn-rot add" onclick="adicionarAoRoteiro(${id})" ${n.geocodificado?'':'disabled'}>Adicionar ao roteiro</button>`)
         : '';
       return `
       <div class="nota ${cls}">
@@ -548,13 +560,15 @@ img.avatar{object-fit:cover}
           <span>Emiss\u00e3o: <b>${fmtDT(n.data_emissao)}</b></span>
           <span>Previs\u00e3o: <b>${fmtDT(n.data_previsao)}</b></span>
         </div>
-        ${acao?`<div class="acoes">${acao}</div>`:''}
+        <div class="acoes">${rotBtn}${bvBtn}</div>
       </div>`;
     }).join('');
   }
 
   function removerDoRoteiro(id){ SELECAO.delete(Number(id)); SEL_DIRTY=true; onSelecaoMudou(); }
   function adicionarAoRoteiro(id){ SELECAO.add(Number(id)); SEL_DIRTY=true; onSelecaoMudou(); }
+  function marcarBateVolta(id){ id=Number(id); BATEVOLTA.add(id); SELECAO.delete(id); SEL_DIRTY=true; onSelecaoMudou(); }
+  function tirarBateVolta(id){ id=Number(id); BATEVOLTA.delete(id); SEL_DIRTY=true; onSelecaoMudou(); }
   function onSelecaoMudou(){
     renderNotas(); renderMapa();
     const b=document.getElementById('btnRecalc');
@@ -713,15 +727,16 @@ img.avatar{object-fit:cover}
     desenharNotas(true);
   }
 
-  function pinNota(num, roxo, neutro){
-    const cor = roxo ? '#6d28d9' : '#9aa3b2';
+  function pinNota(num, roxo, neutro, corCustom){
+    const cor = corCustom || (roxo ? '#6d28d9' : '#9aa3b2');
+    const usaGrad = roxo && !corCustom;
     const txt = (num===''||num==null) ? '' : String(num);
     const html =
       '<div style="position:relative;width:30px;height:38px;filter:drop-shadow(0 3px 5px rgba(15,23,42,.4))">'+
       '<svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg">'+
         '<defs><linearGradient id="g'+cor.slice(1)+'" x1="0" y1="0" x2="0" y2="1">'+
           '<stop offset="0" stop-color="#8b3fd6"/><stop offset="1" stop-color="'+cor+'"/></linearGradient></defs>'+
-        '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+(roxo?('url(#g'+cor.slice(1)+')'):cor)+'" stroke="#fff" stroke-width="2.2"/>'+
+        '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+(usaGrad?('url(#g'+cor.slice(1)+')'):cor)+'" stroke="#fff" stroke-width="2.2"/>'+
         (neutro?'<circle cx="15" cy="15" r="5.5" fill="#fff"/>':'')+
       '</svg>'+
       (txt?('<div style="position:absolute;top:5px;left:0;width:30px;text-align:center;color:#fff;font-weight:800;font-size:13px;font-family:ui-monospace,monospace">'+txt+'</div>'):'')+
@@ -739,15 +754,18 @@ img.avatar{object-fit:cover}
       const id=Number(n.id_embarque);
       const ord=ORDEM_ROTA[id];
       const noRoteiro=SELECAO.has(id);
+      const isBV=BATEVOLTA.has(id);
       let mk;
-      if(temRota && noRoteiro){
+      if(isBV){
+        mk=L.marker(ll,{icon:pinNota('\u21ba', false, false, '#f59e0b'), zIndexOffset:700});
+      } else if(temRota && noRoteiro){
         mk=L.marker(ll,{icon:pinNota(ord?ord.parada:'+', true), zIndexOffset:600});
       } else if(temRota && !noRoteiro){
         mk=L.circleMarker(ll,{radius:6,color:'#aeb6c2',weight:2,fillColor:'#eef1f5',fillOpacity:1});
       } else {
         mk=L.marker(ll,{icon:pinNota('', true, true), zIndexOffset:400});
       }
-      mk.addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):''));
+      mk.addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(isBV?'<br><b style="color:#b26a00">Bate-volta</b>':(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):'')));
     });
     if(fit){ if(pts.length>1){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} } else if(coletaLL){ map.setView(coletaLL,12); } }
   }
@@ -757,8 +775,13 @@ img.avatar{object-fit:cover}
     const btn=document.getElementById('btnCalc'); btn.disabled=true; btn.textContent='Calculando…';
     const rb=document.getElementById('btnRecalc'); if(rb) rb.disabled=true;
     try{
-      const body = (apenasIds && apenasIds.length) ? { apenas_ids: apenasIds } : {};
-      CALC = await apiPost('/calcular', body);
+      // separa NORMAIS x BATE-VOLTA (BV nao entra no roteiro agrupado)
+      const geoIds = NOTAS.filter(n=>n.geocodificado).map(n=>Number(n.id_embarque));
+      const idsBV = [...BATEVOLTA].filter(id=>geoIds.includes(id));
+      const idsNormais = (apenasIds && apenasIds.length ? apenasIds.filter(id=>!BATEVOLTA.has(id))
+                                                        : geoIds.filter(id=>!BATEVOLTA.has(id)));
+
+      CALC = await apiPost('/calcular', { apenas_ids: idsNormais });
       if(CALC.erro){ document.getElementById('resumoRota').innerHTML='Erro: '+CALC.erro; return; }
       layerRotas.clearLayers();
       const rotas=CALC.rotas||[];
@@ -777,21 +800,12 @@ img.avatar{object-fit:cover}
         });
       });
 
-      const s=CALC.resumo||{};
-      const km=s.distance!=null?(s.distance/1000).toFixed(1):'—';
-      const min=s.duration!=null?Math.round(s.duration/60):'—';
-      document.getElementById('resumoRota').innerHTML =
-        `<b>${rotas.length}</b> rota(s) · <b>${CALC.jobs}</b> notas · <b>${km}</b> km · <b>${min}</b> min · ${CALC.veiculos} moto(s) · cap ${CALC.capacidade}` +
-        (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'') +
-        ((CALC.nao_atribuidas&&CALC.nao_atribuidas.length)?` · <span style="color:var(--amber)">${CALC.nao_atribuidas.length} n\u00e3o atribu\u00edda(s)</span>`:'');
-      document.getElementById('btnDesp').disabled = !(rotas.length>0);
-      if(rb){ rb.style.display='none'; }
-
-      // atribui cada rota a um motoboy da fila (por ordem: aguardando, por posicao)
-      ATRIB={}; DESPACHADOS=new Set();
       const notaById={}; NOTAS.forEach(n=>{ notaById[Number(n.id_embarque)]=n; });
       const motos = FROTA.filter(m=>m.status==='aguardando')
                          .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+
+      // atribui rotas normais aos PRIMEIROS da fila
+      ATRIB={}; DESPACHADOS=new Set(); ATRIB_BV=null;
       const atribs=[];
       rotas.forEach((r,i)=>{
         const jobs = (r.steps||[]).filter(s=>s.type==='job');
@@ -801,6 +815,38 @@ img.avatar{object-fit:cover}
         if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nfs.length, km:km2, nfs, motoNome:(m.nome||m.cod), motoFoto:(m.foto||null) }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nfs.length+' nota(s))'); }
         else { atribs.push('Rota '+letraRota(i)+' \u2192 sem motoboy dispon\u00edvel ('+nfs.length+' nota(s))'); }
       });
+
+      // BATE-VOLTA -> ULTIMO da fila (pacote separado, sem limitador)
+      if(idsBV.length && motos.length){
+        const ultimo = motos[motos.length-1];
+        try{
+          const cbv = await apiPost('/calcular', { apenas_ids: idsBV });
+          const rbv = cbv.rotas||[];
+          const nfsBV=[]; let kmBV=0;
+          rbv.forEach(r=>{
+            if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
+            (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{ const n=notaById[Number(s.id)]; nfsBV.push({ id_embarque:Number(s.id), numero_nf:(n?(n.numero_nf||n.id_embarque):s.id), cliente:(n?(n.destinatario||''):'') }); });
+            if(r.distance!=null) kmBV += r.distance/1000;
+          });
+          if(nfsBV.length){
+            ATRIB_BV = { cod:ultimo.cod, nome:(ultimo.nome||ultimo.cod), foto:(ultimo.foto||null), nfs:nfsBV, km:(kmBV?kmBV.toFixed(1):null) };
+            atribs.push('Bate-volta \u2192 '+(ultimo.nome||ultimo.cod)+' (\u00faltimo da fila, '+nfsBV.length+' nota(s))');
+          }
+        }catch(e){}
+      } else if(idsBV.length && !motos.length){
+        atribs.push('Bate-volta: '+idsBV.length+' nota(s) sem motoboy na fila');
+      }
+
+      const s=CALC.resumo||{};
+      const km=s.distance!=null?(s.distance/1000).toFixed(1):'—';
+      const min=s.duration!=null?Math.round(s.duration/60):'—';
+      document.getElementById('resumoRota').innerHTML =
+        `<b>${rotas.length}</b> rota(s) · <b>${CALC.jobs}</b> notas · <b>${km}</b> km · <b>${min}</b> min · ${CALC.veiculos} moto(s) · cap ${CALC.capacidade}` +
+        (idsBV.length?` · <span style="color:#b26a00">${idsBV.length} bate-volta</span>`:'') +
+        (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'');
+      document.getElementById('btnDesp').disabled = !(rotas.length>0 || ATRIB_BV);
+      if(rb){ rb.style.display='none'; }
+
       renderFrota();
       ATRIB_RESUMO = atribs;
       renderNotas(); desenharNotas(false);
@@ -811,7 +857,7 @@ img.avatar{object-fit:cover}
   }
 
   function despacharFake(){
-    if(!CALC || !Object.keys(ATRIB).length){ alert('Calcule a rota primeiro.'); return; }
+    if(!CALC || (!Object.keys(ATRIB).length && !ATRIB_BV)){ alert('Calcule a rota primeiro.'); return; }
     abrirModalDespacho();
   }
 
@@ -821,18 +867,23 @@ img.avatar{object-fit:cover}
   function abrirModalDespacho(){
     const body=document.getElementById('modalDespBody');
     const cods=Object.keys(ATRIB);
-    body.innerHTML =
-      '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Confira as notas de cada motoboy antes de confirmar. Ao confirmar, o roteiro vai para o motoboy e ele passa para <b>Em rota</b>. <span style="color:var(--amber)">(modo simula&ccedil;&atilde;o — nenhuma corrida &eacute; criada de verdade ainda)</span></p>' +
-      cods.map(cod=>{
-        const a=ATRIB[cod];
-        const av = a.motoFoto
-          ? `<img class="avatar" src="${fotoSrcG(a.motoFoto)}" alt="${iniG(a.motoNome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">`
-          : `<div class="avatar">${iniG(a.motoNome)}</div>`;
-        const linhas = a.nfs.map(nf=>`<tr><td class="nf">#${nf.numero_nf}</td><td>${nf.cliente||'—'}</td></tr>`).join('');
-        return `
-          <div class="desp-moto">${av}<div><div style="font-weight:700">${a.motoNome}</div><div style="font-size:12px;color:var(--muted)">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}</div></div><span class="rot">Rota ${a.rota}</span></div>
-          <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
-      }).join('');
+    const blocoMoto = (a) => {
+      const av = a.motoFoto
+        ? `<img class="avatar" src="${fotoSrcG(a.motoFoto)}" alt="${iniG(a.motoNome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">`
+        : `<div class="avatar">${iniG(a.motoNome)}</div>`;
+      const linhas = a.nfs.map(nf=>`<tr><td class="nf">#${nf.numero_nf}</td><td>${nf.cliente||'—'}</td></tr>`).join('');
+      const badge = a.bv ? '<span class="rot" style="background:#fff4e5;color:#b26a00">\u21ba Bate-volta</span>' : ('<span class="rot">Rota '+a.rota+'</span>');
+      return `
+        <div class="desp-moto">${av}<div><div style="font-weight:700">${a.motoNome}</div><div style="font-size:12px;color:var(--muted)">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}${a.bv?' · \u00faltimo da fila':''}</div></div>${badge}</div>
+        <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+    };
+    let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Confira as notas de cada motoboy antes de confirmar. Ao confirmar, o roteiro vai para o motoboy e ele passa para <b>Em rota</b>.</p>';
+    html += cods.map(cod=>blocoMoto(Object.assign({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}))).join('');
+    if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
+      html += '<div style="border-top:2px dashed #ffd699;margin:6px 0 12px"></div>';
+      html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs, bv:true });
+    }
+    body.innerHTML = html;
     document.getElementById('modalDespacho').classList.add('on');
   }
   function fecharModalDespacho(){ document.getElementById('modalDespacho').classList.remove('on'); }
@@ -845,6 +896,9 @@ img.avatar{object-fit:cover}
       const ids = (a.nfs||[]).map(nf=>nf.id_embarque).filter(x=>x!=null);
       return { cod, nome:a.motoNome, nfs: ids };
     });
+    if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
+      atribuicoes.push({ cod:ATRIB_BV.cod, nome:ATRIB_BV.nome, nfs: ATRIB_BV.nfs.map(nf=>nf.id_embarque).filter(x=>x!=null), bate_volta:true });
+    }
     try{
       const r = await apiPost('/despachar', { atribuicoes, modo_teste: modoTeste });
       if(r && r.erro){
