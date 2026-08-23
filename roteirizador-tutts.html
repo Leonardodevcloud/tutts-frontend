@@ -575,10 +575,24 @@ img.avatar{object-fit:cover}
     document.getElementById('mtLivres').textContent=d.aguardando||0;
     document.getElementById('contMotos').textContent=d.total||0;
     document.getElementById('chipLivres').textContent='Livres · '+(d.aguardando||0);
-    document.getElementById('chipRua').textContent='Na rua · '+((d.total||0)-(d.aguardando||0));
+    document.getElementById('chipRua').textContent='Em rota · '+((d.total||0)-(d.aguardando||0));
+    await atualizarStatusEmRota();
     renderFrota();
     }catch(e){ if(e.message!=='nao_autorizado') throw e; }
     finally{ _frotaBusy=false; }
+  }
+
+  // le o status das O.S. despachadas (atualizado pelo webhook da Mapp) e liga em STATUS_NOTA
+  async function atualizarStatusEmRota(){
+    if(!DESPACHADOS.size) return;
+    try{
+      const d = await apiGet('/em-rota');
+      const nfToId = {}; NOTAS.forEach(n=>{ nfToId[String(n.numero_nf||n.id_embarque)] = Number(n.id_embarque); });
+      (d.ordens||[]).forEach(o=>{
+        const id = nfToId[String(o.numero_pedido)];
+        if(id!=null) STATUS_NOTA[id] = { status:o.status, os:o.os };
+      });
+    }catch(e){ /* status e best-effort */ }
   }
 
   let FILTRO_FROTA='todos';        // 'todos' | 'livres' | 'rota'
