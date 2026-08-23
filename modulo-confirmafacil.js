@@ -1099,6 +1099,93 @@
   }
 
   // ─── ABA CONFIG ──────────────────────────────────────────────
+  function AbaAcessosRoteirizador({ fetchAuth, API_URL, showToast }) {
+    const BASE = '/admin/roteirizador-tutts';
+    const [emb, setEmb]           = useState([]);
+    const [filas, setFilas]       = useState([]);
+    const [usuarios, setUsuarios] = useState([]);
+    const [form, setForm]         = useState({ login: '', senha: '', nome_exibicao: '', cnpj_embarcador: '', central_id: '' });
+    const [loading, setLoading]   = useState(false);
+
+    function carregar() {
+      fetchAuth(API_URL + BASE + '/embarcadores').then(r => r.json()).then(d => setEmb(Array.isArray(d) ? d : [])).catch(() => {});
+      fetchAuth(API_URL + BASE + '/filas').then(r => r.json()).then(d => setFilas(Array.isArray(d) ? d : [])).catch(() => {});
+      fetchAuth(API_URL + BASE + '/usuarios').then(r => r.json()).then(d => setUsuarios(Array.isArray(d) ? d : [])).catch(() => {});
+    }
+    useEffect(() => { carregar(); }, []);
+
+    const setF = (k, v) => setForm(s => ({ ...s, [k]: v }));
+    const nomeFila = id => { const x = filas.find(y => String(y.id) === String(id)); return x ? x.nome : (id ? ('#' + id) : '—'); };
+
+    async function criar() {
+      if (!form.login || !form.senha || !form.cnpj_embarcador) { showToast('Login, senha e embarcador são obrigatórios', 'error'); return; }
+      setLoading(true);
+      try {
+        const r = await fetchAuth(API_URL + BASE + '/usuarios', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, central_id: form.central_id || null }) });
+        const d = await r.json();
+        if (d.erro) { showToast(d.erro === 'login_ja_existe' ? 'Esse login já existe' : ('Erro: ' + d.erro), 'error'); }
+        else { showToast('Acesso criado!', 'success'); setForm({ login: '', senha: '', nome_exibicao: '', cnpj_embarcador: '', central_id: '' }); carregar(); }
+      } catch (_) { showToast('Erro ao criar', 'error'); } finally { setLoading(false); }
+    }
+    async function trocarSenha(id) {
+      const nova = prompt('Nova senha para este acesso:'); if (!nova) return;
+      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senha: nova }) }); showToast('Senha atualizada', 'success'); } catch (_) { showToast('Erro', 'error'); }
+    }
+    async function toggle(id, ativo) {
+      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ativo: !ativo }) }); carregar(); } catch (_) { showToast('Erro', 'error'); }
+    }
+    async function remover(id, login) {
+      if (!confirm('Remover o acesso "' + login + '"? Esta ação não pode ser desfeita.')) return;
+      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'DELETE' }); carregar(); } catch (_) { showToast('Erro', 'error'); }
+    }
+
+    const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm';
+    const btnSm = 'ml-1 px-2 py-1 text-xs border border-gray-200 rounded-md hover:bg-gray-50';
+    const campo = (label, ctrl) => h('div', null, h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, label), ctrl);
+
+    return h('div', { className: 'space-y-5' },
+      h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-800' },
+        'Cada acesso do roteirizador fica travado em 1 embarcador (CNPJ) e 1 fila. O login usa a tela ',
+        h('b', null, '/roteirizador-tutts.html'), '.'),
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
+        h('h3', { className: 'font-semibold text-gray-800 mb-3' }, 'Novo acesso'),
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+          campo('Embarcador (CNPJ)', h('select', { className: inputCls, value: form.cnpj_embarcador, onChange: e => setF('cnpj_embarcador', e.target.value) },
+            h('option', { value: '' }, 'Selecione…'),
+            emb.map(x => h('option', { key: x.cnpj_embarcador, value: x.cnpj_embarcador }, (x.nome_embarcador || '(sem nome)') + ' — ' + fmtCNPJ(x.cnpj_embarcador))))),
+          campo('Fila (central)', h('select', { className: inputCls, value: form.central_id, onChange: e => setF('central_id', e.target.value) },
+            h('option', { value: '' }, 'Selecione…'),
+            filas.map(x => h('option', { key: x.id, value: x.id }, x.nome + (x.ativa ? '' : ' (inativa)'))))),
+          campo('Nome de exibição', h('input', { className: inputCls, value: form.nome_exibicao, onChange: e => setF('nome_exibicao', e.target.value), placeholder: 'Ex.: Auto Peças Guará' })),
+          campo('Login', h('input', { className: inputCls, value: form.login, onChange: e => setF('login', e.target.value), placeholder: 'ex.: guara_sia', autoComplete: 'off' })),
+          campo('Senha', h('input', { className: inputCls, value: form.senha, onChange: e => setF('senha', e.target.value), placeholder: 'senha inicial', autoComplete: 'off' }))
+        ),
+        h('button', { className: 'mt-4 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50', disabled: loading, onClick: criar }, loading ? 'Criando…' : 'Criar acesso')
+      ),
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
+        h('h3', { className: 'font-semibold text-gray-800 mb-3' }, 'Acessos cadastrados'),
+        usuarios.length === 0
+          ? h('p', { className: 'text-sm text-gray-500' }, 'Nenhum acesso cadastrado ainda.')
+          : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-sm' },
+              h('thead', null, h('tr', { className: 'text-left text-gray-500 border-b' },
+                ['Login', 'Nome', 'Embarcador', 'Fila', 'Status', 'Último acesso', ''].map((t, i) => h('th', { key: i, className: 'px-3 py-2 font-medium whitespace-nowrap' }, t)))),
+              h('tbody', null, usuarios.map(u => h('tr', { key: u.id, className: 'border-b last:border-0' },
+                h('td', { className: 'px-3 py-2 font-semibold' }, u.login),
+                h('td', { className: 'px-3 py-2' }, u.nome_exibicao || '—'),
+                h('td', { className: 'px-3 py-2 tabular-nums whitespace-nowrap' }, fmtCNPJ(u.cnpj_embarcador)),
+                h('td', { className: 'px-3 py-2' }, nomeFila(u.central_id)),
+                h('td', { className: 'px-3 py-2' }, h('span', { className: 'px-2 py-0.5 rounded-full text-xs font-semibold ' + (u.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500') }, u.ativo ? 'ativo' : 'inativo')),
+                h('td', { className: 'px-3 py-2 text-gray-500 whitespace-nowrap' }, u.ultimo_acesso ? fmtD(u.ultimo_acesso) : '—'),
+                h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' },
+                  h('button', { className: btnSm, onClick: () => trocarSenha(u.id) }, 'Trocar senha'),
+                  h('button', { className: btnSm, onClick: () => toggle(u.id, u.ativo) }, u.ativo ? 'Desativar' : 'Ativar'),
+                  h('button', { className: btnSm + ' text-red-600', onClick: () => remover(u.id, u.login) }, 'Remover'))
+              )))
+            ))
+      )
+    );
+  }
+
   function AbaConfig({ fetchAuth, API_URL, showToast }) {
     const [clientes, setClientes]     = useState([]);
     const [clienteSel, setClienteSel] = useState('');
@@ -1534,14 +1621,15 @@
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
-        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'config', label: 'Configuração' }].map(a =>
+        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'config', label: 'Configuração' }, { id: 'acessos', label: 'Acessos Roteirizador' }].map(a =>
           h('button', {
             key: a.id, onClick: () => setAba(a.id),
             className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (aba === a.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'),
           }, a.label)
         )
       ),
-      aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
+      aba === 'acessos' ? h(AbaAcessosRoteirizador, { fetchAuth, API_URL, showToast })
+        : aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
         : aba === 'risco' ? h(AbaRiscoSLA, { fetchAuth, API_URL, showToast })
         : h(AbaNFs, { fetchAuth, API_URL, showToast })
     );
