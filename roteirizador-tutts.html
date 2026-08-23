@@ -516,9 +516,11 @@ img.avatar{object-fit:cover}
     const card = m => {
       const a = ATRIB[m.cod];
       const desp = DESPACHADOS.has(m.cod);
-      const barra = a ? `<div class="barra">
-          <span class="pill" style="background:#efeafe;color:#6d28d9;font-weight:700">&#8594; Rota ${a.rota} &middot; ${a.notas} nota(s)${a.km?(' &middot; '+a.km+' km'):''}</span>
-          ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a;font-weight:700">em rota (simulado)</span>':''}
+      const cur = m.curtas||0, lon = m.longas||0, tot = cur+lon;
+      const cp = tot>0 ? Math.round(cur/tot*100) : 50;
+      const barraRota = a ? `<div class="barra">
+          <span class="pill" style="background:#efeafe;color:#6d28d9">&#8594; Rota ${a.rota} &middot; ${a.notas} nota(s)${a.km?(' &middot; '+a.km+' km'):''}</span>
+          ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a">em rota</span>':''}
         </div>` : '';
       return `
       <div class="moto"${a?' style="outline:2px solid #efeafe"':''}>
@@ -529,7 +531,13 @@ img.avatar{object-fit:cover}
             <div class="st ${m.status==='aguardando'?'livre':'rua'}"><span class="d"></span>${m.status||'—'}${m.posicao?(' · pos '+m.posicao):''}</div>
           </div>
         </div>
-        ${barra}
+        ${barraRota}
+        <div class="barra">
+          <span class="pill">${cur} curtas</span>
+          <span class="pill">${lon} longas</span>
+        </div>
+        <div class="equidade"><span>Equil\u00edbrio do turno</span><span>${tot} entrega${tot===1?'':'s'}</span></div>
+        <div class="eq-bar"><i class="cur" style="width:${cp}%"></i><i class="lon" style="width:${100-cp}%"></i></div>
       </div>`;
     };
     let html='';
