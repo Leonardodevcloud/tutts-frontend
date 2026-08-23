@@ -598,19 +598,22 @@ img.avatar{object-fit:cover}
 
   // le o status das O.S. despachadas (atualizado pelo webhook da Mapp) e liga em STATUS_NOTA
   async function atualizarStatusEmRota(){
-    if(!DESPACHADOS.size) return;
     try{
       const d = await apiGet('/em-rota');
+      EM_ROTA_POR_COD = {};
       const nfToId = {}; NOTAS.forEach(n=>{ nfToId[String(n.numero_nf||n.id_embarque)] = Number(n.id_embarque); });
       (d.ordens||[]).forEach(o=>{
         const id = nfToId[String(o.numero_pedido)];
         if(id!=null) STATUS_NOTA[id] = { status:o.status, os:o.os };
+        const cod = o.cod_profissional;
+        if(cod){ (EM_ROTA_POR_COD[cod] = EM_ROTA_POR_COD[cod] || []).push(o); }
       });
     }catch(e){ /* status e best-effort */ }
   }
 
   let FILTRO_FROTA='todos';        // 'todos' | 'livres' | 'rota'
-  let STATUS_NOTA={};              // id_embarque -> {status, label} (via webhook, fase status)
+  let STATUS_NOTA={};              // id_embarque -> {status, label} (via webhook)
+  let EM_ROTA_POR_COD={};          // cod_profissional -> [ordens do /em-rota] (persistente, backend)
   function setFiltroFrota(f){ FILTRO_FROTA = (FILTRO_FROTA===f?'todos':f); renderFrota(); }
 
   function renderFrota(){
@@ -642,9 +645,24 @@ img.avatar{object-fit:cover}
           ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a">em rota</span>':''}
           ${(a.km!=null)?`<span class="pill" style="background:${(+a.km>=limiar)?'#fdeceb':'#eef7ef'};color:${(+a.km>=limiar)?'#c0392b':'#16a34a'}">rota ${(+a.km>=limiar)?'longa':'curta'}</span>`:''}
         </div>` : '';
-      // detalhamento das notas que o motoboy saiu (rota atual despachada)
+      // detalhamento das notas que o motoboy saiu — prioriza as O.S. REAIS (backend/em-rota),
+      // com fallback pro ATRIB da sessao. Assim persiste entre recalculos/recarregar.
       let detalhe = '';
-      if(desp && a && a.nfs && a.nfs.length){
+      const reais = EM_ROTA_POR_COD[m.cod];
+      if(desp && reais && reais.length){
+        const nEntregues = reais.filter(o=>o.status==='finalizado').length;
+        const linhas = [...reais].sort((x,y)=> (x.status==='finalizado'?0:1)-(y.status==='finalizado'?0:1))
+          .map(o=>{
+            const st=o.status; const lab=stLabel[st]||st||'a caminho'; const cor=stCor[st]||'#475569';
+            const check = st==='finalizado' ? '&#10003; ' : '';
+            return `<div class="rota-nf"><span class="nf">#${o.numero_pedido}</span><span class="cli">${(o.cliente||'').slice(0,22)}</span><span class="stt" style="color:${cor}">${check}${lab}</span></div>`;
+          }).join('');
+        detalhe = `<div class="rota-det">
+          <div class="rota-det-h">Rota enviada — ${nEntregues}/${reais.length} entregue(s)</div>
+          ${linhas}
+          <button class="btn-rot" style="margin-top:8px;width:100%" onclick="ajustarRota('${m.cod}')">Ajustar rota enviada</button>
+        </div>`;
+      } else if(desp && a && a.nfs && a.nfs.length){
         const nEntregues = a.nfs.filter(nf=>{ const s=STATUS_NOTA[nf.id_embarque]; return s&&s.status==='finalizado'; }).length;
         const linhas = [...a.nfs].sort((x,y)=>{
           const sx=(STATUS_NOTA[x.id_embarque]||{}).status==='finalizado'?0:1;
@@ -857,8 +875,19 @@ img.avatar{object-fit:cover}
   }
 
   function despacharFake(){
-    if(!CALC || (!Object.keys(ATRIB).length && !ATRIB_BV)){ alert('Calcule a rota primeiro.'); return; }
+    if(!CALC){ alert('Calcule a rota primeiro.'); return; }
+    if(!Object.keys(ATRIB).length && !ATRIB_BV){ alert('Rota calculada, mas n\u00e3o h\u00e1 motoboy dispon\u00edvel na fila para atribuir.\n\nAguarde um motoboy entrar na fila (todos est\u00e3o em rota agora).'); return; }
     abrirModalDespacho();
+  }
+
+  function ajustarRota(cod){
+    const reais = EM_ROTA_POR_COD[cod]||[];
+    if(!confirm('Ajustar a rota enviada?\n\nAs '+reais.length+' nota(s) voltam para o pool para voc\u00ea refazer o roteiro.\n\nATEN\u00c7\u00c3O: as O.S. j\u00e1 criadas na Mapp precisam ser canceladas por l\u00e1 (o cancelamento integrado entra na pr\u00f3xima fase).')) return;
+    const nfSet = new Set(reais.map(o=>String(o.numero_pedido)));
+    NOTAS.forEach(n=>{ if(nfSet.has(String(n.numero_nf||n.id_embarque))) SELECAO.add(Number(n.id_embarque)); });
+    delete ATRIB[cod]; DESPACHADOS.delete(cod); SEL_DIRTY=true;
+    renderNotas(); renderMapa(); renderFrota();
+    const b=document.getElementById('btnRecalc'); if(b){ b.style.display=''; b.textContent='Recalcular sele\u00e7\u00e3o ('+SELECAO.size+')'; }
   }
 
   function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
