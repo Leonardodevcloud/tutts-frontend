@@ -282,6 +282,9 @@ html,body{height:100%}
 .btn-ajustar:active{transform:translateY(1px)}
 .sel-moto{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;font-family:inherit;cursor:pointer}
 .sel-moto:focus{outline:none;border-color:#c9b6ef;box-shadow:0 0 0 3px rgba(109,40,217,.1)}
+.desp-grp{transition:opacity .15s}
+.desp-grp.off{opacity:.4}
+.desp-grp.off .desp-nfs{display:none}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
@@ -437,23 +440,27 @@ img.avatar{object-fit:cover}
 
   function assinaturaNotas(){ return NOTAS.filter(n=>n.geocodificado).map(n=>n.id_embarque).sort().join(','); }
   function assinaturaMotos(){ return FROTA.filter(m=>m.status==='aguardando').map(m=>m.cod).sort().join(','); }
-  function toggleAuto(){ AUTO_RECALC=!!document.getElementById('chkAuto').checked; }
+  function toggleAuto(){
+    AUTO_RECALC=!!document.getElementById('chkAuto').checked;
+    if(AUTO_RECALC){
+      const av=document.getElementById('avisoNovidades'); if(av) av.style.display='none';
+      calcular().catch(()=>{});   // ligar o auto ja recalcula na hora
+    }
+  }
   function checarNovidades(){
-    if(!JA_CALCULOU) { SIG_NOTAS=assinaturaNotas(); SIG_MOTOS=assinaturaMotos(); return; }
     const sn=assinaturaNotas(), sm=assinaturaMotos();
     const mudou = (sn!==SIG_NOTAS) || (sm!==SIG_MOTOS);
+    if(AUTO_RECALC){
+      if(mudou){ SIG_NOTAS=sn; SIG_MOTOS=sm; clearTimeout(_autoTimer); _autoTimer=setTimeout(()=>{ if(TOKEN) calcular().catch(()=>{}); }, 3000); }
+      return;
+    }
+    if(!JA_CALCULOU){ SIG_NOTAS=sn; SIG_MOTOS=sm; return; }
     if(!mudou) return;
-    // conta diferencas de notas (novas no pool)
     const antes=new Set(SIG_NOTAS?SIG_NOTAS.split(','):[]);
     const novas=(sn?sn.split(','):[]).filter(x=>!antes.has(x)).length;
     SIG_NOTAS=sn; SIG_MOTOS=sm;
-    if(AUTO_RECALC){
-      clearTimeout(_autoTimer);
-      _autoTimer=setTimeout(()=>{ if(TOKEN) calcular().catch(()=>{}); }, 3000); // debounce
-    } else {
-      const a=document.getElementById('avisoNovidades'), c=document.getElementById('novCount');
-      if(a){ a.style.display=''; if(c) c.textContent=(novas||'!'); }
-    }
+    const a=document.getElementById('avisoNovidades'), c=document.getElementById('novCount');
+    if(a){ a.style.display=''; if(c) c.textContent=(novas||'!'); }
   }
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
@@ -1019,7 +1026,7 @@ img.avatar{object-fit:cover}
     const cods=Object.keys(ATRIB);
     const optsMoto = (sel) => [...FROTA].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)))
       .map(m=>`<option value="${m.cod}" ${String(m.cod)===String(sel)?'selected':''}>${(m.nome||m.cod)}${m.status!=='aguardando'?' (em rota)':''}</option>`).join('');
-    const blocoMoto = (a, selId, sugerido, isBV) => {
+    const blocoMoto = (a, selId, sugerido, isBV, chkId) => {
       const av = a.motoFoto
         ? `<img class="avatar" src="${fotoSrcG(a.motoFoto)}" alt="${iniG(a.motoNome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">`
         : `<div class="avatar">${iniG(a.motoNome)}</div>`;
@@ -1028,20 +1035,25 @@ img.avatar{object-fit:cover}
       const label = isBV ? 'Bate-volta \u2192 motoboy' : (eDir ? 'Envio direto \u2192 motoboy' : 'Rota '+a.rota+' \u2192 motoboy');
       const badge = isBV ? '<span class="rot" style="background:#fff4e5;color:#b26a00">\u21ba Bate-volta</span>'
                    : (eDir ? '<span class="rot" style="background:#eef6ff;color:#1d4ed8">Envio direto</span>' : ('<span class="rot">Rota '+a.rota+'</span>'));
+      const chk = chkId ? `<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate);margin-right:8px"><input type="checkbox" id="${chkId}" checked onchange="this.closest('.desp-grp').classList.toggle('off', !this.checked)"> despachar</label>` : '';
       return `
+        <div class="desp-grp">
         <div class="desp-moto">${av}
           <div style="flex:1">
             <div style="font-size:11px;color:var(--muted);margin-bottom:3px">${label}</div>
             <select class="sel-moto" id="${selId}">${optsMoto(sugerido)}</select>
             <div style="font-size:12px;color:var(--muted);margin-top:3px">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}</div>
-          </div>${badge}</div>
-        <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+          </div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">${badge}${chk}</div></div>
+        <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>
+        </div>`;
     };
-    let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Escolha o motoboy de cada rota e confira as notas. Ao confirmar, cria as corridas na Mapp.</p>';
-    html += cods.map((cod,i)=>blocoMoto({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}, 'dm-'+i, cod, false)).join('');
+    const cods2=Object.keys(ATRIB);
+    const multiplos = cods2.length>1;
+    let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">'+(multiplos?'V\u00e1rios agrupamentos foram montados. Marque os que quer despachar agora e escolha o motoboy de cada um.':'Escolha o motoboy e confira as notas. Ao confirmar, cria as corridas na Mapp.')+'</p>';
+    html += cods2.map((cod,i)=>blocoMoto({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}, 'dm-'+i, cod, false, (multiplos?'chk-'+i:null))).join('');
     if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
       html += '<div style="border-top:2px dashed #ffd699;margin:6px 0 12px"></div>';
-      html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs }, 'dm-bv', ATRIB_BV.cod, true);
+      html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs }, 'dm-bv', ATRIB_BV.cod, true, null);
     }
     body.innerHTML = html;
     document.getElementById('modalDespacho').classList.add('on');
@@ -1052,17 +1064,21 @@ img.avatar{object-fit:cover}
     const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Criando na Mapp…';
     const aviso=document.getElementById('despAviso'); if(aviso) aviso.style.display='';
     const modoTeste = !!(document.getElementById('chkModoTeste') && document.getElementById('chkModoTeste').checked);
+    const multiplos = Object.keys(ATRIB).length>1;
     const atribuicoes = Object.keys(ATRIB).map((cod,i)=>{
+      const chk=document.getElementById('chk-'+i);
+      if(multiplos && chk && !chk.checked) return null;      // agrupamento nao marcado -> pula
       const sel=document.getElementById('dm-'+i); const codEsc = sel?sel.value:cod;
       const moto = FROTA.find(m=>String(m.cod)===String(codEsc));
       const a = ATRIB[cod];
       return { cod: codEsc, nome: moto?(moto.nome||codEsc):cod, nfs: (a.nfs||[]).map(nf=>nf.id_embarque).filter(x=>x!=null) };
-    });
+    }).filter(Boolean);
     if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
       const sel=document.getElementById('dm-bv'); const codEsc = sel?sel.value:ATRIB_BV.cod;
       const moto = FROTA.find(m=>String(m.cod)===String(codEsc));
       atribuicoes.push({ cod: codEsc, nome: moto?(moto.nome||codEsc):ATRIB_BV.nome, nfs: ATRIB_BV.nfs.map(nf=>nf.id_embarque).filter(x=>x!=null), bate_volta:true });
     }
+    if(!atribuicoes.length){ alert('Marque ao menos um agrupamento para despachar.'); btn.disabled=false; btn.textContent='Confirmar despacho'; if(aviso) aviso.style.display='none'; return; }
     try{
       const r = await apiPost('/despachar', { atribuicoes, modo_teste: modoTeste });
       if(r && r.erro){
