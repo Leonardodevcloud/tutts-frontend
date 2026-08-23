@@ -249,6 +249,24 @@ img.avatar{object-fit:cover}
 .loja-icon,.raio-label{background:none!important;border:none!important}
 .loja-badge{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(15,23,42,.25);display:flex;align-items:center;justify-content:center}
 .raio-label span{background:rgba(255,255,255,.95);color:#6d28d9;font-size:11px;font-weight:800;padding:1px 6px;border-radius:7px;white-space:nowrap;border:1px solid rgba(109,40,217,.45);box-shadow:0 1px 3px rgba(15,23,42,.15)}
+/* modal de despacho */
+.modal-wrap{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.5);padding:16px}
+.modal-wrap.on{display:flex}
+.modal-card{background:#fff;border-radius:16px;width:min(560px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(15,23,42,.3);overflow:hidden}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:16px}
+.modal-body{padding:16px 20px;overflow:auto}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.desp-moto{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.desp-moto .avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;overflow:hidden}
+.desp-moto img.avatar{object-fit:cover}
+.desp-moto .rot{margin-left:auto;background:#efeafe;color:#6d28d9;font-weight:800;font-size:12px;padding:3px 10px;border-radius:20px}
+.desp-nfs{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.desp-nfs table{width:100%;border-collapse:collapse;font-size:13px}
+.desp-nfs th{background:var(--bg);text-align:left;padding:7px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.desp-nfs td{padding:7px 10px;border-top:1px solid var(--line)}
+.desp-nfs td.nf{font-family:var(--mono);font-weight:700;color:var(--ink);white-space:nowrap}
+.subhead{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;padding:8px 2px 4px}
 .app-hidden{display:none!important}
 </style>
 </head>
@@ -330,6 +348,21 @@ img.avatar{object-fit:cover}
 </div>
 
 <div class="rodape">Central Tutts — Roteirizador · modo simula&ccedil;&atilde;o (sem despacho real)</div>
+</div>
+
+<!-- MODAL DE CONFIRMACAO DE DESPACHO -->
+<div class="modal-wrap" id="modalDespacho">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Confirmar despacho</h3>
+      <button class="btn" onclick="fecharModalDespacho()">Fechar</button>
+    </div>
+    <div class="modal-body" id="modalDespBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="fecharModalDespacho()">Cancelar</button>
+      <button class="btn btn-primario" id="btnConfirmarDesp" onclick="confirmarDespacho()">Confirmar despacho</button>
+    </div>
+  </div>
 </div>
 <script>
   const API  = 'https://tutts-backend-production.up.railway.app';
@@ -472,12 +505,20 @@ img.avatar{object-fit:cover}
     if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(FROTA_AVISO==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
     const ini = s => (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
     const fotoSrc = f => (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f));
-    M.innerHTML = FROTA.map(m=>{
+    const emRota = m => DESPACHADOS.has(m.cod) || m.status!=='aguardando';
+    const disp = FROTA.filter(m=>!emRota(m));
+    const rota = FROTA.filter(m=>emRota(m));
+    // contadores
+    document.getElementById('mtLivres').textContent=disp.length;
+    document.getElementById('chipLivres').textContent='Livres · '+disp.length;
+    document.getElementById('chipRua').textContent='Em rota · '+rota.length;
+
+    const card = m => {
       const a = ATRIB[m.cod];
       const desp = DESPACHADOS.has(m.cod);
       const barra = a ? `<div class="barra">
           <span class="pill" style="background:#efeafe;color:#6d28d9;font-weight:700">&#8594; Rota ${a.rota} &middot; ${a.notas} nota(s)${a.km?(' &middot; '+a.km+' km'):''}</span>
-          ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a;font-weight:700">despachado (simulado)</span>':''}
+          ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a;font-weight:700">em rota (simulado)</span>':''}
         </div>` : '';
       return `
       <div class="moto"${a?' style="outline:2px solid #efeafe"':''}>
@@ -490,7 +531,12 @@ img.avatar{object-fit:cover}
         </div>
         ${barra}
       </div>`;
-    }).join('');
+    };
+    let html='';
+    html += '<div class="subhead">Dispon\u00edveis</div>';
+    html += disp.length ? disp.map(card).join('') : '<div class="rt-loading" style="padding:8px">Nenhum dispon\u00edvel.</div>';
+    if(rota.length){ html += '<div class="subhead">Em rota</div>' + rota.map(card).join(''); }
+    M.innerHTML = html;
   }
 
   function desenharAneis(center){
@@ -547,15 +593,17 @@ img.avatar{object-fit:cover}
 
       // atribui cada rota a um motoboy da fila (por ordem: aguardando, por posicao)
       ATRIB={}; DESPACHADOS=new Set();
+      const notaById={}; NOTAS.forEach(n=>{ notaById[Number(n.id_embarque)]=n; });
       const motos = FROTA.filter(m=>m.status==='aguardando')
                          .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
       const atribs=[];
       rotas.forEach((r,i)=>{
-        const m = motos[i];
-        const nJobs = (r.steps||[]).filter(s=>s.type==='job').length;
+        const jobs = (r.steps||[]).filter(s=>s.type==='job');
+        const nfs = jobs.map(s=>{ const n=notaById[Number(s.id)]; return n?{numero_nf:(n.numero_nf||n.id_embarque),cliente:(n.destinatario||''),endereco:(n.endereco||'')}:{numero_nf:s.id,cliente:'',endereco:''}; });
         const km = r.distance!=null?(r.distance/1000).toFixed(1):null;
-        if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nJobs, km }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nJobs+' nota(s))'); }
-        else { atribs.push('Rota '+letraRota(i)+' \u2192 sem motoboy dispon\u00edvel ('+nJobs+' nota(s))'); }
+        const m = motos[i];
+        if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nfs.length, km, nfs, motoNome:(m.nome||m.cod), motoFoto:(m.foto||null) }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nfs.length+' nota(s))'); }
+        else { atribs.push('Rota '+letraRota(i)+' \u2192 sem motoboy dispon\u00edvel ('+nfs.length+' nota(s))'); }
       });
       renderFrota();
       ATRIB_RESUMO = atribs;
@@ -565,21 +613,51 @@ img.avatar{object-fit:cover}
     finally{ btn.disabled=false; btn.textContent='Calcular rota'; }
   }
 
-  async function despacharFake(){
-    if(!CALC){ return; }
-    const btn=document.getElementById('btnDesp'); btn.disabled=true; btn.textContent='Registrando…';
+  function despacharFake(){
+    if(!CALC || !Object.keys(ATRIB).length){ alert('Calcule a rota primeiro.'); return; }
+    abrirModalDespacho();
+  }
+
+  function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
+  function iniG(s){ return (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase(); }
+
+  function abrirModalDespacho(){
+    const body=document.getElementById('modalDespBody');
+    const cods=Object.keys(ATRIB);
+    body.innerHTML =
+      '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">Confira as notas de cada motoboy antes de confirmar. Ao confirmar, o roteiro vai para o motoboy e ele passa para <b>Em rota</b>. <span style="color:var(--amber)">(modo simula&ccedil;&atilde;o — nenhuma corrida &eacute; criada de verdade ainda)</span></p>' +
+      cods.map(cod=>{
+        const a=ATRIB[cod];
+        const av = a.motoFoto
+          ? `<img class="avatar" src="${fotoSrcG(a.motoFoto)}" alt="${iniG(a.motoNome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">`
+          : `<div class="avatar">${iniG(a.motoNome)}</div>`;
+        const linhas = a.nfs.map(nf=>`<tr><td class="nf">#${nf.numero_nf}</td><td>${nf.cliente||'—'}</td></tr>`).join('');
+        return `
+          <div class="desp-moto">${av}<div><div style="font-weight:700">${a.motoNome}</div><div style="font-size:12px;color:var(--muted)">${a.notas} nota(s)${a.km?(' · '+a.km+' km'):''}</div></div><span class="rot">Rota ${a.rota}</span></div>
+          <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+      }).join('');
+    document.getElementById('modalDespacho').classList.add('on');
+  }
+  function fecharModalDespacho(){ document.getElementById('modalDespacho').classList.remove('on'); }
+
+  async function confirmarDespacho(){
+    const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Confirmando…';
     try{
-      const r = await apiPost('/despachar-fake',{
+      await apiPost('/despachar-fake',{
         payload_vroom: CALC._payload||null,
         resposta_vroom: {summary:CALC.resumo,routes:(CALC.rotas||[]).map(x=>({vehicle:x.vehicle,cost:x.cost,steps:(x.steps||[]).map(s=>({type:s.type,id:s.id}))}))},
-        qtd_notas: CALC.jobs, qtd_rotas: (CALC.rotas||[]).length
+        qtd_notas: CALC.jobs, qtd_rotas:(CALC.rotas||[]).length
       });
-      alert('SIMULADO — nenhuma corrida criada.\n\n' + (ATRIB_RESUMO.length?ATRIB_RESUMO.join('\n'):'') + '\n\nOs motoboys atribu\u00eddos foram marcados como \"despachado (simulado)\".');
       DESPACHADOS = new Set(Object.keys(ATRIB));
       renderFrota();
-    }catch(e){ alert('Falha ao registrar simula\u00e7\u00e3o.'); }
-    finally{ btn.disabled=false; btn.textContent='Despachar (simulado)'; }
+      renderAlertas();
+      fecharModalDespacho();
+      document.getElementById('btnDesp').disabled=true;
+      ja_toast('Roteiro enviado (simulado). Motoboy(s) movido(s) para Em rota.');
+    }catch(e){ alert('Falha ao confirmar.'); }
+    finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; }
   }
+  function ja_toast(msg){ const r=document.getElementById('resumoRota'); if(r){ const old=r.innerHTML; r.innerHTML='<b style="color:var(--ok)">'+msg+'</b>'; setTimeout(()=>{ if(document.getElementById('resumoRota')) document.getElementById('resumoRota').innerHTML=old; }, 4000); } }
 
   function renderAlertas(){
     const box=document.getElementById('alertas'); if(!box) return;
