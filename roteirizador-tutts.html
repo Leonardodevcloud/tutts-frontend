@@ -954,6 +954,20 @@ img.avatar{object-fit:cover}
         const cor=CORES[i%CORES.length];
         if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
       });
+      // SAIDA REAL: primeiro ponto da 1a rota (onde o motor de rotas realmente comeca).
+      // Se estiver longe do pin da loja, marca o desvio para o operador ajustar o pin.
+      try{
+        const g0 = (rotas[0] && rotas[0].geometry) ? decodePoly(rotas[0].geometry,5) : [];
+        if(g0.length && coletaLL){
+          const saida = g0[0];
+          const distM = map.distance(coletaLL, saida);
+          if(distM > 60){
+            L.polyline([coletaLL, saida],{color:'#c0392b',weight:2.5,dashArray:'3 5',opacity:.8}).addTo(layerRotas);
+            L.marker(saida,{icon:L.divIcon({className:'saida-real',iconSize:[64,20],iconAnchor:[32,26],html:'<div style="background:#c0392b;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">sa\u00edda '+Math.round(distM)+'m</div>'}),zIndexOffset:1100}).addTo(layerRotas)
+              .bindPopup('A rota est\u00e1 nascendo aqui, a '+Math.round(distM)+'m da loja.<br><b>Arraste o pin da loja para a rua de sa\u00edda correta e salve.</b>');
+          }
+        }
+      }catch(e){}
 
       // SELECAO / ORDEM_ROTA a partir das rotas calculadas (parada = ordem no percurso)
       SELECAO=new Set(); ORDEM_ROTA={}; SEL_DIRTY=false; PRAZO_NOTA={};
