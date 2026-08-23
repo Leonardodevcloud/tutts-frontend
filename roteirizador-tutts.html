@@ -335,7 +335,7 @@ img.avatar{object-fit:cover}
   const API  = 'https://tutts-backend-production.up.railway.app';
   const BASE = API + '/api/roteirizador-tutts';
   let TOKEN  = localStorage.getItem('rt_token') || '';
-  let ME=null, NOTAS=[], FROTA=[], CALC=null;
+  let ME=null, NOTAS=[], FROTA=[], CALC=null, COLETA_STATUS=null;
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
@@ -418,9 +418,11 @@ img.avatar{object-fit:cover}
       document.getElementById('hdEmbarcador').innerHTML = (ME.nome_exibicao||emb.nome_embarcador||'Embarcador') +
         (ME.central&&ME.central.nome? ' <small>· '+ME.central.nome+'</small>':'');
       coletaLL = (emb.coleta_lat!=null&&emb.coleta_lng!=null)? [Number(emb.coleta_lat),Number(emb.coleta_lng)] : null;
+      COLETA_STATUS = ME.coleta_status || (coletaLL?'ok':'sem_endereco');
     }catch(e){ return; }
     await Promise.all([carregarNotas(), carregarFrota()]);
     desenharBase();
+    renderAlertas();
     if(map) setTimeout(()=>map.invalidateSize(),150);
   }
 
@@ -550,6 +552,12 @@ img.avatar{object-fit:cover}
   function renderAlertas(){
     const box=document.getElementById('alertas'); if(!box) return;
     let html='';
+    if(COLETA_STATUS && COLETA_STATUS!=='ok'){
+      const msg = COLETA_STATUS==='embarcador_nao_encontrado'
+        ? 'Embarcador nao encontrado no ConfirmaFacil para este CNPJ.'
+        : 'A loja (ponto de partida) nao tem endereco/coordenada cadastrada no ConfirmaFacil.';
+      html+=`<div class="alerta red"><div class="ico">!</div><div class="msg"><b>Sem ponto de partida.</b> ${msg} Cadastre o endereco do embarcador na aba Configuracao do ConfirmaFacil (o mapa e o calculo dependem disso).</div></div>`;
+    }
     const sc = (CALC&&CALC.sem_coordenada)?CALC.sem_coordenada.length:NOTAS.filter(n=>!n.geocodificado).length;
     if(sc>0){
       html+=`<div class="alerta amber"><div class="ico">!</div><div class="msg"><b>${sc} nota(s) sem coordenada.</b> N\u00e3o entraram no c\u00e1lculo — verifique o endere\u00e7o de destino.</div></div>`;
