@@ -925,7 +925,7 @@ img.avatar{object-fit:cover}
       const rotas=CALC.rotas||[];
       rotas.forEach((r,i)=>{
         const cor=CORES[i%CORES.length];
-        if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
+        if(r.geometry){ const cc=decodePoly(r.geometry,5); if(coletaLL) cc.unshift(coletaLL); if(CALC.params&&CALC.params.retorno_a_loja&&coletaLL) cc.push(coletaLL); L.polyline(cc,{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
       });
 
       // SELECAO / ORDEM_ROTA a partir das rotas calculadas (parada = ordem no percurso)
@@ -994,7 +994,7 @@ img.avatar{object-fit:cover}
           const rbv = cbv.rotas||[];
           const nfsBV=[]; let kmBV=0;
           rbv.forEach(r=>{
-            if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
+            if(r.geometry){ const cc=decodePoly(r.geometry,5); if(coletaLL) cc.unshift(coletaLL); L.polyline(cc,{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
             (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{ const n=notaById[Number(s.id)]; nfsBV.push({ id_embarque:Number(s.id), numero_nf:(n?(n.numero_nf||n.id_embarque):s.id), cliente:(n?(n.destinatario||''):'') }); });
             if(r.distance!=null) kmBV += r.distance/1000;
           });
