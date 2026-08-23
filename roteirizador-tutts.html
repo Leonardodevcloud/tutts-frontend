@@ -268,6 +268,14 @@ html,body{height:100%}
 .pz.no_prazo{background:#e7f3ec;color:#16a34a}
 .pz.urgente{background:#fff4e5;color:#b26a00}
 .pz.atrasaria{background:#fdeceb;color:#c0392b}
+.grupo-rota-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 8px;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:10px;position:sticky;top:0;z-index:2}
+.grupo-rota-head:first-child{margin-top:2px}
+.grupo-rota-head.fora{opacity:.75}
+.gr-badge{color:#fff;font-weight:800;font-size:11px;padding:3px 10px;border-radius:20px}
+.gr-cont{font-size:11px;color:var(--muted);font-weight:600;margin-left:4px}
+.gr-desp{color:#fff;border:0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .14s}
+.gr-desp:hover{filter:brightness(1.08)}
+.gr-desp:active{transform:translateY(1px)}
 .rota-det{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px}
 .rota-det-h{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px}
 .rota-nf{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid #f1f3f6}
@@ -436,6 +444,7 @@ img.avatar{object-fit:cover}
   let JA_CALCULOU=false;        // event-driven: so alerta novidades apos o 1o calculo
   let SIG_NOTAS='', SIG_MOTOS='';
   let AUTO_RECALC=false; let _autoTimer=null;
+  let MODAL_CODS=[]; let MODAL_TEM_BV=false;
   const letraRota = i => String.fromCharCode(65 + (i%26));
 
   function assinaturaNotas(){ return NOTAS.filter(n=>n.geocodificado).map(n=>n.id_embarque).sort().join(','); }
@@ -577,13 +586,15 @@ img.avatar{object-fit:cover}
       return [2, 0]; };
     const lista = temRota ? [...NOTAS].sort((a,b)=>{ const ra=rank(a), rb=rank(b); return ra[0]-rb[0] || ra[1]-rb[1]; }) : NOTAS;
 
-    L.innerHTML = lista.map(n=>{
+    const corRota = (letra) => letra ? CORES[(letra.charCodeAt(0)-65)%CORES.length] : '#6d28d9';
+    const cardNota = (n)=>{
       const id=Number(n.id_embarque);
       const isBV = BATEVOLTA.has(id);
       const isDir = DIRETA.has(id);
       const noRoteiro = SELECAO.has(id);
       const ord = ORDEM_ROTA[id];
       const cls = isDir ? 'dir-sel' : (isBV ? 'bv-rota' : (temRota ? (noRoteiro?'no-rota':'fora-rota') : ''));
+      const faixa = (noRoteiro && ord && !isBV && !isDir) ? ` style="border-left:4px solid ${corRota(ord.rota)}"` : '';
       const dup = grupoCount[normEnd(n.endereco)]>1;
       const pz = PRAZO_NOTA[id];
       const pzTag = (pz && noRoteiro && !isBV)
@@ -593,10 +604,9 @@ img.avatar{object-fit:cover}
         ? `<span class="rot-tag bv">\u21ba bate-volta</span>`
         : (temRota
             ? (noRoteiro
-                ? `<span class="rot-tag in">Rota ${ord?ord.rota:'?'}</span>${ord?('<span class="rot-num">parada '+ord.parada+'</span>'):'<span class="rot-num">novo</span>'}`
+                ? `<span class="rot-tag in" style="background:${corRota(ord?ord.rota:'')}22;color:${corRota(ord?ord.rota:'')}">Rota ${ord?ord.rota:'?'}</span>${ord?('<span class="rot-num">parada '+ord.parada+'</span>'):'<span class="rot-num">novo</span>'}`
                 : `<span class="rot-tag out">fora do roteiro</span>`)
             : `<span class="badge-geo ${n.geocodificado?'ok':'no'}">${n.geocodificado?'no mapa':'sem coord'}</span>`);
-      // acoes: bate-volta sempre; + adicionar/remover do roteiro
       const bvBtn = isBV
         ? `<button class="btn-rot bv" onclick="tirarBateVolta(${id})">Tirar bate-volta</button>`
         : `<button class="btn-rot bvon" onclick="marcarBateVolta(${id})" ${n.geocodificado?'':'disabled title="sem coordenada"'}>Bate-volta</button>`;
@@ -609,7 +619,7 @@ img.avatar{object-fit:cover}
             : `<button class="btn-rot add" onclick="adicionarAoRoteiro(${id})" ${n.geocodificado?'':'disabled'}>Adicionar ao roteiro</button>`)
         : '';
       return `
-      <div class="nota ${cls}">
+      <div class="nota ${cls}"${faixa}>
         <div class="top">
           <div class="num"><span class="hash">#</span>${n.numero_nf||n.id_embarque}</div>
           ${tag}
@@ -628,7 +638,32 @@ img.avatar{object-fit:cover}
         </div>
         <div class="acoes">${rotBtn}${dirBtn}${bvBtn}</div>
       </div>`;
-    }).join('');
+    };
+
+    if(!temRota){ L.innerHTML = lista.map(cardNota).join(''); return; }
+
+    // AGRUPA por rota (A junto, B junto...), depois bate-volta, depois fora do roteiro
+    const porRota={}, gBV=[], gDir=[], gFora=[];
+    lista.forEach(n=>{
+      const id=Number(n.id_embarque);
+      if(DIRETA.has(id)) gDir.push(n);
+      else if(BATEVOLTA.has(id)) gBV.push(n);
+      else if(SELECAO.has(id)){ const r=(ORDEM_ROTA[id]&&ORDEM_ROTA[id].rota)||'?'; (porRota[r]=porRota[r]||[]).push(n); }
+      else gFora.push(n);
+    });
+    let out='';
+    Object.keys(porRota).sort().forEach(letra=>{
+      const notas=porRota[letra]; const cor=corRota(letra);
+      out += `<div class="grupo-rota-head" style="border-left:5px solid ${cor}">
+        <div><span class="gr-badge" style="background:${cor}">Rota ${letra}</span> <span class="gr-cont">${notas.length} nota(s)</span></div>
+        <button class="gr-desp" style="background:${cor}" onclick="despacharRota('${letra}')">Despachar Rota ${letra}</button>
+      </div>`;
+      out += notas.map(cardNota).join('');
+    });
+    if(gDir.length){ out += `<div class="grupo-rota-head" style="border-left:5px solid #2563eb"><div><span class="gr-badge" style="background:#2563eb">Envio direto</span> <span class="gr-cont">${gDir.length} nota(s)</span></div><button class="gr-desp" style="background:#2563eb" onclick="despacharDireto()">Enviar direto</button></div>` + gDir.map(cardNota).join(''); }
+    if(gBV.length){ out += `<div class="grupo-rota-head" style="border-left:5px solid #f59e0b"><div><span class="gr-badge" style="background:#f59e0b">\u21ba Bate-volta</span> <span class="gr-cont">${gBV.length} nota(s)</span></div></div>` + gBV.map(cardNota).join(''); }
+    if(gFora.length){ out += `<div class="grupo-rota-head fora"><div><span class="gr-badge" style="background:#9aa3b2">Fora do roteiro</span> <span class="gr-cont">${gFora.length} nota(s)</span></div></div>` + gFora.map(cardNota).join(''); }
+    L.innerHTML = out;
   }
 
   function removerDoRoteiro(id){ SELECAO.delete(Number(id)); SEL_DIRTY=true; onSelecaoMudou(); }
@@ -1021,9 +1056,15 @@ img.avatar{object-fit:cover}
   function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
   function iniG(s){ return (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase(); }
 
-  function abrirModalDespacho(){
+  function despacharRota(letra){
+    const cod = Object.keys(ATRIB).find(c=>ATRIB[c].rota===letra);
+    if(!cod){ alert('Rota '+letra+' n\u00e3o encontrada. Recalcule.'); return; }
+    abrirModalDespacho([cod]);
+  }
+  function abrirModalDespacho(codsFiltro){
     const body=document.getElementById('modalDespBody');
-    const cods=Object.keys(ATRIB);
+    const cods=(codsFiltro && codsFiltro.length) ? codsFiltro : Object.keys(ATRIB);
+    const soBV = (codsFiltro && codsFiltro.length && cods[0]==='__bv__'); // reservado
     const optsMoto = (sel) => [...FROTA].sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)))
       .map(m=>`<option value="${m.cod}" ${String(m.cod)===String(sel)?'selected':''}>${(m.nome||m.cod)}${m.status!=='aguardando'?' (em rota)':''}</option>`).join('');
     const blocoMoto = (a, selId, sugerido, isBV, chkId) => {
@@ -1047,11 +1088,14 @@ img.avatar{object-fit:cover}
         <div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th></tr></thead><tbody>${linhas}</tbody></table></div>
         </div>`;
     };
-    const cods2=Object.keys(ATRIB);
+    const cods2 = cods;
+    MODAL_CODS = cods2;
+    const temBVnoModal = !(codsFiltro && codsFiltro.length);   // rota filtrada nao inclui bate-volta
+    MODAL_TEM_BV = temBVnoModal && !!(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length);
     const multiplos = cods2.length>1;
     let html = '<p style="font-size:13px;color:var(--slate);margin-bottom:14px">'+(multiplos?'V\u00e1rios agrupamentos foram montados. Marque os que quer despachar agora e escolha o motoboy de cada um.':'Escolha o motoboy e confira as notas. Ao confirmar, cria as corridas na Mapp.')+'</p>';
     html += cods2.map((cod,i)=>blocoMoto({motoNome:ATRIB[cod].motoNome, motoFoto:ATRIB[cod].motoFoto, notas:ATRIB[cod].notas, km:ATRIB[cod].km, nfs:ATRIB[cod].nfs, rota:ATRIB[cod].rota}, 'dm-'+i, cod, false, (multiplos?'chk-'+i:null))).join('');
-    if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
+    if(MODAL_TEM_BV){
       html += '<div style="border-top:2px dashed #ffd699;margin:6px 0 12px"></div>';
       html += blocoMoto({ motoNome:ATRIB_BV.nome, motoFoto:ATRIB_BV.foto, notas:ATRIB_BV.nfs.length, km:ATRIB_BV.km, nfs:ATRIB_BV.nfs }, 'dm-bv', ATRIB_BV.cod, true, null);
     }
@@ -1064,8 +1108,8 @@ img.avatar{object-fit:cover}
     const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Criando na Mapp…';
     const aviso=document.getElementById('despAviso'); if(aviso) aviso.style.display='';
     const modoTeste = !!(document.getElementById('chkModoTeste') && document.getElementById('chkModoTeste').checked);
-    const multiplos = Object.keys(ATRIB).length>1;
-    const atribuicoes = Object.keys(ATRIB).map((cod,i)=>{
+    const multiplos = MODAL_CODS.length>1;
+    const atribuicoes = MODAL_CODS.map((cod,i)=>{
       const chk=document.getElementById('chk-'+i);
       if(multiplos && chk && !chk.checked) return null;      // agrupamento nao marcado -> pula
       const sel=document.getElementById('dm-'+i); const codEsc = sel?sel.value:cod;
@@ -1073,7 +1117,7 @@ img.avatar{object-fit:cover}
       const a = ATRIB[cod];
       return { cod: codEsc, nome: moto?(moto.nome||codEsc):cod, nfs: (a.nfs||[]).map(nf=>nf.id_embarque).filter(x=>x!=null) };
     }).filter(Boolean);
-    if(ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
+    if(MODAL_TEM_BV && ATRIB_BV && ATRIB_BV.nfs && ATRIB_BV.nfs.length){
       const sel=document.getElementById('dm-bv'); const codEsc = sel?sel.value:ATRIB_BV.cod;
       const moto = FROTA.find(m=>String(m.cod)===String(codEsc));
       atribuicoes.push({ cod: codEsc, nome: moto?(moto.nome||codEsc):ATRIB_BV.nome, nfs: ATRIB_BV.nfs.map(nf=>nf.id_embarque).filter(x=>x!=null), bate_volta:true });
