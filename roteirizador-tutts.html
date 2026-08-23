@@ -335,7 +335,9 @@ img.avatar{object-fit:cover}
   const API  = 'https://tutts-backend-production.up.railway.app';
   const BASE = API + '/api/roteirizador-tutts';
   let TOKEN  = localStorage.getItem('rt_token') || '';
-  let ME=null, NOTAS=[], FROTA=[], CALC=null, COLETA_STATUS=null;
+  let ME=null, NOTAS=[], FROTA=[], CALC=null, COLETA_STATUS=null, FROTA_AVISO=null;
+  let ATRIB={}, DESPACHADOS=new Set(), ATRIB_RESUMO=[];
+  const letraRota = i => String.fromCharCode(65 + (i%26));
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
@@ -455,17 +457,30 @@ img.avatar{object-fit:cover}
   async function carregarFrota(){
     if(_frotaBusy) return; _frotaBusy=true;
     try{
-    const d = await apiGet('/frota'); FROTA=d.motoboys||[];
+    const d = await apiGet('/frota'); FROTA=d.motoboys||[]; FROTA_AVISO=d.aviso||null;
     document.getElementById('mtLivres').textContent=d.aguardando||0;
     document.getElementById('contMotos').textContent=d.total||0;
     document.getElementById('chipLivres').textContent='Livres · '+(d.aguardando||0);
     document.getElementById('chipRua').textContent='Na rua · '+((d.total||0)-(d.aguardando||0));
-    const M=document.getElementById('lista-motos');
-    if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(d.aviso==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
+    renderFrota();
+    }catch(e){ if(e.message!=='nao_autorizado') throw e; }
+    finally{ _frotaBusy=false; }
+  }
+
+  function renderFrota(){
+    const M=document.getElementById('lista-motos'); if(!M) return;
+    if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(FROTA_AVISO==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
     const ini = s => (s||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
     const fotoSrc = f => (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f));
-    M.innerHTML = FROTA.map(m=>`
-      <div class="moto">
+    M.innerHTML = FROTA.map(m=>{
+      const a = ATRIB[m.cod];
+      const desp = DESPACHADOS.has(m.cod);
+      const barra = a ? `<div class="barra">
+          <span class="pill" style="background:#efeafe;color:#6d28d9;font-weight:700">&#8594; Rota ${a.rota} &middot; ${a.notas} nota(s)${a.km?(' &middot; '+a.km+' km'):''}</span>
+          ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a;font-weight:700">despachado (simulado)</span>':''}
+        </div>` : '';
+      return `
+      <div class="moto"${a?' style="outline:2px solid #efeafe"':''}>
         <div class="top">
           ${m.foto ? `<img class="avatar" src="${fotoSrc(m.foto)}" alt="${ini(m.nome||m.cod)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:this.alt}))">` : `<div class="avatar">${ini(m.nome||m.cod)}</div>`}
           <div>
@@ -473,9 +488,9 @@ img.avatar{object-fit:cover}
             <div class="st ${m.status==='aguardando'?'livre':'rua'}"><span class="d"></span>${m.status||'—'}${m.posicao?(' · pos '+m.posicao):''}</div>
           </div>
         </div>
-      </div>`).join('');
-    }catch(e){ if(e.message!=='nao_autorizado') throw e; }
-    finally{ _frotaBusy=false; }
+        ${barra}
+      </div>`;
+    }).join('');
   }
 
   function desenharAneis(center){
@@ -529,6 +544,21 @@ img.avatar{object-fit:cover}
         (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'') +
         ((CALC.nao_atribuidas&&CALC.nao_atribuidas.length)?` · <span style="color:var(--amber)">${CALC.nao_atribuidas.length} n\u00e3o atribu\u00edda(s)</span>`:'');
       document.getElementById('btnDesp').disabled = !(rotas.length>0);
+
+      // atribui cada rota a um motoboy da fila (por ordem: aguardando, por posicao)
+      ATRIB={}; DESPACHADOS=new Set();
+      const motos = FROTA.filter(m=>m.status==='aguardando')
+                         .sort((a,b)=>((a.posicao||9999)-(b.posicao||9999)));
+      const atribs=[];
+      rotas.forEach((r,i)=>{
+        const m = motos[i];
+        const nJobs = (r.steps||[]).filter(s=>s.type==='job').length;
+        const km = r.distance!=null?(r.distance/1000).toFixed(1):null;
+        if(m){ ATRIB[m.cod]={ rota:letraRota(i), notas:nJobs, km }; atribs.push('Rota '+letraRota(i)+' \u2192 '+(m.nome||m.cod)+' ('+nJobs+' nota(s))'); }
+        else { atribs.push('Rota '+letraRota(i)+' \u2192 sem motoboy dispon\u00edvel ('+nJobs+' nota(s))'); }
+      });
+      renderFrota();
+      ATRIB_RESUMO = atribs;
       renderAlertas();
       if(window.innerWidth<=900){ document.querySelector('.tabbar button[data-tab=mapa]').click(); }
     }catch(e){ document.getElementById('resumoRota').textContent='Falha ao calcular.'; }
@@ -544,7 +574,9 @@ img.avatar{object-fit:cover}
         resposta_vroom: {summary:CALC.resumo,routes:(CALC.rotas||[]).map(x=>({vehicle:x.vehicle,cost:x.cost,steps:(x.steps||[]).map(s=>({type:s.type,id:s.id}))}))},
         qtd_notas: CALC.jobs, qtd_rotas: (CALC.rotas||[]).length
       });
-      alert(r.mensagem||'Despacho simulado registrado. Nenhuma corrida foi criada.');
+      alert('SIMULADO — nenhuma corrida criada.\n\n' + (ATRIB_RESUMO.length?ATRIB_RESUMO.join('\n'):'') + '\n\nOs motoboys atribu\u00eddos foram marcados como \"despachado (simulado)\".');
+      DESPACHADOS = new Set(Object.keys(ATRIB));
+      renderFrota();
     }catch(e){ alert('Falha ao registrar simula\u00e7\u00e3o.'); }
     finally{ btn.disabled=false; btn.textContent='Despachar (simulado)'; }
   }
@@ -557,6 +589,9 @@ img.avatar{object-fit:cover}
         ? 'Embarcador nao encontrado no ConfirmaFacil para este CNPJ.'
         : 'A loja (ponto de partida) nao tem endereco/coordenada cadastrada no ConfirmaFacil.';
       html+=`<div class="alerta red"><div class="ico">!</div><div class="msg"><b>Sem ponto de partida.</b> ${msg} Cadastre o endereco do embarcador na aba Configuracao do ConfirmaFacil (o mapa e o calculo dependem disso).</div></div>`;
+    }
+    if(ATRIB_RESUMO && ATRIB_RESUMO.length){
+      html+=`<div class="alerta info"><div class="ico">&#8594;</div><div class="msg"><b>Atribui\u00e7\u00e3o sugerida${DESPACHADOS.size?' (despachada, simulado)':''}:</b> ${ATRIB_RESUMO.join(' &nbsp;|&nbsp; ')}</div></div>`;
     }
     const sc = (CALC&&CALC.sem_coordenada)?CALC.sem_coordenada.length:NOTAS.filter(n=>!n.geocodificado).length;
     if(sc>0){
