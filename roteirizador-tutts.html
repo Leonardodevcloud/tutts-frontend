@@ -272,6 +272,11 @@ html,body{height:100%}
 .rota-nf .nf{font-family:var(--mono);font-weight:700;color:var(--ink)}
 .rota-nf .cli{color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rota-nf .stt{font-weight:700;font-size:11px;white-space:nowrap}
+.btn-ajustar{margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:2px;
+  background:linear-gradient(180deg,#faf7ff,#f3edfb);color:#6d28d9;border:1px solid #e2d6f5;border-radius:9px;
+  padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .14s;font-family:inherit}
+.btn-ajustar:hover{background:#efeafe;border-color:#c9b6ef;box-shadow:0 2px 8px rgba(109,40,217,.12)}
+.btn-ajustar:active{transform:translateY(1px)}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
@@ -670,7 +675,7 @@ img.avatar{object-fit:cover}
         detalhe = `<div class="rota-det">
           <div class="rota-det-h">Rota enviada — ${nEntregues}/${reais.length} entregue(s)</div>
           ${linhas}
-          <button class="btn-rot" style="margin-top:8px;width:100%" onclick="ajustarRota('${m.cod}')">Ajustar rota enviada</button>
+          <button class="btn-ajustar" onclick="ajustarRota('${m.cod}')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Ajustar rota enviada</button>
         </div>`;
       } else if(desp && a && a.nfs && a.nfs.length){
         const nEntregues = a.nfs.filter(nf=>{ const s=STATUS_NOTA[nf.id_embarque]; return s&&s.status==='finalizado'; }).length;
@@ -912,14 +917,16 @@ img.avatar{object-fit:cover}
     abrirModalDespacho();
   }
 
-  function ajustarRota(cod){
+  async function ajustarRota(cod){
     const reais = EM_ROTA_POR_COD[cod]||[];
-    if(!confirm('Ajustar a rota enviada?\n\nAs '+reais.length+' nota(s) voltam para o pool para voc\u00ea refazer o roteiro.\n\nATEN\u00c7\u00c3O: as O.S. j\u00e1 criadas na Mapp precisam ser canceladas por l\u00e1 (o cancelamento integrado entra na pr\u00f3xima fase).')) return;
-    const nfSet = new Set(reais.map(o=>String(o.numero_pedido)));
-    NOTAS.forEach(n=>{ if(nfSet.has(String(n.numero_nf||n.id_embarque))) SELECAO.add(Number(n.id_embarque)); });
-    delete ATRIB[cod]; DESPACHADOS.delete(cod); SEL_DIRTY=true;
-    renderNotas(); renderMapa(); renderFrota();
-    const b=document.getElementById('btnRecalc'); if(b){ b.style.display=''; b.textContent='Recalcular sele\u00e7\u00e3o ('+SELECAO.size+')'; }
+    const pend = reais.filter(o=>o.status!=='finalizado');
+    const fin = reais.length - pend.length;
+    if(!confirm('Ajustar a rota enviada?\n\n'+pend.length+' nota(s) voltam para o pool para refazer o roteiro.'+(fin?('\n'+fin+' j\u00e1 entregue(s) permanecem.'):'')+'\n\nATEN\u00c7\u00c3O: as O.S. na Mapp precisam ser canceladas por l\u00e1 (o cancelamento integrado entra na pr\u00f3xima fase).')) return;
+    try{ await apiPost('/desvincular',{ cod }); }catch(e){ alert('Falha ao desvincular.'); return; }
+    // limpa localmente e recarrega do backend (a nota volta ao pool)
+    delete ATRIB[cod]; DESPACHADOS.delete(cod); delete EM_ROTA_POR_COD[cod]; SEL_DIRTY=false;
+    await carregarNotas(); await carregarFrota();
+    renderMapa();
   }
 
   function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
