@@ -978,6 +978,7 @@
       centro_custo_mapp: embarcador?.centro_custo_mapp || '',
       // [cf-cat-emb-front-v1] categoria de frete fixa desta filial na Mapp
       categoria_mapp: embarcador?.categoria_mapp || '',
+      criacao_automatica: embarcador ? (embarcador.criacao_automatica !== false) : true,
     });
     const [opcoesCentroCusto, setOpcoesCentroCusto] = useState([]);
     const [opcoesCategoria, setOpcoesCategoria] = useState([]);
@@ -1088,6 +1089,13 @@
             )
           )
         ),
+        h('div', { className: 'px-5 pb-3' },
+          h('label', { className: 'flex items-center gap-2 text-sm text-gray-700 cursor-pointer' },
+            h('input', { type: 'checkbox', checked: form.criacao_automatica !== false, onChange: e => set('criacao_automatica', e.target.checked) }),
+            h('span', null, 'Cria\u00e7\u00e3o autom\u00e1tica de corrida (poller)')
+          ),
+          h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'Desligue para filiais que usam o Roteirizador \u2014 as corridas s\u00f3 nascem quando o expedidor confirma o roteiro.')
+        ),
         h('div', { className: 'flex justify-end gap-3 p-5 border-t border-gray-100' },
           h('button', { onClick: onFechar, className: 'px-4 py-2 text-sm text-gray-600' }, 'Cancelar'),
           h('button', { onClick: salvar, disabled: salvando,
@@ -1100,7 +1108,7 @@
 
   // ─── ABA CONFIG ──────────────────────────────────────────────
   function AbaAcessosRoteirizador({ fetchAuth, API_URL, showToast }) {
-    /* RT_PARAMS_V1 */
+    /* RT_PARAMS_V2 */
     const BASE = '/admin/roteirizador-tutts';
     const [sub, setSub] = useState('acessos');
     const [emb, setEmb] = useState([]);
@@ -1243,8 +1251,7 @@
               numP('Margem de segurança (min)', 'margem_seguranca_min', 'Colchão anti-imprevisto', false),
               numP('Limiar corrida longa (km)', 'limiar_corrida_longa_km', 'Acima disso = bate e volta', false),
               numP('Peso coesão (0-100)', 'peso_coesao', 'Evitar misturar curta+longa', false),
-              numP('Peso equidade (0-100)', 'peso_equidade', 'Equilíbrio entre motoboys', false),
-              numP('Ganho mín. p/ aviso (%)', 'limiar_ganho_min_pct', 'Dispara aviso de melhoria', false)
+              numP('Peso equidade (0-100)', 'peso_equidade', 'Equilíbrio entre motoboys', false)
             ),
             h('button', { className: 'px-5 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50', disabled: pLoading, onClick: salvarParams }, pLoading ? 'Salvando…' : 'Salvar parâmetros')
           ) : null
