@@ -224,8 +224,12 @@ html,body{height:100%}
 .centro-top .resumo{flex:1;min-width:180px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--slate)}
 .centro-top .resumo b{color:var(--ink)}
 .centro-top .btn{box-shadow:none}
-.sim-banner{background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;text-align:center;letter-spacing:.3px;flex-shrink:0}
+.sim-banner{background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;text-align:center;letter-spacing:.3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:14px}
+.sim-banner.real{background:#7f1d1d}
 .sim-banner b{color:#fbbf24}
+.sim-banner.real b{color:#fecaca}
+#btnModo{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+#btnModo:hover{background:rgba(255,255,255,.28)}
 .badge-geo{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px}
 .badge-geo.ok{background:#e7f3ec;color:var(--ok)}
 .badge-geo.no{background:#fdeceb;color:var(--red)}
@@ -338,7 +342,10 @@ img.avatar{object-fit:cover}
 
 <!-- APP -->
 <div id="app" class="app-hidden">
-<div class="sim-banner">MODO SIMULA&Ccedil;&Atilde;O — as rotas s&atilde;o calculadas de verdade, mas <b>nada &eacute; despachado</b>. Nenhuma corrida &eacute; criada.</div>
+<div class="sim-banner teste" id="simBanner">
+  <span id="simTxt">MODO TESTE — as rotas s&atilde;o calculadas de verdade, mas <b>nada &eacute; enviado ao motoboy</b>.</span>
+  <button id="btnModo" onclick="toggleModoTeste()">Ativar modo real</button>
+</div>
 
 <header>
   <div class="logo">
@@ -354,6 +361,7 @@ img.avatar{object-fit:cover}
     <div class="metric"><div class="n" id="mtPool">0</div><div class="l">No pool</div></div>
     <div class="metric"><div class="n" id="mtGeo">0</div><div class="l">Com coord</div></div>
     <div class="metric"><div class="n" id="mtLivres">0</div><div class="l">Motos livres</div></div>
+    <div class="metric" style="min-width:auto"><button class="btn" onclick="abrirDespachosDia()">Despachos do dia</button></div>
     <div class="metric" style="min-width:auto"><button class="btn" onclick="sair()">Sair</button></div>
   </div>
 </header>
@@ -406,7 +414,7 @@ img.avatar{object-fit:cover}
   </div>
 </div>
 
-<div class="rodape">Central Tutts — Roteirizador · modo simula&ccedil;&atilde;o (sem despacho real)</div>
+<div class="rodape">Central Tutts — Roteirizador</div>
 </div>
 
 <!-- MODAL DE CONFIRMACAO DE DESPACHO -->
@@ -428,6 +436,16 @@ img.avatar{object-fit:cover}
     </div>
   </div>
 </div>
+
+<div class="modal-wrap" id="modalRegistro">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Despachos do dia</h3>
+      <button class="btn" onclick="fecharRegistro()">Fechar</button>
+    </div>
+    <div class="modal-body" id="modalRegBody"><div class="rt-loading">Carregando...</div></div>
+  </div>
+</div>
 <script>
   const API  = 'https://tutts-backend-production.up.railway.app';
   const BASE = API + '/api/roteirizador-tutts';
@@ -445,7 +463,43 @@ img.avatar{object-fit:cover}
   let SIG_NOTAS='', SIG_MOTOS='';
   let AUTO_RECALC=false; let _autoTimer=null;
   let MODAL_CODS=[]; let MODAL_TEM_BV=false;
+  let MODO_TESTE=true;   // global: teste = nao envia ao motoboy
   const letraRota = i => String.fromCharCode(65 + (i%26));
+
+  function toggleModoTeste(){    if(MODO_TESTE){
+      if(!confirm('ATEN\u00c7\u00c3O — ativar o MODO REAL.\n\nA partir de agora, ao despachar, as corridas s\u00e3o CRIADAS na Mapp e ENVIADAS ao motoboy de verdade.\n\nConfirmar?')) return;
+      MODO_TESTE=false;
+    } else { MODO_TESTE=true; }
+    aplicarModoBanner();
+  }
+  function aplicarModoBanner(){
+    const b=document.getElementById('simBanner'), t=document.getElementById('simTxt'), btn=document.getElementById('btnModo');
+    if(!b) return;
+    if(MODO_TESTE){ b.className='sim-banner teste'; if(t) t.innerHTML='MODO TESTE — as rotas s\u00e3o calculadas de verdade, mas <b>nada \u00e9 enviado ao motoboy</b>.'; if(btn) btn.textContent='Ativar modo real'; }
+    else { b.className='sim-banner real'; if(t) t.innerHTML='MODO REAL — ao despachar, a corrida \u00e9 <b>criada e ENVIADA ao motoboy</b>.'; if(btn) btn.textContent='Voltar ao modo teste'; }
+    const chk=document.getElementById('chkModoTeste'); if(chk) chk.checked=MODO_TESTE;
+  }
+
+  function fecharRegistro(){ document.getElementById('modalRegistro').classList.remove('on'); }
+  async function abrirDespachosDia(){
+    const body=document.getElementById('modalRegBody');
+    document.getElementById('modalRegistro').classList.add('on');
+    body.innerHTML='<div class="rt-loading">Carregando\u2026</div>';
+    try{
+      const d = await apiGet('/despachos-dia');
+      const arr = d.despachos||[];
+      if(!arr.length){ body.innerHTML='<div class="rt-loading">Nenhum despacho criado hoje.</div>'; return; }
+      const stLabel={finalizado:'entregue',em_andamento:'a caminho',coletado:'coletado',chegou:'chegou',aceito:'aceito',cancelado:'cancelado',pendente:'pendente'};
+      const stCor={finalizado:'#16a34a',cancelado:'#c0392b',coletado:'#6d28d9',chegou:'#b26a00'};
+      const hhmm=t=>{ try{ return new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}); }catch(e){ return ''; } };
+      const linhas=arr.map(o=>{
+        const st=o.status||'pendente'; const cor=stCor[st]||'#475569';
+        return '<tr><td class="nf">#'+o.nf+'</td><td>'+(o.cliente||'\u2014')+'</td><td>'+(o.profissional||o.cod_profissional||'\u2014')+'</td><td style="font-family:var(--mono)">'+(o.os||'\u2014')+'</td><td style="color:'+cor+';font-weight:700">'+(stLabel[st]||st)+'</td><td style="color:var(--muted)">'+hhmm(o.hora)+'</td></tr>';
+      }).join('');
+      const nEnt=arr.filter(o=>o.status==='finalizado').length;
+      body.innerHTML='<div style="font-size:12px;color:var(--slate);margin-bottom:10px"><b>'+arr.length+'</b> O.S. criada(s) hoje \u00b7 <b>'+nEnt+'</b> entregue(s)</div><div class="desp-nfs"><table><thead><tr><th>NF</th><th>Cliente</th><th>Motoboy</th><th>O.S.</th><th>Status</th><th>Hora</th></tr></thead><tbody>'+linhas+'</tbody></table></div>';
+    }catch(e){ body.innerHTML='<div class="rt-loading">Falha ao carregar.</div>'; }
+  }
 
   function assinaturaNotas(){ return NOTAS.filter(n=>n.geocodificado).map(n=>n.id_embarque).sort().join(','); }
   function assinaturaMotos(){ return FROTA.filter(m=>m.status==='aguardando').map(m=>m.cod).sort().join(','); }
@@ -1088,14 +1142,18 @@ img.avatar{object-fit:cover}
   async function ajustarRota(cod){
     const reais = EM_ROTA_POR_COD[cod]||[];
     const pend = reais.filter(o=>o.status!=='finalizado');
-    const fin = reais.length - pend.length;
-    if(!confirm('Ajustar a rota enviada?\n\n'+pend.length+' nota(s) voltam para o pool para refazer o roteiro.'+(fin?('\n'+fin+' j\u00e1 entregue(s) permanecem.'):'')+'\n\nATEN\u00c7\u00c3O: as O.S. na Mapp precisam ser canceladas por l\u00e1 (o cancelamento integrado entra na pr\u00f3xima fase).')) return;
-    const box=document.getElementById('resumoRota'); if(box) box.innerHTML='<span style="color:var(--muted)">Ajustando rota\u2026</span>';
-    try{ await apiPost('/desvincular',{ cod }); }catch(e){ alert('Falha ao desvincular.'); return; }
+    if(!confirm('Ajustar a rota enviada?\n\nVou tentar CANCELAR na Mapp as '+pend.length+' O.S. n\u00e3o finalizadas deste motoboy e devolver as notas ao pool.\n\nObs: se o motoboy j\u00e1 aceitou a corrida, a Mapp recusa o cancelamento (a nota segue com ele).')) return;
+    const box=document.getElementById('resumoRota'); if(box) box.innerHTML='<span style="color:var(--muted)">Cancelando na Mapp e ajustando\u2026</span>';
+    let r;
+    try{ r = await apiPost('/desvincular',{ cod }); }catch(e){ alert('Falha ao desvincular.'); if(box) box.textContent=''; return; }
     delete ATRIB[cod]; DESPACHADOS.delete(cod); delete EM_ROTA_POR_COD[cod]; SEL_DIRTY=false;
     await carregarNotas(); await carregarFrota();
     renderMapa();
-    if(box) box.innerHTML='<span style="color:#16a34a">Rota ajustada \u2014 '+pend.length+' nota(s) de volta no pool.</span>';
+    const canc=(r&&r.canceladas)||0, aloc=(r&&r.alocadas)||0, tot=(r&&r.total)||0;
+    let msg = canc+' O.S. cancelada(s) e devolvida(s) ao pool.';
+    if(aloc) msg += ' '+aloc+' j\u00e1 aceita(s) pelo motoboy — seguem com ele (cancele na Mapp se precisar).';
+    if(box) box.innerHTML='<span style="color:'+(aloc?'#b26a00':'#16a34a')+'">'+msg+'</span>';
+    if(aloc) alert(msg);
   }
 
   function fotoSrcG(f){ return (!f ? '' : (f.startsWith('data:')||f.startsWith('http') ? f : 'data:image/jpeg;base64,'+f)); }
@@ -1152,7 +1210,7 @@ img.avatar{object-fit:cover}
   async function confirmarDespacho(){
     const btn=document.getElementById('btnConfirmarDesp'); btn.disabled=true; btn.textContent='Criando na Mapp…';
     const aviso=document.getElementById('despAviso'); if(aviso) aviso.style.display='';
-    const modoTeste = !!(document.getElementById('chkModoTeste') && document.getElementById('chkModoTeste').checked);
+    const modoTeste = MODO_TESTE;
     const multiplos = MODAL_CODS.length>1;
     const atribuicoes = MODAL_CODS.map((cod,i)=>{
       const chk=document.getElementById('chk-'+i);
