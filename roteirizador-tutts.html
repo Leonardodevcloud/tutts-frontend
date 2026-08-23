@@ -257,6 +257,13 @@ html,body{height:100%}
 .nota .btn-rot.add{color:#6d28d9;border-color:#e2d6f5}
 .rot-num{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:11px;color:#6d28d9;background:#efeafe;border-radius:6px;padding:1px 7px}
 .tag-dup{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:#fff4e5;color:#b26a00;border:1px solid #ffd699}
+.rota-det{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px}
+.rota-det-h{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px}
+.rota-nf{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid #f1f3f6}
+.rota-nf:last-of-type{border-bottom:0}
+.rota-nf .nf{font-family:var(--mono);font-weight:700;color:var(--ink)}
+.rota-nf .cli{color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rota-nf .stt{font-weight:700;font-size:11px;white-space:nowrap}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
 .loja-icon,.raio-label{background:none!important;border:none!important}
@@ -355,7 +362,7 @@ img.avatar{object-fit:cover}
   <div class="col dir">
     <div class="col-head">
       <div class="titulo"><h2>Motoboys</h2><span class="cont" id="contMotos">0</span></div>
-      <div class="filtros"><span class="chip on" id="chipLivres">Livres · 0</span><span class="chip" id="chipRua">Na rua · 0</span></div>
+      <div class="filtros"><span class="chip on" id="chipLivres" onclick="setFiltroFrota('livres')">Livres · 0</span><span class="chip" id="chipRua" onclick="setFiltroFrota('rota')">Em rota · 0</span></div>
     </div>
     <div class="lista" id="lista-motos"><div class="rt-loading">Carregando frota…</div></div>
   </div>
@@ -574,6 +581,10 @@ img.avatar{object-fit:cover}
     finally{ _frotaBusy=false; }
   }
 
+  let FILTRO_FROTA='todos';        // 'todos' | 'livres' | 'rota'
+  let STATUS_NOTA={};              // id_embarque -> {status, label} (via webhook, fase status)
+  function setFiltroFrota(f){ FILTRO_FROTA = (FILTRO_FROTA===f?'todos':f); renderFrota(); }
+
   function renderFrota(){
     const M=document.getElementById('lista-motos'); if(!M) return;
     if(!FROTA.length){ M.innerHTML='<div class="rt-loading">'+(FROTA_AVISO==='usuario_sem_fila'?'Usu\u00e1rio sem fila vinculada.':'Nenhum motoboy na fila.')+'</div>'; return; }
@@ -582,20 +593,47 @@ img.avatar{object-fit:cover}
     const emRota = m => DESPACHADOS.has(m.cod) || m.status!=='aguardando';
     const disp = FROTA.filter(m=>!emRota(m));
     const rota = FROTA.filter(m=>emRota(m));
-    // contadores
+    // contadores + estado ativo do filtro
     document.getElementById('mtLivres').textContent=disp.length;
-    document.getElementById('chipLivres').textContent='Livres · '+disp.length;
-    document.getElementById('chipRua').textContent='Em rota · '+rota.length;
+    const cL=document.getElementById('chipLivres'), cR=document.getElementById('chipRua');
+    cL.textContent='Livres · '+disp.length; cR.textContent='Em rota · '+rota.length;
+    cL.classList.toggle('on', FILTRO_FROTA==='livres' || FILTRO_FROTA==='todos');
+    cR.classList.toggle('on', FILTRO_FROTA==='rota' || FILTRO_FROTA==='todos');
+
+    const limiar = (CALC&&CALC.params&&CALC.params.limiar_corrida_longa_km)||50;
+    const stLabel = { finalizado:'entregue', coletado:'coletado', chegou:'chegou', em_andamento:'a caminho', aceito:'recebida', pendente:'aguardando' };
+    const stCor   = { finalizado:'#16a34a', coletado:'#6d28d9', chegou:'#b26a00', em_andamento:'#475569', aceito:'#475569', pendente:'#8a93a3' };
 
     const card = m => {
       const a = ATRIB[m.cod];
-      const desp = DESPACHADOS.has(m.cod);
+      const desp = DESPACHADOS.has(m.cod) || m.status!=='aguardando';
       const cur = m.curtas||0, lon = m.longas||0, tot = cur+lon;
       const cp = tot>0 ? Math.round(cur/tot*100) : 50;
       const barraRota = a ? `<div class="barra">
           <span class="pill" style="background:#efeafe;color:#6d28d9">&#8594; Rota ${a.rota} &middot; ${a.notas} nota(s)${a.km?(' &middot; '+a.km+' km'):''}</span>
           ${desp?'<span class="pill" style="background:#e7f3ec;color:#16a34a">em rota</span>':''}
+          ${(a.km!=null)?`<span class="pill" style="background:${(+a.km>=limiar)?'#fdeceb':'#eef7ef'};color:${(+a.km>=limiar)?'#c0392b':'#16a34a'}">rota ${(+a.km>=limiar)?'longa':'curta'}</span>`:''}
         </div>` : '';
+      // detalhamento das notas que o motoboy saiu (rota atual despachada)
+      let detalhe = '';
+      if(desp && a && a.nfs && a.nfs.length){
+        const nEntregues = a.nfs.filter(nf=>{ const s=STATUS_NOTA[nf.id_embarque]; return s&&s.status==='finalizado'; }).length;
+        const linhas = [...a.nfs].sort((x,y)=>{
+          const sx=(STATUS_NOTA[x.id_embarque]||{}).status==='finalizado'?0:1;
+          const sy=(STATUS_NOTA[y.id_embarque]||{}).status==='finalizado'?0:1;
+          return sx-sy;
+        }).map(nf=>{
+          const s=STATUS_NOTA[nf.id_embarque]; const st=s?s.status:null;
+          const lab=st?(stLabel[st]||st):'a caminho'; const cor=st?(stCor[st]||'#475569'):'#475569';
+          const check = st==='finalizado' ? '&#10003; ' : '';
+          return `<div class="rota-nf"><span class="nf">#${nf.numero_nf}</span><span class="cli">${(nf.cliente||'').slice(0,22)}</span><span class="stt" style="color:${cor}">${check}${lab}</span></div>`;
+        }).join('');
+        detalhe = `<div class="rota-det">
+          <div class="rota-det-h">Rota enviada — ${nEntregues}/${a.nfs.length} entregue(s)</div>
+          ${linhas}
+          <button class="btn-rot" style="margin-top:8px;width:100%" onclick="refazerRota('${m.cod}')">Refazer rota</button>
+        </div>`;
+      }
       return `
       <div class="moto"${a?' style="outline:2px solid #efeafe"':''}>
         <div class="top">
@@ -606,6 +644,7 @@ img.avatar{object-fit:cover}
           </div>
         </div>
         ${barraRota}
+        ${detalhe}
         <div class="barra">
           <span class="pill">${cur} curtas</span>
           <span class="pill">${lon} longas</span>
@@ -615,10 +654,23 @@ img.avatar{object-fit:cover}
       </div>`;
     };
     let html='';
-    html += '<div class="subhead">Dispon\u00edveis</div>';
-    html += disp.length ? disp.map(card).join('') : '<div class="rt-loading" style="padding:8px">Nenhum dispon\u00edvel.</div>';
-    if(rota.length){ html += '<div class="subhead">Em rota</div>' + rota.map(card).join(''); }
+    if(FILTRO_FROTA!=='rota'){
+      html += '<div class="subhead">Dispon\u00edveis</div>';
+      html += disp.length ? disp.map(card).join('') : '<div class="rt-loading" style="padding:8px">Nenhum dispon\u00edvel.</div>';
+    }
+    if(FILTRO_FROTA!=='livres'){
+      html += '<div class="subhead">Em rota</div>';
+      html += rota.length ? rota.map(card).join('') : '<div class="rt-loading" style="padding:8px">Ningu\u00e9m em rota.</div>';
+    }
     M.innerHTML = html;
+  }
+
+  function refazerRota(cod){
+    if(!confirm('Refazer a rota deste motoboy? As notas voltam para o pool e voc\u00ea recalcula.\n\n(As O.S. j\u00e1 criadas na Mapp precisam ser canceladas por l\u00e1.)')) return;
+    const a=ATRIB[cod]; if(a&&a.nfs){ a.nfs.forEach(nf=>SELECAO.add(Number(nf.id_embarque))); }
+    delete ATRIB[cod]; DESPACHADOS.delete(cod); SEL_DIRTY=true;
+    renderNotas(); renderMapa(); renderFrota();
+    const b=document.getElementById('btnRecalc'); if(b){ b.style.display=''; b.textContent='Recalcular sele\u00e7\u00e3o ('+SELECAO.size+')'; }
   }
 
   function desenharAneis(center){
@@ -802,7 +854,8 @@ img.avatar{object-fit:cover}
       if(despCods.length){ DESPACHADOS = new Set(despCods); renderFrota(); renderAlertas(); }
       fecharModalDespacho();
       document.getElementById('btnDesp').disabled = okAll;
-      alert((modoTeste?'MODO TESTE — ':'')+(linhas.length?((okAll?'Corridas criadas (1 O.S. por nota):':'Resultado do despacho:')+'\n\n'+linhas.join('\n')):'Nada foi despachado.'));
+      const catInfo = 'Categoria enviada: '+(r.categoria?('"'+r.categoria+'"'):'(nenhuma) \u2014 se a Mapp exige modalidade, configure a categoria do embarcador no ConfirmaF\u00e1cil');
+      alert((modoTeste?'MODO TESTE — ':'')+(linhas.length?((okAll?'Corridas criadas (1 O.S. por nota):':'Resultado do despacho:')+'\n\n'+linhas.join('\n')):'Nada foi despachado.')+'\n\n'+catInfo);
     }catch(e){ alert('Falha ao despachar: '+(e.message||e)); }
     finally{ btn.disabled=false; btn.textContent='Confirmar despacho'; }
   }
