@@ -856,10 +856,37 @@ img.avatar{object-fit:cover}
       const nomeLoja = (ME&&ME.embarcador&&(ME.embarcador.coleta_nome_fantasia||ME.embarcador.nome_embarcador))||'Loja / Coleta';
       const lojaIcon=L.divIcon({className:'loja-icon',iconSize:[28,28],iconAnchor:[14,14],
         html:'<div class="loja-badge"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10h16V9"/><path d="M9 19v-6h6v6"/></svg></div>'});
-      L.marker(coletaLL,{icon:lojaIcon,zIndexOffset:1000}).addTo(layerColeta).bindPopup('<b>'+nomeLoja+'</b><br>Ponto de partida');
+      const mk=L.marker(coletaLL,{icon:lojaIcon,zIndexOffset:1000,draggable:true,autoPan:true}).addTo(layerColeta);
+      mk.bindPopup('<b>'+nomeLoja+'</b><br>Ponto de partida<br><span style="color:#6d28d9;font-size:11px">Arraste para o ponto de acesso na rua</span>');
+      mk.on('dragend', function(){ const p=mk.getLatLng(); mostrarSalvarColeta(p.lat, p.lng); });
+      LOJA_MK = mk;
       pts.push(coletaLL);
     }
     desenharNotas(true);
+  }
+
+  let LOJA_MK=null;
+  function mostrarSalvarColeta(lat, lng){
+    let bar=document.getElementById('barSalvarColeta');
+    if(!bar){
+      bar=document.createElement('div'); bar.id='barSalvarColeta';
+      bar.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:1200;background:#fff;border:1px solid var(--line);box-shadow:0 8px 30px rgba(15,23,42,.18);border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center';
+      document.getElementById('map').appendChild(bar);
+    }
+    bar.innerHTML='<span style="font-size:12px;color:var(--slate);font-weight:600">Mover ponto da loja para c\u00e1?</span>'+
+      '<button id="btnSalvarColeta" style="background:#6d28d9;color:#fff;border:0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Salvar aqui</button>'+
+      '<button id="btnCancelColeta" style="background:#fff;color:var(--slate);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>';
+    bar.style.display='flex';
+    document.getElementById('btnSalvarColeta').onclick=async ()=>{
+      try{
+        await apiPost('/coleta-ponto',{ lat, lng });
+        coletaLL=[Number(lat),Number(lng)];
+        if(ME&&ME.embarcador){ ME.embarcador.coleta_lat=lat; ME.embarcador.coleta_lng=lng; }
+        bar.remove(); desenharBase();
+        const rr=document.getElementById('resumoRota'); if(rr) rr.innerHTML='<span style="color:#16a34a">Ponto da loja atualizado. Recalcule a rota.</span>';
+      }catch(e){ alert('Falha ao salvar o ponto da loja.'); }
+    };
+    document.getElementById('btnCancelColeta').onclick=()=>{ bar.remove(); if(LOJA_MK&&coletaLL) LOJA_MK.setLatLng(coletaLL); };
   }
 
   function pinNota(num, roxo, neutro, corCustom){
@@ -925,7 +952,7 @@ img.avatar{object-fit:cover}
       const rotas=CALC.rotas||[];
       rotas.forEach((r,i)=>{
         const cor=CORES[i%CORES.length];
-        if(r.geometry){ const cc=decodePoly(r.geometry,5); if(coletaLL) cc.unshift(coletaLL); if(CALC.params&&CALC.params.retorno_a_loja&&coletaLL) cc.push(coletaLL); L.polyline(cc,{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
+        if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
       });
 
       // SELECAO / ORDEM_ROTA a partir das rotas calculadas (parada = ordem no percurso)
@@ -994,7 +1021,7 @@ img.avatar{object-fit:cover}
           const rbv = cbv.rotas||[];
           const nfsBV=[]; let kmBV=0;
           rbv.forEach(r=>{
-            if(r.geometry){ const cc=decodePoly(r.geometry,5); if(coletaLL) cc.unshift(coletaLL); L.polyline(cc,{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
+            if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
             (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{ const n=notaById[Number(s.id)]; nfsBV.push({ id_embarque:Number(s.id), numero_nf:(n?(n.numero_nf||n.id_embarque):s.id), cliente:(n?(n.destinatario||''):'') }); });
             if(r.distance!=null) kmBV += r.distance/1000;
           });
