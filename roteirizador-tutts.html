@@ -261,6 +261,10 @@ html,body{height:100%}
 .btn-rot.bvon{color:#b26a00;border-color:#f3e2c2}
 .rot-num{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:11px;color:#6d28d9;background:#efeafe;border-radius:6px;padding:1px 7px}
 .tag-dup{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:#fff4e5;color:#b26a00;border:1px solid #ffd699}
+.pz{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px}
+.pz.no_prazo{background:#e7f3ec;color:#16a34a}
+.pz.urgente{background:#fff4e5;color:#b26a00}
+.pz.atrasaria{background:#fdeceb;color:#c0392b}
 .rota-det{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px}
 .rota-det-h{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px}
 .rota-nf{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid #f1f3f6}
@@ -404,6 +408,7 @@ img.avatar{object-fit:cover}
   let SEL_DIRTY=false;          // selecao editada manualmente (pede recalculo)
   let BATEVOLTA=new Set();      // id_embarque marcados como bate-volta (vao pro ultimo da fila)
   let ATRIB_BV=null;            // { cod, nome, foto, nfs, km } do pacote bate-volta
+  let PRAZO_NOTA={};            // id_embarque -> {status:'no_prazo'|'urgente'|'atrasaria', folgaMin}
   const letraRota = i => String.fromCharCode(65 + (i%26));
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
@@ -527,6 +532,10 @@ img.avatar{object-fit:cover}
       const ord = ORDEM_ROTA[id];
       const cls = isBV ? 'bv-rota' : (temRota ? (noRoteiro?'no-rota':'fora-rota') : '');
       const dup = grupoCount[normEnd(n.endereco)]>1;
+      const pz = PRAZO_NOTA[id];
+      const pzTag = (pz && noRoteiro && !isBV)
+        ? `<span class="pz ${pz.status}">${pz.status==='atrasaria'?'atrasaria':(pz.status==='urgente'?'no limite':'no prazo')}${(pz.folgaMin!=null&&pz.status!=='no_prazo')?(' '+(pz.folgaMin>=0?'+':'')+pz.folgaMin+'min'):''}</span>`
+        : '';
       const tag = isBV
         ? `<span class="rot-tag bv">\u21ba bate-volta</span>`
         : (temRota
@@ -553,6 +562,7 @@ img.avatar{object-fit:cover}
         <div class="cli">${n.destinatario||''}</div>
         <div class="meta">
           <span class="tag">${(n.cidade||'')}${n.uf?'/'+n.uf:''}</span>
+          ${pzTag}
           ${dup?`<span class="tag-dup" title="Outra(s) nota(s) no mesmo endere\u00e7o \u2014 conta quase como 1 entrega">\u29C9 mesmo endere\u00e7o (${grupoCount[normEnd(n.endereco)]})</span>`:''}
           ${temRota?`<span class="badge-geo ${n.geocodificado?'ok':'no'}" style="margin-left:auto">${n.geocodificado?'no mapa':'sem coord'}</span>`:''}
         </div>
@@ -809,12 +819,30 @@ img.avatar{object-fit:cover}
       });
 
       // SELECAO / ORDEM_ROTA a partir das rotas calculadas (parada = ordem no percurso)
-      SELECAO=new Set(); ORDEM_ROTA={}; SEL_DIRTY=false;
+      SELECAO=new Set(); ORDEM_ROTA={}; SEL_DIRTY=false; PRAZO_NOTA={};
+      const notaById0={}; NOTAS.forEach(n=>{ notaById0[Number(n.id_embarque)]=n; });
+      // PRAZO DE LARGADA: usa o 'arrival' do VROOM + os tempos configurados do embarcador.
+      // largada = agora + expedicao + carregamento; entrega = largada + arrival + servico.
+      const P = CALC.params||{};
+      const prepSeg = ((P.tempo_expedicao_min||0)+(P.tempo_carregamento_min||0))*60;
+      const servSeg = (P.tempo_servico_min||0)*60;
+      const margemMs = (P.margem_seguranca_min||0)*60*1000;
+      const agora = Date.now();
       rotas.forEach((r,i)=>{
         let parada=0;
         (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{
           parada++; const id=Number(s.id);
           SELECAO.add(id); ORDEM_ROTA[id]={ rota:letraRota(i), parada };
+          const n=notaById0[id];
+          if(n && n.data_previsao){
+            const prev = new Date(n.data_previsao).getTime();
+            if(!isNaN(prev)){
+              const entrega = agora + prepSeg*1000 + (s.arrival||0)*1000 + servSeg*1000;
+              const folga = prev - entrega;
+              const st = folga<0 ? 'atrasaria' : (folga<margemMs ? 'urgente' : 'no_prazo');
+              PRAZO_NOTA[id] = { status:st, folgaMin: Math.round(folga/60000) };
+            }
+          }
         });
       });
 
@@ -858,9 +886,13 @@ img.avatar{object-fit:cover}
       const s=CALC.resumo||{};
       const km=s.distance!=null?(s.distance/1000).toFixed(1):'—';
       const min=s.duration!=null?Math.round(s.duration/60):'—';
+      const nAtrasa = Object.values(PRAZO_NOTA).filter(p=>p.status==='atrasaria').length;
+      const nUrg = Object.values(PRAZO_NOTA).filter(p=>p.status==='urgente').length;
       document.getElementById('resumoRota').innerHTML =
         `<b>${rotas.length}</b> rota(s) · <b>${CALC.jobs}</b> notas · <b>${km}</b> km · <b>${min}</b> min · ${CALC.veiculos} moto(s) · cap ${CALC.capacidade}` +
         (idsBV.length?` · <span style="color:#b26a00">${idsBV.length} bate-volta</span>`:'') +
+        (nAtrasa?` · <span style="color:var(--red)">${nAtrasa} atrasaria(m)</span>`:'') +
+        (nUrg?` · <span style="color:#b26a00">${nUrg} no limite</span>`:'') +
         (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'');
       document.getElementById('btnDesp').disabled = !(rotas.length>0 || ATRIB_BV);
       if(rb){ rb.style.display='none'; }
@@ -973,7 +1005,16 @@ img.avatar{object-fit:cover}
     if(sc>0){
       html+=`<div class="alerta amber"><div class="ico">!</div><div class="msg"><b>${sc} nota(s) sem coordenada.</b> N\u00e3o entraram no c\u00e1lculo — verifique o endere\u00e7o de destino.</div></div>`;
     }
+    // prazo de largada: notas que atrasariam -> sugere bate-volta (automatico)
+    const idsAtrasa = Object.keys(PRAZO_NOTA).filter(id=>PRAZO_NOTA[id].status==='atrasaria' && !BATEVOLTA.has(Number(id)));
+    if(idsAtrasa.length){
+      html+=`<div class="alerta red"><div class="ico">!</div><div class="msg"><b>${idsAtrasa.length} nota(s) atrasariam</b> no roteiro atual (chegam depois da previs\u00e3o). Considere solt\u00e1-las como bate-volta priorit\u00e1rio. <button onclick="sugerirBateVolta()" style="border:1px solid #f3d6d2;background:#fff;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px">Marcar como bate-volta</button></div></div>`;
+    }
     box.innerHTML=html;
+  }
+  function sugerirBateVolta(){
+    Object.keys(PRAZO_NOTA).forEach(id=>{ if(PRAZO_NOTA[id].status==='atrasaria'){ BATEVOLTA.add(Number(id)); SELECAO.delete(Number(id)); } });
+    SEL_DIRTY=true; onSelecaoMudou();
   }
 
   function tick(){ const c=document.getElementById('clock'); if(c) c.textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
