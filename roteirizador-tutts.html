@@ -624,12 +624,31 @@ img.avatar{object-fit:cover}
   let MODAL_CODS=[]; let MODAL_TEM_BV=false;
   let MODO_TESTE=true;   // global: teste = nao envia ao motoboy
   let ROTA_SEL=null;   // letra da rota em foco (ou null = todas)
+  let ROTA_INFO={};    // letra -> {notas, km, min}
+  let RESUMO_TOTAL=null;
+  function montarResumo(){
+    const box=document.getElementById('resumoRota'); if(!box) return;
+    if(ROTA_SEL && ROTA_INFO[ROTA_SEL]){
+      const r=ROTA_INFO[ROTA_SEL]; const cor=corRota(ROTA_SEL);
+      box.innerHTML = `<span class="gr-badge" style="background:${cor}">Rota ${ROTA_SEL}</span> <b>${r.notas}</b> nota(s) · <b>${r.km!=null?r.km.toFixed(1):'—'}</b> km · <b>${r.min!=null?r.min:'—'}</b> min <span style="color:var(--muted);cursor:pointer;text-decoration:underline;margin-left:6px" onclick="limparFoco()">ver total</span>`;
+      return;
+    }
+    const t=RESUMO_TOTAL; if(!t){ return; }
+    box.innerHTML =
+      `<b>${t.rotas}</b> rota(s) · <b>${t.notas}</b> notas · <b>${t.km}</b> km · <b>${t.min}</b> min · ${t.veiculos} moto(s) · cap ${t.capacidade}` +
+      (t.bv?` · <span style="color:#b26a00">${t.bv} bate-volta</span>`:'') +
+      (t.atrasa?` · <span style="color:var(--red)">${t.atrasa} atrasaria(m)</span>`:'') +
+      (t.urg?` · <span style="color:#b26a00">${t.urg} no limite</span>`:'') +
+      (t.coesao?` · <span style="color:#6d28d9">coes\u00e3o ativa</span>`:'') +
+      (t.semCoord?` · <span style="color:var(--red)">${t.semCoord} sem coord</span>`:'');
+  }
   function selecionarRota(letra){
     ROTA_SEL = (ROTA_SEL===letra) ? null : letra;
     aplicarDestaqueRota();
     renderNotas();
+    montarResumo();
   }
-  function limparFoco(){ ROTA_SEL=null; aplicarDestaqueRota(); renderNotas(); }
+  function limparFoco(){ ROTA_SEL=null; aplicarDestaqueRota(); renderNotas(); montarResumo(); }
   function aplicarDestaqueRota(){
     (layerRotas||[]).forEach(o=>{
       if(!o || !o.rtLetra || !o.setOptions) return;
@@ -1313,7 +1332,11 @@ img.avatar{object-fit:cover}
       const servSeg = (P.tempo_servico_min||0)*60;
       const margemMs = (P.margem_seguranca_min||0)*60*1000;
       const agora = Date.now();
+      ROTA_INFO={};
       rotas.forEach((r,i)=>{
+        const letra=letraRota(i);
+        const nJobs=(r.steps||[]).filter(s=>s.type==='job').length;
+        ROTA_INFO[letra]={ notas:nJobs, km:(r.distance!=null?(r.distance/1000):null), min:(r.duration!=null?Math.round(r.duration/60):null) };
         let parada=0;
         (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{
           parada++; const id=Number(s.id);
@@ -1383,17 +1406,19 @@ img.avatar{object-fit:cover}
       }
 
       const s=CALC.resumo||{};
-      const km=s.distance!=null?(s.distance/1000).toFixed(1):'—';
-      const min=s.duration!=null?Math.round(s.duration/60):'—';
-      const nAtrasa = Object.values(PRAZO_NOTA).filter(p=>p.status==='atrasaria').length;
-      const nUrg = Object.values(PRAZO_NOTA).filter(p=>p.status==='urgente').length;
-      document.getElementById('resumoRota').innerHTML =
-        `<b>${rotas.length}</b> rota(s) · <b>${CALC.jobs}</b> notas · <b>${km}</b> km · <b>${min}</b> min · ${CALC.veiculos} moto(s) · cap ${CALC.capacidade}` +
-        (idsBV.length?` · <span style="color:#b26a00">${idsBV.length} bate-volta</span>`:'') +
-        (nAtrasa?` · <span style="color:var(--red)">${nAtrasa} atrasaria(m)</span>`:'') +
-        (nUrg?` · <span style="color:#b26a00">${nUrg} no limite</span>`:'') +
-        (CALC.coesao_aplicada?` · <span style="color:#6d28d9">coes\u00e3o ativa</span>`:'') +
-        (CALC.sem_coordenada&&CALC.sem_coordenada.length?` · <span style="color:var(--red)">${CALC.sem_coordenada.length} sem coord</span>`:'');
+      RESUMO_TOTAL = {
+        rotas: rotas.length,
+        notas: CALC.jobs,
+        km: s.distance!=null?(s.distance/1000).toFixed(1):'—',
+        min: s.duration!=null?Math.round(s.duration/60):'—',
+        veiculos: CALC.veiculos, capacidade: CALC.capacidade,
+        bv: idsBV.length,
+        atrasa: Object.values(PRAZO_NOTA).filter(p=>p.status==='atrasaria').length,
+        urg: Object.values(PRAZO_NOTA).filter(p=>p.status==='urgente').length,
+        coesao: !!CALC.coesao_aplicada,
+        semCoord: (CALC.sem_coordenada&&CALC.sem_coordenada.length)||0
+      };
+      montarResumo();
       // event-driven: a partir daqui, novidades no pool/fila viram aviso
       JA_CALCULOU=true; SIG_NOTAS=assinaturaNotas(); SIG_MOTOS=assinaturaMotos();
       const av=document.getElementById('avisoNovidades'); if(av) av.style.display='none';
