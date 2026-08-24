@@ -1595,6 +1595,11 @@ img.avatar{object-fit:cover}
     if(idsAtrasa.length){
       html+=`<div class="alerta red"><div class="ico">!</div><div class="msg"><b>${idsAtrasa.length} nota(s) atrasariam</b> no roteiro atual (chegam depois da previs\u00e3o). Considere solt\u00e1-las como bate-volta priorit\u00e1rio. <button onclick="sugerirBateVolta()" style="border:1px solid #f3d6d2;background:#fff;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px">Marcar como bate-volta</button></div></div>`;
     }
+    const exc = (CALC && CALC.excedente_local) || [];
+    if(exc.length){
+      const cap = (CALC && CALC.capacidade) || 5;
+      html+=`<div class="alerta amber"><div class="ico">i</div><div class="msg"><b>${exc.length} nota(s) do mesmo endere\u00e7o ficaram de fora</b> por passar do limite de ${cap} por rota. Elas est\u00e3o no pool como <b>fora do roteiro</b> \u2014 se quiser, agregue no roteiro do motoboy (bot\u00e3o <b>Enviar direto</b> na nota, escolhendo o mesmo profissional).</div></div>`;
+    }
     box.innerHTML=html;
   }
   function sugerirBateVolta(){
