@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Central Tutts — Roteirizador</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --ink:#0f172a; --slate:#475569; --muted:#64748b; --muted2:#94a3b8;
@@ -302,9 +300,7 @@ html,body{height:100%}
 .desp-grp.off .desp-nfs{display:none}
 img.avatar{object-fit:cover}
 .moto .avatar{overflow:hidden;flex-shrink:0}
-.loja-icon,.raio-label{background:none!important;border:none!important}
-.loja-badge{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(15,23,42,.25);display:flex;align-items:center;justify-content:center}
-.raio-label span{background:rgba(255,255,255,.95);color:#6d28d9;font-size:11px;font-weight:800;padding:1px 6px;border-radius:7px;white-space:nowrap;border:1px solid rgba(109,40,217,.45);box-shadow:0 1px 3px rgba(15,23,42,.15)}
+
 /* modal de despacho */
 .modal-wrap{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.5);padding:16px}
 .btn-perigo{background:#c0392b;color:#fff;border-color:#c0392b}
@@ -615,6 +611,7 @@ img.avatar{object-fit:cover}
     if(a){ a.style.display=''; if(c) c.textContent=(novas||'!'); }
   }
   let map=null, layerNotas=null, layerRotas=null, layerColeta=null, coletaLL=null;
+  let _infowin=null;
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
   const fmtDT = s => { try{ return s ? new Date(s).toLocaleString('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; }catch(_){ return '—'; } };
@@ -650,10 +647,23 @@ img.avatar{object-fit:cover}
   async function entrar(){
     document.getElementById('loginWrap').style.display='none';
     document.getElementById('app').classList.remove('app-hidden');
-    if(!map) initMap();
-    setTimeout(()=>{ if(map) map.invalidateSize(); }, 250);
-    await carregarTudo();
+    await carregarTudo();   // busca /me (traz a chave), carrega o Google Maps e inicializa
     iniciarPolling();
+  }
+
+  // carrega o Google Maps JS API dinamicamente (a chave so vem apos o login, no /me)
+  let _gmapsPromise=null;
+  function carregarGoogleMaps(key){
+    if(window.google && window.google.maps) return Promise.resolve();
+    if(_gmapsPromise) return _gmapsPromise;
+    _gmapsPromise = new Promise((res,rej)=>{
+      window.__rtGmapsCb = ()=>res();
+      const s=document.createElement('script');
+      s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key||'')+'&libraries=geometry&language=pt-BR&region=BR&callback=__rtGmapsCb';
+      s.async=true; s.defer=true; s.onerror=()=>rej(new Error('falha ao carregar Google Maps'));
+      document.head.appendChild(s);
+    });
+    return _gmapsPromise;
   }
 
   // ---- tempo real (polling) ----
@@ -666,14 +676,17 @@ img.avatar{object-fit:cover}
   function pararPolling(){ if(_pollFrota) clearInterval(_pollFrota); if(_pollNotas) clearInterval(_pollNotas); _pollFrota=_pollNotas=null; }
 
   function initMap(){
-    map = L.map('map',{zoomControl:true}).setView([-16.68,-49.25],11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-    layerColeta=L.layerGroup().addTo(map);
-    layerNotas=L.layerGroup().addTo(map);
-    layerRotas=L.layerGroup().addTo(map);
-    window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
-    setTimeout(()=>map.invalidateSize(),300);
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: {lat:-16.68, lng:-49.25}, zoom: 11,
+      mapTypeControl:false, streetViewControl:false, fullscreenControl:true,
+      gestureHandling:'greedy',
+      styles:[{featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]}]
+    });
+    layerColeta=[]; layerNotas=[]; layerRotas=[];
+    _infowin = new google.maps.InfoWindow();
   }
+  function limparLayer(arr){ if(arr) arr.forEach(o=>{ try{ o.setMap(null); }catch(e){} }); return []; }
+  function gmResize(){ if(map && window.google) google.maps.event.trigger(map,'resize'); }
 
   function decodePoly(str,precision){
     let index=0,lat=0,lng=0,coords=[],shift=0,result=0,byte=null,factor=Math.pow(10,precision||5);
@@ -698,11 +711,14 @@ img.avatar{object-fit:cover}
       coletaLL = (emb.coleta_lat!=null&&emb.coleta_lng!=null)? [Number(emb.coleta_lat),Number(emb.coleta_lng)] : null;
       COLETA_STATUS = ME.coleta_status || (coletaLL?'ok':'sem_endereco');
     }catch(e){ return; }
+    if(!map){
+      try{ await carregarGoogleMaps(ME.google_maps_key); initMap(); }
+      catch(e){ const el=document.getElementById('map'); if(el) el.innerHTML='<div style="padding:20px;color:#c0392b;font-size:13px">Não foi possível carregar o Google Maps. Verifique a chave (GOOGLE_MAPS_JS_KEY) e o faturamento no Google Cloud.</div>'; }
+    }
     restaurarAuto();
     await Promise.all([carregarNotas(), carregarFrota()]);
     desenharBase();
     renderAlertas();
-    if(map) setTimeout(()=>map.invalidateSize(),150);
   }
 
   async function carregarNotas(){
@@ -985,31 +1001,32 @@ img.avatar{object-fit:cover}
     const b=document.getElementById('btnRecalc'); if(b){ b.style.display=''; b.textContent='Recalcular sele\u00e7\u00e3o ('+SELECAO.size+')'; }
   }
 
+  const LL = a => Array.isArray(a) ? {lat:Number(a[0]), lng:Number(a[1])} : a;
   function desenharAneis(center){
+    const c=LL(center);
     const raios=[5,10,15,20,25,30];
     raios.forEach(km=>{
-      L.circle(center,{radius:km*1000,color:'#6d28d9',weight:1.6,opacity:0.65,dashArray:'6 6',fill:false,interactive:false}).addTo(layerColeta);
-      const latOff=(km*1000)/111320;
-      const lbl=L.divIcon({className:'raio-label',html:'<span>'+(km===30?'30+':km)+' km</span>',iconSize:[36,14],iconAnchor:[18,7]});
-      L.marker([center[0]+latOff,center[1]],{icon:lbl,interactive:false,keyboard:false}).addTo(layerColeta);
+      layerColeta.push(new google.maps.Circle({ center:c, radius:km*1000, map,
+        strokeColor:'#6d28d9', strokeOpacity:0.55, strokeWeight:1.4, fillOpacity:0, clickable:false, zIndex:1 }));
     });
+  }
+
+  function lojaIconG(){
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#fff" stroke="#7c3aed" stroke-width="2"/><g transform="translate(9,9)"><path d="M3 9l1.5-5h15L21 9" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.7)"/><path d="M4 9v10h16V9" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.7)"/><path d="M9 19v-6h6v6" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.7)"/></g></svg>';
+    return { url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(34,34), anchor:new google.maps.Point(17,17) };
   }
 
   function desenharBase(){
     if(!map) return;
-    layerNotas.clearLayers();
-    if(layerColeta) layerColeta.clearLayers();
-    const pts=[];
+    layerNotas=limparLayer(layerNotas);
+    layerColeta=limparLayer(layerColeta);
     if(coletaLL){
       desenharAneis(coletaLL);
       const nomeLoja = (ME&&ME.embarcador&&(ME.embarcador.coleta_nome_fantasia||ME.embarcador.nome_embarcador))||'Loja / Coleta';
-      const lojaIcon=L.divIcon({className:'loja-icon',iconSize:[28,28],iconAnchor:[14,14],
-        html:'<div class="loja-badge"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10h16V9"/><path d="M9 19v-6h6v6"/></svg></div>'});
-      const mk=L.marker(coletaLL,{icon:lojaIcon,zIndexOffset:1000,draggable:true,autoPan:true}).addTo(layerColeta);
-      mk.bindPopup('<b>'+nomeLoja+'</b><br>Ponto de partida<br><span style="color:#6d28d9;font-size:11px">Arraste para o ponto de acesso na rua</span>');
-      mk.on('dragend', function(){ const p=mk.getLatLng(); mostrarSalvarColeta(p.lat, p.lng); });
-      LOJA_MK = mk;
-      pts.push(coletaLL);
+      const mk=new google.maps.Marker({ position:LL(coletaLL), map, icon:lojaIconG(), draggable:true, zIndex:1000, title:nomeLoja });
+      mk.addListener('click', ()=>{ _infowin.setContent('<div style="font-size:12px"><b>'+nomeLoja+'</b><br>Ponto de partida<br><span style="color:#6d28d9">Arraste para o ponto de acesso na rua</span></div>'); _infowin.open(map, mk); });
+      mk.addListener('dragend', function(){ const p=mk.getPosition(); mostrarSalvarColeta(p.lat(), p.lng()); });
+      LOJA_MK = mk; layerColeta.push(mk);
     }
     desenharNotas(true);
   }
@@ -1034,38 +1051,31 @@ img.avatar{object-fit:cover}
         coletaLL=[nlat,nlng];
         if(ME&&ME.embarcador){ ME.embarcador.coleta_lat=nlat; ME.embarcador.coleta_lng=nlng; }
         bar.remove(); desenharBase();
-        if(map) map.setView(coletaLL, Math.max(map.getZoom(),16));
+        if(map){ map.setCenter(LL(coletaLL)); map.setZoom(Math.max(map.getZoom(),16)); }
         const rr=document.getElementById('resumoRota');
         if(rr) rr.innerHTML='<span style="color:#16a34a">Ponto da loja '+(resp&&resp.snapped?'ajustado \u00e0 via mais pr\u00f3xima':'salvo')+'. Recalcule a rota.</span>';
       }catch(e){ uiAlert('Falha ao salvar o ponto da loja.'); }
     };
-    document.getElementById('btnCancelColeta').onclick=()=>{ bar.remove(); if(LOJA_MK&&coletaLL) LOJA_MK.setLatLng(coletaLL); };
+    document.getElementById('btnCancelColeta').onclick=()=>{ bar.remove(); if(LOJA_MK&&coletaLL) LOJA_MK.setPosition(LL(coletaLL)); };
   }
 
-  function pinNota(num, roxo, neutro, corCustom){
-    const cor = corCustom || (roxo ? '#6d28d9' : '#9aa3b2');
-    const usaGrad = roxo && !corCustom;
+  function pinNotaIcon(num, cor){
     const txt = (num===''||num==null) ? '' : String(num);
-    const html =
-      '<div style="position:relative;width:30px;height:38px;filter:drop-shadow(0 3px 5px rgba(15,23,42,.4))">'+
-      '<svg width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg">'+
-        '<defs><linearGradient id="g'+cor.slice(1)+'" x1="0" y1="0" x2="0" y2="1">'+
-          '<stop offset="0" stop-color="#8b3fd6"/><stop offset="1" stop-color="'+cor+'"/></linearGradient></defs>'+
-        '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+(usaGrad?('url(#g'+cor.slice(1)+')'):cor)+'" stroke="#fff" stroke-width="2.2"/>'+
-        (neutro?'<circle cx="15" cy="15" r="5.5" fill="#fff"/>':'')+
-      '</svg>'+
-      (txt?('<div style="position:absolute;top:5px;left:0;width:30px;text-align:center;color:#fff;font-weight:800;font-size:13px;font-family:ui-monospace,monospace">'+txt+'</div>'):'')+
-      '</div>';
-    return L.divIcon({className:'pin-nota', html, iconSize:[30,38], iconAnchor:[15,38], popupAnchor:[0,-34]});
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'+
+      '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+cor+'" stroke="#fff" stroke-width="2.2"/>'+
+      (txt?('<text x="15" y="20" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="monospace">'+txt+'</text>'):'<circle cx="15" cy="15" r="5.5" fill="#fff"/>')+
+      '</svg>';
+    return { url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(30,38), anchor:new google.maps.Point(15,38) };
   }
+
 
   function desenharNotas(fit){
     if(!map) return;
-    layerNotas.clearLayers();
-    const pts = coletaLL ? [coletaLL] : [];
+    layerNotas=limparLayer(layerNotas);
+    const pts = coletaLL ? [LL(coletaLL)] : [];
     const temRota=Object.keys(ORDEM_ROTA).length>0 || SELECAO.size>0;
     NOTAS.filter(n=>n.geocodificado).forEach(n=>{
-      const ll=[n.lat,n.lng]; pts.push(ll);
+      const ll={lat:Number(n.lat), lng:Number(n.lng)}; pts.push(ll);
       const id=Number(n.id_embarque);
       const ord=ORDEM_ROTA[id];
       const noRoteiro=SELECAO.has(id);
@@ -1073,19 +1083,25 @@ img.avatar{object-fit:cover}
       const isDir=DIRETA.has(id);
       let mk;
       if(isDir){
-        mk=L.marker(ll,{icon:pinNota('\u2713', false, false, '#2563eb'), zIndexOffset:750});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u2713','#2563eb'), zIndex:750});
       } else if(isBV){
-        mk=L.marker(ll,{icon:pinNota('\u21ba', false, false, '#f59e0b'), zIndexOffset:700});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u21ba','#f59e0b'), zIndex:700});
       } else if(temRota && noRoteiro){
-        mk=L.marker(ll,{icon:pinNota(ord?ord.parada:'+', true), zIndexOffset:600});
+        const cor = ord ? CORES[(ord.rota.charCodeAt(0)-65)%CORES.length] : '#6d28d9';
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon(ord?ord.parada:'+', cor), zIndex:600});
       } else if(temRota && !noRoteiro){
-        mk=L.circleMarker(ll,{radius:6,color:'#aeb6c2',weight:2,fillColor:'#eef1f5',fillOpacity:1});
+        mk=new google.maps.Marker({position:ll, map, zIndex:300, icon:{ path:google.maps.SymbolPath.CIRCLE, scale:6, fillColor:'#eef1f5', fillOpacity:1, strokeColor:'#aeb6c2', strokeWeight:2 }});
       } else {
-        mk=L.marker(ll,{icon:pinNota('', true, true), zIndexOffset:400});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('','#6d28d9'), zIndex:400});
       }
-      mk.addTo(layerNotas).bindPopup('#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(isDir?'<br><b style="color:#1d4ed8">Envio direto</b>':(isBV?'<br><b style="color:#b26a00">Bate-volta</b>':(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):''))));
+      const info='<div style="font-size:12px">#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(isDir?'<br><b style="color:#1d4ed8">Envio direto</b>':(isBV?'<br><b style="color:#b26a00">Bate-volta</b>':(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):'')))+'</div>';
+      mk.addListener('click', ()=>{ _infowin.setContent(info); _infowin.open(map, mk); });
+      layerNotas.push(mk);
     });
-    if(fit){ if(pts.length>1){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} } else if(coletaLL){ map.setView(coletaLL,12); } }
+    if(fit){
+      if(pts.length>1){ const b=new google.maps.LatLngBounds(); pts.forEach(p=>b.extend(p)); try{ map.fitBounds(b, 60); }catch(e){} }
+      else if(coletaLL){ map.setCenter(LL(coletaLL)); map.setZoom(13); }
+    }
   }
   function renderMapa(){ desenharNotas(false); }
 
@@ -1101,23 +1117,26 @@ img.avatar{object-fit:cover}
 
       CALC = await apiPost('/calcular', { apenas_ids: idsNormais });
       if(CALC.erro){ document.getElementById('resumoRota').innerHTML='Erro: '+CALC.erro; return; }
-      layerRotas.clearLayers();
+      layerRotas=limparLayer(layerRotas);
       const rotas=CALC.rotas||[];
       rotas.forEach((r,i)=>{
         const cor=CORES[i%CORES.length];
-        if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:cor,weight:4,opacity:.85}).addTo(layerRotas); }
+        if(r.geometry){ layerRotas.push(new google.maps.Polyline({ path:decodePoly(r.geometry,5).map(p=>({lat:p[0],lng:p[1]})), strokeColor:cor, strokeWeight:4, strokeOpacity:.85, map, zIndex:20 })); }
       });
       // SAIDA REAL: primeiro ponto da 1a rota (onde o motor de rotas realmente comeca).
-      // Se estiver longe do pin da loja, marca o desvio para o operador ajustar o pin.
       try{
         const g0 = (rotas[0] && rotas[0].geometry) ? decodePoly(rotas[0].geometry,5) : [];
         if(g0.length && coletaLL){
-          const saida = g0[0];
-          const distM = map.distance(coletaLL, saida);
+          const saida = {lat:g0[0][0], lng:g0[0][1]};
+          const distM = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(LL(coletaLL)), new google.maps.LatLng(saida));
           if(distM > 60){
-            L.polyline([coletaLL, saida],{color:'#c0392b',weight:2.5,dashArray:'3 5',opacity:.8}).addTo(layerRotas);
-            L.marker(saida,{icon:L.divIcon({className:'saida-real',iconSize:[64,20],iconAnchor:[32,26],html:'<div style="background:#c0392b;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">sa\u00edda '+Math.round(distM)+'m</div>'}),zIndexOffset:1100}).addTo(layerRotas)
-              .bindPopup('A rota est\u00e1 nascendo aqui, a '+Math.round(distM)+'m da loja.<br><b>Arraste o pin da loja para a rua de sa\u00edda correta e salve.</b>');
+            layerRotas.push(new google.maps.Polyline({ path:[LL(coletaLL), saida], strokeColor:'#c0392b', strokeOpacity:0, map, zIndex:25,
+              icons:[{icon:{path:'M 0,-1 0,1', strokeOpacity:.85, strokeColor:'#c0392b', scale:3}, offset:'0', repeat:'10px'}] }));
+            const svg='<svg xmlns="http://www.w3.org/2000/svg" width="70" height="22"><rect x="0" y="2" rx="11" width="70" height="18" fill="#c0392b"/><text x="35" y="15" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold" font-family="sans-serif">sa\u00edda '+Math.round(distM)+'m</text></svg>';
+            const smk=new google.maps.Marker({ position:saida, map, zIndex:1100,
+              icon:{ url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(70,22), anchor:new google.maps.Point(35,26) } });
+            smk.addListener('click', ()=>{ _infowin.setContent('<div style="font-size:12px">A rota est\u00e1 nascendo aqui, a '+Math.round(distM)+'m da loja.<br><b>Arraste o pin da loja para a rua de sa\u00edda correta e salve.</b></div>'); _infowin.open(map, smk); });
+            layerRotas.push(smk);
           }
         }
       }catch(e){}
@@ -1188,7 +1207,7 @@ img.avatar{object-fit:cover}
           const rbv = cbv.rotas||[];
           const nfsBV=[]; let kmBV=0;
           rbv.forEach(r=>{
-            if(r.geometry){ L.polyline(decodePoly(r.geometry,5),{color:'#f59e0b',weight:4,opacity:.95,dashArray:'2 7'}).addTo(layerRotas); }
+            if(r.geometry){ layerRotas.push(new google.maps.Polyline({ path:decodePoly(r.geometry,5).map(p=>({lat:p[0],lng:p[1]})), strokeColor:'#f59e0b', strokeOpacity:0, map, zIndex:22, icons:[{icon:{path:'M 0,-1 0,1', strokeOpacity:.95, strokeColor:'#f59e0b', scale:3}, offset:'0', repeat:'12px'}] })); }
             (r.steps||[]).filter(s=>s.type==='job').forEach(s=>{ const n=notaById[Number(s.id)]; nfsBV.push({ id_embarque:Number(s.id), numero_nf:(n?(n.numero_nf||n.id_embarque):s.id), cliente:(n?(n.destinatario||''):'') }); });
             if(r.distance!=null) kmBV += r.distance/1000;
           });
@@ -1402,7 +1421,7 @@ img.avatar{object-fit:cover}
     document.body.className='t-'+t;
     document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
-    if(t==='mapa'&&map){ setTimeout(()=>map.invalidateSize(),100); }
+    if(t==='mapa'&&map){ setTimeout(()=>{ gmResize(); if(coletaLL) map.setCenter(LL(coletaLL)); },120); }
   }
   document.getElementById('lgSenha').addEventListener('keydown',e=>{ if(e.key==='Enter') fazerLogin(); });
 
