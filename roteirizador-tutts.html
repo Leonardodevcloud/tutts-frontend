@@ -214,6 +214,8 @@
     .alerta{flex-wrap:wrap} .alerta .acoes{width:100%;justify-content:flex-end}
     .cliente-sel{max-width:180px}
   }
+  .nota.card-hl{border-color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.22);background:#faf7ff;animation:cardPulse 1.2s ease-out}
+  @keyframes cardPulse{0%{box-shadow:0 0 0 6px rgba(109,40,217,.35)}100%{box-shadow:0 0 0 3px rgba(109,40,217,.22)}}
 
 /* ---- extras do Roteirizador Tutts (funcional) v2 ---- */
 html,body{height:100%}
@@ -954,7 +956,7 @@ img.avatar{object-fit:cover}
             : `<button class="btn-rot add" onclick="adicionarAoRoteiro(${id})" ${n.geocodificado?'':'disabled'}>Adicionar ao roteiro</button>`)
         : '';
       return `
-      <div class="nota ${cls}"${faixa}>
+      <div class="nota ${cls}" data-nota-id="${id}"${faixa}>
         <div class="top">
           <div class="num"><span class="hash">#</span>${n.numero_nf||n.id_embarque}</div>
           ${tag}
@@ -1237,45 +1239,87 @@ img.avatar{object-fit:cover}
     document.getElementById('btnCancelColeta').onclick=()=>{ bar.remove(); if(LOJA_MK&&coletaLL) LOJA_MK.setPosition(LL(coletaLL)); };
   }
 
-  function pinNotaIcon(num, cor){
+  function pinNotaIcon(num, cor, badge){
     const txt = (num===''||num==null) ? '' : String(num);
-    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'+
-      '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="'+cor+'" stroke="#fff" stroke-width="2.2"/>'+
-      (txt?('<text x="15" y="20" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="monospace">'+txt+'</text>'):'<circle cx="15" cy="15" r="5.5" fill="#fff"/>')+
+    const b = (badge && badge>1) ? String(badge) : '';
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42">'+
+      '<path d="M17 2C8.7 2 2 8.7 2 17c0 10.5 15 23 15 23s15-12.5 15-23C32 8.7 25.3 2 17 2z" fill="'+cor+'" stroke="#fff" stroke-width="2.2"/>'+
+      (txt?('<text x="17" y="22" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="monospace">'+txt+'</text>'):'<circle cx="17" cy="17" r="5.5" fill="#fff"/>')+
+      (b?('<circle cx="27.5" cy="7.5" r="7.5" fill="#f67602" stroke="#fff" stroke-width="1.5"/><text x="27.5" y="11" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold" font-family="sans-serif">'+b+'</text>'):'')+
       '</svg>';
-    return { url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(30,38), anchor:new google.maps.Point(15,38) };
+    return { url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(34,42), anchor:new google.maps.Point(17,40) };
   }
 
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function destacarCards(ids){
+    document.querySelectorAll('.nota.card-hl').forEach(el=>el.classList.remove('card-hl'));
+    let primeiro=null;
+    (ids||[]).forEach(id=>{
+      const el=document.querySelector('.nota[data-nota-id="'+id+'"]');
+      if(el){ el.classList.add('card-hl'); if(!primeiro) primeiro=el; }
+    });
+    if(primeiro) primeiro.scrollIntoView({behavior:'smooth', block:'center'});
+  }
 
   function desenharNotas(fit){
     if(!map) return;
     layerNotas=limparLayer(layerNotas);
     const pts = coletaLL ? [LL(coletaLL)] : [];
     const temRota=Object.keys(ORDEM_ROTA).length>0 || SELECAO.size>0;
+    // AGRUPA por coordenada: 1 pin por PONTO (enderecos com varias NFs viram 1 marcador
+    // com um badge de contagem). O balao lista todas as notas do ponto.
+    const pontos={};
     NOTAS.filter(n=>n.geocodificado).forEach(n=>{
-      const ll={lat:Number(n.lat), lng:Number(n.lng)}; pts.push(ll);
-      const id=Number(n.id_embarque);
-      const ord=ORDEM_ROTA[id];
-      const noRoteiro=SELECAO.has(id);
-      const isBV=BATEVOLTA.has(id);
-      const isDir=DIRETA.has(id);
+      const key=Number(n.lat).toFixed(5)+','+Number(n.lng).toFixed(5);
+      if(!pontos[key]) pontos[key]={ lat:Number(n.lat), lng:Number(n.lng), notas:[] };
+      pontos[key].notas.push(n);
+    });
+    Object.values(pontos).forEach(pt=>{
+      const ll={lat:pt.lat, lng:pt.lng}; pts.push(ll);
+      const notas=pt.notas;
+      const badge=notas.length;
+      // nota "representante" p/ cor/estado do pin: prioriza roteirizada > direta > bv > 1a
+      const nRep = notas.find(n=>ORDEM_ROTA[Number(n.id_embarque)]) || notas.find(n=>DIRETA.has(Number(n.id_embarque))) || notas.find(n=>BATEVOLTA.has(Number(n.id_embarque))) || notas[0];
+      const idR=Number(nRep.id_embarque);
+      const ord=ORDEM_ROTA[idR];
+      const noRoteiro=SELECAO.has(idR);
+      const isBV=BATEVOLTA.has(idR);
+      const isDir=DIRETA.has(idR);
       let mk;
       if(isDir){
-        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u2713','#2563eb'), zIndex:750});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u2713','#2563eb',badge), zIndex:750});
       } else if(isBV){
-        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u21ba','#f59e0b'), zIndex:700});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('\u21ba','#f59e0b',badge), zIndex:700});
       } else if(temRota && noRoteiro){
         const cor = ord ? CORES[(ord.rota.charCodeAt(0)-65)%CORES.length] : '#6d28d9';
-        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon(ord?ord.parada:'+', cor), zIndex:600});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon(ord?ord.parada:'+', cor, badge), zIndex:600});
       } else if(temRota && !noRoteiro){
-        mk=new google.maps.Marker({position:ll, map, zIndex:300, icon:{ path:google.maps.SymbolPath.CIRCLE, scale:6, fillColor:'#eef1f5', fillOpacity:1, strokeColor:'#aeb6c2', strokeWeight:2 }});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('', '#9aa3b2', badge), zIndex:300});
       } else {
-        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('','#6d28d9'), zIndex:400});
+        mk=new google.maps.Marker({position:ll, map, icon:pinNotaIcon('','#6d28d9',badge), zIndex:400});
       }
-      const info='<div style="font-size:12px">#'+(n.numero_nf||n.id_embarque)+'<br>'+(n.endereco||'')+(isDir?'<br><b style="color:#1d4ed8">Envio direto</b>':(isBV?'<br><b style="color:#b26a00">Bate-volta</b>':(temRota?('<br><b>'+(noRoteiro?('No roteiro'+(ord?(' \u00b7 parada '+ord.parada):'')):'Fora do roteiro')+'</b>'):'')))+'</div>';
+      // BALAO rico: endereco + "N corrida(s) neste endereco" + lista de NF / cliente
+      const end = esc(notas[0].endereco||'') + (notas[0].cidade?(' \u00b7 '+esc(notas[0].cidade)+(notas[0].uf?'/'+esc(notas[0].uf):'')):'');
+      const linhas = notas.map(n=>{
+        const i=Number(n.id_embarque);
+        const est = DIRETA.has(i)?'<span style="color:#1d4ed8;font-weight:700">envio direto</span>'
+                 : BATEVOLTA.has(i)?'<span style="color:#b26a00;font-weight:700">bate-volta</span>'
+                 : (ORDEM_ROTA[i]?('<span style="color:'+corRota(ORDEM_ROTA[i].rota)+';font-weight:700">Rota '+ORDEM_ROTA[i].rota+' \u00b7 parada '+ORDEM_ROTA[i].parada+'</span>')
+                 : (temRota?'<span style="color:#9aa3b2">fora do roteiro</span>':''));
+        return '<div style="margin:3px 0;padding-top:3px;border-top:1px solid #eef1f5"><b>#'+esc(n.numero_nf||n.id_embarque)+'</b> '+(n.destinatario?('\u2013 '+esc(n.destinatario)):'')+(est?('<br>'+est):'')+'</div>';
+      }).join('');
+      const titulo = badge>1
+        ? ('<div style="font-weight:800;color:#6d28d9;margin-bottom:2px">'+badge+' corridas neste endere\u00e7o</div>')
+        : '';
+      const info='<div style="font-size:12px;max-width:250px">'+titulo+'<div style="color:#475569;margin-bottom:2px">'+end+'</div>'+linhas+'</div>';
       mk.rtLetra = (temRota && noRoteiro && ord) ? ord.rota : null;
-      if(mk.rtLetra){ mk.addListener('click', ()=>selecionarRota(mk.rtLetra)); }
-      else { mk.addListener('click', ()=>{ _infowin.setContent(info); _infowin.open(map, mk); }); }
+      mk.notaIds = notas.map(n=>Number(n.id_embarque));
+      mk.addListener('click', ()=>{
+        _infowin.setContent(info); _infowin.open(map, mk);
+        destacarCards(mk.notaIds);
+        if(mk.rtLetra){ selecionarRota(mk.rtLetra); }
+      });
       layerNotas.push(mk);
     });
     aplicarDestaqueRota();
