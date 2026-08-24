@@ -738,6 +738,9 @@ img.avatar{object-fit:cover}
   const CORES = ['#6d4aff','#0ea5e9','#16a34a','#b7791f','#c8453b','#7c3aed','#0891b2','#65a30d'];
 
   const fmtDT = s => { try{ return s ? new Date(s).toLocaleString('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; }catch(_){ return '—'; } };
+  // interpreta a "hora de parede" da data como horario de Brasilia (UTC-3), do mesmo jeito
+  // que o card exibe (fmtDT usa timeZone UTC). Sem isso, o calculo de prazo fica 3h errado.
+  const msParedeBRT = s => { if(!s) return NaN; const m=String(s).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/); if(!m) return NaN; return Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]) + 3*3600000; };
 
   async function apiGet(path){
     const r = await fetch(BASE+path,{headers:{Authorization:'Bearer '+TOKEN}});
@@ -1281,7 +1284,7 @@ img.avatar{object-fit:cover}
           SELECAO.add(id); ORDEM_ROTA[id]={ rota:letraRota(i), parada };
           const n=notaById0[id];
           if(n && n.data_previsao){
-            const prev = new Date(n.data_previsao).getTime();
+            const prev = msParedeBRT(n.data_previsao);
             if(!isNaN(prev)){
               const entrega = agora + prepSeg*1000 + (s.arrival||0)*1000 + servSeg*1000;
               const folga = prev - entrega;
