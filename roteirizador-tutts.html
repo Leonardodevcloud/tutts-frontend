@@ -635,7 +635,7 @@ img.avatar{object-fit:cover}
     }
     const t=RESUMO_TOTAL; if(!t){ return; }
     box.innerHTML =
-      `<b>${t.rotas}</b> rota(s) · <b>${t.notas}</b> notas · <b>${t.km}</b> km · <b>${t.min}</b> min · ${t.veiculos} moto(s) · cap ${t.capacidade}` +
+      `<b>${t.rotas}</b> rota(s) · <b>${t.notas}</b> notas${t.paradas!=null?(' em <b>'+t.paradas+'</b> parada(s)'):''} · <b>${t.km}</b> km · <b>${t.min}</b> min · ${t.veiculos} moto(s) · cap ${t.capacidade} parada(s)/rota` +
       (t.bv?` · <span style="color:#b26a00">${t.bv} bate-volta</span>`:'') +
       (t.atrasa?` · <span style="color:var(--red)">${t.atrasa} atrasaria(m)</span>`:'') +
       (t.urg?` · <span style="color:#b26a00">${t.urg} no limite</span>`:'') +
@@ -1409,6 +1409,7 @@ img.avatar{object-fit:cover}
       RESUMO_TOTAL = {
         rotas: rotas.length,
         notas: CALC.jobs,
+        paradas: CALC.paradas!=null?CALC.paradas:null,
         km: s.distance!=null?(s.distance/1000).toFixed(1):'—',
         min: s.duration!=null?Math.round(s.duration/60):'—',
         veiculos: CALC.veiculos, capacidade: CALC.capacidade,
@@ -1595,10 +1596,9 @@ img.avatar{object-fit:cover}
     if(idsAtrasa.length){
       html+=`<div class="alerta red"><div class="ico">!</div><div class="msg"><b>${idsAtrasa.length} nota(s) atrasariam</b> no roteiro atual (chegam depois da previs\u00e3o). Considere solt\u00e1-las como bate-volta priorit\u00e1rio. <button onclick="sugerirBateVolta()" style="border:1px solid #f3d6d2;background:#fff;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px">Marcar como bate-volta</button></div></div>`;
     }
-    const exc = (CALC && CALC.excedente_local) || [];
-    if(exc.length){
-      const cap = (CALC && CALC.capacidade) || 5;
-      html+=`<div class="alerta amber"><div class="ico">i</div><div class="msg"><b>${exc.length} nota(s) do mesmo endere\u00e7o ficaram de fora</b> por passar do limite de ${cap} por rota. Elas est\u00e3o no pool como <b>fora do roteiro</b> \u2014 se quiser, agregue no roteiro do motoboy (bot\u00e3o <b>Enviar direto</b> na nota, escolhendo o mesmo profissional).</div></div>`;
+    const maxEnd = (CALC && CALC.max_notas_endereco) || 0;
+    if(maxEnd >= 6){
+      html+=`<div class="alerta amber"><div class="ico">i</div><div class="msg"><b>Um endere\u00e7o tem ${maxEnd} NFs no mesmo ponto.</b> Todas v\u00e3o juntas com o mesmo motoboy (\u00e9 uma parada s\u00f3) \u2014 s\u00f3 confira se o <b>volume</b> cabe na moto. Se n\u00e3o couber, use <b>Enviar direto</b> para dividir com outro profissional.</div></div>`;
     }
     box.innerHTML=html;
   }
