@@ -4163,6 +4163,8 @@
         ativo: true,
         alterar_valor_mapp_ativo: true,
         restaurar_valor_cancel_ativo: true,
+        mapp_carencia_ativa: false, /* MAPP_CARENCIA_UI_V1 */
+        mapp_carencia_minutos: 10, /* MAPP_CARENCIA_UI_V1 */
         forcar_geocode_google: false, /* REGRA_GEOCODE_GOOGLE_FRONT_V1 */
         apenas_moto_propria: false, /* APENAS_MOTO_PROPRIA_UI_V1 */
         nome_remetente: '',
@@ -4186,6 +4188,8 @@
         providers_preferidos: (r.providers_preferidos && r.providers_preferidos.length) ? r.providers_preferidos : ['uber'], // PROV_B_EDITAR_V1
         estrategia: r.estrategia || 'provider_unico',
         vehicle_type_preferido: r.vehicle_type_preferido || '',
+        mapp_carencia_ativa: r.mapp_carencia_ativa === true, /* MAPP_CARENCIA_UI_V1 */
+        mapp_carencia_minutos: (r.mapp_carencia_minutos != null ? r.mapp_carencia_minutos : 10), /* MAPP_CARENCIA_UI_V1 */
         // Compat: regras antigas só tinham cliente_nome (que era o trecho).
         // Se trecho_endereco estiver vazio, preenche com cliente_nome pra não perder o match.
         trecho_endereco: r.trecho_endereco || r.cliente_nome || '',
@@ -4251,6 +4255,8 @@
         ativo: !!editando.ativo,
         alterar_valor_mapp_ativo: editando.alterar_valor_mapp_ativo !== false,
         restaurar_valor_cancel_ativo: editando.restaurar_valor_cancel_ativo !== false,
+        mapp_carencia_ativa: editando.mapp_carencia_ativa === true, /* MAPP_CARENCIA_UI_V1 */
+        mapp_carencia_minutos: (function () { var n = parseInt(editando.mapp_carencia_minutos, 10); return (isFinite(n) && n > 0) ? n : 10; })(), /* MAPP_CARENCIA_UI_V1 */
         forcar_geocode_google: editando.forcar_geocode_google === true, /* REGRA_GEOCODE_GOOGLE_FRONT_V1 */
         nome_remetente: (editando.nome_remetente || '').trim(),
         package_type: editando.package_type || '',
@@ -4649,6 +4655,30 @@
                 onClick: () => up('restaurar_valor_cancel_ativo', editando.restaurar_valor_cancel_ativo === false),
                 className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.restaurar_valor_cancel_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.restaurar_valor_cancel_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
+            ),
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' }, // MAPP_CARENCIA_UI_V1
+              h('div', { className: 'flex items-center justify-between gap-3' },
+                h('div', null,
+                  h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Carência na Mapp antes do Hub'),
+                  h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                    'Ligado: a corrida fica um tempo na fila da Mapp (buscando entregador próprio). Só vai pro Hub se continuar sem entregador depois desse tempo. Desligado: vai pro Hub assim que elegível.')
+                ),
+                h('button', {
+                  type: 'button',
+                  onClick: () => up('mapp_carencia_ativa', editando.mapp_carencia_ativa !== true),
+                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.mapp_carencia_ativa === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+                }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.mapp_carencia_ativa === true ? 'right-0.5' : 'left-0.5'}` })),
+              ),
+              (editando.mapp_carencia_ativa === true) && h('div', { className: 'mt-3 flex items-center gap-2' },
+                h('span', { className: 'text-[13px] text-gray-700' }, 'Esperar'),
+                h('input', {
+                  type: 'number', min: 1, max: 120,
+                  value: editando.mapp_carencia_minutos == null ? '' : editando.mapp_carencia_minutos,
+                  onChange: e => up('mapp_carencia_minutos', e.target.value),
+                  className: 'w-20 border rounded-lg px-2 py-1.5 text-sm text-center',
+                }),
+                h('span', { className: 'text-[13px] text-gray-700' }, 'minuto(s) na Mapp antes de mandar pro Hub'),
+              ),
             ),
             (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' }, // REGRA_GEOCODE_TOGGLE_UI_V1
               h('div', null,
