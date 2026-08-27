@@ -336,7 +336,6 @@ function atualizarDados(){
   var btn=document.getElementById('btnAtualizar'); if(btn.disabled) return;
   btn.disabled=true; btn.textContent='Atualizando…'; setBar(3,'Enfileirando…');
   api('/api/bi-portal/atualizar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
-    .then(function(r){ return r.json(); })
     .then(function(j){
       if(!j||!j.id){ throw new Error('sem_id'); }
       pollAtualizar(j.id);
@@ -345,7 +344,7 @@ function atualizarDados(){
 function pollAtualizar(id){
   if(_pollAtualizar) clearInterval(_pollAtualizar);
   _pollAtualizar=setInterval(function(){
-    api('/api/bi-portal/atualizar/status/'+id).then(function(r){ return r.json(); }).then(function(d){
+    api('/api/bi-portal/atualizar/status/'+id).then(function(d){
       if(!d) return;
       var pct=d.progresso||0; var et=ETAPAS[d.etapa_atual]||d.etapa_atual||'Processando…';
       if(d.status==='processando'||d.status==='pendente'){ setBar(Math.max(pct,5), et); }
