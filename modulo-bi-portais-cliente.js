@@ -72,6 +72,9 @@
         return Object.assign({}, l, { sel: sel });
       }));
     }
+    function setFiltroLoja(cod, txt) {
+      setLojas(lojas.map(function (l) { return String(l.cod) === String(cod) ? Object.assign({}, l, { filtro: txt }) : l; }));
+    }
     function gerarSenha() { setSenha("Tutts@" + Math.random().toString(36).slice(2, 8)); }
 
     function payloadClientes() {
@@ -124,6 +127,8 @@
     // ---- card de uma loja no form ----
     function cardLoja(l) {
       var qtd = Object.keys(l.sel).length;
+      var termo = (l.filtro || "").toLowerCase();
+      var visiveis = termo ? l.centros.filter(function (c) { return String(c.centro_custo).toLowerCase().indexOf(termo) !== -1; }) : l.centros;
       return h("div", { key: l.cod, className: "border border-gray-200 rounded-xl overflow-hidden mt-3" },
         h("div", { className: "flex items-center justify-between px-3 py-2.5", style: { background: "#faf7ff", borderBottom: "1px solid #eee" } },
           h("div", { className: "font-bold text-sm flex items-center gap-2" },
@@ -138,16 +143,27 @@
         h("div", { className: "p-3" },
           l.loading ? h("div", { className: "text-sm text-gray-400 py-2" }, "Carregando centros...")
             : (l.centros.length === 0 ? h("div", { className: "text-sm text-gray-400 py-2" }, "Sem centros para esta loja.")
-              : h("div", { className: "grid sm:grid-cols-2 gap-2" },
-                l.centros.map(function (c) {
-                  var on = !!l.sel[c.centro_custo];
-                  return h("label", { key: c.centro_custo, className: "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer " + (on ? "border-purple-400 bg-purple-50" : "border-gray-200") },
-                    h("input", { type: "checkbox", checked: on, onChange: function () { toggleCentro(l.cod, c.centro_custo); }, className: "w-4 h-4 accent-purple-600" }),
-                    h("span", { className: "flex-1" },
-                      h("span", { className: "font-semibold text-sm" }, c.centro_custo),
-                      h("span", { className: "block text-xs text-gray-400" }, (c.entregas_30d || 0) + " entregas / 30d"))
-                  );
-                })
+              : h("div", null,
+                (l.centros.length > 8
+                  ? h("input", {
+                      className: inputCls + " mb-2", value: l.filtro || "",
+                      onChange: function (e) { setFiltroLoja(l.cod, e.target.value); },
+                      placeholder: "Buscar centro... (" + l.centros.length + " no total)"
+                    })
+                  : null),
+                h("div", { className: "grid sm:grid-cols-2 gap-2", style: { maxHeight: "320px", overflowY: "auto", paddingRight: "4px" } },
+                  visiveis.length === 0
+                    ? h("div", { className: "text-sm text-gray-400 py-2 col-span-2" }, "Nenhum centro encontrado.")
+                    : visiveis.map(function (c) {
+                      var on = !!l.sel[c.centro_custo];
+                      return h("label", { key: c.centro_custo, className: "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer " + (on ? "border-purple-400 bg-purple-50" : "border-gray-200") },
+                        h("input", { type: "checkbox", checked: on, onChange: function () { toggleCentro(l.cod, c.centro_custo); }, className: "w-4 h-4 accent-purple-600" }),
+                        h("span", { className: "flex-1" },
+                          h("span", { className: "font-semibold text-sm" }, c.centro_custo),
+                          h("span", { className: "block text-xs text-gray-400" }, (c.entregas_30d || 0) + " entregas / 30d"))
+                      );
+                    })
+                )
               )),
           h("div", { className: "text-[11px] text-gray-400 mt-2" }, "Nenhum centro marcado = o cliente vê TODOS os centros desta loja.")
         )
