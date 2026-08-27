@@ -577,8 +577,9 @@ function iniciarApp(){
     window.__LOJAS = lojas;
     document.getElementById('hdBadge').textContent=String((lojas[0]&&lojas[0].cod_cliente)||'—').slice(0,4);
     document.getElementById('hdSub').textContent=(lojas.length>1?(lojas.length+' lojas'):'1 loja')+' · dados via Tutts';
-    // seletor de LOJA
+    // seletor de LOJA — limpa antes (evita opcoes duplicadas se /me rodar 2x)
     var selL=document.getElementById('selLoja');
+    selL.innerHTML='<option value="__todas__">Todas as lojas</option>';
     lojas.forEach(function(l){ var o=document.createElement('option'); o.value=l.cod_cliente; o.textContent=l.cod_cliente+' - '+(l.nome||''); selL.appendChild(o); });
     calcPeriodo();
     carregarUltimaAtualizacao();
