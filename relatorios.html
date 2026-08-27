@@ -165,9 +165,17 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <div class="pill pill-mut"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--ok)"></span> Atualizado agora</div>
+        <div class="pill pill-mut" id="hdAtualizado" title="data dos dados mais recentes"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--muted)"></span> <span id="hdAtualizadoTxt">—</span></div>
+        <button class="btn-ghost" id="btnAtualizar" onclick="atualizarDados()" title="Buscar os dados mais recentes">Atualizar</button>
         <button class="btn-ghost" onclick="sair()">Sair</button>
       </div>
+    </div>
+    <!-- barra de progresso da atualizacao -->
+    <div id="barAtualizar" class="max-w-[1180px] mx-auto px-5" style="display:none">
+      <div style="background:#eef0f4;border-radius:999px;height:8px;overflow:hidden;margin-top:4px">
+        <div id="barAtualizarFill" style="height:8px;width:0%;background:var(--rox,#7c3aed);border-radius:999px;transition:width .4s"></div>
+      </div>
+      <div class="text-[11px] text-[color:var(--muted)] mt-1" id="barAtualizarTxt">Iniciando…</div>
     </div>
     <div class="max-w-[1180px] mx-auto px-5 flex items-center gap-6">
       <div class="tab active" id="tab-dash" onclick="setTab('dash')">Visão geral</div>
@@ -306,6 +314,52 @@ function fazerLogin(){
     .finally(function(){ btn.disabled=false; btn.innerHTML='<span class="tlg-btnsw"></span>Entrar'; });
 }
 function sair(){ limparToken(); mostrarLogin(); }
+
+/* ===== data real dos dados (badge) ===== */
+function fmtDia(s){ if(!s) return null; var p=String(s).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):s; }
+function carregarUltimaAtualizacao(){
+  api('/api/bi-portal/ultima-atualizacao').then(function(r){
+    var d=fmtDia(r&&r.ultima_data_dados);
+    document.getElementById('hdAtualizadoTxt').textContent = d ? ('Dados até '+d) : 'Sem dados';
+  }).catch(function(){ document.getElementById('hdAtualizadoTxt').textContent='—'; });
+}
+
+/* ===== atualizar dados (mesmo processo do BI) ===== */
+var _pollAtualizar=null;
+function setBar(pct,txt){
+  document.getElementById('barAtualizar').style.display='block';
+  document.getElementById('barAtualizarFill').style.width=(pct||0)+'%';
+  document.getElementById('barAtualizarTxt').textContent=txt||'';
+}
+var ETAPAS={ iniciando:'Iniciando…', exportando:'Buscando dados no sistema…', processando_planilha:'Processando planilha…', enviando_bi:'Atualizando relatórios…', concluido:'Concluído!' };
+function atualizarDados(){
+  var btn=document.getElementById('btnAtualizar'); if(btn.disabled) return;
+  btn.disabled=true; btn.textContent='Atualizando…'; setBar(3,'Enfileirando…');
+  api('/api/bi-portal/atualizar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(!j||!j.id){ throw new Error('sem_id'); }
+      pollAtualizar(j.id);
+    }).catch(function(){ finalizarAtualizar('Não foi possível atualizar agora.', false); });
+}
+function pollAtualizar(id){
+  if(_pollAtualizar) clearInterval(_pollAtualizar);
+  _pollAtualizar=setInterval(function(){
+    api('/api/bi-portal/atualizar/status/'+id).then(function(r){ return r.json(); }).then(function(d){
+      if(!d) return;
+      var pct=d.progresso||0; var et=ETAPAS[d.etapa_atual]||d.etapa_atual||'Processando…';
+      if(d.status==='processando'||d.status==='pendente'){ setBar(Math.max(pct,5), et); }
+      else if(d.status==='sucesso'){ setBar(100,'Concluído!'); clearInterval(_pollAtualizar); _pollAtualizar=null;
+        setTimeout(function(){ finalizarAtualizar(null,true); carregarUltimaAtualizacao(); calcPeriodo(); recarregar(); }, 900); }
+      else if(d.status==='falhou'){ clearInterval(_pollAtualizar); _pollAtualizar=null; finalizarAtualizar('A atualização falhou. Tente de novo em instantes.', false); }
+    }).catch(function(){});
+  }, 2500);
+}
+function finalizarAtualizar(msg, ok){
+  var btn=document.getElementById('btnAtualizar'); btn.disabled=false; btn.textContent='Atualizar';
+  if(msg){ setBar(0,msg); setTimeout(function(){ document.getElementById('barAtualizar').style.display='none'; }, 4000); }
+  else { setTimeout(function(){ document.getElementById('barAtualizar').style.display='none'; }, 1500); }
+}
 
 /* ================= estado / filtros ================= */
 var estado={ periodo:'7', de:null, ate:null, loja:'__todas__', centro:'__todos__',
@@ -528,6 +582,7 @@ function iniciarApp(){
     var selL=document.getElementById('selLoja');
     lojas.forEach(function(l){ var o=document.createElement('option'); o.value=l.cod_cliente; o.textContent=l.cod_cliente+' - '+(l.nome||''); selL.appendChild(o); });
     calcPeriodo();
+    carregarUltimaAtualizacao();
     // 1 loja só: esconde o seletor de loja e ja habilita centros daquela loja
     if(lojas.length<=1){
       selL.style.display='none';
