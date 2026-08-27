@@ -344,8 +344,7 @@ function atualizarLabel(){
 function qs(){
   var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
   if(estado.loja&&estado.loja!=='__todas__'){ p.push('cliente='+encodeURIComponent(estado.loja));
-    if(estado.loja&&estado.loja!=='__todas__'){ p.push('cliente='+encodeURIComponent(estado.loja));
-    if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro)); } }
+    if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro)); }
   return p.length?('?'+p.join('&')):'';
 }
 function setPeriodo(el){
@@ -479,7 +478,8 @@ var debT; function debBusca(){ clearTimeout(debT); debT=setTimeout(function(){ e
 function irPagina(d){ var np=estado.page+d; if(np<1)return; if(d>0 && estado.page*estado.per>=totalCorridas)return; estado.page=np; carregarCorridas(); }
 function corridasQS(){
   var p=[]; if(estado.de)p.push('de='+estado.de); if(estado.ate)p.push('ate='+estado.ate);
-  if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro));
+  if(estado.loja&&estado.loja!=='__todas__'){ p.push('cliente='+encodeURIComponent(estado.loja));
+    if(estado.centro&&estado.centro!=='__todos__')p.push('centro='+encodeURIComponent(estado.centro)); }
   if(estado.prazo)p.push('prazo='+estado.prazo);
   if(estado.busca)p.push('q='+encodeURIComponent(estado.busca));
   p.push('sort='+estado.sort); p.push('dir='+estado.dir); p.push('page='+estado.page); p.push('per='+estado.per);
