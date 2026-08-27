@@ -78,7 +78,14 @@
     function gerarSenha() { setSenha("Tutts@" + Math.random().toString(36).slice(2, 8)); }
 
     function payloadClientes() {
-      return lojas.map(function (l) { return { cod_cliente: l.cod, centros: Object.keys(l.sel) }; });
+      return lojas.map(function (l) {
+        var disponiveis = (l.centros || []).map(function (c) { return c.centro_custo; });
+        var sel = Object.keys(l.sel);
+        // marcou TODOS os centros disponíveis = "sem restrição" (vê tudo, inclusive
+        // entregas com centro em branco). Evita filtrar por ANY() e zerar a loja.
+        var todos = disponiveis.length > 0 && sel.length >= disponiveis.length;
+        return { cod_cliente: l.cod, centros: todos ? [] : sel };
+      });
     }
     function salvar() {
       if (!nome.trim() || !login.trim() || senha.length < 6 || lojas.length === 0) {
