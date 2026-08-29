@@ -498,7 +498,7 @@ function barra(id,rows,ordem,color){
 
 /* ================= corridas ================= */
 var corridasCarregou=false, totalCorridas=0;
-var COLS=[['os','OS / NF',''],['end','Entrega','nos'],['motoboy','Motoboy',''],
+var COLS=[['os','OS',''],['nf','NF',''],['end','Entrega','nos'],['motoboy','Motoboy',''],
   ['km','Km','r'],['tempo','Tempo','r'],['meta','Meta','r'],['delta','Folga / excedente','r'],['prazo','Prazo','']];
 // duracao em minutos -> "1h 20min" / "45 min"
 function fmtDur(min){
@@ -544,15 +544,16 @@ function celFolga(d,s){ if(s==='retorno'||d==null) return '<span class="text-[co
   return '<span class="num font-semibold" style="color:var(--err)">−'+fmtDur(Math.abs(d))+'</span><div class="text-[10px] text-[color:var(--muted)]">excedeu</div>'; }
 function carregarCorridas(){
   corridasCarregou=true; montarThead();
-  document.getElementById('corpo').innerHTML='<tr><td colspan="8" class="text-center text-[color:var(--muted)] py-8">Carregando…</td></tr>';
+  document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-8">Carregando…</td></tr>';
   api('/api/bi-portal/corridas'+corridasQS()).then(function(res){
     totalCorridas=res.total||0;
     var rows=res.corridas||[];
-    if(!rows.length){ document.getElementById('corpo').innerHTML='<tr><td colspan="8" class="text-center text-[color:var(--muted)] py-10">Nenhuma corrida no período com esses filtros.</td></tr>'; }
+    if(!rows.length){ document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-10">Nenhuma corrida no período com esses filtros.</td></tr>'; }
     else document.getElementById('corpo').innerHTML=rows.map(function(r){
       var ini=(r.motoboy||'?').split(' ').map(function(x){return x[0];}).slice(0,2).join('');
       return '<tr>'+
         '<td><div class="font-semibold num">OS '+esc(r.os)+'</div>'+(r.num_pedido?('<div class="text-[11px] text-[color:var(--muted)]">'+esc(r.num_pedido)+'</div>'):'')+'</td>'+
+        '<td class="num">'+(r.num_nota?esc(r.num_nota):'<span class="text-[color:var(--muted)]">—</span>')+'</td>'+
         '<td class="text-[color:var(--muted)] max-w-[220px]">'+esc(r.endereco||'—')+'</td>'+
         '<td>'+(r.motoboy?('<div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full grid place-items-center text-[10px] font-bold text-white" style="background:var(--roxo2)">'+esc(ini)+'</span>'+esc(r.motoboy.split(' ').slice(0,2).join(' '))+'</div>'):'—')+'</td>'+
         '<td class="text-right num">'+(r.km!=null?((''+r.km).replace('.',',')):'—')+'</td>'+
