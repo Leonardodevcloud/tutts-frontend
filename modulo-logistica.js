@@ -5411,7 +5411,21 @@
           h('img', { src: ICONE_TUTTS_JPG, style: { width: '100%', height: '100%', objectFit: 'contain', padding: '2px' } }))
       : h('span', { title: 'Hub', style: { width: '20px', height: '20px', background: '#fff', border: '1px solid #f0e0d0', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } }, hubSvg());
     const statusBadge = (s) => {
-      const cor = { 'Entregue': 'bg-green-100 text-green-700', 'Cancelado': 'bg-gray-100 text-gray-500', 'Não entregue': 'bg-orange-100 text-orange-700', 'Em rota': 'bg-blue-100 text-blue-700', 'Pendente': 'bg-gray-100 text-gray-600', 'Devolvido': 'bg-amber-100 text-amber-700' }[s] || 'bg-gray-100 text-gray-600';
+      const cor = {
+        'Entregue': 'bg-green-100 text-green-700',
+        'Devolvido': 'bg-amber-100 text-amber-700',
+        'Em devolução': 'bg-amber-100 text-amber-700',
+        'Cancelado': 'bg-gray-100 text-gray-500',
+        'Não entregue': 'bg-orange-100 text-orange-700',
+        'Aguardando': 'bg-gray-100 text-gray-600',
+        'Procurando entregador': 'bg-purple-100 text-purple-700',
+        'Entregador a caminho': 'bg-indigo-100 text-indigo-700',
+        'A caminho da coleta': 'bg-amber-100 text-amber-700',
+        'Na coleta': 'bg-amber-100 text-amber-700',
+        'Coletou': 'bg-amber-200 text-amber-800',
+        'Em rota': 'bg-blue-100 text-blue-700',
+        'Na entrega': 'bg-orange-100 text-orange-700',
+      }[s] || 'bg-gray-100 text-gray-600';
       return h('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${cor}` }, s || '—');
     };
     const trajeto = (r) => h('div', null,
