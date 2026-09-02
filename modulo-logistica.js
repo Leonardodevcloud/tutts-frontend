@@ -5693,7 +5693,7 @@
                   rowsView.length === 0
                     ? h('tr', null, h('td', { colSpan: Math.max(1, colsVis.length), className: 'px-3 py-8 text-center text-gray-400' },
                         rows.length === 0 ? 'Nenhuma corrida no período' : 'Nenhuma corrida com os filtros atuais'))
-                    : rowsView.map((r, i) => h('tr', { key: r.os + '-' + i, className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
+                    : rowsView.map((r, i) => h('tr', { key: (r.delivery_id != null ? 'd' + r.delivery_id : r.os + '-' + i), className: 'border-t border-gray-100 hover:bg-gray-50 align-top' },
                         colsVis.map(c => h('td', Object.assign(
                           { key: c.id, className: (c.tdCls || 'px-3 py-2') + (c.tdClsFn ? ' ' + c.tdClsFn(r) : '') },
                           c.tdProps ? c.tdProps(r) : {}
