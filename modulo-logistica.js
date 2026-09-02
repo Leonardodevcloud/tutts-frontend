@@ -1691,8 +1691,14 @@
     // 'custom' = intervalo livre (inclui datas retroativas). Padrao: hoje.
     const _hojeBRT = dataLocalBRT(new Date());
     const [modoData, setModoData] = useState('hoje');   // 'hoje' | 'custom'
-    const [dataDe, setDataDe] = useState(_hojeBRT);
-    const [dataAte, setDataAte] = useState(_hojeBRT);
+    const [dataDe, setDataDe] = useState(_hojeBRT);     // APLICADO (dispara a busca)
+    const [dataAte, setDataAte] = useState(_hojeBRT);   // APLICADO (dispara a busca)
+    // [periodo-aplicar-v1] rascunho dos inputs — NAO dispara a busca. So aplica
+    // (dataDe/dataAte) quando o usuario define a data FINAL ou clica em Buscar.
+    // Evita disparar uma busca gigante ao escolher so a data inicial.
+    const [dDe, setDDe] = useState(_hojeBRT);
+    const [dAte, setDAte] = useState(_hojeBRT);
+    const aplicarPeriodo = (de, ate) => { setDataDe(de); setDataAte(ate); };
     // tick de 1 min — mantém o indicador de tempo ("atrasado") atualizado sem refetch
     const [, setTickTempo] = useState(0);
     useEffect(() => { const _id = setInterval(() => setTickTempo(t => t + 1), 60000); return () => clearInterval(_id); }, []);
@@ -2460,7 +2466,7 @@
           // [periodo-v1] Hoje | Personalizado
           h('div', { className: 'inline-flex rounded-lg overflow-hidden border border-gray-200' },
             h('button', {
-              onClick: () => { const hj = dataLocalBRT(new Date()); setModoData('hoje'); setDataDe(hj); setDataAte(hj); },
+              onClick: () => { const hj = dataLocalBRT(new Date()); setModoData('hoje'); setDDe(hj); setDAte(hj); aplicarPeriodo(hj, hj); },
               className: 'px-3 py-2 text-sm font-semibold ' + (modoData === 'hoje' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
             }, 'Hoje'),
             h('button', {
@@ -2468,19 +2474,27 @@
               className: 'px-3 py-2 text-sm font-semibold border-l border-gray-200 ' + (modoData === 'custom' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
             }, 'Personalizado'),
           ),
+          // [periodo-aplicar-v1] os inputs mexem no RASCUNHO (dDe/dAte). A busca so
+          // dispara quando o usuario define a data FINAL (Ate) ou clica em "Buscar".
           modoData === 'custom' && h('div', { className: 'inline-flex items-center gap-1.5' },
             h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'De'),
             h('input', {
-              type: 'date', value: dataDe,
-              onChange: e => setDataDe(e.target.value),
+              type: 'date', value: dDe, max: dAte || undefined,
+              onChange: e => setDDe(e.target.value),   // so rascunho — nao busca
               className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
             }),
             h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'Até'),
             h('input', {
-              type: 'date', value: dataAte,
-              onChange: e => setDataAte(e.target.value),
+              type: 'date', value: dAte, min: dDe || undefined,
+              // definir a data FINAL aplica o periodo e dispara a busca
+              onChange: e => { const v = e.target.value; setDAte(v); if (dDe && v) aplicarPeriodo(dDe, v); },
               className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
             }),
+            // botao Buscar — util quando so o "De" mudou (aplica dDe/dAte na mao)
+            (dDe !== dataDe || dAte !== dataAte) && h('button', {
+              onClick: () => aplicarPeriodo(dDe, dAte),
+              className: 'px-3 py-2 rounded-lg text-sm font-semibold bg-purple-600 text-white hover:bg-purple-700',
+            }, 'Buscar'),
           ),
         ),
         h('select', {
