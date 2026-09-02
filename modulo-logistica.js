@@ -1687,7 +1687,12 @@
     const abrirChat99 = (e) => {
       if (setEstado) setEstado(st => ({ ...st, logisticaTab: 'chat', chat99OS: String(e.codigo_os) }));
     };
-    const [dataFiltro, setDataFiltro] = useState(dataLocalBRT(new Date())); // YYYY-MM-DD em BRT; padrao = hoje
+    // [periodo-v1] filtro de PERIODO (BRT). modoData 'hoje' = dataDe=dataAte=hoje;
+    // 'custom' = intervalo livre (inclui datas retroativas). Padrao: hoje.
+    const _hojeBRT = dataLocalBRT(new Date());
+    const [modoData, setModoData] = useState('hoje');   // 'hoje' | 'custom'
+    const [dataDe, setDataDe] = useState(_hojeBRT);
+    const [dataAte, setDataAte] = useState(_hojeBRT);
     // tick de 1 min — mantém o indicador de tempo ("atrasado") atualizado sem refetch
     const [, setTickTempo] = useState(0);
     useEffect(() => { const _id = setInterval(() => setTickTempo(t => t + 1), 60000); return () => clearInterval(_id); }, []);
@@ -1749,7 +1754,8 @@
         // sobre os 50 recentes — datas passadas voltavam vazias.
         const qs = [];
         // FILTRO_STATUS_CLIENTSIDE_V1: status agora e filtrado no client (instantaneo, sem re-fetch)
-        if (dataFiltro)   qs.push(`data=${encodeURIComponent(dataFiltro)}`);
+        if (dataDe)  qs.push(`de=${encodeURIComponent(dataDe)}`);
+        if (dataAte) qs.push(`ate=${encodeURIComponent(dataAte)}`);
         qs.push('incluir_proprios=1'); // MOTO_PROPRIA_FRONT_V1
         const url = `${API_URL}/logistics/deliveries${qs.length ? `?${qs.join('&')}` : ''}`;
         const res = await fetchAuth(url);
@@ -1788,7 +1794,7 @@
         } catch (_) { /* secao de tentativas e best-effort */ }
       } catch { if (!silencioso) showToast('Erro ao carregar entregas', 'error'); }
       finally { if (!silencioso) setLoading(false); }
-    }, [fetchAuth, API_URL, dataFiltro]); // FILTRO_STATUS_CLIENTSIDE_V1
+    }, [fetchAuth, API_URL, dataDe, dataAte]); // FILTRO_STATUS_CLIENTSIDE_V1
 
     // Carga inicial + auto-refresh a cada 30s — mantém os status em dia
     // sem o operador precisar recarregar a tela na mão (o poller/webhook
@@ -2155,9 +2161,14 @@
         lista = Array.from(maisRecentePorOs.values());
       }
 
-      // Filtro de data (despacho) — comparado em BRT. Vazio = todas as datas.
-      if (dataFiltro) {
-        lista = lista.filter(e => dataLocalBRT(e.created_at) === dataFiltro);
+      // Filtro de data (despacho) — por INTERVALO, em BRT. [periodo-v1]
+      if (dataDe || dataAte) {
+        lista = lista.filter(e => {
+          const d = dataLocalBRT(e.created_at);
+          if (dataDe && d < dataDe) return false;
+          if (dataAte && d > dataAte) return false;
+          return true;
+        });
       }
 
       // Busca livre: OS, enderecos, entregador e — BUSCA_CLIENTE_FINAL_NF —
@@ -2228,7 +2239,7 @@
       });
 
       return ordenado;
-    }, [entregas, busca, filtroMargem, ordenacao, dataFiltro, filtroProvider, filtroCliente, filtroStatus, verProprios]);
+    }, [entregas, busca, filtroMargem, ordenacao, dataDe, dataAte, filtroProvider, filtroCliente, filtroStatus, verProprios]);
 
     // Resumo — total de margem da lista filtrada
     // FILTRO_CLIENTE_KANBAN: lista distinta de clientes presente nas entregas carregadas
@@ -2446,23 +2457,31 @@
           className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
         }),
         h('div', { className: 'flex items-center gap-1.5' },
-          h('input', {
-            type: 'date',
-            value: dataFiltro,
-            onChange: e => setDataFiltro(e.target.value),
-            title: 'Filtrar por data de despacho',
-            className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
-          }),
-          h('button', {
-            onClick: () => setDataFiltro(dataLocalBRT(new Date())),
-            title: 'Voltar para hoje',
-            className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50',
-          }, 'Hoje'),
-          dataFiltro && h('button', {
-            onClick: () => setDataFiltro(''),
-            title: 'Ver todas as datas',
-            className: 'px-2 py-2 text-gray-400 hover:text-gray-600 text-sm',
-          }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-x' }))),
+          // [periodo-v1] Hoje | Personalizado
+          h('div', { className: 'inline-flex rounded-lg overflow-hidden border border-gray-200' },
+            h('button', {
+              onClick: () => { const hj = dataLocalBRT(new Date()); setModoData('hoje'); setDataDe(hj); setDataAte(hj); },
+              className: 'px-3 py-2 text-sm font-semibold ' + (modoData === 'hoje' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
+            }, 'Hoje'),
+            h('button', {
+              onClick: () => setModoData('custom'),
+              className: 'px-3 py-2 text-sm font-semibold border-l border-gray-200 ' + (modoData === 'custom' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
+            }, 'Personalizado'),
+          ),
+          modoData === 'custom' && h('div', { className: 'inline-flex items-center gap-1.5' },
+            h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'De'),
+            h('input', {
+              type: 'date', value: dataDe,
+              onChange: e => setDataDe(e.target.value),
+              className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
+            }),
+            h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'Até'),
+            h('input', {
+              type: 'date', value: dataAte,
+              onChange: e => setDataAte(e.target.value),
+              className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
+            }),
+          ),
         ),
         h('select', {
           value: filtroStatus,
