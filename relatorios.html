@@ -240,9 +240,14 @@
       <div class="card p-5"><h3 class="sora font-bold text-[15px] mb-1">Distribuição por distância</h3><p class="text-[12px] text-[color:var(--muted)] mb-2">corridas por faixa de km</p><div class="chart-wrap h-bar"><canvas id="chKm"></canvas></div></div>
       <div class="card p-5"><h3 class="sora font-bold text-[15px] mb-1">Distribuição por tempo de entrega</h3><p class="text-[12px] text-[color:var(--muted)] mb-2">corridas por faixa de tempo</p><div class="chart-wrap h-bar"><canvas id="chTempo"></canvas></div></div>
     </div>
+    <!-- [matriz-v1] Analise distancia x tempo — so aparece pro cliente 949 -->
+    <div id="cardMatriz" class="card p-5 mt-4" style="display:none">
+      <h3 class="sora font-bold text-[15px] mb-1">Análise por distância × tempo</h3>
+      <p class="text-[12px] text-[color:var(--muted)] mb-3">entregas por faixa de distância e tempo · a meta sobe 15 min a cada 5 km</p>
+      <div style="overflow-x:auto"><table id="tblMatriz" class="w-full text-[12.5px]" style="border-collapse:collapse"></table></div>
+      <div id="matrizKpis" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"></div>
+    </div>
   </div>
-
-  <!-- CORRIDAS -->
   <div id="pane-corridas" class="max-w-[1180px] mx-auto px-5 py-6 hidden">
     <div class="card p-4 mb-4">
       <div class="flex items-center gap-3 flex-wrap">
@@ -418,7 +423,7 @@ function setTab(t){
   document.getElementById('pane-corridas').classList.toggle('hidden',t!=='corridas');
   if(t==='corridas' && !corridasCarregou){ carregarCorridas(); }
 }
-function recarregar(){ carregarMetrics(); carregarSeries(); estado.page=1; corridasCarregou=false;
+function recarregar(){ carregarMetrics(); carregarSeries(); carregarMatriz(); estado.page=1; corridasCarregou=false;
   if(!document.getElementById('pane-corridas').classList.contains('hidden')) carregarCorridas(); }
 
 /* ================= dashboard ================= */
@@ -496,9 +501,58 @@ function barra(id,rows,ordem,color){
     options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return (c.parsed.y||0)+' corridas';}}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:cor('--linha')},border:{display:false}}},maintainAspectRatio:false}});
 }
 
+/* ================= [matriz-v1] analise distancia x tempo (cliente 949) ================= */
+function carregarMatriz(){
+  var card=document.getElementById('cardMatriz');
+  if(!window.__TEM_MATRIZ){ if(card) card.style.display='none'; return; }
+  api('/api/bi-portal/matriz-prazo'+qs()).then(function(d){
+    if(!d || !d.faixas){ card.style.display='none'; return; }
+    renderMatriz(d); card.style.display='';
+  }).catch(function(){ card.style.display='none'; });
+}
+function renderMatriz(d){
+  var cols=d.colunas||[];
+  // cabecalho
+  var th='<thead><tr>'
+    +'<th style="text-align:left;padding:7px 6px;border:1px solid var(--linha);background:#faf7ff">Distância</th>'
+    +cols.map(function(c){return '<th style="padding:7px 6px;border:1px solid var(--linha);background:#faf7ff">'+c+'</th>';}).join('')
+    +'<th style="padding:7px 6px;border:1px solid var(--linha);background:#f3ecfe;font-weight:800">Total</th>'
+    +'<th style="padding:7px 6px;border:1px solid var(--linha);background:#faf7ff">Dentro</th>'
+    +'<th style="padding:7px 6px;border:1px solid var(--linha);background:#faf7ff">Ruim</th>'
+    +'<th style="padding:7px 6px;border:1px solid var(--linha);background:#faf7ff">Inaceitável</th>'
+    +'</tr></thead>';
+  // corpo — colore a celula pela classe (dentro/ruim/inaceitavel) conforme a meta da faixa
+  var idxMeta={'Até 10 km':60,'Até 15 km':75,'Até 20 km':90,'Até 25 km':105,'Até 30 km':120,'Acima de 30 km':135};
+  var teto={'1h00':60,'1h15':75,'1h30':90,'1h45':105,'2h00':120,'2h30':150,'3h00':180,'3h+':999};
+  function corCelula(faixaLabel,col,v){
+    if(!v) return 'color:#c7cdd9';
+    var meta=idxMeta[faixaLabel]||60, t=teto[col]||999;
+    if(t<=meta) return 'background:rgba(5,150,105,.14);color:#047857;font-weight:700';
+    if(t<=meta+15) return 'background:rgba(217,119,6,.15);color:#b45309;font-weight:700';
+    return 'background:rgba(220,38,38,.14);color:#b91c1c;font-weight:700';
+  }
+  var tb='<tbody>'+d.faixas.map(function(f){
+    return '<tr>'
+      +'<td style="text-align:left;padding:7px 6px;border:1px solid var(--linha);font-weight:700;background:#faf7ff;white-space:nowrap">'+f.label+'</td>'
+      +cols.map(function(c){var v=f.buckets[c]||0;return '<td style="text-align:center;padding:7px 6px;border:1px solid var(--linha);'+corCelula(f.label,c,v)+'">'+(v||0)+'</td>';}).join('')
+      +'<td style="text-align:center;padding:7px 6px;border:1px solid var(--linha);font-weight:800;background:#f3ecfe">'+f.total+'</td>'
+      +'<td style="text-align:center;padding:7px 6px;border:1px solid var(--linha);color:#047857;font-weight:700">'+f.dentro+'</td>'
+      +'<td style="text-align:center;padding:7px 6px;border:1px solid var(--linha);color:#b45309;font-weight:700">'+f.ruim+'</td>'
+      +'<td style="text-align:center;padding:7px 6px;border:1px solid var(--linha);color:#b91c1c;font-weight:700">'+f.inaceitavel+'</td>'
+      +'</tr>';
+  }).join('')+'</tbody>';
+  document.getElementById('tblMatriz').innerHTML=th+tb;
+  function kpi(v,k,cor){return '<div class="card p-3" style="text-align:center"><div class="num text-2xl font-extrabold" style="color:'+(cor||'inherit')+'">'+v+'</div><div class="text-[11px] text-[color:var(--muted)]">'+k+'</div></div>';}
+  document.getElementById('matrizKpis').innerHTML=
+    kpi(d.total,'Total de entregas','')
+   +kpi(String(d.pct_dentro).replace('.',',')+'%','Dentro do prazo','var(--ok)')
+   +kpi(String(d.pct_ruim).replace('.',',')+'%','Ruim','#b45309')
+   +kpi(String(d.pct_inaceitavel).replace('.',',')+'%','Inaceitável','#b91c1c');
+}
+
 /* ================= corridas ================= */
 var corridasCarregou=false, totalCorridas=0;
-var COLS=[['os','OS',''],['nf','NF',''],['end','Entrega','nos'],['motoboy','Motoboy',''],
+var COLS=[['os','OS / NF',''],['end','Entrega','nos'],['motoboy','Motoboy',''],
   ['km','Km','r'],['tempo','Tempo','r'],['meta','Meta','r'],['delta','Folga / excedente','r'],['prazo','Prazo','']];
 // duracao em minutos -> "1h 20min" / "45 min"
 function fmtDur(min){
@@ -544,16 +598,15 @@ function celFolga(d,s){ if(s==='retorno'||d==null) return '<span class="text-[co
   return '<span class="num font-semibold" style="color:var(--err)">−'+fmtDur(Math.abs(d))+'</span><div class="text-[10px] text-[color:var(--muted)]">excedeu</div>'; }
 function carregarCorridas(){
   corridasCarregou=true; montarThead();
-  document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-8">Carregando…</td></tr>';
+  document.getElementById('corpo').innerHTML='<tr><td colspan="8" class="text-center text-[color:var(--muted)] py-8">Carregando…</td></tr>';
   api('/api/bi-portal/corridas'+corridasQS()).then(function(res){
     totalCorridas=res.total||0;
     var rows=res.corridas||[];
-    if(!rows.length){ document.getElementById('corpo').innerHTML='<tr><td colspan="9" class="text-center text-[color:var(--muted)] py-10">Nenhuma corrida no período com esses filtros.</td></tr>'; }
+    if(!rows.length){ document.getElementById('corpo').innerHTML='<tr><td colspan="8" class="text-center text-[color:var(--muted)] py-10">Nenhuma corrida no período com esses filtros.</td></tr>'; }
     else document.getElementById('corpo').innerHTML=rows.map(function(r){
       var ini=(r.motoboy||'?').split(' ').map(function(x){return x[0];}).slice(0,2).join('');
       return '<tr>'+
         '<td><div class="font-semibold num">OS '+esc(r.os)+'</div>'+(r.num_pedido?('<div class="text-[11px] text-[color:var(--muted)]">'+esc(r.num_pedido)+'</div>'):'')+'</td>'+
-        '<td class="num">'+(r.num_nota?esc(r.num_nota):'<span class="text-[color:var(--muted)]">—</span>')+'</td>'+
         '<td class="text-[color:var(--muted)] max-w-[220px]">'+esc(r.endereco||'—')+'</td>'+
         '<td>'+(r.motoboy?('<div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full grid place-items-center text-[10px] font-bold text-white" style="background:var(--roxo2)">'+esc(ini)+'</span>'+esc(r.motoboy.split(' ').slice(0,2).join(' '))+'</div>'):'—')+'</td>'+
         '<td class="text-right num">'+(r.km!=null?((''+r.km).replace('.',',')):'—')+'</td>'+
@@ -582,8 +635,7 @@ function iniciarApp(){
     var selL=document.getElementById('selLoja');
     selL.innerHTML='<option value="__todas__">Todas as lojas</option>';
     lojas.forEach(function(l){ var o=document.createElement('option'); o.value=l.cod_cliente; o.textContent=l.cod_cliente+' - '+(l.nome||''); selL.appendChild(o); });
-    calcPeriodo();
-    carregarUltimaAtualizacao();
+
     // 1 loja só: esconde o seletor de loja e ja habilita centros daquela loja
     if(lojas.length<=1){
       selL.style.display='none';
@@ -591,7 +643,7 @@ function iniciarApp(){
     }
     // multi: comeca em "Todas as lojas" (consolidado), centro desabilitado
     var selC=document.getElementById('selCentro'); selC.disabled=true; selC.style.opacity=.5;
-    carregarMetrics(); carregarSeries();
+    carregarMetrics(); carregarSeries(); carregarMatriz();
   }).catch(function(){});
 }
 
