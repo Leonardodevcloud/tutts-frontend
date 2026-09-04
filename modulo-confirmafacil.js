@@ -978,7 +978,6 @@
       centro_custo_mapp: embarcador?.centro_custo_mapp || '',
       // [cf-cat-emb-front-v1] categoria de frete fixa desta filial na Mapp
       categoria_mapp: embarcador?.categoria_mapp || '',
-      criacao_automatica: embarcador ? (embarcador.criacao_automatica !== false) : true,
     });
     const [opcoesCentroCusto, setOpcoesCentroCusto] = useState([]);
     const [opcoesCategoria, setOpcoesCategoria] = useState([]);
@@ -1089,13 +1088,6 @@
             )
           )
         ),
-        h('div', { className: 'px-5 pb-3' },
-          h('label', { className: 'flex items-center gap-2 text-sm text-gray-700 cursor-pointer' },
-            h('input', { type: 'checkbox', checked: form.criacao_automatica !== false, onChange: e => set('criacao_automatica', e.target.checked) }),
-            h('span', null, 'Cria\u00e7\u00e3o autom\u00e1tica de corrida (poller)')
-          ),
-          h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'Desligue para filiais que usam o Roteirizador \u2014 as corridas s\u00f3 nascem quando o expedidor confirma o roteiro.')
-        ),
         h('div', { className: 'flex justify-end gap-3 p-5 border-t border-gray-100' },
           h('button', { onClick: onFechar, className: 'px-4 py-2 text-sm text-gray-600' }, 'Cancelar'),
           h('button', { onClick: salvar, disabled: salvando,
@@ -1107,159 +1099,6 @@
   }
 
   // ─── ABA CONFIG ──────────────────────────────────────────────
-  function AbaAcessosRoteirizador({ fetchAuth, API_URL, showToast }) {
-    /* RT_PARAMS_V2 */
-    const BASE = '/admin/roteirizador-tutts';
-    const [sub, setSub] = useState('acessos');
-    const [emb, setEmb] = useState([]);
-    const [filas, setFilas] = useState([]);
-    const [usuarios, setUsuarios] = useState([]);
-    const [form, setForm] = useState({ login: '', senha: '', nome_exibicao: '', cnpj_embarcador: '', central_id: '' });
-    const [loading, setLoading] = useState(false);
-    const [pEmb, setPEmb] = useState('');
-    const [params, setParams] = useState(null);
-    const [pLoading, setPLoading] = useState(false);
-
-    function carregar() {
-      fetchAuth(API_URL + BASE + '/embarcadores').then(r => r.json()).then(d => setEmb(Array.isArray(d) ? d : [])).catch(() => {});
-      fetchAuth(API_URL + BASE + '/filas').then(r => r.json()).then(d => setFilas(Array.isArray(d) ? d : [])).catch(() => {});
-      fetchAuth(API_URL + BASE + '/usuarios').then(r => r.json()).then(d => setUsuarios(Array.isArray(d) ? d : [])).catch(() => {});
-    }
-    useEffect(() => { carregar(); }, []);
-
-    const setF = (k, v) => setForm(s => ({ ...s, [k]: v }));
-    const nomeFila = id => { const x = filas.find(y => String(y.id) === String(id)); return x ? x.nome : (id ? ('#' + id) : '—'); };
-
-    async function criar() {
-      if (!form.login || !form.senha || !form.cnpj_embarcador) { showToast('Login, senha e embarcador são obrigatórios', 'error'); return; }
-      setLoading(true);
-      try {
-        const r = await fetchAuth(API_URL + BASE + '/usuarios', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, central_id: form.central_id || null }) });
-        const d = await r.json();
-        if (d.erro) { showToast(d.erro === 'login_ja_existe' ? 'Esse login já existe' : ('Erro: ' + d.erro), 'error'); }
-        else { showToast('Acesso criado!', 'success'); setForm({ login: '', senha: '', nome_exibicao: '', cnpj_embarcador: '', central_id: '' }); carregar(); }
-      } catch (_) { showToast('Erro ao criar', 'error'); } finally { setLoading(false); }
-    }
-    async function trocarSenha(id) {
-      const nova = prompt('Nova senha para este acesso:'); if (!nova) return;
-      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senha: nova }) }); showToast('Senha atualizada', 'success'); } catch (_) { showToast('Erro', 'error'); }
-    }
-    async function toggle(id, ativo) {
-      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ativo: !ativo }) }); carregar(); } catch (_) { showToast('Erro', 'error'); }
-    }
-    async function remover(id, login) {
-      if (!confirm('Remover o acesso "' + login + '"? Esta ação não pode ser desfeita.')) return;
-      try { await fetchAuth(API_URL + BASE + '/usuarios/' + id, { method: 'DELETE' }); carregar(); } catch (_) { showToast('Erro', 'error'); }
-    }
-
-    useEffect(() => {
-      if (!pEmb) { setParams(null); return; }
-      fetchAuth(API_URL + BASE + '/params?cnpj=' + encodeURIComponent(pEmb)).then(r => r.json()).then(setParams).catch(() => {});
-    }, [pEmb]);
-    const setP = (k, v) => setParams(p => ({ ...p, [k]: v }));
-    async function salvarParams() {
-      if (!pEmb || !params) { showToast('Selecione um embarcador', 'error'); return; }
-      setPLoading(true);
-      try {
-        const r = await fetchAuth(API_URL + BASE + '/params', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...params, cnpj_embarcador: pEmb }) });
-        const d = await r.json();
-        if (d.erro) showToast('Erro: ' + d.erro, 'error');
-        else { setParams(d); showToast('Parâmetros salvos!', 'success'); }
-      } catch (_) { showToast('Erro ao salvar', 'error'); } finally { setPLoading(false); }
-    }
-
-    const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm';
-    const btnSm = 'ml-1 px-2 py-1 text-xs border border-gray-200 rounded-md hover:bg-gray-50';
-    const campo = (label, ctrl, hint) => h('div', null,
-      h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1' }, label),
-      ctrl,
-      hint ? h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, hint) : null);
-    const numP = (label, k, hint, ativo) => campo(
-      h('span', null, label, ativo ? h('span', { className: 'ml-1 text-[10px] font-bold text-green-600' }, '● ativo') : h('span', { className: 'ml-1 text-[10px] text-gray-400' }, '○ em breve')),
-      h('input', { className: inputCls, type: 'number', value: (params && params[k] != null) ? params[k] : '', onChange: e => setP(k, e.target.value) }),
-      hint);
-
-    const subBtn = (id, label) => h('button', {
-      onClick: () => setSub(id),
-      className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (sub === id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800')
-    }, label);
-
-    return h('div', { className: 'space-y-5' },
-      h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' }, subBtn('acessos', 'Acessos'), subBtn('params', 'Parâmetros')),
-
-      sub === 'acessos' ? h('div', { className: 'space-y-5' },
-        h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-800' },
-          'Cada acesso do roteirizador fica travado em 1 embarcador (CNPJ) e 1 fila. O login usa a tela ', h('b', null, '/roteirizador-tutts.html'), '.'),
-        h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
-          h('h3', { className: 'font-semibold text-gray-800 mb-3' }, 'Novo acesso'),
-          h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
-            campo('Embarcador (CNPJ)', h('select', { className: inputCls, value: form.cnpj_embarcador, onChange: e => setF('cnpj_embarcador', e.target.value) },
-              h('option', { value: '' }, 'Selecione…'),
-              emb.map(x => h('option', { key: x.cnpj_embarcador, value: x.cnpj_embarcador }, (x.nome_embarcador || '(sem nome)') + ' — ' + fmtCNPJ(x.cnpj_embarcador))))),
-            campo('Fila (central)', h('select', { className: inputCls, value: form.central_id, onChange: e => setF('central_id', e.target.value) },
-              h('option', { value: '' }, 'Selecione…'),
-              filas.map(x => h('option', { key: x.id, value: x.id }, x.nome + (x.ativa ? '' : ' (inativa)'))))),
-            campo('Nome de exibição', h('input', { className: inputCls, value: form.nome_exibicao, onChange: e => setF('nome_exibicao', e.target.value), placeholder: 'Ex.: Auto Peças Guará' })),
-            campo('Login', h('input', { className: inputCls, value: form.login, onChange: e => setF('login', e.target.value), placeholder: 'ex.: guara_sia', autoComplete: 'off' })),
-            campo('Senha', h('input', { className: inputCls, value: form.senha, onChange: e => setF('senha', e.target.value), placeholder: 'senha inicial', autoComplete: 'off' }))
-          ),
-          h('button', { className: 'mt-4 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50', disabled: loading, onClick: criar }, loading ? 'Criando…' : 'Criar acesso')
-        ),
-        h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
-          h('h3', { className: 'font-semibold text-gray-800 mb-3' }, 'Acessos cadastrados'),
-          usuarios.length === 0
-            ? h('p', { className: 'text-sm text-gray-500' }, 'Nenhum acesso cadastrado ainda.')
-            : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-sm' },
-                h('thead', null, h('tr', { className: 'text-left text-gray-500 border-b' },
-                  ['Login', 'Nome', 'Embarcador', 'Fila', 'Status', 'Último acesso', ''].map((t, i) => h('th', { key: i, className: 'px-3 py-2 font-medium whitespace-nowrap' }, t)))),
-                h('tbody', null, usuarios.map(u => h('tr', { key: u.id, className: 'border-b last:border-0' },
-                  h('td', { className: 'px-3 py-2 font-semibold' }, u.login),
-                  h('td', { className: 'px-3 py-2' }, u.nome_exibicao || '—'),
-                  h('td', { className: 'px-3 py-2 tabular-nums whitespace-nowrap' }, fmtCNPJ(u.cnpj_embarcador)),
-                  h('td', { className: 'px-3 py-2' }, nomeFila(u.central_id)),
-                  h('td', { className: 'px-3 py-2' }, h('span', { className: 'px-2 py-0.5 rounded-full text-xs font-semibold ' + (u.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500') }, u.ativo ? 'ativo' : 'inativo')),
-                  h('td', { className: 'px-3 py-2 text-gray-500 whitespace-nowrap' }, u.ultimo_acesso ? fmtD(u.ultimo_acesso) : '—'),
-                  h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' },
-                    h('button', { className: btnSm, onClick: () => trocarSenha(u.id) }, 'Trocar senha'),
-                    h('button', { className: btnSm, onClick: () => toggle(u.id, u.ativo) }, u.ativo ? 'Desativar' : 'Ativar'),
-                    h('button', { className: btnSm + ' text-red-600', onClick: () => remover(u.id, u.login) }, 'Remover'))
-                )))
-              ))
-        )
-      ) : h('div', { className: 'space-y-5' },
-        h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-800' },
-          'Parâmetros de roteirização por embarcador (estudo, seção 13). ',
-          h('b', null, '● ativo'), ' = já afeta o cálculo hoje; ', h('b', null, '○ em breve'), ' = configurável, entra nas próximas fases (coesão/equidade, prazo de largada, avisos).'),
-        h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5 space-y-4' },
-          campo('Embarcador', h('select', { className: inputCls, value: pEmb, onChange: e => setPEmb(e.target.value) },
-            h('option', { value: '' }, 'Selecione…'),
-            emb.map(x => h('option', { key: x.cnpj_embarcador, value: x.cnpj_embarcador }, (x.nome_embarcador || '(sem nome)') + ' — ' + fmtCNPJ(x.cnpj_embarcador)))),
-            pEmb && params ? (params._custom ? 'Configuração personalizada deste embarcador.' : 'Usando valores padrão (ainda não salvo para este embarcador).') : 'Escolha um embarcador para ver/editar os parâmetros.'),
-          pEmb && params ? h('div', { className: 'space-y-4' },
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-3' },
-              numP('Capacidade-alvo', 'capacidade_alvo', 'Nº preferido de notas por rota', true),
-              numP('Capacidade máxima', 'capacidade_maxima', 'Teto absoluto de notas', true),
-              numP('Tempo de serviço (min)', 'tempo_servico_min', 'Parado em cada entrega', true)
-            ),
-            h('label', { className: 'flex items-center gap-2 text-sm text-gray-700' },
-              h('input', { type: 'checkbox', checked: !!(params.retorno_a_loja), onChange: e => setP('retorno_a_loja', e.target.checked) }),
-              'Rota fecha na loja (retorno ao depósito) ', h('span', { className: 'text-[10px] font-bold text-green-600' }, '● ativo')),
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-3' },
-              numP('Tolerância de atraso (min)', 'tolerancia_atraso_min', '0 = prazo duro', false),
-              numP('Tempo de expedição (min)', 'tempo_expedicao_min', 'Separar + entregar ao motoboy', false),
-              numP('Tempo de carregamento (min)', 'tempo_carregamento_min', 'Acomodar no baú', false),
-              numP('Margem de segurança (min)', 'margem_seguranca_min', 'Colchão anti-imprevisto', false),
-              numP('Limiar corrida longa (km)', 'limiar_corrida_longa_km', 'Acima disso = bate e volta', false),
-              numP('Peso coesão (0-100)', 'peso_coesao', 'Evitar misturar curta+longa', false),
-              numP('Peso equidade (0-100)', 'peso_equidade', 'Equilíbrio entre motoboys', false)
-            ),
-            h('button', { className: 'px-5 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50', disabled: pLoading, onClick: salvarParams }, pLoading ? 'Salvando…' : 'Salvar parâmetros')
-          ) : null
-        )
-      )
-    );
-  }
-
   function AbaConfig({ fetchAuth, API_URL, showToast }) {
     const [clientes, setClientes]     = useState([]);
     const [clienteSel, setClienteSel] = useState('');
@@ -1681,6 +1520,130 @@
   }
 
   // ─── COMPONENTE PRINCIPAL ────────────────────────────────────
+  // ── [metrica-embarque-v1] Aba: tempo de embarque por embarcador (SLA 20 min) ──
+  function AbaEmbarque({ fetchAuth, API_URL, showToast }) {
+    const [periodo, setPeriodo] = useState('7d');
+    const [de, setDe] = useState('');
+    const [ate, setAte] = useState('');
+    const [dados, setDados] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const SLA = 20;
+
+    function rangeDe() {
+      const hoje = new Date();
+      const brt = new Date(hoje.getTime() - 3 * 3600000);
+      const fim = brt.toISOString().slice(0, 10);
+      if (periodo === 'custom') return { de: de || fim, ate: ate || fim };
+      let d = new Date(brt);
+      if (periodo === 'hoje') { /* mesmo dia */ }
+      else if (periodo === '7d') d.setUTCDate(d.getUTCDate() - 6);
+      else if (periodo === '30d') d.setUTCDate(d.getUTCDate() - 29);
+      return { de: d.toISOString().slice(0, 10), ate: fim };
+    }
+    useEffect(() => {
+      const r = rangeDe();
+      if (periodo === 'custom' && (!de || !ate)) { return; }
+      setLoading(true);
+      fetchAuth(`${API_URL}/confirmafacil/metrica-embarque?de=${r.de}&ate=${r.ate}&sla=${SLA}`)
+        .then(x => x.json()).then(d => { setDados(d); setLoading(false); })
+        .catch(() => { setLoading(false); showToast && showToast('Erro ao carregar métrica de embarque', 'error'); });
+    }, [periodo, de, ate]);
+
+    const fmtMin = (m) => {
+      if (m == null) return '—';
+      m = Math.round(Number(m));
+      if (m < 60) return m + ' min';
+      return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0');
+    };
+    const corMin = (m) => m == null ? '#6b7280' : (m <= SLA ? '#059669' : (m <= SLA * 2 ? '#d97706' : '#dc2626'));
+    const classe = (m) => m <= SLA ? { t: 'Dentro do SLA', c: 'bg-green-100 text-green-700' }
+      : (m <= SLA * 2 ? { t: 'Atenção', c: 'bg-amber-100 text-amber-700' } : { t: 'Fora do SLA', c: 'bg-red-100 text-red-700' });
+
+    const segBtn = (id, lb) => h('button', {
+      key: id, onClick: () => setPeriodo(id),
+      className: 'px-3 py-2 text-sm font-medium ' + (periodo === id ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
+    }, lb);
+
+    const filtros = h('div', { className: 'flex items-center gap-2 flex-wrap' },
+      h('div', { className: 'inline-flex rounded-lg overflow-hidden border border-gray-200' },
+        segBtn('hoje', 'Hoje'), segBtn('7d', '7 dias'), segBtn('30d', '30 dias'), segBtn('custom', 'Personalizado')),
+      periodo === 'custom' && h('div', { className: 'inline-flex items-center gap-1.5' },
+        h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'De'),
+        h('input', { type: 'date', value: de, onChange: e => setDe(e.target.value), className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' }),
+        h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'Até'),
+        h('input', { type: 'date', value: ate, onChange: e => setAte(e.target.value), className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm' })),
+      h('span', { className: 'text-xs text-gray-400' }, 'SLA de embarque: ' + SLA + ' min')
+    );
+
+    if (loading) return h('div', { className: 'space-y-4' }, filtros, h('div', { className: 'text-gray-400 text-sm py-10 text-center' }, 'Carregando…'));
+    if (!dados || !dados.embarcadores || dados.total === 0)
+      return h('div', { className: 'space-y-4' }, filtros, h('div', { className: 'text-gray-400 text-sm py-10 text-center' }, 'Sem embarques registrados no período.'));
+
+    const maxMedia = Math.max.apply(null, dados.embarcadores.map(e => e.media_min).concat([1]));
+    const kpi = (k, v, cor, s) => h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
+      h('div', { className: 'text-xs text-gray-500' }, k),
+      h('div', { className: 'text-2xl font-extrabold mt-1', style: cor ? { color: cor } : {} }, v),
+      s ? h('div', { className: 'text-[11px] text-gray-400 mt-0.5' }, s) : null);
+
+    const dist = dados.distribuicao || { dentro: 0, atencao: 0, fora: 0 };
+    const pctSlaGeral = dados.total ? Math.round((dist.dentro / dados.total) * 100) : 0;
+
+    return h('div', { className: 'space-y-4' },
+      filtros,
+      // KPIs
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
+        kpi('Tempo médio de embarque', fmtMin(dados.media_min), corMin(dados.media_min), 'emissão → embarque'),
+        kpi('Notas embarcadas', String(dados.total), null, 'com Cod. 0 registrado'),
+        kpi('Dentro do SLA', pctSlaGeral + '%', '#059669', dist.dentro + ' de ' + dados.total),
+        kpi('Mais lento', dados.mais_lento ? fmtMin(dados.mais_lento.media_min) : '—', '#dc2626', dados.mais_lento ? dados.mais_lento.embarcador : '')
+      ),
+      // Ranking
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
+        h('h3', { className: 'font-bold text-[15px]' }, 'Ranking por tempo médio'),
+        h('p', { className: 'text-xs text-gray-500 mb-4' }, 'média de embarque por embarcador (menor = melhor)'),
+        h('div', { className: 'space-y-2.5' }, dados.embarcadores.map(e =>
+          h('div', { key: e.cnpj + e.embarcador, className: 'grid items-center gap-3', style: { gridTemplateColumns: '170px 1fr 66px' } },
+            h('span', { className: 'text-[12.5px] font-semibold truncate', title: e.embarcador }, e.embarcador),
+            h('span', { className: 'bg-gray-100 rounded-lg h-[18px] overflow-hidden' },
+              h('span', { className: 'block h-[18px] rounded-lg', style: { width: Math.max(4, (e.media_min / maxMedia) * 100) + '%', background: corMin(e.media_min) } })),
+            h('span', { className: 'text-[12.5px] font-bold text-right' }, fmtMin(e.media_min))
+          )
+        ))
+      ),
+      // Distribuição
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
+        h('h3', { className: 'font-bold text-[15px] mb-3' }, 'Distribuição por faixa'),
+        h('div', { className: 'flex gap-2 flex-wrap text-xs' },
+          h('span', { className: 'px-3 py-1.5 rounded-full bg-green-100 text-green-700 font-semibold' }, '≤ ' + SLA + ' min (dentro): ' + dist.dentro),
+          h('span', { className: 'px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 font-semibold' }, SLA + '–' + (SLA * 2) + ' min (atenção): ' + dist.atencao),
+          h('span', { className: 'px-3 py-1.5 rounded-full bg-red-100 text-red-700 font-semibold' }, '> ' + (SLA * 2) + ' min (fora): ' + dist.fora)
+        )
+      ),
+      // Tabela
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5 overflow-x-auto' },
+        h('h3', { className: 'font-bold text-[15px] mb-3' }, 'Detalhe por embarcador'),
+        h('table', { className: 'w-full text-[12.5px]' },
+          h('thead', null, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
+            ['Embarcador', 'CNPJ', 'Notas', 'Tempo médio', 'Mín', 'Máx', '≤ SLA', 'Classe'].map((c, k) =>
+              h('th', { key: k, className: 'py-2 px-2 ' + (k === 0 ? 'text-left' : 'text-right') }, c)))),
+          h('tbody', null, dados.embarcadores.map(e => {
+            const cl = classe(e.media_min);
+            return h('tr', { key: e.cnpj + e.embarcador, className: 'border-t border-gray-100' },
+              h('td', { className: 'py-2 px-2 text-left font-medium' }, e.embarcador),
+              h('td', { className: 'py-2 px-2 text-right text-gray-500' }, fmtCNPJ(e.cnpj)),
+              h('td', { className: 'py-2 px-2 text-right' }, e.notas),
+              h('td', { className: 'py-2 px-2 text-right font-bold', style: { color: corMin(e.media_min) } }, fmtMin(e.media_min)),
+              h('td', { className: 'py-2 px-2 text-right text-gray-500' }, fmtMin(e.min_min)),
+              h('td', { className: 'py-2 px-2 text-right text-gray-500' }, fmtMin(e.max_min)),
+              h('td', { className: 'py-2 px-2 text-right' }, e.pct_sla + '%'),
+              h('td', { className: 'py-2 px-2 text-right' }, h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + cl.c }, cl.t))
+            );
+          }))
+        )
+      )
+    );
+  }
+
   window.ModuloConfirmaFacil = function (props) {
     const fetchAuth = props.fetchAuth;
     const API_URL   = props.API_URL;
@@ -1695,16 +1658,16 @@
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
-        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'config', label: 'Configuração' }, { id: 'acessos', label: 'Acessos Roteirizador' }].map(a =>
+        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'embarque', label: 'Tempo de Embarque' }, { id: 'config', label: 'Configuração' }].map(a =>
           h('button', {
             key: a.id, onClick: () => setAba(a.id),
             className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (aba === a.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'),
           }, a.label)
         )
       ),
-      aba === 'acessos' ? h(AbaAcessosRoteirizador, { fetchAuth, API_URL, showToast })
-        : aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
+      aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
         : aba === 'risco' ? h(AbaRiscoSLA, { fetchAuth, API_URL, showToast })
+        : aba === 'embarque' ? h(AbaEmbarque, { fetchAuth, API_URL, showToast })
         : h(AbaNFs, { fetchAuth, API_URL, showToast })
     );
   };
