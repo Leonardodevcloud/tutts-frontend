@@ -629,6 +629,8 @@ function iniciarApp(){
     document.getElementById('hdNome').textContent=me.nome_exibicao||'Cliente';
     var lojas = me.lojas || [];
     window.__LOJAS = lojas;
+    // [matriz-v1] a analise por distancia x tempo so aparece pro cliente 949
+    window.__TEM_MATRIZ = lojas.some(function(l){ return String(l.cod_cliente) === '949'; });
     document.getElementById('hdBadge').textContent=String((lojas[0]&&lojas[0].cod_cliente)||'—').slice(0,4);
     document.getElementById('hdSub').textContent=(lojas.length>1?(lojas.length+' lojas'):'1 loja')+' · dados via Tutts';
     // seletor de LOJA — limpa antes (evita opcoes duplicadas se /me rodar 2x)
