@@ -1592,15 +1592,15 @@
       filtros,
       // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
-        kpi('Atraso médio de embarque', fmtMin(dados.media_min), corMin(dados.media_min), 'embarque vs previsão'),
+        kpi('Tempo médio de embarque', fmtMin(dados.media_min), corMin(dados.media_min), 'emissão → embarque (dia útil)'),
         kpi('Notas embarcadas', String(dados.total), null, 'com Cod. 0 registrado'),
         kpi('Dentro do SLA', pctSlaGeral + '%', '#059669', dist.dentro + ' de ' + dados.total),
         kpi('Mais lento', dados.mais_lento ? fmtMin(dados.mais_lento.media_min) : '—', '#dc2626', dados.mais_lento ? dados.mais_lento.embarcador : '')
       ),
       // Ranking
       h('div', { className: 'bg-white border border-gray-200 rounded-xl p-5' },
-        h('h3', { className: 'font-bold text-[15px]' }, 'Ranking por atraso médio'),
-        h('p', { className: 'text-xs text-gray-500 mb-4' }, 'atraso de embarque vs previsão por embarcador (menor = melhor)'),
+        h('h3', { className: 'font-bold text-[15px]' }, 'Ranking por tempo médio'),
+        h('p', { className: 'text-xs text-gray-500 mb-4' }, 'tempo de embarque (emissão → embarque, relógio a partir das 8h em dia útil)'),
         h('div', { className: 'space-y-2.5' }, dados.embarcadores.map(e =>
           h('div', { key: e.cnpj + e.embarcador, className: 'grid items-center gap-3', style: { gridTemplateColumns: '170px 1fr 66px' } },
             h('span', { className: 'text-[12.5px] font-semibold truncate', title: e.embarcador }, e.embarcador),
@@ -1624,7 +1624,7 @@
         h('h3', { className: 'font-bold text-[15px] mb-3' }, 'Detalhe por embarcador'),
         h('table', { className: 'w-full text-[12.5px]' },
           h('thead', null, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
-            ['Embarcador', 'CNPJ', 'Notas', 'Atraso médio', 'Mín', 'Máx', '≤ SLA', 'Classe'].map((c, k) =>
+            ['Embarcador', 'CNPJ', 'Notas', 'Tempo médio', 'Mín', 'Máx', '≤ SLA', 'Classe'].map((c, k) =>
               h('th', { key: k, className: 'py-2 px-2 ' + (k === 0 ? 'text-left' : 'text-right') }, c)))),
           h('tbody', null, dados.embarcadores.map(e => {
             const cl = classe(e.media_min);
