@@ -692,6 +692,7 @@ function carregarCorridas(){
 /* ================= init ================= */
 function iniciarApp(){
   mostrarApp();
+  calcPeriodo(); // [periodo-init-v1] aplica a janela padrao (7 dias) ANTES do 1o load; sem isto de/ate ficam null e vem o historico todo
   api('/api/bi-portal/me').then(function(me){
     document.getElementById('hdNome').textContent=me.nome_exibicao||'Cliente';
     var lojas = me.lojas || [];
