@@ -17819,6 +17819,67 @@ const hideLoadingScreen = () => {
                 (function() {
                     var dados = Qt.porHora || [];
                     if (dados.length === 0) return React.createElement("p", {className: "text-gray-400 text-sm text-center py-8"}, "Sem dados de horário");
+                    // [pico-prazo-v1] filtros atuais (mesmos do dashboard) + se ha OS sem meta
+                    var temSem = dados.some(function(d) { return (d.sem || 0) > 0; });
+                    var filtrosQS = (function() { try { return Xa().toString(); } catch (e) { return ""; } })();
+                    // modal de detalhe (DOM puro, isolado do React) — registrado 1x
+                    if (!window.__picoModalReady) {
+                        window.__picoModalReady = true;
+                        window.abrirDetalhePicoHora = function(opts) {
+                            opts = opts || {};
+                            var apiUrl = opts.apiUrl, fa = opts.fetchAuth, fqs = opts.filtrosQS || "", hora = (opts.hora == null ? null : opts.hora);
+                            var st = { status: "", page: 1, per: 50 };
+                            var root = document.getElementById("pico-modal-root");
+                            if (!root) { root = document.createElement("div"); root.id = "pico-modal-root"; document.body.appendChild(root); }
+                            function fechar() { root.innerHTML = ""; document.removeEventListener("keydown", onKey); }
+                            function onKey(e) { if (e.key === "Escape") fechar(); }
+                            document.addEventListener("keydown", onKey);
+                            function fmtDur(m) { if (m == null) return "\u2014"; m = Math.abs(Math.round(m)); if (m < 60) return m + " min"; var h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? (" " + mm + "min") : ""); }
+                            function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+                            function urlBase(per) { return apiUrl + "/bi/pico-horario/detalhe?" + fqs + (hora != null ? ("&hora=" + hora) : "") + (st.status ? ("&status=" + st.status) : "") + "&page=" + st.page + "&per=" + (per || st.per); }
+                            function carregar() {
+                                render(true);
+                                fa(urlBase()).then(function(r) { return r.json(); }).then(function(j) { render(false, j); }).catch(function() { render(false, null, true); });
+                            }
+                            function render(loading, j, erro) {
+                                var titulo = (hora != null) ? ("Entregas \u00e0s " + String(hora).padStart(2, "0") + "h") : "Entregas \u2014 todas as horas";
+                                var rs = (j && j.resumo) || { total: 0, dentro: 0, fora: 0, sem: 0 };
+                                var rows = (j && j.rows) || [];
+                                var tot = (j && j.total) || 0;
+                                var tp = Math.max(1, Math.ceil(tot / st.per));
+                                var chip = function(val, label, cnt) { var on = st.status === val; return '<button data-st="' + val + '" class="pico-chip" style="font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;cursor:pointer;border:1px solid ' + (on ? "transparent" : "#e5e7eb") + ';background:' + (on ? "#6d28d9" : "#f3f4f6") + ';color:' + (on ? "#fff" : "#4b5563") + '">' + label + (cnt != null ? (" \u00b7 " + cnt.toLocaleString("pt-BR")) : "") + '</button>'; };
+                                var thead = '<tr style="color:#9ca3af;font-size:11px;text-align:left"><th style="padding:6px 10px;font-weight:600">OS</th><th style="padding:6px 10px;font-weight:600">Motoboy</th><th style="padding:6px 10px;font-weight:600;text-align:right">Km</th><th style="padding:6px 10px;font-weight:600;text-align:right">Tempo</th><th style="padding:6px 10px;font-weight:600;text-align:right">Meta</th><th style="padding:6px 10px;font-weight:600;text-align:right">Excedeu / sobrou</th><th style="padding:6px 10px;font-weight:600">Prazo</th></tr>';
+                                var tbody;
+                                if (loading) tbody = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:28px">Carregando\u2026</td></tr>';
+                                else if (erro) tbody = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:28px">Erro ao carregar. Tente de novo.</td></tr>';
+                                else if (!rows.length) tbody = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:28px">Nenhuma entrega.</td></tr>';
+                                else tbody = rows.map(function(r) {
+                                    var late = r.status === "fora", sem = r.status === "sem";
+                                    var deltaTxt = sem ? "\u2014" : ((r.delta < 0 ? "\u2212" : "+") + fmtDur(r.delta));
+                                    var deltaCor = sem ? "#9ca3af" : (late ? "#dc2626" : "#1D9E75");
+                                    var bBg = sem ? "#f3f4f6" : (late ? "#fef2f2" : "#ecfdf5"), bCor = sem ? "#6b7280" : (late ? "#dc2626" : "#0f7a56"), bTxt = sem ? "Sem meta" : (late ? "Fora" : "No prazo");
+                                    return '<tr style="border-top:1px solid #f3f4f6"><td style="padding:8px 10px;font-weight:600;color:#374151">' + esc(r.os) + (r.num_pedido ? ('<div style="font-size:11px;color:#9ca3af;font-weight:400">' + esc(r.num_pedido) + '</div>') : "") + '</td><td style="padding:8px 10px;color:#4b5563">' + esc(r.nome_prof || "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#4b5563">' + (r.km != null ? (("" + r.km).replace(".", ",")) : "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#4b5563">' + fmtDur(r.tempo) + '</td><td style="padding:8px 10px;text-align:right;color:#9ca3af">' + fmtDur(r.meta) + '</td><td style="padding:8px 10px;text-align:right;font-weight:600;color:' + deltaCor + '">' + deltaTxt + '</td><td style="padding:8px 10px"><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:' + bBg + ';color:' + bCor + '">' + bTxt + '</span></td></tr>';
+                                }).join("");
+                                root.innerHTML = '<div class="pico-ov" style="position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto"><div style="width:100%;max-width:720px;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,system-ui,sans-serif"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f0f0f2"><div><div style="font-weight:600;font-size:15px;color:#374151">' + titulo + '</div><div style="font-size:12px;color:#9ca3af;margin-top:1px">' + rs.total.toLocaleString("pt-BR") + ' OS \u00b7 <span style="color:#1D9E75">' + rs.dentro.toLocaleString("pt-BR") + ' no prazo</span> \u00b7 <span style="color:#dc2626">' + rs.fora.toLocaleString("pt-BR") + ' fora</span>' + (rs.sem ? (' \u00b7 <span style="color:#9ca3af">' + rs.sem + ' sem meta</span>') : "") + '</div></div><button class="pico-x" style="font-size:22px;color:#9ca3af;background:none;border:none;cursor:pointer;line-height:1">&times;</button></div><div style="display:flex;gap:7px;padding:12px 20px 4px;flex-wrap:wrap">' + chip("", "Todas", rs.total) + chip("dentro", "No prazo", rs.dentro) + chip("fora", "Fora", rs.fora) + (rs.sem ? chip("sem", "Sem meta", rs.sem) : "") + '</div><div style="padding:8px 8px 4px;max-height:52vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f0f0f2;font-size:12px;color:#9ca3af"><span>' + (tot ? ("Mostrando " + ((st.page - 1) * st.per + 1) + "\u2013" + Math.min(st.page * st.per, tot) + " de " + tot.toLocaleString("pt-BR")) : "\u2014") + '</span><span style="display:flex;align-items:center;gap:8px"><button class="pico-prev" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#4b5563">Anterior</button><span style="color:#6b7280">' + st.page + "/" + tp + '</span><button class="pico-next" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#4b5563">Pr\u00f3xima</button><button class="pico-csv" style="cursor:pointer;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 10px;color:#6d28d9;font-weight:600">Exportar CSV</button></span></div></div></div>';
+                                root.querySelector(".pico-x").onclick = fechar;
+                                root.querySelector(".pico-ov").onclick = function(e) { if (e.target === this) fechar(); };
+                                [].forEach.call(root.querySelectorAll(".pico-chip"), function(b) { b.onclick = function() { st.status = b.getAttribute("data-st"); st.page = 1; carregar(); }; });
+                                root.querySelector(".pico-prev").onclick = function() { if (st.page > 1) { st.page--; carregar(); } };
+                                root.querySelector(".pico-next").onclick = function() { if (st.page < tp) { st.page++; carregar(); } };
+                                root.querySelector(".pico-csv").onclick = function() {
+                                    fa(urlBase(200)).then(function(r) { return r.json(); }).then(function(jj) {
+                                        var rr = (jj && jj.rows) || [];
+                                        var head = ["OS", "Pedido", "Motoboy", "Cliente", "Hora", "Km", "Tempo_min", "Meta_min", "Delta_min", "Status"];
+                                        var linhas = rr.map(function(r) { return [r.os, r.num_pedido || "", r.nome_prof || "", r.cliente || "", r.hora, (r.km != null ? r.km : ""), (r.tempo != null ? r.tempo : ""), (r.meta != null ? r.meta : ""), (r.delta != null ? r.delta : ""), r.status].map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(";"); });
+                                        var csv = "\ufeff" + head.join(";") + "\n" + linhas.join("\n");
+                                        var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                                        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "pico_horario" + (hora != null ? ("_" + hora + "h") : "") + ".csv"; a.click(); URL.revokeObjectURL(a.href);
+                                    }).catch(function() {});
+                                };
+                            }
+                            carregar();
+                        };
+                    }
                     var total = dados.reduce(function(acc, e) { return acc + (e.total || 0); }, 0) || 1;
                     var picoS = 8, picoE = 18;
                     var totalPico = dados.filter(function(d) { return d.hora >= picoS && d.hora < picoE; }).reduce(function(acc, e) { return acc + (e.total || 0); }, 0);
@@ -17831,7 +17892,10 @@ const hideLoadingScreen = () => {
                                 React.createElement("h3", {className: "font-medium text-gray-800 text-base"}, "Acompanhamento hora a hora"),
                                 React.createElement("span", {className: "text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200"}, pctPico + "% entre 8h–18h")
                             ),
-                            React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, total.toLocaleString("pt-BR") + " OS")
+                            React.createElement("div", {className: "flex items-center gap-2"},
+                                React.createElement("span", {className: "text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full"}, total.toLocaleString("pt-BR") + " OS"),
+                                React.createElement("button", {onClick: function() { window.abrirDetalhePicoHora({apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: null}); }, className: "text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100"}, "Ver detalhes")
+                            )
                         ),
                         React.createElement("div", {className: "grid grid-cols-4 gap-2.5 mb-5"},
                             React.createElement("div", {className: "bg-gray-50 rounded-lg px-3 py-2.5"}, React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Horário de pico"), React.createElement("div", {className: "text-xl font-medium text-gray-800"}, hPico.hora + ":00"), React.createElement("div", {className: "text-xs text-gray-400"}, hPico.total.toLocaleString("pt-BR") + " OS")),
@@ -17841,19 +17905,27 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {style: {position: "relative", height: "260px"}, ref: function(ct) {
                             if (!ct || !window.Chart) return;
-                            var vals = dados.map(function(d) { return d.total || 0; });
-                            var hash = vals.join(",");
+                            var dDentro = dados.map(function(d) { return d.dentro || 0; });
+                            var dFora = dados.map(function(d) { return d.fora || 0; });
+                            var dSem = dados.map(function(d) { return d.sem || 0; });
+                            var hash = dados.map(function(d) { return (d.dentro||0)+"/"+(d.fora||0)+"/"+(d.sem||0); }).join(",");
                             if (ct.dataset.chartHash === hash) return;
                             ct.dataset.chartHash = hash;
                             ct.innerHTML = "";
                             var cvs = document.createElement("canvas"); ct.appendChild(cvs);
                             var lbs = dados.map(function(d) { return String(d.hora).padStart(2, "0") + "h"; });
-                            var bgs = dados.map(function(d) { return (d.hora >= picoS && d.hora < picoE) ? "#7F77DD" : "#D3D1C7"; });
-                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: [{ data: vals, backgroundColor: bgs, borderRadius: 4, borderSkipped: false, barPercentage: 0.82 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " OS (" + (ctx.parsed.y / total * 100).toFixed(1) + "%)"; } } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "hLabels", afterDatasetsDraw: function(chart) { var cx = chart.ctx; chart.data.datasets[0].data.forEach(function(v, j) { if (v < total * 0.005) return; var b = chart.getDatasetMeta(0).data[j]; cx.fillStyle = "#1f2937"; cx.font = "600 13px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(v.toLocaleString("pt-BR"), b.x, b.y - 6); }); } }] });
+                            var _ds = [
+                                { label: "No prazo", data: dDentro, backgroundColor: "#1D9E75", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" },
+                                { label: "Fora do prazo", data: dFora, backgroundColor: "#e05561", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" }
+                            ];
+                            if (dSem.some(function(v) { return v > 0; })) _ds.push({ label: "Sem avaliação", data: dSem, backgroundColor: "#D3D1C7", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" });
+                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: _ds }, options: { responsive: true, maintainAspectRatio: false, onHover: function(e, el) { if (e.native && e.native.target) e.native.target.style.cursor = (el && el.length) ? "pointer" : "default"; }, onClick: function(evt, els) { if (els && els.length) { var h = dados[els[0].index] && dados[els[0].index].hora; if (h != null) window.abrirDetalhePicoHora({ apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: h }); } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + ctx.parsed.y.toLocaleString("pt-BR"); }, footer: function(items) { var d = dados[items[0].dataIndex] || {}; var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); return "Total: " + t.toLocaleString("pt-BR") + " OS"; } } } }, scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { stacked: true, grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "bandExp", beforeDraw: function(chart) { var xs = chart.scales.x, ca = chart.chartArea; if (!xs || !ca) return; var i8 = -1, i17 = -1; dados.forEach(function(d, idx) { if (d.hora === 8) i8 = idx; if (d.hora === 17) i17 = idx; }); if (i8 < 0 || i17 < 0) return; var x8 = xs.getPixelForValue(lbs[i8]), x17 = xs.getPixelForValue(lbs[i17]); var per = (i17 > i8) ? (x17 - x8) / (i17 - i8) : 24; var cx = chart.ctx; cx.save(); cx.fillStyle = "rgba(124,58,237,0.05)"; cx.fillRect(x8 - per / 2, ca.top, (x17 - x8) + per, ca.bottom - ca.top); cx.restore(); } }, { id: "hTotals", afterDatasetsDraw: function(chart) { var cx = chart.ctx; dados.forEach(function(d, j) { var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); if (t < 1) return; var topY = null, x = null; chart.data.datasets.forEach(function(ds, di) { if (!ds.data[j]) return; var b = chart.getDatasetMeta(di).data[j]; if (b) { if (topY === null || b.y < topY) topY = b.y; x = b.x; } }); if (topY === null) return; cx.fillStyle = "#1f2937"; cx.font = "600 12px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(t.toLocaleString("pt-BR"), x, topY - 6); }); } }] });
                         }}),
-                        React.createElement("div", {className: "flex items-center gap-4 mt-3"},
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#7F77DD", display: "inline-block"}}), "Pico (8h–18h)"),
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#D3D1C7", display: "inline-block"}}), "Fora do pico")
+                        React.createElement("div", {className: "flex items-center gap-4 mt-3 flex-wrap"},
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#1D9E75", display: "inline-block"}}), "No prazo"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#e05561", display: "inline-block"}}), "Fora do prazo"),
+                            temSem && React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#D3D1C7", display: "inline-block"}}), "Sem avaliação"),
+                            React.createElement("span", {className: "text-xs text-gray-400"}, "\u00b7 clique numa hora pra ver o detalhe")
                         )
                     );
                 })()
