@@ -1652,6 +1652,7 @@
     const [form, setForm]       = useState(null);   // config do cliente selecionado
     const [busy, setBusy]       = useState(false);
     const [pend, setPend]       = useState(null);   // { cliente_id, itens }
+    const [criadas, setCriadas] = useState(null);   // { cliente_id, itens }
 
     const carregar = () => {
       setLoading(true);
@@ -1750,6 +1751,12 @@
         .catch(() => showToast('Erro ao carregar pendentes', 'error'));
     };
 
+    const verCriadas = (clienteId) => {
+      fetchAuth(API_URL + '/confirmafacil-xml/criadas/' + clienteId)
+        .then(r => r.json()).then(d => setCriadas({ cliente_id: clienteId, itens: Array.isArray(d) ? d : [] }))
+        .catch(() => showToast('Erro ao carregar criadas', 'error'));
+    };
+
     if (loading) return h('div', { className: 'text-sm text-gray-500 p-6' }, 'Carregando...');
     const lista = dados || [];
 
@@ -1785,6 +1792,7 @@
           h('div', { className: 'flex gap-2 flex-wrap' },
             h('button', { onClick: () => abrirConfig(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, sel === c.cliente_id ? 'Fechar config' : 'Configurar'),
             h('button', { disabled: busy, onClick: () => rodarAgora(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Rodar agora'),
+            h('button', { onClick: () => verCriadas(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-green-50 text-green-700 hover:bg-green-100' }, 'Criadas'),
             h('button', { onClick: () => verPendentes(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, 'Pendentes'),
             h('button', { disabled: busy, onClick: () => reconciliar(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Reconciliar')
           ),
@@ -1801,6 +1809,28 @@
               h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
               h('button', { disabled: busy, onClick: () => testarImap(c.cliente_id), className: 'px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50' }, 'Testar IMAP')
             )
+          ) : null,
+          criadas && criadas.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
+            h('div', { className: 'flex items-center justify-between mb-2' },
+              h('span', { className: 'font-semibold text-[13px]' }, 'Corridas criadas pelo XML: ' + criadas.itens.length),
+              h('button', { onClick: () => setCriadas(null), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+            ),
+            criadas.itens.length === 0 ? h('div', { className: 'text-[13px] text-gray-500' }, 'Nenhuma corrida criada ainda.')
+            : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12px]' },
+                h('thead', null, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
+                  ['NF', 'Emitente', 'Emissão', 'Coleta', 'Destino', 'OS', 'Valor', 'Rastreio', 'Criada'].map((x, k) => h('th', { key: k, className: 'py-1.5 px-2 text-left whitespace-nowrap' }, x)))),
+                h('tbody', null, criadas.itens.map((it, k) => h('tr', { key: k, className: 'border-t border-gray-100 align-top' },
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap font-medium' }, it.numero_nf + (it.serie_nf ? '/' + it.serie_nf : '')),
+                  h('td', { className: 'py-1.5 px-2' }, h('div', { className: 'font-medium' }, it.emitente_nome || '—'), h('div', { className: 'text-gray-400 text-[11px]' }, fmtCNPJ(it.cnpj_emitente))),
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap text-gray-500' }, it.data_emissao ? fmtDt(it.data_emissao) : '—'),
+                  h('td', { className: 'py-1.5 px-2' }, (it.coleta_nome || '—') + (it.coleta_cidade ? ' · ' + it.coleta_cidade : '')),
+                  h('td', { className: 'py-1.5 px-2' }, (it.destino_nome || '—') + (it.destino_cidade ? ' · ' + it.destino_cidade + (it.destino_uf ? '/' + it.destino_uf : '') : '')),
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap font-medium' }, it.os_numero || '—'),
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap' }, it.tutts_valor != null ? ('R$ ' + Number(it.tutts_valor).toFixed(2)) : '—'),
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap' }, it.tutts_url_rastreamento ? h('a', { href: it.tutts_url_rastreamento, target: '_blank', rel: 'noreferrer', className: 'text-purple-600 hover:underline' }, 'abrir') : '—'),
+                  h('td', { className: 'py-1.5 px-2 whitespace-nowrap text-gray-500' }, fmtDt(it.criado_em))
+                )))
+              ))
           ) : null,
           pend && pend.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
             h('div', { className: 'flex items-center justify-between mb-2' },
