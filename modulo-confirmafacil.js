@@ -1813,6 +1813,7 @@
             h('span', { className: 'px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold' }, 'Erros: ' + (c.qtd_erros || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold' }, 'Fora do corte: ' + (c.qtd_fora_corte || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold' }, 'Duplicadas CF: ' + (c.qtd_duplicada_cf || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 font-semibold' }, 'Ignoradas: ' + (c.qtd_ignorada || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'IMAP: ' + (c.imap_host || '—') + ' / ' + (c.imap_pasta || '—')),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'Corte: ' + (c.xml_data_corte ? fmtDt(c.xml_data_corte) : '—')),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'UID: ' + (c.ultimo_uid || 0))
@@ -1855,6 +1856,7 @@
                     fora_corte:   { c: 'bg-slate-100 text-slate-600', t: 'Fora do corte' },
                     duplicada_cf: { c: 'bg-blue-100 text-blue-700',   t: 'Duplicada (CF)' },
                     sem_cadastro: { c: 'bg-amber-100 text-amber-700', t: 'Sem cadastro' },
+                    ignorado:     { c: 'bg-orange-100 text-orange-700', t: 'Ignorada (não é NFe)' },
                     erro:         { c: 'bg-red-100 text-red-700',     t: 'Erro' },
                   };
                   const st = map[it.status] || { c: 'bg-gray-100 text-gray-600', t: it.status || '—' };
