@@ -1774,6 +1774,15 @@
         }).catch(() => showToast('Erro ao reprocessar', 'error')).finally(() => setBusy(false));
     };
 
+    const reprocessarPendentes = (clienteId) => {
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/reprocessar-pendentes/' + clienteId, { method: 'POST' })
+        .then(r => r.json()).then(d => {
+          d.ok ? showToast('Tentando ' + (d.resetados || 0) + ' pendente(s) de novo', 'success') : showToast(d.error || 'Erro', 'error');
+          verPendentes(clienteId); carregar();
+        }).catch(() => showToast('Erro ao reprocessar pendentes', 'error')).finally(() => setBusy(false));
+    };
+
     if (loading) return h('div', { className: 'text-sm text-gray-500 p-6' }, 'Carregando...');
     const lista = dados || [];
 
@@ -1886,8 +1895,12 @@
           pend && pend.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
             h('div', { className: 'flex items-center justify-between mb-2' },
               h('span', { className: 'font-semibold text-[13px]' }, 'Pendentes (emitente sem cadastro): ' + pend.itens.length),
-              h('button', { onClick: () => setPend(null), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+              h('div', { className: 'flex items-center gap-2' },
+                h('button', { disabled: busy, onClick: () => reprocessarPendentes(c.cliente_id), className: 'px-2.5 py-1 text-[11px] font-medium rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50' }, 'Tentar de novo'),
+                h('button', { onClick: () => setPend(null), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+              )
             ),
+            h('div', { className: 'text-[11.5px] text-gray-400 mb-2' }, 'O puxador tenta até 2 vezes e para. Se cadastrar o CNPJ de coleta, clique em "Tentar de novo".'),
             pend.itens.length === 0 ? h('div', { className: 'text-[13px] text-gray-500' }, 'Nada pendente.')
             : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12px]' },
                 h('thead', null, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
