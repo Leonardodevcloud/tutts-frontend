@@ -1653,6 +1653,7 @@
     const [busy, setBusy]       = useState(false);
     const [pend, setPend]       = useState(null);   // { cliente_id, itens }
     const [criadas, setCriadas] = useState(null);   // { cliente_id, itens }
+    const [logv, setLogv]       = useState(null);   // { cliente_id, itens }
 
     const carregar = () => {
       setLoading(true);
@@ -1757,6 +1758,22 @@
         .catch(() => showToast('Erro ao carregar criadas', 'error'));
     };
 
+    const verLog = (clienteId) => {
+      fetchAuth(API_URL + '/confirmafacil-xml/log/' + clienteId)
+        .then(r => r.json()).then(d => setLogv({ cliente_id: clienteId, itens: Array.isArray(d) ? d : [] }))
+        .catch(() => showToast('Erro ao carregar log', 'error'));
+    };
+
+    const reprocessarCorte = (clienteId) => {
+      if (!window.confirm('Reprocessar desde a data de corte?\n\nO puxador vai varrer a caixa novamente a partir da data de corte. O que já virou corrida não é recriado (dedup).')) return;
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/reprocessar-corte/' + clienteId, { method: 'POST' })
+        .then(r => r.json()).then(d => {
+          d.ok ? showToast('Reprocessamento disparado', 'success') : showToast(d.error || 'Erro', 'error');
+          carregar();
+        }).catch(() => showToast('Erro ao reprocessar', 'error')).finally(() => setBusy(false));
+    };
+
     if (loading) return h('div', { className: 'text-sm text-gray-500 p-6' }, 'Carregando...');
     const lista = dados || [];
 
@@ -1785,6 +1802,8 @@
             h('span', { className: 'px-2.5 py-1 rounded-full bg-green-50 text-green-700 font-semibold' }, 'Criadas: ' + (c.qtd_criadas || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold' }, 'Pendentes: ' + (c.qtd_pendentes || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold' }, 'Erros: ' + (c.qtd_erros || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold' }, 'Fora do corte: ' + (c.qtd_fora_corte || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold' }, 'Duplicadas CF: ' + (c.qtd_duplicada_cf || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'IMAP: ' + (c.imap_host || '—') + ' / ' + (c.imap_pasta || '—')),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'Corte: ' + (c.xml_data_corte ? fmtDt(c.xml_data_corte) : '—')),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'UID: ' + (c.ultimo_uid || 0))
@@ -1793,7 +1812,9 @@
             h('button', { onClick: () => abrirConfig(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, sel === c.cliente_id ? 'Fechar config' : 'Configurar'),
             h('button', { disabled: busy, onClick: () => rodarAgora(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Rodar agora'),
             h('button', { onClick: () => verCriadas(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-green-50 text-green-700 hover:bg-green-100' }, 'Criadas'),
+            h('button', { onClick: () => verLog(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, 'Log'),
             h('button', { onClick: () => verPendentes(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, 'Pendentes'),
+            h('button', { disabled: busy, onClick: () => reprocessarCorte(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50' }, 'Reprocessar corte'),
             h('button', { disabled: busy, onClick: () => reconciliar(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Reconciliar')
           ),
           sel === c.cliente_id && form ? h('div', { className: 'border-t border-gray-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3' },
@@ -1809,6 +1830,36 @@
               h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
               h('button', { disabled: busy, onClick: () => testarImap(c.cliente_id), className: 'px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50' }, 'Testar IMAP')
             )
+          ) : null,
+          logv && logv.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
+            h('div', { className: 'flex items-center justify-between mb-2' },
+              h('span', { className: 'font-semibold text-[13px]' }, 'Log do puxador (o que aconteceu com cada NF): ' + logv.itens.length),
+              h('button', { onClick: () => setLogv(null), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+            ),
+            logv.itens.length === 0 ? h('div', { className: 'text-[13px] text-gray-500' }, 'Nada processado ainda.')
+            : h('div', { className: 'overflow-x-auto max-h-[420px] overflow-y-auto' }, h('table', { className: 'w-full text-[12px]' },
+                h('thead', { className: 'sticky top-0 bg-white' }, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
+                  ['NF', 'Emitente CNPJ', 'Emissão', 'Status', 'Tent.', 'Motivo', 'Atualizado'].map((x, k) => h('th', { key: k, className: 'py-1.5 px-2 text-left whitespace-nowrap' }, x)))),
+                h('tbody', null, logv.itens.map((it, k) => {
+                  const map = {
+                    criada:       { c: 'bg-green-100 text-green-700', t: 'Criada' },
+                    fora_corte:   { c: 'bg-slate-100 text-slate-600', t: 'Fora do corte' },
+                    duplicada_cf: { c: 'bg-blue-100 text-blue-700',   t: 'Duplicada (CF)' },
+                    sem_cadastro: { c: 'bg-amber-100 text-amber-700', t: 'Sem cadastro' },
+                    erro:         { c: 'bg-red-100 text-red-700',     t: 'Erro' },
+                  };
+                  const st = map[it.status] || { c: 'bg-gray-100 text-gray-600', t: it.status || '—' };
+                  return h('tr', { key: k, className: 'border-t border-gray-100' },
+                    h('td', { className: 'py-1.5 px-2 whitespace-nowrap font-medium' }, it.numero_nf + (it.serie_nf ? '/' + it.serie_nf : '')),
+                    h('td', { className: 'py-1.5 px-2 whitespace-nowrap text-gray-500' }, fmtCNPJ(it.cnpj_emitente)),
+                    h('td', { className: 'py-1.5 px-2 whitespace-nowrap text-gray-500' }, it.data_emissao ? fmtDt(it.data_emissao) : '—'),
+                    h('td', { className: 'py-1.5 px-2 whitespace-nowrap' }, h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + st.c }, st.t)),
+                    h('td', { className: 'py-1.5 px-2 text-center' }, it.tentativas || 1),
+                    h('td', { className: 'py-1.5 px-2 text-gray-500 max-w-[280px] truncate', title: it.erro_msg || '' }, it.erro_msg || '—'),
+                    h('td', { className: 'py-1.5 px-2 whitespace-nowrap text-gray-500' }, fmtDt(it.atualizado_em))
+                  );
+                }))
+              ))
           ) : null,
           criadas && criadas.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
             h('div', { className: 'flex items-center justify-between mb-2' },
