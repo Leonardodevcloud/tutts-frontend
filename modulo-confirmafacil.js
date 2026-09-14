@@ -1644,6 +1644,186 @@
     );
   }
 
+  // ── [cf-xml-v1] Aba "Fallback XML" — puxador de NFe por e-mail (IMAP) ──
+  function AbaXmlFallback({ fetchAuth, API_URL, showToast }) {
+    const [dados, setDados]     = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [sel, setSel]         = useState(null);   // cliente_id em edição
+    const [form, setForm]       = useState(null);   // config do cliente selecionado
+    const [busy, setBusy]       = useState(false);
+    const [pend, setPend]       = useState(null);   // { cliente_id, itens }
+
+    const carregar = () => {
+      setLoading(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/status')
+        .then(r => r.json())
+        .then(d => setDados(Array.isArray(d) ? d : []))
+        .catch(() => showToast('Erro ao carregar status', 'error'))
+        .finally(() => setLoading(false));
+    };
+    useEffect(() => { carregar(); }, []);
+
+    const inputProps = (value, onChange, placeholder) => ({
+      value: value == null ? '' : value, placeholder: placeholder || '',
+      onChange: e => onChange(e.target.value),
+      className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-[13px] focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none',
+    });
+    const campo = (label, input) => h('div', null,
+      h('label', { className: 'block text-[12px] font-medium text-gray-600 mb-1' }, label), input);
+
+    const abrirConfig = (clienteId) => {
+      if (sel === clienteId) { setSel(null); setForm(null); return; }
+      setSel(clienteId); setForm(null);
+      fetchAuth(API_URL + '/confirmafacil-xml/config/' + clienteId)
+        .then(r => r.json())
+        .then(d => setForm({
+          imap_host: d.imap_host || '', imap_porta: d.imap_porta || 993,
+          imap_user: d.imap_user || '', imap_senha: '',
+          imap_pasta: d.imap_pasta || 'NF-e', imap_tls: d.imap_tls !== false,
+          xml_data_corte: d.xml_data_corte ? String(d.xml_data_corte).slice(0, 10) : '',
+          xml_geocode_destino: !!d.xml_geocode_destino,
+          _temSenha: d.imap_senha === '********',
+        }))
+        .catch(() => showToast('Erro ao carregar config', 'error'));
+    };
+
+    const salvar = (clienteId) => {
+      setBusy(true);
+      const body = { ...form };
+      if (!body.imap_senha) delete body.imap_senha; // nao sobrescreve senha com vazio
+      fetchAuth(API_URL + '/confirmafacil-xml/config/' + clienteId, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }).then(r => r.json()).then(d => {
+        d.ok ? showToast('Configuração salva', 'success') : showToast(d.error || 'Erro ao salvar', 'error');
+        carregar();
+      }).catch(() => showToast('Erro ao salvar', 'error')).finally(() => setBusy(false));
+    };
+
+    const testarImap = (clienteId) => {
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/testar-imap/' + clienteId, { method: 'POST' })
+        .then(r => r.json()).then(d => {
+          d.ok ? showToast('IMAP OK — pasta "' + (d.pasta || '') + '" (' + (d.total || 0) + ' msgs)', 'success')
+               : showToast('Falha IMAP: ' + (d.erro || 'erro'), 'error');
+        }).catch(() => showToast('Falha ao testar IMAP', 'error')).finally(() => setBusy(false));
+    };
+
+    const trocarModo = (clienteId, modo) => {
+      const msg = modo === 'xml'
+        ? 'Ativar o Fallback XML?\n\nIsso DESLIGA o polling do ConfirmaFácil e o sistema passa a criar corridas a partir dos e-mails de NFe.'
+        : 'Voltar para o ConfirmaFácil?\n\nAntes de religar o CF, o sistema reconcilia as NFs criadas pelo XML (para o CF não duplicar).';
+      if (!window.confirm(msg)) return;
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/modo/' + clienteId, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modo }),
+      }).then(r => r.json()).then(d => {
+        if (d.ok) {
+          let t = 'Modo: ' + String(d.modo).toUpperCase();
+          if (d.reconciliacao) t += ' — reconciliados ' + (d.reconciliacao.reconciliados || 0) + '/' + (d.reconciliacao.total || 0);
+          showToast(t, 'success');
+        } else showToast(d.error || 'Erro ao trocar modo', 'error');
+        carregar();
+      }).catch(() => showToast('Erro ao trocar modo', 'error')).finally(() => setBusy(false));
+    };
+
+    const rodarAgora = (clienteId) => {
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/rodar/' + clienteId, { method: 'POST' })
+        .then(r => r.json()).then(d => {
+          d.ok ? showToast('Ciclo executado (' + (d.configs || 0) + ' config)', 'success') : showToast(d.error || 'Erro', 'error');
+          carregar();
+        }).catch(() => showToast('Erro ao rodar', 'error')).finally(() => setBusy(false));
+    };
+
+    const reconciliar = (clienteId) => {
+      setBusy(true);
+      fetchAuth(API_URL + '/confirmafacil-xml/reconciliar/' + clienteId, { method: 'POST' })
+        .then(r => r.json()).then(d => {
+          d.ok ? showToast('Reconciliados ' + (d.reconciliados || 0) + '/' + (d.total || 0), 'success')
+               : showToast(d.erro || 'Falha (CF fora do ar?)', 'error');
+        }).catch(() => showToast('Erro ao reconciliar', 'error')).finally(() => setBusy(false));
+    };
+
+    const verPendentes = (clienteId) => {
+      fetchAuth(API_URL + '/confirmafacil-xml/pendentes/' + clienteId)
+        .then(r => r.json()).then(d => setPend({ cliente_id: clienteId, itens: Array.isArray(d) ? d : [] }))
+        .catch(() => showToast('Erro ao carregar pendentes', 'error'));
+    };
+
+    if (loading) return h('div', { className: 'text-sm text-gray-500 p-6' }, 'Carregando...');
+    const lista = dados || [];
+
+    return h('div', { className: 'space-y-4' },
+      h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-4 text-[13px] text-purple-900' },
+        h('b', null, 'Fallback por XML / e-mail. '),
+        'Quando o ConfirmaFácil estiver fora do ar, ative o modo XML: o sistema lê as NFe da caixa (pasta NF-e) e cria as corridas. Os modos são exclusivos — só um cria por vez. Ao voltar para o CF, as NFs criadas aqui são reconciliadas para o CF não duplicar.'
+      ),
+      lista.length === 0 ? h('div', { className: 'text-sm text-gray-500' }, 'Nenhum cliente com ConfirmaFácil configurado.')
+      : lista.map(c => {
+        const xml = c.modo_criacao === 'xml';
+        return h('div', { key: c.cliente_id, className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-3' },
+          h('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
+            h('div', { className: 'flex items-center gap-2 flex-wrap' },
+              h('span', { className: 'font-bold text-[15px]' }, c.cliente_nome || ('Cliente ' + c.cliente_id)),
+              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + (xml ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600') }, xml ? 'MODO XML' : 'MODO CF'),
+              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-medium ' + (c.polling_ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500') }, 'CF polling: ' + (c.polling_ativo ? 'on' : 'off'))
+            ),
+            h('div', { className: 'flex gap-2' },
+              xml
+                ? h('button', { disabled: busy, onClick: () => trocarModo(c.cliente_id, 'cf'), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Voltar p/ CF')
+                : h('button', { disabled: busy, onClick: () => trocarModo(c.cliente_id, 'xml'), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50' }, 'Ativar Fallback XML')
+            )
+          ),
+          h('div', { className: 'flex gap-2 flex-wrap text-[11.5px]' },
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-green-50 text-green-700 font-semibold' }, 'Criadas: ' + (c.qtd_criadas || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold' }, 'Pendentes: ' + (c.qtd_pendentes || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold' }, 'Erros: ' + (c.qtd_erros || 0)),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'IMAP: ' + (c.imap_host || '—') + ' / ' + (c.imap_pasta || '—')),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'Corte: ' + (c.xml_data_corte ? fmtDt(c.xml_data_corte) : '—')),
+            h('span', { className: 'px-2.5 py-1 rounded-full bg-gray-50 text-gray-600' }, 'UID: ' + (c.ultimo_uid || 0))
+          ),
+          h('div', { className: 'flex gap-2 flex-wrap' },
+            h('button', { onClick: () => abrirConfig(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, sel === c.cliente_id ? 'Fechar config' : 'Configurar'),
+            h('button', { disabled: busy, onClick: () => rodarAgora(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Rodar agora'),
+            h('button', { onClick: () => verPendentes(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200' }, 'Pendentes'),
+            h('button', { disabled: busy, onClick: () => reconciliar(c.cliente_id), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Reconciliar')
+          ),
+          sel === c.cliente_id && form ? h('div', { className: 'border-t border-gray-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3' },
+            campo('Servidor IMAP', h('input', inputProps(form.imap_host, v => setForm({ ...form, imap_host: v }), 'imap.tutts.com.br'))),
+            campo('Porta', h('input', { ...inputProps(String(form.imap_porta), v => setForm({ ...form, imap_porta: parseInt(v, 10) || 993 }), '993'), type: 'number' })),
+            campo('Usuário', h('input', inputProps(form.imap_user, v => setForm({ ...form, imap_user: v }), 'marcos@tutts.com.br'))),
+            campo('Senha', h('input', { ...inputProps(form.imap_senha, v => setForm({ ...form, imap_senha: v }), form._temSenha ? '******** (mantém a atual)' : ''), type: 'password' })),
+            campo('Pasta', h('input', inputProps(form.imap_pasta, v => setForm({ ...form, imap_pasta: v }), 'NF-e'))),
+            campo('Data de corte', h('input', { ...inputProps(form.xml_data_corte, v => setForm({ ...form, xml_data_corte: v }), ''), type: 'date' })),
+            campo('TLS', h('label', { className: 'flex items-center gap-2 text-[13px] mt-1' }, h('input', { type: 'checkbox', checked: form.imap_tls, onChange: e => setForm({ ...form, imap_tls: e.target.checked }) }), 'Conexão segura (993/TLS)')),
+            campo('Geocodificar destino', h('label', { className: 'flex items-center gap-2 text-[13px] mt-1' }, h('input', { type: 'checkbox', checked: form.xml_geocode_destino, onChange: e => setForm({ ...form, xml_geocode_destino: e.target.checked }) }), 'Usar ORS (senão a legada resolve)')),
+            h('div', { className: 'md:col-span-2 flex gap-2' },
+              h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
+              h('button', { disabled: busy, onClick: () => testarImap(c.cliente_id), className: 'px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50' }, 'Testar IMAP')
+            )
+          ) : null,
+          pend && pend.cliente_id === c.cliente_id ? h('div', { className: 'border-t border-gray-100 pt-3' },
+            h('div', { className: 'flex items-center justify-between mb-2' },
+              h('span', { className: 'font-semibold text-[13px]' }, 'Pendentes (emitente sem cadastro): ' + pend.itens.length),
+              h('button', { onClick: () => setPend(null), className: 'text-gray-400 hover:text-gray-600 text-lg leading-none' }, '×')
+            ),
+            pend.itens.length === 0 ? h('div', { className: 'text-[13px] text-gray-500' }, 'Nada pendente.')
+            : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12px]' },
+                h('thead', null, h('tr', { className: 'text-gray-500 text-[11px] uppercase' },
+                  ['CNPJ emitente', 'NF', 'Série', 'Tentativas', 'Atualizado'].map((x, k) => h('th', { key: k, className: 'py-1.5 px-2 text-left' }, x)))),
+                h('tbody', null, pend.itens.map((it, k) => h('tr', { key: k, className: 'border-t border-gray-100' },
+                  h('td', { className: 'py-1.5 px-2' }, fmtCNPJ(it.cnpj_emitente)),
+                  h('td', { className: 'py-1.5 px-2' }, it.numero_nf),
+                  h('td', { className: 'py-1.5 px-2' }, it.serie_nf),
+                  h('td', { className: 'py-1.5 px-2' }, it.tentativas),
+                  h('td', { className: 'py-1.5 px-2 text-gray-500' }, fmtDt(it.atualizado_em)))))
+              ))
+          ) : null
+        );
+      })
+    );
+  }
+
   window.ModuloConfirmaFacil = function (props) {
     const fetchAuth = props.fetchAuth;
     const API_URL   = props.API_URL;
@@ -1658,14 +1838,15 @@
         )
       ),
       h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl w-fit' },
-        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'embarque', label: 'Tempo de Embarque' }, { id: 'config', label: 'Configuração' }].map(a =>
+        [{ id: 'nfs', label: 'NFs Recebidas' }, { id: 'risco', label: 'Risco de SLA' }, { id: 'embarque', label: 'Tempo de Embarque' }, { id: 'config', label: 'Configuração' }, { id: 'xml', label: 'Fallback XML' }].map(a =>
           h('button', {
             key: a.id, onClick: () => setAba(a.id),
             className: 'px-4 py-2 text-sm font-medium rounded-lg transition-all ' + (aba === a.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'),
           }, a.label)
         )
       ),
-      aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
+      aba === 'xml' ? h(AbaXmlFallback, { fetchAuth, API_URL, showToast })
+        : aba === 'config' ? h(AbaConfig, { fetchAuth, API_URL, showToast })
         : aba === 'risco' ? h(AbaRiscoSLA, { fetchAuth, API_URL, showToast })
         : aba === 'embarque' ? h(AbaEmbarque, { fetchAuth, API_URL, showToast })
         : h(AbaNFs, { fetchAuth, API_URL, showToast })
