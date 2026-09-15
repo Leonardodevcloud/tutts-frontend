@@ -630,7 +630,7 @@ let SISTEMA_MODULOS_CONFIG = [
     { id: "antifraude", label: "Anti-Fraude", icon: "🛡️",
       abas: []
     },
-    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"Dashboard"},{id:"busca",label:"Busca"},{id:"config",label:"Configurações"},{id:"jobs",label:"Jobs"}] },
+    { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"Dashboard"},{id:"busca",label:"Busca"},{id:"config",label:"Configurações"},{id:"jobs",label:"Importações"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
