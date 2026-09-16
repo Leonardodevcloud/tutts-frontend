@@ -53,6 +53,9 @@
         @keyframes checkPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         @keyframes progressShrink { from { width: 100%; } to { width: 0%; } }
         @keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(200px) rotate(720deg); } }
+        @keyframes hubRing { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
+        .hub-node-act::after { content: ""; position: absolute; inset: -4px; border-radius: 9999px; border: 2px solid rgba(255,255,255,.6); animation: hubRing 1.8s infinite; }
+        .hub-chip-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: currentColor; animation: pulse 1.4s infinite; }
         .confirm-card { animation: confirmIn 0.4s ease-out; }
         .confirm-check { animation: checkPop 0.5s ease-out 0.2s both; }
         .confirm-progress { animation: progressShrink 4s linear forwards; }
@@ -1819,6 +1822,9 @@
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); 
                     if (resp.ok) {
                         const data = aplicarHub(await resp.json());
+                        // RASTREIO_CROSS_FIX_V1: se o usuario ja trocou de corrida, ignora este
+                        // resolve fora de ordem -- evita a rota da corrida antiga vazar no mapa da nova.
+                        if (corridaSelecionadaRef.current !== id) return;
                         setDetalheCorrida(data);
                         
                         // Atualizar o card lateral com o status mais recente
@@ -1850,7 +1856,7 @@
                     }
                 } catch (err) {} 
             };
-            const selecionarCorrida = (id) => { setCorridaSelecionada(id); carregarDetalheCorrida(id); };
+            const selecionarCorrida = (id) => { setCorridaSelecionada(id); setDetalheCorrida(null); carregarDetalheCorrida(id); };
             const copiarLinkRastreio = (os) => { navigator.clipboard.writeText(`${SITE_URL}/rastrear.html?os=${os}`).then(() => showToast('✅ Link copiado!', 'success')); };
             const compartilharWhatsApp = (os) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🏍️ Acompanhe sua entrega:\n${SITE_URL}/rastrear.html?os=${os}`)}`, '_blank'); };
             
@@ -2721,6 +2727,48 @@
             // Analisa o estado completo da corrida e retorna uma mensagem descritiva.
             // Combina o status principal com os eventos dos pontos pra dar uma descrição precisa
             // do que o motoboy está fazendo agora.
+            // ETAPA_TRACK_V1: indice de etapa (0..4) + gradiente/cor para o novo banner
+            // de status. Espelha a MESMA logica de analisarEstadoCorrida (nao a altera).
+            // Nos: 0 Solicitada, 1 Motoboy, 2 Coleta, 3 Em rota, 4 Entregue.
+            const etapaDaCorrida = (corrida) => {
+                const g = (a, b) => 'linear-gradient(120deg, ' + a + ', ' + b + ')';
+                const AMBAR = '#e0820a', LARANJA = '#F67602', ROXO = '#7c3aed', VERDE = '#16a34a', VERM = '#e11d48';
+                const entregue = { idx: 4, terminalEntregue: true, cancelada: false, cor: VERDE, grad: g('#15803d', '#22c55e') };
+                const cancel = { idx: -1, terminalEntregue: false, cancelada: true, cor: VERM, grad: g('#6b7280', '#9aa1ab') };
+                if (corrida.hub && corrida.hub.via_hub) {
+                    const h = corrida.hub;
+                    if (h.terminal) return (h.status_canonico === 'DELIVERED') ? entregue : cancel;
+                    if (h.busca_simultanea) return { idx: 1, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#7c3aed', '#9b5cf6') };
+                    const e = Number(h.etapa) || 0;
+                    if (e >= 4) return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#7c3aed', LARANJA) };
+                    if (e === 3) return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#c85a08', LARANJA) };
+                    if (e >= 1) return { idx: 2, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#b8620a', '#eda13b') };
+                    return { idx: 1, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#d98a06', '#f59e0b') };
+                }
+                if (corrida.status === 'cancelado' || corrida.status === 'erro') return cancel;
+                if (corrida.status === 'finalizado') return entregue;
+                if (corrida.status === 'enviado') return { idx: 1, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#d98a06', '#f59e0b') };
+                let pontos = corrida.pontos || corrida.pontos_status || corrida.dados_pontos;
+                if (pontos && typeof pontos === 'string') { try { pontos = JSON.parse(pontos); } catch (e) { pontos = null; } }
+                if (!Array.isArray(pontos)) pontos = null;
+                const norm = (p) => {
+                    if (!p) return 'pendente';
+                    if (p.status && ['chegou', 'coletado', 'finalizado', 'pendente'].includes(p.status)) return p.status;
+                    const cod = (p.codigo || '').toUpperCase();
+                    if (cod === 'CHE') return 'chegou';
+                    if (cod === 'COL') return 'coletado';
+                    if (cod === 'FIN') return 'finalizado';
+                    return 'pendente';
+                };
+                const sc = pontos && pontos[0] ? norm(pontos[0]) : 'pendente';
+                const se = pontos && pontos[1] ? norm(pontos[1]) : 'pendente';
+                if (se === 'finalizado') return entregue;
+                if (se === 'chegou') return { idx: 3, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#7c3aed', LARANJA) };
+                if (sc === 'coletado' || sc === 'finalizado') return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#7c3aed', LARANJA) };
+                if (sc === 'chegou') return { idx: 2, terminalEntregue: false, cancelada: false, cor: '#2563eb', grad: g('#1d4ed8', '#3b82f6') };
+                return { idx: 2, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#b8620a', '#eda13b') };
+            };
+
             const analisarEstadoCorrida = (corrida) => {
                 // 🆕 2026-06: corrida despachada pelo Hub (99/Uber) — status real vem do hub.
                 if (corrida.hub && corrida.hub.via_hub) {
@@ -3523,107 +3571,122 @@
                                     ) : (
                                         <div className="space-y-3">
                                             {/* Card compacto: OS + Profissional + Telefone + Nota + Ações */}
-                                            <div className={`p-3 rounded-xl border ${statusCores[detalheCorrida.status]}`}>
-                                                <div className="flex items-center gap-3">
-                                                    {/* Foto — só se motoboy oficialmente vinculado (ver deveExibirMotoboy) */}
-                                                    {deveExibirMotoboy(detalheCorrida) ? (
-                                                        detalheCorrida.profissional_foto ? (
-                                                            <img src={detalheCorrida.profissional_foto} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
-                                                        ) : (
-                                                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-bike"/></svg></div>
-                                                        )
-                                                    ) : (
-                                                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-lg"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-search"/></svg></div>
-                                                    )}
-                                                    
-                                                    {/* Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="font-bold text-sm">OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
-                                                            {/* Badge de agendamento — visível apenas em corridas com data_retirada.
-                                                                Destaque visual pra operação não confundir com corrida imediata. */}
-                                                            {isCorridaAgendada(detalheCorrida) && (
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarHoraPonto(detalheCorrida.data_retirada)}</span>
-                                                            )}
-                                                            {(() => {
-                                                                const estado = analisarEstadoCorrida(detalheCorrida);
-                                                                return (
-                                                                    <span className={`text-xs px-2 py-0.5 rounded-full border ${estado.cor}`}>{estado.icone} {estado.texto}</span>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                        <div className="text-sm font-medium text-gray-800 truncate">
-                                                            {deveExibirMotoboy(detalheCorrida)
-                                                                ? (detalheCorrida.profissional_nome || 'Aguardando profissional...')
-                                                                : <span className="text-gray-500 italic">Buscando motoboy...</span>}
-                                                        </div>
-                                                        {/* Linha da retirada agendada — aparece logo abaixo do nome, em destaque azul. */}
-                                                        {isCorridaAgendada(detalheCorrida) && (
-                                                            <div className="text-xs text-blue-700 font-medium mt-0.5"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarRetirada(detalheCorrida)}</div>
-                                                        )}
-                                                        <div className="flex items-center gap-3 text-xs text-gray-600 mt-1 flex-wrap">
-                                                            <span><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-clock"/></svg> {formatarSolicitada(detalheCorrida.criado_em)}</span>
-                                                            {deveExibirMotoboy(detalheCorrida) && detalheCorrida.profissional_telefone && (
-                                                                <a href={`tel:${detalheCorrida.profissional_telefone}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-800">
-                                                                    <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-phone"/></svg> {detalheCorrida.profissional_telefone}
-                                                                </a>
-                                                            )}
-                                                            {detalheCorrida.pontos?.[1]?.numero_nota && (
-                                                                <span className="text-green-600"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-tag"/></svg> {detalheCorrida.pontos[1].numero_nota}</span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Botões de ação no canto direito */}
-                                                    <div className="flex flex-col gap-1 flex-shrink-0">
-                                                        {(() => {
-                                                            // 🆕 2026-06: corrida pelo Hub (99/Uber) abre o RASTREIO PERSONALIZADO
-                                                            // da Central (/r/<token>), gerado na corrida. Fallback pro link do
-                                                            // provider só se o token ainda não existir. Enquanto nenhum dos dois
-                                                            // existe (ainda buscando entregador), não mostra o botão.
-                                                            const ehHub = detalheCorrida.hub && detalheCorrida.hub.via_hub;
-                                                            const urlRastreio = ehHub
-                                                                ? (detalheCorrida.hub.rastreio_url || detalheCorrida.hub.tracking_url)
-                                                                : detalheCorrida.tutts_url_rastreamento;
-                                                            const labelRastreio = ehHub ? 'Rastrear entrega' : 'Rastrear';
-                                                            return urlRastreio ? (
-                                                                <a href={urlRastreio} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800 text-center">
-                                                                    {labelRastreio}
-                                                                </a>
-                                                            ) : null;
-                                                        })()}
-                                                        {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
-                                                            <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
-                                                                <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {/* 🔑 Códigos do Hub (coleta/entrega/devolução) — pro cliente informar ao motoboy */}
-                                                {detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao) && (
-                                                    <div className="mt-2 flex flex-wrap gap-2">
-                                                        {detalheCorrida.hub.codigos.coleta && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-key"/></svg> Cód. coleta: {detalheCorrida.hub.codigos.coleta}</span>}
-                                                        {detalheCorrida.hub.codigos.entrega && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-key"/></svg> Cód. entrega: {detalheCorrida.hub.codigos.entrega}</span>}
-                                                        {detalheCorrida.hub.codigos.devolucao && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-key"/></svg> Cód. devolução: {detalheCorrida.hub.codigos.devolucao}</span>}
-                                                    </div>
-                                                )}
-                                                {/* Alerta de retorno no detalhe */}
-                                                {detalheCorrida.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
-                                                    <div className="mt-2 group relative inline-block">
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-sm text-orange-700 font-medium cursor-help">
-                                                            <span className="text-lg"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-alert"/></svg></span>
-                                                            <span>Atenção: Corrida com retorno</span>
-                                                        </div>
-                                                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50">
-                                                            <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
-                                                                Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
+                                            {(() => {
+                                                const estado = analisarEstadoCorrida(detalheCorrida);
+                                                const et = etapaDaCorrida(detalheCorrida);
+                                                const ehHub = detalheCorrida.hub && detalheCorrida.hub.via_hub;
+                                                const urlRastreio = ehHub
+                                                    ? (detalheCorrida.hub.rastreio_url || detalheCorrida.hub.tracking_url)
+                                                    : detalheCorrida.tutts_url_rastreamento;
+                                                const labelRastreio = ehHub ? 'Rastrear entrega' : 'Rastrear';
+                                                const temMotoboy = deveExibirMotoboy(detalheCorrida);
+                                                const trilha = [
+                                                    { lbl: 'Solicitada', ic: 'i-check' },
+                                                    { lbl: 'Motoboy',    ic: 'i-search' },
+                                                    { lbl: 'Coleta',     ic: 'i-package' },
+                                                    { lbl: 'Em rota',    ic: 'i-bike' },
+                                                    { lbl: 'Entregue',   ic: 'i-check' },
+                                                ];
+                                                const temRodape = (temMotoboy && detalheCorrida.profissional_telefone)
+                                                    || (detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao))
+                                                    || (detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno'))
+                                                    || isCorridaAgendada(detalheCorrida);
+                                                return (
+                                                <div className="rounded-2xl shadow-lg overflow-hidden border border-gray-100 bg-white">
+                                                    <div className="relative px-4 pt-4 pb-4 text-white" style={{ background: et.grad }}>
+                                                        <div className="relative z-10 flex items-start gap-3">
+                                                            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'rgba(255,255,255,.2)' }}>
+                                                                {temMotoboy && detalheCorrida.profissional_foto
+                                                                    ? <img src={detalheCorrida.profissional_foto} className="w-full h-full object-cover" />
+                                                                    : <svg className="ico" style={{width:20,height:20}} aria-hidden="true"><use href={temMotoboy ? '#i-bike' : '#i-search'}/></svg>}
                                                             </div>
-                                                            <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 text-[11px] font-medium" style={{ opacity: .9 }}>
+                                                                    <span>OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
+                                                                    {isCorridaAgendada(detalheCorrida) && (
+                                                                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: 'rgba(255,255,255,.25)' }}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarHoraPonto(detalheCorrida.data_retirada)}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="font-bold text-lg leading-tight truncate" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
+                                                                    {temMotoboy ? (detalheCorrida.profissional_nome || 'Aguardando profissional...') : 'Buscando motoboy...'}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-[11px] mt-0.5 flex-wrap" style={{ opacity: .9 }}>
+                                                                    <span className="inline-flex items-center gap-1"><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-clock"/></svg> {formatarSolicitada(detalheCorrida.criado_em)}</span>
+                                                                    {detalheCorrida.pontos && detalheCorrida.pontos[1] && detalheCorrida.pontos[1].numero_nota && (
+                                                                        <span className="inline-flex items-center gap-1"><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-tag"/></svg> {detalheCorrida.pontos[1].numero_nota}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1.5 flex-shrink-0">
+                                                                {urlRastreio && (
+                                                                    <a href={urlRastreio} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-bold" style={{ color: '#4D0669' }}>
+                                                                        <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-pin"/></svg> {labelRastreio}
+                                                                    </a>
+                                                                )}
+                                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
+                                                                    <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.32)' }}>
+                                                                        <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
+                                                        <div className="relative z-10 mt-3">
+                                                            <span className="inline-flex items-center gap-2 bg-white rounded-full px-3 py-1.5 text-xs font-bold shadow-sm" style={{ color: et.cancelada ? '#e11d48' : et.cor }}>
+                                                                {(!et.cancelada && !et.terminalEntregue) ? <span className="hub-chip-pulse"></span> : <span>{estado.icone}</span>}
+                                                                {estado.texto}
+                                                            </span>
+                                                        </div>
+                                                        {!et.cancelada && (
+                                                        <div className="relative z-10 mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,.22)' }}>
+                                                            <div className="flex items-center">
+                                                                {trilha.map((s, i) => {
+                                                                    const done = et.terminalEntregue ? true : i < et.idx;
+                                                                    const act = !et.terminalEntregue && i === et.idx;
+                                                                    return (
+                                                                        <React.Fragment key={i}>
+                                                                            {i > 0 && <div className="flex-1 rounded" style={{ height: 3, margin: '0 -1px', background: (et.terminalEntregue || i <= et.idx) ? '#fff' : 'rgba(255,255,255,.28)' }}></div>}
+                                                                            <div className={`relative flex items-center justify-center rounded-full flex-shrink-0 ${act ? 'hub-node-act' : ''}`} style={{ width: 24, height: 24, background: (done || act) ? '#fff' : 'rgba(255,255,255,.22)', border: '2px solid ' + ((done || act) ? '#fff' : 'rgba(255,255,255,.5)'), color: et.cor }}>
+                                                                                <svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href={'#' + (done ? 'i-check' : s.ic)}/></svg>
+                                                                            </div>
+                                                                        </React.Fragment>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <div className="flex mt-1.5">
+                                                                {trilha.map((s, i) => (
+                                                                    <div key={i} className={`flex-1 text-[9.5px] font-semibold ${i === 0 ? 'text-left' : i === trilha.length - 1 ? 'text-right' : 'text-center'}`} style={{ opacity: (i === et.idx || (et.terminalEntregue && i === 4)) ? 1 : .65 }}>{s.lbl}</div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            
+                                                    {temRodape && (
+                                                    <div className="px-4 py-3 space-y-2">
+                                                        {isCorridaAgendada(detalheCorrida) && (
+                                                            <div className="text-xs text-blue-700 font-medium flex items-center gap-1"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarRetirada(detalheCorrida)}</div>
+                                                        )}
+                                                        {temMotoboy && detalheCorrida.profissional_telefone && (
+                                                            <a href={`tel:${detalheCorrida.profissional_telefone}`} className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-phone"/></svg> {detalheCorrida.profissional_telefone}</a>
+                                                        )}
+                                                        {detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao) && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {detalheCorrida.hub.codigos.coleta && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. coleta: {detalheCorrida.hub.codigos.coleta}</span>}
+                                                                {detalheCorrida.hub.codigos.entrega && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. entrega: {detalheCorrida.hub.codigos.entrega}</span>}
+                                                                {detalheCorrida.hub.codigos.devolucao && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. devolucao: {detalheCorrida.hub.codigos.devolucao}</span>}
+                                                            </div>
+                                                        )}
+                                                        {detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                            <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-xs text-orange-700 font-medium">
+                                                                <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-alert"/></svg>
+                                                                <span>Atencao: corrida com retorno. Se for indevido, solicite o cancelamento ao suporte Tutts.</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    )}
+                                                </div>
+                                                );
+                                            })()}
+
                                             {/* Métricas compactas */}
                                             <div className="grid grid-cols-3 gap-2">
                                                 <div className="bg-white p-2 rounded-lg shadow text-center">
