@@ -3417,7 +3417,7 @@
                                         {corridasAtivas.length === 0 ? (
                                             <div className="text-center py-8 text-gray-400"><div className="text-4xl mb-2"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-mail"/></svg></div><div className="text-sm">Nenhuma corrida ativa</div></div>
                                         ) : (
-                                            <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
+                                            <div className="space-y-2 max-h-[calc(100vh-170px)] overflow-y-auto">
                                                 {corridasAtivas.map(c => {
                                                     const { coletas, entregas } = contarPontos(c);
                                                     // Buscar notas dos pontos (se disponível)
@@ -3587,13 +3587,12 @@
                                                     { lbl: 'Em rota',    ic: 'i-bike' },
                                                     { lbl: 'Entregue',   ic: 'i-check' },
                                                 ];
-                                                const temRodape = (temMotoboy && detalheCorrida.profissional_telefone)
-                                                    || (detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao))
+                                                const temRodape = (detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao))
                                                     || (detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno'))
                                                     || isCorridaAgendada(detalheCorrida);
                                                 return (
                                                 <div className="rounded-2xl shadow-lg overflow-hidden border border-gray-100 bg-white">
-                                                    <div className="relative px-4 pt-4 pb-4 text-white" style={{ background: et.grad }}>
+                                                    <div className="relative px-4 pt-3 pb-3 text-white" style={{ background: et.grad }}>{/* ATIVAS_COMPACTO_V1 */}
                                                         <div className="relative z-10 flex items-start gap-3">
                                                             <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'rgba(255,255,255,.2)' }}>
                                                                 {temMotoboy && detalheCorrida.profissional_foto
@@ -3615,6 +3614,9 @@
                                                                     {detalheCorrida.pontos && detalheCorrida.pontos[1] && detalheCorrida.pontos[1].numero_nota && (
                                                                         <span className="inline-flex items-center gap-1"><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-tag"/></svg> {detalheCorrida.pontos[1].numero_nota}</span>
                                                                     )}
+                                                                    {temMotoboy && detalheCorrida.profissional_telefone && (
+                                                                        <a href={`tel:${detalheCorrida.profissional_telefone}`} className="inline-flex items-center gap-1 hover:underline" style={{ opacity: .95 }}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-phone"/></svg> {detalheCorrida.profissional_telefone}</a>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             <div className="flex flex-col gap-1.5 flex-shrink-0">
@@ -3630,29 +3632,29 @@
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="relative z-10 mt-3">
+                                                        <div className="relative z-10 mt-2">
                                                             <span className="inline-flex items-center gap-2 bg-white rounded-full px-3 py-1.5 text-xs font-bold shadow-sm" style={{ color: et.cancelada ? '#e11d48' : et.cor }}>
                                                                 {(!et.cancelada && !et.terminalEntregue) ? <span className="hub-chip-pulse"></span> : <span>{estado.icone}</span>}
                                                                 {estado.texto}
                                                             </span>
                                                         </div>
                                                         {!et.cancelada && (
-                                                        <div className="relative z-10 mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,.22)' }}>
+                                                        <div className="relative z-10 mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,.22)' }}>
                                                             <div className="flex items-center">
                                                                 {trilha.map((s, i) => {
                                                                     const done = et.terminalEntregue ? true : i < et.idx;
                                                                     const act = !et.terminalEntregue && i === et.idx;
                                                                     return (
                                                                         <React.Fragment key={i}>
-                                                                            {i > 0 && <div className="flex-1 rounded" style={{ height: 3, margin: '0 -1px', background: (et.terminalEntregue || i <= et.idx) ? '#fff' : 'rgba(255,255,255,.28)' }}></div>}
-                                                                            <div className={`relative flex items-center justify-center rounded-full flex-shrink-0 ${act ? 'hub-node-act' : ''}`} style={{ width: 24, height: 24, background: (done || act) ? '#fff' : 'rgba(255,255,255,.22)', border: '2px solid ' + ((done || act) ? '#fff' : 'rgba(255,255,255,.5)'), color: et.cor }}>
+                                                                            {i > 0 && <div className="flex-1 rounded" style={{ height: 2, margin: '0 -1px', background: (et.terminalEntregue || i <= et.idx) ? '#fff' : 'rgba(255,255,255,.28)' }}></div>}
+                                                                            <div className={`relative flex items-center justify-center rounded-full flex-shrink-0 ${act ? 'hub-node-act' : ''}`} style={{ width: 20, height: 20, background: (done || act) ? '#fff' : 'rgba(255,255,255,.22)', border: '2px solid ' + ((done || act) ? '#fff' : 'rgba(255,255,255,.5)'), color: et.cor }}>
                                                                                 <svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href={'#' + (done ? 'i-check' : s.ic)}/></svg>
                                                                             </div>
                                                                         </React.Fragment>
                                                                     );
                                                                 })}
                                                             </div>
-                                                            <div className="flex mt-1.5">
+                                                            <div className="flex mt-1">
                                                                 {trilha.map((s, i) => (
                                                                     <div key={i} className={`flex-1 text-[9.5px] font-semibold ${i === 0 ? 'text-left' : i === trilha.length - 1 ? 'text-right' : 'text-center'}`} style={{ opacity: (i === et.idx || (et.terminalEntregue && i === 4)) ? 1 : .65 }}>{s.lbl}</div>
                                                                 ))}
@@ -3664,9 +3666,6 @@
                                                     <div className="px-4 py-3 space-y-2">
                                                         {isCorridaAgendada(detalheCorrida) && (
                                                             <div className="text-xs text-blue-700 font-medium flex items-center gap-1"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarRetirada(detalheCorrida)}</div>
-                                                        )}
-                                                        {temMotoboy && detalheCorrida.profissional_telefone && (
-                                                            <a href={`tel:${detalheCorrida.profissional_telefone}`} className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-phone"/></svg> {detalheCorrida.profissional_telefone}</a>
                                                         )}
                                                         {detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao) && (
                                                             <div className="flex flex-wrap gap-2">
@@ -3706,7 +3705,7 @@
                                             <div className="flex flex-col md:flex-row gap-4">
                                                 <div className="w-full md:w-80 bg-white p-4 rounded-xl shadow">
                                                     <div className="text-sm font-bold text-gray-700 mb-3"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Pontos da Rota</div>
-                                                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                                                    <div className="space-y-3 max-h-[calc(100vh-330px)] overflow-y-auto">
                                                         {detalheCorrida.pontos?.map((p, idx) => {
                                                             const isColeta = idx === 0;
                                                             const status = p.status || 'pendente';
@@ -3833,7 +3832,7 @@
                                                         })}
                                                     </div>
                                                 </div>
-                                                <div className="flex-1" style={{position:'sticky',top:'270px',alignSelf:'flex-start',height:'calc(100vh - 290px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" motoboyPos={detalheCorrida.hub && detalheCorrida.hub.posicao ? detalheCorrida.hub.posicao : null} motoboyFoto={detalheCorrida.hub && detalheCorrida.hub.motoboy ? detalheCorrida.hub.motoboy.foto : null} /></div>
+                                                <div className="flex-1" style={{position:'sticky',top:'200px',alignSelf:'flex-start',height:'calc(100vh - 220px)'}}><MapaLeaflet key={`acompanhar-${mapaKey}-${corridaSelecionada}`} id={`mapa-acompanhar-${corridaSelecionada}`} pontos={detalheCorrida.pontos} height="100%" tipo="acompanhar" motoboyPos={detalheCorrida.hub && detalheCorrida.hub.posicao ? detalheCorrida.hub.posicao : null} motoboyFoto={detalheCorrida.hub && detalheCorrida.hub.motoboy ? detalheCorrida.hub.motoboy.foto : null} /></div>
                                             </div>
                                         </div>
                                     )}
