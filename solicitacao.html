@@ -2289,8 +2289,19 @@
                 // Forçar re-render do mapa para auto-fit nos novos pontos
                 setMapaKey(prev => prev + 1);
                 
-                // Perguntar se quer ajustar a posição no mapa
-                setPromptAjuste({ aberto: true, pontoId: novoPonto.id });
+                // [AJUSTE_DIRETO_V1] Abre DIRETO o mapa de ajuste (sem o passo intermediario Sim/Nao).
+                // A pessoa ja cai na tela do mapa pra confirmar a posicao ou realocar o pino.
+                setPosicaoAjustada({ lat: parseFloat(novoPonto.latitude), lng: parseFloat(novoPonto.longitude) });
+                setEnderecoAjustado(null);
+                setModalAjusteMapa({
+                    aberto: true,
+                    sugestaoOriginal: { endereco: novoPonto.endereco_completo, componentes: [] },
+                    latitude: parseFloat(novoPonto.latitude),
+                    longitude: parseFloat(novoPonto.longitude),
+                    pontoId: novoPonto.id,
+                    etapa: 'ajustar'
+                });
+                setPromptAjuste({ aberto: false, pontoId: null });
                 
                 showToast('✅ Adicionado', 'success');
             };
