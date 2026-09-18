@@ -5515,6 +5515,16 @@
         // o title mostra de onde veio o nome (regra / endereco / solicitacao)
         tdProps: (r) => ({ title: r.cliente_nome ? (r.cliente_nome + (r.cliente_origem ? ' (' + r.cliente_origem + ')' : '')) : '' }),
         cel: (r) => r.cliente_nome || '—', csv: (r) => r.cliente_nome || '' },
+      // CLIENTE_FINAL_RELATORIO_V1: destinatario e NF/pedido lidos do texto
+      // livre do ponto de entrega da Mapp. Nem todo cliente preenche — o
+      // travessao significa "a Mapp nao trouxe", nao "erro".
+      { id: 'nota', rot: 'Pedido / NF',
+        tdCls: 'px-3 py-2 text-gray-600 whitespace-nowrap text-[11px]',
+        cel: (r) => r.nota_fiscal || '—', csv: (r) => r.nota_fiscal || '' },
+      { id: 'cliente_final', rot: 'Cliente final',
+        tdCls: 'px-3 py-2 text-gray-600 max-w-[160px] truncate',
+        tdProps: (r) => ({ title: r.cliente_final || '' }),
+        cel: (r) => r.cliente_final || '—', csv: (r) => r.cliente_final || '' },
       { id: 'enderecos', rot: 'Coleta / Entrega', rotFiltro: 'Endereços',
         tdCls: 'px-3 py-2 min-w-[200px]',
         cel: (r) => trajeto(r),
