@@ -2667,6 +2667,14 @@
                     const resp = await fetch(`${API_URL}/api/solicitacao/corrida`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
                     const data = await resp.json();
                     if (resp.ok) { 
+                        // [AGENDA_HUB_FRONT_V1] Corrida agendada no Hub: nao abre OS agora.
+                        if (data.agendada) {
+                            showToast('🗓️ ' + (data.mensagem || 'Corrida agendada! Sera solicitada no Hub no horario.'), 'success');
+                            limpar();
+                            setConfig(prev => ({ ...prev, codigo_profissional: '', agendar: false, data_retirada: '', hora_retirada: '' }));
+                            carregarHistorico(); carregarCorridasAtivas();
+                            return;
+                        }
                         const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
                         // Extrair endereços para o modal de confirmação
                         const coletaEnd = pontos[0]?.endereco_completo || pontos[0]?.bairro || 'Coleta';
