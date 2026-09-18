@@ -450,10 +450,11 @@
                         h(KpiEntregas, { valor: dados.tempo_medio != null ? String(dados.tempo_medio) : '--', rotulo: 'min por corrida' })
                     ),
 
-                    h('p', { className: 'text-[11px] text-gray-400 leading-snug' },
-                        'O horário é quando a corrida foi solicitada. O tempo é quanto durou, do aceite até finalizar.',
-                        dados.atualizado_em ? (' · Atualizado em ' + dados.atualizado_em) : ''
+                    dados.atualizado_em && h('p', { className: 'text-[11px] text-gray-400' },
+                        'Atualizado em ' + dados.atualizado_em
                     ),
+
+                    h(TabelaPrazos, { regua: dados.regua_prazo || [] }),
 
                     // Busca
                     h('div', { className: 'flex items-center gap-2 px-3 rounded-xl border border-gray-200 bg-gray-50', style: { minHeight: 44 } },
@@ -583,40 +584,103 @@
         return DIAS_SEMANA[d.getDay()] + ', ' + dia + ' ' + MESES[mes - 1];
     }
 
+    // Tabela da régua de prazo — vem do backend, mesma fonte do cálculo.
+    function TabelaPrazos({ regua }) {
+        const [aberto, setAberto] = useState(false);
+        if (!regua || regua.length === 0) return null;
+
+        const faixa = (f) => (f.km_max == null)
+            ? ('acima de ' + f.km_min + ' km')
+            : (f.km_min === 0 ? ('até ' + f.km_max + ' km') : (f.km_min + ' a ' + f.km_max + ' km'));
+
+        return h('div', { className: 'rounded-xl border border-gray-200 overflow-hidden' },
+            h('button', {
+                onClick: () => setAberto(!aberto),
+                style: { minHeight: 44 },
+                className: 'w-full px-3 flex items-center justify-between hover:bg-gray-50'
+            },
+                h('span', { className: 'flex items-center gap-2 text-xs font-bold text-gray-800' },
+                    h('svg', { className: 'ico', style: { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })),
+                    'Qual é o seu prazo em cada corrida'
+                ),
+                h('svg', {
+                    className: 'ico',
+                    style: { width: 14, height: 14, color: '#9ca3af', transform: aberto ? 'rotate(90deg)' : 'none' },
+                    'aria-hidden': 'true'
+                }, h('use', { href: '#i-arrowright' }))
+            ),
+            aberto && h('div', { className: 'px-3 pb-3 pt-1' },
+                h('p', { className: 'text-[11px] text-gray-500 mb-2 leading-snug' },
+                    'O prazo começa quando você aceita a corrida e termina quando você finaliza. Quanto maior a distância, maior o prazo.'
+                ),
+                h('div', { className: 'rounded-lg border border-gray-100 overflow-hidden' },
+                    regua.map((f, i) => h('div', {
+                        key: i,
+                        className: 'flex items-center justify-between px-3 py-2 text-xs ' + (i % 2 ? 'bg-gray-50' : 'bg-white')
+                    },
+                        h('span', { className: 'text-gray-600' }, faixa(f)),
+                        h('span', { className: 'font-bold text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, f.minutos + ' min')
+                    ))
+                )
+            )
+        );
+    }
+
     function EntregaItem({ entrega }) {
         const noPrazo = entrega.dentro_prazo === true;
         const foraPrazo = entrega.dentro_prazo === false;
+        const tem = entrega.tempo_min != null && entrega.prazo_min != null;
         const cor = noPrazo ? '#16a34a' : foraPrazo ? '#dc2626' : '#d97706';
+
         const km = (entrega.km != null && parseFloat(entrega.km) > 0)
             ? String(parseFloat(entrega.km)).replace('.', ',') + ' km' : null;
 
-        const chip = (texto, destaque) => h('span', {
-            className: 'text-[11px] font-semibold px-1.5 py-0.5 rounded-md ' +
-                (destaque ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600'),
-            style: { fontVariantNumeric: 'tabular-nums' }
-        }, texto);
+        const diff = tem ? (entrega.prazo_min - entrega.tempo_min) : null;
+        const veredito = !tem ? 'Sem medição'
+            : diff >= 0 ? (diff + ' min de sobra')
+            : (Math.abs(diff) + ' min acima do prazo');
 
-        return h('div', { className: 'flex items-start gap-2.5 px-3 py-3' },
-            h('span', {
-                style: { width: 9, height: 9, borderRadius: '50%', background: cor, marginTop: 5, flexShrink: 0 },
-                'aria-hidden': 'true'
-            }),
-            h('div', { className: 'flex-1 min-w-0 space-y-1' },
-                h('div', { className: 'flex items-baseline justify-between gap-2' },
-                    h('span', { className: 'text-sm font-semibold text-gray-900 truncate' }, entrega.cliente || 'Cliente'),
-                    h('span', {
-                        className: 'text-xs font-bold text-gray-700 flex-shrink-0',
-                        style: { fontVariantNumeric: 'tabular-nums' }
-                    }, entrega.hora_br ? ('às ' + entrega.hora_br) : '--:--')
-                ),
-                h('div', { className: 'flex items-center gap-1.5 flex-wrap' },
-                    h('span', { className: 'text-[10px] text-gray-400', style: { fontVariantNumeric: 'tabular-nums' } }, 'OS ' + entrega.os),
-                    entrega.tempo_min != null
-                        ? chip('levou ' + entrega.tempo_min + ' min', foraPrazo)
-                        : chip('sem medição', false),
-                    km && chip(km, false),
-                    entrega.bairro && h('span', { className: 'text-[11px] text-gray-400 truncate' }, entrega.bairro)
-                )
+        // Barra: quanto do prazo foi consumido. Estourou = barra cheia vermelha.
+        const pct = tem && entrega.prazo_min > 0
+            ? Math.min(100, Math.round(100 * entrega.tempo_min / entrega.prazo_min))
+            : 0;
+
+        const dado = (rotulo, valor) => h('span', { className: 'whitespace-nowrap' },
+            h('span', { className: 'text-gray-400' }, rotulo + ' '),
+            h('span', { className: 'font-semibold text-gray-700', style: { fontVariantNumeric: 'tabular-nums' } }, valor)
+        );
+
+        return h('div', { className: 'px-3 py-3 space-y-1.5' },
+
+            // Linha 1: cliente + veredito
+            h('div', { className: 'flex items-baseline justify-between gap-2' },
+                h('span', { className: 'text-sm font-semibold text-gray-900 truncate' }, entrega.cliente || 'Cliente'),
+                h('span', {
+                    className: 'text-[11px] font-bold flex-shrink-0',
+                    style: { color: cor, fontVariantNumeric: 'tabular-nums' }
+                }, veredito)
+            ),
+
+            // Linha 2: os tres numeros, cada um com rotulo
+            h('div', { className: 'flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px]' },
+                dado('Solicitada às', entrega.hora_br || '--:--'),
+                dado('Duração', tem ? (entrega.tempo_min + ' min') : '--'),
+                dado('Prazo', entrega.prazo_min != null ? (entrega.prazo_min + ' min') : '--')
+            ),
+
+            // Barra prazo consumido
+            tem && h('div', {
+                style: { height: 5, borderRadius: 999, background: '#f1f2f4', overflow: 'hidden' },
+                role: 'presentation'
+            },
+                h('div', { style: { height: '100%', borderRadius: 999, width: pct + '%', background: cor } })
+            ),
+
+            // Linha 3: identificacao
+            h('div', { className: 'flex items-center gap-1.5 text-[10px] text-gray-400 flex-wrap' },
+                h('span', { style: { fontVariantNumeric: 'tabular-nums' } }, 'OS ' + entrega.os),
+                km && h('span', null, '· ' + km),
+                entrega.bairro && h('span', { className: 'truncate' }, '· ' + entrega.bairro)
             )
         );
     }
