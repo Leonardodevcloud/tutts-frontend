@@ -1251,6 +1251,8 @@
             const [redespachando, setRedespachando] = useState(null); // REDESPACHO_BTN_V1: OS em curso
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
+            const [corridasAgendadas, setCorridasAgendadas] = useState([]); // PAINEL_AGENDADAS_V1
+            const [painelAgendadasAberto, setPainelAgendadasAberto] = useState(false);
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
             const [filtroConcluidas, setFiltroConcluidas] = useState('todas');
@@ -1376,6 +1378,7 @@
             
             useEffect(() => { if (abaAtiva === 'nova' || abaAtiva === 'acompanhar') setMapaKey(prev => prev + 1); }, [abaAtiva, corridaSelecionada]);
             useEffect(() => { carregarProfissionais(); }, []);
+            useEffect(() => { carregarCorridasAgendadas(); const _iv = setInterval(carregarCorridasAgendadas, 60000); return () => clearInterval(_iv); }, []);
             // [PROVEDOR_CARD_UNICO_V1] Hub decide a modalidade nos bastidores: se o provider
             // for 'hub' e nao houver categoria escolhida, seleciona a primeira automaticamente
             // (o dropdown de modalidade fica escondido pro Hub).
@@ -1774,6 +1777,9 @@
                 }
             };
 
+            const carregarCorridasAgendadas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/corridas-agendadas`, { headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-store' } }); if (resp.ok) { const data = await resp.json(); setCorridasAgendadas(data.agendadas || []); } } catch (err) {} };
+            const cancelarAgendada = async (id) => { try { const resp = await fetch(`${API_URL}/api/solicitacao/corridas-agendadas/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { showToast('Agendamento cancelado', 'success'); carregarCorridasAgendadas(); } else { const d = await resp.json().catch(() => ({})); showToast(d.error || 'Erro ao cancelar', 'error'); } } catch (err) { showToast('Erro ao cancelar', 'error'); } };
+            const rotuloAgendada = (iso) => { const d = new Date(iso); if (isNaN(d.getTime())) return { quando: '', restante: '' }; const hh = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia', hour: '2-digit', minute: '2-digit' }).format(d); const dia = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia', day: '2-digit', month: '2-digit' }).format(d); const hoje = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia', day: '2-digit', month: '2-digit' }).format(new Date()); const quando = (dia === hoje ? 'hoje ' : dia + ' ') + hh; const diff = Math.round((d.getTime() - Date.now()) / 60000); let restante; if (diff <= 0) restante = 'disparando...'; else if (diff < 60) restante = 'em ' + diff + ' min'; else if (diff < 1440) restante = 'em ' + Math.round(diff / 60) + 'h'; else restante = quando; return { quando, restante }; };
             const carregarCorridasAtivas = async () => { try { const resp = await fetch(`${API_URL}/api/solicitacao/historico?limite=50`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resp.ok) { const data = await resp.json(); const normalizadas = (data.solicitacoes || []).map(aplicarHub); setCorridasAtivas(normalizadas.filter(s => { if (s.hub && s.hub.via_hub) return !s.hub.terminal; return ['enviado', 'aceito', 'em_andamento'].includes(s.status); })); } } catch (err) {} };
 
             // 🆕 2026-06: quando a corrida veio do Hub (99/Uber), copia os dados do
@@ -2672,7 +2678,7 @@
                             showToast('🗓️ ' + (data.mensagem || 'Corrida agendada! Sera solicitada no Hub no horario.'), 'success');
                             limpar();
                             setConfig(prev => ({ ...prev, codigo_profissional: '', agendar: false, data_retirada: '', hora_retirada: '' }));
-                            carregarHistorico(); carregarCorridasAtivas();
+                            carregarHistorico(); carregarCorridasAtivas(); carregarCorridasAgendadas();
                             return;
                         }
                         const motoboy = config.codigo_profissional ? profissionais.find(p => p.codigo === config.codigo_profissional)?.nome : null;
@@ -3067,6 +3073,34 @@
                     </header>
                     
                     {/* ========== ABA NOVA SOLICITAÇÃO ========== */}
+                    {/* PAINEL_AGENDADAS_V1 — pilula flutuante translucida (todas as abas) */}
+                    {corridasAgendadas.length > 0 && (
+                        <div className="fixed top-16 right-4 z-40" style={{maxWidth:'280px'}}>
+                            <div className="rounded-2xl overflow-hidden" style={{background:'rgba(255,255,255,0.72)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.8)', boxShadow:'0 8px 24px rgba(31,27,58,0.16)'}}>
+                                <div onClick={() => setPainelAgendadasAberto(v => !v)} className="flex items-center justify-between px-3 py-2 cursor-pointer" style={{borderBottom: painelAgendadasAberto ? '1px solid rgba(124,58,237,0.15)' : 'none'}}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded-lg flex items-center justify-center text-white" style={{background:'#7c3aed'}}><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-calendar"/></svg></span>
+                                        <span className="text-xs font-semibold" style={{color:'#3c3489'}}>{corridasAgendadas.length} agendada{corridasAgendadas.length > 1 ? 's' : ''}</span>
+                                    </div>
+                                    <span style={{color:'#7c3aed', fontSize:'11px', transform: painelAgendadasAberto ? 'rotate(180deg)' : 'none', transition:'transform .15s'}}>▾</span>
+                                </div>
+                                {painelAgendadasAberto && (
+                                    <div className="p-2 space-y-1.5" style={{maxHeight:'256px', overflowY:'auto'}}>
+                                        {corridasAgendadas.map(a => { const r = rotuloAgendada(a.disparar_em); return (
+                                            <div key={a.id} onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); carregarCorridasAgendadas(); setPainelAgendadasAberto(false); }} className="rounded-lg px-2.5 py-2 cursor-pointer" style={{background:'rgba(255,255,255,0.7)', border:'1px solid rgba(124,58,237,0.12)'}}>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-medium text-gray-900 truncate">{a.destino || 'Corrida'}</span>
+                                                    <span className="text-[10px] font-semibold whitespace-nowrap ml-2" style={{color:'#6d28d9', background:'rgba(124,58,237,0.12)', borderRadius:'20px', padding:'2px 8px'}}>{r.restante}</span>
+                                                </div>
+                                                <div className="text-[10px] text-gray-500 mt-0.5">{r.quando} · Hub</div>
+                                            </div>
+                                        ); })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {abaAtiva === 'nova' && (
                         <>
                             <div className="md:hidden flex bg-white shadow">
@@ -3492,6 +3526,23 @@
                         <div className="w-full px-3 md:px-6 pt-4 md:pb-3 md:h-[calc(100vh-70px)] md:overflow-hidden">{/* ATIVAS_VIEWPORT_V1 */}
                             <div className="flex flex-col md:flex-row gap-4 md:h-full md:min-h-0">
                                 <div className="w-full md:w-80 space-y-3 md:h-full md:min-h-0 md:flex md:flex-col md:space-y-0">
+                                    {corridasAgendadas.length > 0 && (
+                                        <div className="bg-white rounded-xl shadow p-3 mb-3">{/* AGENDADAS_ATIVAS_V1 */}
+                                            <div className="flex items-center gap-2 mb-2"><span className="text-sm font-bold text-purple-700"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> Agendadas ({corridasAgendadas.length})</span></div>
+                                            <div className="space-y-2">
+                                                {corridasAgendadas.map(a => { const r = rotuloAgendada(a.disparar_em); return (
+                                                    <div key={a.id} className="p-3 rounded-lg border-2 border-dashed" style={{borderColor:'#a78bdf'}}>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm font-medium text-gray-900 truncate">{a.destino || 'Corrida'}</span>
+                                                            <span className="text-[10px] font-semibold whitespace-nowrap ml-2 px-2 py-0.5 rounded-full" style={{color:'#6d28d9', background:'#f5f3ff', border:'1px solid #e5deff'}}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {r.quando}</span>
+                                                        </div>
+                                                        <div className="text-[11px] mt-1.5 flex items-center gap-1" style={{color:'#8b5cf6'}}><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-clock"/></svg> {r.restante} · sera solicitada no Hub</div>
+                                                        <div className="flex justify-end mt-1.5"><button onClick={() => cancelarAgendada(a.id)} className="text-[11px] text-red-500 hover:text-red-700 font-medium">Cancelar</button></div>
+                                                    </div>
+                                                ); })}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="bg-white rounded-xl shadow p-3 md:flex-1 md:min-h-0 md:flex md:flex-col md:overflow-hidden">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
