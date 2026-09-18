@@ -1380,8 +1380,13 @@
             // for 'hub' e nao houver categoria escolhida, seleciona a primeira automaticamente
             // (o dropdown de modalidade fica escondido pro Hub).
             useEffect(() => {
-                if (config.provider === 'hub' && !config.categoria && cliente.categorias_disponiveis && cliente.categorias_disponiveis.length > 0) {
-                    setConfig(c => ({ ...c, categoria: cliente.categorias_disponiveis[0].sigla }));
+                if (config.provider === 'hub') {
+                    setConfig(c => {
+                        const patch = {};
+                        if (!c.categoria && cliente.categorias_disponiveis && cliente.categorias_disponiveis.length > 0) patch.categoria = cliente.categorias_disponiveis[0].sigla;
+                        if (c.retorno) patch.retorno = false; // Hub nao tem retorno
+                        return Object.keys(patch).length ? { ...c, ...patch } : c;
+                    });
                 }
             }, [config.provider]);
 
@@ -3405,7 +3410,7 @@
                                             </div>
                                             )}
                                             <div className="flex flex-wrap gap-4 mt-3">
-                                                <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retorno</label>
+                                                {config.provider !== 'hub' && (<label className="flex items-center gap-2 text-sm cursor-pointer">{/* RETORNO_HUB_HIDE_V1 */}<input type="checkbox" checked={config.retorno} onChange={(e) => setConfig({...config, retorno: e.target.checked})} className="w-4 h-4" />↩️ Retorno</label>)}
                                             </div>
                                             {/* Agendamento: toggle controla se o campo data_retirada é enviado.
                                                 Quando ligado, expõe data/hora; quando desligado, envia string vazia (corrida imediata).
