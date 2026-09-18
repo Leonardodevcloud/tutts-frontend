@@ -4261,6 +4261,12 @@
       const payload = {
         cliente_nome: editando.cliente_nome.trim(),
         trecho_endereco: editando.trecho_endereco.trim(),
+        // IDENT_ALT_SALVAR_V1: o campo existia no form e no banco, mas NUNCA
+        // era enviado no payload. O backend recebia undefined, caia no
+        // COALESCE($3, cliente_identificador) e mantinha o valor antigo (vazio).
+        // Resultado: "Regra atualizada" no toast e nada gravado — por isso o
+        // match alternativo nunca casava. String vazia limpa o campo.
+        cliente_identificador: (editando.cliente_identificador || '').trim(),
         usar_uber: !!editando.usar_uber,
         providers_preferidos: (editando.providers_preferidos && editando.providers_preferidos.length) ? editando.providers_preferidos : (editando.usar_uber ? ['uber'] : []), // PROV_C_SALVAR_V1
         estrategia: editando.estrategia || 'provider_unico',
