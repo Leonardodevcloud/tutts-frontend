@@ -288,7 +288,7 @@
 
         var abrirProvedores = async function(cliente) {
             try {
-                var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
+                var resp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores", { cache: "no-store" }); // NOSTORE_PROVEDORES_V1
                 var data = resp.ok ? await resp.json() : { provedores: ['tutts'] };
                 setEstado({...estado, modalProvedores: {
                     id: cliente.id, nome: cliente.nome,
@@ -1300,7 +1300,7 @@
                                             React.createElement("button", {
                                                 onClick: async function() {
                                                 try {
-                                                    var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores");
+                                                    var rp = await fetchAuth(API_URL + "/admin/solicitacao/clientes/" + cliente.id + "/provedores", { cache: "no-store" }); // NOSTORE_PROVEDORES_V1
                                                     var dp = rp.ok ? await rp.json() : {provedores: ['tutts']};
                                                     x({...p, modalProvedores: {id: cliente.id, nome: cliente.nome, selecionados: dp.provedores || ['tutts'], salvando: false}});
                                                 } catch(e) { ja("Erro ao carregar provedores", "error"); }
