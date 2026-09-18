@@ -450,8 +450,9 @@
                         h(KpiEntregas, { valor: dados.tempo_medio != null ? String(dados.tempo_medio) : '--', rotulo: 'min por corrida' })
                     ),
 
-                    dados.atualizado_em && h('p', { className: 'text-[11px] text-gray-400' },
-                        'Atualizado em ' + dados.atualizado_em
+                    h('p', { className: 'text-[11px] text-gray-400 leading-snug' },
+                        'O horário é quando a corrida foi solicitada. O tempo é quanto durou, do aceite até finalizar.',
+                        dados.atualizado_em ? (' · Atualizado em ' + dados.atualizado_em) : ''
                     ),
 
                     // Busca
@@ -606,12 +607,12 @@
                     h('span', {
                         className: 'text-xs font-bold text-gray-700 flex-shrink-0',
                         style: { fontVariantNumeric: 'tabular-nums' }
-                    }, entrega.hora_br || '--:--')
+                    }, entrega.hora_br ? ('às ' + entrega.hora_br) : '--:--')
                 ),
                 h('div', { className: 'flex items-center gap-1.5 flex-wrap' },
                     h('span', { className: 'text-[10px] text-gray-400', style: { fontVariantNumeric: 'tabular-nums' } }, 'OS ' + entrega.os),
                     entrega.tempo_min != null
-                        ? chip(entrega.tempo_min + ' min', foraPrazo)
+                        ? chip('levou ' + entrega.tempo_min + ' min', foraPrazo)
                         : chip('sem medição', false),
                     km && chip(km, false),
                     entrega.bairro && h('span', { className: 'text-[11px] text-gray-400 truncate' }, entrega.bairro)
