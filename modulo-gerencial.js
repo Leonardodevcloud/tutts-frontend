@@ -612,7 +612,7 @@
             var valorInc = (c.os_incent > 0) ? (c.incentivo / c.os_incent) : 0;
             var pctCls = (c.pct || 0) >= 3.5 ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700';
             var tipPct = 'Incentivo do cliente dividido pelo faturamento liquido do cliente na semana, vezes 100.';
-            return h('tr', { key: c.cod_cliente, className: 'border-b border-gray-100 hover:bg-purple-50' },
+            return h('tr', { key: c.cod_cliente + '|' + (c.centro_custo || ''), className: 'border-b border-gray-100 hover:bg-purple-50' },
               h('td', { className: 'py-2.5 px-3' }, h('span', { className: 'font-semibold text-gray-800' }, c.nome), h('span', { className: 'text-gray-400 text-xs ml-1' }, c.cod_cliente)),
               h('td', { className: 'py-2.5 px-3 text-right text-gray-600' }, String(c.os_incent || 0)),
               h('td', { className: 'py-2.5 px-3 text-right text-gray-400' }, fmt(c.adic_cliente)),
