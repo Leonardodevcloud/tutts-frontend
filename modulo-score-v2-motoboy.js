@@ -343,127 +343,278 @@
     }
 
     // ============================================================
-    // 📋 MINHAS ENTREGAS (lazy load — só busca quando expande)
+    // 📋 MINHAS ENTREGAS — redesign 2026-09 (KM + dia + paginação)
     // ============================================================
+    // Mudanças:
+    //  - agrupamento por dia com header (total, km, % do dia)
+    //  - KM de cada corrida (campo `km` novo no backend)
+    //  - "no prazo" agora é a MESMA régua do card de nível (era o SLA do
+    //    cliente, dava contagem divergente na mesma tela)
+    //  - paginação real (30 por vez) no lugar do slice(0,50) mudo
+    //  - sem scroll aninhado: a lista cresce e usa o scroll da página
+    //  - "atualizado em" + chip "ainda entrando" nos 2 dias mais recentes,
+    //    porque o BI carrega cada dia em várias ondas até a noite do dia
+    //    seguinte — antes o motoboy achava que corrida tinha sumido
+    //  - datas/horas vêm prontas do backend (string), nunca new Date(),
+    //    que deslocava o dia por causa do UTC
+    // ============================================================
+    const PAGINA_ENTREGAS = 30;
+
     function MinhasEntregas({ apiUrl, fetchAuth, token }) {
         const [aberto, setAberto] = useState(false);
         const [dados, setDados] = useState(null);
+        const [linhas, setLinhas] = useState([]);
         const [loading, setLoading] = useState(false);
+        const [carregandoMais, setCarregandoMais] = useState(false);
         const [erro, setErro] = useState(null);
-        const [filtroPrazo, setFiltroPrazo] = useState('todos');
+        const [filtro, setFiltro] = useState('todos');
+        const [busca, setBusca] = useState('');
 
-        const carregar = async () => {
-            if (dados || loading) return;
+        const buscar = async (filtroAlvo, offset) => {
+            const url = apiUrl + '/score-v2/minhas-entregas?limite=' + PAGINA_ENTREGAS +
+                '&offset=' + offset + '&filtro=' + filtroAlvo;
+            let r;
+            if (typeof fetchAuth === 'function') {
+                r = await fetchAuth(url);
+            } else {
+                r = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + (token || '') },
+                    credentials: 'include'
+                });
+            }
+            if (!r.ok) throw new Error('Falha ao carregar entregas');
+            return await r.json();
+        };
+
+        const carregar = async (filtroAlvo) => {
             setLoading(true);
+            setErro(null);
             try {
-                let r;
-                if (typeof fetchAuth === 'function') {
-                    r = await fetchAuth(apiUrl + '/score-v2/minhas-entregas');
-                } else {
-                    r = await fetch(apiUrl + '/score-v2/minhas-entregas', {
-                        headers: { 'Authorization': 'Bearer ' + (token || '') },
-                        credentials: 'include'
-                    });
-                }
-                if (!r.ok) throw new Error('Falha ao carregar entregas');
-                setDados(await r.json());
+                const j = await buscar(filtroAlvo, 0);
+                setDados(j);
+                setLinhas(j.entregas || []);
             } catch (err) { setErro(err.message); }
             finally { setLoading(false); }
+        };
+
+        const carregarMais = async () => {
+            if (carregandoMais) return;
+            setCarregandoMais(true);
+            try {
+                const j = await buscar(filtro, linhas.length);
+                setLinhas(prev => prev.concat(j.entregas || []));
+            } catch (err) { setErro(err.message); }
+            finally { setCarregandoMais(false); }
+        };
+
+        const trocarFiltro = (novo) => {
+            if (novo === filtro) return;
+            setFiltro(novo);
+            setLinhas([]);
+            carregar(novo);
         };
 
         const toggle = () => {
             const novoEstado = !aberto;
             setAberto(novoEstado);
-            if (novoEstado) carregar();
+            if (novoEstado && !dados) carregar(filtro);
         };
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+        const totalFiltro = dados
+            ? (filtro === 'no_prazo' ? dados.no_prazo : filtro === 'fora_prazo' ? dados.fora_prazo : dados.total)
+            : 0;
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-2xl overflow-hidden' },
             h('button', {
                 onClick: toggle,
                 className: 'w-full p-4 flex items-center justify-between hover:bg-gray-50'
             },
-                h('span', { className: 'font-bold text-sm text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), "Minhas Entregas (28 dias)")),
-                h('span', { className: 'text-gray-400 text-sm' }, aberto ? '' : '')
-            ),
-            aberto && h('div', { className: 'p-4 border-t border-gray-200' },
-                loading && h('div', { className: 'text-center text-gray-500 text-sm py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")),
-                erro && h('div', { className: 'text-center text-red-500 text-sm py-4' }, '' + erro),
-                dados && dados.entregas.length === 0 && h('div', { className: 'text-center text-gray-400 text-sm py-4' },
-                    'Nenhuma entrega nos últimos 28 dias.'
+                h('span', { className: 'flex items-center gap-2 font-bold text-sm text-gray-900' },
+                    h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })),
+                    'Minhas entregas'
                 ),
-                dados && dados.entregas.length > 0 && h(EntregasLista, {
-                    entregas: dados.entregas,
-                    resumoDia: dados.resumo_dia,
-                    filtro: filtroPrazo,
-                    setFiltro: setFiltroPrazo,
-                })
+                h('svg', {
+                    className: 'ico', style: { width: 16, height: 16, color: '#9ca3af', transform: aberto ? 'rotate(90deg)' : 'none' }, 'aria-hidden': 'true'
+                }, h('use', { href: '#i-arrowright' }))
+            ),
+
+            aberto && h('div', { className: 'border-t border-gray-200' },
+                loading && h('div', { className: 'text-center text-gray-500 text-sm py-6' }, 'Carregando...'),
+                erro && h('div', { className: 'text-center text-red-500 text-sm py-6' }, '' + erro),
+
+                !loading && dados && h('div', { className: 'p-4 space-y-3' },
+
+                    // KPIs (28 dias)
+                    h('div', { className: 'flex gap-2' },
+                        h(KpiEntregas, { valor: String(dados.total || 0), rotulo: 'corridas' }),
+                        h(KpiEntregas, { valor: dados.tempo_medio != null ? String(dados.tempo_medio) : '--', rotulo: 'min por corrida' })
+                    ),
+
+                    dados.atualizado_em && h('p', { className: 'text-[11px] text-gray-400' },
+                        'Atualizado em ' + dados.atualizado_em
+                    ),
+
+                    // Busca
+                    h('div', { className: 'flex items-center gap-2 px-3 rounded-xl border border-gray-200 bg-gray-50', style: { minHeight: 44 } },
+                        h('svg', { className: 'ico', style: { width: 16, height: 16, color: '#9ca3af', flexShrink: 0 }, 'aria-hidden': 'true' }, h('use', { href: '#i-search' })),
+                        h('input', {
+                            type: 'search',
+                            value: busca,
+                            onChange: (e) => setBusca(e.target.value),
+                            placeholder: 'Buscar OS ou cliente',
+                            'aria-label': 'Buscar OS ou cliente',
+                            className: 'flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-gray-900'
+                        })
+                    ),
+
+                    // Filtros
+                    h('div', { className: 'flex gap-1 p-1 rounded-xl bg-gray-100' },
+                        [
+                            { id: 'todos', label: 'Todas', n: dados.total },
+                            { id: 'no_prazo', label: 'No prazo', n: dados.no_prazo },
+                            { id: 'fora_prazo', label: 'Fora', n: dados.fora_prazo },
+                        ].map(f => h('button', {
+                            key: f.id,
+                            onClick: () => trocarFiltro(f.id),
+                            style: { minHeight: 40 },
+                            className: 'flex-1 rounded-lg text-xs font-semibold ' + (
+                                filtro === f.id ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-200'
+                            )
+                        }, f.label + ' ' + (f.n || 0)))
+                    ),
+
+                    h(ListaPorDia, { linhas, resumoDia: dados.resumo_dia || [], busca }),
+
+                    linhas.length < totalFiltro && h('button', {
+                        onClick: carregarMais,
+                        disabled: carregandoMais,
+                        style: { minHeight: 48 },
+                        className: 'w-full rounded-xl border border-gray-200 text-sm font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-60'
+                    }, carregandoMais ? 'Carregando...' : 'Carregar mais ' + Math.min(PAGINA_ENTREGAS, totalFiltro - linhas.length)),
+
+                    h('p', { className: 'text-[11px] text-gray-400 text-center' },
+                        'Mostrando ' + linhas.length + ' de ' + totalFiltro + ' corridas'
+                    ),
+
+                    dados.sem_medicao > 0 && h('p', { className: 'text-[11px] text-gray-400 text-center' },
+                        dados.sem_medicao + ' corrida(s) sem horário completo não entram no cálculo de prazo.'
+                    )
+                )
             )
         );
     }
 
-    function EntregasLista({ entregas, resumoDia, filtro, setFiltro }) {
-        // Aplica filtro
-        const filtradas = entregas.filter(e => {
-            if (filtro === 'no_prazo') return e.dentro_prazo === true;
-            if (filtro === 'fora_prazo') return e.dentro_prazo === false;
-            return true;
+    function KpiEntregas({ valor, rotulo }) {
+        return h('div', { className: 'flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5' },
+            h('div', { className: 'text-lg font-extrabold text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, valor),
+            h('div', { className: 'text-[10px] text-gray-500 mt-0.5' }, rotulo)
+        );
+    }
+
+    // Agrupa as linhas já carregadas por dia, na ordem em que vieram.
+    function ListaPorDia({ linhas, resumoDia, busca }) {
+        const termo = (busca || '').trim().toLowerCase();
+        const visiveis = termo
+            ? linhas.filter(e =>
+                String(e.os || '').toLowerCase().indexOf(termo) >= 0 ||
+                String(e.cliente || '').toLowerCase().indexOf(termo) >= 0 ||
+                String(e.bairro || '').toLowerCase().indexOf(termo) >= 0)
+            : linhas;
+
+        if (visiveis.length === 0) {
+            return h('p', { className: 'text-center text-gray-400 text-sm py-6' },
+                termo ? 'Nada encontrado para "' + busca + '".' : 'Nenhuma entrega nos últimos 28 dias.');
+        }
+
+        const resumoPorDia = {};
+        resumoDia.forEach(d => { resumoPorDia[d.dia_iso] = d; });
+
+        const grupos = [];
+        visiveis.forEach(e => {
+            const ultimo = grupos[grupos.length - 1];
+            if (ultimo && ultimo.dia === e.dia_iso) ultimo.itens.push(e);
+            else grupos.push({ dia: e.dia_iso, rotulo: e.dia_br, itens: [e] });
         });
 
-        const totais = {
-            geral: entregas.length,
-            no_prazo: entregas.filter(e => e.dentro_prazo === true).length,
-            fora_prazo: entregas.filter(e => e.dentro_prazo === false).length,
-        };
-
-        return h('div', null,
-            // Filtros
-            h('div', { className: 'flex gap-1 mb-3 text-xs' },
-                [
-                    { id: 'todos', label: 'Todas (' + totais.geral + ')', cor: 'bg-gray-200 text-gray-700' },
-                    { id: 'no_prazo', label: 'No prazo (' + totais.no_prazo + ')', cor: 'bg-green-100 text-green-800' },
-                    { id: 'fora_prazo', label: 'Fora (' + totais.fora_prazo + ')', cor: 'bg-red-100 text-red-800' },
-                ].map(f => h('button', {
-                    key: f.id,
-                    onClick: () => setFiltro(f.id),
-                    className: 'px-2 py-1 rounded font-medium ' + (
-                        filtro === f.id ? 'bg-purple-600 text-white' : f.cor + ' hover:opacity-80'
+        return h('div', { className: 'space-y-4' },
+            grupos.map(g => {
+                const r = resumoPorDia[g.dia] || {};
+                const avaliadas = (r.no_prazo || 0) + (r.fora_prazo || 0);
+                const pct = avaliadas > 0 ? Math.round(100 * (r.no_prazo || 0) / avaliadas) : null;
+                return h('div', { key: g.dia },
+                    h('div', { className: 'flex items-center justify-between px-1 pb-2' },
+                        h('span', { className: 'flex items-center gap-2' },
+                            h('span', { className: 'text-xs font-bold text-gray-900' }, rotuloDia(g.dia, g.rotulo)),
+                            r.parcial && h('span', {
+                                className: 'text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800'
+                            }, 'ainda entrando')
+                        ),
+                        h('span', { className: 'text-[11px] text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } },
+                            (r.total || g.itens.length) + ' corridas' +
+                            (r.km ? ' · ' + r.km + ' km' : '') +
+                            (pct != null ? ' · ' + pct + '%' : '')
+                        )
+                    ),
+                    h('div', { className: 'rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100' },
+                        g.itens.map((e, i) => h(EntregaItem, { key: e.os + '-' + e.dia_iso + '-' + i, entrega: e }))
                     )
-                }, f.label))
-            ),
-
-            // Lista (limitada a 50 pra performance)
-            h('div', { className: 'space-y-1 max-h-96 overflow-y-auto' },
-                filtradas.slice(0, 50).map((e, i) => h(EntregaItem, { key: e.os + '-' + i, entrega: e }))
-            ),
-            filtradas.length > 50 && h('p', { className: 'text-[10px] text-gray-400 text-center mt-2' },
-                '+ ' + (filtradas.length - 50) + ' entregas não exibidas'
-            )
+                );
+            })
         );
+    }
+
+    const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+    // Formata a partir da STRING 'YYYY-MM-DD' — sem new Date(iso), que
+    // interpreta como UTC e joga o dia pra trás no fuso do Brasil.
+    function rotuloDia(iso, fallback) {
+        if (!iso || iso.length < 10) return fallback || '-';
+        const ano = parseInt(iso.slice(0, 4), 10);
+        const mes = parseInt(iso.slice(5, 7), 10);
+        const dia = parseInt(iso.slice(8, 10), 10);
+        const d = new Date(ano, mes - 1, dia);
+        const hoje = new Date();
+        const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+        const diff = Math.round((base - d) / 86400000);
+        if (diff === 0) return 'Hoje, ' + dia + ' ' + MESES[mes - 1];
+        if (diff === 1) return 'Ontem, ' + dia + ' ' + MESES[mes - 1];
+        return DIAS_SEMANA[d.getDay()] + ', ' + dia + ' ' + MESES[mes - 1];
     }
 
     function EntregaItem({ entrega }) {
         const noPrazo = entrega.dentro_prazo === true;
         const foraPrazo = entrega.dentro_prazo === false;
-        const dia = entrega.data_solicitado ? new Date(entrega.data_solicitado).toLocaleDateString('pt-BR') : '-';
-        const hora = entrega.hora_solicitado ? String(entrega.hora_solicitado).slice(0, 5) : '';
-        const tempo = entrega.tempo_execucao_minutos != null ? Math.round(entrega.tempo_execucao_minutos) + ' min' : '-';
+        const cor = noPrazo ? '#16a34a' : foraPrazo ? '#dc2626' : '#d97706';
+        const km = (entrega.km != null && parseFloat(entrega.km) > 0)
+            ? String(parseFloat(entrega.km)).replace('.', ',') + ' km' : null;
 
-        return h('div', {
-            className: 'flex items-center gap-2 p-2 rounded text-xs border-l-4 ' + (
-                noPrazo ? 'border-green-400 bg-green-50' :
-                foraPrazo ? 'border-red-400 bg-red-50' :
-                'border-gray-300 bg-gray-50'
-            )
-        },
-            h('span', { className: 'text-base' },
-                noPrazo ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : foraPrazo ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-x" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" }))
-            ),
-            h('div', { className: 'flex-1 min-w-0' },
-                h('div', { className: 'font-medium text-gray-900 truncate' },
-                    'OS ' + entrega.os + (entrega.nome_fantasia ? ' • ' + entrega.nome_fantasia : '')
+        const chip = (texto, destaque) => h('span', {
+            className: 'text-[11px] font-semibold px-1.5 py-0.5 rounded-md ' +
+                (destaque ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600'),
+            style: { fontVariantNumeric: 'tabular-nums' }
+        }, texto);
+
+        return h('div', { className: 'flex items-start gap-2.5 px-3 py-3' },
+            h('span', {
+                style: { width: 9, height: 9, borderRadius: '50%', background: cor, marginTop: 5, flexShrink: 0 },
+                'aria-hidden': 'true'
+            }),
+            h('div', { className: 'flex-1 min-w-0 space-y-1' },
+                h('div', { className: 'flex items-baseline justify-between gap-2' },
+                    h('span', { className: 'text-sm font-semibold text-gray-900 truncate' }, entrega.cliente || 'Cliente'),
+                    h('span', {
+                        className: 'text-xs font-bold text-gray-700 flex-shrink-0',
+                        style: { fontVariantNumeric: 'tabular-nums' }
+                    }, entrega.hora_br || '--:--')
                 ),
-                h('div', { className: 'text-gray-500 truncate' },
-                    dia + ' ' + hora + ' • ' + tempo + (entrega.bairro ? ' • ' + entrega.bairro : '')
+                h('div', { className: 'flex items-center gap-1.5 flex-wrap' },
+                    h('span', { className: 'text-[10px] text-gray-400', style: { fontVariantNumeric: 'tabular-nums' } }, 'OS ' + entrega.os),
+                    entrega.tempo_min != null
+                        ? chip(entrega.tempo_min + ' min', foraPrazo)
+                        : chip('sem medição', false),
+                    km && chip(km, false),
+                    entrega.bairro && h('span', { className: 'text-[11px] text-gray-400 truncate' }, entrega.bairro)
                 )
             )
         );
