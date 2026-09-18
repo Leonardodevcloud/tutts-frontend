@@ -1251,7 +1251,7 @@
             const [redespachando, setRedespachando] = useState(null); // REDESPACHO_BTN_V1: OS em curso
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
-            const [corridasAgendadas, setCorridasAgendadas] = useState([]); // PAINEL_AGENDADAS_V1
+            const [corridasAgendadas, setCorridasAgendadas] = useState([]); // PAINEL_AGENDADAS_V1 PAINEL_AGENDADAS_V2
             const [painelAgendadasAberto, setPainelAgendadasAberto] = useState(false);
             const [detalheCorrida, setDetalheCorrida] = useState(null);
             const [corridasConcluidas, setCorridasConcluidas] = useState([]);
@@ -3073,30 +3073,29 @@
                     </header>
                     
                     {/* ========== ABA NOVA SOLICITAÇÃO ========== */}
-                    {/* PAINEL_AGENDADAS_V1 — pilula flutuante translucida (todas as abas) */}
+                    {/* PAINEL_AGENDADAS_V2 — pilula no canto inferior direito (fora do toggle do mapa) */}
                     {corridasAgendadas.length > 0 && (
-                        <div className="fixed top-16 right-4 z-40" style={{maxWidth:'280px'}}>
-                            <div className="rounded-2xl overflow-hidden" style={{background:'rgba(255,255,255,0.72)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.8)', boxShadow:'0 8px 24px rgba(31,27,58,0.16)'}}>
-                                <div onClick={() => setPainelAgendadasAberto(v => !v)} className="flex items-center justify-between px-3 py-2 cursor-pointer" style={{borderBottom: painelAgendadasAberto ? '1px solid rgba(124,58,237,0.15)' : 'none'}}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-lg flex items-center justify-center text-white" style={{background:'#7c3aed'}}><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-calendar"/></svg></span>
-                                        <span className="text-xs font-semibold" style={{color:'#3c3489'}}>{corridasAgendadas.length} agendada{corridasAgendadas.length > 1 ? 's' : ''}</span>
-                                    </div>
-                                    <span style={{color:'#7c3aed', fontSize:'11px', transform: painelAgendadasAberto ? 'rotate(180deg)' : 'none', transition:'transform .15s'}}>▾</span>
-                                </div>
-                                {painelAgendadasAberto && (
-                                    <div className="p-2 space-y-1.5" style={{maxHeight:'256px', overflowY:'auto'}}>
+                        <div className="fixed bottom-5 right-4 z-40 flex flex-col items-end gap-1.5" style={{maxWidth:'300px'}}>
+                            {painelAgendadasAberto && (
+                                <div className="rounded-2xl overflow-hidden w-full" style={{background:'rgba(255,255,255,0.80)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.85)', boxShadow:'0 8px 24px rgba(31,27,58,0.18)'}}>
+                                    <div className="p-2 space-y-1.5" style={{maxHeight:'320px', overflowY:'auto'}}>
                                         {corridasAgendadas.map(a => { const r = rotuloAgendada(a.disparar_em); return (
-                                            <div key={a.id} onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); carregarCorridasAgendadas(); setPainelAgendadasAberto(false); }} className="rounded-lg px-2.5 py-2 cursor-pointer" style={{background:'rgba(255,255,255,0.7)', border:'1px solid rgba(124,58,237,0.12)'}}>
+                                            <div key={a.id} onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); carregarCorridasAgendadas(); setPainelAgendadasAberto(false); }} className="rounded-lg px-2.5 py-2 cursor-pointer" style={{background:'rgba(255,255,255,0.75)', border:'1px solid rgba(124,58,237,0.12)'}}>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-medium text-gray-900 truncate">{a.destino || 'Corrida'}</span>
                                                     <span className="text-[10px] font-semibold whitespace-nowrap ml-2" style={{color:'#6d28d9', background:'rgba(124,58,237,0.12)', borderRadius:'20px', padding:'2px 8px'}}>{r.restante}</span>
                                                 </div>
                                                 <div className="text-[10px] text-gray-500 mt-0.5">{r.quando} · Hub</div>
+                                                {(a.numero_pedido || a.nf) && (<div className="text-[10px] text-gray-500">{a.numero_pedido ? ('Ped #' + a.numero_pedido) : ''}{(a.numero_pedido && a.nf) ? ' · ' : ''}{a.nf ? ('NF ' + a.nf) : ''}</div>)}
                                             </div>
                                         ); })}
                                     </div>
-                                )}
+                                </div>
+                            )}
+                            <div onClick={() => setPainelAgendadasAberto(v => !v)} className="flex items-center gap-2 cursor-pointer rounded-full px-3 py-2" style={{background:'rgba(124,58,237,0.96)', boxShadow:'0 6px 18px rgba(124,58,237,0.4)'}}>
+                                <svg className="ico" style={{width:14,height:14,color:'#fff'}} aria-hidden="true"><use href="#i-calendar"/></svg>
+                                <span className="text-xs font-semibold text-white">{corridasAgendadas.length} agendada{corridasAgendadas.length > 1 ? 's' : ''}</span>
+                                <span style={{color:'#fff', fontSize:'11px'}}>{painelAgendadasAberto ? '▾' : '▴'}</span>
                             </div>
                         </div>
                     )}
@@ -3537,6 +3536,7 @@
                                                             <span className="text-[10px] font-semibold whitespace-nowrap ml-2 px-2 py-0.5 rounded-full" style={{color:'#6d28d9', background:'#f5f3ff', border:'1px solid #e5deff'}}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {r.quando}</span>
                                                         </div>
                                                         <div className="text-[11px] mt-1.5 flex items-center gap-1" style={{color:'#8b5cf6'}}><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-clock"/></svg> {r.restante} · sera solicitada no Hub</div>
+                                                        {(a.numero_pedido || a.nf) && (<div className="text-[11px] text-gray-500 mt-1">{a.numero_pedido ? ('Pedido #' + a.numero_pedido) : ''}{(a.numero_pedido && a.nf) ? ' · ' : ''}{a.nf ? ('NF ' + a.nf) : ''}</div>)}
                                                         <div className="flex justify-end mt-1.5"><button onClick={() => cancelarAgendada(a.id)} className="text-[11px] text-red-500 hover:text-red-700 font-medium">Cancelar</button></div>
                                                     </div>
                                                 ); })}
