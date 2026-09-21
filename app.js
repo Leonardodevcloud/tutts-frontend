@@ -17308,7 +17308,7 @@ const hideLoadingScreen = () => {
                 className: "bg-purple-100 px-4 py-3"
             }, React.createElement("h3", {
                 className: "font-bold text-purple-900"
-            }, "Resumo Geral por Cliente"), ((ua.cod_cliente || []).length > 0 || (ua.centro_custo || []).length > 0 || (ua.categorias || []).length > 0 || ua.regiao) && React.createElement("div", {
+            }, "Resumo Geral por Cliente" /* PRAZO_DENOM_CARD_V1: % = dentro/(dentro+fora), igual ao card DonutPrazo e ao SQL do backend */), ((ua.cod_cliente || []).length > 0 || (ua.centro_custo || []).length > 0 || (ua.categorias || []).length > 0 || ua.regiao) && React.createElement("div", {
                 className: "mt-2 flex flex-wrap gap-2"
             }, ua.regiao && React.createElement("span", {
                 className: "text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full"
@@ -17378,13 +17378,13 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-purple-600"
             }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / (nl(e.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(e.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -17419,13 +17419,13 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-orange-500"
             }, nl(a.total_retornos || 0).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-600 bg-green-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-600 bg-red-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / (nl(a.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, cl(a.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
@@ -17452,13 +17452,13 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-purple-700"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / (nl(ft?.total_entregas) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(ft?.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -17498,8 +17498,8 @@ const hideLoadingScreen = () => {
                         {id:"epf",l:"Ent/prof",f:"media_entregas_por_prof",t:"line",c:"#BA7517",ax:"pct"}
                     ]},
                     {g:"Performance", items:[
-                        {id:"txp",l:"Taxa prazo %",fn:function(c){return(parseInt(c.dentro_prazo)||0)/Math.max(parseInt(c.total_entregas)||1,1)*100;},t:"line",c:"#1D9E75",ax:"pct",s:"%"},
-                        {id:"txpp",l:"Taxa prof %",fn:function(c){return(parseInt(c.dentro_prazo_prof||0))/Math.max(parseInt(c.total_entregas)||1,1)*100;},t:"line",c:"#5DCAA5",ax:"pct",s:"%"},
+                        {id:"txp",l:"Taxa prazo %",fn:function(c){var _n=parseInt(c.dentro_prazo)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo)||0),1)*100;},t:"line",c:"#1D9E75",ax:"pct",s:"%"},
+                        {id:"txpp",l:"Taxa prof %",fn:function(c){var _n=parseInt(c.dentro_prazo_prof||0)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo_prof||0)||0),1)*100;},t:"line",c:"#5DCAA5",ax:"pct",s:"%"},
                         {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#7F77DD",ax:"vol",isTempo:true}
                     ]},
                     {g:"Financeiro", items:[
