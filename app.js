@@ -1591,9 +1591,12 @@ const hideLoadingScreen = () => {
     // 🎨 FASE 1A: DonutPrazo — donut compacto pra mostrar No Prazo / Fora.
     // Uso: <DonutPrazo dentro={1621} fora={259} titulo="Prazo de Entrega" />
     // Mostra o % grande no centro, donut animado, e legenda embaixo.
-    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, titulo, corDentro, corFora }) => {
+    // PRAZO_REGRA_B_V1: semMedicao = quantas das "fora" sao entregas SEM horario
+    // (contam como fora pela regra B, mas a tela sinaliza pra nao esconder).
+    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, semMedicao: semProp, titulo, corDentro, corFora }) => {
         const dentro = Number(dentroProp) || 0;
         const fora = Number(foraProp) || 0;
+        const semMedicao = Number(semProp) || 0;
         const total = dentro + fora;
         const pct = total > 0 ? (dentro / total * 100) : 0;
         const cD = corDentro || CORES_BI.sucesso;
@@ -1659,7 +1662,11 @@ const hideLoadingScreen = () => {
                             React.createElement("span", { className: "ml-1 text-xs font-semibold", style: { color: cF } },
                                 "(", (100 - pct).toFixed(1), "%)"
                             )
-                        )
+                        ),
+                        semMedicao > 0 && React.createElement("p", {
+                            className: "text-[10px] text-amber-700 text-right mt-0.5",
+                            title: "Entregas sem horário de conclusão na Mapp. Contam como fora do prazo."
+                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), " sem horário")
                     ),
                     React.createElement("div", { className: "w-2.5 h-2.5 rounded-full", style: { backgroundColor: cF } })
                 )
@@ -17178,6 +17185,7 @@ const hideLoadingScreen = () => {
                     React.createElement(DonutPrazo, {
                         dentro: nl(ft?.dentro_prazo),
                         fora: nl(ft?.fora_prazo),
+                        semMedicao: nl(ft?.sem_prazo), // PRAZO_REGRA_B_V1
                         titulo: "Prazo de Entrega",
                         corDentro: CORES_BI.sucesso,
                         corFora: CORES_BI.erro
@@ -17191,6 +17199,7 @@ const hideLoadingScreen = () => {
                     React.createElement(DonutPrazo, {
                         dentro: nl(ft?.dentro_prazo_prof),
                         fora: nl(ft?.fora_prazo_prof),
+                        semMedicao: nl(ft?.sem_prazo_prof), // PRAZO_REGRA_B_V1
                         titulo: "Prazo Profissional",
                         corDentro: CORES_BI.info,
                         corFora: CORES_BI.aviso
@@ -17380,11 +17389,11 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-green-700 bg-green-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contam como fora" }, nl(e.sem_prazo), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contam como fora" }, nl(e.sem_prazo_prof), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(e.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -17421,11 +17430,11 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-green-600 bg-green-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-600 bg-red-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contam como fora" }, nl(a.sem_prazo), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contam como fora" }, nl(a.sem_prazo_prof), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, cl(a.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
@@ -17454,11 +17463,11 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-green-700 bg-green-100"
             }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contam como fora" }, nl(ft?.sem_prazo), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
             }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
-            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contam como fora" }, nl(ft?.sem_prazo_prof), " sem horário") /* PRAZO_REGRA_B_V1 */), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(ft?.tempo_medio)), React.createElement("td", {
                 className: "px-2 py-2 text-right"
