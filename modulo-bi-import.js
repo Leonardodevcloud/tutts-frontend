@@ -328,8 +328,11 @@
                       h('td', { className: 'px-3 py-2 font-mono text-xs text-gray-500' }, `#${r.id}`),
                       h('td', { className: 'px-3 py-2 font-bold' }, fmtDataRef(r.data_referencia)),
                       h('td', { className: 'px-3 py-2 text-xs' },
+                        // BI_CRON_DIA_V1: 'cron' = fechamento D-1 (12h); 'cron_dia' = dia corrente (demais horarios)
                         r.origem === 'cron'
-                          ? h('span', { className: 'px-2 py-1 bg-purple-100 text-purple-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Cron"))
+                          ? h('span', { className: 'px-2 py-1 bg-purple-100 text-purple-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Cron D-1"))
+                          : r.origem === 'cron_dia'
+                          ? h('span', { className: 'px-2 py-1 bg-emerald-100 text-emerald-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Cron do dia"))
                           : h('span', { className: 'px-2 py-1 bg-blue-100 text-blue-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Manual"))
                       ),
                       h('td', { className: 'px-3 py-2' },
