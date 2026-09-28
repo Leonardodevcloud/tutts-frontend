@@ -7659,30 +7659,31 @@ const hideLoadingScreen = () => {
         }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading, ba]);
         
 
-    // EXPAND_PRAZOS_V1: celula "levou / tinha" para os dois prazos do expand.
-    // tempo/prazo em minutos; dentro === null => sem horario na Mapp (nao e estouro).
-    function _fmtMin(v) {
+    // EXPAND_PRAZOS_V1 / UNIDADE_MINUTOS_V1: celula "levou / tinha" dos dois prazos.
+    // Tudo em MINUTOS — a configuracao de prazos e em minutos, entao h:mm aqui
+    // fazia 105min virar "1:45" e ser lido como 145. Sem unidades misturadas.
+    function _min(v) {
         if (v === null || v === undefined || isNaN(v)) return null;
-        var t = Math.round(v);
-        return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+        return Math.round(v);
     }
     function _celulaPrazo(tempo, prazo, dentro) {
-        var lev = _fmtMin(tempo);
-        var tin = _fmtMin(prazo);
+        var lev = _min(tempo);
+        var tin = _min(prazo);
         if (lev === null) {
             return React.createElement("div", {className: "text-[10px] text-amber-700", title: "Sem horário registrado na Mapp — conta como no prazo"},
                 "sem horário",
-                tin ? React.createElement("div", {className: "text-gray-400"}, "tinha ", tin) : null
+                tin !== null ? React.createElement("div", {className: "text-gray-400"}, "tinha ", tin, " min") : null
             );
         }
         var estourou = dentro === false;
         return React.createElement("div", {className: "leading-tight"},
             React.createElement("span", {className: "font-bold " + (estourou ? "text-red-700" : "text-green-700")}, lev),
-            React.createElement("span", {className: "text-gray-400"}, " / ", tin || "-"),
+            React.createElement("span", {className: "text-gray-400"}, " / ", tin !== null ? tin : "-", " min"),
             React.createElement("div", {className: "text-[9px] " + (estourou ? "text-red-600" : "text-green-600")},
+                tin === null ? "" :
                 estourou
-                    ? ("+" + _fmtMin(Math.max(0, (tempo || 0) - (prazo || 0))) + " acima")
-                    : ("sobrou " + _fmtMin(Math.max(0, (prazo || 0) - (tempo || 0))))
+                    ? ("+" + (lev - tin) + " min acima")
+                    : ("sobrou " + (tin - lev) + " min")
             )
         );
     }
@@ -18515,8 +18516,8 @@ const hideLoadingScreen = () => {
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Alocação"),
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Coleta"),
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "Dist."),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-green-100", title: "Solicitado pela loja ate a chegada no destino, contra o prazo contratado do cliente"}, "Prazo Cliente", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha")),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-violet-100", title: "Da alocacao ate a finalizacao, contra a regua de prazo do profissional"}, "Prazo Motoboy", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha")),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-green-100", title: "Solicitado pela loja ate a chegada no destino, contra o prazo contratado do cliente"}, "Prazo Cliente", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha (min)")),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-violet-100", title: "Da alocacao ate a finalizacao, contra a regua de prazo do profissional"}, "Prazo Motoboy", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha (min)")),
                                                         React.createElement("th", {className: "px-2 py-1 text-right"}, "Valor")
                                                     )
                                                 ),
