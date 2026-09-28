@@ -18526,10 +18526,13 @@ const hideLoadingScreen = () => {
                                                             React.createElement("td", {className: "px-2 py-1 font-mono font-bold text-blue-700"}, os.os),
                                                             React.createElement("td", {className: "px-2 py-1"}, os.cod_cliente, " - ", (os.cliente || "").substring(0, 20)),
                                                             React.createElement("td", {className: "px-2 py-1 text-gray-600"}, (os.centro_custo || "-").substring(0, 15)),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, os.data_solicitado_br || (os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-")), // DATA_FUSO_EXPAND_V1
                                                             React.createElement("td", {className: "px-2 py-1 text-center text-pink-600"}, os.tempo_alocacao ? (Math.floor(os.tempo_alocacao / 60) + ":" + String(Math.round(os.tempo_alocacao) % 60).padStart(2, "0")) : "-"),
                                                             React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600"}, os.tempo_coleta ? (Math.floor(os.tempo_coleta / 60) + ":" + String(Math.round(os.tempo_coleta) % 60).padStart(2, "0")) : "-"),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, (os.distancia || 0).toFixed(1), "km"),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center", title: (os.pontos_entrega > 1 ? ("Soma de " + os.pontos_entrega + " pontos. O prazo vale por ponto (" + (os.km_do_prazo || 0).toFixed(1) + "km).") : "")},
+                                                                (os.distancia || 0).toFixed(1), "km",
+                                                                os.pontos_entrega > 1 && React.createElement("div", {className: "text-[9px] text-gray-500"}, os.pontos_entrega, " pts \u00b7 ", (os.km_do_prazo || 0).toFixed(1), "km/pt")
+                                                            ),
                                                             // EXPAND_PRAZOS_V1: cada lado mostra quanto LEVOU / quanto TINHA
                                                             React.createElement("td", {className: "px-2 py-1 text-center bg-green-50"}, _celulaPrazo(os.tempo_cliente, os.prazo_cliente, os.dentro_prazo)),
                                                             React.createElement("td", {className: "px-2 py-1 text-center bg-violet-50"}, _celulaPrazo(os.tempo_prof, os.prazo_prof, os.dentro_prazo_prof)),
