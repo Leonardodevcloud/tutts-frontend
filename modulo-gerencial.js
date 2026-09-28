@@ -671,9 +671,13 @@
       setAtiva(id);
     }
 
+    // MENU_STICKY_V2: o HeaderCompacto e sticky top-0 e ocupa ~66px, entao o
+    // menu gruda em 82px (logo abaixo dele) e ganha altura maxima com rolagem
+    // propria — assim o card inteiro fica visivel em qualquer ponto da pagina.
     return h('nav', {
       'aria-label': 'Secoes do relatorio',
-      className: 'w-full lg:w-56 flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-2.5'
+      className: 'w-full lg:w-56 flex-shrink-0 flex flex-col gap-2.5 ' +
+        'lg:sticky lg:top-[82px] lg:max-h-[calc(100vh-98px)] lg:overflow-y-auto lg:pb-1'
     },
       h('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
         h('div', { className: 'px-2.5 pb-2 text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Secoes do relatorio'),
@@ -741,17 +745,6 @@
     }
     var pctTxt = function(v) { return v == null ? '—' : fD(v, 1) + '%'; };
 
-    // PCT_VISUAL_V1: teto da barra = maior % do bloco, arredondado pra cima na
-    // dezena (minimo 20). Normalizar por 100 deixaria todas as barras curtas e
-    // indistinguiveis, que e justamente o que se quer comparar.
-    function tetoBarra(listaDePcts) {
-      var maior = 0;
-      listaDePcts.forEach(function(arr) {
-        (arr || []).forEach(function(v) { if (v != null && v > maior) maior = v; });
-      });
-      return Math.max(20, Math.ceil(maior / 10) * 10);
-    }
-
     var thCel = function(txt, right, key, destaque) {
       return h('th', {
         key: key,
@@ -772,25 +765,19 @@
         v != null ? setaV(v) + '%' : '—');
     };
 
-    // Célula: número grande + barra de proporção + % em cor forte
-    function celulaNum(chave, valor, pct, cor, teto, ehUltima, sufixo) {
-      var largura = (pct == null || teto <= 0) ? 0 : Math.min(100, Math.round(pct / teto * 100));
+    // PCT_VISUAL_V2: so numero e percentual. Sem barra de progresso — o peso
+    // vem do tamanho e da cor do percentual, nao de um elemento a mais.
+    function celulaNum(chave, valor, pct, cor, ehUltima, sufixo) {
       return h('td', { key: chave, className: 'px-3 py-2.5 text-right ' + (ehUltima ? 'bg-gray-50' : '') },
-        h('div', { className: 'text-[17px] font-extrabold text-gray-900 tabular-nums' },
+        h('div', { className: 'text-[17px] font-extrabold text-gray-900 tabular-nums leading-tight' },
           valor == null ? '—' : fN(valor),
           sufixo ? h('span', { className: 'ml-1 text-[12px] font-semibold text-gray-500' }, sufixo) : null
         ),
-        pct === false ? null : h('div', { className: 'mt-1.5 flex items-center justify-end gap-1.5' },
-          h('span', { className: 'w-[52px] h-[5px] rounded-full bg-gray-200 overflow-hidden' },
-            h('span', { className: 'block h-[5px] rounded-full', style: { width: largura + '%', background: cor } })
-          ),
-          h('span', { className: 'min-w-[44px] text-[12.5px] font-extrabold tabular-nums', style: { color: cor } }, pctTxt(pct))
-        )
+        h('div', { className: 'mt-0.5 text-[13.5px] font-extrabold tabular-nums leading-tight', style: { color: cor } }, pctTxt(pct))
       );
     }
 
     // ── Tabela 1: resumo ──
-    var tetoResumo = tetoBarra([dt.ativos.pcts, dt.alocados.pcts]);
     var linhasPct = [
       { rot: 'Qtd. ativos',   sub: '% sobre os cadastros da semana', bloco: dt.ativos,   cor: '#6d28d9' },
       { rot: 'Qtd. alocados', sub: '% sobre os cadastros da semana', bloco: dt.alocados, cor: '#1d4ed8' }
@@ -816,7 +803,7 @@
                 h('div', { className: 'text-[11px] text-gray-400' }, l.sub)
               ),
               l.bloco.valores.map(function(v, j) {
-                return celulaNum(j, v, l.bloco.pcts[j], l.cor, tetoResumo, j === ult, null);
+                return celulaNum(j, v, l.bloco.pcts[j], l.cor, j === ult, null);
               }),
               celVar(variacao(l.bloco.valores), false)
             );
@@ -856,7 +843,6 @@
     // ── Tabelas 2 e 3: quebra por operador ──
     function tabelaOperador(titulo, subtitulo, bloco, cor) {
       var ops = bloco.operadores || [];
-      var teto = tetoBarra(ops.map(function(o) { return o.pcts; }).concat([bloco.pcts]));
       return h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto mt-4' },
         h('div', { className: 'px-4 py-3 border-b border-gray-100' },
           h('h3', { className: 'text-sm font-bold text-gray-800' }, titulo),
@@ -871,7 +857,7 @@
                   return h('tr', { key: o.operador, className: 'border-b border-gray-100 hover:bg-purple-50/40' },
                     h('td', { className: 'px-3 py-2.5 font-bold text-gray-900' }, o.operador),
                     o.valores.map(function(v, j) {
-                      return celulaNum(j, v, o.pcts[j], cor, teto, j === ult, null);
+                      return celulaNum(j, v, o.pcts[j], cor, j === ult, null);
                     }),
                     celVar(variacao(o.valores), false)
                   );
@@ -879,15 +865,9 @@
                 h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.05)' } },
                   h('td', { className: 'px-3 py-2.5 font-extrabold text-purple-700' }, 'TOTAL'),
                   bloco.valores.map(function(v, j) {
-                    var largura = (bloco.pcts[j] == null || teto <= 0) ? 0 : Math.min(100, Math.round(bloco.pcts[j] / teto * 100));
                     return h('td', { key: j, className: 'px-3 py-2.5 text-right ' + (j === ult ? 'bg-purple-50' : '') },
-                      h('div', { className: 'text-[17px] font-extrabold text-purple-700 tabular-nums' }, fN(v)),
-                      h('div', { className: 'mt-1.5 flex items-center justify-end gap-1.5' },
-                        h('span', { className: 'w-[52px] h-[5px] rounded-full bg-purple-100 overflow-hidden' },
-                          h('span', { className: 'block h-[5px] rounded-full', style: { width: largura + '%', background: '#7c3aed' } })
-                        ),
-                        h('span', { className: 'min-w-[44px] text-[12.5px] font-extrabold text-purple-700 tabular-nums' }, pctTxt(bloco.pcts[j]))
-                      )
+                      h('div', { className: 'text-[17px] font-extrabold text-purple-700 tabular-nums leading-tight' }, fN(v)),
+                      h('div', { className: 'mt-0.5 text-[13.5px] font-extrabold text-purple-700 tabular-nums leading-tight' }, pctTxt(bloco.pcts[j]))
                     );
                   }),
                   celVar(variacao(bloco.valores), false)
@@ -900,8 +880,8 @@
     return h('div', null,
       header,
       tabelaResumo,
-      tabelaOperador('Ativacoes por operador', 'A barra mostra a fatia dos cadastros da semana que cada operador ativou', dt.ativos, '#6d28d9'),
-      tabelaOperador('Alocacoes por operador', 'A barra mostra a fatia dos cadastros da semana que cada operador alocou', dt.alocados, '#1d4ed8'),
+      tabelaOperador('Ativacoes por operador', 'Percentual sobre os cadastros novos da mesma semana', dt.ativos, '#6d28d9'),
+      tabelaOperador('Alocacoes por operador', 'Percentual sobre os cadastros novos da mesma semana', dt.alocados, '#1d4ed8'),
       h('div', { className: 'mt-2 text-[11.5px] text-gray-400 leading-relaxed' },
         'Cadastros: leads com data de cadastro na semana. Ativos: leads com status ativo e data de ativacao na semana, atribuidos a quem ativou. ',
         'Alocados: alocacoes pela data em que foram feitas (created_at), atribuidas a quem alocou — nao pela data prevista da operacao, ',
