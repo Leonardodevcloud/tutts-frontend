@@ -56,6 +56,99 @@
   }
 
   // ════════════════════════════════════════════════════════════════
+  // SELETOR cliente -> centro de custo
+  //
+  // Lista os clientes pelo nome de exibicao (mascara do BI quando existe) e,
+  // depois que um cliente e escolhido, so entao oferece OS CENTROS DAQUELE
+  // CLIENTE. Centro de custo so faz sentido dentro de um cliente: um combo
+  // global de centros mistura codigos de lojas diferentes.
+  // ════════════════════════════════════════════════════════════════
+  function SeletorCliente(props) {
+    var opcoes = props.opcoes || { clientes: [], centros_por_cliente: {} };
+    var cod = props.codCliente, cc = props.centroCusto;
+    var sBusca = useState(""); var busca = sBusca[0], setBusca = sBusca[1];
+    var sAberto = useState(false); var aberto = sAberto[0], setAberto = sAberto[1];
+
+    var selecionado = null;
+    for (var i = 0; i < opcoes.clientes.length; i++) {
+      if (String(opcoes.clientes[i].cod_cliente) === String(cod)) { selecionado = opcoes.clientes[i]; break; }
+    }
+    var centros = (cod !== null && cod !== undefined && cod !== "")
+      ? (opcoes.centros_por_cliente[String(cod)] || []) : [];
+
+    var termo = busca.trim().toLowerCase();
+    var filtrados = opcoes.clientes.filter(function (c) {
+      if (!termo) return true;
+      return String(c.nome).toLowerCase().indexOf(termo) >= 0 ||
+        String(c.nome_real || "").toLowerCase().indexOf(termo) >= 0 ||
+        String(c.cod_cliente).indexOf(termo) >= 0;
+    }).slice(0, 60);
+
+    return h("div", { className: "flex gap-2 flex-wrap items-end" },
+
+      // cliente
+      h("div", { className: "relative", style: { minWidth: 280 } },
+        h("label", { htmlFor: "sel-cliente", className: "block text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1" }, "Loja"),
+        h("input", {
+          id: "sel-cliente",
+          type: "text",
+          value: aberto ? busca : (selecionado ? (selecionado.nome + "  ·  " + selecionado.cod_cliente) : ""),
+          placeholder: "Buscar loja por nome ou código",
+          onFocus: function () { setAberto(true); setBusca(""); },
+          onBlur: function () { setTimeout(function () { setAberto(false); }, 160); },
+          onChange: function (e) { setBusca(e.target.value); },
+          className: "w-full border border-gray-300 rounded-lg px-3 text-sm",
+          style: { minHeight: 38 }
+        }),
+        aberto && h("div", {
+          className: "absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-y-auto",
+          style: { maxHeight: 260 }
+        },
+          filtrados.length === 0 && h("div", { className: "px-3 py-3 text-xs text-gray-400" }, "Nenhuma loja encontrada"),
+          filtrados.map(function (c) {
+            return h("button", {
+              key: c.cod_cliente,
+              type: "button",
+              onMouseDown: function () { props.onChange(c.cod_cliente, ""); setAberto(false); },
+              className: "w-full text-left px-3 py-2 hover:bg-purple-50 border-b border-gray-50",
+              style: { minHeight: 38 }
+            },
+              h("span", { className: "text-xs font-semibold text-gray-800" }, c.nome),
+              h("span", { className: "ml-1.5 text-[10px] text-gray-400", style: { fontVariantNumeric: "tabular-nums" } }, c.cod_cliente),
+              c.mascara && c.nome_real && c.nome_real !== c.mascara &&
+                h("div", { className: "text-[10px] text-gray-400" }, c.nome_real),
+              c.centros > 0 && h("span", { className: "ml-2 text-[10px] text-purple-600" }, c.centros + " centro(s)")
+            );
+          })
+        )
+      ),
+
+      // centro de custo — so depois de escolher a loja
+      h("div", { style: { minWidth: 220 } },
+        h("label", { htmlFor: "sel-cc", className: "block text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1" }, "Centro de custo"),
+        h("select", {
+          id: "sel-cc",
+          value: cc || "",
+          disabled: !selecionado,
+          onChange: function (e) { props.onChange(cod, e.target.value); },
+          className: "w-full border border-gray-300 rounded-lg px-2 text-sm disabled:bg-gray-50 disabled:text-gray-400",
+          style: { minHeight: 38 }
+        },
+          h("option", { value: "" }, selecionado ? "Todos os centros da loja" : "Escolha a loja primeiro"),
+          centros.map(function (x) {
+            return h("option", { key: x.centro_custo, value: x.centro_custo },
+              x.centro_custo + " (" + x.entregas + " entregas)");
+          })
+        ),
+        selecionado && centros.length === 0 &&
+          h("span", { className: "block text-[10px] text-gray-400 mt-1" }, "Essa loja não usa centro de custo")
+      ),
+
+      props.children
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
   // PANORAMA
   // ════════════════════════════════════════════════════════════════
   function Panorama(props) {
@@ -66,10 +159,15 @@
     var sDados = useState(null); var dados = sDados[0], setDados = sDados[1];
     var sLoad = useState(false); var loading = sLoad[0], setLoading = sLoad[1];
     var sErro = useState(null); var erro = sErro[0], setErro = sErro[1];
+    var sFCod = useState(""); var fCod = sFCod[0], setFCod = sFCod[1];
+    var sFCC = useState(""); var fCC = sFCC[0], setFCC = sFCC[1];
 
     var carregar = function () {
       setLoading(true); setErro(null);
-      fetchAuth(API_URL + "/bi/escala/panorama?de=" + de + "&ate=" + ate)
+      var q = "?de=" + de + "&ate=" + ate;
+      if (fCod) q += "&cod_cliente=" + encodeURIComponent(fCod);
+      if (fCC) q += "&centro_custo=" + encodeURIComponent(fCC);
+      fetchAuth(API_URL + "/bi/escala/panorama" + q)
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (j.error) { setErro(j.error); setDados(null); }
@@ -102,10 +200,21 @@
             className: "border border-gray-300 rounded-lg px-3 text-sm", style: { minHeight: 38 }
           })
         ),
+        h(SeletorCliente, {
+          opcoes: props.opcoes,
+          codCliente: fCod,
+          centroCusto: fCC,
+          onChange: function (cod, cc) { setFCod(cod); setFCC(cc); }
+        }),
         h("button", {
           onClick: carregar, style: { minHeight: 38 },
           className: "px-4 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
         }, "Aplicar"),
+        (fCod || fCC) && h("button", {
+          onClick: function () { setFCod(""); setFCC(""); },
+          style: { minHeight: 38 },
+          className: "px-3 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-semibold"
+        }, "Limpar loja"),
         h("div", { className: "flex-1" }),
         h("button", {
           onClick: function () { props.irPara("config"); }, style: { minHeight: 38 },
@@ -231,6 +340,8 @@
     var sLoad = useState(true); var loading = sLoad[0], setLoading = sLoad[1];
     var sSalvando = useState(false); var salvando = sSalvando[0], setSalvando = sSalvando[1];
     var sBusca = useState(""); var busca = sBusca[0], setBusca = sBusca[1];
+    var sNovoCod = useState(""); var novoCod = sNovoCod[0], setNovoCod = sNovoCod[1];
+    var sNovoCC = useState(""); var novoCC = sNovoCC[0], setNovoCC = sNovoCC[1];
 
     var carregar = function () {
       setLoading(true);
@@ -256,11 +367,11 @@
       setSujo(function (p) { var n = Object.assign({}, p); n[idx] = true; return n; });
     };
 
-    var adicionar = function (cod, nome) {
+    var adicionar = function (cod, nome, cc) {
       setLinhas(function (prev) {
         return prev.concat([{
           id: null, cod_cliente: cod, nome_cliente: nome || ("Cliente " + cod),
-          centro_custo: "", min_semana: 0, min_sabado: 0, min_domingo: 0,
+          centro_custo: cc || "", min_semana: 0, min_sabado: 0, min_domingo: 0,
           vigente_desde: hoje()
         }]);
       });
@@ -334,7 +445,7 @@
           style: { width: 44, height: 44 }
         }, icone(I_VOLTAR, 18)),
         h("div", { className: "flex-1 min-w-[220px]" },
-          h("h3", { className: "font-bold text-gray-900 text-base" }, "Mínimo de profissionais por loja"),
+          h("h3", { className: "font-bold text-gray-900 text-base" }, "Disponibilidade — mínimo por loja"),
           h("p", { className: "text-xs text-gray-500" }, "Quantos profissionais cada loja precisa ter rodando por dia")
         ),
         qtdSuja > 0 && h("span", { className: "text-[11px] text-amber-700 font-semibold" },
@@ -359,21 +470,36 @@
         })
       ),
 
-      semMinimo.length > 0 && h("div", { className: "bg-amber-50 border border-amber-200 rounded-xl p-3" },
-        h("div", { className: "flex items-center gap-2 mb-2" },
-          h("span", { className: "text-amber-700" }, icone(I_ALERTA, 15)),
-          h("span", { className: "text-xs text-amber-900 font-semibold" },
-            semMinimo.length + " loja(s) com movimento nos últimos 30 dias e sem mínimo cadastrado — ficam fora do painel")
+      // Adicionar loja: escolhe a loja, depois o centro daquela loja.
+      h("div", { className: "bg-white border border-gray-200 rounded-xl p-3" },
+        h("div", { className: "text-xs font-bold text-gray-800 mb-2" }, "Adicionar loja ao painel"),
+        h(SeletorCliente, {
+          opcoes: props.opcoes,
+          codCliente: novoCod,
+          centroCusto: novoCC,
+          onChange: function (cod, cc) { setNovoCod(cod); setNovoCC(cc); }
+        },
+          h("button", {
+            onClick: function () {
+              if (!novoCod) { showToast("Escolha a loja", "error"); return; }
+              var jaTem = linhas.some(function (l) {
+                return String(l.cod_cliente) === String(novoCod) &&
+                  String(l.centro_custo || "") === String(novoCC || "");
+              });
+              if (jaTem) { showToast("Essa loja/centro já está na lista", "error"); return; }
+              var nome = "Cliente " + novoCod;
+              (props.opcoes.clientes || []).forEach(function (c) {
+                if (String(c.cod_cliente) === String(novoCod)) nome = c.nome;
+              });
+              adicionar(novoCod, nome, novoCC);
+              setNovoCod(""); setNovoCC("");
+            },
+            style: { minHeight: 38 },
+            className: "px-4 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
+          }, "Adicionar")
         ),
-        h("div", { className: "flex flex-wrap gap-1.5" },
-          semMinimo.map(function (s) {
-            return h("button", {
-              key: s.cod_cliente,
-              onClick: function () { adicionar(s.cod_cliente, s.nome_cliente); },
-              className: "px-2 py-1 rounded-lg border border-amber-300 bg-white text-[11px] font-semibold text-amber-900 hover:bg-amber-100"
-            }, "+ " + (s.nome_cliente || s.cod_cliente) + " (" + s.dias_com_movimento + "d)");
-          })
-        )
+        semMinimo.length > 0 && h("p", { className: "text-[11px] text-gray-500 mt-2" },
+          semMinimo.length + " loja(s) rodaram nos últimos 30 dias e ainda não têm mínimo — elas ficam fora do painel até serem cadastradas.")
       ),
 
       h("div", { className: "bg-white border border-gray-200 rounded-xl overflow-hidden" },
@@ -403,14 +529,23 @@
                     h("span", { className: "ml-1.5 text-[10px] text-gray-400", style: { fontVariantNumeric: "tabular-nums" } }, l.cod_cliente)
                   ),
                   h("td", { className: "px-3 py-2" },
-                    h("input", {
-                      type: "text", value: l.centro_custo || "",
-                      placeholder: "todos",
+                    // centros DAQUELA loja, nao uma lista global de codigos
+                    h("select", {
+                      value: l.centro_custo || "",
                       "aria-label": "Centro de custo",
                       onChange: function (e) { mudar(idx, "centro_custo", e.target.value); },
-                      className: "w-32 rounded-lg border border-gray-200 px-2 text-xs text-gray-600",
+                      className: "w-40 rounded-lg border border-gray-200 px-2 text-xs text-gray-600",
                       style: { minHeight: 36 }
-                    })
+                    },
+                      h("option", { value: "" }, "Todos os centros"),
+                      ((props.opcoes.centros_por_cliente || {})[String(l.cod_cliente)] || []).map(function (x) {
+                        return h("option", { key: x.centro_custo, value: x.centro_custo }, x.centro_custo);
+                      }),
+                      // valor gravado que nao esta mais na lista dos ultimos 120 dias
+                      l.centro_custo && !((props.opcoes.centros_por_cliente || {})[String(l.cod_cliente)] || [])
+                        .some(function (x) { return x.centro_custo === l.centro_custo; }) &&
+                        h("option", { value: l.centro_custo }, l.centro_custo + " (sem movimento recente)")
+                    )
                   ),
                   h("td", { className: "px-2 py-2 text-center" }, numInput(l, idx, "min_semana", "Mínimo de segunda a sexta", true)),
                   h("td", { className: "px-2 py-2 text-center" }, numInput(l, idx, "min_sabado", "Mínimo no sábado", false)),
@@ -451,11 +586,23 @@
   // ════════════════════════════════════════════════════════════════
   function BiEscala(props) {
     var sTela = useState("panorama"); var tela = sTela[0], setTela = sTela[1];
+    var sOpc = useState({ clientes: [], centros_por_cliente: {} });
+    var opcoes = sOpc[0], setOpcoes = sOpc[1];
+
+    // Lojas e centros vem uma vez e servem as duas telas.
+    useEffect(function () {
+      props.fetchAuth(props.API_URL + "/bi/escala/opcoes")
+        .then(function (r) { return r.json(); })
+        .then(function (j) { if (!j.error) setOpcoes(j); })
+        .catch(function () {});
+    }, []);
+
     var comuns = {
       API_URL: props.API_URL,
       fetchAuth: props.fetchAuth,
       showToast: props.showToast || function () {},
-      irPara: setTela
+      irPara: setTela,
+      opcoes: opcoes
     };
     return h("div", { className: "space-y-4" },
       tela === "panorama" ? h(Panorama, comuns) : h(Config, comuns)

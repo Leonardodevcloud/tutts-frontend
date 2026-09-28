@@ -603,7 +603,7 @@ let SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "escala", label: "Escala"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}, {id: "portais-cliente", label: "Portais Cliente"}]
+      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "escala", label: "Disponibilidade"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}, {id: "portais-cliente", label: "Portais Cliente"}]
     },
     { id: "bi-monitoramento", label: "BI Monitoramento", icon: "📡", admin: true, abas: [] },
     { id: "todo", label: "TO-DO", icon: "📝",
