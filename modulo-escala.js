@@ -161,6 +161,8 @@
     var sErro = useState(null); var erro = sErro[0], setErro = sErro[1];
     var sFCod = useState(""); var fCod = sFCod[0], setFCod = sFCod[1];
     var sFCC = useState(""); var fCC = sFCC[0], setFCC = sFCC[1];
+    // DETALHE_LOJA_V1: loja aberta na tabela da esquerda (null = visao somada)
+    var sAberta = useState(null); var aberta = sAberta[0], setAberta = sAberta[1];
 
     var carregar = function () {
       setLoading(true); setErro(null);
@@ -171,7 +173,7 @@
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (j.error) { setErro(j.error); setDados(null); }
-          else setDados(j);
+          else { setDados(j); setAberta(null); }
         })
         .catch(function () { setErro("Erro de conexão"); })
         .finally(function () { setLoading(false); });
@@ -181,6 +183,13 @@
     if (loading) return h("div", { className: "text-center text-gray-500 py-10 text-sm" }, "Carregando escala...");
 
     var k = dados && dados.kpis;
+    // DETALHE_LOJA_V1: com loja aberta, a tabela da esquerda usa a serie dela
+    var linhasDia = [];
+    if (dados) {
+      linhasDia = (aberta && dados.dias_por_loja && dados.dias_por_loja[aberta.chave])
+        ? dados.dias_por_loja[aberta.chave]
+        : (dados.dias || []);
+    }
 
     return h("div", { className: "space-y-4" },
 
@@ -234,8 +243,11 @@
       ),
 
       k && h("div", { className: "flex gap-3" },
-        kpi("Dias analisados", String(k.dias_analisados)),
-        kpi("Dias abaixo do mínimo", String(k.dias_abaixo), k.dias_abaixo > 0 ? "#b91c1c" : "#15803d"),
+        kpi("Dias com escala", String(k.dias_analisados) +
+          (k.dias_sem_escala ? "" : "")),
+        kpi("Dias abaixo do mínimo",
+          String(k.dias_abaixo) + (k.ocorrencias_abaixo > k.dias_abaixo ? ("  (" + k.ocorrencias_abaixo + " ocorrências)") : ""),
+          k.dias_abaixo > 0 ? "#b91c1c" : "#15803d"),
         kpi("Cobertura média", k.cobertura_media === null ? "—" : k.cobertura_media + "%",
           (k.cobertura_media !== null && k.cobertura_media < 100) ? "#b91c1c" : "#15803d"),
         kpi("Saldo no período", (k.saldo > 0 ? "+" : "") + k.saldo, k.saldo < 0 ? "#b91c1c" : "#15803d")
@@ -245,9 +257,15 @@
 
         // por dia
         h("div", { className: "bg-white border border-gray-200 rounded-xl overflow-hidden", style: { flex: "1 1 520px", minWidth: 420 } },
-          h("div", { className: "px-4 py-3 border-b border-gray-200 flex items-baseline justify-between" },
-            h("h3", { className: "font-bold text-gray-900 text-sm" }, "Por dia"),
-            h("span", { className: "text-[11px] text-gray-400" }, "somando todas as lojas do filtro")
+          h("div", { className: "px-4 py-3 border-b border-gray-200 flex items-baseline justify-between gap-2 flex-wrap" },
+            h("h3", { className: "font-bold text-gray-900 text-sm" },
+              aberta ? ("Por dia — " + aberta.nome + (aberta.centro_custo ? (" · " + aberta.centro_custo) : "")) : "Por dia"),
+            aberta
+              ? h("button", {
+                  onClick: function () { setAberta(null); },
+                  className: "text-[11px] font-semibold text-purple-700 hover:underline"
+                }, "← voltar para todas as lojas")
+              : h("span", { className: "text-[11px] text-gray-400" }, "somando todas as lojas · clique numa loja ao lado")
           ),
           h("div", { className: "overflow-x-auto" },
             h("table", { className: "w-full text-xs" },
@@ -261,21 +279,30 @@
                 )
               ),
               h("tbody", null,
-                (dados.dias || []).map(function (d) {
-                  return h("tr", { key: d.dia, className: "border-b border-gray-50 hover:bg-purple-50" },
+                linhasDia.map(function (d) {
+                  var semEscala = d.minimo === 0;
+                  return h("tr", {
+                    key: d.dia,
+                    className: "border-b border-gray-50 hover:bg-purple-50",
+                    style: semEscala ? { background: "#fafafa" } : null
+                  },
                     h("td", { className: "px-4 py-2" },
-                      h("span", { className: "font-semibold text-gray-800", style: { fontVariantNumeric: "tabular-nums" } }, d.dia_br),
+                      h("span", {
+                        className: semEscala ? "text-gray-400" : "font-semibold text-gray-800",
+                        style: { fontVariantNumeric: "tabular-nums" }
+                      }, d.dia_br),
                       h("span", { className: "ml-1.5 text-[10px] text-gray-400" }, SEMANA[d.dow]),
-                      d.lojas_abaixo > 0 && h("span", { className: "ml-2 text-[10px] text-red-600 font-semibold" },
+                      semEscala && h("span", { className: "ml-2 text-[10px] text-gray-400" }, "sem escala"),
+                      !aberta && !semEscala && d.lojas_abaixo > 0 && h("span", { className: "ml-2 text-[10px] text-red-600 font-semibold" },
                         d.lojas_abaixo + (d.lojas_abaixo === 1 ? " loja em falta" : " lojas em falta"))
                     ),
                     h("td", { className: "px-3 py-2 text-right text-gray-500", style: { fontVariantNumeric: "tabular-nums" } }, d.minimo),
-                    h("td", { className: "px-3 py-2 text-right font-bold text-gray-900", style: { fontVariantNumeric: "tabular-nums" } }, d.reais),
-                    h("td", { className: "px-3 py-2 text-right" }, celulaSaldo(d.saldo)),
+                    h("td", { className: "px-3 py-2 text-right font-bold", style: { fontVariantNumeric: "tabular-nums", color: semEscala ? "#94a3b8" : "#0f172a" } }, d.reais),
+                    h("td", { className: "px-3 py-2 text-right" }, semEscala ? h("span", { className: "text-gray-300" }, "—") : celulaSaldo(d.saldo)),
                     h("td", { className: "px-4 py-2 text-right" }, celulaCobertura(d.cobertura))
                   );
                 }),
-                (dados.dias || []).length === 0 && h("tr", null,
+                linhasDia.length === 0 && h("tr", null,
                   h("td", { colSpan: 5, className: "px-4 py-6 text-center text-gray-400 text-sm" }, "Sem dias avaliados no período.")
                 )
               )
@@ -301,9 +328,21 @@
               ),
               h("tbody", null,
                 (dados.clientes || []).map(function (c) {
-                  return h("tr", { key: c.cod_cliente + "|" + (c.centro_custo || ""), className: "border-b border-gray-50" },
+                  var chave = c.cod_cliente + "|" + (c.centro_custo || "");
+                  var ativa = aberta && aberta.chave === chave;
+                  return h("tr", {
+                    key: chave,
+                    className: "border-b border-gray-50 cursor-pointer hover:bg-purple-50",
+                    style: ativa ? { background: "#f5f3ff" } : null,
+                    onClick: function () {
+                      setAberta(ativa ? null : {
+                        chave: chave, nome: c.nome_cliente,
+                        cod_cliente: c.cod_cliente, centro_custo: c.centro_custo
+                      });
+                    }
+                  },
                     h("td", { className: "px-4 py-2" },
-                      h("span", { className: "text-gray-800" }, c.nome_cliente),
+                      h("span", { className: "text-gray-800 " + (ativa ? "font-bold" : "") }, c.nome_cliente),
                       h("span", { className: "ml-1.5 text-[10px] text-gray-400", style: { fontVariantNumeric: "tabular-nums" } }, c.cod_cliente),
                       c.centro_custo && h("div", { className: "text-[10px] text-gray-400" }, c.centro_custo)
                     ),
