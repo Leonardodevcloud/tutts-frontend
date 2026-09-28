@@ -7658,6 +7658,35 @@ const hideLoadingScreen = () => {
             }
         }, [Et, mapaCalorVisivel, mapaCalorDados, mapaCalorLoading, ba]);
         
+
+    // EXPAND_PRAZOS_V1: celula "levou / tinha" para os dois prazos do expand.
+    // tempo/prazo em minutos; dentro === null => sem horario na Mapp (nao e estouro).
+    function _fmtMin(v) {
+        if (v === null || v === undefined || isNaN(v)) return null;
+        var t = Math.round(v);
+        return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+    }
+    function _celulaPrazo(tempo, prazo, dentro) {
+        var lev = _fmtMin(tempo);
+        var tin = _fmtMin(prazo);
+        if (lev === null) {
+            return React.createElement("div", {className: "text-[10px] text-amber-700", title: "Sem horário registrado na Mapp — conta como no prazo"},
+                "sem horário",
+                tin ? React.createElement("div", {className: "text-gray-400"}, "tinha ", tin) : null
+            );
+        }
+        var estourou = dentro === false;
+        return React.createElement("div", {className: "leading-tight"},
+            React.createElement("span", {className: "font-bold " + (estourou ? "text-red-700" : "text-green-700")}, lev),
+            React.createElement("span", {className: "text-gray-400"}, " / ", tin || "-"),
+            React.createElement("div", {className: "text-[9px] " + (estourou ? "text-red-600" : "text-green-600")},
+                estourou
+                    ? ("+" + _fmtMin(Math.max(0, (tempo || 0) - (prazo || 0))) + " acima")
+                    : ("sobrou " + _fmtMin(Math.max(0, (prazo || 0) - (tempo || 0))))
+            )
+        );
+    }
+
         // Função para carregar OS de um profissional específico
         const carregarOsProfissional = async (codProf) => {
             try {
@@ -18485,9 +18514,9 @@ const hideLoadingScreen = () => {
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "Data"),
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Alocação"),
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Coleta"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Entrega"),
                                                         React.createElement("th", {className: "px-2 py-1 text-center"}, "Dist."),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Status"),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-green-100", title: "Solicitado pela loja ate a chegada no destino, contra o prazo contratado do cliente"}, "Prazo Cliente", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha")),
+                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-violet-100", title: "Da alocacao ate a finalizacao, contra a regua de prazo do profissional"}, "Prazo Motoboy", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha")),
                                                         React.createElement("th", {className: "px-2 py-1 text-right"}, "Valor")
                                                     )
                                                 ),
@@ -18500,11 +18529,10 @@ const hideLoadingScreen = () => {
                                                             React.createElement("td", {className: "px-2 py-1 text-center"}, os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-"),
                                                             React.createElement("td", {className: "px-2 py-1 text-center text-pink-600"}, os.tempo_alocacao ? (Math.floor(os.tempo_alocacao / 60) + ":" + String(Math.round(os.tempo_alocacao) % 60).padStart(2, "0")) : "-"),
                                                             React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600"}, os.tempo_coleta ? (Math.floor(os.tempo_coleta / 60) + ":" + String(Math.round(os.tempo_coleta) % 60).padStart(2, "0")) : "-"),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center text-rose-600"}, os.tempo_entrega ? (Math.floor(os.tempo_entrega / 60) + ":" + String(Math.round(os.tempo_entrega) % 60).padStart(2, "0")) : "-"),
                                                             React.createElement("td", {className: "px-2 py-1 text-center"}, (os.distancia || 0).toFixed(1), "km"),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center"},
-                                                                React.createElement("span", {className: "px-1 py-0.5 rounded text-xs font-bold " + (os.dentro_prazo === true ? "bg-green-100 text-green-700" : os.dentro_prazo === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600")}, os.dentro_prazo === true ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : os.dentro_prazo === false ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) : "?")
-                                                            ),
+                                                            // EXPAND_PRAZOS_V1: cada lado mostra quanto LEVOU / quanto TINHA
+                                                            React.createElement("td", {className: "px-2 py-1 text-center bg-green-50"}, _celulaPrazo(os.tempo_cliente, os.prazo_cliente, os.dentro_prazo)),
+                                                            React.createElement("td", {className: "px-2 py-1 text-center bg-violet-50"}, _celulaPrazo(os.tempo_prof, os.prazo_prof, os.dentro_prazo_prof)),
                                                             React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", (os.valor_prof || 0).toFixed(2))
                                                         );
                                                     })
