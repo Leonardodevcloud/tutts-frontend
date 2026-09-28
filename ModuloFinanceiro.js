@@ -2614,6 +2614,12 @@
                 }, React.createElement("p", { className: "text-amber-700 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ModuloGratuidadesV2 não carregado")),
                    React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Confira se o script está incluído no index.html antes do ModuloFinanceiro.js"))),
                 { API_URL: API_URL, fetchAuth: fetchAuth, ja: ja, confirm: typeof confirmar === 'function' ? confirmar : undefined }
+            ), "sinistros" === p.finTab && React.createElement(
+                window.ModuloSinistrosComponent || (() => React.createElement("div", {
+                    className: "bg-white rounded-xl shadow p-8 text-center"
+                }, React.createElement("p", { className: "text-amber-700 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ModuloSinistros nao carregado")),
+                   React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Confira se modulo-sinistros.js esta incluido no index.html antes do ModuloFinanceiro.js"))),
+                { API_URL: API_URL, fetchAuth: fetchAuth, ja: ja }
             ), "restritos" === p.finTab && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
