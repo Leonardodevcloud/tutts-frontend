@@ -20619,7 +20619,7 @@ const hideLoadingScreen = () => {
                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Prazo Padrão Profissional")),
                     React.createElement("p", {
                         className: "text-sm text-gray-500 mb-4"
-                    }, "Prazo que o profissional tem para concluir a entrega após coletar"),
+                    }, "Contado do momento em que o profissional ACEITA a corrida (alocação) até finalizar a entrega — inclui o deslocamento até a loja. Mesma régua usada no Score do motoboy."), // ROTULO_PRAZO_PROF_V1
                     React.createElement("div", {
                         className: "space-y-3 mb-4"
                     }, prazoProfPadrao.map((e, t) => React.createElement("div", {
@@ -20706,7 +20706,7 @@ const hideLoadingScreen = () => {
                     // Prazo por Cliente/Centro
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-orange-200"},
                         React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Prazo Prof. por Cliente ou Centro de Custo")),
-                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão"),
+                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão (mesma contagem: da alocação até finalizar)"),
                         React.createElement("div", {className: "mb-4"},
                             React.createElement("label", {className: "text-sm text-gray-600 font-medium"}, "Selecionar Cliente ou Centro de Custo"),
                             React.createElement("select", {
