@@ -626,6 +626,148 @@
     );
   }
 
+  // ═══ SETOR DE ATIVAÇÃO (GERENCIAL_ATIVACAO_V1) ═══
+  // Comparativo entre semanas dos indicadores do setor de ativação.
+  // Mesmas regras do analytics do CRM, porém semana a semana.
+  function SecaoAtivacao(props) {
+    var fetchApi = props.fetchApi, sel = props.selSemana;
+    var _d = useState(null), dt = _d[0], setDt = _d[1];
+    var _l = useState(false), load = _l[0], setLoad = _l[1];
+    var _e = useState(null), err = _e[0], setErr = _e[1];
+
+    useEffect(function() {
+      if (!sel) { setDt(null); return; }
+      setLoad(true); setErr(null);
+      fetchApi('/gerencial/ativacao?data_inicio=' + sel.data_inicio + '&data_fim=' + sel.data_fim + '&semanas=4')
+        .then(function(j) { setDt(j); setLoad(false); })
+        .catch(function(e) { setErr(e.message); setDt(null); setLoad(false); });
+    }, [sel ? sel.data_inicio : null, fetchApi]);
+
+    var header = h(Secao, {
+      icone: h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-users' })),
+      titulo: 'Setor de Ativacao',
+      sub: 'Comparativo das ultimas 4 semanas — cadastros, ativacoes, alocacoes e tag TP'
+    });
+
+    if (load) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Carregando...'));
+    if (err) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-red-500 text-sm' }, 'Erro ao carregar: ' + err));
+    if (!dt || !dt.semanas) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Sem dados'));
+
+    var sems = dt.semanas || [];
+    var ult = sems.length - 1;
+
+    // Variação % da última semana contra a anterior
+    function variacao(vals) {
+      if (ult < 1) return null;
+      var a = vals[ult], b = vals[ult - 1];
+      if (a == null || b == null || b === 0) return null;
+      return r2((a - b) / b * 100);
+    }
+    var pctTxt = function(v) { return v == null ? '—' : fD(v, 1) + '%'; };
+
+    var thCel = function(txt, right, key) {
+      return h('th', { key: key, className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[11px] font-bold uppercase text-gray-400' }, txt);
+    };
+    var cabecalho = function(primeira) {
+      return h('thead', null, h('tr', { className: 'bg-gray-50 border-b' },
+        thCel(primeira, false, 'h0'),
+        sems.map(function(s, i) { return thCel(s.label, true, 'h' + (i + 1)); }),
+        thCel('Var. %', true, 'hv')
+      ));
+    };
+    var celVar = function(v) {
+      return h('td', { className: 'px-3 py-2 text-right font-bold', style: { color: corV(v) } }, v != null ? setaV(v) + '%' : '—');
+    };
+
+    // ── Tabela 1: resumo dos indicadores ──
+    var linhasResumo = [
+      { rot: 'Qtd. cadastros novos', vals: dt.cadastros.valores, fmt: fN, destaque: true },
+      { rot: 'Qtd. ativos', vals: dt.ativos.valores, fmt: fN, pcts: dt.ativos.pcts },
+      { rot: 'Qtd. alocados', vals: dt.alocados.valores, fmt: fN, pcts: dt.alocados.pcts },
+      { rot: 'Qtd. leads com tag TP', vals: dt.tp.valores, fmt: fN, aviso: dt.tp.disponivel ? null : 'Planilha TP indisponivel no momento' },
+      { rot: 'Tempo medio de ativacao', vals: dt.tempo_medio.valores, fmt: function(v) { return v == null ? '—' : fD(v, 1) + ' dias'; }, invertido: true }
+    ];
+
+    var tabelaResumo = h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto' },
+      h('table', { className: 'w-full border-collapse text-sm' },
+        cabecalho('Indicador'),
+        h('tbody', null, linhasResumo.map(function(l, i) {
+          var v = variacao(l.vals);
+          // Tempo medio: cair e bom, entao a cor inverte
+          var corVar = l.invertido ? (v == null ? '#94a3b8' : (v <= 0 ? '#10b981' : '#ef4444')) : corV(v);
+          return h('tr', { key: i, className: 'border-b border-gray-100 ' + (l.destaque ? 'bg-purple-50/40' : '') },
+            h('td', { className: 'px-3 py-2.5' },
+              h('span', { className: l.destaque ? 'font-extrabold text-purple-700' : 'font-semibold text-gray-800' }, l.rot),
+              l.aviso ? h('span', { className: 'ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700', title: l.aviso }, '!') : null
+            ),
+            l.vals.map(function(val, j) {
+              return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
+                h('div', { className: 'font-bold', style: { color: val == null ? '#cbd5e1' : (l.destaque ? '#7c3aed' : '#1e293b') } }, l.fmt(val)),
+                l.pcts ? h('div', { className: 'text-[11px] text-gray-400' }, pctTxt(l.pcts[j]) + ' dos cadastros') : null
+              );
+            }),
+            h('td', { className: 'px-3 py-2.5 text-right font-bold', style: { color: corVar } }, v != null ? setaV(v) + '%' : '—')
+          );
+        }))
+      )
+    );
+
+    // ── Tabelas 2 e 3: quebra por operador ──
+    function tabelaOperador(titulo, bloco, sufixoPct) {
+      var ops = bloco.operadores || [];
+      return h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto mt-4' },
+        h('div', { className: 'px-4 py-3 border-b border-gray-100' },
+          h('h3', { className: 'text-sm font-bold text-gray-800' }, titulo),
+          h('p', { className: 'text-[11px] text-gray-400' }, 'Percentual calculado sobre os cadastros novos da mesma semana')
+        ),
+        ops.length === 0
+          ? h('div', { className: 'p-8 text-center text-gray-400 text-sm' }, 'Nenhum registro no periodo')
+          : h('table', { className: 'w-full border-collapse text-sm' },
+              cabecalho('Operador'),
+              h('tbody', null,
+                ops.map(function(o, i) {
+                  var v = variacao(o.valores);
+                  return h('tr', { key: o.operador, className: 'border-b border-gray-100 hover:bg-purple-50/40 ' + (i % 2 === 1 ? 'bg-gray-50/40' : '') },
+                    h('td', { className: 'px-3 py-2.5 font-semibold text-gray-800' }, o.operador),
+                    o.valores.map(function(val, j) {
+                      return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
+                        h('div', { className: 'font-bold text-gray-800' }, fN(val)),
+                        h('div', { className: 'text-[11px] text-gray-400' }, pctTxt(o.pcts[j]))
+                      );
+                    }),
+                    celVar(v)
+                  );
+                }),
+                // Linha TOTAL do bloco
+                h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.04)' } },
+                  h('td', { className: 'px-3 py-2.5 font-extrabold text-purple-700' }, 'TOTAL'),
+                  bloco.valores.map(function(val, j) {
+                    return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
+                      h('div', { className: 'font-extrabold text-purple-700' }, fN(val)),
+                      h('div', { className: 'text-[11px] text-purple-400' }, pctTxt(bloco.pcts[j]) + sufixoPct)
+                    );
+                  }),
+                  celVar(variacao(bloco.valores))
+                )
+              )
+            )
+      );
+    }
+
+    return h('div', null,
+      header,
+      tabelaResumo,
+      tabelaOperador('Ativacoes por operador', dt.ativos, ' dos cadastros'),
+      tabelaOperador('Alocacoes por operador', dt.alocados, ' dos cadastros'),
+      h('div', { className: 'mt-2 text-[11px] text-gray-400 leading-relaxed' },
+        'Cadastros: leads com data de cadastro na semana. Ativos: leads com status ativo e data de ativacao na semana, atribuidos a quem ativou. ',
+        'Alocados: alocacoes pela data prevista de operacao (ou data de criacao quando nao houver), atribuidas a quem alocou — ',
+        'por isso um operador pode alocar mais do que ativou. Tag TP: leads da planilha TP com data na semana, deduplicados por telefone. ',
+        'Tempo medio: media de dias entre cadastro e ativacao dos leads ativados na semana.'
+      )
+    );
+  }
+
   window.ModuloGerencialComponent = function(props) {
     var usuario = props.usuario, apiUrl = props.API_URL, getToken = props.getToken;
     var HeaderCompacto = props.HeaderCompacto, Toast = props.Toast, LoadingOverlay = props.LoadingOverlay;
@@ -751,6 +893,8 @@
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(GarantidoTable, { rows: d.garantido || [] })),
           // Dinamica aplicada (DINAMICA_FRONT_V1)
           h(SecaoDinamica, { fetchApi: fetchApi, selSemana: selSemana }),
+          // Setor de Ativacao (GERENCIAL_ATIVACAO_V1)
+          h(SecaoAtivacao, { fetchApi: fetchApi, selSemana: selSemana }),
           // Footer
           h('div', { className: 'text-center mt-8 text-xs text-gray-400 pb-4' }, 'Gerado em ' + new Date().toLocaleString('pt-BR') + ' · Central Tutts')
         )
