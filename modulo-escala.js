@@ -182,7 +182,26 @@
 
     if (loading) return h("div", { className: "text-center text-gray-500 py-10 text-sm" }, "Carregando escala...");
 
-    var k = dados && dados.kpis;
+    // KPI_POR_LOJA_V1: os KPIs e a tabela da esquerda so tem conteudo com uma
+    // loja aberta. A visao somada juntava lojas de porte diferente num numero
+    // que nao descrevia nenhuma delas.
+    var k = null;
+    if (aberta && dados && dados.dias_por_loja && dados.dias_por_loja[aberta.chave]) {
+      var serieK = dados.dias_por_loja[aberta.chave];
+      var avaliados = serieK.filter(function (d) { return d.status !== "sem_operacao"; });
+      var somaMin = 0, somaReal = 0, faltas = 0;
+      avaliados.forEach(function (d) {
+        somaMin += d.minimo; somaReal += d.reais;
+        if (d.status === "falta") faltas += 1;
+      });
+      k = {
+        dias_analisados: avaliados.length,
+        dias_abaixo: faltas,
+        dias_sem_operacao: serieK.length - avaliados.length,
+        saldo: somaReal - somaMin,
+        cobertura_media: somaMin > 0 ? Math.round((somaReal / somaMin) * 100) : null
+      };
+    }
     // DETALHE_LOJA_V1: com loja aberta, a tabela da esquerda usa a serie dela
     // DETALHE_LOJA_V1: com loja aberta a tabela usa SO a serie dela. Sem
     // fallback pra soma: cair na soma exibindo o nome da loja no titulo e o
@@ -195,7 +214,7 @@
         if (serie) linhasDia = serie;
         else serieAusente = true;
       } else {
-        linhasDia = dados.dias || [];
+        linhasDia = []; // sem loja aberta: nada na esquerda
       }
     }
 
@@ -250,6 +269,14 @@
         }, "Cadastrar agora")
       ),
 
+      !k && dados && !dados.sem_configuracao && h("div", { className: "flex gap-3" },
+        kpi("Dias com operação", "—", "#cbd5e1"),
+        kpi("Dias abaixo do mínimo", "—", "#cbd5e1"),
+        kpi("Cobertura média", "—", "#cbd5e1"),
+        kpi("Saldo no período", "—", "#cbd5e1"),
+        kpi("Dias sem operação", "—", "#cbd5e1")
+      ),
+
       k && h("div", { className: "flex gap-3" },
         kpi("Dias com operação", String(k.dias_analisados)),
         kpi("Dias abaixo do mínimo",
@@ -272,8 +299,8 @@
               ? h("button", {
                   onClick: function () { setAberta(null); },
                   className: "text-[11px] font-semibold text-purple-700 hover:underline"
-                }, "← voltar para todas as lojas")
-              : h("span", { className: "text-[11px] text-gray-400" }, "somando todas as lojas · clique numa loja ao lado")
+                }, "← limpar seleção")
+              : h("span", { className: "text-[11px] text-gray-400" }, "clique numa loja ao lado")
           ),
           h("div", { className: "overflow-x-auto" },
             h("table", { className: "w-full text-xs" },
@@ -318,8 +345,12 @@
                   h("td", { colSpan: 5, className: "px-4 py-5 text-center text-sm text-amber-800 bg-amber-50" },
                     "O detalhe desta loja não veio na resposta. Se o backend acabou de subir, recarregue; se persistir, é sinal de que o deploy do backend ainda não incluiu esta versão.")
                 ),
-                !serieAusente && linhasDia.length === 0 && h("tr", null,
-                  h("td", { colSpan: 5, className: "px-4 py-6 text-center text-gray-400 text-sm" }, "Sem dias avaliados no período.")
+                !serieAusente && !aberta && h("tr", null,
+                  h("td", { colSpan: 5, className: "px-4 py-10 text-center text-gray-400 text-sm" },
+                    "Selecione uma loja na tabela ao lado para ver o detalhe dia a dia.")
+                ),
+                !serieAusente && aberta && linhasDia.length === 0 && h("tr", null,
+                  h("td", { colSpan: 5, className: "px-4 py-6 text-center text-gray-400 text-sm" }, "Sem dias avaliados no período para esta loja.")
                 )
               )
             )
@@ -339,7 +370,8 @@
                   h("th", { scope: "col", className: "text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Loja"),
                   h("th", { scope: "col", className: "text-right px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Mín"),
                   h("th", { scope: "col", className: "text-right px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Dias em falta"),
-                  h("th", { scope: "col", className: "text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Saldo")
+                  h("th", { scope: "col", className: "text-right px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Saldo"),
+                  h("th", { scope: "col", className: "text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-600" }, "Cobertura")
                 )
               ),
               h("tbody", null,
@@ -369,7 +401,9 @@
                     }, c.dias_abaixo,
                       h("div", { className: "text-[9px] font-normal text-gray-400" }, "de " + c.dias_avaliados)
                     ),
-                    h("td", { className: "px-4 py-2 text-right" }, celulaSaldo(c.saldo))
+                    h("td", { className: "px-2 py-2 text-right" }, celulaSaldo(c.saldo)),
+                    // cobertura consolidada do periodo filtrado
+                    h("td", { className: "px-4 py-2 text-right" }, celulaCobertura(c.cobertura))
                   );
                 })
               )
