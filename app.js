@@ -7675,7 +7675,11 @@ const hideLoadingScreen = () => {
                 tin !== null ? React.createElement("div", {className: "text-gray-400"}, "tinha ", tin, " min") : null
             );
         }
-        var estourou = dentro === false;
+        // COERENCIA_PRAZO_V1: quando temos os dois numeros, o VEREDITO SAI DELES.
+        // Antes vinha da coluna dentro_prazo gravada, que foi calculada no import
+        // a partir do tempo_execucao_minutos (campo corrompido da planilha) — dava
+        // "85 / 75 min · sobrou -10 min" pintado de verde.
+        var estourou = (tin !== null) ? (lev > tin) : (dentro === false);
         return React.createElement("div", {className: "leading-tight"},
             React.createElement("span", {className: "font-bold " + (estourou ? "text-red-700" : "text-green-700")}, lev),
             React.createElement("span", {className: "text-gray-400"}, " / ", tin !== null ? tin : "-", " min"),
@@ -7684,7 +7688,13 @@ const hideLoadingScreen = () => {
                 estourou
                     ? ("+" + (lev - tin) + " min acima")
                     : ("sobrou " + (tin - lev) + " min")
-            )
+            ),
+            // COERENCIA_PRAZO_V1: avisa quando a flag gravada discorda do calculo
+            (tin !== null && dentro !== null && dentro !== undefined && dentro === estourou) &&
+                React.createElement("div", {
+                    className: "text-[9px] text-amber-700",
+                    title: "A coluna gravada no banco diz o contrário deste cálculo. Rode o recalcular do BI."
+                }, "divergente")
         );
     }
 
