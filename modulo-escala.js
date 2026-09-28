@@ -184,11 +184,19 @@
 
     var k = dados && dados.kpis;
     // DETALHE_LOJA_V1: com loja aberta, a tabela da esquerda usa a serie dela
+    // DETALHE_LOJA_V1: com loja aberta a tabela usa SO a serie dela. Sem
+    // fallback pra soma: cair na soma exibindo o nome da loja no titulo e o
+    // que fez parecer que o filtro nao funcionava.
     var linhasDia = [];
+    var serieAusente = false;
     if (dados) {
-      linhasDia = (aberta && dados.dias_por_loja && dados.dias_por_loja[aberta.chave])
-        ? dados.dias_por_loja[aberta.chave]
-        : (dados.dias || []);
+      if (aberta) {
+        var serie = dados.dias_por_loja && dados.dias_por_loja[aberta.chave];
+        if (serie) linhasDia = serie;
+        else serieAusente = true;
+      } else {
+        linhasDia = dados.dias || [];
+      }
     }
 
     return h("div", { className: "space-y-4" },
@@ -243,14 +251,14 @@
       ),
 
       k && h("div", { className: "flex gap-3" },
-        kpi("Dias com escala", String(k.dias_analisados) +
-          (k.dias_sem_escala ? "" : "")),
+        kpi("Dias com operação", String(k.dias_analisados)),
         kpi("Dias abaixo do mínimo",
           String(k.dias_abaixo) + (k.ocorrencias_abaixo > k.dias_abaixo ? ("  (" + k.ocorrencias_abaixo + " ocorrências)") : ""),
           k.dias_abaixo > 0 ? "#b91c1c" : "#15803d"),
         kpi("Cobertura média", k.cobertura_media === null ? "—" : k.cobertura_media + "%",
           (k.cobertura_media !== null && k.cobertura_media < 100) ? "#b91c1c" : "#15803d"),
-        kpi("Saldo no período", (k.saldo > 0 ? "+" : "") + k.saldo, k.saldo < 0 ? "#b91c1c" : "#15803d")
+        kpi("Saldo no período", (k.saldo > 0 ? "+" : "") + k.saldo, k.saldo < 0 ? "#b91c1c" : "#15803d"),
+        kpi("Dias sem operação", String(k.dias_sem_operacao || 0), "#64748b")
       ),
 
       dados && !dados.sem_configuracao && h("div", { className: "flex gap-3 items-start flex-wrap" },
@@ -280,29 +288,37 @@
               ),
               h("tbody", null,
                 linhasDia.map(function (d) {
-                  var semEscala = d.minimo === 0;
+                  var semOp = d.status === "sem_operacao";
                   return h("tr", {
                     key: d.dia,
                     className: "border-b border-gray-50 hover:bg-purple-50",
-                    style: semEscala ? { background: "#fafafa" } : null
+                    style: semOp ? { background: "#fafafa" } : null
                   },
                     h("td", { className: "px-4 py-2" },
                       h("span", {
-                        className: semEscala ? "text-gray-400" : "font-semibold text-gray-800",
+                        className: semOp ? "text-gray-400" : "font-semibold text-gray-800",
                         style: { fontVariantNumeric: "tabular-nums" }
                       }, d.dia_br),
                       h("span", { className: "ml-1.5 text-[10px] text-gray-400" }, SEMANA[d.dow]),
-                      semEscala && h("span", { className: "ml-2 text-[10px] text-gray-400" }, "sem escala"),
-                      !aberta && !semEscala && d.lojas_abaixo > 0 && h("span", { className: "ml-2 text-[10px] text-red-600 font-semibold" },
+                      semOp && h("span", {
+                        className: "ml-2 text-[10px] text-gray-500 bg-gray-100 rounded px-1.5 py-0.5",
+                        title: "Nenhum profissional rodou — feriado, folga ou loja fechada. Fora da conta."
+                      }, "sem operação"),
+                      !aberta && d.lojas_abaixo > 0 && h("span", { className: "ml-2 text-[10px] text-red-600 font-semibold" },
                         d.lojas_abaixo + (d.lojas_abaixo === 1 ? " loja em falta" : " lojas em falta"))
                     ),
                     h("td", { className: "px-3 py-2 text-right text-gray-500", style: { fontVariantNumeric: "tabular-nums" } }, d.minimo),
-                    h("td", { className: "px-3 py-2 text-right font-bold", style: { fontVariantNumeric: "tabular-nums", color: semEscala ? "#94a3b8" : "#0f172a" } }, d.reais),
-                    h("td", { className: "px-3 py-2 text-right" }, semEscala ? h("span", { className: "text-gray-300" }, "—") : celulaSaldo(d.saldo)),
+                    h("td", { className: "px-3 py-2 text-right font-bold", style: { fontVariantNumeric: "tabular-nums", color: semOp ? "#94a3b8" : "#0f172a" } }, d.reais),
+                    h("td", { className: "px-3 py-2 text-right" },
+                      (d.saldo === null || d.saldo === undefined) ? h("span", { className: "text-gray-300" }, "—") : celulaSaldo(d.saldo)),
                     h("td", { className: "px-4 py-2 text-right" }, celulaCobertura(d.cobertura))
                   );
                 }),
-                linhasDia.length === 0 && h("tr", null,
+                serieAusente && h("tr", null,
+                  h("td", { colSpan: 5, className: "px-4 py-5 text-center text-sm text-amber-800 bg-amber-50" },
+                    "O detalhe desta loja não veio na resposta. Se o backend acabou de subir, recarregue; se persistir, é sinal de que o deploy do backend ainda não incluiu esta versão.")
+                ),
+                !serieAusente && linhasDia.length === 0 && h("tr", null,
                   h("td", { colSpan: 5, className: "px-4 py-6 text-center text-gray-400 text-sm" }, "Sem dias avaliados no período.")
                 )
               )
@@ -350,7 +366,9 @@
                     h("td", {
                       className: "px-2 py-2 text-right font-semibold",
                       style: { fontVariantNumeric: "tabular-nums", color: c.dias_abaixo > 0 ? "#b91c1c" : "#64748b" }
-                    }, c.dias_abaixo),
+                    }, c.dias_abaixo,
+                      h("div", { className: "text-[9px] font-normal text-gray-400" }, "de " + c.dias_avaliados)
+                    ),
                     h("td", { className: "px-4 py-2 text-right" }, celulaSaldo(c.saldo))
                   );
                 })
@@ -360,7 +378,7 @@
           h("div", { className: "px-4 py-2.5 border-t border-gray-200 bg-amber-50 flex items-start gap-2" },
             h("span", { className: "text-amber-700 mt-0.5" }, icone(I_ALERTA, 14)),
             h("span", { className: "text-[11px] text-amber-900 leading-snug" },
-              "Saldo negativo = rodou menos profissionais que o mínimo. Despacho por app externo não entra na contagem.")
+              "Saldo negativo = rodou menos profissionais que o mínimo. Dias sem escala (mínimo 0) e dias sem nenhum profissional (feriado, folga ou loja fechada) ficam fora da conta. Despacho por app externo não entra na contagem.")
           )
         )
       )
