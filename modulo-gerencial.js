@@ -342,7 +342,7 @@
   }
 
   function Secao(p) {
-    return h('div', { className: 'mt-8 mb-4' },
+    return h('div', { id: p.id || null, className: 'mt-8 mb-4 scroll-mt-24' },
       h('div', { className: 'flex items-center gap-2 mb-1' }, h('span', { className: 'text-xl' }, p.icone || ''), h('h2', { className: 'text-lg font-extrabold text-gray-900' }, p.titulo)),
       p.sub ? h('p', { className: 'text-xs text-gray-500' }, p.sub) : null
     );
@@ -583,7 +583,7 @@
     var maxInc = lista.reduce(function(m, c) { return Math.max(m, c.incentivo || 0); }, 0) || 1;
     var pctTxt = function(p) { return (p != null) ? (String(p).replace('.', ',') + '%') : '-'; };
 
-    var header = h(Secao, { icone: h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), titulo: 'Dinamica aplicada', sub: 'Incentivo pago ao profissional na semana' });
+    var header = h(Secao, { icone: h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), id: 'sec-dinamica', titulo: 'Dinamica aplicada', sub: 'Incentivo pago ao profissional na semana' });
 
     if (load) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Carregando...'));
     if (lista.length === 0) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Nenhum cliente com dinamica aplicada nesta semana'));
@@ -626,9 +626,85 @@
     );
   }
 
+  // ═══ MENU LATERAL DE SEÇÕES (MENU_SECOES_V1) ═══
+  var SECOES = [
+    { id: 'sec-kpis',      rotulo: 'KPIs da Semana' },
+    { id: 'sec-767',       rotulo: 'SLA Comollati (767)' },
+    { id: 'sec-porto',     rotulo: 'SLA Porto Seco' },
+    { id: 'sec-outros',    rotulo: 'SLA Outros Monitorados' },
+    { id: 'sec-ticket',    rotulo: 'Ticket Medio Liquido' },
+    { id: 'sec-demanda',   rotulo: 'Variacao de Demanda' },
+    { id: 'sec-garantido', rotulo: 'Minimo Garantido' },
+    { id: 'sec-dinamica',  rotulo: 'Dinamica Aplicada' },
+    { id: 'sec-ativacao',  rotulo: 'Setor de Ativacao' }
+  ];
+
+  function MenuSecoes(p) {
+    var _a = useState(SECOES[0].id), ativa = _a[0], setAtiva = _a[1];
+
+    useEffect(function() {
+      function aoRolar() {
+        var melhor = null, menorDist = Infinity;
+        SECOES.forEach(function(s) {
+          var el = document.getElementById(s.id);
+          if (!el) return;
+          var d = Math.abs(el.getBoundingClientRect().top - 96);
+          if (d < menorDist) { menorDist = d; melhor = s.id; }
+        });
+        if (melhor) setAtiva(melhor);
+      }
+      aoRolar();
+      window.addEventListener('scroll', aoRolar, { passive: true });
+      window.addEventListener('resize', aoRolar);
+      return function() {
+        window.removeEventListener('scroll', aoRolar);
+        window.removeEventListener('resize', aoRolar);
+      };
+    }, []);
+
+    function irPara(e, id) {
+      e.preventDefault();
+      var el = document.getElementById(id);
+      if (!el) return;
+      var topo = el.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop) - 84;
+      window.scrollTo({ top: topo, behavior: 'smooth' });
+      setAtiva(id);
+    }
+
+    return h('nav', {
+      'aria-label': 'Secoes do relatorio',
+      className: 'w-full lg:w-56 flex-shrink-0 lg:sticky lg:top-4 flex flex-col gap-2.5'
+    },
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+        h('div', { className: 'px-2.5 pb-2 text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Secoes do relatorio'),
+        h('div', { className: 'flex flex-col gap-0.5' },
+          SECOES.map(function(s) {
+            var on = ativa === s.id;
+            return h('a', {
+              key: s.id,
+              href: '#' + s.id,
+              onClick: function(e) { irPara(e, s.id); },
+              className: 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg no-underline transition-colors ' +
+                (on ? 'bg-purple-50 ring-1 ring-purple-200' : 'hover:bg-gray-50')
+            },
+              h('span', { className: 'w-[3px] h-[17px] flex-shrink-0 rounded-full ' + (on ? 'bg-purple-700' : 'bg-transparent') }),
+              h('span', { className: 'flex-1 text-[13px] ' + (on ? 'font-bold text-purple-700' : 'font-medium text-slate-600') }, s.rotulo)
+            );
+          })
+        )
+      ),
+      p.semana ? h('div', { className: 'bg-white border border-gray-200 rounded-xl px-3.5 py-3 flex flex-col gap-1.5' },
+        h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Semana'),
+        h('div', { className: 'text-[13.5px] font-bold text-gray-900' }, p.semana.label),
+        h('div', { className: 'text-[11.5px] text-gray-500' }, fN(p.semana.entregas) + ' entregas')
+      ) : null
+    );
+  }
+
   // ═══ SETOR DE ATIVAÇÃO (GERENCIAL_ATIVACAO_V1) ═══
   // Comparativo entre semanas dos indicadores do setor de ativação.
-  // Mesmas regras do analytics do CRM, porém semana a semana.
+  // Mesmas regras do analytics do CRM, exceto alocação — que aqui conta pelo
+  // created_at (quando o operador fez), não pela data prevista da operação.
   function SecaoAtivacao(props) {
     var fetchApi = props.fetchApi, sel = props.selSemana;
     var _d = useState(null), dt = _d[0], setDt = _d[1];
@@ -644,6 +720,7 @@
     }, [sel ? sel.data_inicio : null, fetchApi]);
 
     var header = h(Secao, {
+      id: 'sec-ativacao',
       icone: h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-users' })),
       titulo: 'Setor de Ativacao',
       sub: 'Comparativo das ultimas 4 semanas — cadastros, ativacoes, alocacoes e tag TP'
@@ -656,7 +733,6 @@
     var sems = dt.semanas || [];
     var ult = sems.length - 1;
 
-    // Variação % da última semana contra a anterior
     function variacao(vals) {
       if (ult < 1) return null;
       var a = vals[ult], b = vals[ult - 1];
@@ -665,89 +741,156 @@
     }
     var pctTxt = function(v) { return v == null ? '—' : fD(v, 1) + '%'; };
 
-    var thCel = function(txt, right, key) {
-      return h('th', { key: key, className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[11px] font-bold uppercase text-gray-400' }, txt);
+    // PCT_VISUAL_V1: teto da barra = maior % do bloco, arredondado pra cima na
+    // dezena (minimo 20). Normalizar por 100 deixaria todas as barras curtas e
+    // indistinguiveis, que e justamente o que se quer comparar.
+    function tetoBarra(listaDePcts) {
+      var maior = 0;
+      listaDePcts.forEach(function(arr) {
+        (arr || []).forEach(function(v) { if (v != null && v > maior) maior = v; });
+      });
+      return Math.max(20, Math.ceil(maior / 10) * 10);
+    }
+
+    var thCel = function(txt, right, key, destaque) {
+      return h('th', {
+        key: key,
+        className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide ' +
+          (destaque ? 'text-gray-900 bg-gray-100' : 'text-gray-500')
+      }, txt);
     };
     var cabecalho = function(primeira) {
-      return h('thead', null, h('tr', { className: 'bg-gray-50 border-b' },
-        thCel(primeira, false, 'h0'),
-        sems.map(function(s, i) { return thCel(s.label, true, 'h' + (i + 1)); }),
-        thCel('Var. %', true, 'hv')
+      return h('thead', null, h('tr', { className: 'bg-gray-50 border-b border-gray-200' },
+        thCel(primeira, false, 'h0', false),
+        sems.map(function(s, i) { return thCel(s.label, true, 'h' + (i + 1), i === ult); }),
+        thCel('Var.', true, 'hv', false)
       ));
     };
-    var celVar = function(v) {
-      return h('td', { className: 'px-3 py-2 text-right font-bold', style: { color: corV(v) } }, v != null ? setaV(v) + '%' : '—');
+    var celVar = function(v, invertido) {
+      var cor = invertido ? (v == null ? '#94a3b8' : (v <= 0 ? '#15803d' : '#dc2626')) : corV(v);
+      return h('td', { className: 'px-3 py-2.5 text-right text-[13px] font-extrabold tabular-nums', style: { color: cor } },
+        v != null ? setaV(v) + '%' : '—');
     };
 
-    // ── Tabela 1: resumo dos indicadores ──
-    var linhasResumo = [
-      { rot: 'Qtd. cadastros novos', vals: dt.cadastros.valores, fmt: fN, destaque: true },
-      { rot: 'Qtd. ativos', vals: dt.ativos.valores, fmt: fN, pcts: dt.ativos.pcts },
-      { rot: 'Qtd. alocados', vals: dt.alocados.valores, fmt: fN, pcts: dt.alocados.pcts },
-      { rot: 'Qtd. leads com tag TP', vals: dt.tp.valores, fmt: fN, aviso: dt.tp.disponivel ? null : 'Planilha TP indisponivel no momento' },
-      { rot: 'Tempo medio de ativacao', vals: dt.tempo_medio.valores, fmt: function(v) { return v == null ? '—' : fD(v, 1) + ' dias'; }, invertido: true }
+    // Célula: número grande + barra de proporção + % em cor forte
+    function celulaNum(chave, valor, pct, cor, teto, ehUltima, sufixo) {
+      var largura = (pct == null || teto <= 0) ? 0 : Math.min(100, Math.round(pct / teto * 100));
+      return h('td', { key: chave, className: 'px-3 py-2.5 text-right ' + (ehUltima ? 'bg-gray-50' : '') },
+        h('div', { className: 'text-[17px] font-extrabold text-gray-900 tabular-nums' },
+          valor == null ? '—' : fN(valor),
+          sufixo ? h('span', { className: 'ml-1 text-[12px] font-semibold text-gray-500' }, sufixo) : null
+        ),
+        pct === false ? null : h('div', { className: 'mt-1.5 flex items-center justify-end gap-1.5' },
+          h('span', { className: 'w-[52px] h-[5px] rounded-full bg-gray-200 overflow-hidden' },
+            h('span', { className: 'block h-[5px] rounded-full', style: { width: largura + '%', background: cor } })
+          ),
+          h('span', { className: 'min-w-[44px] text-[12.5px] font-extrabold tabular-nums', style: { color: cor } }, pctTxt(pct))
+        )
+      );
+    }
+
+    // ── Tabela 1: resumo ──
+    var tetoResumo = tetoBarra([dt.ativos.pcts, dt.alocados.pcts]);
+    var linhasPct = [
+      { rot: 'Qtd. ativos',   sub: '% sobre os cadastros da semana', bloco: dt.ativos,   cor: '#6d28d9' },
+      { rot: 'Qtd. alocados', sub: '% sobre os cadastros da semana', bloco: dt.alocados, cor: '#1d4ed8' }
     ];
 
     var tabelaResumo = h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto' },
       h('table', { className: 'w-full border-collapse text-sm' },
         cabecalho('Indicador'),
-        h('tbody', null, linhasResumo.map(function(l, i) {
-          var v = variacao(l.vals);
-          // Tempo medio: cair e bom, entao a cor inverte
-          var corVar = l.invertido ? (v == null ? '#94a3b8' : (v <= 0 ? '#10b981' : '#ef4444')) : corV(v);
-          return h('tr', { key: i, className: 'border-b border-gray-100 ' + (l.destaque ? 'bg-purple-50/40' : '') },
-            h('td', { className: 'px-3 py-2.5' },
-              h('span', { className: l.destaque ? 'font-extrabold text-purple-700' : 'font-semibold text-gray-800' }, l.rot),
-              l.aviso ? h('span', { className: 'ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700', title: l.aviso }, '!') : null
+        h('tbody', null,
+          // Cadastros — base de todos os percentuais
+          h('tr', { key: 'cad', className: 'border-b border-gray-100', style: { background: 'rgba(124,58,237,.05)' } },
+            h('td', { className: 'px-3 py-3 font-extrabold text-purple-700' }, 'Qtd. cadastros novos'),
+            dt.cadastros.valores.map(function(v, j) {
+              return h('td', { key: j, className: 'px-3 py-3 text-right text-[17px] font-extrabold text-purple-700 tabular-nums ' + (j === ult ? 'bg-purple-50' : '') }, fN(v));
+            }),
+            celVar(variacao(dt.cadastros.valores), false)
+          ),
+          // Ativos e alocados — número + barra + %
+          linhasPct.map(function(l) {
+            return h('tr', { key: l.rot, className: 'border-b border-gray-100' },
+              h('td', { className: 'px-3 py-2.5' },
+                h('div', { className: 'font-bold text-gray-900' }, l.rot),
+                h('div', { className: 'text-[11px] text-gray-400' }, l.sub)
+              ),
+              l.bloco.valores.map(function(v, j) {
+                return celulaNum(j, v, l.bloco.pcts[j], l.cor, tetoResumo, j === ult, null);
+              }),
+              celVar(variacao(l.bloco.valores), false)
+            );
+          }),
+          // TP
+          h('tr', { key: 'tp', className: 'border-b border-gray-100' },
+            h('td', { className: 'px-3 py-3' },
+              h('span', { className: 'font-bold text-gray-900' }, 'Qtd. leads com tag TP'),
+              dt.tp.disponivel ? null : h('span', {
+                className: 'ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700',
+                title: 'Planilha TP indisponivel no momento' + (dt.tp.erro ? ' (' + dt.tp.erro + ')' : '')
+              }, '!')
             ),
-            l.vals.map(function(val, j) {
-              return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
-                h('div', { className: 'font-bold', style: { color: val == null ? '#cbd5e1' : (l.destaque ? '#7c3aed' : '#1e293b') } }, l.fmt(val)),
-                l.pcts ? h('div', { className: 'text-[11px] text-gray-400' }, pctTxt(l.pcts[j]) + ' dos cadastros') : null
+            dt.tp.valores.map(function(v, j) {
+              return h('td', { key: j, className: 'px-3 py-3 text-right text-[17px] font-extrabold text-gray-900 tabular-nums ' + (j === ult ? 'bg-gray-50' : '') }, fN(v));
+            }),
+            celVar(variacao(dt.tp.valores), false)
+          ),
+          // Tempo médio — cair é bom, cor invertida
+          h('tr', { key: 'tm' },
+            h('td', { className: 'px-3 py-3' },
+              h('div', { className: 'font-bold text-gray-900' }, 'Tempo medio de ativacao'),
+              h('div', { className: 'text-[11px] text-gray-400' }, 'do cadastro ate a ativacao — menor e melhor')
+            ),
+            dt.tempo_medio.valores.map(function(v, j) {
+              return h('td', { key: j, className: 'px-3 py-3 text-right text-[17px] font-extrabold text-gray-900 tabular-nums ' + (j === ult ? 'bg-gray-50' : '') },
+                v == null ? '—' : fD(v, 1),
+                v == null ? null : h('span', { className: 'ml-1 text-[12px] font-semibold text-gray-500' }, 'dias')
               );
             }),
-            h('td', { className: 'px-3 py-2.5 text-right font-bold', style: { color: corVar } }, v != null ? setaV(v) + '%' : '—')
-          );
-        }))
+            celVar(variacao(dt.tempo_medio.valores), true)
+          )
+        )
       )
     );
 
     // ── Tabelas 2 e 3: quebra por operador ──
-    function tabelaOperador(titulo, bloco, sufixoPct) {
+    function tabelaOperador(titulo, subtitulo, bloco, cor) {
       var ops = bloco.operadores || [];
+      var teto = tetoBarra(ops.map(function(o) { return o.pcts; }).concat([bloco.pcts]));
       return h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto mt-4' },
         h('div', { className: 'px-4 py-3 border-b border-gray-100' },
           h('h3', { className: 'text-sm font-bold text-gray-800' }, titulo),
-          h('p', { className: 'text-[11px] text-gray-400' }, 'Percentual calculado sobre os cadastros novos da mesma semana')
+          h('p', { className: 'text-[11.5px] text-gray-400' }, subtitulo)
         ),
         ops.length === 0
           ? h('div', { className: 'p-8 text-center text-gray-400 text-sm' }, 'Nenhum registro no periodo')
           : h('table', { className: 'w-full border-collapse text-sm' },
               cabecalho('Operador'),
               h('tbody', null,
-                ops.map(function(o, i) {
-                  var v = variacao(o.valores);
-                  return h('tr', { key: o.operador, className: 'border-b border-gray-100 hover:bg-purple-50/40 ' + (i % 2 === 1 ? 'bg-gray-50/40' : '') },
-                    h('td', { className: 'px-3 py-2.5 font-semibold text-gray-800' }, o.operador),
-                    o.valores.map(function(val, j) {
-                      return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
-                        h('div', { className: 'font-bold text-gray-800' }, fN(val)),
-                        h('div', { className: 'text-[11px] text-gray-400' }, pctTxt(o.pcts[j]))
-                      );
+                ops.map(function(o) {
+                  return h('tr', { key: o.operador, className: 'border-b border-gray-100 hover:bg-purple-50/40' },
+                    h('td', { className: 'px-3 py-2.5 font-bold text-gray-900' }, o.operador),
+                    o.valores.map(function(v, j) {
+                      return celulaNum(j, v, o.pcts[j], cor, teto, j === ult, null);
                     }),
-                    celVar(v)
+                    celVar(variacao(o.valores), false)
                   );
                 }),
-                // Linha TOTAL do bloco
-                h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.04)' } },
+                h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.05)' } },
                   h('td', { className: 'px-3 py-2.5 font-extrabold text-purple-700' }, 'TOTAL'),
-                  bloco.valores.map(function(val, j) {
-                    return h('td', { key: j, className: 'px-3 py-2.5 text-right' },
-                      h('div', { className: 'font-extrabold text-purple-700' }, fN(val)),
-                      h('div', { className: 'text-[11px] text-purple-400' }, pctTxt(bloco.pcts[j]) + sufixoPct)
+                  bloco.valores.map(function(v, j) {
+                    var largura = (bloco.pcts[j] == null || teto <= 0) ? 0 : Math.min(100, Math.round(bloco.pcts[j] / teto * 100));
+                    return h('td', { key: j, className: 'px-3 py-2.5 text-right ' + (j === ult ? 'bg-purple-50' : '') },
+                      h('div', { className: 'text-[17px] font-extrabold text-purple-700 tabular-nums' }, fN(v)),
+                      h('div', { className: 'mt-1.5 flex items-center justify-end gap-1.5' },
+                        h('span', { className: 'w-[52px] h-[5px] rounded-full bg-purple-100 overflow-hidden' },
+                          h('span', { className: 'block h-[5px] rounded-full', style: { width: largura + '%', background: '#7c3aed' } })
+                        ),
+                        h('span', { className: 'min-w-[44px] text-[12.5px] font-extrabold text-purple-700 tabular-nums' }, pctTxt(bloco.pcts[j]))
+                      )
                     );
                   }),
-                  celVar(variacao(bloco.valores))
+                  celVar(variacao(bloco.valores), false)
                 )
               )
             )
@@ -757,13 +900,15 @@
     return h('div', null,
       header,
       tabelaResumo,
-      tabelaOperador('Ativacoes por operador', dt.ativos, ' dos cadastros'),
-      tabelaOperador('Alocacoes por operador', dt.alocados, ' dos cadastros'),
-      h('div', { className: 'mt-2 text-[11px] text-gray-400 leading-relaxed' },
+      tabelaOperador('Ativacoes por operador', 'A barra mostra a fatia dos cadastros da semana que cada operador ativou', dt.ativos, '#6d28d9'),
+      tabelaOperador('Alocacoes por operador', 'A barra mostra a fatia dos cadastros da semana que cada operador alocou', dt.alocados, '#1d4ed8'),
+      h('div', { className: 'mt-2 text-[11.5px] text-gray-400 leading-relaxed' },
         'Cadastros: leads com data de cadastro na semana. Ativos: leads com status ativo e data de ativacao na semana, atribuidos a quem ativou. ',
-        'Alocados: alocacoes pela data prevista de operacao (ou data de criacao quando nao houver), atribuidas a quem alocou — ',
-        'por isso um operador pode alocar mais do que ativou. Tag TP: leads da planilha TP com data na semana, deduplicados por telefone. ',
-        'Tempo medio: media de dias entre cadastro e ativacao dos leads ativados na semana.'
+        'Alocados: alocacoes pela data em que foram feitas (created_at), atribuidas a quem alocou — nao pela data prevista da operacao, ',
+        'que fica meses a frente e trazia de volta operadores antigos. Por isso um operador pode alocar mais do que ativou. ',
+        'Tag TP: leads da planilha TP com data na semana, deduplicados por telefone. ',
+        'Tempo medio: media de dias entre cadastro e ativacao dos leads ativados na semana. ',
+        'A ultima coluna e a semana corrente, ainda em curso — comparar o parcial dela com semanas fechadas sempre da queda.'
       )
     );
   }
@@ -846,9 +991,11 @@
         ) :
         !dados ? h('div', { className: 'text-center py-20 text-gray-400' }, 'Selecione uma semana') :
 
-        h('div', null,
+        h('div', { className: 'flex flex-col lg:flex-row gap-5 items-start' },
+          h(MenuSecoes, { semana: selSemana }),
+          h('div', { className: 'flex-1 min-w-0 w-full' },
           // KPIs
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), id: 'sec-kpis', titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
           h('div', { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3' },
             h(KpiCard, { label: 'Entregas', valor: fN(k.entregas), cor: '#7c3aed', sub: k.var_entregas != null ? setaV(k.var_entregas) + '%' : null, subCor: corV(k.var_entregas) }),
             h(KpiCard, { label: 'No Prazo', valor: fP(k.prazo_pct), cor: k.prazo_pct >= 85 ? '#10b981' : '#f59e0b', sub: k.var_prazo_pp != null ? (k.var_prazo_pp >= 0 ? '+' : '') + fD(k.var_prazo_pp) + ' pp' : null, subCor: corV(k.var_prazo_pp) }),
@@ -858,11 +1005,11 @@
             h(KpiCard, { label: 'Entregadores', valor: fN(k.entregadores), cor: '#a855f7' })
           ),
           // SLA 767
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), id: 'sec-767', titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_767 || [], empty: 'Sem dados do cliente 767 nesta semana' })),
           (d.evolucao_semanal || {})[767] ? h(EvolucaoChart, { data: d.evolucao_semanal[767] }) : null,
           // Porto Seco
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), titulo: 'SLA Porto Seco', sub: (d.config_count || {}).porto_seco + ' clientes configurados' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), id: 'sec-porto', titulo: 'SLA Porto Seco', sub: (d.config_count || {}).porto_seco + ' clientes configurados' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_porto_seco || [] })),
           // Porto Seco: evolução consolidada de todos os clientes
           (function() {
@@ -874,7 +1021,7 @@
             return allLojas.length > 0 ? h(EvolucaoChart, { data: { semanas: allSemanas, lojas: allLojas } }) : null;
           })(),
           // Outros
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), titulo: 'SLA Outros Monitorados', sub: (d.config_count || {}).outros + ' clientes configurados' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), id: 'sec-outros', titulo: 'SLA Outros Monitorados', sub: (d.config_count || {}).outros + ' clientes configurados' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(SlaTable, { rows: d.sla_outros || [] })),
           // Outros: evolução individual por cliente
           (function() {
@@ -883,13 +1030,13 @@
             return outClientes.map(function(cod) { return ev[cod] ? h(EvolucaoChart, { key: cod, data: ev[cod] }) : null; });
           })(),
           // Ticket
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), titulo: 'Ticket Médio Líquido por Cliente', sub: 'Comparativo 4 semanas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), id: 'sec-ticket', titulo: 'Ticket Médio Líquido por Cliente', sub: 'Comparativo 4 semanas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(CompTable, { semanas: (d.ticket_medio||{}).semanas, clientes: (d.ticket_medio||{}).clientes, tipo: 'ticket', demandaClientes: (d.demanda||{}).clientes })),
           // Demanda
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), titulo: 'Variação de Demanda', sub: 'Entregas por cliente — 4 semanas' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })), id: 'sec-demanda', titulo: 'Variação de Demanda', sub: 'Entregas por cliente — 4 semanas' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(CompTable, { semanas: (d.demanda||{}).semanas, clientes: (d.demanda||{}).clientes, tipo: 'demanda' })),
           // Garantido
-          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), titulo: 'Mínimo Garantido' }),
+          h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })), id: 'sec-garantido', titulo: 'Mínimo Garantido' }),
           h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden' }, h(GarantidoTable, { rows: d.garantido || [] })),
           // Dinamica aplicada (DINAMICA_FRONT_V1)
           h(SecaoDinamica, { fetchApi: fetchApi, selSemana: selSemana }),
@@ -897,6 +1044,7 @@
           h(SecaoAtivacao, { fetchApi: fetchApi, selSemana: selSemana }),
           // Footer
           h('div', { className: 'text-center mt-8 text-xs text-gray-400 pb-4' }, 'Gerado em ' + new Date().toLocaleString('pt-BR') + ' · Central Tutts')
+          )
         )
       )
     );
