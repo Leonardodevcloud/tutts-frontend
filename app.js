@@ -18418,10 +18418,15 @@ const hideLoadingScreen = () => {
                     var expandido = Kt["prof-" + indexReal];
                     var osDoProf = profOsExpandido[e.cod_prof] || [];
                     var carregandoOS = profOsLoading === e.cod_prof;
-                    var pctDentro = (nl(e.dentro_prazo) / (nl(e.total_entregas) || 1) * 100);
-                    var pctFora = (nl(e.fora_prazo) / (nl(e.total_entregas) || 1) * 100);
-                    var pctDentroProf = (nl(e.dentro_prazo_prof) / (nl(e.total_entregas) || 1) * 100);
-                    var pctForaProf = (nl(e.fora_prazo_prof) / (nl(e.total_entregas) || 1) * 100);
+                    // PRAZO_PROF_TABELA_V1: base = dentro+fora (mesma do card e da
+                    // linha de Total). Com o backend alinhado isso equivale ao total
+                    // de entregas, e as duas colunas passam a somar 100%.
+                    var _baseCli = (nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1;
+                    var _baseProf = (nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1;
+                    var pctDentro = (nl(e.dentro_prazo) / _baseCli * 100);
+                    var pctFora = (nl(e.fora_prazo) / _baseCli * 100);
+                    var pctDentroProf = (nl(e.dentro_prazo_prof) / _baseProf * 100);
+                    var pctForaProf = (nl(e.fora_prazo_prof) / _baseProf * 100);
                     return React.createElement(React.Fragment, {key: indexReal},
                         React.createElement("tr", {
                             className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
@@ -18439,7 +18444,8 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-right text-rose-600"}, cl(e.tempo_medio)), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-green-50"}, 
                                 React.createElement("div", {className: "text-green-700 font-bold"}, nl(e.dentro_prazo).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentro >= 80 ? "bg-green-100 text-green-700" : pctDentro >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentro.toFixed(1), "%")
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentro >= 80 ? "bg-green-100 text-green-700" : pctDentro >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentro.toFixed(1), "%"),
+                                nl(e.sem_prazo) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de conclusão na Mapp — contadas como no prazo"}, "inclui ", nl(e.sem_prazo), " sem horário")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-red-50"}, 
                                 React.createElement("div", {className: "text-red-700 font-bold"}, nl(e.fora_prazo).toLocaleString("pt-BR")),
@@ -18447,7 +18453,8 @@ const hideLoadingScreen = () => {
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
                                 React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%")
+                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%"),
+                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de alocação/conclusão — contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem horário")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
                                 React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
