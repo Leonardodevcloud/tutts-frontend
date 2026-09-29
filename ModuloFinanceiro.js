@@ -1752,6 +1752,36 @@
                             )
                         ),
                         
+                        // Card Sinistros (FIN_HOME_CARDS_V1)
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "sinistros"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                        },
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" }))
+                                ),
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Sinistros"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Apuração de avarias e extravios: tratativa com o cliente e com o entregador.")
+                            )
+                        ),
+
+                        // Card Comissão (FIN_HOME_CARDS_V1)
+                        React.createElement("div", {
+                            onClick: () => { x({...p, finTab: "comissao"}); },
+                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                        },
+                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-600 to-violet-700"}),
+                            React.createElement("div", {className: "p-5"},
+                                React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
+                                ),
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Comissão"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "Comissão dos vendedores por cliente e competência, com faixas pela data de início.")
+                            )
+                        ),
+
                         // Card Restritos
                         React.createElement("div", {
                             onClick: () => { x({...p, finTab: "restritos"}); },
