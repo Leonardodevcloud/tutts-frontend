@@ -11,11 +11,23 @@
 
   const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
   const fmtDt = d => { try { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
-  // [cf-geocode-google-v1] Tag "endereco geocodificado pelo Google"
-  const TagGeoGoogle = () => h('span', {
-    className: 'inline-flex items-center gap-1 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 whitespace-nowrap',
-    title: 'Endereço reescrito pelo Google (geocodificado)',
-  }, h('svg', { className: 'ico', style: { width: 12, height: 12 }, 'aria-hidden': 'true' }, h('use', { href: '#i-map' })), 'Geocodificado');
+  // [cf-geocode-google-v1] Tag "endereco geocodificado" + origem (memoria / cache banco / google)
+  const GEO_FONTE = {
+    memoria: { t: 'cache memória', cls: 'bg-emerald-100 text-emerald-700', tip: 'Resolvido pelo cache em memória — sem consulta ao banco nem ao Google' },
+    cache:   { t: 'cache banco',   cls: 'bg-emerald-100 text-emerald-700', tip: 'Resolvido pelo cache central (enderecos_geocodificados) — sem chamada ao Google' },
+    google:  { t: 'Google',        cls: 'bg-sky-100 text-sky-700',         tip: 'Consultado no Google (1ª vez deste endereço — agora está no cache)' },
+  };
+  const TagGeoGoogle = ({ fonte }) => {
+    const f = GEO_FONTE[fonte] || null;
+    return h('span', {
+      className: 'inline-flex items-center gap-1 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ' + (f ? f.cls : 'bg-sky-100 text-sky-700'),
+      title: 'Endereço reescrito por geocodificação' + (f ? ' · ' + f.tip : ''),
+    },
+      h('svg', { className: 'ico', style: { width: 12, height: 12 }, 'aria-hidden': 'true' }, h('use', { href: '#i-map' })),
+      'Geocodificado',
+      f && h('span', { className: 'opacity-70 font-medium' }, '· ' + f.t)
+    );
+  };
   const fmtCNPJ = v => { if (!v) return ''; const n = v.replace(/\D/g, ''); return n.length === 14 ? n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : v; };
   const fmt = v => v || '—';
 
@@ -248,7 +260,7 @@
                           h('p', { className: 'text-sm font-medium text-gray-800 flex items-center gap-2 flex-wrap' },
                             p.nome_fantasia || p.endereco_completo?.split(',')[0] || '—',
                             // [cf-geocode-google-v1] tag: endereco reescrito pelo Google
-                            p.geocodificado_google && h(TagGeoGoogle, null)
+                            p.geocodificado_google && h(TagGeoGoogle, { fonte: p.geocode_fonte })
                           ),
                           p.geocodificado_google
                             ? h('div', { className: 'mt-1 rounded-lg border border-sky-100 bg-sky-50/60 px-2.5 py-1.5 text-xs space-y-0.5' },
@@ -873,7 +885,7 @@
                             onClick: () => v.solicitacao_id && setOsAberta(v.solicitacao_id),
                             title: 'Antes: ' + (v.geo_end_original || '—') + '\nDepois: ' + (v.geo_end_novo || '—'),
                             className: 'mt-0.5 block text-left',
-                          }, h(TagGeoGoogle, null)),
+                          }, h(TagGeoGoogle, { fonte: v.geo_fonte })),
                           v.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono block mt-0.5' }, v.centro_custo_mapp)
                         ),
                         h('td', { className: 'px-3 py-3 space-y-1' },
