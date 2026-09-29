@@ -97,8 +97,18 @@
     var api = p.api, edit = p.cliente || null;
     var _b = useState(''), busca = _b[0], setBusca = _b[1];
     var _op = useState([]), opcoes = _op[0], setOpcoes = _op[1];
-    var _f = useState({ cod_cliente: edit ? edit.cod_cliente : '', nome_cliente: edit ? edit.nome_cliente : '', data_inicio: edit ? edit.data_inicio : '', vendedor_1_id: edit ? edit.vendedor_1_id : '', vendedor_2_id: edit ? (edit.vendedor_2_id || '') : '', comissao_dividida: edit ? !!edit.comissao_dividida : false, ativo: edit ? edit.ativo !== false : true });
+    var _f = useState({ cod_cliente: edit ? edit.cod_cliente : '', nome_cliente: edit ? edit.nome_cliente : '', nome_exibicao: edit ? (edit.nome_exibicao || edit.nome_cliente || '') : '', centros_custo: edit ? (edit.centros_custo || []) : [], modo_cc: edit && edit.centros_custo && edit.centros_custo.length ? 'especificos' : 'todos', data_inicio: edit ? edit.data_inicio : '', vendedor_1_id: edit ? edit.vendedor_1_id : '', vendedor_2_id: edit ? (edit.vendedor_2_id || '') : '', comissao_dividida: edit ? !!edit.comissao_dividida : false, ativo: edit ? edit.ativo !== false : true });
     var form = _f[0], setForm = _f[1];
+    // COMISSAO_CC_V1: centros de custo da loja (mesma consulta do Portais Cliente)
+    var _cc = useState(null), ccInfo = _cc[0], setCcInfo = _cc[1];
+    useEffect(function () {
+      if (!form.cod_cliente) { setCcInfo(null); return; }
+      api('/comissao/clientes-central/' + form.cod_cliente + '/centros' + (edit ? '?ignorar_id=' + edit.id : '')).then(function (j) {
+        setCcInfo(j);
+        setForm(function (f) { return f.nome_exibicao ? f : Object.assign({}, f, { nome_exibicao: j.mascara || f.nome_cliente || '' }); });
+      }).catch(function () { setCcInfo({ centros: [], mascara: '' }); });
+    }, [form.cod_cliente, api, edit]);
+    function alternarCc(nome) { setForm(function (f) { var s = f.centros_custo.slice(); var i = s.indexOf(nome); if (i >= 0) s.splice(i, 1); else s.push(nome); return Object.assign({}, f, { centros_custo: s }); }); }
     var _pv = useState(null), previa = _pv[0], setPrevia = _pv[1];
     var _sv = useState(false), salvando = _sv[0], setSalvando = _sv[1];
     var _er = useState(null), erro = _er[0], setErro = _er[1];
@@ -125,8 +135,9 @@
       if (!form.vendedor_1_id) return setErro('Selecione o vendedor responsável');
       if (form.comissao_dividida && !form.vendedor_2_id) return setErro('Selecione o segundo vendedor');
       if (form.comissao_dividida && String(form.vendedor_2_id) === String(form.vendedor_1_id)) return setErro('O segundo vendedor não pode ser o mesmo do primeiro');
+      if (form.modo_cc === 'especificos' && !form.centros_custo.length) return setErro('Selecione pelo menos um centro de custo (ou marque "Todos")');
       setSalvando(true);
-      var body = { cod_cliente: Number(form.cod_cliente), nome_cliente: form.nome_cliente, data_inicio: form.data_inicio, vendedor_1_id: Number(form.vendedor_1_id), vendedor_2_id: form.comissao_dividida ? Number(form.vendedor_2_id) : null, comissao_dividida: !!form.comissao_dividida, ativo: !!form.ativo };
+      var body = { cod_cliente: Number(form.cod_cliente), nome_cliente: form.nome_cliente, nome_exibicao: form.nome_exibicao, centros_custo: form.modo_cc === 'especificos' ? form.centros_custo : [], data_inicio: form.data_inicio, vendedor_1_id: Number(form.vendedor_1_id), vendedor_2_id: form.comissao_dividida ? Number(form.vendedor_2_id) : null, comissao_dividida: !!form.comissao_dividida, ativo: !!form.ativo };
       api(edit ? '/comissao/clientes/' + edit.id : '/comissao/clientes', { method: edit ? 'PUT' : 'POST', body: JSON.stringify(body) })
         .then(function () { p.aoSalvar(); }).catch(function (e) { setErro(e.message); }).finally(function () { setSalvando(false); });
     }
@@ -150,10 +161,30 @@
             : h('div', null,
                 h('input', { className: caixa, placeholder: 'Buscar por nome ou ID no cadastro da Central', value: busca, onChange: function (e) { setBusca(e.target.value); } }),
                 h('div', { className: 'mt-1 max-h-56 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100' }, opcoes.slice(0, 60).map(function (c) {
-                  return h('button', { key: c.cod_cliente, type: 'button', disabled: c.ja_em_comissao, onClick: function () { set('cod_cliente', c.cod_cliente); set('nome_cliente', c.nome); },
+                  return h('button', { key: c.cod_cliente, type: 'button', disabled: c.ja_em_comissao, onClick: function () { set('cod_cliente', c.cod_cliente); set('nome_cliente', c.nome); set('nome_exibicao', ''); set('centros_custo', []); set('modo_cc', 'todos'); },
                     className: 'w-full text-left px-3 py-2 text-[13px] hover:bg-purple-50 disabled:opacity-40 flex items-center gap-2' },
-                    h('span', { className: 'flex-1 truncate' }, c.nome), h('span', { className: 'text-gray-400 text-xs' }, 'ID ' + c.cod_cliente), c.ja_em_comissao ? h('span', { className: 'text-[10px] text-amber-700 font-bold' }, 'JÁ EM COMISSÃO') : null);
+                    h('span', { className: 'flex-1 truncate' }, c.nome), h('span', { className: 'text-gray-400 text-xs' }, 'ID ' + c.cod_cliente),
+                    c.ja_em_comissao ? h('span', { className: 'text-[10px] text-amber-700 font-bold' }, 'JÁ EM COMISSÃO (TODOS OS CC)') : (c.tem_cadastro ? h('span', { className: 'text-[10px] text-purple-700 font-bold', title: c.centros_em_comissao.join(', ') }, c.centros_em_comissao.length + ' CC EM COMISSÃO') : null));
                 }), opcoes.length === 0 ? h('div', { className: 'px-3 py-3 text-xs text-gray-400' }, 'Nenhum cliente encontrado') : null)))),
+      form.cod_cliente ? h('div', { className: 'space-y-3' },
+        h('div', null, h('label', { className: rotulo }, 'Nome de exibição'),
+          h('input', { className: caixa, value: form.nome_exibicao, placeholder: form.nome_cliente, onChange: function (e) { set('nome_exibicao', e.target.value); } }),
+          h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'Padrão: máscara do BI (' + ((ccInfo && ccInfo.mascara) || form.nome_cliente || '—') + '). Use pra identificar a loja/CC, ex.: "Varejão — Tancredo Neves".')),
+        h('div', null, h('label', { className: rotulo }, 'Centros de custo que entram na comissão'),
+          h('div', { className: 'flex gap-2 mb-2' }, [['todos', 'Todos os centros'], ['especificos', 'Centros específicos']].map(function (o) {
+            var sel = form.modo_cc === o[0]; var bloq = o[0] === 'todos' && ccInfo && ccInfo.todos_ocupado_por;
+            return h('button', { key: o[0], type: 'button', disabled: !!bloq, title: bloq ? 'Já existe cadastro com todos os centros: ' + bloq : '', onClick: function () { set('modo_cc', o[0]); }, className: 'px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border disabled:opacity-40 ' + (sel ? 'bg-purple-800 text-white border-purple-800' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300') }, o[1]);
+          })),
+          form.modo_cc === 'especificos' ? (!ccInfo ? h('div', { className: 'text-xs text-gray-400' }, 'Carregando centros...') : ccInfo.centros.length === 0 ? h('div', { className: 'text-xs text-amber-700' }, 'O BI não tem centro de custo para esta loja.') :
+            h('div', { className: 'max-h-52 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100' }, ccInfo.centros.map(function (c) {
+              var sel = form.centros_custo.indexOf(c.centro_custo) >= 0; var ocup = c.ocupado_por;
+              return h('label', { key: c.centro_custo, className: 'flex items-center gap-2 px-3 py-1.5 text-[12.5px] ' + (ocup ? 'opacity-50' : 'cursor-pointer hover:bg-purple-50') },
+                h('input', { type: 'checkbox', className: 'accent-purple-700', checked: sel, disabled: !!ocup, onChange: function () { alternarCc(c.centro_custo); } }),
+                h('span', { className: 'flex-1 truncate font-medium' }, c.centro_custo),
+                h('span', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, c.entregas_30d + ' entregas/30d'),
+                ocup ? h('span', { className: 'text-[10px] text-amber-700 font-bold whitespace-nowrap', title: 'Em comissão no cadastro ' + ocup }, 'EM OUTRO CADASTRO') : null);
+            })))
+          : h('p', { className: 'text-[11px] text-gray-400' }, 'Entregas, faturamento e repasse de toda a loja (todos os centros de custo do BI).'))) : null,
       h('div', null, h('label', { className: rotulo }, 'Data de início do cliente'),
         h('input', { type: 'date', className: caixa, value: form.data_inicio, onChange: function (e) { set('data_inicio', e.target.value); } }),
         h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'As faixas contam a partir desta data exata (pode ser no meio do mês). O que for faturado antes não gera comissão.')),
@@ -259,8 +290,8 @@
       rodape: [h('button', { key: 'e', className: btnS, onClick: function () { p.editar(d.cliente); } }, 'Editar cadastro'), h('button', { key: 'c', className: btnP, onClick: p.fechar }, 'Fechar')] },
       erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
       !d ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') : [
-        h('div', { key: 'r', className: 'grid grid-cols-3 gap-3' },
-          [['Vendedor(es)', d.cliente.vendedores], ['Data de início', fData(d.cliente.data_inicio)], ['Comissão dividida', d.cliente.comissao_dividida ? 'Sim' : 'Não']].map(function (x, i) {
+        h('div', { key: 'r', className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
+          [['Vendedor(es)', d.cliente.vendedores], ['Data de início', fData(d.cliente.data_inicio)], ['Comissão dividida', d.cliente.comissao_dividida ? 'Sim' : 'Não'], ['Centros de custo', d.cliente.centros_custo && d.cliente.centros_custo.length ? d.cliente.centros_custo.join(', ') : 'Todos']].map(function (x, i) {
             return h('div', { key: i, className: 'bg-gray-50 rounded-xl p-3' }, h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, x[0]), h('div', { className: 'text-sm font-bold text-gray-800' }, x[1]));
           })),
         h('div', { key: 'tabs', className: 'flex gap-1 border-b border-gray-200' }, [['extrato', 'Extrato'], ['historico', 'Histórico (' + d.historico.length + ')']].map(function (t) {
@@ -451,7 +482,8 @@
             var negCls = function (v) { return v < 0 ? 'text-red-600' : ''; };
             var comissaoAux = e.encerrado ? 'Fora do período' : !e.lancado ? 'Aguardando lançamento' : (t.saldo_pendente_saida > 0 ? 'Saldo negativo → próximo mês' : (c.comissao_dividida ? fR(t.comissao_por_vendedor) + ' para cada' : c.vendedores));
             return h('tr', { key: c.id, className: 'border-t border-gray-100 hover:bg-gray-50/60 align-top' },
-              h('td', { className: 'px-3 py-2.5' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio))),
+              h('td', { className: 'px-3 py-2.5' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio)),
+                c.centros_custo && c.centros_custo.length ? h('div', { className: 'flex flex-wrap gap-1 mt-1' }, c.centros_custo.slice(0, 3).map(function (cc) { return h('span', { key: cc, className: 'px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-mono', title: cc }, cc.length > 18 ? cc.slice(0, 17) + '…' : cc); }), c.centros_custo.length > 3 ? h('span', { className: 'text-[10px] text-gray-400', title: c.centros_custo.join(', ') }, '+' + (c.centros_custo.length - 3)) : null) : h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'todos os CC')),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, c.vendedores),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap text-gray-600' }, e.mes_relacao),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, e.periodos.length > 1 ? h('span', { className: 'inline-flex items-center gap-1' }, h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida }), '→', h(TagFaixa, { pct: e.periodos[1].faixa_pct, encerrada: e.periodos[1].encerrada, dividida: c.comissao_dividida })) : h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida })),
@@ -470,7 +502,7 @@
       // Painéis
       painel && painel.tipo === 'cliente' ? h(PainelCliente, { api: api, vendedores: vendedores, cliente: painel.cliente || null, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Cliente salvo'); recarregar(); } }) : null,
       painel && painel.tipo === 'lancamento' ? h(PainelLancamento, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Lançamento salvo'); recarregar(); } }) : null,
-      painel && painel.tipo === 'extrato' ? h(PainelExtrato, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, editar: function (cli) { setPainel({ tipo: 'cliente', cliente: { id: cli.id, cod_cliente: cli.cod_cliente, nome_cliente: cli.nome, data_inicio: cli.data_inicio, vendedor_1_id: cli.vendedor_1_id, vendedor_2_id: cli.vendedor_2_id, comissao_dividida: cli.comissao_dividida, ativo: cli.ativo } }); } }) : null,
+      painel && painel.tipo === 'extrato' ? h(PainelExtrato, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, editar: function (cli) { setPainel({ tipo: 'cliente', cliente: { id: cli.id, cod_cliente: cli.cod_cliente, nome_cliente: cli.nome_cliente || cli.nome, nome_exibicao: cli.nome_exibicao, centros_custo: cli.centros_custo || [], data_inicio: cli.data_inicio, vendedor_1_id: cli.vendedor_1_id, vendedor_2_id: cli.vendedor_2_id, comissao_dividida: cli.comissao_dividida, ativo: cli.ativo } }); } }) : null,
       painel && painel.tipo === 'vendedores' ? h(PainelVendedores, { api: api, fechar: function () { setPainel(null); }, mudou: function () { api('/comissao/vendedores').then(function (j) { setVendedores(j.vendedores || []); }); } }) : null,
       painel && painel.tipo === 'historico' ? h(PainelHistorico, { api: api, competencia: comp, fechar: function () { setPainel(null); } }) : null
     );
