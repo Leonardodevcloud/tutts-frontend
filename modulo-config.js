@@ -52,6 +52,10 @@
 
         React.useEffect(function() { carregar(); }, [carregar]);
 
+        // LOGIN_LIMITER_V2: desbloqueio manual por codigo (pega o travamento em memoria,
+        // que nao aparece na lista abaixo)
+        var codManualState = React.useState("");
+        var codManual = codManualState[0], setCodManual = codManualState[1];
         var desbloquear = function(cod, nome) {
             if (!cod) return;
             if (!confirm("🔓 Desbloquear a conta de " + (nome || cod) + "?\n\nO bloqueio e as tentativas de login registradas serão removidos.")) return;
@@ -67,7 +71,8 @@
                 .then(function(res) {
                     setProcessando(null);
                     if (res.ok) {
-                        showToast("🔓 Conta de " + (nome || cod) + " desbloqueada!", "success");
+                        showToast(res.data && res.data.somente_rate_limit ? ("🔓 " + (nome || cod) + ": limite de tentativas zerado (não havia bloqueio no banco)") : ("🔓 Conta de " + (nome || cod) + " desbloqueada!"), "success");
+                        setCodManual("");
                         carregar();
                     } else {
                         showToast("❌ " + (res.data.error || "Erro ao desbloquear"), "error");
@@ -119,6 +124,15 @@
             ),
             React.createElement("p", { className: "text-sm text-gray-500 mb-4" },
                 "Contas bloqueadas automaticamente após muitas tentativas de login falhas. Use \"Desbloquear\" para liberar o acesso e \"Senha\" caso o usuário tenha esquecido a senha."
+            ),
+            // LOGIN_LIMITER_V2: desbloqueio por codigo
+            React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4" },
+                React.createElement("div", { className: "flex-1 text-[12.5px] text-amber-900" },
+                    React.createElement("b", null, "Usuário diz que continua bloqueado e não aparece na lista? "),
+                    "Além do bloqueio no banco existe um limite de tentativas em memória (20 em 15 min por usuário). Informe o código pra zerar os dois."),
+                React.createElement("input", { value: codManual, onChange: function(e) { setCodManual(e.target.value); }, placeholder: "Código do profissional", className: "w-44 px-3 py-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400 focus:outline-none" }),
+                React.createElement("button", { disabled: !codManual.trim() || processando, onClick: function() { desbloquear(codManual.trim().replace("#", ""), null); },
+                    className: "px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-50" }, "Desbloquear")
             ),
 
             // Erro
