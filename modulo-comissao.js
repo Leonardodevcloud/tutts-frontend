@@ -439,7 +439,10 @@
     var badgeSt = { aberto: 'bg-green-100 text-green-700', fechado: 'bg-gray-200 text-gray-700', pago: 'bg-blue-100 text-blue-700' }[st];
     var th = function (t, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide text-gray-500 whitespace-nowrap' }, t); };
 
-    return h('div', { className: 'space-y-4' },
+    // COMISSAO_WIDE_V1: o Financeiro embrulha as abas em max-w-7xl (1280px); a
+    // apuração tem 12 colunas e não cabe. Sai do container e usa a largura da
+    // tela com 32px de margem de cada lado.
+    return h('div', { className: 'space-y-4', style: { marginLeft: 'calc(50% - 50vw + 32px)', marginRight: 'calc(50% - 50vw + 32px)', maxWidth: 'none' } },
       // Cabeçalho
       h('div', { className: 'flex flex-col lg:flex-row lg:items-end gap-3' },
         h('div', { className: 'flex-1' }, h('h2', { className: 'text-xl font-extrabold text-gray-900' }, 'Controle de comissões'), h('p', { className: 'text-[12.5px] text-gray-500' }, 'Entregas, faturamento e repasse vêm do BI; faixa e comissão são calculadas pela data de início de cada cliente.')),
@@ -473,7 +476,7 @@
       dados ? h('div', null,
         h('div', { className: 'text-[12px] font-bold text-gray-700 mb-2' }, 'Comissão por vendedor · ' + fComp(comp)),
         dados.por_vendedor.length === 0 ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum vendedor cadastrado.') :
-        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3' }, dados.por_vendedor.map(function (v) {
+        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3' }, dados.por_vendedor.map(function (v) {
           return h('div', { key: v.id, className: 'bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3' },
             h('div', { className: 'w-9 h-9 rounded-full bg-purple-100 text-purple-800 text-[11px] font-extrabold flex items-center justify-center' }, v.nome.split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2).toUpperCase()),
             h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'text-sm font-bold text-gray-800 truncate' }, v.nome), h('div', { className: 'text-[11px] text-gray-400' }, v.clientes + ' cliente(s) em comissão')),
@@ -486,25 +489,25 @@
           h('div', { className: 'text-[13px] font-bold text-gray-800' }, 'Apuração por cliente · ' + fComp(comp)),
           h('div', { className: 'text-[11px] text-gray-400' }, 'Lucro = (bruto − repasse) − imposto de ' + (imposto == null ? '—' : imposto) + '% sobre a comissão líquida')),
         dados.clientes.length === 0 ? h('div', { className: 'p-8 text-center text-sm text-gray-400' }, 'Nenhum cliente em comissão nesta competência. Cadastre um cliente com "+ Novo cliente".') :
-        h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12.5px]' },
+        h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12.5px] min-w-[1240px]' },
           h('thead', { className: 'bg-gray-50' }, h('tr', null, th('Cliente'), th('Vendedor(es)'), th('Mês da relação'), th('Faixa'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Com. líquida', 1), th('Imposto', 1), th('Lucro', 1), th('Comissão', 1), th('Lançamento'))),
           h('tbody', null, dados.clientes.map(function (e) {
             var t = e.totais || {}; var c = e.cliente;
             var negCls = function (v) { return v < 0 ? 'text-red-600' : ''; };
             var comissaoAux = e.encerrado ? 'Fora do período' : !e.lancado ? 'Aguardando lançamento' : (t.saldo_pendente_saida > 0 ? 'Saldo negativo → próximo mês' : (c.comissao_dividida ? fR(t.comissao_por_vendedor) + ' para cada' : c.vendedores));
             return h('tr', { key: c.id, className: 'border-t border-gray-100 hover:bg-gray-50/60 align-top' },
-              h('td', { className: 'px-3 py-2.5' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio)),
-                c.centros_custo && c.centros_custo.length ? h('div', { className: 'flex flex-wrap gap-1 mt-1' }, c.centros_custo.slice(0, 3).map(function (cc) { return h('span', { key: cc, className: 'px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-mono', title: cc }, cc.length > 18 ? cc.slice(0, 17) + '…' : cc); }), c.centros_custo.length > 3 ? h('span', { className: 'text-[10px] text-gray-400', title: c.centros_custo.join(', ') }, '+' + (c.centros_custo.length - 3)) : null) : h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'todos os CC')),
+              h('td', { className: 'px-3 py-2.5 min-w-[230px]' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio)),
+                c.centros_custo && c.centros_custo.length ? h('div', { className: 'flex flex-wrap gap-1 mt-1' }, c.centros_custo.slice(0, 3).map(function (cc) { return h('span', { key: cc, className: 'px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-mono whitespace-nowrap', title: cc }, cc.length > 26 ? cc.slice(0, 25) + '…' : cc); }), c.centros_custo.length > 3 ? h('span', { className: 'text-[10px] text-gray-400', title: c.centros_custo.join(', ') }, '+' + (c.centros_custo.length - 3)) : null) : h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'todos os CC')),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, c.vendedores),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap text-gray-600' }, e.mes_relacao),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, e.periodos.length > 1 ? h('span', { className: 'inline-flex items-center gap-1' }, h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida }), '→', h(TagFaixa, { pct: e.periodos[1].faixa_pct, encerrada: e.periodos[1].encerrada, dividida: c.comissao_dividida })) : h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida })),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums' }, e.bi_sem_dados ? h('span', { className: 'text-gray-400 text-[11px]' }, 'Sem dados no BI') : e.entregas_bi),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.faturamento_bruto)),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.repasse_entregador), e.saldo_entrada && e.saldo_entrada.valor > 0 ? h('div', { className: 'text-[10px] text-red-600 whitespace-nowrap' }, 'inclui ' + fR(e.saldo_entrada.valor) + ' pendente') : null),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums ' + negCls(t.comissao_liquida) }, fRneg(t.comissao_liquida)),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums' }, fR(t.imposto)),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums ' + negCls(t.lucro) }, fRneg(t.lucro)),
-              h('td', { className: 'px-3 py-2.5 text-right' }, h('div', { className: 'font-extrabold tabular-nums ' + (e.lancado ? 'text-purple-900' : 'text-gray-400') }, e.lancado ? fR(t.comissao) : (e.encerrado ? fR(0) : '—')), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, comissaoAux)),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.faturamento_bruto)),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.repasse_entregador), e.saldo_entrada && e.saldo_entrada.valor > 0 ? h('div', { className: 'text-[10px] text-red-600 whitespace-nowrap' }, 'inclui ' + fR(e.saldo_entrada.valor) + ' pendente') : null),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.comissao_liquida) }, fRneg(t.comissao_liquida)),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap' }, fR(t.imposto)),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.lucro) }, fRneg(t.lucro)),
+              h('td', { className: 'px-3 py-2.5 text-right whitespace-nowrap' }, h('div', { className: 'font-extrabold tabular-nums ' + (e.lancado ? 'text-purple-900' : 'text-gray-400') }, e.lancado ? fR(t.comissao) : (e.encerrado ? fR(0) : '—')), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, comissaoAux)),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, h('div', { className: 'flex gap-1.5' },
                 h('button', { className: btnL + ' ' + (e.lancado ? 'bg-gray-700' : 'bg-orange-500'), disabled: !aberto && !e.lancado, onClick: function () { setPainel({ tipo: 'lancamento', clienteId: c.id }); } }, aberto ? (e.lancado ? 'Editar' : 'Lançar') : 'Ver'),
                 h('button', { className: btnL + ' bg-purple-700', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'),
