@@ -11,6 +11,11 @@
 
   const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
   const fmtDt = d => { try { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
+  // [cf-geocode-google-v1] Tag "endereco geocodificado pelo Google"
+  const TagGeoGoogle = () => h('span', {
+    className: 'inline-flex items-center gap-1 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 whitespace-nowrap',
+    title: 'Endereço reescrito pelo Google (geocodificado)',
+  }, h('svg', { className: 'ico', style: { width: 12, height: 12 }, 'aria-hidden': 'true' }, h('use', { href: '#i-map' })), 'Geocodificado');
   const fmtCNPJ = v => { if (!v) return ''; const n = v.replace(/\D/g, ''); return n.length === 14 ? n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : v; };
   const fmt = v => v || '—';
 
@@ -239,10 +244,20 @@
                     dados.pontos.map((p, i) =>
                       h('div', { key: i, className: 'flex gap-3 items-start' },
                         h('div', { className: 'w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs flex items-center justify-center font-medium flex-shrink-0 mt-0.5' }, p.ordem),
-                        h('div', null,
-                          h('p', { className: 'text-sm font-medium text-gray-800' }, p.nome_fantasia || p.endereco_completo?.split(',')[0] || '—'),
-                          h('p', { className: 'text-xs text-gray-500' }, p.endereco_completo || '—'),
-                          p.numero_nota && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded' }, 'NF ' + p.numero_nota)
+                        h('div', { className: 'min-w-0' },
+                          h('p', { className: 'text-sm font-medium text-gray-800 flex items-center gap-2 flex-wrap' },
+                            p.nome_fantasia || p.endereco_completo?.split(',')[0] || '—',
+                            // [cf-geocode-google-v1] tag: endereco reescrito pelo Google
+                            p.geocodificado_google && h(TagGeoGoogle, null)
+                          ),
+                          p.geocodificado_google
+                            ? h('div', { className: 'mt-1 rounded-lg border border-sky-100 bg-sky-50/60 px-2.5 py-1.5 text-xs space-y-0.5' },
+                                h('p', { className: 'text-gray-500' }, h('span', { className: 'font-semibold text-gray-400 uppercase text-[10px] tracking-wide mr-1.5' }, 'Antes'), h('span', { className: 'line-through decoration-gray-300' }, p.endereco_original || '—')),
+                                h('p', { className: 'text-gray-800' }, h('span', { className: 'font-semibold text-sky-600 uppercase text-[10px] tracking-wide mr-1.5' }, 'Depois'), p.endereco_completo || '—', p.cep ? h('span', { className: 'text-gray-400' }, ' · CEP ' + p.cep) : null),
+                                (p.latitude && p.longitude) && h('p', { className: 'text-[11px] font-mono text-gray-400' }, Number(p.latitude).toFixed(6) + ', ' + Number(p.longitude).toFixed(6))
+                              )
+                            : h('p', { className: 'text-xs text-gray-500' }, p.endereco_completo || '—'),
+                          p.numero_nota && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded inline-block mt-1' }, 'NF ' + p.numero_nota)
                         )
                       )
                     )
@@ -853,6 +868,12 @@
                           h('p', { className: 'text-xs font-medium text-gray-700' }, v.destinatario_nome || v.cliente_nome || '—'),
                           (v.destinatario_cidade||v.destinatario_uf) && h('p', { className: 'text-xs text-gray-400' },
                             [v.destinatario_cidade, v.destinatario_uf].filter(Boolean).join(' / ')),
+                          // [cf-geocode-google-v1] tag na lista + antes/depois no title (clique abre a OS)
+                          v.geo_google && h('button', {
+                            onClick: () => v.solicitacao_id && setOsAberta(v.solicitacao_id),
+                            title: 'Antes: ' + (v.geo_end_original || '—') + '\nDepois: ' + (v.geo_end_novo || '—'),
+                            className: 'mt-0.5 block text-left',
+                          }, h(TagGeoGoogle, null)),
                           v.centro_custo_mapp && h('span', { className: 'text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono block mt-0.5' }, v.centro_custo_mapp)
                         ),
                         h('td', { className: 'px-3 py-3 space-y-1' },
