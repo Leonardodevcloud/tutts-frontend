@@ -142,6 +142,12 @@
         .then(function () { p.aoSalvar(); }).catch(function (e) { setErro(e.message); }).finally(function () { setSalvando(false); });
     }
 
+    // COMISSAO_DEL_V1: excluir cadastro (cadastrou errado)
+    function excluir() {
+      if (!window.confirm('Excluir o cadastro de "' + (form.nome_exibicao || form.nome_cliente) + '"?\n\nOs lançamentos deste cliente em competências ABERTAS também serão apagados. Esta ação não pode ser desfeita.')) return;
+      setSalvando(true); setErro(null);
+      api('/comissao/clientes/' + edit.id, { method: 'DELETE' }).then(function () { p.aoExcluir(); }).catch(function (e) { setErro(e.message); }).finally(function () { setSalvando(false); });
+    }
     var botoesVend = function (campo, excluir) {
       return h('div', { className: 'grid grid-cols-2 sm:grid-cols-3 gap-2' }, vendedores.filter(function (v) { return v.ativo && String(v.id) !== String(excluir); }).map(function (v) {
         var sel = String(form[campo]) === String(v.id);
@@ -150,7 +156,7 @@
     };
 
     return h(Lateral, { titulo: edit ? 'Editar cliente em comissão' : 'Novo cliente em comissão', sobretitulo: 'Cadastro', fechar: p.fechar,
-      rodape: [h('button', { key: 'c', className: btnS, onClick: p.fechar }, 'Cancelar'), h('button', { key: 's', className: btnP, disabled: salvando, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar cliente')] },
+      rodape: [edit ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluir }, 'Excluir cadastro') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, 'Cancelar'), h('button', { key: 's', className: btnP, disabled: salvando, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar cliente')] },
       erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
       h('div', null, h('label', { className: rotulo }, 'Cliente'),
         edit ? h('div', { className: 'px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm' }, form.nome_cliente, h('span', { className: 'text-gray-400 text-xs ml-2' }, 'ID ' + form.cod_cliente))
@@ -226,6 +232,11 @@
 
     function setVal(i, k, v) { setVals(function (a) { var n = a.slice(); n[i] = Object.assign({}, n[i]); n[i][k] = v; n[i]['origem_' + (k === 'faturamento_bruto' ? 'bruto' : 'repasse')] = 'manual'; return n; }); }
     function restaurarBi(i) { setVals(function (a) { var n = a.slice(); n[i] = { faturamento_bruto: moedaInput(dados.periodos[i].bi.bruto), repasse_entregador: moedaInput(dados.periodos[i].bi.repasse), origem_bruto: 'bi', origem_repasse: 'bi' }; return n; }); }
+    function excluirLanc() {
+      if (!window.confirm('Remover o lançamento de ' + fComp(p.competencia) + ' deste cliente?\n\nO cliente volta a "Aguardando lançamento" e os meses seguintes são recalculados.')) return;
+      setErro(null); setSalvando(true);
+      api('/comissao/lancamento?cliente_id=' + p.clienteId + '&competencia=' + p.competencia, { method: 'DELETE' }).then(function () { p.aoSalvar('Lançamento removido'); }).catch(function (e) { setErro(e.message); }).finally(function () { setSalvando(false); });
+    }
     function salvar() {
       setErro(null); setSalvando(true);
       api('/comissao/lancamento', { method: 'POST', body: JSON.stringify({ cliente_id: p.clienteId, competencia: p.competencia, manter_saldo_negativo: manter, periodos: dados.periodos.map(function (per, i) { return { inicio: per.inicio, faturamento_bruto: parseMoeda(vals[i].faturamento_bruto), repasse_entregador: parseMoeda(vals[i].repasse_entregador) }; }) }) })
@@ -235,7 +246,7 @@
     var linha = function (rot, val, cls, neg) { return h('div', { className: 'flex items-center justify-between text-[12.5px] py-0.5' }, h('span', { className: 'text-gray-500' }, rot), h('span', { className: 'tabular-nums font-semibold ' + (neg ? 'text-red-600' : (cls || 'text-gray-800')) }, val)); };
 
     return h(Lateral, { titulo: dados ? dados.cliente.nome : 'Carregando...', sobretitulo: 'Lançamento · ' + fComp(p.competencia), fechar: p.fechar,
-      rodape: [h('button', { key: 'c', className: btnS, onClick: p.fechar }, soLeitura ? 'Fechar' : 'Cancelar'), !soLeitura ? h('button', { key: 's', className: btnP, disabled: salvando || !dados, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar lançamento') : null] },
+      rodape: [dados && dados.lancado && !soLeitura ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluirLanc }, 'Remover lançamento') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, soLeitura ? 'Fechar' : 'Cancelar'), !soLeitura ? h('button', { key: 's', className: btnP, disabled: salvando || !dados, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar lançamento') : null] },
       erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
       !dados ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') : [
         soLeitura ? h('div', { key: 'ro', className: 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-[12.5px] text-gray-600' }, 'Competência ' + dados.status.status + ' — somente leitura.') : null,
@@ -496,12 +507,13 @@
               h('td', { className: 'px-3 py-2.5 text-right' }, h('div', { className: 'font-extrabold tabular-nums ' + (e.lancado ? 'text-purple-900' : 'text-gray-400') }, e.lancado ? fR(t.comissao) : (e.encerrado ? fR(0) : '—')), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, comissaoAux)),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, h('div', { className: 'flex gap-1.5' },
                 h('button', { className: btnL + ' ' + (e.lancado ? 'bg-gray-700' : 'bg-orange-500'), disabled: !aberto && !e.lancado, onClick: function () { setPainel({ tipo: 'lancamento', clienteId: c.id }); } }, aberto ? (e.lancado ? 'Editar' : 'Lançar') : 'Ver'),
-                h('button', { className: btnL + ' bg-purple-700', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'))));
+                h('button', { className: btnL + ' bg-purple-700', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'),
+                h('button', { className: 'px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-purple-700 hover:border-purple-300', title: 'Editar cadastro', 'aria-label': 'Editar cadastro', onClick: function () { setPainel({ tipo: 'cliente', cliente: { id: c.id, cod_cliente: c.cod_cliente, nome_cliente: c.nome_cliente || c.nome, nome_exibicao: c.nome_exibicao, centros_custo: c.centros_custo || [], data_inicio: c.data_inicio, vendedor_1_id: c.vendedor_1_id, vendedor_2_id: c.vendedor_2_id, comissao_dividida: c.comissao_dividida, ativo: c.ativo } }); } }, Ico('pencil', 'ico', { width: 14, height: 14 })))));
           }))))) : null,
 
       // Painéis
-      painel && painel.tipo === 'cliente' ? h(PainelCliente, { api: api, vendedores: vendedores, cliente: painel.cliente || null, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Cliente salvo'); recarregar(); } }) : null,
-      painel && painel.tipo === 'lancamento' ? h(PainelLancamento, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Lançamento salvo'); recarregar(); } }) : null,
+      painel && painel.tipo === 'cliente' ? h(PainelCliente, { api: api, vendedores: vendedores, cliente: painel.cliente || null, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Cliente salvo'); recarregar(); }, aoExcluir: function () { setPainel(null); aviso('Cadastro excluído'); recarregar(); } }) : null,
+      painel && painel.tipo === 'lancamento' ? h(PainelLancamento, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, aoSalvar: function (msg) { setPainel(null); aviso(typeof msg === 'string' ? msg : 'Lançamento salvo'); recarregar(); } }) : null,
       painel && painel.tipo === 'extrato' ? h(PainelExtrato, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, editar: function (cli) { setPainel({ tipo: 'cliente', cliente: { id: cli.id, cod_cliente: cli.cod_cliente, nome_cliente: cli.nome_cliente || cli.nome, nome_exibicao: cli.nome_exibicao, centros_custo: cli.centros_custo || [], data_inicio: cli.data_inicio, vendedor_1_id: cli.vendedor_1_id, vendedor_2_id: cli.vendedor_2_id, comissao_dividida: cli.comissao_dividida, ativo: cli.ativo } }); } }) : null,
       painel && painel.tipo === 'vendedores' ? h(PainelVendedores, { api: api, fechar: function () { setPainel(null); }, mudou: function () { api('/comissao/vendedores').then(function (j) { setVendedores(j.vendedores || []); }); } }) : null,
       painel && painel.tipo === 'historico' ? h(PainelHistorico, { api: api, competencia: comp, fechar: function () { setPainel(null); } }) : null
