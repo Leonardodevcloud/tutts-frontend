@@ -474,8 +474,12 @@ function hasModuleAccess(user, moduleId) {
     // Admin master tem acesso a tudo
     if (user.role === "admin_master") return true;
     
-    // Admin financeiro tem acesso apenas ao financeiro e solicitações
+    // PERM_V5: Admin financeiro — se o master configurou permissões, elas valem;
+    // sem configuração, mantém o padrão histórico (financeiro + solicitações + disponibilidade + CRM).
     if (user.role === "admin_financeiro") {
+        if (user.permissions && user.permissions.hasConfig === true && user.permissions.modulos) {
+            return user.permissions.modulos[moduleId] === true;
+        }
         return ["financeiro", "solicitacoes", "disponibilidade", "crm-whatsapp"].includes(moduleId);
     }
     
@@ -514,6 +518,26 @@ function hasModuleAccess(user, moduleId) {
     return false;
 }
 
+// PERM_V5: chave canônica de aba em allowed_tabs = "<modulo>_<aba sem hifens>".
+// Idêntica ao backend (modulos.registry.chaveAba) e à tela de Permissões.
+function permAbaKey(moduleId, abaId) {
+    return String(moduleId) + "_" + String(abaId).replace(/-/g, "");
+}
+// PERM_V5: a aba está liberada pro usuário? Master sempre; sem config de abas = tudo liberado.
+function tabPermitida(user, moduleId, abaId) {
+    if (!user) return false;
+    if (user.role === "admin_master") return true;
+    if (abaId === "permissoes") return false; // só master
+    const abas = user.permissions && user.permissions.abas ? user.permissions.abas : null;
+    if (!abas || Object.keys(abas).length === 0) return true;
+    return abas[permAbaKey(moduleId, abaId)] !== false;
+}
+// PERM_V5: abas visíveis de um módulo pro usuário (usado pelos dois headers)
+function abasPermitidas(user, moduleId) {
+    const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduleId);
+    return (moduloConfig?.abas || []).filter(a => tabPermitida(user, moduleId, a.id));
+}
+
 // Função helper para encontrar a primeira aba permitida de um módulo
 function getFirstAllowedTab(user, moduleId, defaultTab) {
     if (!user) return defaultTab;
@@ -529,11 +553,11 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
     const abas = user.permissions && user.permissions.abas ? user.permissions.abas : {};
     if (Object.keys(abas).length === 0) return defaultTab;
     
-    // Procurar primeira aba permitida
+    // Se a default está liberada, mantém; senão a primeira permitida
+    if (abas[permAbaKey(moduleId, defaultTab)] !== false && moduloConfig.abas.some(a => a.id === defaultTab)) return defaultTab;
     for (let i = 0; i < moduloConfig.abas.length; i++) {
         const aba = moduloConfig.abas[i];
-        const abaKey = moduleId + "_" + aba.id.replace("-", "");
-        if (abas[abaKey] !== false) {
+        if (abas[permAbaKey(moduleId, aba.id)] !== false) {
             return aba.id;
         }
     }
@@ -768,11 +792,8 @@ const OverflowNav = ({ items, activeId, onSelect, theme = "dark" }) => {
 
 // ==================== COMPONENTE NAVEGAÇÃO HORIZONTAL ====================
 const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasModuleAccess, socialProfile, onLogout, isLoading, lastUpdate, onRefresh }) => {
-    const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = (moduloConfig?.abas || []).filter(function(a) {
-        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
-        return true;
-    });
+    // PERM_V5: barra de abas respeita allowed_tabs (antes mostrava tudo)
+    const abas = abasPermitidas(usuario, moduloAtivo);
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
@@ -803,7 +824,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
                             if (item.id === "__home__") onNavigate("home", null);
-                            else onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
+                            else onNavigate(item.id, getFirstAllowedTab(usuario, item.id, item._modulo?.abas?.[0]?.id || null));
                         },
                         theme: "dark"
                     }),
@@ -968,11 +989,16 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
 
 // ==================== HEADER COMPACTO GLOBAL ====================
 const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate, onRefresh, onLogout, onGoHome, onNavigate, onChangeTab }) => {
-    const moduloConfig = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
-    const abas = (moduloConfig?.abas || []).filter(function(a) {
-        if (a.id === "permissoes" && usuario?.role !== "admin_master") return false;
-        return true;
-    });
+    // PERM_V5: barra de abas respeita allowed_tabs (antes mostrava tudo)
+    const abas = abasPermitidas(usuario, moduloAtivo);
+    // PERM_V5: se a aba ativa ficou proibida (ex.: restaurada do localStorage), pula pra primeira permitida
+    React.useEffect(function () {
+        if (!onChangeTab || !abaAtiva || abas.length === 0) return;
+        if (!abas.some(a => a.id === abaAtiva) && moduloAtivo !== "home" && moduloAtivo !== "disponibilidade") {
+            const cfg = SISTEMA_MODULOS_CONFIG.find(m => m.id === moduloAtivo);
+            if (cfg && cfg.abas && cfg.abas.some(a => a.id === abaAtiva)) onChangeTab(abas[0].id);
+        }
+    }, [moduloAtivo, abaAtiva, abas.length]);
     
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
@@ -1005,7 +1031,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
                             if (item.id === "__home__") { if (onGoHome) onGoHome(); }
-                            else if (onNavigate) onNavigate(item.id, item._modulo?.abas?.[0]?.id || null);
+                            else if (onNavigate) onNavigate(item.id, getFirstAllowedTab(usuario, item.id, item._modulo?.abas?.[0]?.id || null));
                         },
                         theme: "dark"
                     }),
@@ -6836,6 +6862,9 @@ const hideLoadingScreen = () => {
                     fullName: e.full_name,
                     role: e.role,
                     createdAt: new Date(e.created_at).toLocaleString("pt-BR"),
+                    ativo: e.ativo !== false,               // PERM_V5
+                    desativadoEm: e.desativado_em || null,
+                    desativadoPor: e.desativado_por || null,
                     foto: null
                 }));
                 // mostra a lista já — preservando fotos que um Ia anterior
@@ -8821,6 +8850,19 @@ const hideLoadingScreen = () => {
                     sessionStorage.setItem('tutts_csrf', t.csrfToken);
                 }
                 
+                // PERM_V5: catálogo do registry ANTES de montar o mapa de permissões
+                // (antes vinha depois → módulo só no registry ficava sem entrada no mapa).
+                try {
+                    const mcRes0 = await fetchAuth(`${API_URL}/modules-config`);
+                    if (mcRes0.ok) {
+                        const mcData0 = await mcRes0.json();
+                        if (mcData0 && Array.isArray(mcData0.modulos) && mcData0.modulos.length > 0
+                            && mcData0.modulos.every(function (m) { return m && m.id; })) {
+                            SISTEMA_MODULOS_CONFIG = mcData0.modulos;
+                        }
+                    }
+                } catch (e) { console.log("modules-config indisponivel, usando catalogo local"); }
+
                 // Carregar permissões se for admin
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {

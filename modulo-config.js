@@ -217,6 +217,8 @@
     // primeiro, busca, filtro por tipo e paginação (40 por página).
     function ListaUsuariosView(props) {
         var usuarios = props.usuarios || [];
+        var usuarioLogado = props.usuario || {};
+        var ehMaster = usuarioLogado.role === "admin_master"; // PERM_V5
         var estado = props.estado;
         var setEstado = props.setEstado;
         var API_URL = props.API_URL;
@@ -256,7 +258,8 @@
         // Filtragem
         var buscaNorm = busca.toLowerCase().trim();
         var filtrados = usuarios.filter(function(u) {
-            if (filtroTipo !== "todos" && u.role !== filtroTipo) return false;
+            if (filtroTipo === "__inativos") { if (u.ativo !== false) return false; }
+            else if (filtroTipo !== "todos" && u.role !== filtroTipo) return false;
             if (!buscaNorm) return true;
             return getNome(u).toLowerCase().indexOf(buscaNorm) !== -1 ||
                    String(getCod(u)).toLowerCase().indexOf(buscaNorm) !== -1;
@@ -310,6 +313,20 @@
             });
         };
 
+        // PERM_V5: ativar/desativar (so master)
+        var alternarAtivo = function(user) {
+            var cod = getCod(user); if (cod && typeof cod === "string") cod = cod.replace("#", "");
+            if (!cod) { showToast("❌ Código do usuário não encontrado", "error"); return; }
+            var ativar = user.ativo === false;
+            if (!confirm(ativar ? ("Reativar o acesso de " + getNome(user) + "?") : ("Desativar " + getNome(user) + "?\n\nA pessoa não consegue mais entrar e as sessões abertas são derrubadas. Nada é apagado — dá pra reativar depois."))) return;
+            fetchAuth(API_URL + "/users/" + encodeURIComponent(cod) + "/ativo", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ativo: ativar }) })
+                .then(function(resp) { return resp.json().then(function(d) { return { ok: resp.ok, d: d }; }); })
+                .then(function(r) {
+                    if (r.ok && r.d.success) { showToast(ativar ? "✅ Usuário reativado" : "⛔ Usuário desativado", "success"); if (recarregar) recarregar(); }
+                    else showToast("❌ " + (r.d.error || "Erro"), "error");
+                })
+                .catch(function() { showToast("❌ Erro ao alterar status", "error"); });
+        };
         var excluir = function(user) {
             var cod = getCod(user);
             if (cod && typeof cod === "string") cod = cod.replace("#", "");
@@ -344,12 +361,14 @@
                         " flex items-center justify-center text-white text-2xl font-bold",
                 }, nome ? nome.charAt(0).toUpperCase() : "?");
 
+            var inativo = user.ativo === false;
             return React.createElement("div", {
                 key: cod,
-                className: "relative border rounded-2xl p-5 flex flex-col items-center text-center " +
-                    "bg-white hover:shadow-md hover:border-purple-200 transition-all"
+                className: "relative border rounded-2xl p-5 flex flex-col items-center text-center transition-all " +
+                    (inativo ? "bg-gray-50 border-dashed opacity-75 hover:opacity-100" : "bg-white hover:shadow-md hover:border-purple-200")
             },
-                React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl " + r.bar }),
+                React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl " + (inativo ? "bg-gray-300" : r.bar) }),
+                inativo && React.createElement("span", { className: "absolute top-3 right-3 text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-100 text-red-700", title: "Desativado" + (user.desativadoPor ? " por " + user.desativadoPor : "") }, "Inativo"),
                 avatar,
                 React.createElement("p", {
                     className: "font-bold text-sm mt-3 leading-tight h-9 flex items-center justify-center",
@@ -367,6 +386,11 @@
                         title: "Preencher foto e WhatsApp pelo admin",
                         className: "px-3 py-2 rounded-lg text-xs font-semibold transition-colors " + (user.cadastro_completo ? "bg-green-50 text-green-700 hover:bg-green-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100")
                     }, user.cadastro_completo ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))),
+                    ehMaster && getCod(user) !== (usuarioLogado.codProfissional || usuarioLogado.cod_profissional) && React.createElement("button", {
+                        onClick: function() { alternarAtivo(user); },
+                        title: inativo ? "Reativar acesso" : "Desativar acesso (mantém histórico)",
+                        className: "px-3 py-2 rounded-lg text-xs font-semibold transition-colors " + (inativo ? "bg-green-50 text-green-700 hover:bg-green-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100")
+                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: inativo ? "#i-power" : "#i-ban" }))),
                     user.role !== "admin_master" && React.createElement("button", {
                         onClick: function() { excluir(user); },
                         className: "px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
@@ -471,7 +495,8 @@
                         React.createElement("option", { value: "admin_master" }, "Master"),
                         React.createElement("option", { value: "admin" }, "Admin"),
                         React.createElement("option", { value: "admin_financeiro" }, "Financeiro"),
-                        React.createElement("option", { value: "user" }, "Usuário")
+                        React.createElement("option", { value: "user" }, "Usuário"),
+                        React.createElement("option", { value: "__inativos" }, "Inativos")
                     )
                 )
             ),
@@ -481,7 +506,8 @@
                 chip("bg-blue-50 text-blue-700", "" + cont.admin + " Admin"),
                 chip("bg-green-50 text-green-700", "" + cont.admin_financeiro + " Financeiro"),
                 chip("bg-gray-100 text-gray-600", "" + cont.user + " Usuários"),
-                chip("bg-amber-50 text-amber-700", "" + cont.comFoto + " com foto")
+                chip("bg-amber-50 text-amber-700", "" + cont.comFoto + " com foto"),
+                chip("bg-red-50 text-red-700", "" + usuarios.filter(function(u) { return u.ativo === false; }).length + " inativos")
             ),
             // Info de resultado filtrado
             (buscaNorm || filtroTipo !== "todos") && React.createElement("p", { className: "text-sm text-gray-500 mb-3" },
@@ -510,7 +536,7 @@
         var TOTAL = MODULOS.length;
 
         var admins = usuarios.filter(function(u) {
-            return u.role === "admin" || u.role === "admin_financeiro";
+            return (u.role === "admin" || u.role === "admin_financeiro") && u.ativo !== false;
         });
 
         var sPerms   = React.useState({});    var perms = sPerms[0],   setPerms = sPerms[1];
@@ -1668,6 +1694,7 @@
                 // Lista de usuários (redesign: cards 4/linha, foto primeiro, paginação)
                 React.createElement(ListaUsuariosView, {
                     usuarios: A,
+                    usuario: l,
                     estado: p,
                     setEstado: x,
                     API_URL: API_URL,
