@@ -273,10 +273,11 @@
         }),
         calc ? h('div', { key: 'res', className: 'rounded-xl p-3 bg-purple-50 border border-purple-100' },
           h('div', { className: 'text-[11px] font-extrabold uppercase tracking-wider text-purple-800 mb-1' }, 'Resultado do mês'),
-          linha('Comissão líquida (bruto − repasse' + (dados.saldo_entrada.valor > 0 ? ' − saldo' : '') + ')', fRneg(calc.comissao_liquida), null, calc.comissao_liquida < 0),
-          linha('Imposto (' + dados.imposto_pct + '%)', fR(calc.imposto)),
-          linha('Lucro', fRneg(calc.lucro), null, calc.lucro < 0),
-          linha('Comissão do mês', fR(calc.comissao), 'text-purple-900 text-[14px]'),
+          linha('Margem (bruto − repasse' + (dados.saldo_entrada.valor > 0 ? ' − saldo pendente' : '') + ')', fRneg(calc.comissao_liquida), null, calc.comissao_liquida < 0),
+          linha('Imposto (' + dados.imposto_pct + '% da margem)', fR(calc.imposto)),
+          linha('Lucro (margem − imposto)', fRneg(calc.lucro), null, calc.lucro < 0),
+          h('div', { className: 'border-t border-purple-200 my-1' }),
+          linha('Comissão do vendedor (lucro × faixa)', fR(calc.comissao), 'text-purple-800 text-[16px] font-extrabold'),
           dados.cliente.comissao_dividida ? linha('Para cada vendedor', fR(calc.comissao_por_vendedor), 'text-purple-900') : linha('Vendedor', dados.cliente.vendedores)) : null,
         h('label', { key: 'ck', className: 'flex items-start gap-3 p-3 border rounded-xl cursor-pointer ' + (calc && calc.tem_negativo ? 'border-red-300 bg-red-50' : 'border-gray-200') },
           h('input', { type: 'checkbox', className: 'mt-1 accent-purple-700', disabled: soLeitura, checked: manter, onChange: function (e) { setManter(e.target.checked); } }),
@@ -319,7 +320,7 @@
             h('div', { className: 'text-[10.5px] text-gray-400 mt-1' }, 'Cada bloco começa na data indicada. Contorno laranja = períodos dentro da competência selecionada. Saída em ' + fData(d.cliente.saida) + '.')),
           h('div', { className: 'overflow-x-auto border border-gray-200 rounded-xl' },
             h('table', { className: 'w-full text-[12px]' },
-              h('thead', { className: 'bg-purple-900 text-white' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Com. líq.', 1), th('Imposto', 1), th('Lucro', 1), th('Faixa'), th('Comissão', 1))),
+              h('thead', { className: 'bg-purple-900 text-white' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Margem', 1), th('Imposto', 1), th('Lucro', 1), th('Faixa'), th('Comissão vend.', 1))),
               h('tbody', null, d.meses.map(function (m) {
                 return h('tr', { key: m.competencia, className: (m.selecionada ? 'bg-orange-50 ' : '') + 'border-t border-gray-100 ' + (m.previa ? 'text-gray-400 italic' : '') , title: m.previa ? 'Sem lançamento (prévia com dados do BI)' : '' },
                   td(fComp3(m.competencia), 'font-bold ' + (m.previa ? '' : 'text-gray-800')), td(m.bi_sem_dados ? '—' : m.entregas, 'text-right'), td(fR(m.faturamento_bruto), 'text-right'),
@@ -437,7 +438,8 @@
     var aberto = st === 'aberto';
     var ind = dados ? dados.indicadores : null;
     var badgeSt = { aberto: 'bg-green-100 text-green-700', fechado: 'bg-gray-200 text-gray-700', pago: 'bg-blue-100 text-blue-700' }[st];
-    var th = function (t, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide text-gray-500 whitespace-nowrap' }, t); };
+    // COMISSAO_NOMES_V1: cabeçalho com dica (title) e sub-rótulo explicando cada etapa
+    var th = function (t, right, sub, tip, cls) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide whitespace-nowrap ' + (cls || 'text-gray-500'), title: tip || '' }, t, sub ? h('div', { className: 'text-[9.5px] font-medium normal-case tracking-normal text-gray-400' }, sub) : null); };
 
     // COMISSAO_WIDE_V1: o Financeiro embrulha as abas em max-w-7xl (1280px); a
     // apuração tem 12 colunas e não cabe. Sai do container e usa a largura da
@@ -487,14 +489,18 @@
       dados ? h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
         h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100' },
           h('div', { className: 'text-[13px] font-bold text-gray-800' }, 'Apuração por cliente · ' + fComp(comp)),
-          h('div', { className: 'text-[11px] text-gray-400' }, 'Lucro = (bruto − repasse) − imposto de ' + (imposto == null ? '—' : imposto) + '% sobre a comissão líquida')),
+          h('div', { className: 'text-[11px] text-gray-400' }, 'Margem = bruto − repasse ao entregador · Imposto = ' + (imposto == null ? '—' : imposto) + '% da margem · Lucro = margem − imposto · Comissão do vendedor = lucro × faixa')),
         dados.clientes.length === 0 ? h('div', { className: 'p-8 text-center text-sm text-gray-400' }, 'Nenhum cliente em comissão nesta competência. Cadastre um cliente com "+ Novo cliente".') :
         h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12.5px] min-w-[1240px]' },
-          h('thead', { className: 'bg-gray-50' }, h('tr', null, th('Cliente'), th('Vendedor(es)'), th('Mês da relação'), th('Faixa'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Com. líquida', 1), th('Imposto', 1), th('Lucro', 1), th('Comissão', 1), th('Lançamento'))),
+          h('thead', { className: 'bg-gray-50' }, h('tr', null, th('Cliente'), th('Vendedor(es)'), th('Mês da relação'), th('Faixa'), th('Entregas', 1, 'BI'), th('Fat. bruto', 1, 'cliente'), th('Repasse', 1, 'entregador'),
+            th('Margem', 1, 'bruto − repasse', 'É a "comissão líquida" da planilha: o que sobra pra Tutts depois de pagar o entregador. Não é a comissão do vendedor.'),
+            th('Imposto', 1, '% da margem'), th('Lucro', 1, 'margem − imposto'),
+            th('Comissão vendedor', 1, 'lucro × faixa', 'Valor que o vendedor recebe: lucro × % da faixa (20/10/5%). Dividida = metade pra cada.', 'text-purple-800'),
+            th('Lançamento'))),
           h('tbody', null, dados.clientes.map(function (e) {
             var t = e.totais || {}; var c = e.cliente;
             var negCls = function (v) { return v < 0 ? 'text-red-600' : ''; };
-            var comissaoAux = e.encerrado ? 'Fora do período' : !e.lancado ? 'Aguardando lançamento' : (t.saldo_pendente_saida > 0 ? 'Saldo negativo → próximo mês' : (c.comissao_dividida ? fR(t.comissao_por_vendedor) + ' para cada' : c.vendedores));
+            var comissaoAux = e.encerrado ? 'Fora do período' : !e.lancado ? 'prévia · aguardando lançamento' : (t.saldo_pendente_saida > 0 ? 'Saldo negativo → próximo mês' : (c.comissao_dividida ? fR(t.comissao_por_vendedor) + ' para cada' : c.vendedores));
             return h('tr', { key: c.id, className: 'border-t border-gray-100 hover:bg-gray-50/60 align-top' },
               h('td', { className: 'px-3 py-2.5 min-w-[230px]' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio)),
                 c.centros_custo && c.centros_custo.length ? h('div', { className: 'flex flex-wrap gap-1 mt-1' }, c.centros_custo.slice(0, 3).map(function (cc) { return h('span', { key: cc, className: 'px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-mono whitespace-nowrap', title: cc }, cc.length > 26 ? cc.slice(0, 25) + '…' : cc); }), c.centros_custo.length > 3 ? h('span', { className: 'text-[10px] text-gray-400', title: c.centros_custo.join(', ') }, '+' + (c.centros_custo.length - 3)) : null) : h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'todos os CC')),
@@ -507,7 +513,9 @@
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.comissao_liquida) }, fRneg(t.comissao_liquida)),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap' }, fR(t.imposto)),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.lucro) }, fRneg(t.lucro)),
-              h('td', { className: 'px-3 py-2.5 text-right whitespace-nowrap' }, h('div', { className: 'font-extrabold tabular-nums ' + (e.lancado ? 'text-purple-900' : 'text-gray-400') }, e.lancado ? fR(t.comissao) : (e.encerrado ? fR(0) : '—')), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, comissaoAux)),
+              h('td', { className: 'px-3 py-2.5 text-right whitespace-nowrap ' + (e.lancado && !e.encerrado ? 'bg-purple-50/70' : '') },
+                h('div', { className: 'tabular-nums text-[14px] ' + (e.lancado && !e.encerrado ? 'font-extrabold text-purple-800' : 'font-semibold text-gray-400 italic') }, e.encerrado ? fR(0) : fR(t.comissao)),
+                h('div', { className: 'text-[10.5px] whitespace-nowrap ' + (e.lancado ? 'text-purple-500' : 'text-gray-400') }, comissaoAux)),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, h('div', { className: 'flex gap-1.5' },
                 h('button', { className: btnL + ' ' + (e.lancado ? 'bg-gray-700' : 'bg-orange-500'), disabled: !aberto && !e.lancado, onClick: function () { setPainel({ tipo: 'lancamento', clienteId: c.id }); } }, aberto ? (e.lancado ? 'Editar' : 'Lançar') : 'Ver'),
                 h('button', { className: btnL + ' bg-purple-700', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'),
