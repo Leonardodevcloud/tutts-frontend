@@ -295,7 +295,19 @@
     var _d = useState(null), d = _d[0], setD = _d[1];
     var _ab = useState('extrato'), aba = _ab[0], setAba = _ab[1];
     var _er = useState(null), erro = _er[0], setErro = _er[1];
-    useEffect(function () { api('/comissao/extrato/' + p.clienteId + '?competencia=' + p.competencia).then(setD).catch(function (e) { setErro(e.message); }); }, [p.clienteId, p.competencia, api]);
+    // COMISSAO_RETRO_V1: lançar meses anteriores de uma vez (migração do Excel)
+    var _rt = useState(null), retro = _rt[0], setRetro = _rt[1]; // { ate, fechar }
+    var _rb = useState(false), retroBusy = _rb[0], setRetroBusy = _rb[1];
+    var _rr = useState(null), retroRes = _rr[0], setRetroRes = _rr[1];
+    function carregarExtrato() { return api('/comissao/extrato/' + p.clienteId + '?competencia=' + p.competencia).then(setD).catch(function (e) { setErro(e.message); }); }
+    useEffect(function () { carregarExtrato(); }, [p.clienteId, p.competencia, api]);
+    var mesesRetro = d ? d.meses.filter(function (m) { return m.previa && !m.encerrado && m.competencia < compHoje(); }) : [];
+    function executarRetro() {
+      setRetroBusy(true); setRetroRes(null);
+      api('/comissao/extrato/' + p.clienteId + '/lancar-anteriores', { method: 'POST', body: JSON.stringify({ ate: retro.ate, fechar_e_pagar: !!retro.fechar }) })
+        .then(function (j) { setRetroRes(j); setRetro(null); p.mudou && p.mudou(); return carregarExtrato(); })
+        .catch(function (e) { setErro(e.message); }).finally(function () { setRetroBusy(false); });
+    }
     var th = function (t, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-2 py-2 text-[10px] font-extrabold uppercase tracking-wide' }, t); };
     var td = function (t, cls) { return h('td', { className: 'px-2 py-1.5 tabular-nums whitespace-nowrap ' + (cls || '') }, t); };
     return h(Lateral, { titulo: d ? d.cliente.nome : 'Carregando...', sobretitulo: 'Extrato de comissão · ID ' + (d ? d.cliente.cod_cliente : ''), fechar: p.fechar, largura: 860,
@@ -310,6 +322,28 @@
           return h('button', { key: t[0], type: 'button', onClick: function () { setAba(t[0]); }, className: 'px-3 py-2 text-[13px] font-semibold border-b-2 -mb-px ' + (aba === t[0] ? 'border-purple-700 text-purple-800' : 'border-transparent text-gray-500') }, t[1]);
         })),
         aba === 'extrato' ? h('div', { key: 'ex', className: 'space-y-4' },
+          mesesRetro.length > 0 && !retro ? h('div', { className: 'flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] text-amber-800' },
+            h('span', { className: 'flex-1' }, h('b', null, mesesRetro.length + ' mês(es) anterior(es) sem lançamento'), ' (' + fComp3(mesesRetro[0].competencia) + ' a ' + fComp3(mesesRetro[mesesRetro.length - 1].competencia) + '). Aparecem como prévia e não entram no total.'),
+            h('button', { className: btnP + ' bg-amber-600 hover:bg-amber-700', onClick: function () { setRetro({ ate: mesesRetro[mesesRetro.length - 1].competencia, fechar: false }); } }, 'Lançar meses anteriores')) : null,
+          retro ? h('div', { className: 'rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-3' },
+            h('div', { className: 'text-[13px] font-bold text-amber-900' }, 'Lançar meses anteriores com os valores do BI'),
+            h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+              h('div', null, h('label', { className: rotulo }, 'Do início (' + fComp3(d.cliente.data_inicio.slice(0, 7)) + ') até'),
+                h('select', { className: caixa, value: retro.ate, onChange: function (e) { setRetro(Object.assign({}, retro, { ate: e.target.value })); } }, mesesRetro.map(function (m) { return h('option', { key: m.competencia, value: m.competencia }, fComp(m.competencia)); }))),
+              h('label', { className: 'flex items-start gap-2 text-[12.5px] mt-5 cursor-pointer' }, h('input', { type: 'checkbox', className: 'mt-0.5 accent-purple-700', checked: retro.fechar, onChange: function (e) { setRetro(Object.assign({}, retro, { fechar: e.target.checked })); } }),
+                h('span', null, h('b', null, 'Fechar e marcar como pago'), ' essas competências', h('span', { className: 'block text-[11px] text-gray-500' }, 'Só fecha a competência se nenhum outro cliente estiver pendente nela.')))),
+            h('div', { className: 'overflow-x-auto max-h-56 overflow-y-auto border border-amber-200 rounded-lg bg-white' }, h('table', { className: 'w-full text-[12px]' },
+              h('thead', { className: 'bg-amber-100/60 text-amber-900' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Faixa'), th('Comissão', 1))),
+              h('tbody', null, mesesRetro.filter(function (m) { return m.competencia <= retro.ate; }).map(function (m) {
+                return h('tr', { key: m.competencia, className: 'border-t border-gray-100' }, td(fComp3(m.competencia), 'font-bold'), td(m.bi_sem_dados ? 'sem dados' : m.entregas, 'text-right ' + (m.bi_sem_dados ? 'text-red-600' : '')), td(fR(m.faturamento_bruto), 'text-right'), td(fR(m.repasse_entregador), 'text-right'), td(m.faixa_rotulo), td(fR(m.comissao), 'text-right font-bold text-purple-800'));
+              })))),
+            h('p', { className: 'text-[11px] text-amber-800' }, 'Os valores podem ser ajustados depois, mês a mês, pelo botão Editar do painel (enquanto a competência estiver aberta). Meses sem dados no BI são lançados com zero.'),
+            h('div', { className: 'flex justify-end gap-2' }, h('button', { className: btnS, disabled: retroBusy, onClick: function () { setRetro(null); } }, 'Cancelar'), h('button', { className: btnP, disabled: retroBusy, onClick: executarRetro }, retroBusy ? 'Lançando...' : 'Confirmar lançamentos'))) : null,
+          retroRes ? h('div', { className: 'rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 text-[12.5px] text-green-800' },
+            h('b', null, retroRes.criados.length + ' lançamento(s) criado(s)'), retroRes.criados.length ? ' (' + retroRes.criados.map(function (c) { return fComp3(c.competencia); }).join(', ') + ')' : '',
+            retroRes.fechados.length ? h('div', null, 'Fechadas e pagas: ' + retroRes.fechados.map(fComp3).join(', ')) : null,
+            retroRes.nao_fechados.length ? h('div', { className: 'text-amber-800' }, 'Não fechadas (outros clientes pendentes): ' + retroRes.nao_fechados.map(function (n) { return fComp3(n.competencia) + ' — ' + n.pendentes.join(', '); }).join(' · ')) : null,
+            retroRes.pulados.length ? h('div', { className: 'text-gray-600' }, 'Puladas: ' + retroRes.pulados.map(function (x) { return fComp3(x.competencia) + ' (' + x.motivo + ')'; }).join(', ')) : null) : null,
           h('div', null,
             h('div', { className: 'text-[12px] font-bold text-gray-700 mb-2' }, 'Linha do tempo das faixas (12 meses a partir do início)'),
             h('div', { className: 'grid gap-1', style: { gridTemplateColumns: 'repeat(12, minmax(0,1fr))' } }, d.timeline.map(function (b, i) {
@@ -525,7 +559,7 @@
       // Painéis
       painel && painel.tipo === 'cliente' ? h(PainelCliente, { api: api, vendedores: vendedores, cliente: painel.cliente || null, fechar: function () { setPainel(null); }, aoSalvar: function () { setPainel(null); aviso('Cliente salvo'); recarregar(); }, aoExcluir: function () { setPainel(null); aviso('Cadastro excluído'); recarregar(); } }) : null,
       painel && painel.tipo === 'lancamento' ? h(PainelLancamento, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, aoSalvar: function (msg) { setPainel(null); aviso(typeof msg === 'string' ? msg : 'Lançamento salvo'); recarregar(); } }) : null,
-      painel && painel.tipo === 'extrato' ? h(PainelExtrato, { api: api, clienteId: painel.clienteId, competencia: comp, fechar: function () { setPainel(null); }, editar: function (cli) { setPainel({ tipo: 'cliente', cliente: { id: cli.id, cod_cliente: cli.cod_cliente, nome_cliente: cli.nome_cliente || cli.nome, nome_exibicao: cli.nome_exibicao, centros_custo: cli.centros_custo || [], data_inicio: cli.data_inicio, vendedor_1_id: cli.vendedor_1_id, vendedor_2_id: cli.vendedor_2_id, comissao_dividida: cli.comissao_dividida, ativo: cli.ativo } }); } }) : null,
+      painel && painel.tipo === 'extrato' ? h(PainelExtrato, { api: api, clienteId: painel.clienteId, competencia: comp, mudou: function () { aviso('Meses anteriores lançados'); recarregar(); }, fechar: function () { setPainel(null); }, editar: function (cli) { setPainel({ tipo: 'cliente', cliente: { id: cli.id, cod_cliente: cli.cod_cliente, nome_cliente: cli.nome_cliente || cli.nome, nome_exibicao: cli.nome_exibicao, centros_custo: cli.centros_custo || [], data_inicio: cli.data_inicio, vendedor_1_id: cli.vendedor_1_id, vendedor_2_id: cli.vendedor_2_id, comissao_dividida: cli.comissao_dividida, ativo: cli.ativo } }); } }) : null,
       painel && painel.tipo === 'vendedores' ? h(PainelVendedores, { api: api, fechar: function () { setPainel(null); }, mudou: function () { api('/comissao/vendedores').then(function (j) { setVendedores(j.vendedores || []); }); } }) : null,
       painel && painel.tipo === 'historico' ? h(PainelHistorico, { api: api, competencia: comp, fechar: function () { setPainel(null); } }) : null
     );
