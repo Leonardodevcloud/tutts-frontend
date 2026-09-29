@@ -1104,7 +1104,7 @@
     const [clienteSel, setClienteSel] = useState('');
     const [config, setConfig]         = useState(null);
     const [embs, setEmbs]             = useState([]);
-    const [formC, setFormC]           = useState({ cf_email: '', cf_senha: '', cf_id_cliente: '320', cnpj_transportadora: '', polling_ativo: true, ativo: true, geocode_google_destino: false });
+    const [formC, setFormC]           = useState({ cf_email: '', cf_senha: '', cf_id_cliente: '320', cnpj_transportadora: '', polling_ativo: true, ativo: true });
     const [modalEmb, setModalEmb]     = useState(null);
     // [cf-geocode-google-v1] testador de geocodificacao do destino
     const [geoTeste, setGeoTeste]     = useState({ rua: '', numero: '', bairro: '', cidade: '', uf: '', cep: '' });
@@ -1123,7 +1123,7 @@
       fetchAuth(API_URL + '/confirmafacil/config/' + clienteSel).then(r => r.json()).then(d => {
         if (d.config) {
           setConfig(d.config);
-          setFormC({ cf_email: d.config.cf_email || '', cf_senha: '', cf_id_cliente: String(d.config.cf_id_cliente || '320'), cnpj_transportadora: d.config.cnpj_transportadora || '', polling_ativo: d.config.polling_ativo !== false, ativo: d.config.ativo !== false, geocode_google_destino: d.config.geocode_google_destino === true });
+          setFormC({ cf_email: d.config.cf_email || '', cf_senha: '', cf_id_cliente: String(d.config.cf_id_cliente || '320'), cnpj_transportadora: d.config.cnpj_transportadora || '', polling_ativo: d.config.polling_ativo !== false, ativo: d.config.ativo !== false });
         }
       }).catch(() => {});
       fetchAuth(API_URL + '/confirmafacil/embarcadores/' + clienteSel).then(r => r.json()).then(d => setEmbs(d.embarcadores || [])).catch(() => {});
@@ -1178,17 +1178,17 @@
             h('label', { className: 'flex items-center gap-2 text-sm cursor-pointer' }, h('input', { type: 'checkbox', checked: formC.ativo, onChange: e => setF('ativo', e.target.checked), className: 'accent-purple-600' }), 'Ativo'),
             h('label', { className: 'flex items-center gap-2 text-sm cursor-pointer' }, h('input', { type: 'checkbox', checked: formC.polling_ativo, onChange: e => setF('polling_ativo', e.target.checked), className: 'accent-purple-600' }), 'Polling automático')
           ),
-          // [cf-geocode-google-v1] Geocodificar destino no Google (busca CF, XML e manual)
+          // [cf-geocode-google-v1] Geocodificacao do destino no Google — SEMPRE ativa (busca CF, XML e manual)
           h('div', { className: 'col-span-2 border border-gray-100 rounded-xl p-3 bg-gray-50/60' },
-            h('label', { className: 'flex items-center gap-2 text-sm cursor-pointer font-medium text-gray-700' },
-              h('input', { type: 'checkbox', checked: formC.geocode_google_destino, onChange: e => setF('geocode_google_destino', e.target.checked), className: 'accent-purple-600' }),
+            h('div', { className: 'flex items-center gap-2 text-sm font-medium text-gray-700' },
               h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })),
-              'Geocodificar destino no Google'
+              'Geocodificação do destino no Google',
+              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700' }, 'sempre ativa')
             ),
             h('p', { className: 'text-[11.5px] text-gray-500 mt-1 ml-6' },
-              'Antes de criar a corrida (busca CF, XML e manual), o endereço de entrega passa pelo Google e é reescrito com rua, número, bairro, cidade, UF, CEP e coordenadas corrigidos. ',
-              'Só aplica quando o resultado é preciso (ROOFTOP/interpolado, mesma UF) — senão o endereço segue como veio. ',
-              'Usa o cache central de geocodificação (mesmo do HUB): cada endereço bate no Google uma única vez.'
+              'Em todas as corridas do CF (busca, XML e manual) o endereço de entrega passa pelo Google e é reescrito com rua, número, bairro, cidade, UF, CEP e coordenadas corrigidos. ',
+              'Só aplica quando o resultado é preciso (ROOFTOP/interpolado, mesma UF) — senão o endereço segue como veio da NF. ',
+              'Cache em 2 camadas (memória + banco central, o mesmo do HUB): cada endereço bate no Google uma única vez.'
             ),
             h('div', { className: 'mt-3 ml-6' },
               h('div', { className: 'text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5' }, 'Testar um endereço'),
@@ -1209,12 +1209,13 @@
               geoRes && h('div', { className: 'mt-2 text-[12px] rounded-lg border p-2.5 ' + (geoRes.aplicado ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800') },
                 geoRes.aplicado
                   ? h('div', null,
-                      h('div', { className: 'font-semibold' }, (geoRes.fonte === 'cache' ? 'Cache' : 'Google') + ' · ' + (geoRes.location_type || '')),
+                      h('div', { className: 'font-semibold' }, (geoRes.fonte === 'memoria' ? 'Cache (memória)' : geoRes.fonte === 'cache' ? 'Cache (banco)' : 'Google') + ' · ' + (geoRes.location_type || '')),
                       h('div', { className: 'mt-1' }, h('span', { className: 'text-gray-500' }, 'Antes: '), [geoRes.antes.rua, geoRes.antes.numero, geoRes.antes.bairro, geoRes.antes.cidade, geoRes.antes.uf, geoRes.antes.cep].filter(Boolean).join(', ')),
                       h('div', null, h('span', { className: 'text-gray-500' }, 'Depois: '), [geoRes.depois.rua, geoRes.depois.numero, geoRes.depois.bairro, geoRes.depois.cidade, geoRes.depois.uf, geoRes.depois.cep].filter(Boolean).join(', ')),
                       h('div', { className: 'font-mono text-[11px] text-gray-500' }, geoRes.depois.la + ', ' + geoRes.depois.lo + ' — ' + (geoRes.endereco_formatado || ''))
                     )
-                  : h('div', null, h('span', { className: 'font-semibold' }, 'Não aplicado'), ' — ', geoRes.motivo || geoRes.error || 'sem resultado preciso', '. O endereço seguiria como veio da NF.')
+                  : h('div', null, h('span', { className: 'font-semibold' }, 'Não aplicado'), ' — ', geoRes.motivo || geoRes.error || 'sem resultado preciso', '. O endereço seguiria como veio da NF.'),
+                geoRes.stats && h('div', { className: 'mt-1.5 text-[11px] text-gray-500 font-mono' }, 'desde o boot: memória ' + geoRes.stats.mem + ' · banco ' + geoRes.stats.banco + ' · google ' + geoRes.stats.google + ' · sem resultado ' + geoRes.stats.falha)
               )
             )
           )
@@ -1879,7 +1880,7 @@
             campo('Pasta', h('input', inputProps(form.imap_pasta, v => setForm({ ...form, imap_pasta: v }), 'NF-e'))),
             campo('Data de corte', h('input', { ...inputProps(form.xml_data_corte, v => setForm({ ...form, xml_data_corte: v }), ''), type: 'date' })),
             campo('TLS', h('label', { className: 'flex items-center gap-2 text-[13px] mt-1' }, h('input', { type: 'checkbox', checked: form.imap_tls, onChange: e => setForm({ ...form, imap_tls: e.target.checked }) }), 'Conexão segura (993/TLS)')),
-            campo('Geocodificar destino', h('div', { className: 'text-[12px] text-gray-500 mt-2' }, 'Configurado na aba ', h('b', null, 'Config'), ' → "Geocodificar destino no Google" (vale para busca CF, XML e manual).')),
+            campo('Geocodificar destino', h('div', { className: 'text-[12px] text-gray-500 mt-2' }, 'Sempre ativo via Google (busca CF, XML e manual). Testador na aba ', h('b', null, 'Config'), '.')),
             h('div', { className: 'md:col-span-2 flex gap-2' },
               h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
               h('button', { disabled: busy, onClick: () => testarImap(c.cliente_id), className: 'px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50' }, 'Testar IMAP')
