@@ -2464,39 +2464,41 @@
                 className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar")))), p.searchCod && resumoData && (() => {
                 const e = resumoData;
+                // RESUMO_KPI_V2: categoria de cada saque (mesma regra da Conciliacao).
+                // Antes os KPIs olhavam so o status literal e os "pago_stark" (a maioria)
+                // nao entravam em lugar nenhum — Total 126 vs 0+35+2+2.
+                const resumoCat = r => {
+                    if (r.status === "aguardando_aprovacao" || r.status === "aguardando_pagamento_stark") return "aguardando";
+                    if (r.status === "rejeitado") return "rejeitado";
+                    if (r.status === "inativo") return "inativo";
+                    if (r.status === "aprovado_gratuidade" || (r.status === "pago_stark" && r.has_gratuity === true)) return "aprovado_gratuidade";
+                    if (r.status === "aprovado" || r.status === "pago_stark") return "aprovado";
+                    return r.status || "outro";
+                };
+                const fR = n => "R$ " + Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const nCat = c => e.filter(r => resumoCat(r) === c).length;
+                // Lucro = taxa cobrada nos saques pagos SEM gratuidade (solicitado - repassado ao profissional)
+                const cobrados = e.filter(r => resumoCat(r) === "aprovado");
+                const lucro = cobrados.reduce((s, r) => s + (parseFloat(r.requested_amount || 0) - parseFloat(r.final_amount || 0)), 0);
+                const totalSolicitadoPago = e.filter(r => resumoCat(r) === "aprovado" || resumoCat(r) === "aprovado_gratuidade").reduce((s, r) => s + parseFloat(r.requested_amount || 0), 0);
+                const totalRepassado = e.filter(r => resumoCat(r) === "aprovado" || resumoCat(r) === "aprovado_gratuidade").reduce((s, r) => s + parseFloat(r.final_amount || 0), 0);
+                const kpi = (rotulo, valor, cor, aux) => React.createElement("div", { className: "bg-white rounded-xl shadow p-4" },
+                    React.createElement("p", { className: "text-sm text-gray-600" }, rotulo),
+                    React.createElement("p", { className: "text-2xl font-bold " + cor }, valor),
+                    aux ? React.createElement("p", { className: "text-[11px] text-gray-400 mt-0.5" }, aux) : null);
                 return React.createElement(React.Fragment, null, React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
-                }, React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Total"), React.createElement("p", {
-                    className: "text-2xl font-bold text-purple-600"
-                }, e.length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aguardando"), React.createElement("p", {
-                    className: "text-2xl font-bold text-yellow-600"
-                }, e.filter(e => "aguardando_aprovacao" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aprovadas"), React.createElement("p", {
-                    className: "text-2xl font-bold text-green-600"
-                }, e.filter(e => "aprovado" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Aprov. Gratuidade"), React.createElement("p", {
-                    className: "text-2xl font-bold text-blue-600"
-                }, e.filter(e => "aprovado_gratuidade" === e.status).length)), React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("p", {
-                    className: "text-sm text-gray-600"
-                }, "Rejeitadas"), React.createElement("p", {
-                    className: "text-2xl font-bold text-red-600"
-                }, e.filter(e => "rejeitado" === e.status).length))), React.createElement("div", {
+                    className: "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6"
+                },
+                    kpi("Total", e.length, "text-purple-600", fR(totalSolicitadoPago) + " sacados"),
+                    kpi("Aguardando", nCat("aguardando"), "text-yellow-600"),
+                    kpi("Aprovadas", nCat("aprovado"), "text-green-600", "inclui pagas via Stark"),
+                    kpi("Aprov. Gratuidade", nCat("aprovado_gratuidade"), "text-blue-600", "sem taxa"),
+                    kpi("Rejeitadas", nCat("rejeitado"), "text-red-600"),
+                    React.createElement("div", { className: "rounded-xl shadow p-4 text-white", style: { background: "linear-gradient(135deg,#7c3aed,#9333ea)" }, title: "Soma de (valor solicitado − valor repassado) nos saques pagos sem gratuidade" },
+                        React.createElement("p", { className: "text-sm", style: { color: "#e9d5ff" } }, "Lucro (taxas cobradas)"),
+                        React.createElement("p", { className: "text-2xl font-bold" }, fR(lucro)),
+                        React.createElement("p", { className: "text-[11px] mt-0.5", style: { color: "#ddd6fe" } }, cobrados.length + " saque(s) cobrado(s) · repassado " + fR(totalRepassado)))
+                ), React.createElement("div", {
                     className: "bg-white rounded-xl shadow overflow-hidden"
                 }, React.createElement("div", {
                     className: "p-4 border-b"
@@ -2511,34 +2513,34 @@
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Todas ("), e.length, ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
-                        resumoFilter: "aguardando_aprovacao"
+                        resumoFilter: "aguardando"
                     }),
-                    className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aguardando_aprovacao" === p.resumoFilter ? "bg-yellow-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando ("), e.filter(e => "aguardando_aprovacao" === e.status).length, ")"), React.createElement("button", {
+                    className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aguardando" === p.resumoFilter ? "bg-yellow-500 text-white" : "bg-gray-100 hover:bg-gray-200")
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando ("), nCat("aguardando"), ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "aprovado"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado" === p.resumoFilter ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas ("), e.filter(e => "aprovado" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas ("), nCat("aprovado"), ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "aprovado_gratuidade"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("aprovado_gratuidade" === p.resumoFilter ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Aprov. Gratuidade ("), e.filter(e => "aprovado_gratuidade" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Aprov. Gratuidade ("), nCat("aprovado_gratuidade"), ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "rejeitado"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("rejeitado" === p.resumoFilter ? "bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas ("), e.filter(e => "rejeitado" === e.status).length, ")"), React.createElement("button", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas ("), nCat("rejeitado"), ")"), React.createElement("button", {
                     onClick: () => x({
                         ...p,
                         resumoFilter: "inativo"
                     }),
                     className: "px-4 py-2 rounded-lg font-semibold text-sm " + ("inativo" === p.resumoFilter ? "bg-orange-500 text-white" : "bg-gray-100 hover:bg-gray-200")
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Inativo ("), e.filter(e => "inativo" === e.status).length, ")"))), React.createElement("div", {
+                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Inativo ("), nCat("inativo"), ")"))), React.createElement("div", {
                     className: "overflow-x-auto"
                 }, React.createElement("table", {
                     className: "w-full text-sm"
@@ -2562,7 +2564,7 @@
                     className: "px-4 py-3 text-center"
                 }, "Gratuidade"), React.createElement("th", {
                     className: "px-4 py-3 text-center"
-                }, "Status"))), React.createElement("tbody", null, e.filter(e => !p.resumoFilter || e.status === p.resumoFilter).map(e => {
+                }, "Status"))), React.createElement("tbody", null, e.filter(e => !p.resumoFilter || resumoCat(e) === p.resumoFilter || e.status === p.resumoFilter).map(e => {
                     const t = new Date(e.created_at),
                         a = t.toLocaleDateString("pt-BR"),
                         l = t.toLocaleTimeString("pt-BR", {
