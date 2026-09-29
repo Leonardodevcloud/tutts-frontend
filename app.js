@@ -22230,9 +22230,9 @@ const hideLoadingScreen = () => {
             })))))))))
         })()))})(), "disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
-                ? React.createElement(window.ModuloDisponibilidadeContent, {
+                ? React.createElement(React.Fragment, null, React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth, getToken
-                })
+                }), typeof window.PainelDisponiveis !== 'undefined' ? React.createElement(window.PainelDisponiveis, { API_URL, fetchAuth, ja, usuario: l, getToken }) : null) // DISPONIVEIS_V1
                 : React.createElement("div", {className: "flex items-center justify-center py-12"},
                     React.createElement("div", {className: "text-center"},
                         React.createElement("div", {className: "animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"}),

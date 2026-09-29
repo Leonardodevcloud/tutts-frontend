@@ -102,6 +102,9 @@
                 if (!l || !API_URL) return;
                 _dispWsAuthFailed.current = false;
 
+                // DISPONIVEIS_V1: painel flutuante pede recarga da escala apos alocar
+                var _onDispReload = function() { reloadDebounced(); };
+                window.addEventListener('disponibilidade:reload', _onDispReload);
                 function reloadDebounced() {
                     if (_dispWsReloadTimer.current) clearTimeout(_dispWsReloadTimer.current);
                     _dispWsReloadTimer.current = setTimeout(function() {
@@ -209,6 +212,8 @@
                                     removerLinha(data.data.id);
                                 } else if (data.event === 'DISP_RELOAD') {
                                     reloadDebounced();
+                                } else if (data.event === 'DISPONIVEIS_CHANGED') { // DISPONIVEIS_V1
+                                    window.dispatchEvent(new CustomEvent('disponiveis:changed', { detail: data.data || {} }));
                                 }
                             } catch (err) {
                                 console.error('❌ [WS-Disp] Erro:', err);
@@ -242,6 +247,7 @@
                 conectar();
 
                 return function() {
+                    window.removeEventListener('disponibilidade:reload', _onDispReload); // DISPONIVEIS_V1
                     clearInterval(pingInterval);
                     if (_dispWsReconnect.current) clearTimeout(_dispWsReconnect.current);
                     if (_dispWsReloadTimer.current) clearTimeout(_dispWsReloadTimer.current);
