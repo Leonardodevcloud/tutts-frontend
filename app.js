@@ -564,7 +564,7 @@ var NAV_TAB_NAME = {
   "mensagens":"message","indicacoes":"handshake","indicações":"handshake","avisos":"bell","recrutamento":"users",
   "provedores":"link","chat":"message","garantido":"wallet","upload":"upload","backup":"save","validacao":"check",
   "validação":"check","conciliacao":"refresh","conciliação":"refresh","resumo":"filetext","gratuidades":"package",
-  "sinistros":"alert","restritos":"ban","loja":"package","horarios":"settings","horários":"settings","limites":"lock","saldo":"card"
+  "sinistros":"alert","comissao":"wallet","comissão":"wallet","restritos":"ban","loja":"package","horarios":"settings","horários":"settings","limites":"lock","saldo":"card"
 };
 function tabLabelEl(label) {
   if (!label || typeof label !== "string") return label;
@@ -594,7 +594,7 @@ let SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
     },
     { id: "financeiro", label: "Financeiro", icon: "💰",
-      abas: [{id: "home-fin", label: "Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "limites", label: "Limites"}, {id: "stark-bank", label: "Pix Stark"}, {id: "acerto-prof", label: "Acerto Prof"}, {id: "conciliacao-acerto", label: "Conc. Acerto"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "sinistros", label: "Sinistros"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Configurações"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
+      abas: [{id: "home-fin", label: "Home"}, {id: "solicitacoes", label: "Solicitações"}, {id: "limites", label: "Limites"}, {id: "stark-bank", label: "Pix Stark"}, {id: "acerto-prof", label: "Acerto Prof"}, {id: "conciliacao-acerto", label: "Conc. Acerto"}, {id: "validacao", label: "Validação"}, {id: "conciliacao", label: "Conciliação"}, {id: "resumo", label: "Resumo"}, {id: "gratuidades", label: "Gratuidades"}, {id: "sinistros", label: "Sinistros"}, {id: "comissao", label: "Comissão"}, {id: "restritos", label: "Restritos"}, {id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "loja", label: "Loja"}, {id: "relatorios", label: "Relatórios"}, {id: "horarios", label: "Configurações"}, {id: "avisos", label: "Avisos"}, {id: "backup", label: "Backup"}, {id: "saldo-plific", label: "Saldo Plific"}]
     },
     { id: "operacional", label: "Operacional", icon: "⚙️",
       abas: [{id: "indicacoes", label: "Indicações"}, {id: "promo-novatos", label: "Promo Novatos"}, {id: "avisos", label: "Avisos"}, {id: "novas-operacoes", label: "Novas Operações"}, {id: "recrutamento", label: "Recrutamento"}, {id: "localizacao-clientes", label: "Localização Clientes"}, {id: "relatorio-diario", label: "Relatório Diário"}, {id: "score-prof", label: "Score Prof"}, {id: "incentivos", label: "Acompanhamento"}]
