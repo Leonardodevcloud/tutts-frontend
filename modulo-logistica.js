@@ -368,13 +368,57 @@
         seletor);
     })();
 
+    // HUB_MENU_SECOES_V1: ids das seções pro menu lateral
     return h(React.Fragment, null,
-      secProvedores,
-      h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-4' }, secEta, secMotivos),
-      secParceiros,
-      secTendencia,
-      secHeat,
+      h('div', { id: 'hub-provedores', className: 'scroll-mt-24' }, secProvedores),
+      h('div', { id: 'hub-eta', className: 'grid grid-cols-1 lg:grid-cols-2 gap-4 scroll-mt-24' }, secEta, secMotivos),
+      h('div', { id: 'hub-parceiros', className: 'scroll-mt-24' }, secParceiros),
+      h('div', { id: 'hub-tendencia', className: 'scroll-mt-24' }, secTendencia),
+      h('div', { id: 'hub-heat', className: 'scroll-mt-24' }, secHeat),
       tip);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // HUB_MENU_SECOES_V1 — menu lateral de seções do Dashboard (mesmo padrão do
+  // Análise Gerencial): sticky, destaca a seção visível, rola suave ao clicar.
+  // ════════════════════════════════════════════════════════
+  const HUB_SECOES = [
+    { id: 'hub-kpis', rotulo: 'KPIs do período' },
+    { id: 'hub-tempo', rotulo: 'Tempo e SLA' },
+    { id: 'hub-financeiro', rotulo: 'Financeiro' },
+    { id: 'hub-margem', rotulo: 'Margem por cliente' },
+    { id: 'hub-provedores', rotulo: 'Provedores' },
+    { id: 'hub-eta', rotulo: 'ETA e cancelamentos' },
+    { id: 'hub-parceiros', rotulo: 'Parceiros e motos novas' },
+    { id: 'hub-tendencia', rotulo: 'Tendência diária' },
+    { id: 'hub-heat', rotulo: 'Hora × dia da semana' },
+  ];
+  function MenuSecoesHub({ de, ate, total }) {
+    const [ativa, setAtiva] = useState(HUB_SECOES[0].id);
+    useEffect(() => {
+      const aoRolar = () => {
+        let melhor = null, menor = Infinity;
+        HUB_SECOES.forEach(sec => { const el = document.getElementById(sec.id); if (!el) return; const d = Math.abs(el.getBoundingClientRect().top - 96); if (d < menor) { menor = d; melhor = sec.id; } });
+        // no fim da página a última seção nunca chega ao topo: marca ela
+        if ((window.innerHeight + (window.pageYOffset || document.documentElement.scrollTop)) >= document.documentElement.scrollHeight - 8) melhor = HUB_SECOES[HUB_SECOES.length - 1].id;
+        if (melhor) setAtiva(melhor);
+      };
+      aoRolar();
+      window.addEventListener('scroll', aoRolar, { passive: true }); window.addEventListener('resize', aoRolar);
+      return () => { window.removeEventListener('scroll', aoRolar); window.removeEventListener('resize', aoRolar); };
+    }, []);
+    const irPara = (e, id) => { e.preventDefault(); const el = document.getElementById(id); if (!el) return; const topo = el.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop) - 84; window.scrollTo({ top: topo, behavior: 'smooth' }); setAtiva(id); };
+    const fmtD = (s) => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '';
+    return h('nav', { 'aria-label': 'Seções do dashboard', className: 'w-full lg:w-56 flex-shrink-0 flex flex-col gap-2.5 lg:sticky lg:top-[82px] lg:max-h-[calc(100vh-98px)] lg:overflow-y-auto lg:pb-1' },
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
+        h('div', { className: 'px-2.5 pb-2 text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Seções do dashboard'),
+        h('div', { className: 'flex flex-col gap-0.5' }, HUB_SECOES.map(sec => { const on = ativa === sec.id; return h('a', { key: sec.id, href: '#' + sec.id, onClick: (e) => irPara(e, sec.id), className: 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg no-underline transition-colors ' + (on ? 'bg-purple-50 ring-1 ring-purple-200' : 'hover:bg-gray-50') },
+          h('span', { className: 'w-[3px] h-[17px] flex-shrink-0 rounded-full ' + (on ? 'bg-purple-700' : 'bg-transparent') }),
+          h('span', { className: 'flex-1 text-[13px] ' + (on ? 'font-bold text-purple-700' : 'font-medium text-slate-600') }, sec.rotulo)); }))),
+      h('div', { className: 'bg-white border border-gray-200 rounded-xl px-3.5 py-3 flex flex-col gap-1' },
+        h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Período'),
+        h('div', { className: 'text-[13.5px] font-bold text-gray-900' }, de === ate ? fmtD(de) : `${fmtD(de)} – ${fmtD(ate)}`),
+        total != null && h('div', { className: 'text-[11.5px] text-gray-500' }, `${total} corridas`)));
   }
 
   function TabDashboard({ API_URL, fetchAuth, showToast }) {
@@ -474,7 +518,7 @@
 
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
+    return h('div', { className: 'max-w-[1500px] mx-auto p-4 space-y-4' },
       // HEADER
       h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
         h('div', null,
@@ -495,8 +539,12 @@
         ),
       ),
 
+      // HUB_MENU_SECOES_V1: menu lateral + conteúdo
+      h('div', { className: 'flex flex-col lg:flex-row gap-5 items-start' },
+      h(MenuSecoesHub, { de, ate, total }),
+      h('div', { className: 'flex-1 min-w-0 w-full space-y-4' },
       // KPIs
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-3' },
+      h('div', { id: 'hub-kpis', className: 'grid grid-cols-2 md:grid-cols-5 gap-3 scroll-mt-24' },
         [
           // HUB_DASH_OS_V1: contagem por CORRIDA (OS). Redespacho nao infla total/cancelados.
           { lbl: 'Total de corridas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: data.tentativas_total != null ? `${ni(data.tentativas_total)} tentativas · ${ni(data.redespachos)} redespachos em ${ni(data.os_redespachadas)} corridas` : null },
@@ -514,7 +562,7 @@
       ),
 
       // TEMPO + SLA
-      h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-3' },
+      h('div', { id: 'hub-tempo', className: 'grid grid-cols-1 lg:grid-cols-3 gap-3 scroll-mt-24' },
         h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
           h('div', { className: 'flex items-center gap-2 mb-1' },
             h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Desempenho de tempo')),
@@ -581,7 +629,7 @@
       //   Provedor     = custo final da 99 (com taxas) ou a cotação (Uber)
       //   Regra        = valor do Hub pela tabela (regra do cliente → cliente → global → Mapp)
       //   Margem       = regra − provedor · Ticket médio = margem ÷ corridas
-      (function () {
+      h('div', { id: 'hub-financeiro', className: 'scroll-mt-24' }, (function () {
         if (finRel === undefined) return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-2 text-xs text-gray-400' }, h('div', { className: 'animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full' }), 'Calculando financeiro pelas linhas do Relatório...');
         if (finRel === null) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl p-4' }, 'Não deu pra carregar o financeiro (relatório indisponível).');
         const f = finRel;
@@ -597,10 +645,10 @@
             h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, c.l),
             h('div', { className: `text-xl font-extrabold mt-1 ${c.c}` }, c.v),
             c.s && h('div', { className: 'text-[10px] text-gray-400 mt-1' }, c.s))));
-      })(),
+      })()),
 
       // MARGEM POR CLIENTE
-      h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4' },
+      h('div', { id: 'hub-margem', className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4 scroll-mt-24' },
         h('div', null,
           h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), 'Margem por cliente')),
           h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Por corrida (OS): receita e custo só do que fatura (entregue + devolvida), custo da tentativa final. Margem = valor cliente − custo do provedor.'),
@@ -664,6 +712,7 @@
       ),
       // HUB_DASH_ANALITICO_V1: provedores, ETA, motivos, parceiros, tendência, mapa de calor
       h(HubAnalitico, { API_URL, fetchAuth, showToast, de, ate }),
+      )), // fim conteúdo + flex (HUB_MENU_SECOES_V1)
     );
   }
 
