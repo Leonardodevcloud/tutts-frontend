@@ -255,10 +255,11 @@
       // KPIs
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
         [
-          { lbl: 'Total de entregas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: null },
-          { lbl: 'Entregues', val: entregues, ico: 'check', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total` : null },
+          // HUB_DASH_OS_V1: contagem por CORRIDA (OS). Redespacho nao infla total/cancelados.
+          { lbl: 'Total de corridas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: data.tentativas_total != null ? `${ni(data.tentativas_total)} tentativas · ${ni(data.redespachos)} redespachos em ${ni(data.os_redespachadas)} corridas` : null },
+          { lbl: 'Entregues', val: entregues, ico: 'check', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total${ni(data.devolvidos) ? ` · ${ni(data.devolvidos)} devolvida${ni(data.devolvidos) > 1 ? 's' : ''}` : ''}` : null },
           { lbl: 'Em andamento', val: emand, ico: 'bike', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
-          { lbl: 'Cancelados', val: cancel, ico: 'x', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback` : null },
+          { lbl: 'Canceladas', val: cancel, ico: 'x', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback · só cancelamento definitivo` : null },
         ].map(k => h('div', { key: k.lbl, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4' },
           h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${k.chip}` }, h('svg', { className: 'ico ico-lg', 'aria-hidden': 'true' }, h('use', { href: '#i-' + k.ico }))),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, k.lbl),
@@ -272,9 +273,9 @@
         h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
           h('div', { className: 'flex items-center gap-2 mb-1' },
             h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Desempenho de tempo')),
-            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, `média · ${ni(data.n_trilha)} c/ trilha`),
+            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, `média · ${ni(data.n_trilha)} entregues`),
           ),
-          h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, da criação à entrega (inclui em andamento).'),
+          h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, só corridas entregues. Conta desde a 1ª solicitação — redespacho não zera o relógio. Mediana entre parênteses.'),
           h('div', { className: 'flex h-9 rounded-xl overflow-hidden mb-4' },
             h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tLoc) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#a78bfa,#8b5cf6)', minWidth: '44px' } }, fmtMin(tLoc)),
             h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tCol) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#f6a94a,#f5921e)', minWidth: '44px' } }, fmtMin(tCol)),
@@ -282,19 +283,19 @@
           ),
           h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
             [
-              { c: '#8b5cf6', l: 'Localização', v: fmtMin(tLoc), d: 'criação → entregador' },
-              { c: '#f5921e', l: 'Coleta', v: fmtMin(tCol), d: 'atribuição → coleta' },
-              { c: '#15a05a', l: 'Entrega', v: fmtMin(tRota), d: 'coleta → entrega' },
+              { c: '#8b5cf6', l: 'Localização', v: fmtMin(tLoc), md: data.t_localizacao_mediana_min, d: '1ª solicitação → entregador' },
+              { c: '#f5921e', l: 'Coleta', v: fmtMin(tCol), md: data.t_coleta_mediana_min, d: 'atribuição → coleta' },
+              { c: '#15a05a', l: 'Entrega', v: fmtMin(tRota), md: data.t_rota_mediana_min, d: 'coleta → entrega' },
             ].map(t => h('div', { key: t.l, className: 'border border-gray-200 rounded-xl p-3' },
               h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' },
                 h('span', { className: 'inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle', style: { background: t.c } }), t.l),
-              h('div', { className: 'text-lg font-extrabold text-gray-800 mt-0.5' }, t.v),
+              h('div', { className: 'text-lg font-extrabold text-gray-800 mt-0.5' }, t.v, t.md != null && h('span', { className: 'text-[11px] font-semibold text-gray-400 ml-1' }, `(${fmtMin(t.md)})`)),
               h('div', { className: 'text-[10px] text-gray-400' }, t.d),
             )).concat([
               h('div', { key: 'total', className: 'border rounded-xl p-3', style: { background: '#faf7ff', borderColor: '#e9defd' } },
                 h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-purple-600' }, 'Tempo total'),
-                h('div', { className: 'text-lg font-extrabold text-purple-700 mt-0.5' }, fmtMin(tTot)),
-                h('div', { className: 'text-[10px] text-purple-400' }, 'criação → entrega'),
+                h('div', { className: 'text-lg font-extrabold text-purple-700 mt-0.5' }, fmtMin(tTot), data.t_total_mediana_min != null && h('span', { className: 'text-[11px] font-semibold text-purple-400 ml-1' }, `(${fmtMin(data.t_total_mediana_min)})`)),
+                h('div', { className: 'text-[10px] text-purple-400' }, '1ª solicitação → entrega'),
               ),
             ]),
           ),
@@ -305,7 +306,7 @@
           const off = CIRC * (1 - pct / 100);
           return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
             h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-target' })), 'SLA / Prazo')),
-            h('p', { className: 'text-xs text-gray-500 mb-3' }, `No prazo da distância · ${sla ? sla.total_avaliado : 0} entregas avaliadas.`),
+            h('p', { className: 'text-xs text-gray-500 mb-3' }, `Prazo pela distância, contado da 1ª solicitação · ${sla ? sla.total_avaliado : 0} entregues avaliadas${sla && sla.sem_km ? ` · ${sla.sem_km} sem km` : ''}.`),
             h('div', { className: 'flex flex-col items-center' },
               h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
                 h('svg', { width: 140, height: 140, viewBox: '0 0 140 140' },
@@ -331,13 +332,14 @@
       // FINANCEIRO
       h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100' },
         [
-          { l: 'Receita (cliente)', v: fmtMoney(parseFloat(data.receita_total || 0)), c: 'text-gray-800' },
+          { l: 'Receita (cliente)', v: fmtMoney(parseFloat(data.receita_total || 0)), c: 'text-gray-800', s: data.faturaveis != null ? `${ni(data.faturaveis)} corridas faturáveis (entregues + devolvidas)` : null },
           { l: 'Custo provedores', v: fmtMoney(parseFloat(data.custo_total_uber || 0)), c: 'text-gray-800' },
           { l: 'Margem total', v: (parseFloat(data.margem_total || 0) >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(parseFloat(data.margem_total || 0))), c: parseFloat(data.margem_total || 0) >= 0 ? 'text-green-600' : 'text-red-600' },
-          { l: 'Valor médio', v: fmtMoney(parseFloat(data.valor_medio_uber || 0)), c: 'text-gray-800' },
+          { l: 'Custo médio provedor', v: fmtMoney(parseFloat(data.valor_medio_uber || 0)), c: 'text-gray-800', s: data.ticket_medio_cliente != null ? `ticket cliente ${fmtMoney(parseFloat(data.ticket_medio_cliente || 0))}` : null },
         ].map(f => h('div', { key: f.l, className: 'p-4' },
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, f.l),
           h('div', { className: `text-xl font-extrabold mt-1 ${f.c}` }, f.v),
+          f.s && h('div', { className: 'text-[10px] text-gray-400 mt-1' }, f.s),
         )),
       ),
 
@@ -345,7 +347,7 @@
       h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4' },
         h('div', null,
           h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), 'Margem por cliente')),
-          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Margem = valor cliente − custo do provedor.'),
+          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Por corrida (OS): receita e custo só do que fatura (entregue + devolvida), custo da tentativa final. Margem = valor cliente − custo do provedor.'),
         ),
         margemLoading
           ? h('div', { className: 'text-center py-10' }, h('div', { className: 'animate-spin w-7 h-7 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
@@ -371,7 +373,9 @@
                     h('thead', { className: 'text-[10px] uppercase text-gray-400 border-b border-gray-200' },
                       h('tr', null,
                         h('th', { className: 'px-2 py-2 text-left' }, 'Cliente'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Qtd'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Corridas'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Entregues'),
+                        h('th', { className: 'px-2 py-2 text-right' }, 'Redesp.'),
                         h('th', { className: 'px-2 py-2 text-right' }, 'Receita'),
                         h('th', { className: 'px-2 py-2 text-right' }, 'Custo'),
                         h('th', { className: 'px-2 py-2 text-right' }, 'Margem'),
@@ -385,6 +389,8 @@
                         return h('tr', { key: i, className: `border-b border-gray-50 hover:bg-gray-50 ${m < 0 ? 'bg-red-50/40' : ''}` },
                           h('td', { className: 'px-2 py-2' }, h('div', { className: 'font-semibold text-gray-800' }, c.cliente), !c.regra_id && h('div', { className: 'text-[10px] text-gray-400' }, 'Sem regra')),
                           h('td', { className: 'px-2 py-2 text-right text-gray-700' }, c.qtd),
+                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, c.entregues != null ? c.entregues : '—'),
+                          h('td', { className: 'px-2 py-2 text-right ' + (ni(c.redespachos) ? 'text-amber-600 font-semibold' : 'text-gray-400') }, c.redespachos != null ? c.redespachos : '—'),
                           h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
                           h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
                           h('td', { className: `px-2 py-2 text-right font-semibold ${pos ? 'text-green-700' : 'text-red-700'}` }, `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
@@ -5233,7 +5239,7 @@
     const [cols, setCols] = useState(() => new Set(
       // [relatorio-data-v4] 'data' entra visivel por padrao (voce pediu data/hora
       // no relatorio); da pra esconder no seletor de colunas se atrapalhar.
-      ['data', 'cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido']
+      ['data', 'tentativa', 'cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido'] // HUB_DASH_OS_V1: + tentativa
     ));
     const colVisivel = (id) => cols.has(id);
     const alternarCol = (id) => setCols(prev => {
@@ -5510,6 +5516,19 @@
             return [dd + '/' + mm + '/' + aa, hh + ':' + mi + ':' + ss];
           } catch (_) { return ['', '']; }
         } },
+      // HUB_DASH_OS_V1: numero da tentativa dentro da OS. 1 = solicitacao
+      // original; 2+ = redespacho (cancela + recria). Na tela vira "2/3"
+      // (2a de 3 tentativas) em ambar; no CSV saem duas colunas.
+      { id: 'tentativa', rot: 'Tent.',
+        tdCls: 'px-3 py-2 text-center whitespace-nowrap text-[11px]',
+        cel: (r) => {
+          if (r.tentativa == null) return '—';
+          const tot = r.tentativas_os || 1;
+          if (tot <= 1) return h('span', { className: 'text-gray-400' }, '1');
+          return h('span', { className: 'font-bold px-1.5 py-0.5 rounded ' + (r.tentativa > 1 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'), title: r.tentativa > 1 ? 'Redespacho — ' + r.tentativa + 'ª de ' + tot + ' tentativas desta OS' : 'Solicitação original — OS teve ' + tot + ' tentativas' }, r.tentativa + '/' + tot);
+        },
+        csvRot: ['Tentativa', 'Tentativas da OS'],
+        csv: (r) => [r.tentativa != null ? r.tentativa : '', r.tentativas_os != null ? r.tentativas_os : ''] },
       { id: 'cliente', rot: 'Cliente',
         tdCls: 'px-3 py-2 text-gray-600 max-w-[130px] truncate',
         // o title mostra de onde veio o nome (regra / endereco / solicitacao)
