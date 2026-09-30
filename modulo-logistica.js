@@ -383,6 +383,7 @@
     const [margemData, setMargemData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [margemLoading, setMargemLoading] = useState(false);
+    const [finRel, setFinRel] = useState(undefined);        // HUB_FIN_REGRA_V1: undefined = carregando, null = erro
     const [periodo, setPeriodo] = useState('7d');           // 1d | 7d | 30d | custom
 
     const hojeBRT   = () => dataLocalBRT(new Date());
@@ -420,6 +421,33 @@
 
     useEffect(() => { carregar(); }, [carregar]);
     useEffect(() => { carregarMargem(); }, [carregarMargem]);
+    // HUB_FIN_REGRA_V1: financeiro a partir das linhas do Relatório (Entregue + Devolvido)
+    useEffect(() => {
+      let vivo = true; setFinRel(undefined);
+      (async () => {
+        try {
+          const res = await fetchAuth(`${API_URL}/admin/relatorio/hub-corridas?de=${de}&ate=${ate}`);
+          const json = await res.json();
+          if (!vivo) return;
+          if (!json.success) { setFinRel(null); return; }
+          const rows = (json.corridas || []).filter(c => c.status === 'Entregue' || c.status === 'Devolvido');
+          const num = (v) => (v == null || isNaN(parseFloat(v)) ? null : parseFloat(v));
+          let mapp = 0, semMapp = 0, prov = 0, regra = 0, margem = 0; const orig = {};
+          rows.forEach(c => {
+            const vm = num(c.valor_mapp), vp = num(c.custo_provedor), vr = num(c.valor);
+            if (vm == null) semMapp++; else mapp += vm;
+            if (vp != null) prov += vp;
+            if (vr != null) regra += vr;
+            margem += (vr || 0) - (vp || 0);
+            if (c.valor_origem) orig[c.valor_origem] = (orig[c.valor_origem] || 0) + 1;
+          });
+          const ORIG_ROT = { regra: 'regra', cliente: 'tabela do cliente', global: 'tabela global', mapp: 'valor Mapp', indefinido: 'indefinido' };
+          const origens = Object.entries(orig).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${ORIG_ROT[k] || k}`).join(', ');
+          setFinRel({ n: rows.length, mapp, semMapp, prov, regra, regraDif: regra - mapp, margem, ticket: rows.length ? margem / rows.length : 0, origens });
+        } catch (e) { if (vivo) setFinRel(null); }
+      })();
+      return () => { vivo = false; };
+    }, [fetchAuth, API_URL, de, ate]);
 
     if (loading || !data) return h('div', { className: 'flex items-center justify-center py-16' },
       h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
@@ -540,19 +568,30 @@
         })(),
       ),
 
-      // FINANCEIRO
-      h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100' },
-        [
-          { l: 'Receita (cliente)', v: fmtMoney(parseFloat(data.receita_total || 0)), c: 'text-gray-800', s: data.faturaveis != null ? `${ni(data.faturaveis)} corridas faturáveis (entregues + devolvidas)` : null },
-          { l: 'Custo provedores', v: fmtMoney(parseFloat(data.custo_total_uber || 0)), c: 'text-gray-800' },
-          { l: 'Margem total', v: (parseFloat(data.margem_total || 0) >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(parseFloat(data.margem_total || 0))), c: parseFloat(data.margem_total || 0) >= 0 ? 'text-green-600' : 'text-red-600' },
-          { l: 'Custo médio provedor', v: fmtMoney(parseFloat(data.valor_medio_uber || 0)), c: 'text-gray-800', s: data.ticket_medio_cliente != null ? `ticket cliente ${fmtMoney(parseFloat(data.ticket_medio_cliente || 0))}` : null },
-        ].map(f => h('div', { key: f.l, className: 'p-4' },
-          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, f.l),
-          h('div', { className: `text-xl font-extrabold mt-1 ${f.c}` }, f.v),
-          f.s && h('div', { className: 'text-[10px] text-gray-400 mt-1' }, f.s),
-        )),
-      ),
+      // FINANCEIRO — HUB_FIN_REGRA_V1
+      // Fonte: as MESMAS linhas do Relatório (/admin/relatorio/hub-corridas), só Entregue + Devolvido.
+      // Assim o Dashboard bate com o Relatório por construção:
+      //   Valor Mapp   = valor original da OS na Mapp (valor_servico_mapp_original)
+      //   Provedor     = custo final da 99 (com taxas) ou a cotação (Uber)
+      //   Regra        = valor do Hub pela tabela (regra do cliente → cliente → global → Mapp)
+      //   Margem       = regra − provedor · Ticket médio = margem ÷ corridas
+      (function () {
+        if (finRel === undefined) return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-2 text-xs text-gray-400' }, h('div', { className: 'animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full' }), 'Calculando financeiro pelas linhas do Relatório...');
+        if (finRel === null) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl p-4' }, 'Não deu pra carregar o financeiro (relatório indisponível).');
+        const f = finRel;
+        const cells = [
+          { l: 'Valor Mapp', v: fmtMoney(f.mapp), c: 'text-gray-700', s: `${f.n} corridas faturáveis${f.semMapp ? ` · ${f.semMapp} sem valor Mapp` : ''}` },
+          { l: 'Valor provedor', v: fmtMoney(f.prov), c: 'text-gray-800', s: `média ${fmtMoney(f.n ? f.prov / f.n : 0)} por corrida` },
+          { l: 'Valor com regra aplicada', v: fmtMoney(f.regra), c: 'text-gray-800', s: `${f.regraDif >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(f.regraDif))} vs Mapp${f.origens ? ' · ' + f.origens : ''}` },
+          { l: 'Margem (regra − provedor)', v: (f.margem >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.margem)), c: f.margem >= 0 ? 'text-green-600' : 'text-red-600', s: f.regra ? `${((f.margem / f.regra) * 100).toFixed(1)}% do valor com regra` : null },
+          { l: 'Ticket médio da margem', v: (f.ticket >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.ticket)), c: f.ticket >= 0 ? 'text-green-600' : 'text-red-600', s: 'margem ÷ corridas faturáveis' },
+        ];
+        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-5 divide-x divide-gray-100' },
+          cells.map(c => h('div', { key: c.l, className: 'p-4' },
+            h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, c.l),
+            h('div', { className: `text-xl font-extrabold mt-1 ${c.c}` }, c.v),
+            c.s && h('div', { className: 'text-[10px] text-gray-400 mt-1' }, c.s))));
+      })(),
 
       // MARGEM POR CLIENTE
       h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4' },
