@@ -1,5 +1,5 @@
 /**
- * modulo-logistica-relatorio.js — HUB_REL_V2 (v2.1)
+ * modulo-logistica-relatorio.js — HUB_REL_V2 (v2.2)
  * ─────────────────────────────────────────────────────────────────────────
  * Relatório de corridas do Hub, versão 2 (substitui TabRelatorio de modulo-logistica.js):
  *   • barra de filtros em chips (cada chip abre só a sua lista) + linha "ativos"
@@ -56,9 +56,11 @@
   const GRAFICOS = [
     { id: 'tempo_faixa', rot: 'Tempo por faixa de km' }, { id: 'corridas_dia', rot: 'Corridas por dia' }, { id: 'prazo_dia', rot: '% no prazo por dia' }, { id: 'margem_dia', rot: 'Margem por dia', interno: true },
   ];
+  // HUB_REL_V22: ordem pedida pela operação — etapas primeiro (alocação → coleta → entrega), depois o total e a mediana
   const METRICAS_FAIXA = [
-    { id: 'corridas', rot: 'Corridas' }, { id: 'tempo', rot: 'Tempo médio de atendimento' }, { id: 'mediana', rot: 'Mediana' }, { id: 'prazo', rot: '% no prazo' },
-    { id: 'loc', rot: 'Localização' }, { id: 'col', rot: 'Coleta' }, { id: 'ent', rot: 'Entrega' },
+    { id: 'corridas', rot: 'Corridas' },
+    { id: 'loc', rot: 'Alocação', sub: '1ª solicitação → entregador' }, { id: 'col', rot: 'Coleta', sub: 'entregador → coleta' }, { id: 'ent', rot: 'Entrega', sub: 'coleta → entrega' },
+    { id: 'tempo', rot: 'Tempo médio de atendimento' }, { id: 'mediana', rot: 'Mediana' }, { id: 'prazo', rot: '% no prazo' },
     { id: 'hub', rot: 'Valor Hub médio', interno: true }, { id: 'custo', rot: 'Custo médio', interno: true }, { id: 'margem', rot: 'Margem média', interno: true }, { id: 'rskm', rot: 'R$ por km', interno: true },
   ];
 
@@ -95,11 +97,11 @@
     const [f, setF] = useState({ clientes: null, provedores: null, status: new Set(STATUS_FATURAVEIS), canais: null, kmDe: '', kmAte: '', margemDe: '', margemAte: '', busca: '' });
     const [cols, setCols] = useState(() => new Set(['data', 'tentativa', 'cliente', 'enderecos', 'motoboy', 'status', 'km', 'valor', 'mapp', 'custo', 'liquido']));
     const [visao, setVisao] = useState('corridas'); // corridas | faixas | clientes
-    const [faixas, setFaixas] = useState({ tamanho: 5, teto: 30, metricas: new Set(['corridas', 'tempo', 'mediana', 'prazo', 'hub', 'custo', 'margem']), quebrarPor: 'nada' });
+    const [faixas, setFaixas] = useState({ tamanho: 5, teto: 30, metricas: new Set(['corridas', 'loc', 'col', 'ent', 'tempo', 'mediana', 'prazo', 'hub', 'custo', 'margem']), quebrarPor: 'nada' });
     const [chipAberto, setChipAberto] = useState(null);
     const [gaveta, setGaveta] = useState(false);
     const [pdfAberto, setPdfAberto] = useState(false);
-    const [pdfCfg, setPdfCfg] = useState({ modelo: 'cliente', cabecalho: new Set(['logo', 'cliente', 'periodo']), kpis: new Set(['corridas', 'entregues', 'km', 'tempo', 'prazo']), graficos: new Set(['tempo_faixa', 'corridas_dia']), tabela: true, colunas: new Set(['os', 'data', 'nota', 'entrega', 'status', 'km', 'tempo']), lembrar: true });
+    const [pdfCfg, setPdfCfg] = useState({ modelo: 'cliente', cabecalho: new Set(['logo', 'cliente', 'periodo']), kpis: new Set(['corridas', 'entregues', 'km', 'tempo', 'prazo']), graficos: new Set(['tempo_faixa', 'corridas_dia']), tabela: true, secoes: new Set(['faixas', 'corridas']), colunas: new Set(['os', 'data', 'nota', 'entrega', 'status', 'km', 'tempo', 'prazo']), lembrar: true });
     const [pdfGerando, setPdfGerando] = useState(false);
     const [presets, setPresets] = useState([]);
     const [presetAtivo, setPresetAtivo] = useState(null);
@@ -219,7 +221,11 @@
       const lista = Object.values(buckets).map(b => ({ ...b, rot: b.fim == null ? `${b.ini}+ km` : `${b.ini} – ${b.fim} km`, tempo: media(b.tempos), med: mediana(b.tempos), loc: media(b.loc), col: media(b.col), ent: media(b.ent), prazo: b.aval ? (b.ok / b.aval) * 100 : null, hub: media(b.hubs), custo: media(b.custos), margem: media(b.margens), rskm: media(b.rskm), kmMedio: media(b.kms) }))
         .sort((a, b) => a.ini - b.ini || ordPt(a.quebra, b.quebra));
       const total = linhasQueSomam.length - semKm;
-      return { lista, semKm, total, maxN: Math.max(1, ...lista.map(b => b.n)) };
+      // linha Total com a MESMA conta das faixas (média das corridas que têm o dado)
+      const tb = { n: 0, kms: [], tempos: [], loc: [], col: [], ent: [], aval: 0, ok: 0, hubs: [], custos: [], margens: [], rskm: [] };
+      linhasQueSomam.forEach(r => { if (r.km != null) add(tb, r); });
+      const totalBucket = { ...tb, rot: 'Total', tempo: media(tb.tempos), med: mediana(tb.tempos), loc: media(tb.loc), col: media(tb.col), ent: media(tb.ent), prazo: tb.aval ? (tb.ok / tb.aval) * 100 : null, hub: media(tb.hubs), custo: media(tb.custos), margem: media(tb.margens), rskm: media(tb.rskm) };
+      return { lista, semKm, total, totalBucket, maxN: Math.max(1, ...lista.map(b => b.n)) };
     }, [linhasQueSomam, faixas]);
 
     // ── POR CLIENTE ──
@@ -303,14 +309,14 @@
     }
 
     // ── PRESETS ──
-    const configAtual = () => ({ periodo, de: deCustom, ate: ateCustom, visao, cols: [...cols], faixas: { ...faixas, metricas: [...faixas.metricas] }, filtros: { clientes: f.clientes && [...f.clientes], provedores: f.provedores && [...f.provedores], status: f.status && [...f.status], canais: f.canais && [...f.canais], kmDe: f.kmDe, kmAte: f.kmAte, margemDe: f.margemDe, margemAte: f.margemAte, busca: f.busca }, pdf: pdfCfg.lembrar ? { ...pdfCfg, cabecalho: [...pdfCfg.cabecalho], kpis: [...pdfCfg.kpis], graficos: [...pdfCfg.graficos], colunas: [...pdfCfg.colunas] } : null });
+    const configAtual = () => ({ periodo, de: deCustom, ate: ateCustom, visao, cols: [...cols], faixas: { ...faixas, metricas: [...faixas.metricas] }, filtros: { clientes: f.clientes && [...f.clientes], provedores: f.provedores && [...f.provedores], status: f.status && [...f.status], canais: f.canais && [...f.canais], kmDe: f.kmDe, kmAte: f.kmAte, margemDe: f.margemDe, margemAte: f.margemAte, busca: f.busca }, pdf: pdfCfg.lembrar ? { ...pdfCfg, cabecalho: [...pdfCfg.cabecalho], kpis: [...pdfCfg.kpis], graficos: [...pdfCfg.graficos], colunas: [...pdfCfg.colunas], secoes: [...(pdfCfg.secoes || [])] } : null });
     const aplicarPreset = (p) => {
       const c = p.config || {};
       if (c.periodo) setPeriodo(c.periodo); if (c.de) setDeCustom(c.de); if (c.ate) setAteCustom(c.ate);
       if (c.visao) setVisao(c.visao); if (c.cols) setCols(new Set(c.cols));
       if (c.faixas) setFaixas({ tamanho: c.faixas.tamanho || 5, teto: c.faixas.teto || 30, metricas: new Set(c.faixas.metricas || ['corridas', 'tempo']), quebrarPor: c.faixas.quebrarPor || 'nada' });
       if (c.filtros) { const s = (a) => Array.isArray(a) ? new Set(a) : null; setF({ clientes: s(c.filtros.clientes), provedores: s(c.filtros.provedores), status: c.filtros.status === null ? (c.filtros.soFaturaveis === false ? null : new Set(STATUS_FATURAVEIS)) : s(c.filtros.status), canais: s(c.filtros.canais), kmDe: c.filtros.kmDe || '', kmAte: c.filtros.kmAte || '', margemDe: c.filtros.margemDe || '', margemAte: c.filtros.margemAte || '', busca: c.filtros.busca || '' }); }
-      if (c.pdf) setPdfCfg({ ...c.pdf, cabecalho: new Set(c.pdf.cabecalho || []), kpis: new Set(c.pdf.kpis || []), graficos: new Set(c.pdf.graficos || []), colunas: new Set(c.pdf.colunas || []) });
+      if (c.pdf) setPdfCfg({ ...c.pdf, tabela: c.pdf.tabela !== false, cabecalho: new Set(c.pdf.cabecalho || []), kpis: new Set(c.pdf.kpis || []), graficos: new Set(c.pdf.graficos || []), colunas: new Set(c.pdf.colunas || []), secoes: new Set(c.pdf.secoes || ['faixas', 'corridas']) });
       setPresetAtivo(p.id); setGaveta(false); setChipAberto(null);
       toast(`Preset "${p.nome}" aplicado`, 'info');
     };
@@ -339,6 +345,7 @@
     const clientesSel = f.clientes ? [...f.clientes].filter(x => x !== VAZIO) : [];
     const tituloCliente = clientesSel.length === 1 ? clientesSel[0] : clientesSel.length > 1 ? `${clientesSel.length} clientes` : 'todos os clientes';
 
+    const [pdfGeradoEm, setPdfGeradoEm] = useState(() => new Date());
     const gerarHtmlPdf = () => {
       const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const cab = pdfCfg.cabecalho, kp = pdfCfg.kpis, gr = pdfCfg.graficos;
@@ -350,17 +357,22 @@
       if (gr.has('corridas_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">Corridas por dia</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.n })), '#7c3aed', v => String(v))}</div>`);
       if (gr.has('prazo_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">% no prazo por dia</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.aval ? d.ok / d.aval * 100 : 0 })), '#15a05a', v => pctF(v))}</div>`);
       if (gr.has('margem_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">Margem por dia (R$)</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.margem })), '#f5921e', v => brl(v))}</div>`);
+      // HUB_REL_V22: o PDF sai COMPLETO — cada tabela é uma seção ligável, independente da visão na tela
+      const sec = pdfCfg.secoes || new Set();
       let tabela = '';
       if (pdfCfg.tabela) {
-        if (visao === 'faixas') {
+        if (sec.has('faixas')) {
           const ms = METRICAS_FAIXA.filter(m => faixas.metricas.has(m.id) && (pdfCfg.modelo !== 'cliente' || !m.interno));
-          tabela = `<table><thead><tr><th>Faixa</th>${faixas.quebrarPor !== 'nada' ? `<th>${faixas.quebrarPor === 'provedor' ? 'Provedor' : 'Cliente'}</th>` : ''}${ms.map(m => `<th class="r">${esc(m.rot)}</th>`).join('')}</tr></thead><tbody>${faixasCalc.lista.map(b => `<tr><td><b>${esc(b.rot)}</b></td>${faixas.quebrarPor !== 'nada' ? `<td>${esc(faixas.quebrarPor === 'provedor' ? provNome(b.quebra) : (b.quebra === VAZIO ? 'Sem cliente' : b.quebra))}</td>` : ''}${ms.map(m => `<td class="r">${esc(valorMetrica(b, m.id))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td><b>Total</b></td>${faixas.quebrarPor !== 'nada' ? '<td></td>' : ''}${ms.map(m => `<td class="r">${esc(m.id === 'corridas' ? String(faixasCalc.total) : m.id === 'tempo' ? fmtMin(totais.tempoMedio) : m.id === 'mediana' ? fmtMin(totais.tempoMediana) : m.id === 'prazo' ? pctF(totais.pctPrazo) : m.id === 'hub' ? brlS(totais.corridas ? totais.hub / totais.corridas : 0) : m.id === 'custo' ? brlS(totais.corridas ? totais.custo / totais.corridas : 0) : m.id === 'margem' ? brlS(totais.ticket) : '')}</td>`).join('')}</tr></tbody></table>`;
-        } else if (visao === 'clientes') {
+          tabela += `<div class="box sec"><div class="bt">Por faixa de km (${faixas.tamanho} em ${faixas.tamanho} km${faixas.quebrarPor !== 'nada' ? ', por ' + faixas.quebrarPor : ''})</div><table><thead><tr><th>Faixa</th>${faixas.quebrarPor !== 'nada' ? `<th>${faixas.quebrarPor === 'provedor' ? 'Provedor' : 'Cliente'}</th>` : ''}${ms.map(m => `<th class="r">${esc(m.rot)}</th>`).join('')}</tr></thead><tbody>${faixasCalc.lista.map(b => `<tr><td><b>${esc(b.rot)}</b></td>${faixas.quebrarPor !== 'nada' ? `<td>${esc(faixas.quebrarPor === 'provedor' ? provNome(b.quebra) : (b.quebra === VAZIO ? 'Sem cliente' : b.quebra))}</td>` : ''}${ms.map(m => `<td class="r">${esc(valorMetrica(b, m.id))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td><b>Total</b></td>${faixas.quebrarPor !== 'nada' ? '<td></td>' : ''}${ms.map(m => `<td class="r">${esc(valorMetrica(faixasCalc.totalBucket, m.id))}</td>`).join('')}</tr></tbody></table></div>`;
+        }
+        if (sec.has('clientes')) {
           const interno = pdfCfg.modelo === 'cliente';
-          tabela = `<table><thead><tr><th>Cliente</th><th class="r">Corridas</th><th class="r">KM</th><th class="r">Tempo médio</th><th class="r">No prazo</th>${interno ? '' : '<th class="r">Valor Hub</th><th class="r">Custo</th><th class="r">Margem</th>'}</tr></thead><tbody>${clientesCalc.map(c => `<tr><td>${esc(c.nome)}</td><td class="r">${c.n}</td><td class="r">${kmF(c.km)}</td><td class="r">${fmtMin(c.tempo)}</td><td class="r">${pctF(c.prazo)}</td>${interno ? '' : `<td class="r">${brlS(c.hub)}</td><td class="r">${brlS(c.custo)}</td><td class="r">${brlS(c.margem)}</td>`}</tr>`).join('')}</tbody></table>`;
-        } else {
+          tabela += `<div class="box sec"><div class="bt">Por cliente</div><table><thead><tr><th>Cliente</th><th class="r">Corridas</th><th class="r">KM</th><th class="r">Tempo médio</th><th class="r">No prazo</th>${interno ? '' : '<th class="r">Valor Hub</th><th class="r">Custo</th><th class="r">Margem</th>'}</tr></thead><tbody>${clientesCalc.map(c => `<tr><td>${esc(c.nome)}</td><td class="r">${c.n}</td><td class="r">${kmF(c.km)}</td><td class="r">${fmtMin(c.tempo)}</td><td class="r">${pctF(c.prazo)}</td>${interno ? '' : `<td class="r">${brlS(c.hub)}</td><td class="r">${brlS(c.custo)}</td><td class="r">${brlS(c.margem)}</td>`}</tr>`).join('')}</tbody></table></div>`;
+        }
+        if (sec.has('corridas')) {
           const cs = COLS.filter(c => c.fixa || pdfCfg.colunas.has(c.id)).filter(c => pdfCfg.modelo !== 'cliente' || !c.interno);
-          tabela = `<table><thead><tr>${cs.map(c => `<th${c.num ? ' class="r"' : ''}>${esc(c.rot)}</th>`).join('')}</tr></thead><tbody>${rowsView.map(r => `<tr>${cs.map(c => `<td${c.num ? ' class="r"' : ''}>${esc(c.pdf(r))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          const fora = rowsView.filter(r => r.no_prazo === false).length, dentro = rowsView.filter(r => r.no_prazo === true).length;
+          tabela += `<div class="sec quebra"><div class="bt">Corridas do período <span class="s">· ${rowsView.length} corridas · ${dentro} no prazo · ${fora} fora do prazo</span></div><table><thead><tr>${cs.map(c => `<th${c.num ? ' class="r"' : ''}>${esc(c.rot)}</th>`).join('')}</tr></thead><tbody>${rowsView.map(r => `<tr class="${r.no_prazo === false ? 'fora' : ''}">${cs.map(c => `<td${c.num ? ' class="r"' : ''}${c.id === 'prazo' ? (r.no_prazo === false ? ' style="color:#b91c1c;font-weight:700"' : r.no_prazo === true ? ' style="color:#047857;font-weight:700"' : '') : ''}>${esc(c.pdf(r))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
         }
       }
       const filtrosTxt = cab.has('filtros') ? `<div class="filtros">Filtros: ${esc([f.provedores ? 'provedor ' + [...f.provedores].map(provNome).join('/') : null, statusModo === 'faturaveis' ? 'faturáveis (Entregue + Devolvido)' : statusModo === 'todas' ? 'todas as etapas' : 'status ' + [...f.status].join('/'), (num(f.kmDe) != null || num(f.kmAte) != null) ? `km ${f.kmDe || 0}–${f.kmAte || '∞'}` : null, f.busca ? `busca "${f.busca}"` : null].filter(Boolean).join(' · ') || 'nenhum')}</div>` : '';
@@ -378,8 +390,9 @@
         table{width:100%;border-collapse:collapse;font-size:9.5px}th{background:#f9fafb;color:#6b7280;font-size:8px;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:6px 7px;border-bottom:1px solid #e5e7eb}td{padding:5px 7px;border-bottom:1px solid #f3f4f6;vertical-align:top}.r{text-align:right}tr{break-inside:avoid}tr.tot td{background:#faf5ff;font-weight:800;color:#5b21b6}
         .filtros{font-size:9px;color:#6b7280;margin:-8px 0 12px}
         .rod{margin-top:12px;font-size:8.5px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:6px}
+        .sec{margin-bottom:14px}.sec .bt{font-size:12px;margin-bottom:8px}.sec .bt .s{font-weight:500}.quebra{break-before:page}tr.fora td{background:#fff7f7}thead{display:table-header-group}
       </style></head><body>
-        <div class="cab">${cab.has('logo') ? '<div class="logo">tutts</div>' : ''}<div style="flex:1"><div class="t">Relatório de entregas${cab.has('cliente') ? ' — ' + esc(tituloCliente) : ''}</div><div class="s">${cab.has('periodo') ? `Período ${fmtDataBR(de)} a ${fmtDataBR(ate)} · ` : ''}gerado em ${new Date().toLocaleString('pt-BR', { timeZone: TZ })} · Central Tutts</div></div><div class="s" style="text-align:right">Visão: ${visao === 'faixas' ? `por faixa de km (${faixas.tamanho} em ${faixas.tamanho})` : visao === 'clientes' ? 'por cliente' : 'corridas'}<br>${rowsView.length} corridas${statusModo === 'faturaveis' ? ' faturáveis' : ''}</div></div>
+        <div class="cab">${cab.has('logo') ? '<div class="logo">tutts</div>' : ''}<div style="flex:1"><div class="t">Relatório de entregas${cab.has('cliente') ? ' — ' + esc(tituloCliente) : ''}</div><div class="s">${cab.has('periodo') ? `Período ${fmtDataBR(de)} a ${fmtDataBR(ate)} · ` : ''}gerado em ${pdfGeradoEm.toLocaleString('pt-BR', { timeZone: TZ })} · Central Tutts</div></div><div class="s" style="text-align:right">Visão: ${visao === 'faixas' ? `por faixa de km (${faixas.tamanho} em ${faixas.tamanho})` : visao === 'clientes' ? 'por cliente' : 'corridas'}<br>${rowsView.length} corridas${statusModo === 'faturaveis' ? ' faturáveis' : ''}</div></div>
         ${filtrosTxt}
         ${kp.size ? `<div class="kpis">${kpisHtml}</div>` : ''}
         ${grafs.length ? `<div class="grafs">${grafs.join('')}</div>` : ''}
@@ -390,7 +403,7 @@
     const gerarPdf = async () => {
       setPdfGerando(true);
       try {
-        const html = gerarHtmlPdf();
+        const html = htmlPdf || gerarHtmlPdf();
         const r = await fetchAuth(`${API_URL}/logistics/relatorio/pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, filename: `relatorio-hub-${visao}-${de}-a-${ate}.pdf`, landscape: true }) });
         if (!r.ok) { let j = null; try { j = await r.json(); } catch (_) {} throw new Error((j && j.error) || 'HTTP ' + r.status); }
         const blob = await r.blob(); const url = URL.createObjectURL(blob);
@@ -399,6 +412,9 @@
       } catch (e) { toast('Erro ao gerar PDF: ' + e.message, 'error'); }
       finally { setPdfGerando(false); }
     };
+
+    // HUB_REL_V22: HTML do PDF calculado uma vez por mudança real (sem timestamp vivo) — a prévia parava de "piscar"
+    const htmlPdf = useMemo(() => pdfAberto ? gerarHtmlPdf() : '', [pdfAberto, pdfCfg, rowsView, faixas, visao, pdfGeradoEm, totais, faixasCalc, clientesCalc, porDia, de, ate]);
 
     // ═════════════ RENDER ═════════════
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
@@ -454,14 +470,14 @@
         h('div', { className: 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-3 items-start' },
           h('div', { className: 'bg-white rounded-2xl border border-gray-200 overflow-hidden' },
             h('table', { className: 'w-full text-[12.5px]' },
-              h('thead', null, h('tr', { className: 'bg-gray-50 text-[10.5px] font-bold uppercase tracking-wide text-gray-500' }, h('th', { className: 'px-4 py-2.5 text-left' }, 'Faixa'), quebra && h('th', { className: 'px-3 py-2.5 text-left' }, faixas.quebrarPor === 'provedor' ? 'Provedor' : 'Cliente'), ms.map(m => h('th', { key: m.id, className: 'px-3 py-2.5 text-right' }, m.rot)))),
+              h('thead', null, h('tr', { className: 'bg-gray-50 text-[10.5px] font-bold uppercase tracking-wide text-gray-500' }, h('th', { className: 'px-4 py-2.5 text-left' }, 'Faixa'), quebra && h('th', { className: 'px-3 py-2.5 text-left' }, faixas.quebrarPor === 'provedor' ? 'Provedor' : 'Cliente'), ms.map(m => h('th', { key: m.id, className: 'px-3 py-2.5 text-right' }, m.rot, m.sub && h('div', { className: 'text-[9px] font-medium normal-case tracking-normal text-gray-400' }, m.sub))))),
               h('tbody', null, faixasCalc.lista.length === 0 ? h('tr', null, h('td', { colSpan: 2 + ms.length, className: 'px-4 py-12 text-center text-gray-400' }, 'Sem corridas com km no filtro.')) :
                 faixasCalc.lista.map((b, i) => { const pouco = b.n < 5; return h('tr', { key: b.ini + '|' + b.quebra, className: `border-t border-gray-100 ${pouco ? 'text-gray-400' : ''}` },
                   h('td', { className: 'px-4 py-2.5 font-bold whitespace-nowrap' }, (!quebra || i === 0 || faixasCalc.lista[i - 1].ini !== b.ini) ? b.rot : ''),
                   quebra && h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, faixas.quebrarPor === 'provedor' ? h('span', { className: 'inline-flex items-center gap-1.5' }, h('span', { className: 'w-2 h-2 rounded-full', style: { background: provCor(b.quebra) } }), provNome(b.quebra)) : (b.quebra === VAZIO ? 'Sem cliente' : b.quebra)),
                   ms.map(m => h('td', { key: m.id, className: 'px-3 py-2.5 text-right whitespace-nowrap ' + (m.id === 'tempo' ? 'font-extrabold text-purple-800' : m.id === 'prazo' && b.prazo != null ? (b.prazo >= 90 ? 'text-emerald-700 font-bold' : b.prazo >= 80 ? 'text-amber-700 font-bold' : 'text-red-600 font-bold') : m.id === 'margem' ? 'text-emerald-700 font-bold' : m.id === 'custo' ? 'text-rose-600' : '') },
                     m.id === 'corridas' ? h('span', { className: 'inline-flex items-center gap-2 justify-end' }, h('span', { className: 'h-[14px] rounded', style: { width: Math.max(3, Math.round(b.n / faixasCalc.maxN * 120)), background: pouco ? '#c4b5fd' : '#7c3aed' } }), h('b', null, b.n), h('span', { className: 'text-[10px] text-gray-400' }, faixasCalc.total ? pctF(b.n / faixasCalc.total * 100) : '')) : valorMetrica(b, m.id)))); }),
-                faixasCalc.lista.length > 0 && h('tr', { className: 'border-t border-purple-100 bg-purple-50/60 font-extrabold text-purple-900' }, h('td', { className: 'px-4 py-2.5' }, 'Total'), quebra && h('td', null), ms.map(m => h('td', { key: m.id, className: 'px-3 py-2.5 text-right' }, m.id === 'corridas' ? faixasCalc.total : m.id === 'tempo' ? fmtMin(totais.tempoMedio) : m.id === 'mediana' ? fmtMin(totais.tempoMediana) : m.id === 'prazo' ? pctF(totais.pctPrazo) : m.id === 'hub' ? brlS(totais.corridas ? totais.hub / totais.corridas : 0) : m.id === 'custo' ? brlS(totais.corridas ? totais.custo / totais.corridas : 0) : m.id === 'margem' ? brlS(totais.ticket) : ''))))),
+                faixasCalc.lista.length > 0 && h('tr', { className: 'border-t border-purple-100 bg-purple-50/60 font-extrabold text-purple-900' }, h('td', { className: 'px-4 py-2.5' }, 'Total'), quebra && h('td', null), ms.map(m => h('td', { key: m.id, className: 'px-3 py-2.5 text-right' }, valorMetrica(faixasCalc.totalBucket, m.id)))))),
             h('div', { className: 'px-4 py-2 text-[10.5px] text-gray-400 border-t border-gray-100' }, `${faixasCalc.total} corridas com km${faixasCalc.semKm ? ` · ${faixasCalc.semKm} sem km (fora)` : ''} · faixas com menos de 5 corridas ficam em cinza · tempo = 1ª solicitação → entrega`)),
           h('div', { className: 'space-y-3' },
             !quebra && graf.length > 0 && h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4' },
@@ -514,11 +530,13 @@
               bloco('Cabeçalho', [{ id: 'logo', rot: 'Logo Tutts' }, { id: 'cliente', rot: 'Nome do cliente' }, { id: 'periodo', rot: 'Período' }, { id: 'filtros', rot: 'Filtros aplicados' }], 'cabecalho'),
               bloco('Cards (KPIs)', KPIS, 'kpis', h('span', { className: 'text-[11px] text-gray-400' }, `${pdfCfg.kpis.size} de ${KPIS.length}`)),
               bloco('Gráficos', GRAFICOS, 'graficos'),
-              h('section', { className: 'py-3' }, h('div', { className: 'flex items-center gap-2 mb-1.5' }, h('span', { className: 'text-[13px] font-extrabold' }, 'Tabela'), h('label', { className: 'inline-flex items-center gap-1.5 text-[12px] ml-1 cursor-pointer' }, h('input', { type: 'checkbox', checked: pdfCfg.tabela, onChange: e => setPdfCfg(p => ({ ...p, tabela: e.target.checked })), className: 'w-[15px] h-[15px] accent-purple-600' }), 'incluir'), visao === 'corridas' && h('span', { className: 'ml-auto text-[11px] text-gray-400' }, `colunas: ${pdfCfg.colunas.size}`)),
-                visao === 'corridas' ? h('div', { className: 'flex flex-wrap gap-1.5' }, COLS.filter(c => !c.fixa).map(c => { const on = pdfCfg.colunas.has(c.id); const escondido = pdfCfg.modelo === 'cliente' && c.interno; return h('button', { key: c.id, type: 'button', onClick: () => togglePdf('colunas', c.id), className: `h-[28px] px-2.5 rounded-lg text-[11.5px] font-semibold ${on ? 'bg-gray-900 text-white' : escondido ? 'bg-amber-50 text-amber-700 line-through' : 'bg-gray-100 text-gray-500'}` }, c.rotFiltro || c.rot); })) : h('div', { className: 'text-[11.5px] text-gray-500' }, visao === 'faixas' ? `Tabela por faixa de km com as métricas escolhidas na tela${pdfCfg.modelo === 'cliente' ? ' (valores internos ficam fora)' : ''}.` : `Tabela por cliente${pdfCfg.modelo === 'cliente' ? ' sem Hub/custo/margem' : ''}.`),
-                h('div', { className: 'text-[11px] text-gray-400 mt-2' }, 'Riscado = escondido pelo modelo “Para o cliente”. Dá pra reativar um a um.'))); })()),
+              h('section', { className: 'py-3' }, h('div', { className: 'flex items-center gap-2 mb-1.5' }, h('span', { className: 'text-[13px] font-extrabold' }, 'Tabelas'), h('span', { className: 'text-[11px] text-gray-400' }, 'independem da visão da tela')),
+                h('div', { className: 'grid grid-cols-1 gap-x-3' }, [['faixas', `Por faixa de km (${faixas.tamanho} em ${faixas.tamanho}, métricas da tela)`], ['corridas', `Lista de corridas (${rowsView.length}, com dentro/fora do prazo)`], ['clientes', 'Por cliente']].map(([id, rot]) => h('label', { key: id, className: 'flex items-center gap-2 h-[30px] text-[12.5px] cursor-pointer text-gray-800' }, h('input', { type: 'checkbox', checked: (pdfCfg.secoes || new Set()).has(id), onChange: () => togglePdf('secoes', id), className: 'w-[15px] h-[15px] accent-purple-600' }), rot))),
+                (pdfCfg.secoes || new Set()).has('corridas') && h('div', { className: 'mt-2' }, h('div', { className: 'text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1.5' }, `Colunas da lista · ${pdfCfg.colunas.size}`),
+                  h('div', { className: 'flex flex-wrap gap-1.5' }, COLS.filter(c => !c.fixa).map(c => { const on = pdfCfg.colunas.has(c.id); const escondido = pdfCfg.modelo === 'cliente' && c.interno; return h('button', { key: c.id, type: 'button', onClick: () => togglePdf('colunas', c.id), className: `h-[28px] px-2.5 rounded-lg text-[11.5px] font-semibold ${on ? 'bg-gray-900 text-white' : escondido ? 'bg-amber-50 text-amber-700 line-through' : 'bg-gray-100 text-gray-500'}` }, c.rotFiltro || c.rot); }))),
+                h('div', { className: 'text-[11px] text-gray-400 mt-2' }, 'Riscado = escondido pelo modelo “Para o cliente”. Dá pra reativar um a um. A lista de corridas começa em página nova.'))); })()),
           h('div', { className: 'px-6 py-3.5 border-t border-gray-200 flex items-center gap-2.5' }, h('label', { className: 'inline-flex items-center gap-2 text-[12px] text-gray-700 cursor-pointer' }, h('input', { type: 'checkbox', checked: pdfCfg.lembrar, onChange: e => setPdfCfg(p => ({ ...p, lembrar: e.target.checked })), className: 'w-[15px] h-[15px] accent-purple-600' }), 'Lembrar no preset'), h('button', { type: 'button', disabled: pdfGerando, onClick: () => setPdfAberto(false), className: 'ml-auto h-[40px] px-3.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-500' }, 'Cancelar'), h('button', { type: 'button', disabled: pdfGerando, onClick: gerarPdf, className: 'h-[40px] px-4 rounded-lg bg-purple-700 text-white text-[13px] font-extrabold inline-flex items-center gap-2 disabled:opacity-60' }, Ico('download', 15), pdfGerando ? 'Gerando…' : 'Gerar PDF'))),
-        h('div', { className: 'bg-gray-100 flex flex-col min-h-0' }, h('div', { className: 'px-6 py-3 text-[12px] text-gray-500 flex items-center gap-2' }, h('b', { className: 'text-gray-700' }, 'Prévia'), 'A4 paisagem · o arquivo sai idêntico', h('span', { className: 'ml-auto' }, `${rowsView.length} linhas`)), h('div', { className: 'flex-1 overflow-auto px-6 pb-6' }, h(PreviewPdf, { html: gerarHtmlPdf() })))));
+        h('div', { className: 'bg-gray-100 flex flex-col min-h-0' }, h('div', { className: 'px-6 py-3 text-[12px] text-gray-500 flex items-center gap-2' }, h('b', { className: 'text-gray-700' }, 'Prévia'), 'A4 paisagem · o arquivo sai idêntico', h('span', { className: 'ml-auto' }, `${rowsView.length} linhas`)), h('div', { className: 'flex-1 overflow-auto px-6 pb-6' }, h(PreviewPdf, { html: htmlPdf })))));
 
     // ── página ──
     return h('div', { className: 'max-w-[1400px] mx-auto p-4 space-y-3.5' },
@@ -527,7 +545,7 @@
         h('button', { type: 'button', onClick: carregar, title: 'Recarregar', className: 'h-[38px] w-[38px] border border-gray-200 rounded-lg bg-white text-gray-600 inline-flex items-center justify-center' }, Ico('refresh', 16)),
         h('button', { type: 'button', onClick: salvarPreset, className: 'h-[38px] px-3.5 border border-gray-200 rounded-lg bg-white text-[13px] font-semibold text-gray-700 inline-flex items-center gap-2' }, Ico('save', 15), 'Salvar como preset'),
         h('button', { type: 'button', onClick: baixarCSV, className: 'h-[38px] px-3.5 border border-gray-200 rounded-lg bg-white text-[13px] font-semibold text-gray-700 inline-flex items-center gap-2' }, Ico('download', 15), 'CSV'),
-        h('button', { type: 'button', onClick: () => setPdfAberto(true), className: 'h-[38px] px-3.5 rounded-lg text-[13px] font-bold inline-flex items-center gap-2', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#6d28d9' } }, Ico('filetext', 15), 'PDF')),
+        h('button', { type: 'button', onClick: () => { setPdfGeradoEm(new Date()); setPdfAberto(true); }, className: 'h-[38px] px-3.5 rounded-lg text-[13px] font-bold inline-flex items-center gap-2', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#6d28d9' } }, Ico('filetext', 15), 'PDF')),
 
       // BARRA DE FILTROS
       h('div', { ref: barraRef, className: 'bg-white rounded-2xl border border-gray-200 px-3 py-2.5 space-y-2.5' },
