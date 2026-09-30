@@ -430,8 +430,14 @@
           const json = await res.json();
           if (!vivo) return;
           if (!json.success) { setFinRel(null); return; }
-          const rows = (json.corridas || []).filter(c => c.status === 'Entregue' || c.status === 'Devolvido');
+          // HUB_FIN_REGRA_V11: o relatório injeta as corridas de MOTO PRÓPRIA (provider 'proprio',
+          // is_moto_propria) — elas não são do Hub e ficam FORA do dashboard (sem custo de provedor,
+          // sem valor Mapp; entravam com margem zero e diluíam o ticket). Também sai o que não tem
+          // valor de regra (ex.: entregue com cancelado_por preenchido → valor null).
+          const todas = (json.corridas || []).filter(c => (c.status === 'Entregue' || c.status === 'Devolvido') && !c.is_moto_propria && String(c.provider || '').toLowerCase() !== 'proprio' && c.valor_origem !== 'moto_propria');
           const num = (v) => (v == null || isNaN(parseFloat(v)) ? null : parseFloat(v));
+          const rows = todas.filter(c => num(c.valor) != null);
+          const semValor = todas.length - rows.length;
           let mapp = 0, semMapp = 0, prov = 0, regra = 0, margem = 0; const orig = {};
           rows.forEach(c => {
             const vm = num(c.valor_mapp), vp = num(c.custo_provedor), vr = num(c.valor);
@@ -443,7 +449,7 @@
           });
           const ORIG_ROT = { regra: 'regra', cliente: 'tabela do cliente', global: 'tabela global', mapp: 'valor Mapp', indefinido: 'indefinido' };
           const origens = Object.entries(orig).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${ORIG_ROT[k] || k}`).join(', ');
-          setFinRel({ n: rows.length, mapp, semMapp, prov, regra, regraDif: regra - mapp, margem, ticket: rows.length ? margem / rows.length : 0, origens });
+          setFinRel({ n: rows.length, semValor, mapp, semMapp, prov, regra, regraDif: regra - mapp, margem, ticket: rows.length ? margem / rows.length : 0, origens });
         } catch (e) { if (vivo) setFinRel(null); }
       })();
       return () => { vivo = false; };
@@ -580,11 +586,11 @@
         if (finRel === null) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl p-4' }, 'Não deu pra carregar o financeiro (relatório indisponível).');
         const f = finRel;
         const cells = [
-          { l: 'Valor Mapp', v: fmtMoney(f.mapp), c: 'text-gray-700', s: `${f.n} corridas faturáveis${f.semMapp ? ` · ${f.semMapp} sem valor Mapp` : ''}` },
+          { l: 'Valor Mapp', v: fmtMoney(f.mapp), c: 'text-gray-700', s: `${f.n} corridas do Hub faturáveis${f.semMapp ? ` · ${f.semMapp} sem valor Mapp` : ''}${f.semValor ? ` · ${f.semValor} sem valor (fora)` : ''}` },
           { l: 'Valor provedor', v: fmtMoney(f.prov), c: 'text-gray-800', s: `média ${fmtMoney(f.n ? f.prov / f.n : 0)} por corrida` },
           { l: 'Valor com regra aplicada', v: fmtMoney(f.regra), c: 'text-gray-800', s: `${f.regraDif >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(f.regraDif))} vs Mapp${f.origens ? ' · ' + f.origens : ''}` },
           { l: 'Margem (regra − provedor)', v: (f.margem >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.margem)), c: f.margem >= 0 ? 'text-green-600' : 'text-red-600', s: f.regra ? `${((f.margem / f.regra) * 100).toFixed(1)}% do valor com regra` : null },
-          { l: 'Ticket médio da margem', v: (f.ticket >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.ticket)), c: f.ticket >= 0 ? 'text-green-600' : 'text-red-600', s: 'margem ÷ corridas faturáveis' },
+          { l: 'Ticket médio da margem', v: (f.ticket >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.ticket)), c: f.ticket >= 0 ? 'text-green-600' : 'text-red-600', s: `(regra − provedor) ÷ ${f.n} corridas · ticket cliente ${fmtMoney(f.n ? f.regra / f.n : 0)}` },
         ];
         return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-5 divide-x divide-gray-100' },
           cells.map(c => h('div', { key: c.l, className: 'p-4' },
