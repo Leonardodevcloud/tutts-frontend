@@ -1,5 +1,5 @@
 /**
- * modulo-logistica-relatorio.js — HUB_REL_V2 (v2.2)
+ * modulo-logistica-relatorio.js — HUB_REL_V2 (v2.3)
  * ─────────────────────────────────────────────────────────────────────────
  * Relatório de corridas do Hub, versão 2 (substitui TabRelatorio de modulo-logistica.js):
  *   • barra de filtros em chips (cada chip abre só a sua lista) + linha "ativos"
@@ -351,12 +351,26 @@
       const cab = pdfCfg.cabecalho, kp = pdfCfg.kpis, gr = pdfCfg.graficos;
       const kpiVal = { corridas: [String(totais.corridas), ''], entregues: [String(totais.entregues), totais.corridas ? pctF(totais.entregues / totais.corridas * 100) : ''], km: [kmF(totais.km), `${kmF(totais.corridas ? totais.km / totais.corridas : 0)} km/corrida`], tempo: [fmtMin(totais.tempoMedio), `mediana ${fmtMin(totais.tempoMediana)}`], prazo: [pctF(totais.pctPrazo), `${totais.avaliadas} avaliadas`], mapp: [brlS(totais.mapp), ''], hub: [brlS(totais.hub), ''], custo: [brlS(totais.custo), ''], margem: [brlS(totais.margem), `ticket ${brlS(totais.ticket)}`] };
       const kpisHtml = KPIS.filter(k => kp.has(k.id)).map(k => `<div class="kpi${['tempo', 'prazo', 'margem'].includes(k.id) ? ' kpi-' + k.id : ''}"><div class="kl">${esc(k.rot)}</div><div class="kv">${esc(kpiVal[k.id][0])}</div>${kpiVal[k.id][1] ? `<div class="ks">${esc(kpiVal[k.id][1])}</div>` : ''}</div>`).join('');
-      const barras = (itens, cor, fmt) => { const max = Math.max(1, ...itens.map(i => i.v || 0)); const W = 640, H = 150, bw = Math.max(6, Math.min(48, (W - 40) / itens.length - 6)); return `<svg viewBox="0 0 ${W} ${H + 30}" width="100%" style="max-height:180px"><line x1="30" x2="${W}" y1="${H}" y2="${H}" stroke="#e5e7eb"/>${itens.map((it, i) => { const x = 34 + i * ((W - 40) / itens.length); const hh = (it.v || 0) / max * (H - 24); return `<rect x="${x}" y="${H - hh}" width="${bw}" height="${hh}" rx="3" fill="${cor}"/><text x="${x + bw / 2}" y="${H - hh - 4}" font-size="9" text-anchor="middle" fill="#4b5563">${esc(fmt(it.v))}</text><text x="${x + bw / 2}" y="${H + 14}" font-size="9" text-anchor="middle" fill="#6b7280">${esc(it.rot)}</text>`; }).join('')}</svg>`; };
+      // HUB_REL_V23: gráfico adapta ao tamanho do período. Poucos itens → 2 por linha; muitos → ocupa a
+      // linha inteira, fica mais alto, rótulos a cada N; acima de 8 semanas de dias → agrega por semana.
+      const semanaDe = (dia) => { const d = new Date(dia + 'T12:00:00'); const dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); return d.toISOString().slice(0, 10); };
+      const agregaSemana = (itens, soma) => { const m = {}; itens.forEach(it => { const k = semanaDe(it.dia); if (!m[k]) m[k] = { dia: k, itens: [] }; m[k].itens.push(it); }); return Object.values(m).sort((a, b) => a.dia.localeCompare(b.dia)).map(g => ({ rot: 'sem ' + fmtDia(g.dia), v: soma(g.itens) })); };
+      const barras = (itens, cor, fmt) => {
+        const n = itens.length; const wide = n > 12;
+        const W = wide ? 1040 : 640, H = wide ? 210 : 150, padL = 30, area = W - padL - 10;
+        const slot = area / Math.max(1, n); const bw = Math.max(4, Math.min(48, slot - Math.max(2, slot * 0.25)));
+        const max = Math.max(1, ...itens.map(i => i.v || 0));
+        const passoRot = Math.max(1, Math.ceil(n / (wide ? 26 : 14))), passoVal = Math.max(1, Math.ceil(n / (wide ? 20 : 12)));
+        const fs = n > 40 ? 8 : 9;
+        return `<svg class="${wide ? 'wide' : ''}" viewBox="0 0 ${W} ${H + 34}" width="100%" style="display:block;max-height:${wide ? 260 : 190}px"><line x1="${padL}" x2="${W}" y1="${H}" y2="${H}" stroke="#e5e7eb"/>${[0.5, 1].map(f => `<line x1="${padL}" x2="${W}" y1="${(H - f * (H - 24)).toFixed(1)}" y2="${(H - f * (H - 24)).toFixed(1)}" stroke="#f1f5f9"/><text x="${padL - 4}" y="${(H - f * (H - 24) + 3).toFixed(1)}" font-size="8" text-anchor="end" fill="#94a3b8">${esc(fmt(max * f))}</text>`).join('')}${itens.map((it, i) => { const x = padL + 4 + i * slot; const hh = (it.v || 0) / max * (H - 24); return `<rect x="${x.toFixed(1)}" y="${(H - hh).toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="${bw > 8 ? 3 : 1}" fill="${cor}"/>${(i % passoVal === 0 && bw >= 10) ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(H - hh - 4).toFixed(1)}" font-size="${fs}" text-anchor="middle" fill="#4b5563">${esc(fmt(it.v))}</text>` : ''}${(i % passoRot === 0) ? `<text x="${(x + bw / 2).toFixed(1)}" y="${H + 14}" font-size="${fs}" text-anchor="middle" fill="#6b7280">${esc(it.rot)}</text>` : ''}`; }).join('')}</svg>`;
+      };
+      const serieDias = (soma, fmtV) => { const muitos = porDia.length > 56; const itens = muitos ? agregaSemana(porDia, soma) : porDia.map(d => ({ rot: fmtDia(d.dia), v: soma([d]) })); return { itens, nota: muitos ? ' (por semana)' : '' }; };
+      const boxG = (titulo, svg) => `<div class="box${svg.includes('class="wide"') ? ' box-wide' : ''}"><div class="bt">${titulo}</div>${svg}</div>`;
       const grafs = [];
-      if (gr.has('tempo_faixa') && faixasCalc.lista.length) grafs.push(`<div class="box"><div class="bt">Tempo médio de atendimento por faixa de km</div>${barras(faixasCalc.lista.filter(b => b.quebra === '_' || faixas.quebrarPor === 'nada').map(b => ({ rot: b.rot.replace(' km', ''), v: b.tempo })), '#7c3aed', v => v == null ? '' : fmtMin(v))}</div>`);
-      if (gr.has('corridas_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">Corridas por dia</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.n })), '#7c3aed', v => String(v))}</div>`);
-      if (gr.has('prazo_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">% no prazo por dia</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.aval ? d.ok / d.aval * 100 : 0 })), '#15a05a', v => pctF(v))}</div>`);
-      if (gr.has('margem_dia') && porDia.length) grafs.push(`<div class="box"><div class="bt">Margem por dia (R$)</div>${barras(porDia.map(d => ({ rot: fmtDia(d.dia), v: d.margem })), '#f5921e', v => brl(v))}</div>`);
+      if (gr.has('tempo_faixa') && faixasCalc.lista.length) grafs.push(boxG('Tempo médio de atendimento por faixa de km', barras(faixasCalc.lista.filter(b => b.quebra === '_' || faixas.quebrarPor === 'nada').map(b => ({ rot: b.rot.replace(' km', ''), v: b.tempo })), '#7c3aed', v => v == null ? '' : fmtMin(v))));
+      if (gr.has('corridas_dia') && porDia.length) { const sd = serieDias(ds => ds.reduce((a, d) => a + d.n, 0), v => String(Math.round(v))); grafs.push(boxG('Corridas por dia' + sd.nota, barras(sd.itens, '#7c3aed', v => String(Math.round(v))))); }
+      if (gr.has('prazo_dia') && porDia.length) { const sd = serieDias(ds => { const a = ds.reduce((x, d) => x + d.aval, 0), o = ds.reduce((x, d) => x + d.ok, 0); return a ? o / a * 100 : 0; }); grafs.push(boxG('% no prazo por dia' + sd.nota, barras(sd.itens, '#15a05a', v => pctF(v)))); }
+      if (gr.has('margem_dia') && porDia.length) { const sd = serieDias(ds => ds.reduce((a, d) => a + d.margem, 0)); grafs.push(boxG('Margem por dia (R$)' + sd.nota, barras(sd.itens, '#f5921e', v => brl(v)))); }
       // HUB_REL_V22: o PDF sai COMPLETO — cada tabela é uma seção ligável, independente da visão na tela
       const sec = pdfCfg.secoes || new Set();
       let tabela = '';
@@ -385,7 +399,7 @@
         .kpis{display:grid;grid-template-columns:repeat(${Math.min(6, Math.max(1, kp.size))},1fr);gap:8px;margin-bottom:14px}
         .kpi{border:1px solid #e5e7eb;border-radius:9px;padding:8px 10px}.kl{font-size:8px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.03em}.kv{font-size:18px;font-weight:800;margin-top:2px}.ks{font-size:8.5px;color:#9ca3af}
         .kpi-tempo{background:#faf5ff;border-color:#ddd6fe}.kpi-tempo .kv,.kpi-tempo .kl{color:#5b21b6}.kpi-prazo{background:#ecfdf5;border-color:#a7f3d0}.kpi-prazo .kv,.kpi-prazo .kl{color:#047857}.kpi-margem .kv{color:#047857}
-        .grafs{display:grid;grid-template-columns:repeat(${Math.min(2, Math.max(1, grafs.length))},1fr);gap:10px;margin-bottom:14px}
+        .grafs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}.box-wide{grid-column:1 / -1}.box img,.box svg{width:100%;height:auto;display:block}
         .box{border:1px solid #e5e7eb;border-radius:9px;padding:10px;break-inside:avoid}.bt{font-weight:800;margin-bottom:6px}
         table{width:100%;border-collapse:collapse;font-size:9.5px}th{background:#f9fafb;color:#6b7280;font-size:8px;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:6px 7px;border-bottom:1px solid #e5e7eb}td{padding:5px 7px;border-bottom:1px solid #f3f4f6;vertical-align:top}.r{text-align:right}tr{break-inside:avoid}tr.tot td{background:#faf5ff;font-weight:800;color:#5b21b6}
         .filtros{font-size:9px;color:#6b7280;margin:-8px 0 12px}
@@ -400,10 +414,28 @@
         <div class="rod">Tempo de atendimento = da 1ª solicitação à entrega. No prazo = dentro do prazo por distância. ${pdfCfg.modelo === 'cliente' ? 'Versão para o cliente — sem valores internos.' : 'Versão interna.'}</div>
       </body></html>`;
     };
+    // HUB_REL_V23: converte cada <svg> do HTML em PNG (canvas, 2x) antes de mandar pro servidor.
+    // O Chromium do Railway não estava desenhando o SVG inline no PDF; imagem prontinha sai igual em qualquer um.
+    const rasterizarSvgs = async (html) => {
+      try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const svgs = [...doc.querySelectorAll('svg')];
+        for (const svg of svgs) {
+          const vb = (svg.getAttribute('viewBox') || '0 0 640 180').split(/\s+/).map(Number);
+          const w = vb[2] || 640, hgt = vb[3] || 180, escala = 2;
+          const clone = svg.cloneNode(true); clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); clone.setAttribute('width', w); clone.setAttribute('height', hgt); clone.removeAttribute('style');
+          clone.querySelectorAll('text').forEach(t => { if (!t.getAttribute('font-family')) t.setAttribute('font-family', 'Arial, Helvetica, sans-serif'); });
+          const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+          const png = await new Promise((res, rej) => { const img = new Image(); img.onload = () => { try { const c = document.createElement('canvas'); c.width = w * escala; c.height = hgt * escala; const ctx = c.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/png')); } catch (e) { rej(e); } }; img.onerror = rej; img.src = src; });
+          const im = doc.createElement('img'); im.setAttribute('src', png); im.setAttribute('alt', ''); im.setAttribute('style', 'width:100%;height:auto;display:block'); svg.replaceWith(im);
+        }
+        return '<!doctype html>' + doc.documentElement.outerHTML;
+      } catch (e) { console.warn('[relatorio] rasterizar svg falhou, mandando svg inline:', e.message); return html; }
+    };
     const gerarPdf = async () => {
       setPdfGerando(true);
       try {
-        const html = htmlPdf || gerarHtmlPdf();
+        const html = await rasterizarSvgs(htmlPdf || gerarHtmlPdf());
         const r = await fetchAuth(`${API_URL}/logistics/relatorio/pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, filename: `relatorio-hub-${visao}-${de}-a-${ate}.pdf`, landscape: true }) });
         if (!r.ok) { let j = null; try { j = await r.json(); } catch (_) {} throw new Error((j && j.error) || 'HTTP ' + r.status); }
         const blob = await r.blob(); const url = URL.createObjectURL(blob);
