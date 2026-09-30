@@ -175,8 +175,9 @@
   // Dados: GET /logistics/dashboard/analitico (agregado por corrida/OS).
   // Cores: 99 = roxo #7c3aed, Uber = âmbar #f5921e (fixas por provedor, nunca por posição).
   // ════════════════════════════════════════════════════════
-  const PROV_COR = { '99': '#7c3aed', uber: '#f5921e', moto_propria: '#15a05a' };
-  const PROV_NOME = { '99': '99Entrega', uber: 'Uber Direct', moto_propria: 'Moto própria' };
+  // HUB_DASH_ANALITICO_V11: provider_code real da 99 e 'noventanove'
+  const PROV_COR = { '99': '#7c3aed', noventanove: '#7c3aed', uber: '#f5921e', moto_propria: '#15a05a' };
+  const PROV_NOME = { '99': '99Entrega', noventanove: '99Entrega', uber: 'Uber Direct', moto_propria: 'Moto própria' };
   const provCor = (p) => PROV_COR[String(p || '').toLowerCase()] || '#64748b';
   const provNome = (p) => PROV_NOME[String(p || '').toLowerCase()] || String(p || '—');
   const DOW = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -254,7 +255,7 @@
       ));
 
     // ── 2) ETA PROMETIDO × REAL ──
-    const secEta = card('ETA prometido × real', 'clock', 'O provedor promete um tempo na cotação. Aqui: quanto ele cumpre, medido na própria tentativa dele (solicitação → entrega).',
+    const secEta = card('ETA prometido × real', 'clock', 'ETA = duração prevista que o próprio provedor devolve na cotação (99: delivery_duration · Uber: duration). Comparada com o tempo real da mesma tentativa (solicitação → entrega). Mede confiabilidade da promessa, não velocidade.',
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
         provs.filter(p => p.eta_avaliadas > 0).map(p => {
           const cumpriu = pct(p.eta_cumpriu, p.eta_avaliadas);
@@ -269,10 +270,14 @@
               h('span', { className: 'w-24 text-gray-500' }, l),
               h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded', style: { width: `${((parseFloat(v) || 0) / maxV) * 100}%`, background: cor, minWidth: 2 } })),
               h('span', { className: 'w-14 text-right font-semibold text-gray-800' }, fmtMin(v)))),
-            h('div', { className: 'flex items-center gap-3 pt-1 border-t border-gray-100' },
-              h('div', null, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Cumpriu o ETA'), h('div', { className: 'text-lg font-extrabold ' + (cumpriu >= 80 ? 'text-green-600' : cumpriu >= 60 ? 'text-amber-600' : 'text-red-600') }, fmtPct(cumpriu))),
-              h('div', null, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Desvio médio'), h('div', { className: 'text-lg font-extrabold ' + (desvio > 0 ? 'text-amber-600' : 'text-green-600') }, desvio == null ? '—' : (desvio > 0 ? '+' : '') + fmtMin(desvio))),
-              h('div', { className: 'text-[10px] text-gray-400 ml-auto max-w-[45%]' }, desvio > 0 ? 'Promete menos do que entrega — o ETA da cotação é otimista.' : 'Entrega dentro do que promete.')));
+            h('div', { className: 'flex items-start gap-4 pt-1 border-t border-gray-100' },
+              h('div', { className: 'shrink-0' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400 whitespace-nowrap' }, 'Cumpriu o ETA'), h('div', { className: 'text-lg font-extrabold whitespace-nowrap ' + (cumpriu >= 80 ? 'text-green-600' : cumpriu >= 60 ? 'text-amber-600' : 'text-red-600') }, fmtPct(cumpriu))),
+              h('div', { className: 'shrink-0' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400 whitespace-nowrap' }, 'Desvio médio'), h('div', { className: 'text-lg font-extrabold whitespace-nowrap ' + (desvio > 0 ? 'text-amber-600' : 'text-green-600') }, desvio == null ? '—' : (desvio > 0 ? '+' : '') + fmtMin(desvio))),
+              h('div', { className: 'text-[10px] text-gray-400 leading-snug' },
+                desvio > 5 ? 'Promete menos do que entrega — ETA otimista.'
+                : desvio < -10 ? 'Promete com folga — cumpre quase sempre, mas a ETA superestima o tempo.'
+                : cumpriu < 70 ? 'Promessa justa: na média bate, mas estoura em boa parte das corridas.'
+                : 'Entrega dentro do que promete.')));
         }),
         !provs.some(p => p.eta_avaliadas > 0) && h('div', { className: 'text-sm text-gray-400 py-4 text-center md:col-span-2' }, 'Nenhuma entrega com ETA registrado no período.')));
 
