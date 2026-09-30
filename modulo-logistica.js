@@ -168,6 +168,210 @@
   // ════════════════════════════════════════════════════════
   // ABA 1: DASHBOARD - métricas
   // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // HUB_DASH_ANALITICO_V1 — seções analíticas do Dashboard do Hub
+  // Provedores (99 × Uber) + ETA prometido × real, motivos de cancelamento,
+  // parceiros frequentes × novos, tendência diária e mapa de calor hora × dia.
+  // Dados: GET /logistics/dashboard/analitico (agregado por corrida/OS).
+  // Cores: 99 = roxo #7c3aed, Uber = âmbar #f5921e (fixas por provedor, nunca por posição).
+  // ════════════════════════════════════════════════════════
+  const PROV_COR = { '99': '#7c3aed', uber: '#f5921e', moto_propria: '#15a05a' };
+  const PROV_NOME = { '99': '99Entrega', uber: 'Uber Direct', moto_propria: 'Moto própria' };
+  const provCor = (p) => PROV_COR[String(p || '').toLowerCase()] || '#64748b';
+  const provNome = (p) => PROV_NOME[String(p || '').toLowerCase()] || String(p || '—');
+  const DOW = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  function HubAnalitico({ API_URL, fetchAuth, showToast, de, ate }) {
+    const [an, setAn] = useState(null);
+    const [erro, setErro] = useState(null);
+    const [heatMetrica, setHeatMetrica] = useState('corridas'); // corridas | pct_no_prazo | t_total_min
+    const [hover, setHover] = useState(null); // { x, y, linhas: [] }
+
+    useEffect(() => {
+      let vivo = true;
+      (async () => {
+        setAn(null); setErro(null);
+        try {
+          const res = await fetchAuth(`${API_URL}/logistics/dashboard/analitico?data_inicio=${de}&data_fim=${ate}`);
+          const json = await res.json();
+          if (!vivo) return;
+          if (json.success) setAn(json); else setErro(json.error || 'Erro ao carregar analítico');
+        } catch (e) { if (vivo) setErro('Erro de rede ao carregar analítico'); }
+      })();
+      return () => { vivo = false; };
+    }, [API_URL, fetchAuth, de, ate]);
+
+    const fmtMin = (m) => { const v = parseFloat(m); if (m == null || isNaN(v)) return '—'; const r = Math.round(v); return r < 60 ? r + ' min' : Math.floor(r / 60) + 'h' + (r % 60 ? ' ' + (r % 60) + 'min' : ''); };
+    const pct = (a, b) => (b ? (a / b) * 100 : null);
+    const fmtPct = (v, d = 0) => v == null ? '—' : v.toFixed(d) + '%';
+    const card = (titulo, icone, sub, corpo, extra) => h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3' },
+      h('div', { className: 'flex items-start gap-2 flex-wrap' },
+        h('div', { className: 'flex-1 min-w-0' },
+          h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-' + icone })), titulo)),
+          sub && h('p', { className: 'text-xs text-gray-500 mt-0.5' }, sub)),
+        extra || null),
+      corpo);
+    const tip = hover && h('div', { className: 'fixed z-50 pointer-events-none bg-gray-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 shadow-xl', style: { left: hover.x + 12, top: hover.y + 12, maxWidth: 260 } },
+      hover.linhas.map((l, i) => h('div', { key: i, className: i === 0 ? 'font-bold' : 'text-gray-300' }, l)));
+    const onMove = (linhas) => (e) => setHover({ x: e.clientX, y: e.clientY, linhas });
+    const offHover = () => setHover(null);
+
+    if (erro) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl p-4' }, erro);
+    if (!an) return h('div', { className: 'flex items-center justify-center py-10' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }));
+
+    const provs = an.provedores || [];
+    const totalCorr = provs.reduce((s, p) => s + p.corridas, 0);
+
+    // ── 1) PROVEDORES ──
+    const secProvedores = card('Provedores', 'truck', 'Por corrida (OS) — o provedor da tentativa final. Custos e receita só do que fatura.',
+      !provs.length ? h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Sem corridas no período.') :
+      h('div', { className: 'space-y-3' },
+        // barra de participação
+        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' },
+          provs.map(p => h('div', { key: p.provider, className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${pct(p.corridas, totalCorr)}%`, background: provCor(p.provider), minWidth: 40 }, onMouseMove: onMove([provNome(p.provider), `${p.corridas} corridas · ${fmtPct(pct(p.corridas, totalCorr))}`]), onMouseLeave: offHover }, `${provNome(p.provider)} ${fmtPct(pct(p.corridas, totalCorr))}`))),
+        h('div', { className: 'overflow-x-auto' },
+          h('table', { className: 'w-full text-xs' },
+            h('thead', null, h('tr', { className: 'text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100' },
+              ['Provedor', 'Corridas', 'Entregues', 'Canceladas', 'Redesp.', 'Tempo médio', 'Localização', 'Km médio', 'Custo médio', 'Receita', 'Margem', 'Margem %'].map((t, i) => h('th', { key: t, className: 'px-2 py-2 ' + (i === 0 ? 'text-left' : 'text-right') }, t)))),
+            h('tbody', null, provs.map(p => {
+              const m = parseFloat(p.margem || 0), rec = parseFloat(p.receita || 0);
+              return h('tr', { key: p.provider, className: 'border-b border-gray-50 hover:bg-gray-50' },
+                h('td', { className: 'px-2 py-2 font-semibold text-gray-800' }, h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle', style: { background: provCor(p.provider) } }), provNome(p.provider)),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, p.corridas),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, `${p.entregues} `, h('span', { className: 'text-gray-400' }, `(${fmtPct(pct(p.entregues, p.corridas))})`)),
+                h('td', { className: 'px-2 py-2 text-right ' + (pct(p.canceladas, p.corridas) > 20 ? 'text-red-600 font-semibold' : 'text-gray-700') }, `${p.canceladas} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(p.canceladas, p.corridas))})`)),
+                h('td', { className: 'px-2 py-2 text-right ' + (p.redespachos ? 'text-amber-600 font-semibold' : 'text-gray-400') }, p.redespachos),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMin(p.t_total_min), p.t_total_mediana_min != null && h('span', { className: 'text-gray-400' }, ` (${fmtMin(p.t_total_mediana_min)})`)),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMin(p.t_localizacao_min)),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, p.km_medio != null ? parseFloat(p.km_medio).toFixed(1) + ' km' : '—'),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(p.custo_medio || 0))),
+                h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(rec)),
+                h('td', { className: 'px-2 py-2 text-right font-semibold ' + (m >= 0 ? 'text-green-600' : 'text-red-600') }, (m >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(m))),
+                h('td', { className: 'px-2 py-2 text-right text-gray-600' }, fmtPct(pct(m, rec))),
+              );
+            })))),
+        h('p', { className: 'text-[10px] text-gray-400' }, 'Tempo médio = 1ª solicitação → entrega (mediana entre parênteses). Redesp. = tentativas a mais que a corrida precisou; a corrida é atribuída ao provedor que entregou.'),
+      ));
+
+    // ── 2) ETA PROMETIDO × REAL ──
+    const secEta = card('ETA prometido × real', 'clock', 'O provedor promete um tempo na cotação. Aqui: quanto ele cumpre, medido na própria tentativa dele (solicitação → entrega).',
+      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+        provs.filter(p => p.eta_avaliadas > 0).map(p => {
+          const cumpriu = pct(p.eta_cumpriu, p.eta_avaliadas);
+          const desvio = p.eta_desvio_min;
+          const maxV = Math.max(parseFloat(p.eta_medio) || 0, parseFloat(p.real_tentativa_min) || 0, 1);
+          return h('div', { key: p.provider, className: 'border border-gray-200 rounded-xl p-3 space-y-2' },
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: provCor(p.provider) } }),
+              h('span', { className: 'font-bold text-sm text-gray-800' }, provNome(p.provider)),
+              h('span', { className: 'ml-auto text-[10px] text-gray-400' }, `${p.eta_avaliadas} entregas com ETA`)),
+            [['ETA prometido', p.eta_medio, '#cbd5e1'], ['Tempo real', p.real_tentativa_min, provCor(p.provider)]].map(([l, v, cor]) => h('div', { key: l, className: 'flex items-center gap-2 text-[11px]' },
+              h('span', { className: 'w-24 text-gray-500' }, l),
+              h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded', style: { width: `${((parseFloat(v) || 0) / maxV) * 100}%`, background: cor, minWidth: 2 } })),
+              h('span', { className: 'w-14 text-right font-semibold text-gray-800' }, fmtMin(v)))),
+            h('div', { className: 'flex items-center gap-3 pt-1 border-t border-gray-100' },
+              h('div', null, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Cumpriu o ETA'), h('div', { className: 'text-lg font-extrabold ' + (cumpriu >= 80 ? 'text-green-600' : cumpriu >= 60 ? 'text-amber-600' : 'text-red-600') }, fmtPct(cumpriu))),
+              h('div', null, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Desvio médio'), h('div', { className: 'text-lg font-extrabold ' + (desvio > 0 ? 'text-amber-600' : 'text-green-600') }, desvio == null ? '—' : (desvio > 0 ? '+' : '') + fmtMin(desvio))),
+              h('div', { className: 'text-[10px] text-gray-400 ml-auto max-w-[45%]' }, desvio > 0 ? 'Promete menos do que entrega — o ETA da cotação é otimista.' : 'Entrega dentro do que promete.')));
+        }),
+        !provs.some(p => p.eta_avaliadas > 0) && h('div', { className: 'text-sm text-gray-400 py-4 text-center md:col-span-2' }, 'Nenhuma entrega com ETA registrado no período.')));
+
+    // ── 3) MOTIVOS DE CANCELAMENTO ──
+    const motivos = an.motivos || [];
+    const totalCanc = motivos.reduce((s, m) => s + m.total, 0);
+    const porQuem = {}; motivos.forEach(m => { porQuem[m.por] = (porQuem[m.por] || 0) + m.total; });
+    const QUEM_ROT = { operador: 'Operador (Tutts)', cliente: 'Cliente', provider: 'Provedor', fallback: 'Sem entregador', 'sem registro': 'Sem registro' };
+    const secMotivos = card('Motivos de cancelamento', 'x', `${totalCanc} canceladas definitivas — cancelar pra redespachar não entra.`,
+      !motivos.length ? h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Nenhum cancelamento definitivo no período.') :
+      h('div', { className: 'space-y-3' },
+        h('div', { className: 'flex flex-wrap gap-1.5' }, Object.entries(porQuem).sort((a, b) => b[1] - a[1]).map(([q, n]) => h('span', { key: q, className: 'text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-700' }, `${QUEM_ROT[q] || q} · ${n} (${fmtPct(pct(n, totalCanc))})`))),
+        h('div', { className: 'space-y-1.5' }, motivos.slice(0, 10).map((m, i) => h('div', { key: i, className: 'flex items-center gap-2 text-xs' },
+          h('span', { className: 'w-2 h-2 rounded-full shrink-0', style: { background: provCor(m.provider) }, title: provNome(m.provider) }),
+          h('span', { className: 'w-40 shrink-0 truncate text-gray-700', title: m.motivo }, m.motivo),
+          h('span', { className: 'w-20 shrink-0 text-[10px] text-gray-400 truncate' }, QUEM_ROT[m.por] || m.por),
+          h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded bg-red-400', style: { width: `${pct(m.total, motivos[0].total)}%`, minWidth: 2 } })),
+          h('span', { className: 'w-16 text-right font-semibold text-gray-800' }, `${m.total} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(m.total, totalCanc))})`))))),
+        motivos.length > 10 && h('p', { className: 'text-[10px] text-gray-400' }, `+${motivos.length - 10} motivos menores.`)));
+
+    // ── 4) PARCEIROS: frequentes × novos × ocasionais, por provedor ──
+    const parc = an.parceiros || [];
+    const TIPO = { frequente: { rot: 'Parceiros frequentes', cor: '#7c3aed', d: '> 3 entregas nos 30 dias antes do fim do período' }, ocasional: { rot: 'Ocasionais', cor: '#94a3b8', d: 'já entregaram antes, mas não são frequentes' }, novo: { rot: 'Motos novas', cor: '#15a05a', d: '1ª entrega com a gente caiu no período' }, sem_id: { rot: 'Sem identificação', cor: '#e2e8f0', d: 'provedor não mandou telefone do entregador' } };
+    const ORDEM = ['frequente', 'ocasional', 'novo', 'sem_id'];
+    const agrupa = (lista) => { const o = {}; ORDEM.forEach(t => { o[t] = { entregas: 0, motoboys: 0 }; }); lista.forEach(p => { if (o[p.tipo]) { o[p.tipo].entregas += p.entregas; o[p.tipo].motoboys += p.motoboys; } }); return o; };
+    const barraParc = (titulo, lista, cor) => { const g = agrupa(lista); const tot = ORDEM.reduce((s, t) => s + g[t].entregas, 0); if (!tot) return null;
+      return h('div', { key: titulo, className: 'space-y-1.5' },
+        h('div', { className: 'flex items-center gap-2 text-xs' }, cor && h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: cor } }), h('span', { className: 'font-bold text-gray-800' }, titulo), h('span', { className: 'text-gray-400' }, `· ${tot} entregas`)),
+        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' }, ORDEM.filter(t => g[t].entregas).map(t => h('div', { key: t, className: 'flex items-center justify-center text-[10px] font-bold', style: { width: `${pct(g[t].entregas, tot)}%`, background: TIPO[t].cor, color: t === 'sem_id' || t === 'ocasional' ? '#334155' : '#fff', minWidth: 28 }, onMouseMove: onMove([TIPO[t].rot, `${g[t].entregas} entregas (${fmtPct(pct(g[t].entregas, tot))}) · ${g[t].motoboys} motoboys`, TIPO[t].d]), onMouseLeave: offHover }, fmtPct(pct(g[t].entregas, tot))))));
+    };
+    const provsParc = [...new Set(parc.map(p => p.provider))];
+    const secParceiros = card('Parceiros frequentes × motos novas', 'users', 'Quem está entregando: proporção das entregas feitas por parceiros frequentes, motos novas e ocasionais. Mesma régua da aba Frequentes.',
+      !parc.length ? h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Sem entregas concluídas no período.') :
+      h('div', { className: 'space-y-4' },
+        barraParc('Todos os provedores', parc, null),
+        provsParc.length > 1 && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100' }, provsParc.map(pv => barraParc(provNome(pv), parc.filter(p => p.provider === pv), provCor(pv)))),
+        h('div', { className: 'flex flex-wrap gap-3 text-[10px] text-gray-500' }, ORDEM.map(t => h('span', { key: t, className: 'inline-flex items-center gap-1' }, h('span', { className: 'w-2.5 h-2.5 rounded-sm', style: { background: TIPO[t].cor } }), `${TIPO[t].rot} — ${TIPO[t].d}`)))));
+
+    // ── 5) TENDÊNCIA DIÁRIA ──
+    const dias = an.por_dia || [];
+    const secTendencia = (function () {
+      if (!dias.length) return card('Tendência diária', 'trendup', null, h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Sem dados.'));
+      const W = 900, HB = 120, HL = 70, padL = 34, padR = 8, n = dias.length, bw = (W - padL - padR) / n;
+      const maxC = Math.max(...dias.map(d => d.corridas), 1);
+      const fmtDia = (s) => s.slice(8, 10) + '/' + s.slice(5, 7);
+      const passo = n > 20 ? Math.ceil(n / 12) : 1;
+      const x = (i) => padL + i * bw;
+      const pts = dias.map((d, i) => d.pct_no_prazo == null ? null : [x(i) + bw / 2, HL - 6 - (d.pct_no_prazo / 100) * (HL - 14)]);
+      const path = pts.reduce((acc, p, i) => p ? acc + (acc && pts[i - 1] ? ' L' : ' M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1) : acc, '');
+      return card('Tendência diária', 'trendup', 'Corridas por dia (entregues em roxo, o resto em cinza) e % no prazo. Um gráfico por medida — sem eixo duplo.',
+        h('div', { className: 'space-y-2' },
+          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, 'Corridas por dia'),
+          h('svg', { viewBox: `0 0 ${W} ${HB + 18}`, className: 'w-full', style: { height: 150 } },
+            [0.5, 1].map(f => h('g', { key: f }, h('line', { x1: padL, x2: W - padR, y1: HB - f * (HB - 10), y2: HB - f * (HB - 10), stroke: '#f1f5f9' }), h('text', { x: padL - 4, y: HB - f * (HB - 10) + 3, fontSize: 9, fill: '#94a3b8', textAnchor: 'end' }, Math.round(maxC * f)))),
+            h('line', { x1: padL, x2: W - padR, y1: HB, y2: HB, stroke: '#e2e8f0' }),
+            dias.map((d, i) => { const hT = (d.corridas / maxC) * (HB - 10), hE = (d.entregues / maxC) * (HB - 10); return h('g', { key: d.dia, onMouseMove: onMove([fmtDia(d.dia), `${d.corridas} corridas · ${d.entregues} entregues · ${d.canceladas} canceladas`, `no prazo ${fmtPct(d.pct_no_prazo)} · tempo médio ${fmtMin(d.t_total_min)}`, `margem ${fmtMoney(d.margem)}`]), onMouseLeave: offHover },
+              h('rect', { x: x(i) + bw * 0.15, y: HB - hT, width: Math.max(bw * 0.7, 2), height: hT, fill: '#e2e8f0', rx: 3 }),
+              h('rect', { x: x(i) + bw * 0.15, y: HB - hE, width: Math.max(bw * 0.7, 2), height: hE, fill: '#7c3aed', rx: 3 }),
+              (i % passo === 0) && h('text', { x: x(i) + bw / 2, y: HB + 13, fontSize: 9, fill: '#64748b', textAnchor: 'middle' }, fmtDia(d.dia))); })),
+          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400 pt-1' }, '% no prazo por dia'),
+          h('svg', { viewBox: `0 0 ${W} ${HL}`, className: 'w-full', style: { height: 80 } },
+            [0, 50, 100].map(v => h('g', { key: v }, h('line', { x1: padL, x2: W - padR, y1: HL - 6 - (v / 100) * (HL - 14), y2: HL - 6 - (v / 100) * (HL - 14), stroke: v === 100 ? '#e2e8f0' : '#f1f5f9', strokeDasharray: v === 50 ? '3 3' : null }), h('text', { x: padL - 4, y: HL - 6 - (v / 100) * (HL - 14) + 3, fontSize: 9, fill: '#94a3b8', textAnchor: 'end' }, v + '%'))),
+            path && h('path', { d: path, fill: 'none', stroke: '#15a05a', strokeWidth: 2, strokeLinejoin: 'round' }),
+            pts.map((p, i) => p && h('circle', { key: i, cx: p[0], cy: p[1], r: 4, fill: '#fff', stroke: '#15a05a', strokeWidth: 2, onMouseMove: onMove([fmtDia(dias[i].dia), `${fmtPct(dias[i].pct_no_prazo)} no prazo · ${dias[i].avaliadas} avaliadas`]), onMouseLeave: offHover })))));
+    })();
+
+    // ── 6) MAPA DE CALOR hora × dia ──
+    const heat = an.mapa_calor || [];
+    const secHeat = (function () {
+      if (!heat.length) return card('Quando estoura', 'calendar', null, h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Sem dados.'));
+      const idx = {}; heat.forEach(c => { idx[c.dow + '-' + c.hora] = c; });
+      const horas = []; for (let hh = 0; hh < 24; hh++) if (heat.some(c => c.hora === hh)) horas.push(hh);
+      const hMin = Math.max(0, Math.min(...horas) - 0), hMax = Math.max(...horas); const hs = []; for (let hh = hMin; hh <= hMax; hh++) hs.push(hh);
+      const val = (c) => !c ? null : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? c.pct_no_prazo : c.t_total_min;
+      const vals = heat.map(val).filter(v => v != null); const vMax = Math.max(...vals, 1), vMin = Math.min(...vals, 0);
+      // sequencial: um tom (roxo) claro → escuro; pra % no prazo, inverte (baixo = escuro = ruim)
+      const cor = (v) => { if (v == null) return '#f8fafc'; let t = vMax === vMin ? 1 : (v - vMin) / (vMax - vMin); if (heatMetrica === 'pct_no_prazo') t = 1 - t; const L = 96 - t * 58; return `hsl(262 70% ${L}%)`; };
+      const fmtV = (c) => !c ? '' : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? fmtPct(c.pct_no_prazo) : fmtMin(c.t_total_min);
+      const seletor = h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-0.5 text-[11px] font-semibold' }, [['corridas', 'Volume'], ['pct_no_prazo', '% no prazo'], ['t_total_min', 'Tempo médio']].map(([k, r]) => h('button', { key: k, onClick: () => setHeatMetrica(k), className: `px-2.5 py-1 rounded-md ${heatMetrica === k ? 'bg-white shadow text-purple-700' : 'text-gray-500'}` }, r)));
+      return card('Quando estoura: hora × dia da semana', 'calendar', 'Corridas pela hora da 1ª solicitação (horário de Brasília). Mais escuro = mais volume / mais tempo; em "% no prazo", mais escuro = pior.',
+        h('div', { className: 'overflow-x-auto' },
+          h('table', { className: 'text-[10px] border-separate', style: { borderSpacing: 2 } },
+            h('thead', null, h('tr', null, h('th', { className: 'text-left text-gray-400 font-semibold pr-1' }, ''), hs.map(hh => h('th', { key: hh, className: 'text-gray-400 font-semibold w-8 text-center' }, String(hh).padStart(2, '0'))))),
+            h('tbody', null, [1, 2, 3, 4, 5, 6, 0].map(dw => h('tr', { key: dw },
+              h('td', { className: 'text-gray-500 font-semibold pr-1 whitespace-nowrap' }, DOW[dw]),
+              hs.map(hh => { const c = idx[dw + '-' + hh]; return h('td', { key: hh, className: 'w-8 h-7 rounded text-center font-semibold', style: { background: cor(val(c)), color: c && ((heatMetrica === 'pct_no_prazo' ? 1 - ((val(c) - vMin) / Math.max(vMax - vMin, 1)) : (val(c) - vMin) / Math.max(vMax - vMin, 1)) > 0.55) ? '#fff' : '#475569' },
+                onMouseMove: c ? onMove([`${DOW[dw]} ${String(hh).padStart(2, '0')}h`, `${c.corridas} corridas · ${c.entregues} entregues · ${c.canceladas} canceladas`, `no prazo ${fmtPct(c.pct_no_prazo)} (${c.avaliadas} avaliadas) · tempo médio ${fmtMin(c.t_total_min)}`]) : null, onMouseLeave: offHover }, fmtV(c)); })))))),
+        seletor);
+    })();
+
+    return h(React.Fragment, null,
+      secProvedores,
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-4' }, secEta, secMotivos),
+      secParceiros,
+      secTendencia,
+      secHeat,
+      tip);
+  }
+
   function TabDashboard({ API_URL, fetchAuth, showToast }) {
     const [data, setData] = useState(null);
     const [sla, setSla] = useState(null);
@@ -253,13 +457,15 @@
       ),
 
       // KPIs
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-5 gap-3' },
         [
           // HUB_DASH_OS_V1: contagem por CORRIDA (OS). Redespacho nao infla total/cancelados.
           { lbl: 'Total de corridas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: data.tentativas_total != null ? `${ni(data.tentativas_total)} tentativas · ${ni(data.redespachos)} redespachos em ${ni(data.os_redespachadas)} corridas` : null },
           { lbl: 'Entregues', val: entregues, ico: 'check', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total${ni(data.devolvidos) ? ` · ${ni(data.devolvidos)} devolvida${ni(data.devolvidos) > 1 ? 's' : ''}` : ''}` : null },
           { lbl: 'Em andamento', val: emand, ico: 'bike', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
           { lbl: 'Canceladas', val: cancel, ico: 'x', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback · só cancelamento definitivo` : null },
+          // HUB_DASH_ANALITICO_V1: KPI de destaque — tempo médio de entrega (1ª solicitação → entrega, só entregues)
+          { lbl: 'Tempo médio de entrega', val: fmtMin(tTot), ico: 'clock', chip: 'bg-amber-50 text-amber-600', foot: data.t_total_mediana_min != null ? `mediana ${fmtMin(data.t_total_mediana_min)} · ${ni(data.n_trilha)} entregues` : null },
         ].map(k => h('div', { key: k.lbl, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4' },
           h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${k.chip}` }, h('svg', { className: 'ico ico-lg', 'aria-hidden': 'true' }, h('use', { href: '#i-' + k.ico }))),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, k.lbl),
@@ -406,6 +612,8 @@
                 ),
               ),
       ),
+      // HUB_DASH_ANALITICO_V1: provedores, ETA, motivos, parceiros, tendência, mapa de calor
+      h(HubAnalitico, { API_URL, fetchAuth, showToast, de, ate }),
     );
   }
 
