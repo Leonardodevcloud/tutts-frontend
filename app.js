@@ -491,7 +491,7 @@ function hasModuleAccess(user, moduleId) {
     // Admin normal - verificar permissões
     if (user.role === "admin") {
         // Módulos sempre liberados para admin independente de permissões
-        if (["roadmap", "confirmafacil"].includes(moduleId)) return true;
+        if (["roadmap", "confirmafacil", "painel"].includes(moduleId)) return true; // PAINEL_V1
 
         // Se não tem permissões configuradas, dar acesso a tudo
         if (!user.permissions) return true;
@@ -658,6 +658,7 @@ let SISTEMA_MODULOS_CONFIG = [
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
+    { id: "painel", label: "Meu Painel", icon: "📈", admin: true, abas: [] }, // PAINEL_V1
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
 ];
 
@@ -15070,6 +15071,39 @@ const hideLoadingScreen = () => {
             );
         }
 
+        // PAINEL_V1 - Meu Painel (metricas individuais de atendimento)
+        if ("painel" === Ee) {
+            return React.createElement("div", {
+                className: "min-h-screen bg-gray-50"
+            },
+                i && React.createElement(Toast, i),
+                n && React.createElement(LoadingOverlay, null),
+                React.createElement(HeaderCompacto, {
+                    usuario: l,
+                    moduloAtivo: Ee,
+                    abaAtiva: "",
+                    socialProfile: socialProfile,
+                    isLoading: f,
+                    lastUpdate: E,
+                    onRefresh: () => window.location.reload(),
+                    onLogout: () => o(null),
+                    onGoHome: () => he("home"),
+                    onNavigate: navegarSidebar,
+                    onChangeTab: () => {}
+                }),
+                typeof window.ModuloPainel !== 'undefined'
+                    ? React.createElement(window.ModuloPainel, {
+                        usuario: l,
+                        apiUrl: API_URL,
+                        showToast: ja,
+                        fetchAuth: fetchAuth
+                    })
+                    : React.createElement("div", { className: "text-center py-12" },
+                        React.createElement("p", { className: "text-red-500" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Módulo Meu Painel não carregado. Verifique se modulo-painel.js está presente."))
+                    )
+            );
+        }
+
         // ========== MÓDULO FILAS ==========
         if ("filas" === Ee) {
             return React.createElement("div", {
@@ -21084,6 +21118,25 @@ const hideLoadingScreen = () => {
                         )
                     ),
 
+                    // PAINEL_V1 - Meu Painel (metricas de atendimento por operador) - so admin
+                    (l.role === "admin" || l.role === "admin_master") &&
+                    React.createElement("div", {
+                        onClick: () => he("painel"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Meu Painel"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, l.role === "admin_master" ? "M
+é
+tricas da equipe de atendimento" : "Suas m
+é
+tricas de atendimento")
+                        )
+                    ),
                     // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
                     (l.role === "admin" || l.role === "admin_master") &&
                     React.createElement("div", {
