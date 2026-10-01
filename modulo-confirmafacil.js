@@ -1826,8 +1826,11 @@
       }).then(r => r.json()).then(d => {
         if (d.ok) {
           let t = 'Modo: ' + String(d.modo).toUpperCase();
-          if (d.reconciliacao) t += ' — reconciliados ' + (d.reconciliacao.reconciliados || 0) + '/' + (d.reconciliacao.total || 0);
+          if (d.reconciliacao && d.reconciliacao.em_segundo_plano) t += ' — unificando NFs do XML com o CF em segundo plano'; // CF_XML_AUTO_V12
+          else if (d.reconciliacao) t += ' — reconciliados ' + (d.reconciliacao.reconciliados || 0) + '/' + (d.reconciliacao.total || 0);
           showToast(t, 'success');
+          // CF_XML_AUTO_V12: reflete o modo na hora, sem esperar o reload
+          setDados(prev => (prev || []).map(x => x.cliente_id === clienteId ? { ...x, modo_criacao: modo, polling_ativo: modo !== 'xml' } : x));
         } else showToast(d.error || 'Erro ao trocar modo', 'error');
         carregar();
       }).catch(() => showToast('Erro ao trocar modo', 'error')).finally(() => setBusy(false));
