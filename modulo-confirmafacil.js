@@ -1786,7 +1786,7 @@
           xml_data_corte: d.xml_data_corte ? String(d.xml_data_corte).slice(0, 10) : '',
           xml_geocode_destino: !!d.xml_geocode_destino,
           xml_carencia_min: d.xml_carencia_min == null ? 2 : d.xml_carencia_min,                   // CF_XML_AUTO_V1
-          cf_indisponivel_apos_min: d.cf_indisponivel_apos_min == null ? 3 : d.cf_indisponivel_apos_min, // CF_XML_AUTO_V1
+          cf_indisponivel_apos_min: d.cf_indisponivel_apos_min == null ? 5 : d.cf_indisponivel_apos_min, // CF_XML_AUTO_V11
           _temSenha: d.imap_senha === '********',
         }))
         .catch(() => showToast('Erro ao carregar config', 'error'));
@@ -1905,7 +1905,7 @@
         const modo = c.modo_criacao || 'cf';
         const okMs = c.cf_ultimo_ok ? (Date.now() - new Date(c.cf_ultimo_ok).getTime()) : null;
         const errMs = c.cf_ultimo_erro ? (Date.now() - new Date(c.cf_ultimo_erro).getTime()) : null;
-        const limMin = Number(c.cf_indisponivel_apos_min) > 0 ? Number(c.cf_indisponivel_apos_min) : 3;
+        const limMin = Number(c.cf_indisponivel_apos_min) > 0 ? Number(c.cf_indisponivel_apos_min) : 5; // CF_XML_AUTO_V11
         const cfFora = okMs == null ? (errMs != null) : ((errMs != null && errMs < okMs && Number(c.cf_falhas_seguidas) >= 2) || okMs > limMin * 60000);
         const agoHum = (ms) => ms == null ? '—' : ms < 60000 ? 'agora' : ms < 3600000 ? 'há ' + Math.round(ms / 60000) + ' min' : 'há ' + Math.round(ms / 3600000) + ' h';
         const chipCf = c.polling_ativo
@@ -1962,7 +1962,7 @@
               h('input', { ...inputProps(String(form.xml_carencia_min), v => setForm({ ...form, xml_carencia_min: Math.max(0, parseInt(v, 10) || 0) }), '2'), type: 'number', min: 0, max: 60 }),
               h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Minutos que o XML espera o CF criar a corrida antes de criar ele mesmo. 0 = cria na hora.'))),
             campo('CF considerado fora do ar após', h('div', null,
-              h('input', { ...inputProps(String(form.cf_indisponivel_apos_min), v => setForm({ ...form, cf_indisponivel_apos_min: Math.max(1, parseInt(v, 10) || 3) }), '3'), type: 'number', min: 1, max: 120 }),
+              h('input', { ...inputProps(String(form.cf_indisponivel_apos_min), v => setForm({ ...form, cf_indisponivel_apos_min: Math.max(1, parseInt(v, 10) || 3) }), '5'), type: 'number', min: 1, max: 120 }),
               h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Minutos sem resposta do ConfirmaFácil. Fora do ar, o XML cria sem esperar a carência.'))),
             h('div', { className: 'md:col-span-2 flex gap-2' },
               h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
