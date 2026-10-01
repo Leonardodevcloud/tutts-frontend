@@ -542,6 +542,7 @@
     const [embCnpj, setEmbCnpj]    = useState('');
     const [statusFiltro, setStatus] = useState('');
     const [corridaFiltro, setCorrida] = useState('');
+    const [origemFiltro, setOrigem]   = useState(''); // CF_XML_AUTO_V1: '' | 'cf' | 'xml'
     const [busca, setBusca]         = useState('');
     const [statusCF, setStatusCF]   = useState('');
     const [semCorrida, setSemCorrida] = useState(false); // [cf-fixes-v2] card Sem corrida
@@ -615,6 +616,7 @@
       if (de || ate)     params.set('modo_data', 'previsao_ou_emissao');
       if (embCnpj)       params.set('embarcador_cnpj', embCnpj);
       if (corridaFiltro) params.set('tem_corrida', corridaFiltro);
+      if (origemFiltro)  params.set('origem', origemFiltro); // CF_XML_AUTO_V1
       if (busca)         params.set('busca', busca);
       if (sCF)           params.set('status_cf', sCF);
       if (semOS)         params.set('tem_corrida', 'nao');
@@ -708,6 +710,16 @@
               h('option', { value: '' }, 'Todas'),
               h('option', { value: 'sim' }, 'Com corrida'),
               h('option', { value: 'nao' }, 'Sem corrida')
+            )
+          ),
+          // CF_XML_AUTO_V1: origem da NF/corrida
+          h('div', null,
+            h('label', { className: 'block text-xs font-medium text-gray-600 mb-1' }, 'Origem'),
+            h('select', { value: origemFiltro, onChange: e => setOrigem(e.target.value),
+              className: 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+              h('option', { value: '' }, 'Todas'),
+              h('option', { value: 'cf' }, 'Via ConfirmaFácil'),
+              h('option', { value: 'xml' }, 'Via XML (e-mail)')
             )
           ),
           h('div', null,
@@ -863,7 +875,11 @@
                       h('tr', { key: v.id, className: (i % 2 === 0 ? 'hover:bg-gray-50' : 'bg-gray-50/50 hover:bg-gray-50') },
                         h('td', { className: 'px-3 py-3' },
                           h('p', { className: 'font-semibold text-gray-900' }, v.numero_nf || '—'),
-                          h('p', { className: 'text-xs text-gray-400' }, 'Série ' + (v.serie_nf || '—'))
+                          h('p', { className: 'text-xs text-gray-400' }, 'Série ' + (v.serie_nf || '—')),
+                          // CF_XML_AUTO_V1: de onde veio a corrida
+                          h('span', { className: 'inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide ' + (v.origem_corrida === 'xml' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500'),
+                            title: v.origem_corrida === 'xml' ? 'Corrida criada a partir do XML da NFe (e-mail)' : 'Corrida criada pelo ConfirmaFácil' },
+                            v.origem_corrida === 'xml' ? 'VIA XML' : 'VIA CF')
                         ),
                         h('td', { className: 'px-3 py-3' },
                           v.data_emissao
@@ -1762,6 +1778,8 @@
           imap_pasta: d.imap_pasta || 'NF-e', imap_tls: d.imap_tls !== false,
           xml_data_corte: d.xml_data_corte ? String(d.xml_data_corte).slice(0, 10) : '',
           xml_geocode_destino: !!d.xml_geocode_destino,
+          xml_carencia_min: d.xml_carencia_min == null ? 2 : d.xml_carencia_min,                   // CF_XML_AUTO_V1
+          cf_indisponivel_apos_min: d.cf_indisponivel_apos_min == null ? 3 : d.cf_indisponivel_apos_min, // CF_XML_AUTO_V1
           _temSenha: d.imap_senha === '********',
         }))
         .catch(() => showToast('Erro ao carregar config', 'error'));
@@ -1790,8 +1808,10 @@
 
     const trocarModo = (clienteId, modo) => {
       const msg = modo === 'xml'
-        ? 'Ativar o Fallback XML?\n\nIsso DESLIGA o polling do ConfirmaFácil e o sistema passa a criar corridas a partir dos e-mails de NFe.'
-        : 'Voltar para o ConfirmaFácil?\n\nAntes de religar o CF, o sistema reconcilia as NFs criadas pelo XML (para o CF não duplicar).';
+        ? 'Ativar SÓ o XML?\n\nIsso DESLIGA o polling do ConfirmaFácil e o sistema passa a criar corridas só a partir dos e-mails de NFe.'
+        : modo === 'auto'
+          ? 'Ativar o modo Auto?\n\nCF e XML ficam ligados. O XML só cria a corrida se o CF não criar dentro da carência (configurável) ou se o CF estiver fora do ar. Quando o CF volta, nada precisa ser religado. As NFs já criadas pelo XML são unificadas com o CF antes.'
+          : 'Voltar para SÓ o ConfirmaFácil?\n\nAntes de religar o CF, o sistema unifica as NFs criadas pelo XML (para o CF não duplicar). O XML para de criar.';
       if (!window.confirm(msg)) return;
       setBusy(true);
       fetchAuth(API_URL + '/confirmafacil-xml/modo/' + clienteId, {
@@ -1867,27 +1887,43 @@
     return h('div', { className: 'space-y-4' },
       h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-4 text-[13px] text-purple-900' },
         h('b', null, 'Fallback por XML / e-mail. '),
-        'Quando o ConfirmaFácil estiver fora do ar, ative o modo XML: o sistema lê as NFe da caixa (pasta NF-e) e cria as corridas. Os modos são exclusivos — só um cria por vez. Ao voltar para o CF, as NFs criadas aqui são reconciliadas para o CF não duplicar.'
+        'Três modos por cliente: ', h('b', null, 'CF'), ' (só o ConfirmaFácil cria), ', h('b', null, 'Auto'), ' (recomendado — os dois ligados: o XML só cria se o CF não criou dentro da carência, ou na hora se o CF estiver fora do ar; quando o CF volta, nada precisa ser religado) e ', h('b', null, 'XML'),
+        ' (só o e-mail cria, CF desligado). Corridas vindas do XML aparecem no painel de NFs com a tag ', h('span', { className: 'px-1 rounded bg-violet-100 text-violet-700 font-bold text-[10px]' }, 'VIA XML'),
+        '. Se o CF enxergar depois uma NF que o XML já criou, o registro é unificado (sem duplicar).'
       ),
       lista.length === 0 ? h('div', { className: 'text-sm text-gray-500' }, 'Nenhum cliente com ConfirmaFácil configurado.')
       : lista.map(c => {
         const xml = c.modo_criacao === 'xml';
+        // CF_XML_AUTO_V1: saude do CF (alimentada pelo poller do CF)
+        const modo = c.modo_criacao || 'cf';
+        const okMs = c.cf_ultimo_ok ? (Date.now() - new Date(c.cf_ultimo_ok).getTime()) : null;
+        const errMs = c.cf_ultimo_erro ? (Date.now() - new Date(c.cf_ultimo_erro).getTime()) : null;
+        const limMin = Number(c.cf_indisponivel_apos_min) > 0 ? Number(c.cf_indisponivel_apos_min) : 3;
+        const cfFora = okMs == null ? (errMs != null) : ((errMs != null && errMs < okMs && Number(c.cf_falhas_seguidas) >= 2) || okMs > limMin * 60000);
+        const agoHum = (ms) => ms == null ? '—' : ms < 60000 ? 'agora' : ms < 3600000 ? 'há ' + Math.round(ms / 60000) + ' min' : 'há ' + Math.round(ms / 3600000) + ' h';
+        const chipCf = c.polling_ativo
+          ? h('span', { title: c.cf_ultimo_erro_msg || '', className: 'px-2 py-0.5 rounded-full text-[11px] font-medium ' + (cfFora ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700') },
+              cfFora ? ('CF fora do ar' + (okMs != null ? ' · último ok ' + agoHum(okMs) : '') + (c.cf_falhas_seguidas ? ' · ' + c.cf_falhas_seguidas + ' falhas' : '')) : ('CF ok · ' + agoHum(okMs)))
+          : h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500' }, 'CF polling: off');
+        const btnModo = (id, label) => h('button', { disabled: busy || modo === id, onClick: () => trocarModo(c.cliente_id, id),
+          className: 'px-3 py-1.5 text-[12px] font-semibold rounded-lg disabled:cursor-default ' + (modo === id ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100') }, label);
         return h('div', { key: c.cliente_id, className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-3' },
           h('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
             h('div', { className: 'flex items-center gap-2 flex-wrap' },
               h('span', { className: 'font-bold text-[15px]' }, c.cliente_nome || ('Cliente ' + c.cliente_id)),
-              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + (xml ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600') }, xml ? 'MODO XML' : 'MODO CF'),
-              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-medium ' + (c.polling_ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500') }, 'CF polling: ' + (c.polling_ativo ? 'on' : 'off'))
+              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + (modo === 'auto' ? 'bg-emerald-100 text-emerald-700' : xml ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600') }, 'MODO ' + modo.toUpperCase()),
+              chipCf
             ),
-            h('div', { className: 'flex gap-2' },
-              xml
-                ? h('button', { disabled: busy, onClick: () => trocarModo(c.cliente_id, 'cf'), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' }, 'Voltar p/ CF')
-                : h('button', { disabled: busy, onClick: () => trocarModo(c.cliente_id, 'xml'), className: 'px-3 py-1.5 text-[12px] font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50' }, 'Ativar Fallback XML')
+            // CF_XML_AUTO_V1: seletor de modo (CF | Auto | XML)
+            h('div', { className: 'flex items-center gap-0.5 bg-gray-50 border border-gray-200 rounded-xl p-0.5', role: 'group', 'aria-label': 'Modo de criação' },
+              btnModo('cf', 'Só CF'), btnModo('auto', 'Auto (CF + XML)'), btnModo('xml', 'Só XML')
             )
           ),
           h('div', { className: 'flex gap-2 flex-wrap text-[11.5px]' },
             h('span', { className: 'px-2.5 py-1 rounded-full bg-green-50 text-green-700 font-semibold' }, 'Criadas: ' + (c.qtd_criadas || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold' }, 'Pendentes: ' + (c.qtd_pendentes || 0)),
+            Number(c.qtd_aguardando_cf) > 0 && h('span', { className: 'px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-semibold', title: 'NFs vistas no e-mail aguardando o CF criar (carência)' }, 'Aguardando CF: ' + c.qtd_aguardando_cf),
+            modo === 'auto' && h('span', { className: 'px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold' }, 'Carência: ' + (c.xml_carencia_min == null ? 2 : c.xml_carencia_min) + ' min'),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold' }, 'Erros: ' + (c.qtd_erros || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold' }, 'Fora do corte: ' + (c.qtd_fora_corte || 0)),
             h('span', { className: 'px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold' }, 'Duplicadas CF: ' + (c.qtd_duplicada_cf || 0)),
@@ -1914,6 +1950,13 @@
             campo('Data de corte', h('input', { ...inputProps(form.xml_data_corte, v => setForm({ ...form, xml_data_corte: v }), ''), type: 'date' })),
             campo('TLS', h('label', { className: 'flex items-center gap-2 text-[13px] mt-1' }, h('input', { type: 'checkbox', checked: form.imap_tls, onChange: e => setForm({ ...form, imap_tls: e.target.checked }) }), 'Conexão segura (993/TLS)')),
             campo('Geocodificar destino', h('div', { className: 'text-[12px] text-gray-500 mt-2' }, 'Sempre ativo via Google (busca CF, XML e manual). Testador na aba ', h('b', null, 'Config'), '.')),
+            // CF_XML_AUTO_V1: parametros do modo Auto
+            campo('Carência do XML (modo Auto)', h('div', null,
+              h('input', { ...inputProps(String(form.xml_carencia_min), v => setForm({ ...form, xml_carencia_min: Math.max(0, parseInt(v, 10) || 0) }), '2'), type: 'number', min: 0, max: 60 }),
+              h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Minutos que o XML espera o CF criar a corrida antes de criar ele mesmo. 0 = cria na hora.'))),
+            campo('CF considerado fora do ar após', h('div', null,
+              h('input', { ...inputProps(String(form.cf_indisponivel_apos_min), v => setForm({ ...form, cf_indisponivel_apos_min: Math.max(1, parseInt(v, 10) || 3) }), '3'), type: 'number', min: 1, max: 120 }),
+              h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Minutos sem resposta do ConfirmaFácil. Fora do ar, o XML cria sem esperar a carência.'))),
             h('div', { className: 'md:col-span-2 flex gap-2' },
               h('button', { disabled: busy, onClick: () => salvar(c.cliente_id), className: 'px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50' }, busy ? 'Salvando...' : 'Salvar'),
               h('button', { disabled: busy, onClick: () => testarImap(c.cliente_id), className: 'px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50' }, 'Testar IMAP')
