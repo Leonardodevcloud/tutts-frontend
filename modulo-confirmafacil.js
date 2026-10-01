@@ -11,6 +11,10 @@
 
   const fmtD = d => { try { return d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
   const fmtDt = d => { try { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; } catch (_) { return d || '—'; } };
+  // CF_TRILHA_HORA_V1: carimbos gravados com NOW() no servidor (UTC) -> mostrar em Brasilia
+  const fmtBRT = d => { try { return d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—'; } catch (_) { return d || '—'; } };
+  // "DD-MM-AAAA HH:MM:SS" (ja em BRT, como foi enviado ao CF) -> "DD/MM/AAAA HH:MM"
+  const fmtOcorr = s => { const m = String(s || '').match(/^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})/); return m ? `${m[1]}/${m[2]}/${m[3]} ${m[4]}:${m[5]}` : null; };
   // [cf-geocode-google-v1] Tag "endereco geocodificado" + origem (memoria / cache banco / google)
   const GEO_FONTE = {
     memoria: { t: 'cache memória', cls: 'bg-emerald-100 text-emerald-700', tip: 'Resolvido pelo cache em memória — sem consulta ao banco nem ao Google' },
@@ -289,8 +293,11 @@
                           h('div', { className: 'flex-1 pb-1' },
                             h('div', { className: 'flex items-baseline justify-between' },
                               h('p', { className: 'text-sm font-medium text-gray-800' }, tr.label),
-                              h('p', { className: 'text-xs text-gray-400' }, fmtD(t.criado_em))
+                              // CF_TRILHA_HORA_V1: horario em Brasilia (antes mostrava UTC, 3h a mais)
+                              h('p', { className: 'text-xs text-gray-400', title: 'Quando o sistema enviou ao CF (horário de Brasília)' }, fmtBRT(t.criado_em))
                             ),
+                            // CF_TRILHA_HORA_V1: o horario da OCORRENCIA que foi pro CF (manual ou automatico) — e o que vale pro prazo
+                            fmtOcorr(t.ocorrencia_em) && h('p', { className: 'text-xs text-purple-700 font-medium' }, 'Ocorrência informada ao CF: ' + fmtOcorr(t.ocorrencia_em)),
                             t.sucesso
                               ? h('p', { className: 'text-xs text-green-600' }, 'CF recebeu · Cod. ' + t.cod_ocorrencia)
                               : h('p', { className: 'text-xs text-red-500' }, '' + (t.erro_msg || 'Falhou')),
