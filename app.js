@@ -21130,11 +21130,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
                             ),
                             React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Meu Painel"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, l.role === "admin_master" ? "M
-é
-tricas da equipe de atendimento" : "Suas m
-é
-tricas de atendimento")
+                            React.createElement("p", {className: "text-xs text-gray-500"}, l.role === "admin_master" ? "Métricas da equipe de atendimento" : "Suas métricas de atendimento")
                         )
                     ),
                     // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
