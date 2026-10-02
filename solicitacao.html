@@ -3763,6 +3763,14 @@
                                                                 A 99 nao cancela depois da coleta: a corrida seguiria viva
                                                                 e cobrada, e o redespacho pagaria duas. Some em vez de
                                                                 ficar cinza — botao que nunca liga so gera pergunta. */}
+                                                            {/* HUB_VOLTOU_FILA_V1 — o Hub encerrou a tentativa (central cancelou so no painel / provedor falhou),
+                                                                mas a OS segue viva na Mapp esperando motoboy Tutts. A corrida NAO sumiu: voltou a ser Tutts. */}
+                                                            {c.hub && c.hub.voltou_fila && (
+                                                                <div className="mt-2 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                                                                    <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-refresh"/></svg>
+                                                                    Voltou para a fila Tutts — a Central encerrou o entregador parceiro; buscando motoboy.
+                                                                </div>
+                                                            )}
                                                             {c.hub && c.hub.via_hub && !c.hub.terminal && c.hub.etapa <= 2 && c.hub.provider !== 'uber' && (
                                                                 <button
                                                                     onClick={() => redespacharCorrida(c)}
