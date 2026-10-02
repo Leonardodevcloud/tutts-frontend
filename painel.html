@@ -133,7 +133,7 @@
   .rel-pz-no { background:#fef2f2; color:#b91c1c; }
   .rel-pz-sd { background:#f3f4f6; color:#9ca3af; }
   @media print {
-    .abas, .top, .rel-filtros, #carregando { display:none !important; }
+    .abas, .top, .rel-filtros, #carregando, .pm-bg { display:none !important; }
     .rel-tab-box { max-height:none; border:0; }
     .rel-wrap { padding:0; }
   }
@@ -251,6 +251,36 @@
   .btn-redesp:hover { filter:brightness(1.08); }
   .btn-redesp:disabled { opacity:.55; cursor:default; }
   .btn-rastrear:disabled { opacity:.5; cursor:default; border-color:#f3f4f6; color:#cbd5e1; background:#fafafa; }
+  /* CANCELAMENTO_LOJA_V1 - acao destrutiva: outline vermelho, nunca cheio (o cheio e o redespacho). */
+  .btn-cancel { width:100%; margin-top:6px; font-size:12px; font-weight:600; padding:8px; border-radius:8px; border:1px solid #fecaca; color:#b91c1c; background:#fff; cursor:pointer; }
+  .btn-cancel:hover { background:#fef2f2; }
+  .btn-cancel:disabled { opacity:.55; cursor:default; }
+  /* modal do portal (cancelamento) */
+  .pm-bg { position:fixed; inset:0; background:rgba(17,24,39,.55); z-index:1000; display:none; align-items:center; justify-content:center; padding:16px; }
+  .pm-bg.on { display:flex; }
+  .pm { background:#fff; border-radius:14px; width:100%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,.25); overflow:hidden; }
+  .pm-h { padding:14px 16px; border-bottom:1px solid #f3f4f6; display:flex; align-items:flex-start; gap:10px; }
+  .pm-h .ic { width:34px; height:34px; border-radius:50%; background:#fef2f2; color:#b91c1c; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+  .pm-h .t { font-size:15px; font-weight:700; color:#111827; line-height:1.2; }
+  .pm-h .s { font-size:12px; color:#6b7280; margin-top:2px; }
+  .pm-b { padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+  .pm-b label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#6b7280; display:block; margin-bottom:4px; }
+  .pm-b select, .pm-b textarea { width:100%; font-size:13px; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-family:inherit; outline:none; box-sizing:border-box; }
+  .pm-b select:focus, .pm-b textarea:focus { border-color:var(--roxo); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .pm-b textarea { resize:none; min-height:58px; }
+  .pm-err { font-size:12px; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:7px 10px; display:none; }
+  .pm-err.on { display:block; }
+  .pm-info { font-size:11.5px; color:#6b7280; background:#f9fafb; border-radius:8px; padding:8px 10px; line-height:1.4; }
+  .pm-f { padding:12px 16px; border-top:1px solid #f3f4f6; display:flex; gap:8px; justify-content:flex-end; }
+  .pm-f .b2 { font-size:13px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff; color:#374151; cursor:pointer; }
+  .pm-f .b1 { font-size:13px; font-weight:700; padding:8px 14px; border-radius:8px; border:1px solid #dc2626; background:#dc2626; color:#fff; cursor:pointer; }
+  .pm-f .b1:disabled, .pm-f .b2:disabled { opacity:.55; cursor:default; }
+  /* aba Cancelamentos (reusa .rel-*) */
+  .canc-orig { font-size:10px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap; border:1px solid; }
+  .canc-central { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
+  .canc-loja { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+  .canc-solicitacao { background:#f0f9ff; color:#0369a1; border-color:#bae6fd; }
+  .canc-motivo { max-width:360px; white-space:normal; line-height:1.4; }
   .hora { font-size:10px; color:#9ca3af; padding:0 12px 8px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
   .chip-cli { font-size:10px; font-weight:600; color:#374151; background:#f3f4f6; border-radius:4px; padding:2px 6px; }
@@ -345,6 +375,7 @@
     <button class="aba on" id="abaLista" type="button">Entregas</button>
     <button class="aba" id="abaMapa" type="button">Mapa</button>
     <button class="aba" id="abaRel" type="button">Relatório</button>
+    <button class="aba" id="abaCanc" type="button">Cancelamentos</button>
   </div>
   <div id="carregando">Carregando entregas...</div>
   <div class="board" id="board" style="display:none;"></div>
@@ -380,6 +411,33 @@
     </div>
   </div>
 
+  <!-- CANCELAMENTO_LOJA_V1: aba Cancelamentos -->
+  <div class="rel-wrap" id="cancWrap" style="display:none;">
+    <div class="rel-filtros">
+      <label>De <input type="date" id="cancDe" /></label>
+      <label>ate <input type="date" id="cancAte" /></label>
+      <label>Quem cancelou
+        <select id="cancOrigem">
+          <option value="">Todos</option>
+          <option value="loja">Minha loja</option>
+          <option value="central">Central Tutts</option>
+          <option value="solicitacao">Portal de solicitação</option>
+        </select>
+      </label>
+      <label>Buscar <input type="search" id="cancBusca" placeholder="OS ou motivo" /></label>
+      <button class="rel-btn rel-btn-p" id="cancBuscar" type="button">Buscar</button>
+    </div>
+    <div class="rel-cards" id="cancCards"></div>
+    <div class="rel-tab-box">
+      <table class="rel-tab" id="cancTab">
+        <thead><tr>
+          <th>Quando</th><th>OS</th><th>Quem cancelou</th><th>Motivo</th><th>Corrida estava</th><th>Entregador</th><th>Coleta / Entrega</th>
+        </tr></thead>
+        <tbody id="cancBody"><tr><td colspan="7" class="rel-vazio">Escolha o periodo e clique em Buscar</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="mapa-wrap" id="mapaWrap">
     <div class="mapa-filtros">
       <button class="chip on-amb" id="chipColetar" type="button">A coletar <span class="n" id="nColetar">0</span></button>
@@ -406,6 +464,44 @@
       <span><i style="background:#10b981"></i>Coletou</span>
       <span style="color:#9ca3af">Linha cheia = rota por rua &middot; tracejada = sem rota, linha reta</span>
       <span style="color:#9ca3af">Clique num motoboy ou destino pra destacar a corrida</span>
+    </div>
+  </div>
+</div>
+
+<!-- CANCELAMENTO_LOJA_V1: modal de cancelamento (motivo obrigatorio) -->
+<div class="pm-bg" id="pmCancel" role="dialog" aria-modal="true" aria-labelledby="pmCancelT">
+  <div class="pm">
+    <div class="pm-h">
+      <div class="ic">!</div>
+      <div>
+        <div class="t" id="pmCancelT">Cancelar OS</div>
+        <div class="s">O entregador e dispensado e a corrida e encerrada. Nao da pra desfazer.</div>
+      </div>
+    </div>
+    <div class="pm-b">
+      <div>
+        <label for="pmMotivo">Motivo do cancelamento</label>
+        <select id="pmMotivo">
+          <option value="">Selecione um motivo...</option>
+          <option>Cliente desistiu da entrega</option>
+          <option>Pedido duplicado</option>
+          <option>Endereco incorreto ou incompleto</option>
+          <option>Demora para encontrar entregador</option>
+          <option>Produto indisponivel / sem estoque</option>
+          <option>Vou enviar por outro meio</option>
+          <option value="__outro">Outro (descrever)</option>
+        </select>
+      </div>
+      <div>
+        <label for="pmTexto">Detalhes</label>
+        <textarea id="pmTexto" maxlength="500" placeholder="Opcional"></textarea>
+      </div>
+      <div class="pm-err" id="pmErr" role="alert"></div>
+      <div class="pm-info">So da pra cancelar enquanto o entregador <b>ainda nao coletou</b>. O motivo fica registrado no historico (aba Cancelamentos).</div>
+    </div>
+    <div class="pm-f">
+      <button type="button" class="b2" id="pmVoltar">Voltar</button>
+      <button type="button" class="b1" id="pmConfirmar">Cancelar corrida</button>
     </div>
   </div>
 </div>
@@ -619,6 +715,10 @@
     var btnRd = (podeRedesp && !ehProprio)
       ? '<button class="btn-redesp" onclick="__portal.redespachar('+Number(e.id)+')">\u21bb Redespachar</button>'
       : '';
+    // CANCELAMENTO_LOJA_V1 - mesma fronteira do redespacho: so ate a coleta.
+    var btnCc = (podeRedesp && !ehProprio)
+      ? '<button class="btn-cancel" onclick="__portal.cancelar('+Number(e.id)+','+Number(e.codigo_os)+')">\u2715 Cancelar corrida</button>'
+      : '';
     var cls = e.extraviado ? 'card extr' : (e.entregador_frequente ? 'card freq' : 'card');
     var faixa = '';
     if(e.extraviado) faixa = '<div class="faixa faixa-extr">\uD83D\uDCE6 Extraviado</div>';
@@ -635,7 +735,7 @@
       + telBloco
       + '<div class="hora">'+(ehProprio?'Em rota desde ':'Despachada ')+esc(fmtHora(e.created_at))+'</div>'
       + trilhaHTML(e.codigo_os)
-      + '<div class="foot">'+btnR+btnRd+'</div>'
+      + '<div class="foot">'+btnR+btnRd+btnCc+'</div>'
       + '</div>';
   }
 
@@ -1139,16 +1239,18 @@
     window.print();
   }
 
-  // [portal-relatorio-v1] 3 abas: lista | mapa | relatorio
+  // [portal-relatorio-v1] 4 abas: lista | mapa | relatorio | cancelamentos
   function trocarAba(qual){
-    var ehMapa = qual==='mapa', ehRel = qual==='rel';
-    var ehLista = !ehMapa && !ehRel;
+    var ehMapa = qual==='mapa', ehRel = qual==='rel', ehCanc = qual==='canc';
+    var ehLista = !ehMapa && !ehRel && !ehCanc;
     document.getElementById('abaLista').className = 'aba'+(ehLista?' on':'');
     document.getElementById('abaMapa').className  = 'aba'+(ehMapa?' on':'');
     document.getElementById('abaRel').className   = 'aba'+(ehRel?' on':'');
+    document.getElementById('abaCanc').className  = 'aba'+(ehCanc?' on':'');
     document.getElementById('board').style.display = ehLista?'flex':'none';
     document.getElementById('mapaWrap').style.display = ehMapa?'block':'none';
     document.getElementById('relWrap').style.display = ehRel?'block':'none';
+    document.getElementById('cancWrap').style.display = ehCanc?'block':'none';
     // a busca e a data do topo sao do quadro; no mapa e no relatorio somem
     document.getElementById('tBusca').style.display = ehLista?'':'none';
     document.getElementById('tData').style.display  = ehLista?'':'none';
@@ -1160,11 +1262,142 @@
       carregarMapa();
     }
     if(ehRel && !relCarregouUmaVez){ relCarregouUmaVez = true; carregarRelatorio(); }
+    if(ehCanc){ carregarCancelamentos(); }
   }
+
+  // ── CANCELAMENTO_LOJA_V1: aba Cancelamentos ─────────────────────
+  var ORIGEM_ROT = { central:'Central Tutts', loja:'Minha loja', solicitacao:'Portal de solicitação' };
+  var STATUS_ROT_CANC = { PENDING:'Aguardando', QUOTED:'Cotando', DISPATCHED:'Procurando entregador', COURIER_ASSIGNED:'Entregador atribuido', PICKUP_EN_ROUTE:'A caminho da coleta', ARRIVED_PICKUP:'Na coleta', PICKED_UP:'Coletou', DROPOFF_EN_ROUTE:'Em rota', ARRIVED_DROPOFF:'Na entrega', MOTO_PROPRIA:'Moto propria' };
+  function cancQS(){
+    var de = document.getElementById('cancDe').value, ate = document.getElementById('cancAte').value;
+    var o = document.getElementById('cancOrigem').value, b = document.getElementById('cancBusca').value.trim();
+    var qs = [];
+    if(de) qs.push('de='+encodeURIComponent(de));
+    if(ate) qs.push('ate='+encodeURIComponent(ate));
+    if(o) qs.push('origem='+encodeURIComponent(o));
+    if(b) qs.push('busca='+encodeURIComponent(b));
+    return qs.length ? ('?'+qs.join('&')) : '';
+  }
+  function carregarCancelamentos(){
+    var body = document.getElementById('cancBody');
+    body.innerHTML = '<tr><td colspan="7" class="rel-vazio">Carregando...</td></tr>';
+    var _t = token(); if(!_t){ mostrarLogin(); return; }
+    fetch(API+'/api/logistics/portal/cancelamentos'+cancQS(), { headers:{ 'Authorization':'Bearer '+_t } })
+      .then(function(r){ if(r.status===401){ localStorage.removeItem(TOKEN_KEY); mostrarLogin(); throw new Error('401'); } return r.json(); })
+      .then(function(d){
+        var it = d.itens || [], rs = d.resumo || {};
+        document.getElementById('cancCards').innerHTML =
+            '<div class="rel-card"><div class="k">Cancelamentos</div><div class="v">'+(rs.total||0)+'</div></div>'
+          + '<div class="rel-card"><div class="k">Pela loja</div><div class="v">'+(rs.loja||0)+'</div></div>'
+          + '<div class="rel-card"><div class="k">Pela Central</div><div class="v">'+(rs.central||0)+'</div></div>'
+          + '<div class="rel-card"><div class="k">Pelo portal</div><div class="v">'+(rs.solicitacao||0)+'</div></div>';
+        if(!it.length){
+          var filtrou = document.getElementById('cancOrigem').value || document.getElementById('cancBusca').value.trim();
+          body.innerHTML = '<tr><td colspan="7" class="rel-vazio">'+(filtrou?'Nenhum cancelamento com esses filtros':'Nenhum cancelamento no periodo')+'</td></tr>';
+          return;
+        }
+        body.innerHTML = it.map(function(c){
+          var o = c.origem || '';
+          return '<tr>'
+            + '<td style="white-space:nowrap">'+relFmtDataHora(c.criado_em)+'</td>'
+            + '<td><b>'+esc(c.codigo_os||'—')+'</b></td>'
+            + '<td><span class="canc-orig canc-'+esc(o)+'">'+esc(ORIGEM_ROT[o]||o)+'</span><div style="font-size:10.5px;color:#6b7280;margin-top:3px">'+esc(c.cancelado_por_nome||'')+'</div></td>'
+            + '<td class="canc-motivo">'+esc(c.motivo||'—')+'</td>'
+            + '<td>'+esc(STATUS_ROT_CANC[c.status_antes]||c.status_antes||'—')+'</td>'
+            + '<td>'+esc(c.entregador_nome||'—')+'</td>'
+            + '<td class="rel-end">'+esc(c.endereco_coleta||'—')+'<br>'+esc(c.endereco_entrega||'—')+'</td>'
+            + '</tr>';
+        }).join('');
+      })
+      .catch(function(e){
+        if(String(e.message)==='401') return;
+        body.innerHTML = '<tr><td colspan="7" class="rel-vazio">Nao foi possivel carregar: '+esc(e.message)+'</td></tr>';
+      });
+  }
+  document.getElementById('cancBuscar').addEventListener('click', carregarCancelamentos);
+  document.getElementById('cancBusca').addEventListener('keydown', function(e){ if(e.key==='Enter') carregarCancelamentos(); });
+  (function(){
+    var d = new Date(), d0 = new Date(); d0.setDate(d0.getDate()-30);
+    var iso = function(x){ return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2); };
+    document.getElementById('cancDe').value  = iso(d0);
+    document.getElementById('cancAte').value = iso(d);
+  })();
+
+  // ── CANCELAMENTO_LOJA_V1: modal ─────────────────────────────────
+  var pmAlvo = null;   // { id, os, btn }
+  var pmUltimoFoco = null;
+  function pmAbrir(id, os, btn){
+    pmAlvo = { id:id, os:os, btn:btn };
+    pmUltimoFoco = document.activeElement;
+    document.getElementById('pmCancelT').textContent = 'Cancelar OS '+os;
+    document.getElementById('pmMotivo').value = '';
+    document.getElementById('pmTexto').value = '';
+    pmErro(null);
+    pmOcupado(false);
+    document.getElementById('pmCancel').classList.add('on');
+    setTimeout(function(){ document.getElementById('pmMotivo').focus(); }, 30);
+  }
+  function pmFechar(){
+    document.getElementById('pmCancel').classList.remove('on');
+    pmAlvo = null;
+    if(pmUltimoFoco && pmUltimoFoco.focus){ try{ pmUltimoFoco.focus(); }catch(e){} }
+  }
+  function pmErro(msg){ var el=document.getElementById('pmErr'); el.textContent = msg||''; el.className = 'pm-err'+(msg?' on':''); }
+  function pmOcupado(on){
+    document.getElementById('pmConfirmar').disabled = on;
+    document.getElementById('pmVoltar').disabled = on;
+    document.getElementById('pmMotivo').disabled = on;
+    document.getElementById('pmTexto').disabled = on;
+    document.getElementById('pmConfirmar').textContent = on ? 'Cancelando...' : 'Cancelar corrida';
+  }
+  function pmMotivoFinal(){
+    var sel = document.getElementById('pmMotivo').value;
+    var txt = document.getElementById('pmTexto').value.replace(/\s+/g,' ').trim();
+    if(!sel) return '';
+    if(sel==='__outro') return txt;
+    return txt ? (sel+' — '+txt) : sel;
+  }
+  function pmConfirmar(){
+    if(!pmAlvo) return;
+    var motivo = pmMotivoFinal();
+    if(motivo.length < 3){ pmErro(document.getElementById('pmMotivo').value==='__outro' ? 'Descreva o motivo do cancelamento.' : 'Selecione o motivo do cancelamento.'); document.getElementById(document.getElementById('pmMotivo').value==='__outro'?'pmTexto':'pmMotivo').focus(); return; }
+    var t=token(); if(!t){ mostrarLogin(); return; }
+    pmErro(null); pmOcupado(true);
+    var alvo = pmAlvo;
+    fetch(API+'/api/logistics/portal/deliveries/'+alvo.id+'/cancel',{
+      method:'POST', headers:{ 'Authorization':'Bearer '+t, 'Content-Type':'application/json' },
+      body: JSON.stringify({ motivo: motivo })
+    })
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+    .then(function(x){
+      if(x.ok && x.j.success){
+        pmFechar();
+        alert(x.j.aviso ? ('Corrida cancelada. '+x.j.aviso) : 'Corrida cancelada.');
+        carregar();
+      } else {
+        pmOcupado(false);
+        pmErro(x.j.error || 'Nao foi possivel cancelar agora. Tente de novo ou fale com a Central.');
+      }
+    })
+    .catch(function(){ pmOcupado(false); pmErro('Sem conexao. Verifique a internet e tente de novo.'); });
+  }
+  document.getElementById('pmVoltar').addEventListener('click', pmFechar);
+  document.getElementById('pmConfirmar').addEventListener('click', pmConfirmar);
+  document.getElementById('pmCancel').addEventListener('click', function(ev){ if(ev.target===this && !document.getElementById('pmConfirmar').disabled) pmFechar(); });
+  document.getElementById('pmMotivo').addEventListener('change', function(){
+    pmErro(null);
+    document.getElementById('pmTexto').placeholder = this.value==='__outro' ? 'Descreva o motivo (obrigatorio)' : 'Opcional';
+    if(this.value==='__outro') document.getElementById('pmTexto').focus();
+  });
+  document.getElementById('pmTexto').addEventListener('input', function(){ pmErro(null); });
+  document.addEventListener('keydown', function(ev){
+    if(ev.key==='Escape' && document.getElementById('pmCancel').classList.contains('on') && !document.getElementById('pmConfirmar').disabled) pmFechar();
+  });
 
   document.getElementById('abaLista').addEventListener('click',function(){ trocarAba('lista'); });
   document.getElementById('abaMapa').addEventListener('click',function(){ trocarAba('mapa'); });
   document.getElementById('abaRel').addEventListener('click',function(){ trocarAba('rel'); });
+  document.getElementById('abaCanc').addEventListener('click',function(){ trocarAba('canc'); });
   document.getElementById('relBuscar').addEventListener('click', carregarRelatorio);
   document.getElementById('relCsv').addEventListener('click', baixarRelatorioCsv);
   document.getElementById('relPdf').addEventListener('click', baixarRelatorioPdf);
@@ -1231,6 +1464,7 @@
       // carregar(), que chama render() e jogava a tela de volta pro quadro —
       // por isso a aba "voltava sozinha" depois de 30s.
       if(document.getElementById('relWrap').style.display==='block') return;
+      if(document.getElementById('cancWrap').style.display==='block') return;
       if(document.getElementById('mapaWrap').style.display==='block') carregarMapa();
       else carregar();
     },30000);
@@ -1276,6 +1510,8 @@
       })
       .catch(function(){ alert('Erro de conexao.'); if(b){ b.disabled=false; b.textContent='\u21bb Redespachar'; } });
     },
+    // CANCELAMENTO_LOJA_V1
+    cancelar:function(id, os){ pmAbrir(id, os, event && event.target); },
     toggleTrilha:function(os){ trilhaAberta[os] = !trilhaAberta[os]; render(null); },
     ligar:function(tel){ if(isMobile()){ window.location.href='tel:'+tel; } else { try{ navigator.clipboard.writeText(tel); alert('Telefone copiado: '+tel); }catch(e){ alert(tel); } } } };
 

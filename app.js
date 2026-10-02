@@ -656,7 +656,7 @@ let SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"Dashboard"},{id:"busca",label:"Busca"},{id:"config",label:"Configurações"},{id:"jobs",label:"Importações"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
-    { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
+    { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"cancelamentos",label:"Cancelamentos"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
     { id: "painel", label: "Meu Painel", icon: "📈", admin: true, abas: [] }, // PAINEL_V1
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }

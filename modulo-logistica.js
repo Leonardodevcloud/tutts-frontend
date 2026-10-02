@@ -9,7 +9,19 @@
   'use strict';
 
   const { useState, useEffect, useCallback, useRef, useMemo } = React;
-  const h = React.createElement; /* HUB_ICONS_V1 */
+  const h = React.createElement;
+  // CANCEL_MOTIVO_V3: motivos padrao do cancelamento (admin). Lista curta de
+  // proposito — o que nao cabe aqui vai em "Outro" com texto livre.
+  const MOTIVOS_CANCELAMENTO = [
+    'Cliente desistiu da entrega',
+    'Pedido duplicado',
+    'Endereco incorreto ou incompleto',
+    'Demora na alocacao do entregador',
+    'Entregador nao compareceu',
+    'Produto indisponivel / sem estoque',
+    'Erro no cadastro da OS',
+    'Vai sair com moto propria',
+  ]; /* HUB_ICONS_V1 */
 
   // REDESPACHO_BTN_V1 — estagios em que ainda da pra redespachar.
   //
@@ -2036,7 +2048,7 @@
     const [provDropAberto, setProvDropAberto] = useState(false); // RDA_QUICK_DROPSTATE_V3
     // Modal de cotação manual (Opção C)
     const [cotacaoModal, setCotacaoModal] = useState(null); // null | {state, codigoOS, dados, error}
-    const [cancelarModal, setCancelarModal] = useState(null); // CANCEL_MODAL_V2: null | {entrega, jaColetou, enviando}
+    const [cancelarModal, setCancelarModal] = useState(null); // CANCEL_MODAL_V3: null | {entrega, jaColetou, enviando, motivoSel, motivoTxt, erroMotivo}
     const [tickClock, setTickClock] = useState(0); // força re-render por segundo pro countdown
     // Mini-modal pra pedir código da OS (substitui prompt() nativo do navegador)
     const [pedirCodigoModal, setPedirCodigoModal] = useState(null); // null | {valor: string}
@@ -2392,26 +2404,43 @@
       const entregaObj = (entregaOuId && typeof entregaOuId === 'object') ? entregaOuId : { id: entregaOuId };
       const st = entregaObj.status_canonico || null;
       const JA_COLETOU = ['PICKED_UP', 'DROPOFF_EN_ROUTE', 'ARRIVED_DROPOFF'];
-      setCancelarModal({ entrega: entregaObj, jaColetou: !!(st && JA_COLETOU.includes(st)), enviando: false });
+      // CANCEL_MOTIVO_V3: motivo obrigatorio — comeca vazio, o modal valida.
+      setCancelarModal({ entrega: entregaObj, jaColetou: !!(st && JA_COLETOU.includes(st)), enviando: false, motivoSel: '', motivoTxt: '', erroMotivo: null });
+    }
+
+    // CANCEL_MOTIVO_V3: resolve o motivo final do modal ('Outro' usa o texto livre).
+    function motivoDoModal(m) {
+      if (!m) return '';
+      const sel = String(m.motivoSel || '').trim();
+      const txt = String(m.motivoTxt || '').replace(/\s+/g, ' ').trim();
+      if (!sel) return '';
+      if (sel === '__outro') return txt;
+      return txt ? (sel + ' — ' + txt) : sel;
     }
 
     async function executarCancelamento(entrega, escopo) {
+      // CANCEL_MOTIVO_V3: sem motivo nao sai do modal.
+      const motivo = motivoDoModal(cancelarModal);
+      if (motivo.length < 3) {
+        setCancelarModal(function (m) { return m ? Object.assign({}, m, { erroMotivo: 'Informe o motivo do cancelamento.' }) : m; });
+        return;
+      }
       /* MP_CANCEL_PROPRIO_V4: moto propria nao tem linha no hub — cancela por codigo_os */
       if (entrega && entrega.is_moto_propria) {
-        setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
+        setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true, erroMotivo: null }) : m; });
         try {
-          const r = await fetchAuth(`${API_URL}/logistics/moto-propria/${entrega.codigo_os}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          const r = await fetchAuth(`${API_URL}/logistics/moto-propria/${entrega.codigo_os}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ motivo: motivo }) });
           if (r.ok) { showToast('Removida do painel — cancele na Mapp manualmente', 'warning'); setCancelarModal(null); carregar(); } /* MP_TOAST_CENTRAL_V1 */
           else { let er = {}; try { er = await r.json(); } catch (_e) {} showToast(er.error || er.motivo || 'Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
         } catch (_e) { showToast('Erro ao cancelar', 'error'); setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: false }) : m; }); }
         return;
       }
       const id = entrega.id;
-      setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true }) : m; });
+      setCancelarModal(function (m) { return m ? Object.assign({}, m, { enviando: true, erroMotivo: null }) : m; });
       try {
         const res = await fetchAuth(`${API_URL}/logistics/deliveries/${id}/cancel`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ motivo: 'Cancelamento manual', escopo: escopo })
+          body: JSON.stringify({ motivo: motivo, escopo: escopo })
         });
         if (res.ok) {
           let info = {};
@@ -3049,6 +3078,34 @@
               h('p', { className: 'text-[11px] text-red-100 mt-0.5' }, cancelarModal.entrega.is_moto_propria ? 'Confirmar cancelamento da moto própria?' : 'Como tu quer cancelar essa corrida?')), /* MP_MODAL_SUB_V5 */
           ),
           h('div', { className: 'p-5 space-y-3' },
+            /* CANCEL_MOTIVO_V3: motivo obrigatorio — fica registrado no historico (aba Cancelamentos). */
+            h('div', { className: 'space-y-2' },
+              h('label', { htmlFor: 'hub-cancel-motivo', className: 'block text-[11px] font-semibold text-gray-500 uppercase tracking-wide' }, 'Motivo do cancelamento'),
+              h('select', {
+                id: 'hub-cancel-motivo',
+                value: cancelarModal.motivoSel || '',
+                disabled: cancelarModal.enviando,
+                autoFocus: true,
+                onChange: (ev) => { const v = ev.target.value; setCancelarModal(m => m ? Object.assign({}, m, { motivoSel: v, erroMotivo: null }) : m); },
+                className: 'w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100',
+              },
+                h('option', { value: '' }, 'Selecione um motivo...'),
+                MOTIVOS_CANCELAMENTO.map(mo => h('option', { key: mo, value: mo }, mo)),
+                h('option', { value: '__outro' }, 'Outro (descrever)'),
+              ),
+              h('textarea', {
+                value: cancelarModal.motivoTxt || '',
+                disabled: cancelarModal.enviando,
+                rows: 2,
+                maxLength: 500,
+                onChange: (ev) => { const v = ev.target.value; setCancelarModal(m => m ? Object.assign({}, m, { motivoTxt: v, erroMotivo: null }) : m); },
+                placeholder: cancelarModal.motivoSel === '__outro' ? 'Descreva o motivo (obrigatorio)' : 'Detalhes (opcional)',
+                className: 'w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100 resize-none',
+              }),
+              cancelarModal.erroMotivo && h('div', { role: 'alert', className: 'text-[12px] text-red-600 flex items-center gap-1' },
+                h('svg', { className: 'ico', style: { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-alert' })), cancelarModal.erroMotivo),
+              h('div', { className: 'text-[11px] text-gray-400' }, 'O motivo e quem cancelou ficam no historico (aba Cancelamentos).'),
+            ),
             /* MP_MODAL_ENXUTO_V5: moto propria tem modal simples (1 botao); hub mantem os 2 escopos */
             cancelarModal.entrega.is_moto_propria && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' }, /* MP_MODAL_AVISO_MAPP_V1 */
               h('b', null, 'Atenção: '), 'a moto própria já tem entregador. Aqui a corrida só sai do painel (central) — ela ', h('b', null, 'não é cancelada na Mapp'), '. Se precisar, ', h('b', null, 'cancele na Mapp manualmente'), '.'),
@@ -6091,6 +6148,10 @@
       regras:    TabRegras,
       // HUB_REL_V2: relatorio v2 em modulo-logistica-relatorio.js (fallback: TabRelatorio antigo)
       relatorio: window.ModuloLogisticaRelatorio || TabRelatorio,
+      // CANCEL_HISTORICO_V1: historico de cancelamentos (modulo-logistica-cancelamentos.js)
+      cancelamentos: window.ModuloLogisticaCancelamentos || (() => h('div', {
+        className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg'
+      }, 'modulo-logistica-cancelamentos.js não foi carregado. Verifique o index.html.')),
       barrados:   TabBarrados,
       frequentes: TabFrequentes,
       // 🆕 2026-05 Hub logístico — painel de provedores (modulo-logistica-providers.js).

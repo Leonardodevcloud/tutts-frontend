@@ -1249,6 +1249,15 @@
             const [dadosPonto, setDadosPonto] = useState({ observacao: '', telefone: '', procurar_por: '', nome_fantasia: '', razao_social: '', numero_nota: '', codigo_finalizar: '', complemento: '' });
             const [corridasAtivas, setCorridasAtivas] = useState([]);
             const [redespachando, setRedespachando] = useState(null); // REDESPACHO_BTN_V1: OS em curso
+            // CANCELAMENTO_CLIENTE_V2: modal de cancelamento (motivo obrigatorio)
+            const [modalCancelar, setModalCancelar] = useState(null); // null | { id, os, motivoSel, motivoTxt, erro, enviando }
+            // CANCEL_HISTORICO_CLIENTE_V1: aba Cancelamentos
+            const [cancelamentos, setCancelamentos] = useState({ itens: [], resumo: null });
+            const [cancelamentosLoading, setCancelamentosLoading] = useState(false);
+            const [cancDe, setCancDe] = useState(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
+            const [cancAte, setCancAte] = useState(() => new Date().toISOString().slice(0, 10));
+            const [cancOrigem, setCancOrigem] = useState('');
+            const [cancBusca, setCancBusca] = useState('');
             const [confirmacaoOS, setConfirmacaoOS] = useState(null); // { os, coleta, entrega, motoboy }
             const [corridaSelecionada, setCorridaSelecionada] = useState(null);
             const [corridasAgendadas, setCorridasAgendadas] = useState([]); // PAINEL_AGENDADAS_V1 PAINEL_AGENDADAS_V2
@@ -1938,14 +1947,82 @@
                 }
             };
             
-            const cancelarCorrida = async (id) => {
-                if (!confirm('Tem certeza que deseja CANCELAR esta corrida?')) return;
+            // CANCELAMENTO_CLIENTE_V2 — abre o modal; o cancelamento de fato roda em confirmarCancelamento.
+            // Regra: corrida do Hub so cancela ANTES da coleta (hub.etapa <= 2). Depois disso o
+            // entregador parceiro nao cancela e a corrida seguiria cobrada — so a Central.
+            const MOTIVOS_CANCEL = [
+                'Cliente desistiu da entrega',
+                'Pedido duplicado',
+                'Endereco incorreto ou incompleto',
+                'Demora para encontrar motoboy',
+                'Produto indisponivel / sem estoque',
+                'Vou enviar por outro meio',
+            ];
+            const podeCancelarCorrida = (c) => {
+                if (!c) return false;
+                if (['finalizado', 'cancelado'].includes(c.status)) return false;
+                if (c.hub && c.hub.via_hub) return !c.hub.terminal && (c.hub.etapa == null || c.hub.etapa <= 2);
+                return true;
+            };
+            const cancelarCorrida = (idOuCorrida) => {
+                const c = (idOuCorrida && typeof idOuCorrida === 'object') ? idOuCorrida : null;
+                const id = c ? c.id : idOuCorrida;
+                const os = c ? (c.tutts_os_numero || c.id) : ((detalheCorrida && detalheCorrida.id === id && (detalheCorrida.tutts_os_numero || detalheCorrida.id)) || id);
+                setModalCancelar({ id, os, motivoSel: '', motivoTxt: '', erro: null, enviando: false });
+            };
+            const motivoCancelFinal = (m) => {
+                if (!m || !m.motivoSel) return '';
+                const txt = String(m.motivoTxt || '').replace(/\s+/g, ' ').trim();
+                if (m.motivoSel === '__outro') return txt;
+                return txt ? (m.motivoSel + ' — ' + txt) : m.motivoSel;
+            };
+            const confirmarCancelamento = async () => {
+                if (!modalCancelar || modalCancelar.enviando) return;
+                const motivo = motivoCancelFinal(modalCancelar);
+                if (motivo.length < 3) {
+                    setModalCancelar(m => ({ ...m, erro: m.motivoSel === '__outro' ? 'Descreva o motivo do cancelamento.' : 'Selecione o motivo do cancelamento.' }));
+                    return;
+                }
+                setModalCancelar(m => ({ ...m, enviando: true, erro: null }));
                 try {
-                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${id}/cancelar`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` } });
-                    const data = await resp.json();
-                    if (resp.ok) { showToast(data.cancelou_tutts ? '✅ Corrida cancelada!' : '❌ Corrida marcada como cancelada', 'success'); carregarCorridasAtivas(); carregarConcluidas(); setCorridaSelecionada(null); setDetalheCorrida(null); }
-                    else showToast(data.error || 'Erro ao cancelar', 'error');
-                } catch (err) { showToast('Erro ao cancelar', 'error'); }
+                    const resp = await fetch(`${API_URL}/api/solicitacao/corrida/${modalCancelar.id}/cancelar`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ motivo }),
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (resp.ok) {
+                        setModalCancelar(null);
+                        if (data.erro_tutts) showToast('Corrida cancelada no entregador. No sistema Tutts a OS ficou aberta — a Central vai concluir.', 'info');
+                        else showToast(data.cancelou_tutts || data.via_hub ? '✅ Corrida cancelada' : '✅ Corrida marcada como cancelada', 'success');
+                        carregarCorridasAtivas(); carregarConcluidas(); setCorridaSelecionada(null); setDetalheCorrida(null);
+                    } else {
+                        setModalCancelar(m => m ? ({ ...m, enviando: false, erro: data.error || 'Não foi possível cancelar agora.' }) : m);
+                    }
+                } catch (err) {
+                    setModalCancelar(m => m ? ({ ...m, enviando: false, erro: 'Sem conexão. Verifique a internet e tente de novo.' }) : m);
+                }
+            };
+
+            // CANCEL_HISTORICO_CLIENTE_V1
+            const carregarCancelamentos = async (opts) => {
+                const de = (opts && opts.de != null) ? opts.de : cancDe;
+                const ate = (opts && opts.ate != null) ? opts.ate : cancAte;
+                const origem = (opts && opts.origem != null) ? opts.origem : cancOrigem;
+                const busca = (opts && opts.busca != null) ? opts.busca : cancBusca;
+                setCancelamentosLoading(true);
+                try {
+                    const qs = [];
+                    if (de) qs.push('de=' + encodeURIComponent(de));
+                    if (ate) qs.push('ate=' + encodeURIComponent(ate));
+                    if (origem) qs.push('origem=' + encodeURIComponent(origem));
+                    if (busca && busca.trim()) qs.push('busca=' + encodeURIComponent(busca.trim()));
+                    const resp = await fetch(`${API_URL}/api/solicitacao/cancelamentos?${qs.join('&')}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const data = await resp.json().catch(() => ({}));
+                    if (resp.ok) setCancelamentos({ itens: data.itens || [], resumo: data.resumo || null });
+                    else showToast(data.error || 'Erro ao carregar cancelamentos', 'error');
+                } catch (err) { showToast('Erro ao carregar cancelamentos', 'error'); }
+                setCancelamentosLoading(false);
             };
             
             const sincronizarStatus = async () => {
@@ -3065,6 +3142,7 @@
                                 <button onClick={() => { setAbaAtiva('enderecos'); carregarTodosEnderecos(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'enderecos' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-building"/></svg> Endereços</button>
                                 <button onClick={() => setAbaAtiva('maquinas')} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'maquinas' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-tag"/></svg> Máquinas</button>
                                 <button onClick={() => { setAbaAtiva('relatorio'); carregarRelatorio(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'relatorio' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-chart"/></svg> Relatório</button>
+                                <button onClick={() => { setAbaAtiva('cancelamentos'); carregarCancelamentos(); }} className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${abaAtiva === 'cancelamentos' ? 'bg-white text-purple-700' : 'text-blue-100 hover:bg-blue-800'}`}><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-ban"/></svg> Cancelamentos</button>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded">Sair</button>
@@ -3694,6 +3772,15 @@
                                                                     {redespachando === c.tutts_os_numero ? 'Chamando outro...' : '↻  Redespachar'}
                                                                 </button>
                                                             )}
+                                                            {/* CANCELAMENTO_CLIENTE_V2 — mesma fronteira: so ate a coleta. Outline, nunca cheio. */}
+                                                            {podeCancelarCorrida(c) && (
+                                                                <button
+                                                                    onClick={(ev) => { ev.stopPropagation(); cancelarCorrida(c); }}
+                                                                    className="mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    ✕  Cancelar corrida
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -3764,8 +3851,8 @@
                                                                         <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-pin"/></svg> {labelRastreio}
                                                                     </a>
                                                                 )}
-                                                                {!['finalizado', 'cancelado'].includes(detalheCorrida.status) && (
-                                                                    <button onClick={() => cancelarCorrida(detalheCorrida.id)} className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.32)' }}>
+                                                                {podeCancelarCorrida(detalheCorrida) && (
+                                                                    <button onClick={() => cancelarCorrida(detalheCorrida)} className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.32)' }}>
                                                                         <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar
                                                                     </button>
                                                                 )}
@@ -4065,6 +4152,83 @@
                                                     <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">{r.valor == null ? '—' : Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                                 </tr>
                                             ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* CANCEL_HISTORICO_CLIENTE_V1 — aba Cancelamentos */}
+                    {abaAtiva === 'cancelamentos' && (
+                        <div className="max-w-6xl mx-auto p-3 md:p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-800">Cancelamentos</h2>
+                                    <div className="text-xs text-gray-500 mt-0.5">Corridas canceladas por você ou pela Central, com o motivo registrado.</div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <input type="date" value={cancDe} onChange={e => { setCancDe(e.target.value); carregarCancelamentos({ de: e.target.value }); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+                                    <span className="text-gray-400 text-xs">até</span>
+                                    <input type="date" value={cancAte} onChange={e => { setCancAte(e.target.value); carregarCancelamentos({ ate: e.target.value }); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+                                    <select value={cancOrigem} onChange={e => { setCancOrigem(e.target.value); carregarCancelamentos({ origem: e.target.value }); }} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                        <option value="">Quem cancelou: todos</option>
+                                        <option value="solicitacao">Eu (portal)</option>
+                                        <option value="central">Central Tutts</option>
+                                        <option value="loja">Painel da loja</option>
+                                    </select>
+                                    <input type="search" value={cancBusca} onChange={e => setCancBusca(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') carregarCancelamentos(); }} placeholder="OS ou motivo" className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs w-36" />
+                                    <button onClick={() => carregarCancelamentos()} className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700">Buscar</button>
+                                </div>
+                            </div>
+
+                            {cancelamentos.resumo && (
+                                <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <div className="bg-white rounded-xl border p-3"><div className="text-[11px] text-gray-400">Cancelamentos</div><div className="text-xl font-bold text-gray-800">{cancelamentos.resumo.total || 0}</div></div>
+                                    <div className="bg-white rounded-xl border p-3"><div className="text-[11px] text-gray-400">Por mim</div><div className="text-xl font-bold text-gray-800">{cancelamentos.resumo.solicitacao || 0}</div></div>
+                                    <div className="bg-white rounded-xl border p-3"><div className="text-[11px] text-gray-400">Pela Central</div><div className="text-xl font-bold text-gray-800">{(cancelamentos.resumo.central || 0) + (cancelamentos.resumo.loja || 0)}</div></div>
+                                </div>
+                            )}
+
+                            {cancelamentosLoading ? (
+                                <div className="flex justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>
+                            ) : (
+                                <div className="bg-white rounded-xl border overflow-hidden overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead><tr className="bg-gray-50 text-left text-gray-500">
+                                            <th className="px-3 py-2 font-semibold">Quando</th>
+                                            <th className="px-3 py-2 font-semibold">OS</th>
+                                            <th className="px-3 py-2 font-semibold">Quem cancelou</th>
+                                            <th className="px-3 py-2 font-semibold">Motivo</th>
+                                            <th className="px-3 py-2 font-semibold">Corrida estava</th>
+                                            <th className="px-3 py-2 font-semibold">Motoboy</th>
+                                            <th className="px-3 py-2 font-semibold">Coleta / Entrega</th>
+                                        </tr></thead>
+                                        <tbody>
+                                            {cancelamentos.itens.length === 0 ? (
+                                                <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">{(cancOrigem || cancBusca.trim()) ? 'Nenhum cancelamento com esses filtros' : 'Nenhum cancelamento no período'}</td></tr>
+                                            ) : cancelamentos.itens.map((c) => {
+                                                const ORIG = { central: ['Central Tutts', 'bg-purple-50 text-purple-700 border-purple-200'], loja: ['Painel da loja', 'bg-amber-50 text-amber-700 border-amber-200'], solicitacao: ['Eu (portal)', 'bg-sky-50 text-sky-700 border-sky-200'] };
+                                                const ST = { PENDING: 'Aguardando', QUOTED: 'Cotando', DISPATCHED: 'Procurando motoboy', COURIER_ASSIGNED: 'Motoboy atribuído', PICKUP_EN_ROUTE: 'A caminho da coleta', ARRIVED_PICKUP: 'Na coleta', PICKED_UP: 'Coletou', DROPOFF_EN_ROUTE: 'Em rota', ARRIVED_DROPOFF: 'Na entrega', pendente: 'Pendente', enviado: 'Enviada', aceito: 'Aceita', em_andamento: 'Em andamento' };
+                                                const o = ORIG[c.origem] || [c.origem, 'bg-gray-50 text-gray-600 border-gray-200'];
+                                                return (
+                                                    <tr key={c.id} className="border-t border-gray-100 align-top">
+                                                        <td className="px-3 py-2 whitespace-nowrap text-gray-600">{formatarSolicitada(c.criado_em)}</td>
+                                                        <td className="px-3 py-2 font-semibold text-gray-700 whitespace-nowrap">{c.codigo_os ? c.codigo_os : '—'}</td>
+                                                        <td className="px-3 py-2 whitespace-nowrap">
+                                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${o[1]}`}>{o[0]}</span>
+                                                            <div className="text-[10px] text-gray-400 mt-0.5">{c.cancelado_por_nome || ''}</div>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-gray-700 min-w-[200px] max-w-[360px]">{c.motivo || '—'}</td>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-gray-600">{ST[c.status_antes] || c.status_antes || '—'}</td>
+                                                        <td className="px-3 py-2 text-gray-600">{c.entregador_nome || '—'}</td>
+                                                        <td className="px-3 py-2 min-w-[200px]">
+                                                            <div className="flex items-start gap-1.5"><span className="text-purple-500 leading-4">●</span><span className="text-gray-600">{c.endereco_coleta || '—'}</span></div>
+                                                            <div className="flex items-start gap-1.5 mt-1"><span className="text-orange-500 leading-4">▼</span><span className="text-gray-700">{c.endereco_entrega || '—'}</span></div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -4565,6 +4729,48 @@
                     )}
                     
                     {/* ========== MODAL: NOVO ENDEREÇO ========== */}
+                    {/* CANCELAMENTO_CLIENTE_V2 — modal de cancelamento (motivo obrigatorio) */}
+                    {modalCancelar && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { if (!modalCancelar.enviando) setModalCancelar(null); }}>
+                            <div role="dialog" aria-modal="true" aria-labelledby="cancel-modal-titulo" className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="px-4 py-3 border-b border-gray-100 flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-red-50 text-red-700 flex items-center justify-center flex-shrink-0"><svg className="ico" style={{width:18,height:18}} aria-hidden="true"><use href="#i-alert"/></svg></div>
+                                    <div className="min-w-0">
+                                        <div id="cancel-modal-titulo" className="font-bold text-gray-800 leading-tight">Cancelar OS #{modalCancelar.os}</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">O motoboy é dispensado e a corrida é encerrada. Não dá pra desfazer.</div>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    <div>
+                                        <label htmlFor="cancel-motivo" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Motivo do cancelamento</label>
+                                        <select id="cancel-motivo" autoFocus value={modalCancelar.motivoSel} disabled={modalCancelar.enviando}
+                                            onChange={e => { const v = e.target.value; setModalCancelar(m => ({ ...m, motivoSel: v, erro: null })); }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none">
+                                            <option value="">Selecione um motivo...</option>
+                                            {MOTIVOS_CANCEL.map(mo => <option key={mo} value={mo}>{mo}</option>)}
+                                            <option value="__outro">Outro (descrever)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="cancel-detalhes" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Detalhes</label>
+                                        <textarea id="cancel-detalhes" rows={2} maxLength={500} value={modalCancelar.motivoTxt} disabled={modalCancelar.enviando}
+                                            onChange={e => { const v = e.target.value; setModalCancelar(m => ({ ...m, motivoTxt: v, erro: null })); }}
+                                            placeholder={modalCancelar.motivoSel === '__outro' ? 'Descreva o motivo (obrigatório)' : 'Opcional'}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none resize-none" />
+                                    </div>
+                                    {modalCancelar.erro && (
+                                        <div role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{modalCancelar.erro}</div>
+                                    )}
+                                    <div className="text-[11px] text-gray-500 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed">Só dá pra cancelar enquanto o motoboy <b>ainda não coletou</b>. O motivo fica registrado na aba Cancelamentos.</div>
+                                </div>
+                                <div className="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
+                                    <button type="button" disabled={modalCancelar.enviando} onClick={() => setModalCancelar(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Voltar</button>
+                                    <button type="button" disabled={modalCancelar.enviando} onClick={confirmarCancelamento} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold disabled:opacity-50">{modalCancelar.enviando ? 'Cancelando...' : 'Cancelar corrida'}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {modalNovoEndereco.aberto && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalNovoEndereco({ aberto: false })}>
                             <div className={`bg-white rounded-xl shadow-2xl w-full ${dadosNovoEndereco && !aguardandoNumeroNovo ? 'max-w-5xl' : 'max-w-md'} p-4 max-h-[95vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
