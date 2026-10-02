@@ -46,10 +46,10 @@
     solicitacao: { rot: 'Solicitação', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
   };
   const ESCOPOS = {
-    ambos:   'Painel + Mapp/Tutts',
-    central: 'Só painel (OS reaberta na Mapp)',
-    tutts:   'Direto na Tutts (fora do Hub)',
-    proprio: 'Moto própria (só painel)',
+    ambos:   'Cancelar na central e na Mapp (Hub + Painel + Mapp)',
+    central: 'Cancelar só na central (Hub + Painel; a OS volta pra fila da Mapp)',
+    tutts:   'Corrida fora do Hub: cancelada direto na Mapp/Tutts',
+    proprio: 'Moto própria: só saiu do painel (Mapp não é cancelada por API)',
   };
   const PROV = { noventanove: '99', '99': '99', uber: 'Uber', proprio: 'Moto própria', tutts: 'Tutts' };
   const provNome = (p) => PROV[String(p || '').toLowerCase()] || (p || '—');
@@ -65,30 +65,46 @@
   const statusRot = (s) => STATUS_ROT[s] || (s ? String(s).replace(/_/g, ' ').toLowerCase() : '—');
 
   // Resultado por sistema: um ponto por sistema, sem texto repetido.
-  function Resultado({ c }) {
-    const itens = [];
-    if (c.escopo === 'tutts') {
-      itens.push({ k: 'Tutts', ok: c.tutts_cancelado, msg: c.tutts_msg });
-    } else if (c.escopo === 'proprio') {
-      itens.push({ k: 'Painel', ok: true });
-    } else {
-      itens.push({ k: 'Provedor', ok: c.provider_cancelado, msg: c.provider_msg });
-      itens.push({ k: 'Mapp', ok: c.mapp_reaberta, msg: c.mapp_reaberta ? 'OS reaberta' : null });
-      if (c.escopo === 'ambos') itens.push({ k: 'Tutts', ok: c.tutts_cancelado, msg: c.tutts_msg });
-    }
-    return h('div', { className: 'flex flex-wrap gap-1' },
-      itens.map(it => h('span', {
-        key: it.k,
-        title: it.msg || (it.ok === true ? 'OK' : it.ok === false ? 'Não confirmou' : 'Sem retorno'),
-        className: 'inline-flex items-center gap-1 text-[10.5px] font-semibold px-1.5 py-0.5 rounded border '
-          + (it.ok === true ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : it.ok === false ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-gray-50 text-gray-500 border-gray-200'),
-      },
-        h('span', { className: 'w-1.5 h-1.5 rounded-full ' + (it.ok === true ? 'bg-emerald-500' : it.ok === false ? 'bg-red-500' : 'bg-gray-400') }),
-        it.k)),
-    );
+  // RESULTADO_CLARO_V2: o que aconteceu em CADA sistema, em texto, sem ambiguidade.
+  //   Hub    = provedor (99/Uber): a corrida do entregador parceiro foi cancelada?
+  //   Painel = Central Tutts (esta tela): a corrida foi encerrada aqui?
+  //   Mapp   = sistema Tutts/Mapp: a OS foi CANCELADA la, ou ficou EM ABERTO
+  //            (reaberta na fila esperando motoboy)?
+  // "Reaberta" nao e cancelada — por isso a palavra nao aparece mais como resultado.
+  function resultadoSistemas(c) {
+    const hub = c.escopo === 'tutts'
+      ? { sis: 'Hub', estado: 'na', rot: 'não passou pelo Hub', msg: 'Corrida fora do Hub (motoboy Tutts)' }
+      : c.escopo === 'proprio'
+        ? { sis: 'Hub', estado: 'na', rot: 'moto própria', msg: 'Sem corrida em provedor' }
+        : c.provider_cancelado === false
+          ? { sis: 'Hub', estado: 'nao', rot: 'NÃO cancelou no ' + provNome(c.provider_code), msg: c.provider_msg || 'O provedor não confirmou o cancelamento' }
+          : { sis: 'Hub', estado: 'ok', rot: 'cancelada no ' + provNome(c.provider_code), msg: c.provider_msg || 'Provedor confirmou' };
+    const painel = { sis: 'Painel', estado: 'ok', rot: 'cancelada na Central', msg: 'Registrada aqui como cancelada' };
+    let mapp;
+    if (c.tutts_cancelado === true) mapp = { sis: 'Mapp', estado: 'ok', rot: 'cancelada na Mapp', msg: 'Tutts confirmou o cancelamento da OS' };
+    else if (c.escopo === 'central') mapp = { sis: 'Mapp', estado: 'aberta', rot: 'EM ABERTO na Mapp', msg: 'Escopo "só na central": a OS foi reaberta na fila da Mapp e segue esperando motoboy' };
+    else if (c.escopo === 'proprio') mapp = { sis: 'Mapp', estado: 'aberta', rot: 'EM ABERTO na Mapp', msg: 'Moto própria: só saiu do painel. Cancele na Mapp manualmente' };
+    else if (c.tutts_cancelado === false) mapp = { sis: 'Mapp', estado: 'nao', rot: 'NÃO cancelou na Mapp', msg: 'Tutts recusou: ' + (c.tutts_msg || 'erro') + (c.mapp_reaberta ? ' — a OS ficou reaberta na fila' : '') };
+    else mapp = { sis: 'Mapp', estado: 'na', rot: 'sem retorno da Mapp', msg: c.tutts_msg || 'Sem OS vinculada ou sem resposta' };
+    return [hub, painel, mapp];
   }
+  const EST_CLS = {
+    ok:     { txt: 'text-emerald-700', dot: 'bg-emerald-500', ic: '✓' },
+    nao:    { txt: 'text-red-700',     dot: 'bg-red-500',     ic: '✕' },
+    aberta: { txt: 'text-amber-700',   dot: 'bg-amber-500',   ic: '!' },
+    na:     { txt: 'text-gray-400',    dot: 'bg-gray-300',    ic: '–' },
+  };
+  function Resultado({ c }) {
+    return h('div', { className: 'flex flex-col gap-0.5 whitespace-nowrap' },
+      resultadoSistemas(c).map(r => {
+        const e = EST_CLS[r.estado];
+        return h('div', { key: r.sis, title: r.msg, className: 'flex items-center gap-1.5 text-[11.5px] ' + e.txt },
+          h('span', { className: 'w-2 h-2 rounded-full ' + e.dot }),
+          h('span', { className: 'font-bold w-[44px] text-gray-500' }, r.sis),
+          h('span', { className: r.estado === 'na' ? 'font-normal' : 'font-semibold' }, r.rot));
+      }));
+  }
+  const resultadoTexto = (c) => resultadoSistemas(c).map(r => r.sis + ': ' + r.rot).join(' · ');
 
   function csvEscape(v) {
     const s = v == null ? '' : String(v);
@@ -131,12 +147,11 @@
 
     const exportarCSV = () => {
       if (!itens.length) { showToast && showToast('Nada pra exportar com os filtros atuais', 'warning'); return; }
-      const cab = ['Data/hora', 'OS', 'Cliente', 'Origem', 'Quem cancelou', 'Motivo', 'Estado da corrida', 'Provedor', 'Entregador', 'Escopo', 'Provedor cancelou', 'Mapp reaberta', 'Tutts cancelou', 'Obs provedor', 'Obs Tutts', 'Coleta', 'Entrega'];
-      const simNao = (v) => v === true ? 'sim' : v === false ? 'não' : '';
+      const cab = ['Data/hora', 'OS', 'Cliente', 'Origem', 'Quem cancelou', 'Motivo', 'Estado da corrida', 'Provedor', 'Entregador', 'Escopo', 'Hub', 'Painel', 'Mapp', 'Obs provedor', 'Obs Tutts', 'Coleta', 'Entrega'];
       const linhas = itens.map(c => [
         fmtDT(c.criado_em), c.codigo_os || '', c.cliente_nome || '', (ORIGENS[c.origem] || {}).rot || c.origem,
         c.cancelado_por_nome || '', c.motivo || '', statusRot(c.status_antes), provNome(c.provider_code), c.entregador_nome || '',
-        ESCOPOS[c.escopo] || c.escopo || '', simNao(c.provider_cancelado), simNao(c.mapp_reaberta), simNao(c.tutts_cancelado),
+        ESCOPOS[c.escopo] || c.escopo || '', ...resultadoSistemas(c).map(r => r.rot),
         c.provider_msg || '', c.tutts_msg || '', c.endereco_coleta || '', c.endereco_entrega || '',
       ].map(csvEscape).join(';'));
       const blob = new Blob(['﻿' + [cab.join(';')].concat(linhas).join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -208,10 +223,10 @@
               (buscaAplicada || origem) && h('button', { type: 'button', onClick: () => { setBusca(''); setBuscaAplicada(''); setOrigem(''); }, className: 'mt-3 text-sm font-semibold text-purple-700 hover:underline' }, 'Limpar filtros'))
           : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
               h('div', { className: 'overflow-x-auto' },
-                h('table', { className: 'w-full text-sm min-w-[1040px]' },
+                h('table', { className: 'w-full text-sm min-w-[1180px]' },
                   h('thead', null,
                     h('tr', { className: 'bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide text-left' },
-                      ['Quando', 'OS', 'Cliente', 'Origem', 'Quem cancelou', 'Motivo', 'Estava em', 'Entregador', 'Resultado'].map(t =>
+                      ['Quando', 'OS', 'Cliente', 'Origem', 'Quem cancelou', 'Motivo', 'Estava em', 'Entregador', 'Onde foi cancelada'].map(t =>
                         h('th', { key: t, className: 'px-3 py-2.5 whitespace-nowrap' }, t)))),
                   h('tbody', null,
                     itens.map(c => {
@@ -254,7 +269,11 @@
               ),
               h('div', { className: 'px-3 py-2 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between' },
                 h('span', null, itens.length + ' registro' + (itens.length === 1 ? '' : 's') + (dados.resumo && dados.resumo.total > itens.length ? ' de ' + dados.resumo.total + ' (refine o período)' : '')),
-                h('span', null, 'Clique numa linha pra ver endereços e detalhes'),
+                h('span', { className: 'flex items-center gap-3' },
+                  h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-2 h-2 rounded-full bg-emerald-500' }), 'cancelada'),
+                  h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-2 h-2 rounded-full bg-amber-500' }), 'em aberto (esperando motoboy)'),
+                  h('span', { className: 'flex items-center gap-1' }, h('span', { className: 'w-2 h-2 rounded-full bg-red-500' }), 'não cancelou'),
+                  h('span', null, '· clique na linha pra ver detalhes')),
               ),
             ),
     );
