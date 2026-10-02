@@ -175,13 +175,20 @@
     const linhasQueSomam = rowsView;
 
     const totais = useMemo(() => {
-      const t = { corridas: 0, entregues: 0, km: 0, mapp: 0, semMapp: 0, hub: 0, custo: 0, margem: 0, tempos: [], noPrazo: 0, avaliadas: 0 };
+      // HUB_REL_KPI_CUSTO_V1: custo por provedor (99 x Uber), quantas corridas tem custo
+      // e quantas ainda estao na cotacao (nao reconciliadas) — alimenta o card "Custo provedor".
+      const t = { corridas: 0, entregues: 0, km: 0, mapp: 0, semMapp: 0, hub: 0, custo: 0, margem: 0, tempos: [], noPrazo: 0, avaliadas: 0, custoPorProv: {}, comCusto: 0, custoCotacao: 0 };
       linhasQueSomam.forEach(c => {
         t.corridas++; if (c.status === 'Entregue') t.entregues++;
         if (c.km != null) t.km += c.km;
         if (c.valor_mapp != null) t.mapp += c.valor_mapp; else t.semMapp++;
         if (c.valor != null) t.hub += c.valor;
-        if (c.custo_provedor != null) t.custo += c.custo_provedor;
+        if (c.custo_provedor != null) {
+          t.custo += c.custo_provedor; t.comCusto++;
+          const pv = provNome(c.provider);
+          t.custoPorProv[pv] = (t.custoPorProv[pv] || 0) + c.custo_provedor;
+          if (c.custo_origem === 'cotacao') t.custoCotacao++;
+        }
         if (c.faturamento_liquido != null) t.margem += c.faturamento_liquido;
         if (c.tempo_atendimento_min != null) t.tempos.push(c.tempo_atendimento_min);
         if (c.no_prazo != null) { t.avaliadas++; if (c.no_prazo) t.noPrazo++; }
@@ -189,6 +196,7 @@
       t.tempoMedio = media(t.tempos); t.tempoMediana = mediana(t.tempos);
       t.pctPrazo = t.avaliadas ? (t.noPrazo / t.avaliadas) * 100 : null;
       t.ticket = t.corridas ? t.margem / t.corridas : 0;
+      t.custoMedio = t.comCusto ? t.custo / t.comCusto : 0;
       return t;
     }, [linhasQueSomam]);
 
@@ -605,12 +613,20 @@
         h('span', { className: 'ml-auto text-[12px] text-gray-500 inline-flex items-center gap-1.5' }, 'Preset: ', presetAtivo && presets.find(p => p.id === presetAtivo) ? h('span', { className: 'px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold' }, presets.find(p => p.id === presetAtivo).nome) : h('b', { className: 'text-gray-700' }, 'nenhum'), presets.length > 0 && h('select', { 'aria-label': 'Aplicar preset', value: '', onChange: e => { const p = presets.find(x => String(x.id) === e.target.value); if (p) aplicarPreset(p); }, className: 'h-[28px] border border-gray-200 rounded-lg text-[12px] px-1.5 bg-white' }, h('option', { value: '' }, 'aplicar…'), presets.map(p => h('option', { key: p.id, value: p.id }, p.nome))))),
 
       // KPIs
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3' },
+      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3' },
         kpiCard('Corridas', String(totais.corridas), null, `${totais.entregues} entregues${statusModo === 'faturaveis' ? ' · só faturáveis' : ''}`),
         kpiCard('KM total', kmF(totais.km), null, `${kmF(totais.corridas ? totais.km / totais.corridas : 0)} km por corrida`),
         kpiCard('Tempo médio de atendimento', fmtMin(totais.tempoMedio), 'text-purple-800', `mediana ${fmtMin(totais.tempoMediana)} · ${pctF(totais.pctPrazo)} no prazo (${totais.avaliadas} aval.)`, 'bg-purple-50 border-purple-200 text-purple-700'),
         kpiCard('Valor Mapp', brlS(totais.mapp), 'text-gray-700', totais.semMapp ? `${totais.semMapp} sem valor Mapp` : 'o que a OS trazia'),
         kpiCard('Valor do Hub (regra)', brlS(totais.hub), 'text-purple-900', totais.mapp > 0 ? `${totais.hub - totais.mapp >= 0 ? '+' : '−'} ${brlS(Math.abs(totais.hub - totais.mapp))} vs Mapp (${pctF(Math.abs((totais.hub - totais.mapp) / totais.mapp * 100), 1)})` : null, 'bg-purple-50 border-purple-200 text-purple-700'),
+        // HUB_REL_KPI_CUSTO_V1: o que os provedores (99/Uber) cobraram no periodo.
+        kpiCard('Custo provedor', brlS(totais.custo), 'text-rose-600',
+          (() => {
+            const provs = Object.entries(totais.custoPorProv).sort((a, b) => b[1] - a[1]).map(([n, v]) => `${n} ${brlS(v)}`);
+            const base = provs.length > 1 ? provs.join(' · ') : `média ${brlS(totais.custoMedio)} por corrida`;
+            return totais.custoCotacao ? `${base} · ${totais.custoCotacao} ainda em cotação (~)` : base;
+          })(),
+          'bg-rose-50 border-rose-200 text-rose-700'),
         kpiCard('Margem (Hub − provedor)', (totais.margem >= 0 ? '+ ' : '− ') + brlS(Math.abs(totais.margem)), totais.margem >= 0 ? 'text-emerald-700' : 'text-rose-600', `custo ${brlS(totais.custo)} · ticket ${brlS(totais.ticket)}${totais.hub ? ` · ${pctF(totais.margem / totais.hub * 100, 1)}` : ''}`, 'bg-emerald-50 border-emerald-200 text-emerald-700')),
 
       loading ? h('div', { className: 'flex items-center justify-center py-16' }, h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' }))
