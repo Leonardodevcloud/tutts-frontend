@@ -7259,6 +7259,8 @@
                         // Carregar saldo
                         carregarSaldo();
                         if (d.sem_pix > 0) Toast('⚠️ ' + d.sem_pix + ' profissionais sem chave Pix cadastrada', 'warning');
+                        /* ACERTO_RESTR_V1: avisa restritos (não podem ser pagos) */
+                        if (d.restritos > 0) Toast('🚫 ' + d.restritos + ' profissional(is) com RESTRIÇÃO — não serão pagos neste acerto', 'error');
                     } else {
                         Toast('❌ ' + (d.error || 'Erro ao processar'), 'error');
                         setSt(function(p) { return Object.assign({}, p, { uploading: false }); });
@@ -7285,6 +7287,8 @@
                 });
                 var d = await r.json();
                 if (d.success) {
+                    /* ACERTO_RESTR_V1: avisa se algum foi removido por restrição */
+                    if (d.bloqueados && d.bloqueados.length > 0) Toast('🚫 ' + d.bloqueados.length + ' removido(s) do lote por restrição: ' + d.bloqueados.map(function(b) { return b.cod_prof; }).join(', '), 'error');
                     Toast('✅ Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
                     // Limpar dados e ir para aprovação
                     setSt(function(p) { return Object.assign({}, p, { dados: null, subTab: 'aprovacao' }); });
@@ -7491,13 +7495,14 @@
                 concluido: 'bg-green-100 text-green-800', rejeitado: 'bg-red-100 text-red-800',
                 em_lote: 'bg-blue-100 text-blue-800', erro: 'bg-red-100 text-red-800',
                 parcial: 'bg-orange-100 text-orange-800', aguardando: 'bg-amber-100 text-amber-800',
-                pronto: 'bg-emerald-100 text-emerald-800', sem_pix: 'bg-red-100 text-red-800'
+                pronto: 'bg-emerald-100 text-emerald-800', sem_pix: 'bg-red-100 text-red-800',
+                restrito: 'bg-red-100 text-red-800' /* ACERTO_RESTR_V1 */
             };
             var labels = {
                 pronto: 'Pronto', sem_pix: 'Sem Pix', aguardando: 'Aguardando',
                 processando: 'Processando', pago: 'Pago', concluido: 'Concluído',
                 rejeitado: 'Rejeitado', em_lote: 'Lote Gerado', erro: 'Erro',
-                parcial: 'Parcial'
+                parcial: 'Parcial', restrito: 'Restrito' /* ACERTO_RESTR_V1 */
             };
             return React.createElement("span", {
                 className: "px-2 py-1 rounded-full text-xs font-medium " + (c[s] || 'bg-gray-100 text-gray-600')
@@ -7598,10 +7603,14 @@
                 st.dados && React.createElement("div", { className: "space-y-4" },
 
                     // Cards resumo
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-6 gap-3" },
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-7 gap-3" }, /* ACERTO_RESTR_V1 +1 card */
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_mapp || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Mapp")
+                        ),
+                        (st.dados.restritos || 0) > 0 && React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-rose-600 text-center" },
+                            React.createElement("p", { className: "text-2xl font-bold text-rose-600" }, st.dados.restritos || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Restritos")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_sistema || 0),
@@ -7671,6 +7680,9 @@
                             React.createElement("tbody", null,
                                 todosProfs.sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
                                     var ehSemPix = prof.status === 'sem_pix';
+                                    /* ACERTO_RESTR_V1: restrito nao pode ser selecionado/pago */
+                                    var ehRestrito = prof.status === 'restrito' || prof.is_restricted;
+                                    var bloqueado = ehSemPix || ehRestrito;
                                     var origemBadge = prof.pix_origem === 'mapp'
                                         ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Mapp") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mapp"))
                                         : prof.pix_origem === 'sistema'
@@ -7679,20 +7691,27 @@
 
                                     return React.createElement("tr", {
                                         key: prof.cod_prof + '-' + i,
-                                        className: "border-b hover:bg-gray-50 " + (ehSemPix ? 'bg-red-50 opacity-60' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
+                                        className: "border-b hover:bg-gray-50 " + (ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
                                     },
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
                                             React.createElement("input", {
                                                 type: "checkbox",
-                                                checked: !!sel[prof.cod_prof],
-                                                onChange: function() { toggleSel(prof.cod_prof); },
-                                                disabled: ehSemPix,
-                                                className: "w-4 h-4 accent-emerald-600 " + (ehSemPix ? "cursor-not-allowed" : "cursor-pointer"),
-                                                title: ehSemPix ? "Sem chave Pix — não pode ser selecionado" : "Selecionar"
+                                                checked: !ehRestrito && !!sel[prof.cod_prof],
+                                                onChange: function() { if (!bloqueado) toggleSel(prof.cod_prof); },
+                                                disabled: bloqueado,
+                                                className: "w-4 h-4 accent-emerald-600 " + (bloqueado ? "cursor-not-allowed" : "cursor-pointer"),
+                                                title: ehRestrito ? ("Motoboy com RESTRIÇÃO — não pode ser pago" + (prof.restricao_motivo ? ": " + prof.restricao_motivo : "")) : ehSemPix ? "Sem chave Pix — não pode ser selecionado" : "Selecionar"
                                             })
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 font-mono text-gray-700" }, "#" + prof.cod_prof),
-                                        React.createElement("td", { className: "px-3 py-2.5" }, prof.nome_planilha),
+                                        React.createElement("td", { className: "px-3 py-2.5" },
+                                            prof.nome_planilha,
+                                            /* ACERTO_RESTR_V1: etiqueta de restricao */
+                                            ehRestrito && React.createElement("span", {
+                                                className: "ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 align-middle",
+                                                title: prof.restricao_motivo || "Restrição ativa"
+                                            }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "RESTRITO")
+                                        ),
                                         React.createElement("td", { className: "px-3 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" }, origemBadge),
