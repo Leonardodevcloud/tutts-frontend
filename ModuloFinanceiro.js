@@ -7174,15 +7174,25 @@
         var modalRes = _modalRes[0]; var setModalRes = _modalRes[1];
 
         // ===== State validação DICT =====
-        var _dictResults = React.useState({}); // { cod_prof: { loading, success, dict, erro } }
+        var _dictResults = React.useState({}); // { cod_prof: { loading, success, dict, erro, divergente, titular_nome } }
         var dictResults = _dictResults[0]; var setDictResults = _dictResults[1];
+        // 🆕 PIX_UX_V1: confirmação do ADM para pagar chave de titular divergente
+        var _divConfirm = React.useState({}); // { cod_prof: true }
+        var divConfirm = _divConfirm[0]; var setDivConfirm = _divConfirm[1];
+
+        // 🆕 PIX_UX_V1: linha com titular divergente e ainda NÃO confirmada pelo ADM
+        var isDivBloqueado = function(cod) {
+            var dr = dictResults[cod];
+            return !!(dr && dr.success && dr.divergente && !divConfirm[cod]);
+        };
 
         // ===== Helpers de seleção =====
         var profissionaisProntos = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
         var profissionaisSemPix = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'sem_pix'; });
         var todosProfs = st.dados && st.dados.profissionais || [];
 
-        var selecionados = profissionaisProntos.filter(function(p) { return sel[p.cod_prof]; });
+        // Só entra no pagamento quem está pronto E não é divergente-bloqueado
+        var selecionados = profissionaisProntos.filter(function(p) { return sel[p.cod_prof] && !isDivBloqueado(p.cod_prof); });
         var valorSelecionado = selecionados.reduce(function(a, p) { return a + p.saldo; }, 0);
         var qtdSelecionados = selecionados.length;
 
@@ -7283,7 +7293,8 @@
             try {
                 var r = await fetchAuth(API_URL + '/stark/acerto/criar-lote', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ profissionais: selecionados })
+                    /* 🆕 PIX_UX_V1: leva a confirmação de titular divergente feita na tela */
+                    body: JSON.stringify({ profissionais: selecionados.map(function(p) { return Object.assign({}, p, { confirmado_divergencia: !!divConfirm[p.cod_prof] }); }) })
                 });
                 var d = await r.json();
                 if (d.success) {
@@ -7390,11 +7401,13 @@
                 var d = await r.json();
                 setDictResults(function(prev) {
                     var n = Object.assign({}, prev);
-                    n[prof.cod_prof] = { loading: false, success: d.success, dict: d.dict, erro: d.erro || null };
+                    n[prof.cod_prof] = { loading: false, success: d.success, dict: d.dict, erro: d.erro || null, divergente: !!d.divergente, titular_nome: (d.dict && d.dict.nome) || null };
                     return n;
                 });
-                if (d.success) {
-                    Toast('✅ #' + prof.cod_prof + ': Pix válido — ' + (d.dict.nome || 'OK'), 'success');
+                if (d.success && d.divergente) {
+                    Toast('⚠️ #' + prof.cod_prof + ': chave em nome de OUTRO titular — ' + ((d.dict && d.dict.nome) || '') + '. Confirme antes de pagar.', 'warning');
+                } else if (d.success) {
+                    Toast('✅ #' + prof.cod_prof + ': Pix conferido — ' + ((d.dict && d.dict.nome) || 'OK'), 'success');
                 } else {
                     Toast('❌ #' + prof.cod_prof + ': ' + (d.erro || 'Chave não encontrada no DICT'), 'error');
                 }
@@ -7682,7 +7695,12 @@
                                     var ehSemPix = prof.status === 'sem_pix';
                                     /* ACERTO_RESTR_V1: restrito nao pode ser selecionado/pago */
                                     var ehRestrito = prof.status === 'restrito' || prof.is_restricted;
-                                    var bloqueado = ehSemPix || ehRestrito;
+                                    /* 🆕 PIX_UX_V1: titular divergente precisa de confirmacao do ADM */
+                                    var _dr = dictResults[prof.cod_prof];
+                                    var ehDivergente = !!(_dr && _dr.success && _dr.divergente);
+                                    var divConfirmado = !!divConfirm[prof.cod_prof];
+                                    var divBloqueado = ehDivergente && !divConfirmado;
+                                    var bloqueado = ehSemPix || ehRestrito || divBloqueado;
                                     var origemBadge = prof.pix_origem === 'mapp'
                                         ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Mapp") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mapp"))
                                         : prof.pix_origem === 'sistema'
@@ -7691,16 +7709,16 @@
 
                                     return React.createElement("tr", {
                                         key: prof.cod_prof + '-' + i,
-                                        className: "border-b hover:bg-gray-50 " + (ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
+                                        className: "border-b hover:bg-gray-50 " + (ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : divBloqueado ? 'bg-amber-50' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
                                     },
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
                                             React.createElement("input", {
                                                 type: "checkbox",
-                                                checked: !ehRestrito && !!sel[prof.cod_prof],
+                                                checked: !bloqueado && !!sel[prof.cod_prof],
                                                 onChange: function() { if (!bloqueado) toggleSel(prof.cod_prof); },
                                                 disabled: bloqueado,
                                                 className: "w-4 h-4 accent-emerald-600 " + (bloqueado ? "cursor-not-allowed" : "cursor-pointer"),
-                                                title: ehRestrito ? ("Motoboy com RESTRIÇÃO — não pode ser pago" + (prof.restricao_motivo ? ": " + prof.restricao_motivo : "")) : ehSemPix ? "Sem chave Pix — não pode ser selecionado" : "Selecionar"
+                                                title: ehRestrito ? ("Motoboy com RESTRIÇÃO — não pode ser pago" + (prof.restricao_motivo ? ": " + prof.restricao_motivo : "")) : ehSemPix ? "Sem chave Pix — não pode ser selecionado" : divBloqueado ? "Titular diferente — confirme na coluna DICT antes de pagar" : "Selecionar"
                                             })
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 font-mono text-gray-700" }, "#" + prof.cod_prof),
@@ -7719,13 +7737,32 @@
                                             prof.pix_key ? (function() {
                                                 var dr = dictResults[prof.cod_prof];
                                                 if (dr && dr.loading) return React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }));
-                                                if (dr && dr.success === true) return React.createElement("span", { className: "text-xs text-emerald-600 font-medium cursor-help", title: (dr.dict && dr.dict.nome ? dr.dict.nome : '') + (dr.validado_em ? ' — Validado em ' + new Date(dr.validado_em).toLocaleDateString('pt-BR') : '') }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "" + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ')[0] : 'OK'));
-                                                if (dr && dr.success === false) return React.createElement("span", { className: "text-xs text-red-500 font-medium cursor-pointer", title: dr.erro || 'Inválida', onClick: function() { validarPixDict(prof); } }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Reintentar"));
+                                                /* 🆕 PIX_UX_V1: titular diferente — mostra o nome e exige confirmacao */
+                                                if (dr && dr.success === true && dr.divergente) {
+                                                    var titDiv = dr.titular_nome ? dr.titular_nome.split(' ').slice(0, 2).join(' ') : '?';
+                                                    return React.createElement("div", { className: "flex flex-col items-center gap-1" },
+                                                        React.createElement("span", { className: "inline-flex items-center gap-1 text-[11px] font-bold text-rose-700", title: "Chave Pix está no nome de: " + (dr.titular_nome || '?') + " (CPF diferente do cadastro)" },
+                                                            React.createElement("svg", { className: "ico", style: { width: 13, height: 13 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Titular: " + titDiv),
+                                                        React.createElement("label", { className: "inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 cursor-pointer" },
+                                                            React.createElement("input", { type: "checkbox", checked: !!divConfirm[prof.cod_prof], onChange: function() { setDivConfirm(function(prev) { var n = Object.assign({}, prev); if (n[prof.cod_prof]) { delete n[prof.cod_prof]; } else { n[prof.cod_prof] = true; } return n; }); }, className: "w-3 h-3 accent-rose-600" }),
+                                                            "Confirmo pagar")
+                                                    );
+                                                }
+                                                if (dr && dr.success === true) return React.createElement("span", { className: "inline-flex items-center gap-1 text-xs text-emerald-700 font-semibold cursor-help", title: "Conferido no banco — titular: " + (dr.dict && dr.dict.nome ? dr.dict.nome : 'OK') }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "" + (dr.dict && dr.dict.nome ? dr.dict.nome.split(' ').slice(0, 2).join(' ') : 'OK'));
+                                                if (dr && dr.success === false) return React.createElement("span", { className: "inline-flex items-center gap-1 text-xs text-red-600 font-medium cursor-pointer", title: (dr.erro || 'Chave inválida') + ' — clique para tentar de novo', onClick: function() { validarPixDict(prof); } }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Reverificar");
                                                 return React.createElement("button", { onClick: function() { validarPixDict(prof); }, className: "text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition-colors" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Validar"));
                                             })() : React.createElement("span", { className: "text-xs text-gray-300" }, "—")
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
-                                        React.createElement("td", { className: "px-3 py-2.5 text-center" }, badge(prof.status))
+                                        /* 🆕 PIX_UX_V1: status reflete a conferencia do DICT (nao mostra "Pronto" quando falhou/diverge) */
+                                        React.createElement("td", { className: "px-3 py-2.5 text-center" }, (function() {
+                                            if (ehRestrito || ehSemPix) return badge(prof.status);
+                                            if (divBloqueado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700" }, "Titular diferente");
+                                            if (ehDivergente && divConfirmado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800" }, "Confirmado (outro)");
+                                            if (_dr && _dr.success === true) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800" }, "Conferido");
+                                            if (_dr && _dr.success === false) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800" }, "Rever Pix");
+                                            return badge(prof.status);
+                                        })())
                                     );
                                 })
                             )
