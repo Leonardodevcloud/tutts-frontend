@@ -7196,6 +7196,26 @@
         var valorSelecionado = selecionados.reduce(function(a, p) { return a + p.saldo; }, 0);
         var qtdSelecionados = selecionados.length;
 
+        // 🆕 PIX_UX_V2: linhas que precisam de ação (reverificar chave ou confirmar titular divergente)
+        var pendentesVerif = todosProfs.filter(function(p) {
+            if (p.status === 'restrito' || p.status === 'sem_pix' || !p.pix_key) return false;
+            var dr = dictResults[p.cod_prof];
+            if (dr && dr.success === false) return true;
+            if (dr && dr.success === true && dr.divergente && !divConfirm[p.cod_prof]) return true;
+            return false;
+        });
+        var irParaLinha = function(cod) {
+            try {
+                var el = document.getElementById('acerto-row-' + cod);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    var old = el.style.boxShadow;
+                    el.style.boxShadow = 'inset 0 0 0 2px #f59e0b';
+                    setTimeout(function() { el.style.boxShadow = old || ''; }, 1600);
+                }
+            } catch (e) {}
+        };
+
         var todosEstaoSelecionados = profissionaisProntos.length > 0 && profissionaisProntos.every(function(p) { return sel[p.cod_prof]; });
 
         var toggleSel = function(codProf) {
@@ -7616,7 +7636,7 @@
                 st.dados && React.createElement("div", { className: "space-y-4" },
 
                     // Cards resumo
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-7 gap-3" }, /* ACERTO_RESTR_V1 +1 card */
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-8 gap-3" }, /* PIX_UX_V2 +1 card (Reverificar) */
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_mapp || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Mapp")
@@ -7633,6 +7653,11 @@
                             React.createElement("p", { className: "text-2xl font-bold text-red-600" }, st.dados.sem_pix || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Sem Pix")
                         ),
+                        /* 🆕 PIX_UX_V2: KPI dos que precisam reverificar/confirmar */
+                        React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-amber-500 text-center " + (pendentesVerif.length > 0 ? "cursor-pointer hover:bg-amber-50" : ""), onClick: function() { if (pendentesVerif.length) irParaLinha(pendentesVerif[0].cod_prof); }, title: pendentesVerif.length ? "Clique para ir ao primeiro que precisa de atenção" : "Nada pendente" },
+                            React.createElement("p", { className: "text-2xl font-bold text-amber-600" }, pendentesVerif.length),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Reverificar")
+                        ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-gray-400 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-gray-600" }, st.dados.total || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Total")
@@ -7644,6 +7669,48 @@
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-yellow-500 text-center" },
                             React.createElement("p", { className: "text-xl font-bold text-yellow-600" }, formatarMoeda(valorSelecionado)),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Valor selecionado")
+                        )
+                    ),
+
+                    /* 🆕 PIX_UX_V2: LEGENDA (gabarito) dos estados */
+                    React.createElement("div", { className: "bg-white rounded-xl p-3 shadow flex flex-wrap items-center gap-x-6 gap-y-2" },
+                        React.createElement("span", { className: "font-bold text-gray-400 uppercase tracking-wide text-[10px]" }, "Legenda"),
+                        React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
+                            React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" }),
+                            React.createElement("b", { className: "text-emerald-700" }, "Conferido"), "— chave ok, pode pagar."),
+                        React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
+                            React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" }),
+                            React.createElement("b", { className: "text-rose-700" }, "Titular diferente"), "— chave no nome de outra pessoa; marque “Confirmo pagar” se for pagar mesmo assim."),
+                        React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
+                            React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" }),
+                            React.createElement("b", { className: "text-amber-700" }, "Rever Pix"), "— deu erro; clique em Reverificar (veja o motivo no tooltip)."),
+                        React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
+                            React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" }),
+                            React.createElement("b", { className: "text-blue-700" }, "Validar"), "— ainda não conferido; clique em Validar.")
+                    ),
+
+                    /* 🆕 PIX_UX_V2: MENU LATERAL flutuante — quem precisa de atenção (clique rola até a linha) */
+                    pendentesVerif.length > 0 && React.createElement("div", {
+                        className: "fixed z-40 bg-white rounded-xl shadow-xl border border-amber-200 hidden lg:block",
+                        style: { right: 16, top: 150, width: 236, maxHeight: "62vh", overflowY: "auto" }
+                    },
+                        React.createElement("div", { className: "px-3 py-2 bg-amber-500 text-white rounded-t-xl font-bold text-xs flex items-center justify-between sticky top-0" },
+                            React.createElement("span", null, "Precisam de atenção"),
+                            React.createElement("span", { className: "bg-white text-amber-600 rounded-full px-2 py-0.5 text-[11px]" }, pendentesVerif.length)
+                        ),
+                        React.createElement("div", { className: "p-2 flex flex-col gap-1" },
+                            pendentesVerif.map(function(p) {
+                                var drp = dictResults[p.cod_prof];
+                                var ehDiv = drp && drp.success === true && drp.divergente;
+                                return React.createElement("button", {
+                                    key: "pv-" + p.cod_prof,
+                                    onClick: function() { irParaLinha(p.cod_prof); },
+                                    className: "text-left px-2 py-1.5 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-colors"
+                                },
+                                    React.createElement("div", { className: "text-xs font-semibold text-gray-800 truncate" }, (p.nome_sistema || p.nome_planilha || ('#' + p.cod_prof))),
+                                    React.createElement("div", { className: "text-[10px] font-medium " + (ehDiv ? "text-rose-600" : "text-amber-600") }, "#" + p.cod_prof + " · " + (ehDiv ? "Titular diferente" : "Rever Pix"))
+                                );
+                            })
                         )
                     ),
 
@@ -7709,6 +7776,7 @@
 
                                     return React.createElement("tr", {
                                         key: prof.cod_prof + '-' + i,
+                                        id: "acerto-row-" + prof.cod_prof, /* 🆕 PIX_UX_V2: ancora p/ menu lateral */
                                         className: "border-b hover:bg-gray-50 " + (ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : divBloqueado ? 'bg-amber-50' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
                                     },
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
