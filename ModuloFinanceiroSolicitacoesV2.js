@@ -433,11 +433,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                 e("th", { style: thStyle({ textAlign: "left" }) }, "PIX"),
                 e("th", { style: thStyle({ textAlign: "left" }) }, "Status"),
                 e("th", { style: thStyle({ textAlign: "right", width: 80 }) }, "Data/Hora"),
+                e("th", { style: thStyle({ textAlign: "right", width: 90 }) }, "Vencimento"), /* VENC_MAP_V3 */
               )
             ),
             e("tbody", null,
               paginadas.length === 0 && e("tr", null,
-                e("td", { colSpan: 7, style: { padding: 32, textAlign: "center", color: "#9CA3AF", fontSize: 13 } },
+                e("td", { colSpan: 8, style: { padding: 32, textAlign: "center", color: "#9CA3AF", fontSize: 13 } }, /* VENC_MAP_V3 +1 col */
                   "Nenhum saque encontrado com esse filtro"
                 )
               ),
@@ -576,29 +577,24 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         fontSize: 9, fontWeight: 500,
                       },
                       title: "Motoboy com restrição"
-                    }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
-                    /* VENC_MAP_V1: sinaliza saques cuja competência caiu no DOMINGO ANTERIOR
-                       (seg/ter/qua-até-12h) — abatimento lançado na MAP com vencimento retroativo */
-                    s.vencimento_retroativo && e("span", {
-                      style: {
-                        display: "inline-flex", alignItems: "center", gap: 3, marginLeft: 4,
-                        padding: "1px 6px", background: "#FEF3C7",
-                        color: "#92400E", borderRadius: 3,
-                        fontSize: 9, fontWeight: 700,
-                        textTransform: "uppercase", letterSpacing: "0.3px",
-                      },
-                      title: "Competência lançada no DOMINGO ANTERIOR" + (s.vencimento_map ? " (" + String(s.vencimento_map).slice(0, 10).split("-").reverse().join("/") + ")" : "") + " — saque de seg/ter/qua até 12h"
-                    }, "comp. " + (s.vencimento_map ? String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7) : "dom"))
+                    }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })))
                   ),
                   // Data/Hora
                   e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
                     e("div", { style: { fontSize: 11, color: "#6B7280", fontWeight: 500, lineHeight: 1.2 } }, formatData(s.created_at)),
-                    e("div", { style: { fontSize: 10, color: "#9CA3AF", marginTop: 1 } }, formatHora(s.created_at)),
-                    /* VENC_MAP_V2: data de vencimento (competencia) enviada a MAP */
-                    s.vencimento_map && e("div", {
-                      style: { fontSize: 9.5, marginTop: 2, fontWeight: 700, color: s.vencimento_retroativo ? "#92400E" : "#6B7280" },
-                      title: s.vencimento_retroativo ? "Competencia no DOMINGO ANTERIOR (saque seg/ter/qua ate 12h)" : "Competencia = data da realizacao"
-                    }, "venc " + String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7))
+                    e("div", { style: { fontSize: 10, color: "#9CA3AF", marginTop: 1 } }, formatHora(s.created_at))
+                  ),
+                  // Vencimento (competencia MAP) em coluna propria /* VENC_MAP_V3 */
+                  e("td", { style: { ...tdStyle(), textAlign: "right", fontVariantNumeric: "tabular-nums" } },
+                    s.vencimento_map
+                      ? e("div", { style: { display: "inline-flex", flexDirection: "column", alignItems: "flex-end", lineHeight: 1.15 } },
+                          e("span", {
+                            style: { fontSize: 11, fontWeight: 700, color: s.vencimento_retroativo ? "#92400E" : "#374151" },
+                            title: s.vencimento_retroativo ? "Competencia no DOMINGO ANTERIOR (saque seg/ter/qua ate 12h)" : "Competencia = data da realizacao"
+                          }, String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7) + "/" + String(s.vencimento_map).slice(0, 4)),
+                          s.vencimento_retroativo && e("span", { style: { fontSize: 9, fontWeight: 600, color: "#B45309", marginTop: 1 } }, "dom. anterior")
+                        )
+                      : e("span", { style: { color: "#D1D5DB" } }, "—")
                   ),
                 );
               })
