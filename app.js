@@ -9149,26 +9149,11 @@ const hideLoadingScreen = () => {
                 const statusAnterior = q.find(w => w.id === e)?.status;
                 U(prev => prev.map(w => w.id === e ? { ...w, status: t } : w));
                 
-                // Calcular data do débito baseado no toggle de acerto
-                let dataDebito = null;
-                console.log("🔍 Toggle acertoRealizado:", acertoRealizado);
-                if (t === "aprovado" || t === "aprovado_gratuidade") {
-                    if (acertoRealizado) {
-                        // Acerto realizado: data/hora atual
-                        dataDebito = new Date().toISOString();
-                        console.log("📅 Data débito (hoje):", dataDebito);
-                    } else {
-                        // Acerto pendente: último domingo
-                        const hoje = new Date();
-                        const diaSemana = hoje.getDay(); // 0 = domingo
-                        const diasParaDomingo = diaSemana === 0 ? 7 : diaSemana;
-                        const ultimoDomingo = new Date(hoje);
-                        ultimoDomingo.setDate(hoje.getDate() - diasParaDomingo);
-                        ultimoDomingo.setHours(23, 59, 0, 0);
-                        dataDebito = ultimoDomingo.toISOString();
-                        console.log("📅 Data débito (último domingo):", dataDebito);
-                    }
-                }
+                // 🆕 VENC_MAP_V1: a competência (vencimento) do abatimento na MAP agora
+                // é calculada no BACKEND pela regra de dia da semana (seg/ter/qua-até-12h
+                // -> domingo anterior; demais dias -> data da realização). O front não
+                // envia mais a data, e o toggle "Acerto realizado" foi aposentado.
+                const dataDebito = null; /* VENC_MAP_V1 */
                 
                 // =============== PROTEÇÃO 3: GERAR CHAVE DE IDEMPOTÊNCIA ===============
                 const idempotencyKey = `withdrawal_${e}_${t}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -9223,7 +9208,7 @@ const hideLoadingScreen = () => {
                 if (data._idempotent) {
                     ja("ℹ️ Esta operação já foi processada anteriormente", "info");
                 } else {
-                    ja("✅ Status atualizado!" + (!acertoRealizado && (t === "aprovado" || t === "aprovado_gratuidade") ? " (Débito no último domingo)" : ""), "success");
+                    ja("✅ Status atualizado!", "success");
                 }
                 
                 // Atualizar item na lista com dados reais do servidor (resposta do PATCH)

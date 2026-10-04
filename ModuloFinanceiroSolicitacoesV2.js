@@ -381,42 +381,9 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
         );
       }),
 
-      e("div", { style: { width: 1, height: 18, background: "#E5E7EB", margin: "0 3px" } }),
-
-      // Segmented Acerto Pendente / Realizado
-      e("div", {
-        style: {
-          display: "inline-flex", border: "1px solid #E5E7EB",
-          borderRadius: 6, overflow: "hidden", background: "#F9FAFB",
-        }
-      },
-        e("button", {
-          onClick: () => {
-            setAcertoRealizado(false);
-            try { localStorage.setItem("tutts_acerto_realizado", "false"); } catch (err) { }
-          },
-          style: {
-            border: "none", padding: "4px 10px",
-            fontSize: 11, fontWeight: 500, cursor: "pointer",
-            background: !acertoRealizado ? "white" : "transparent",
-            color: !acertoRealizado ? "#111827" : "#6b7280",
-            boxShadow: !acertoRealizado ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-          }
-        }, "Pendentes"),
-        e("button", {
-          onClick: () => {
-            setAcertoRealizado(true);
-            try { localStorage.setItem("tutts_acerto_realizado", "true"); } catch (err) { }
-          },
-          style: {
-            border: "none", padding: "4px 10px",
-            fontSize: 11, fontWeight: 500, cursor: "pointer",
-            background: acertoRealizado ? "white" : "transparent",
-            color: acertoRealizado ? "#111827" : "#6b7280",
-            boxShadow: acertoRealizado ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-          }
-        }, "Realizados"),
-      ),
+      /* VENC_MAP_V1: toggle "Acerto Pendentes/Realizados" removido — a competência
+         do abatimento na MAP agora é automática (regra de dia da semana no backend).
+         Saques com competência retroativa ao domingo anterior são sinalizados por chip. */
 
       e("div", { style: { flex: 1 } }),
 
@@ -609,7 +576,19 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                         fontSize: 9, fontWeight: 500,
                       },
                       title: "Motoboy com restrição"
-                    }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })))
+                    }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
+                    /* VENC_MAP_V1: sinaliza saques cuja competência caiu no DOMINGO ANTERIOR
+                       (seg/ter/qua-até-12h) — abatimento lançado na MAP com vencimento retroativo */
+                    s.vencimento_retroativo && e("span", {
+                      style: {
+                        display: "inline-flex", alignItems: "center", gap: 3, marginLeft: 4,
+                        padding: "1px 6px", background: "#FEF3C7",
+                        color: "#92400E", borderRadius: 3,
+                        fontSize: 9, fontWeight: 700,
+                        textTransform: "uppercase", letterSpacing: "0.3px",
+                      },
+                      title: "Competência lançada no DOMINGO ANTERIOR" + (s.vencimento_map ? " (" + String(s.vencimento_map).slice(0, 10).split("-").reverse().join("/") + ")" : "") + " — saque de seg/ter/qua até 12h"
+                    }, "comp. " + (s.vencimento_map ? String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7) : "dom"))
                   ),
                   // Data/Hora
                   e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
@@ -725,6 +704,8 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
       ["Taxa", taxa > 0 ? e("span", { style: { color: "#BA7517" } }, `– ${er(taxa)}`) : "—"],
       ["Líquido pago", e("span", { style: { color: "#0F6E56", fontWeight: 600 } }, er(s.final_amount))],
       ["Débito Plific", s.debito_plific_at ? `${formatHora(s.debito_plific_at)}` : s.debito_erro ? e("span", { style: { color: "#991B1B" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Falha")) : "—"],
+      /* VENC_MAP_V1: competência (vencimento) enviada à MAP */
+      s.vencimento_map ? ["Competência MAP", e("span", { style: { fontWeight: 600, color: s.vencimento_retroativo ? "#92400E" : "#111827" } }, fmtVencMap(s.vencimento_map) + (s.vencimento_retroativo ? "  •  domingo anterior" : ""))] : null,
       auto ? ["Origem", e("span", { style: { color: "#4338CA", fontWeight: 600 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" })), "Auto-saque"))] : ["Origem", e("span", { style: { color: "#6b7280" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-hand" })), "Manual"))],
       s.admin_name ? ["Aprovado por", s.admin_name] : null,
     ]),
@@ -750,6 +731,7 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
         e("div", { style: { position: "absolute", left: 4, top: 4, bottom: 4, width: 1, background: "#E5E7EB" } }),
         timelineItem(e, formatHora(s.created_at), "Solicitado pelo motoboy", "success"),
         s.debito_plific_at && timelineItem(e, formatHora(s.debito_plific_at), "Auto-débito Plific OK", "success"),
+        s.vencimento_retroativo && timelineItem(e, fmtVencMap(s.vencimento_map), "Competência no domingo anterior (MAP)", "warning"),
         s.debito_erro && !s.debito_plific_at && timelineItem(e, "—", "Débito Plific falhou", "error"),
         (s.status === "aprovado" || s.status === "aprovado_gratuidade") && s.updated_at && timelineItem(e, formatHora(s.updated_at), "Aprovado", "success"),
         s.stark_status === "em_lote" && timelineItem(e, "—", "Em lote (aguardando pagamento)", "warning"),
@@ -871,6 +853,16 @@ const drawerActionStyle = {
   fontWeight: 500,
   cursor: "pointer",
 };
+/* VENC_MAP_V1: formata a competência 'YYYY-MM-DD' (DATE) como 'DD/MM/YYYY' sem
+   depender de fuso (não usa new Date, que deslocaria 1 dia em UTC-3). */
+function fmtVencMap(d) {
+  if (!d) return "";
+  const s = String(d).slice(0, 10);
+  const p = s.split("-");
+  if (p.length !== 3) return s;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
 function sectionDrawer(e, titulo, rows) {
   const filtered = rows.filter(r => r);
   if (filtered.length === 0) return null;
