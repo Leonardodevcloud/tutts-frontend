@@ -1331,7 +1331,7 @@
             dadosExcel.push([]);
             
             // Cabeçalho tabela
-            dadosExcel.push(["ID", "Código", "Nome", "CPF", "Data Solicitação", "Data Aprovação", "Data Lançamento", "Data Débito", "Valor Solicitado", "Valor Final", "Taxa", "Status", "Gratuidade", "OMIE"]);
+            dadosExcel.push(["ID", "Código", "Nome", "CPF", "Data Solicitação", "Data Aprovação", "Data Lançamento", "Data Débito", "Vencimento MAP", "Dom. Anterior", "Valor Solicitado", "Valor Final", "Taxa", "Status", "Gratuidade", "OMIE"]);
             
             // Dados
             dadosFiltrados.forEach(item => {
@@ -1345,6 +1345,8 @@
                     formatarDataExcel(item.approved_at),
                     formatarDataExcel(item.lancamento_at),
                     formatarDataExcel(item.debito_plific_at),
+                    item.vencimento_map ? (String(item.vencimento_map).slice(8,10) + "/" + String(item.vencimento_map).slice(5,7) + "/" + String(item.vencimento_map).slice(0,4)) : "-",
+                    item.vencimento_retroativo ? "Sim" : "Não",
                     valSolic,
                     parseFloat(item.final_amount || 0),
                     valSolic * 0.045,
@@ -1356,7 +1358,7 @@
             
             // Criar e baixar Excel
             const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
-            ws["!cols"] = [{ wch: 8 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }];
+            ws["!cols"] = [{ wch: 8 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 13 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 10 }]; /* VENC_MAP_V2 +2 cols */
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Validação");
             const nomeArquivo = "Validacao_" + tipoFiltro + "_" + new Date().toISOString().split("T")[0].replace(/-/g, "") + ".xlsx";
@@ -2166,6 +2168,21 @@
                                 className: "px-3 py-2 border rounded-lg text-sm"
                             })
                         ),
+                        // VENC_MAP_V2: Filtro por Data de Vencimento (competencia enviada a MAP)
+                        React.createElement("div", null,
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#b45309" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Vencimento")),
+                            React.createElement("input", {
+                                type: "date",
+                                value: p.concDataVencimento || "",
+                                onChange: e => {
+                                    setConciliacaoPagina(1);
+                                    x({...p, concDataVencimento: e.target.value, concDataSolicitacao: "", concDataRealizacao: ""});
+                                    if (e.target.value) carregarConciliacao(e.target.value, e.target.value, "vencimento");
+                                    else setConciliacaoData(null);
+                                },
+                                className: "px-3 py-2 border rounded-lg text-sm"
+                            })
+                        ),
                         // Loading indicator
                         conciliacaoLoading && React.createElement("div", {className: "flex items-center gap-2 text-purple-600"},
                             React.createElement("div", {className: "w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"}),
@@ -2180,8 +2197,8 @@
                             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Apenas Gratuidades"))
                         ),
                         // Botão Limpar Filtros
-                        (p.concDataSolicitacao || p.concDataRealizacao || p.concApenasGratuidade) && React.createElement("button", {
-                            onClick: () => { setConciliacaoPagina(1); setConciliacaoData(null); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concApenasGratuidade: false}); },
+                        (p.concDataSolicitacao || p.concDataRealizacao || p.concDataVencimento || p.concApenasGratuidade) && React.createElement("button", {
+                            onClick: () => { setConciliacaoPagina(1); setConciliacaoData(null); x({...p, concDataSolicitacao: "", concDataRealizacao: "", concDataVencimento: "", concApenasGratuidade: false}); },
                             className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200"
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar Filtros"))
                     )
@@ -2332,7 +2349,11 @@
                     className: "font-medium text-green-700"
                 }, o), c && React.createElement(React.Fragment, null, " às ", React.createElement("span", {
                     className: "font-medium text-green-700"
-                }, c))))), React.createElement("td", {
+                }, c))), /* VENC_MAP_V2 competencia */ (e.vencimento_map ? React.createElement("span", {
+                    className: e.vencimento_retroativo ? "text-amber-700" : "text-gray-500"
+                }, "Vencimento: ", React.createElement("span", {
+                    className: e.vencimento_retroativo ? "font-bold text-amber-800" : "font-medium text-gray-700"
+                }, String(e.vencimento_map).slice(8,10) + "/" + String(e.vencimento_map).slice(5,7) + "/" + String(e.vencimento_map).slice(0,4)), e.vencimento_retroativo ? " (dom. anterior)" : "") : null))), React.createElement("td", {
                     className: "px-4 py-3"
                 }, e.user_name), React.createElement("td", {
                     className: "px-4 py-3"

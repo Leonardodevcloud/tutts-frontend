@@ -593,7 +593,12 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                   // Data/Hora
                   e("td", { style: { ...tdStyle(), textAlign: "right", color: "#9CA3AF", fontVariantNumeric: "tabular-nums" } },
                     e("div", { style: { fontSize: 11, color: "#6B7280", fontWeight: 500, lineHeight: 1.2 } }, formatData(s.created_at)),
-                    e("div", { style: { fontSize: 10, color: "#9CA3AF", marginTop: 1 } }, formatHora(s.created_at))
+                    e("div", { style: { fontSize: 10, color: "#9CA3AF", marginTop: 1 } }, formatHora(s.created_at)),
+                    /* VENC_MAP_V2: data de vencimento (competencia) enviada a MAP */
+                    s.vencimento_map && e("div", {
+                      style: { fontSize: 9.5, marginTop: 2, fontWeight: 700, color: s.vencimento_retroativo ? "#92400E" : "#6B7280" },
+                      title: s.vencimento_retroativo ? "Competencia no DOMINGO ANTERIOR (saque seg/ter/qua ate 12h)" : "Competencia = data da realizacao"
+                    }, "venc " + String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7))
                   ),
                 );
               })
