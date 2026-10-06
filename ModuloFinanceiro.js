@@ -6525,6 +6525,9 @@
         var validacoes = _validacoes[0]; var setValidacoes = _validacoes[1];
         var _validando = React.useState(false);
         var validando = _validando[0]; var setValidando = _validando[1];
+        // [SAQUE_DIVERG_V1] confirmacao do financeiro p/ pagar chave de titular divergente (igual ao acerto)
+        var _divConfirmSaque = React.useState({}); // { saqueId: true }
+        var divConfirmSaque = _divConfirmSaque[0]; var setDivConfirmSaque = _divConfirmSaque[1];
 
         // Validar lote antes de pagar (consulta DICT para cada saque)
         var validarLote = async function() {
@@ -6661,15 +6664,21 @@
                 
                 // 2. Executar pagamento com o token validado
                 var ids = dv.saque_ids && dv.saque_ids.length > 0 ? dv.saque_ids : (idsSelecionados.length > 0 ? idsSelecionados : st.pendentes.map(function(s) { return s.id; }));
-                
+                // [SAQUE_DIVERG_V1] ids que o financeiro confirmou pagar mesmo com titular divergente
+                var confirmadosDiv = ids.filter(function(id) { return !!divConfirmSaque[id]; });
+
                 setModal2fa(function(p) { return Object.assign({}, p, { etapa: 'executando' }); });
-                
+
                 var re = await fetchAuth(API_URL + '/stark/lote/executar', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ saque_ids: ids, chave_token: modal2fa.chaveToken })
+                    body: JSON.stringify({ saque_ids: ids, chave_token: modal2fa.chaveToken, confirmados_divergencia: confirmadosDiv })
                 });
                 var de = await re.json();
-                
+                // [SAQUE_DIVERG_V1] saques retidos por titular divergente aguardando confirmacao
+                if (de.divergentes && de.divergentes.length > 0) {
+                    showToast('🔸 ' + de.divergentes.length + ' saque(s) com titular diferente ficaram retidos. Clique em "Validar", marque "Confirmo pagar" na linha e pague novamente.', 'warning');
+                }
+
                 if (de.success) {
                     setModal2fa({ aberto: false, etapa: 'confirmar', chaveToken: null, emailMascarado: '', tokenDigitado: '', enviando: false, validando: false, erro: '' });
                     
@@ -6874,7 +6883,23 @@
                                                 ),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-gray-600 text-xs max-w-[180px] truncate" }, s.pix_key),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-right font-bold " + (parseFloat(s.final_amount) >= 200 ? "text-emerald-700 text-base" : "text-gray-700") }, formatarMoeda(s.final_amount)),
-                                                React.createElement("td", { className: "px-4 py-2.5 text-center" }, s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando")),
+                                                React.createElement("td", { className: "px-4 py-2.5 text-center" },
+                                                    /* [SAQUE_DIVERG_V1] titular divergente: badge vermelho + "Confirmo pagar" (igual ao acerto) */
+                                                    (v && v.dict_status === 'ok' && v.cpf_divergente)
+                                                        ? React.createElement("div", { className: "flex flex-col items-center gap-1" },
+                                                            React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700", title: v.dict_nome ? ("Chave Pix em nome de: " + v.dict_nome) : "Titular diferente do cadastro" }, "⚠️ Titular diferente"),
+                                                            v.dict_nome ? React.createElement("span", { className: "text-[10px] text-gray-500 max-w-[150px] truncate" }, v.dict_nome) : null,
+                                                            React.createElement("label", { className: "flex items-center gap-1 text-xs font-medium cursor-pointer " + (divConfirmSaque[s.id] ? "text-emerald-700" : "text-red-600") },
+                                                                React.createElement("input", { type: "checkbox", checked: !!divConfirmSaque[s.id], onChange: function() { setDivConfirmSaque(function(p) { var n = Object.assign({}, p); if (n[s.id]) { delete n[s.id]; } else { n[s.id] = true; } return n; }); }, className: "w-3.5 h-3.5 accent-emerald-600" }),
+                                                                divConfirmSaque[s.id] ? "Pagamento confirmado" : "Confirmo pagar"
+                                                            )
+                                                          )
+                                                        : (v && v.dict_status === 'ok')
+                                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700", title: v.dict_nome || "" }, "✓ Conferido")
+                                                            : (v && v.dict_status === 'erro')
+                                                                ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700", title: (v.alertas || []).join(' | ') }, "Rever Pix")
+                                                                : (s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando"))
+                                                ),
                                                 React.createElement("td", { className: "px-4 py-2.5 text-xs text-gray-500" }, s.approved_at ? new Date(s.approved_at).toLocaleString('pt-BR') : '—')
                                             );
                                         }))
