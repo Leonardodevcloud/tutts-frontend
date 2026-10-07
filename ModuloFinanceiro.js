@@ -7211,6 +7211,27 @@
             return !!(dr && dr.success && dr.divergente && !divConfirm[cod]);
         };
 
+        // 🆕 ACERTO_DEDUP_V1: já pago neste ciclo (mesmo cód + mesmo valor) — intocável
+        var isJaPago = function(p) {
+            return !!(p && (p.status === 'ja_pago' || p.ja_pago));
+        };
+
+        // 🆕 ACERTO_DEDUP_V1: rank p/ agrupar a lista:
+        //   0 = precisa de ação (erro/ajuste/titular divergente) -> TOPO
+        //   1 = pagável/pronto -> meio
+        //   2 = sem pix / restrito -> abaixo
+        //   3 = JÁ PAGO -> FUNDO (intocável)
+        var rankLinha = function(p) {
+            if (isJaPago(p)) return 3;
+            var dr = dictResults[p.cod_prof];
+            var precisaAcao = (p.status === 'sem_pix') ||
+                (dr && dr.success === false) ||
+                (dr && dr.success === true && dr.divergente && !divConfirm[p.cod_prof]);
+            if (precisaAcao) return 0;
+            if (p.status === 'restrito' || p.is_restricted) return 2;
+            return 1;
+        };
+
         // ===== Helpers de seleção =====
         var profissionaisProntos = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'pronto'; });
         var profissionaisSemPix = (st.dados && st.dados.profissionais || []).filter(function(p) { return p.status === 'sem_pix'; });
@@ -7223,7 +7244,7 @@
 
         // 🆕 PIX_UX_V2: linhas que precisam de ação (reverificar chave ou confirmar titular divergente)
         var pendentesVerif = todosProfs.filter(function(p) {
-            if (p.status === 'restrito' || p.status === 'sem_pix' || !p.pix_key) return false;
+            if (p.status === 'restrito' || p.status === 'sem_pix' || p.status === 'ja_pago' || p.ja_pago || !p.pix_key) return false; /* ACERTO_DEDUP_V1: já pago não precisa de atenção */
             var dr = dictResults[p.cod_prof];
             if (dr && dr.success === false) return true;
             if (dr && dr.success === true && dr.divergente && !divConfirm[p.cod_prof]) return true;
@@ -7346,8 +7367,13 @@
                 });
                 var d = await r.json();
                 if (d.success) {
-                    /* ACERTO_RESTR_V1: avisa se algum foi removido por restrição */
-                    if (d.bloqueados && d.bloqueados.length > 0) Toast('🚫 ' + d.bloqueados.length + ' removido(s) do lote por restrição: ' + d.bloqueados.map(function(b) { return b.cod_prof; }).join(', '), 'error');
+                    /* ACERTO_RESTR_V1 / ACERTO_DEDUP_V1: avisa se algum foi removido (restrição ou já pago) */
+                    if (d.bloqueados && d.bloqueados.length > 0) {
+                        var _dups = d.bloqueados.filter(function(b) { return b.motivo && b.motivo.indexOf('JÁ PAGO') >= 0; });
+                        var _outros = d.bloqueados.filter(function(b) { return !(b.motivo && b.motivo.indexOf('JÁ PAGO') >= 0); });
+                        if (_dups.length > 0) Toast('🛡️ ' + _dups.length + ' já pago(s) e bloqueado(s) contra duplicidade: ' + _dups.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
+                        if (_outros.length > 0) Toast('🚫 ' + _outros.length + ' removido(s) do lote por restrição: ' + _outros.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
+                    }
                     Toast('✅ Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
                     // Limpar dados e ir para aprovação
                     setSt(function(p) { return Object.assign({}, p, { dados: null, subTab: 'aprovacao' }); });
@@ -7559,13 +7585,15 @@
                 em_lote: 'bg-blue-100 text-blue-800', erro: 'bg-red-100 text-red-800',
                 parcial: 'bg-orange-100 text-orange-800', aguardando: 'bg-amber-100 text-amber-800',
                 pronto: 'bg-emerald-100 text-emerald-800', sem_pix: 'bg-red-100 text-red-800',
-                restrito: 'bg-red-100 text-red-800' /* ACERTO_RESTR_V1 */
+                restrito: 'bg-red-100 text-red-800', /* ACERTO_RESTR_V1 */
+                ja_pago: 'bg-slate-200 text-slate-600' /* 🆕 ACERTO_DEDUP_V1 */
             };
             var labels = {
                 pronto: 'Pronto', sem_pix: 'Sem Pix', aguardando: 'Aguardando',
                 processando: 'Processando', pago: 'Pago', concluido: 'Concluído',
                 rejeitado: 'Rejeitado', em_lote: 'Lote Gerado', erro: 'Erro',
-                parcial: 'Parcial', restrito: 'Restrito' /* ACERTO_RESTR_V1 */
+                parcial: 'Parcial', restrito: 'Restrito', /* ACERTO_RESTR_V1 */
+                ja_pago: 'Já pago' /* 🆕 ACERTO_DEDUP_V1 */
             };
             return React.createElement("span", {
                 className: "px-2 py-1 rounded-full text-xs font-medium " + (c[s] || 'bg-gray-100 text-gray-600')
@@ -7666,7 +7694,7 @@
                 st.dados && React.createElement("div", { className: "space-y-4" },
 
                     // Cards resumo
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-8 gap-3" }, /* PIX_UX_V2 +1 card (Reverificar) */
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-9 gap-3" }, /* PIX_UX_V2 +1 card (Reverificar) · ACERTO_DEDUP_V1 +1 (Já pago) */
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-emerald-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-emerald-600" }, st.dados.pix_mapp || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Pix Mapp")
@@ -7674,6 +7702,11 @@
                         (st.dados.restritos || 0) > 0 && React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-rose-600 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-rose-600" }, st.dados.restritos || 0),
                             React.createElement("p", { className: "text-xs text-gray-500" }, "Restritos")
+                        ),
+                        /* 🆕 ACERTO_DEDUP_V1: KPI de já pagos (bloqueados contra duplicidade) */
+                        (st.dados.ja_pagos || 0) > 0 && React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-slate-400 text-center" },
+                            React.createElement("p", { className: "text-2xl font-bold text-slate-600" }, st.dados.ja_pagos || 0),
+                            React.createElement("p", { className: "text-xs text-gray-500" }, "Já pagos")
                         ),
                         React.createElement("div", { className: "bg-white rounded-xl p-4 shadow border-l-4 border-blue-500 text-center" },
                             React.createElement("p", { className: "text-2xl font-bold text-blue-600" }, st.dados.pix_sistema || 0),
@@ -7716,7 +7749,11 @@
                             React.createElement("b", { className: "text-amber-700" }, "Rever Pix"), "— deu erro; clique em Reverificar (veja o motivo no tooltip)."),
                         React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
                             React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" }),
-                            React.createElement("b", { className: "text-blue-700" }, "Validar"), "— ainda não conferido; clique em Validar.")
+                            React.createElement("b", { className: "text-blue-700" }, "Validar"), "— ainda não conferido; clique em Validar."),
+                        /* 🆕 ACERTO_DEDUP_V1 */
+                        React.createElement("span", { className: "inline-flex items-center gap-2 text-xs text-gray-600" },
+                            React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block" }),
+                            React.createElement("b", { className: "text-slate-600" }, "Já pago"), "— já recebeu este valor; fica bloqueado (intocável) contra duplicidade.")
                     ),
 
                     /* 🆕 PIX_UX_V2: MENU LATERAL flutuante — quem precisa de atenção (clique rola até a linha) */
@@ -7788,16 +7825,23 @@
                                 )
                             ),
                             React.createElement("tbody", null,
-                                todosProfs.sort(function(a, b) { return b.saldo - a.saldo; }).map(function(prof, i) {
+                                /* 🆕 ACERTO_DEDUP_V1: agrupa (precisa de ação no topo, JÁ PAGO no fundo) e, dentro do grupo, por valor desc */
+                                todosProfs.slice().sort(function(a, b) {
+                                    var ra = rankLinha(a), rb = rankLinha(b);
+                                    if (ra !== rb) return ra - rb;
+                                    return b.saldo - a.saldo;
+                                }).map(function(prof, i) {
                                     var ehSemPix = prof.status === 'sem_pix';
                                     /* ACERTO_RESTR_V1: restrito nao pode ser selecionado/pago */
                                     var ehRestrito = prof.status === 'restrito' || prof.is_restricted;
+                                    /* 🆕 ACERTO_DEDUP_V1: já pago -> intocável */
+                                    var ehJaPago = isJaPago(prof);
                                     /* 🆕 PIX_UX_V1: titular divergente precisa de confirmacao do ADM */
                                     var _dr = dictResults[prof.cod_prof];
                                     var ehDivergente = !!(_dr && _dr.success && _dr.divergente);
                                     var divConfirmado = !!divConfirm[prof.cod_prof];
                                     var divBloqueado = ehDivergente && !divConfirmado;
-                                    var bloqueado = ehSemPix || ehRestrito || divBloqueado;
+                                    var bloqueado = ehSemPix || ehRestrito || divBloqueado || ehJaPago;
                                     var origemBadge = prof.pix_origem === 'mapp'
                                         ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium " + (prof.pix_formato_valido ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") }, prof.pix_formato_valido ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Mapp") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mapp"))
                                         : prof.pix_origem === 'sistema'
@@ -7807,10 +7851,12 @@
                                     return React.createElement("tr", {
                                         key: prof.cod_prof + '-' + i,
                                         id: "acerto-row-" + prof.cod_prof, /* 🆕 PIX_UX_V2: ancora p/ menu lateral */
-                                        className: "border-b hover:bg-gray-50 " + (ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : divBloqueado ? 'bg-amber-50' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
+                                        className: "border-b hover:bg-gray-50 " + (ehJaPago ? 'bg-slate-100 opacity-60' : ehRestrito ? 'bg-rose-50 opacity-70' : ehSemPix ? 'bg-red-50 opacity-60' : divBloqueado ? 'bg-amber-50' : sel[prof.cod_prof] ? 'bg-emerald-50' : '')
                                     },
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
-                                            React.createElement("input", {
+                                            ehJaPago
+                                                ? React.createElement("span", { title: "Já pago — bloqueado contra duplicidade", className: "inline-flex" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: "#64748b" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })))
+                                                : React.createElement("input", {
                                                 type: "checkbox",
                                                 checked: !bloqueado && !!sel[prof.cod_prof],
                                                 onChange: function() { if (!bloqueado) toggleSel(prof.cod_prof); },
@@ -7826,7 +7872,12 @@
                                             ehRestrito && React.createElement("span", {
                                                 className: "ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 align-middle",
                                                 title: prof.restricao_motivo || "Restrição ativa"
-                                            }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "RESTRITO")
+                                            }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "RESTRITO"),
+                                            /* 🆕 ACERTO_DEDUP_V1: etiqueta de já pago */
+                                            ehJaPago && React.createElement("span", {
+                                                className: "ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600 align-middle",
+                                                title: "Já pago" + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "") + " — bloqueado contra duplicidade"
+                                            }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "JÁ PAGO")
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
@@ -7854,6 +7905,11 @@
                                         React.createElement("td", { className: "px-3 py-2.5 text-right font-bold text-emerald-700" }, formatarMoeda(prof.saldo)),
                                         /* 🆕 PIX_UX_V1: status reflete a conferencia do DICT (nao mostra "Pronto" quando falhou/diverge) */
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" }, (function() {
+                                            /* 🆕 ACERTO_DEDUP_V1: já pago tem prioridade visual */
+                                            if (ehJaPago) return React.createElement("span", {
+                                                className: "px-2 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-600 cursor-help",
+                                                title: "Já pago" + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "")
+                                            }, "Já pago");
                                             if (ehRestrito || ehSemPix) return badge(prof.status);
                                             if (divBloqueado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700" }, "Titular diferente");
                                             if (ehDivergente && divConfirmado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800" }, "Confirmado (outro)");
