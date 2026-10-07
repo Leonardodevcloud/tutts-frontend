@@ -7518,7 +7518,8 @@
                 setModal2fa(function(p) { return Object.assign({}, p, { etapa: 'executando' }); });
                 var re = await fetchAuth(API_URL + '/stark/acerto/' + modal2fa.loteId + '/executar', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chave_token: modal2fa.chaveToken })
+                    /* [ACERTO_CONFIRMA_V1] leva os confirmados de divergencia tambem no executar */
+                    body: JSON.stringify({ chave_token: modal2fa.chaveToken, confirmados_divergencia: Object.keys(divConfirm).filter(function(k){ return divConfirm[k]; }) })
                 });
                 var de = await re.json();
 
