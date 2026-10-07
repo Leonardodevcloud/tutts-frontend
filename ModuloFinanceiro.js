@@ -7442,7 +7442,7 @@
                 var r = await fetchAuth(API_URL + '/stark/acerto/validar-pix', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     /* 🆕 PIX_UX_V3: envia o CPF (planilha/sistema) p/ a validacao bater igual ao pagamento */
-                    body: JSON.stringify({ pix_key: prof.pix_key, cod_prof: prof.cod_prof, cpf: (prof.cpf_sistema || prof.cpf_planilha || '') })
+                    body: JSON.stringify({ pix_key: prof.pix_key, cod_prof: prof.cod_prof, cpf: (prof.cpf_sistema || prof.cpf_planilha || ''), nome: (prof.nome_sistema || prof.nome_planilha || '') /* PIX_NOME_V1 */ })
                 });
                 var d = await r.json();
                 setDictResults(function(prev) {
