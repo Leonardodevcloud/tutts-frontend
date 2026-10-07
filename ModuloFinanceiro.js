@@ -7306,6 +7306,9 @@
                                     success: prof.dict_validacao.valido,
                                     dict: prof.dict_validacao.valido ? { nome: prof.dict_validacao.nome, banco: prof.dict_validacao.banco } : null,
                                     erro: prof.dict_validacao.erro || null,
+                                    /* [PIX_PREVIEW_V1] leva a divergencia de titular da previa pra UI (badge + checkbox) */
+                                    divergente: !!prof.dict_validacao.divergente,
+                                    titular_nome: prof.dict_validacao.nome || null,
                                     validado_em: prof.dict_validacao.validado_em
                                 };
                             }
