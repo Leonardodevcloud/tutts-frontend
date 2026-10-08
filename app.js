@@ -1621,7 +1621,7 @@ const hideLoadingScreen = () => {
     // PRAZO_SEM_HORARIO_NO_PRAZO_V1: semMedicao = quantas das "no prazo" sao
     // entregas SEM horario na Mapp. Contam como no prazo (falta de dado nao
     // derruba o SLA) e o card explica o calculo no rodape.
-    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, semMedicao: semProp, titulo, corDentro, corFora, tipoSem }) => { // PRAZO_REGRA_17H_V1: tipoSem 'prof' = sem alocação
+    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, semMedicao: semProp, titulo, corDentro, corFora, tipoSem }) => { // PRAZO_REGRA_17H_V1 / PRAZO_PROF_COLETA_V1: tipoSem 'prof' = sem coleta
         const dentro = Number(dentroProp) || 0;
         const fora = Number(foraProp) || 0;
         const semMedicao = Number(semProp) || 0;
@@ -1682,7 +1682,7 @@ const hideLoadingScreen = () => {
                         ),
                         semMedicao > 0 && React.createElement("p", {
                             className: "text-[10px] text-amber-700 mt-0.5"
-                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), tipoSem === "prof" ? " sem alocação" : " com horário inconsistente") // BI_SO_CONCLUIDAS_V1 / PRAZO_REGRA_17H_V1
+                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), tipoSem === "prof" ? " sem coleta" : " com horário inconsistente") // BI_SO_CONCLUIDAS_V1 / PRAZO_REGRA_17H_V1
                     )
                 ),
                 React.createElement("div", { className: "flex items-center gap-2" },
@@ -1709,7 +1709,7 @@ const hideLoadingScreen = () => {
                     "Calculado sobre ", total.toLocaleString('pt-BR'), " entregas concluídas (corridas em andamento não entram). ",
                     semMedicao > 0
                         ? (tipoSem === "prof"
-                            ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída não tem horário de alocação na Mapp — o prazo do profissional não pode ser medido e ela foi contada" : " entregas concluídas não têm horário de alocação na Mapp — o prazo do profissional não pode ser medido e elas foram contadas") + " como no prazo.")
+                            ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída não tem horário de coleta (ponto 1) na Mapp — o prazo do profissional não pode ser medido e ela foi contada" : " entregas concluídas não têm horário de coleta (ponto 1) na Mapp — o prazo do profissional não pode ser medido e elas foram contadas") + " como no prazo.")
                             : (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída tem horário inconsistente na Mapp (ex.: finalização antes da criação) e foi contada" : " entregas concluídas têm horário inconsistente na Mapp (ex.: finalização antes da criação) e foram contadas") + " como no prazo."))
                         : "Todas com horário registrado."
                 )
@@ -17578,7 +17578,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-red-700 bg-red-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(e.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(e.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -17619,7 +17619,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-red-600 bg-red-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(a.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(a.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
@@ -17652,7 +17652,7 @@ const hideLoadingScreen = () => {
                 className: "px-3 py-2 text-center text-red-700 bg-red-100"
             }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
             }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -18628,7 +18628,7 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
                                 React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%"),
-                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem alocação")
+                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem coleta")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
                                 React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
@@ -18966,10 +18966,65 @@ const hideLoadingScreen = () => {
                     _osAgrupadas[os].sort(function(a, b) { return (parseInt(a.ponto) || 1) - (parseInt(b.ponto) || 1); });
                 });
                 var _osArray = Object.keys(_osAgrupadas).sort(function(a, b) { return parseInt(b) - parseInt(a); });
+                // ===== PRAZO_PROF_COLETA_V1: métricas por ponto / por OS — mesma régua do backend =====
+                // Loja: criação → finalização. Profissional: COLETA (finalização do ponto 1) → finalização.
+                // Regra das 17h: início >= 17:00 e fim em dia posterior → conta das 08:00 do dia do fim.
+                // Ícones/cores vêm das ENTREGAS (ponto >= 2), nunca da linha da coleta.
+                var _partesDH = function(v) {
+                    if (!v) return null;
+                    var m = String(v).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+                    if (!m) return null;
+                    return { y: +m[1], mo: +m[2] - 1, d: +m[3], h: +m[4], mi: +m[5], s: +(m[6] || 0) };
+                };
+                var _minRegra17 = function(ini, fim) {
+                    var a = _partesDH(ini), b = _partesDH(fim);
+                    if (!a || !b) return null;
+                    var tA = Date.UTC(a.y, a.mo, a.d, a.h, a.mi, a.s), tB = Date.UTC(b.y, b.mo, b.d, b.h, b.mi, b.s);
+                    if (Date.UTC(b.y, b.mo, b.d) > Date.UTC(a.y, a.mo, a.d) && a.h >= 17) {
+                        return Math.max(0, (tB - Date.UTC(b.y, b.mo, b.d, 8, 0, 0)) / 60000);
+                    }
+                    if (tB < tA) return null;
+                    return (tB - tA) / 60000;
+                };
+                var _agregaPrazo = function(lista, campo) {
+                    var temTrue = false;
+                    for (var i = 0; i < lista.length; i++) {
+                        if (lista[i][campo] === false) return false;
+                        if (lista[i][campo] === true) temTrue = true;
+                    }
+                    return temTrue ? true : null;
+                };
+                var _coletaDaOS = function(pontos) {
+                    for (var i = 0; i < pontos.length; i++) if (pontos[i].inicio_prof_os) return pontos[i].inicio_prof_os;
+                    var p1 = pontos.find(function(r) { return (parseInt(r.ponto) || 1) === 1; });
+                    return (p1 && p1.finalizado) || null;
+                };
+                var _tProfPonto = function(row, coleta) {
+                    if ((parseInt(row.ponto) || 1) < 2) return null;
+                    var t = coleta ? _minRegra17(coleta, row.finalizado) : null;
+                    if (t === null && row.tempo_entrega_prof_minutos !== null && row.tempo_entrega_prof_minutos !== undefined) t = Number(row.tempo_entrega_prof_minutos);
+                    return t;
+                };
+                var _metOS = function(pontos) {
+                    var coleta = _coletaDaOS(pontos);
+                    var entregas = pontos.filter(function(r) { return (parseInt(r.ponto) || 1) >= 2; });
+                    if (entregas.length === 0) entregas = pontos.length > 1 ? pontos.slice(1) : pontos;
+                    var ultima = entregas[0];
+                    entregas.forEach(function(r) { if (r.finalizado && (!ultima.finalizado || String(r.finalizado) > String(ultima.finalizado))) ultima = r; });
+                    var tProf = coleta && ultima ? _minRegra17(coleta, ultima.finalizado) : null;
+                    if (tProf === null && ultima && ultima.tempo_entrega_prof_minutos !== null && ultima.tempo_entrega_prof_minutos !== undefined) tProf = Number(ultima.tempo_entrega_prof_minutos);
+                    return {
+                        finalizado: ultima ? ultima.finalizado : null,
+                        tLoja: ultima ? _minRegra17(ultima.data_hora || pontos[0].data_hora, ultima.finalizado) : null,
+                        tProf: tProf,
+                        dentro: _agregaPrazo(entregas, "dentro_prazo"),
+                        dentroProf: _agregaPrazo(entregas, "dentro_prazo_prof")
+                    };
+                };
                 // status_prazo_prof é filtro client-side (campo calculado pelo backend). Não se aplica à busca direta.
                 if (ua.status_prazo_prof && !remotoAtivo) {
                     _osArray = _osArray.filter(function(osNum) {
-                        var dpp = _osAgrupadas[osNum][0].dentro_prazo_prof;
+                        var dpp = _metOS(_osAgrupadas[osNum]).dentroProf; // PRAZO_PROF_COLETA_V1: pelas entregas da OS
                         if (dpp === null || dpp === undefined) return true;
                         if (ua.status_prazo_prof === "dentro") return dpp === true;
                         if (ua.status_prazo_prof === "fora") return dpp === false;
@@ -19070,72 +19125,10 @@ const hideLoadingScreen = () => {
                     var isExpanded = window.osExpandidas[osNum] || false;
                     var temMaisPontos = pontos.length > 1;
                     
-                    // Pegar o finalizado da OS (do último ponto, que é quando realmente terminou)
-                    var finalizadoOS = ultimoReg.finalizado || primeiroReg.finalizado;
-                    
-                    // Função para extrair data e hora de uma string datetime
-                    // Os dados vêm como "2025-12-01T18:12:19.000Z" mas são horários de Brasília
-                    var parseDateTime = function(str) {
-                        if (!str) return null;
-                        var s = String(str);
-                        // Extrair partes: YYYY-MM-DD e HH:MM:SS
-                        var match = s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-                        if (!match) return null;
-                        return {
-                            ano: parseInt(match[1]),
-                            mes: parseInt(match[2]),
-                            dia: parseInt(match[3]),
-                            hora: parseInt(match[4]),
-                            min: parseInt(match[5]),
-                            seg: parseInt(match[6]),
-                            dataStr: match[1] + '-' + match[2] + '-' + match[3]
-                        };
-                    };
-                    
-                    // Função para calcular tempo com regras de horário comercial
-                    // Regra: se dias diferentes, começa às 8h do dia do fim
-                    var calcularTempoComRegras = function(dataHoraInicio, dataHoraFim) {
-                        var inicio = parseDateTime(dataHoraInicio);
-                        var fim = parseDateTime(dataHoraFim);
-                        
-                        if (!inicio || !fim) return null;
-                        
-                        var mesmaData = inicio.dataStr === fim.dataStr;
-                        
-                        var inicioMinutos, fimMinutos;
-                        
-                        // Fim sempre é a hora real do fim
-                        fimMinutos = fim.hora * 60 + fim.min + fim.seg / 60;
-                        
-                        if (!mesmaData) {
-                            // Dias diferentes - começa às 8h do dia do fim
-                            inicioMinutos = 8 * 60; // 8:00 = 480 minutos
-                        } else {
-                            inicioMinutos = inicio.hora * 60 + inicio.min + inicio.seg / 60;
-                        }
-                        
-                        var difMinutos = fimMinutos - inicioMinutos;
-                        
-                        // Se negativo (fim antes das 8h), algo está errado - retorna null
-                        if (difMinutos < 0) return null;
-                        
-                        return difMinutos;
-                    };
-                    
-                    // T. Entrega: Solicitado (data_hora) → Finalizado
-                    var tempoEntregaOS = calcularTempoComRegras(primeiroReg.data_hora, finalizadoOS);
-                    
-                    // T. Entrega Prof: usar campo do banco (calculado durante upload/recálculo)
-                    var tempoEntregaProfOS = primeiroReg.tempo_entrega_prof_minutos;
-                    
-                    // Prazo em minutos (vem do banco) - para prazo normal
-                    var prazoMinutos = primeiroReg.prazo_minutos || 60;
-                    
-                    // Prazo Prof em minutos - vem do banco
-                    var prazoProfMinutos = primeiroReg.prazo_prof_minutos || 60;
-                    
-                    // Prazo Prof: usar campo do banco
-                    var dentroPrazoProf = primeiroReg.dentro_prazo_prof;
+                    // PRAZO_PROF_COLETA_V1: valores da OS calculados pelas ENTREGAS (ver _metOS)
+                    var metOS = _metOS(pontos);
+                    var coletaOS = _coletaDaOS(pontos);
+                    var finalizadoOS = metOS.finalizado || ultimoReg.finalizado || primeiroReg.finalizado;
                     
                     var formatTempo = function(mins) {
                         if (mins === null || mins === undefined || isNaN(mins) || mins < 0) return "-";
@@ -19209,6 +19202,14 @@ const hideLoadingScreen = () => {
                             return "-";
                         };
                         
+                        // PRAZO_PROF_COLETA_V1: linha da OS = valores da OS (pelas entregas);
+                        // linha de ponto expandida = valores do próprio ponto (coleta não tem prazo).
+                        var ehEntrega = pontoNum >= 2;
+                        var vTLoja = isFirst ? metOS.tLoja : (ehEntrega ? _minRegra17(row.data_hora, row.finalizado) : null);
+                        var vTProf = isFirst ? metOS.tProf : _tProfPonto(row, coletaOS);
+                        var vDentro = isFirst ? metOS.dentro : (ehEntrega ? row.dentro_prazo : null);
+                        var vDentroProf = isFirst ? metOS.dentroProf : (ehEntrega ? row.dentro_prazo_prof : null);
+                        var corPrazo = function(v) { return v === true ? "text-green-700" : v === false ? "text-red-600" : "text-gray-500"; };
                         var horaAlocado = extrairHora(row.data_hora_alocado);
                         var horaSolicitado = row.hora_solicitado || extrairHora(row.data_hora);
                         
@@ -19257,24 +19258,24 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
                             // Hora Chegada
                             React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
-                            // Hora Entregue (finalizado da OS)
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaEntregueOS),
-                            // T. Entrega (Solicitado → Finalizado da OS)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 text-green-700"}, formatTempo(tempoEntregaOS)),
-                            // T. Entrega Prof (Alocado → Finalizado da OS)
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + (tempoEntregaProfOS !== null && tempoEntregaProfOS <= prazoProfMinutos ? "text-green-700" : "text-red-600")}, formatTempo(tempoEntregaProfOS)),
+                            // Hora Entregue — linha da OS: última finalização; linha de ponto: a do ponto
+                            React.createElement("td", {className: "px-2 py-1 text-center"}, isFirst ? horaEntregueOS : extrairHora(row.finalizado)),
+                            // T. Entrega (loja): criação → finalização, regra das 17h
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 " + corPrazo(vDentro)}, formatTempo(vTLoja)),
+                            // T. Entrega Prof: COLETA (finalização do ponto 1) → finalização, regra das 17h
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + corPrazo(vDentroProf), title: vTProf === null && pontoNum >= 2 ? "Sem horário de coleta (ponto 1) — prazo do profissional não medido" : "Da coleta (finalização do ponto 1) até a finalização"}, formatTempo(vTProf)),
                             // KM
                             React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
                             // Prazo
                             React.createElement("td", {className: "px-2 py-1 text-center"}, 
-                                row.dentro_prazo === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
-                                row.dentro_prazo === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
+                                vDentro === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
+                                vDentro === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Prazo Prof (baseado no T. Entrega Prof vs prazo por km)
                             React.createElement("td", {className: "px-2 py-1 text-center bg-orange-50"}, 
-                                dentroPrazoProf === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
-                                dentroPrazoProf === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
+                                vDentroProf === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
+                                vDentroProf === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Finalizado
@@ -20603,7 +20604,7 @@ const hideLoadingScreen = () => {
                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Prazo Padrão Profissional")),
                     React.createElement("p", {
                         className: "text-sm text-gray-500 mb-4"
-                    }, "Contado do momento em que o profissional ACEITA a corrida (alocação) até finalizar a entrega — inclui o deslocamento até a loja. Mesma régua usada no Score do motoboy."), // ROTULO_PRAZO_PROF_V1
+                    }, "Contado da COLETA (quando o profissional finaliza o ponto 1) até finalizar a entrega — o deslocamento até a loja não conta. Mesma régua usada no Score do motoboy."), // ROTULO_PRAZO_PROF_V1 / PRAZO_PROF_COLETA_V1
                     React.createElement("div", {
                         className: "space-y-3 mb-4"
                     }, prazoProfPadrao.map((e, t) => React.createElement("div", {
@@ -20690,7 +20691,7 @@ const hideLoadingScreen = () => {
                     // Prazo por Cliente/Centro
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-orange-200"},
                         React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Prazo Prof. por Cliente ou Centro de Custo")),
-                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão (mesma contagem: da alocação até finalizar)"),
+                        React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão (mesma contagem: da coleta até finalizar a entrega)"),
                         React.createElement("div", {className: "mb-4"},
                             React.createElement("label", {className: "text-sm text-gray-600 font-medium"}, "Selecionar Cliente ou Centro de Custo"),
                             React.createElement("select", {

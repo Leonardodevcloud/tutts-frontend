@@ -624,7 +624,7 @@
             ),
             aberto && h('div', { className: 'px-3 pb-3 pt-1' },
                 h('p', { className: 'text-[11px] text-gray-500 mb-2 leading-snug' },
-                    'O prazo começa quando você aceita a corrida e termina quando você finaliza. Quanto maior a distância, maior o prazo.'
+                    'O prazo começa quando você finaliza a coleta (ponto 1) e termina quando você finaliza a entrega — o deslocamento até a loja não conta. Quanto maior a distância, maior o prazo.' /* PRAZO_PROF_COLETA_V1 */
                 ),
                 h('div', { className: 'rounded-lg border border-gray-100 overflow-hidden' },
                     regua.map((f, i) => h('div', {
