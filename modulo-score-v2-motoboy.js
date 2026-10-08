@@ -22,6 +22,19 @@
         return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
     }
 
+    // SCORE_FMT_V1: números dos requisitos do score para exibição.
+    // % → no máximo 1 casa, vírgula (85,7%) | contagens → inteiro.
+    // Antes saía o float cru do backend (85.71%, 1.0600000000000023 %).
+    function fmtReq(v, suf) {
+        const n = parseFloat(String(v).replace(',', '.'));
+        if (!isFinite(n)) return String(v == null ? '-' : v) + (suf || '');
+        if (suf === '%') {
+            return n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+        }
+        return Math.round(n).toLocaleString('pt-BR') + (suf || '');
+    }
+    window.TuttsScoreFmtReq = fmtReq; // usado também pelo card "Meu Score" da home (app.js)
+
     // ============================================================
     // TELA COMPLETA DE SCORE (motoboy)
     // ============================================================
@@ -212,7 +225,7 @@
                     const atualN = parseFloat(String(r.atual).replace(',', '.'));
                     const metaN = parseFloat(String(r.meta).replace(',', '.'));
                     const falta = (!ok && isFinite(atualN) && isFinite(metaN) && metaN > atualN)
-                        ? ('Faltam ' + (Math.round((metaN - atualN) * 100) / 100) + suf + ' pra ' + (proxNome || 'o próximo nível'))
+                        ? ('Faltam ' + fmtReq(metaN - atualN, suf) + ' pra ' + (proxNome || 'o próximo nível'))
                         : null;
                     return h('div', { key: i },
                         h('div', { className: 'flex items-center justify-between mb-1.5' },
@@ -223,9 +236,9 @@
                                 r.label
                             ),
                             h('span', { className: 'text-xs font-bold', style: { fontVariantNumeric: 'tabular-nums' } },
-                                h('span', { className: 'text-gray-900' }, r.atual + suf),
+                                h('span', { className: 'text-gray-900' }, fmtReq(r.atual, suf)),
                                 h('span', { className: 'text-gray-400' }, ' / '),
-                                h('span', { className: 'text-gray-500' }, r.meta + suf)
+                                h('span', { className: 'text-gray-500' }, fmtReq(r.meta, suf))
                             )
                         ),
                         h('div', { style: { height: 7, borderRadius: 999, background: '#eef0f3', overflow: 'hidden' } },
@@ -860,11 +873,15 @@
                     ),
                     h('div', { className: 'space-y-2' }, progresso.requisitos.map((r, i) => h('div', { key: i },
                         h('div', { className: 'flex items-center justify-between text-xs mb-1' },
-                            h('span', { className: 'text-gray-700' }, (r.ok ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))) + r.label),
-                            h('span', { className: 'text-gray-500 font-mono' }, r.atual + (r.sufixo || ''))
+                            // SCORE_FMT_V1: o ícone virou elemento (SVG) — concatenar com "+" gerava "[object Object]".
+                            h('span', { className: 'flex items-center gap-1.5 text-gray-700' },
+                                h("svg", { className: "ico", style: { width: 14, height: 14, flexShrink: 0, color: r.ok ? "#16a34a" : "#d97706" }, "aria-hidden": "true" }, h("use", { href: r.ok ? "#i-check" : "#i-target" })),
+                                r.label
+                            ),
+                            h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, fmtReq(r.atual, r.sufixo || '') + ' / ' + fmtReq(r.meta, r.sufixo || ''))
                         ),
                         h('div', { className: 'w-full bg-gray-200 rounded-full h-1.5' },
-                            h('div', { className: 'h-full bg-purple-500 rounded-full', style: { width: r.pct + '%' } })
+                            h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, parseFloat(r.pct) || 0) + '%', background: r.ok ? '#22c55e' : '#a855f7' } })
                         )
                     )))
                 ),

@@ -3540,7 +3540,15 @@ const hideLoadingScreen = () => {
                                 const pctMedio = Math.round(reqs.reduce((s, r) => s + r.pct, 0) / reqs.length);
                                 window._tuttsScoreProgressoPct = pctMedio;
                                 window._tuttsScoreProgressoTexto = naoOk.length > 0
-                                    ? "Faltam " + (referencia.meta - referencia.atual) + " " + (referencia.metrica === "entregas" ? "entregas" : referencia.metrica === "dias_16h" ? "entregas após 16h" : "%") + " pro " + (dados.progresso.proximo_nivel === 3 ? "Ouro" : dados.progresso.proximo_nivel === 2 ? "Prata" : "Bronze")
+                                    // SCORE_FMT_V1: diferença arredondada (antes "Faltam 1.0600000000000023 % pro Ouro")
+                                    ? (function () {
+                                        const _dif = (parseFloat(referencia.meta) || 0) - (parseFloat(referencia.atual) || 0);
+                                        const _ehPct = referencia.metrica === "pct_prazo" || referencia.sufixo === "%";
+                                        const _qtd = _ehPct
+                                            ? _dif.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "% no prazo"
+                                            : Math.ceil(_dif).toLocaleString("pt-BR") + " " + (referencia.metrica === "dias_16h" ? (Math.ceil(_dif) === 1 ? "dia com entrega após 16h" : "dias com entrega após 16h") : (Math.ceil(_dif) === 1 ? "entrega" : "entregas"));
+                                        return "Faltam " + _qtd + " pro " + (dados.progresso.proximo_nivel === 3 ? "Ouro" : dados.progresso.proximo_nivel === 2 ? "Prata" : "Bronze");
+                                    })()
                                     : "Você atingiu todos os critérios!";
                             } else {
                                 window._tuttsScoreProgressoPct = 100;
