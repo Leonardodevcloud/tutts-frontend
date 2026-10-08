@@ -627,7 +627,7 @@ let SISTEMA_MODULOS_CONFIG = [
       abas: [{id: "panorama", label: "Panorama"}, {id: "principal", label: "Principal"}, {id: "faltosos", label: "Faltosos"}, {id: "espelho", label: "Espelho"}, {id: "relatorios", label: "Relatórios"}, {id: "motoboys", label: "Motoboys"}, {id: "restricoes", label: "Restrições"}, {id: "config", label: "Configurações"}]
     },
     { id: "bi", label: "BI", icon: "📊",
-      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "escala", label: "Disponibilidade"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Upload"}, {id: "config", label: "Configurações"}, {id: "portais-cliente", label: "Portais Cliente"}]
+      abas: [{id: "home-bi", label: "Home"}, {id: "dashboard", label: "Dashboard"}, {id: "profissionais", label: "Por Profissional"}, {id: "escala", label: "Disponibilidade"}, {id: "garantido", label: "Garantido"}, {id: "os", label: "Análise por OS"}, {id: "cliente767", label: "Cliente 767"}, {id: "chat-ia", label: "Chat IA"}, {id: "relatorio-ia", label: "Relatório IA"}, {id: "upload", label: "Importação"}, {id: "config", label: "Configurações"}, {id: "portais-cliente", label: "Portais Cliente"}]
     },
     { id: "bi-monitoramento", label: "BI Monitoramento", icon: "📡", admin: true, abas: [] },
     { id: "todo", label: "TO-DO", icon: "📝",
@@ -17256,8 +17256,8 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
                                     React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" }))
                                 ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Upload"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Importação de planilhas e gerenciamento de dados operacionais.")
+                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Importação"),
+                                React.createElement("p", {className: "text-xs text-gray-500"}, "O agente baixa a planilha do sistema e atualiza o BI. Histórico e fila de importações.")
                             )
                         ),
                         
@@ -19304,48 +19304,19 @@ const hideLoadingScreen = () => {
                 className: "bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-center text-sm text-yellow-700"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, iconeSvg("alert", { color: "#d97706" }), "Mostrando 200 de " + totalOS + " OS. Use os filtros ou a busca por número para refinar."))
             );
-            })(), "upload" === Et && React.createElement("div", {
-                className: "space-y-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-6"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Upload de Planilha")),
-                        // === 2026-04 v3 — Layout 2 cards + historico unificado ===
-            React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4" },
-                
-                // CARD AUTOMATICO (RPA)
-                React.createElement("div", { className: "bg-white rounded-xl shadow p-5" },
-                    window.BiImportAutoTab
-                        ? React.createElement(window.BiImportAutoTab, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja, hideHistorico: true })
-                        : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de importacao automatica...")
-                ),
-                
-                // CARD MANUAL
-                React.createElement("div", { className: "bg-white rounded-xl shadow p-5" },
-                    React.createElement("div", { className: "flex items-center gap-2 mb-1" },
-                        React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })),
-                        React.createElement("h3", { className: "text-base font-semibold text-purple-900" }, "Upload Manual")
-                    ),
-                    React.createElement("p", { className: "text-xs text-purple-700 mb-3" }, "Arraste ou selecione planilhas Excel"),
-                    // Upload Manual
-            React.createElement("div", {
-                className: "border-2 border-dashed border-purple-300 rounded-xl p-10 text-center bg-purple-50"
-            }, React.createElement("p", {
-                className: "text-5xl mb-4"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" }))), React.createElement("p", {
-                className: "text-purple-700 font-semibold mb-2"
-            }, "Arraste ou selecione planilhas Excel"), React.createElement("p", {
-                className: "text-purple-600 text-sm mb-4"
-            }, "Você pode selecionar múltiplos arquivos • Apenas OS novas serão inseridas"), Ea ? React.createElement("div", null, React.createElement("div", {
-                className: "animate-spin text-4xl mb-2"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }))), React.createElement("p", {
-                className: "text-purple-600 text-sm"
-            }, Ea)) : React.createElement(React.Fragment, null, React.createElement("input", {
-                type: "file",
-                accept: ".xlsx,.xls",
-                multiple: true,
-                onChange: async (e) => {
+            })(), "upload" === Et && (
+                // BI_IMPORT_REDESIGN_V1: aba "Importação" redesenhada (modulo-bi-import.js).
+                // Removidos: Atualizar Alocação, Inicializar Prazos DAX e o histórico unificado
+                // duplicado. Upload manual e Recalcular prazos ficam em "Ferramentas avançadas".
+                window.BiImportAutoTab
+                    ? React.createElement(window.BiImportAutoTab, {
+                        API_URL: API_URL,
+                        fetchAuth: fetchAuth,
+                        showToast: ja,
+                        uploadManualStatus: Ea,
+                        onRecalcularPrazos: xl,
+                        recalculando: ba,
+                        onUploadManual: async (e) => {
                     const arquivos = Array.from(e.target.files);
                     if (arquivos.length === 0) return;
                     
@@ -19475,130 +19446,10 @@ const hideLoadingScreen = () => {
                     } else {
                         ja("❌ Nenhum arquivo foi processado", "error");
                     }
-                },
-                className: "hidden",
-                id: "bi-upload-file"
-            }), React.createElement("label", {
-                htmlFor: "bi-upload-file",
-                className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-purple-700 inline-block"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" })), "Selecionar Arquivo(s)"))),
-            // Botão para atualizar alocação em registros existentes
-            React.createElement("div", {
-                className: "mt-4 pt-4 border-t border-purple-200"
-            }, React.createElement("p", {
-                className: "text-purple-600 text-sm mb-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar apenas Data/Hora Alocado (para registros existentes):")), React.createElement("input", {
-                type: "file",
-                accept: ".xlsx,.xls",
-                multiple: true,
-                onChange: async (e) => {
-                    const arquivos = Array.from(e.target.files);
-                    if (arquivos.length === 0) return;
-                    
-                    let totalAtualizados = 0;
-                    let totalErros = 0;
-                    
-                    for (const arquivo of arquivos) {
-                        try {
-                            ha(`Atualizando alocação de ${arquivo.name}...`);
-                            
-                            const t = await arquivo.arrayBuffer();
-                            const a = XLSX.read(t, { type: "array" });
-                            const sheet = a.Sheets[a.SheetNames[0]];
-                            const r = XLSX.utils.sheet_to_json(sheet);
-                            
-                            const entregas = r.map(row => ({
-                                os: row.OS,
-                                ponto: row.Ponto || row['Ponto_Entrega'] || 1,
-                                data_hora_alocado: row["Data/Hora Alocado"]
-                            })).filter(e => e.os && e.data_hora_alocado);
-                            
-                            if (entregas.length === 0) {
-                                console.log("Nenhum registro com Data/Hora Alocado encontrado");
-                                continue;
-                            }
-                            
-                            ha(`Enviando ${entregas.length} registros para atualização...`);
-                            
-                            const response = await fetchAuth(`${API_URL}/bi/entregas/atualizar-alocado`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ entregas })
-                            });
-                            
-                            const result = await response.json();
-                            if (result.success) {
-                                totalAtualizados += result.atualizados || 0;
-                                totalErros += result.erros || 0;
-                            }
-                        } catch (err) {
-                            console.error(`Erro em ${arquivo.name}:`, err);
-                            totalErros++;
-                        }
-                    }
-                    
-                    ha(null);
-                    if (totalAtualizados > 0) {
-                        ja(`${totalAtualizados} registros atualizados com Data/Hora Alocado!`, "success");
-                        el(); // Recarregar dashboard
-                    } else {
-                        ja(`Nenhum registro atualizado. Verifique se a planilha tem a coluna "Data/Hora Alocado"`, "warning");
-                    }
-                    e.target.value = "";
-                },
-                className: "hidden",
-                id: "bi-update-alocado-file"
-            }), React.createElement("label", {
-                htmlFor: "bi-update-alocado-file",
-                className: "px-4 py-2 bg-pink-500 text-white rounded-lg font-semibold cursor-pointer hover:bg-pink-600 inline-block text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Atualizar Alocação"))), 
-            // Botão para inicializar prazos DAX
-            React.createElement("div", {
-                className: "mt-4 pt-4 border-t border-green-200"
-            }, React.createElement("p", {
-                className: "text-green-600 text-sm mb-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Inicializar prazos com regras do DAX (cliente 767 = 2h fixo, outros = faixas por km):")), React.createElement("button", {
-                onClick: async () => {
-                    if (!confirm("Isso vai atualizar todos os prazos com as regras do DAX. Continuar?")) return;
-                    ha("Inicializando prazos DAX...");
-                    try {
-                        const r = await fetchAuth(`${API_URL}/bi/inicializar-prazos-dax`, { method: "POST" });
-                        const j = await r.json();
-                        if (j.success) {
-                            ja(`Prazos inicializados! ${j.registrosAtualizados} registros atualizados`, "success");
-                            el();
-                        } else {
-                            ja(`Erro: ${j.error}`, "error");
-                        }
-                    } catch (err) {
-                        ja(`Erro: ${err.message}`, "error");
-                    }
-                    ha(null);
-                },
-                className: "px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Inicializar Prazos DAX"))))),
-                )
-            ),
-            
-            // HISTORICO UNIFICADO (manual + RPA combinados)
-            window.BiHistoricoUnificado
-                ? React.createElement(window.BiHistoricoUnificado, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja })
-                : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do historico unificado..."),
-            
-            // RECALCULAR PRAZOS
-            React.createElement("div", {
-                className: "bg-blue-50 border border-blue-200 rounded-xl p-4"
-            }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", null, React.createElement("h4", {
-                className: "font-semibold text-blue-800"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Recalcular Prazos")), React.createElement("p", {
-                className: "text-sm text-blue-600"
-            }, "Após alterar configurações de prazo, recalcule para atualizar os dados")), React.createElement("button", {
-                onClick: xl,
-                disabled: ba,
-                className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-            }, ba ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Recalculando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Recalcular"))))), 
+                }
+                    })
+                    : React.createElement("div", { className: "bg-white rounded-2xl border border-violet-100 p-6 text-sm text-gray-500" }, "Carregando a tela de importação...")
+            ), 
             
             // ========== ABA RELATÓRIO IA ==========
             "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
