@@ -30,6 +30,9 @@
     const [dataManual, setDataManual] = useState('');
     const [linhaExpandida, setLinhaExpandida] = useState(null); // id da linha com log aberto
     const [historicoAberto, setHistoricoAberto] = useState(false); // histórico recolhido por padrão
+    // REPROCESSO_PENDENTES_V2: OS que ficaram em aberto no BI (entraram em execução e não foram atualizadas)
+    const [abertas, setAbertas] = useState(null);           // { total_os, janela_dias, datas: [{data_ref, qtd_os, em_fila}] }
+    const [reprocessando, setReprocessando] = useState(false);
 
     const filtrosRef = useRef(filtros);
     filtrosRef.current = filtros;
@@ -62,7 +65,32 @@
       }
     }, [fetchAuth, API_URL]);
 
-    useEffect(() => { carregar(); }, []);
+    // REPROCESSO_PENDENTES_V2
+    const carregarAbertas = useCallback(async () => {
+      try {
+        const r = await fetchAuth(`${API_URL}/agent/bi-import/abertas`);
+        if (r.ok) setAbertas(await r.json());
+      } catch { /* silencioso: o card só não mostra o resumo */ }
+    }, [fetchAuth, API_URL]);
+
+    async function handleReprocessar() {
+      setReprocessando(true);
+      try {
+        const r = await fetchAuth(`${API_URL}/agent/bi-import/reprocessar-abertas`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) { showToastFn(d.erro || 'Não foi possível agendar o reprocesso. Tente de novo.', 'error'); return; }
+        showToastFn(d.mensagem || 'Reprocesso agendado.', d.criados && d.criados.length ? 'success' : 'info');
+        if (d.resumo) setAbertas(d.resumo);
+        setHistoricoAberto(true);
+        carregar(1, filtrosRef.current);
+      } catch {
+        showToastFn('Falha de conexão ao agendar o reprocesso.', 'error');
+      } finally {
+        setReprocessando(false);
+      }
+    }
+
+    useEffect(() => { carregar(); carregarAbertas(); }, []);
 
     const totalPaginas = Math.ceil(total / PER_PAGE);
     const aplicarFiltros = () => carregar(1, filtros);
@@ -194,6 +222,28 @@
           }, enviando ? 'Processando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-rocket" })), 'Importar agora'))
         ),
 
+        // REPROCESSO_PENDENTES_V2: OS em aberto + reprocesso manual
+        h('div', { className: 'mt-4 pt-4 border-t border-purple-200 flex items-start justify-between gap-3 flex-wrap' },
+          h('div', { className: 'flex-1 min-w-[220px]' },
+            h('div', { className: 'text-xs font-semibold text-purple-900 inline-flex items-center gap-1.5' },
+              h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })),
+              'OS em aberto no BI (últimos ' + ((abertas && abertas.janela_dias) || 7) + ' dias)'
+            ),
+            h('p', { className: 'text-xs text-purple-700 mt-1' },
+              abertas == null ? 'Verificando...'
+                : abertas.total_os === 0 ? 'Nenhuma OS em aberto — tudo atualizado.'
+                : abertas.total_os + ' OS sem finalização em ' + abertas.datas.length + (abertas.datas.length === 1 ? ' data' : ' datas') + ': ' +
+                  abertas.datas.map(x => fmtDataRef(x.data_ref) + ' (' + x.qtd_os + (x.em_fila ? ', na fila' : '') + ')').join(' · ')
+            ),
+            h('p', { className: 'text-[11px] text-purple-500 mt-1' }, 'O sistema reimporta essas datas sozinho a cada hora (9h–19h). Use o botão para fazer agora.')
+          ),
+          h('button', {
+            onClick: handleReprocessar,
+            disabled: reprocessando || (abertas && abertas.total_os === 0),
+            className: 'px-4 py-2 bg-white border border-purple-400 text-purple-700 rounded-lg text-sm font-semibold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed',
+          }, reprocessando ? 'Agendando...' : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), 'Reprocessar OS em aberto agora'))
+        ),
+
         // Progresso ao vivo
         jobAtivo && h('div', { className: 'mt-4 p-3 bg-white rounded-lg border border-purple-200' },
           h('div', { className: 'flex items-center justify-between mb-2' },
@@ -272,7 +322,9 @@
               className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm',
             },
               h('option', { value: '' }, 'Todas'),
-              h('option', { value: 'cron' }, 'Cron (12h)'),
+              h('option', { value: 'cron' }, 'Cron D-1 (12h)'),
+              h('option', { value: 'cron_dia' }, 'Cron do dia'),
+              h('option', { value: 'reprocesso' }, 'Reprocesso'),
               h('option', { value: 'manual' }, 'Manual')
             )
           ),
@@ -331,6 +383,8 @@
                         // BI_CRON_DIA_V1: 'cron' = fechamento D-1 (12h); 'cron_dia' = dia corrente (demais horarios)
                         r.origem === 'cron'
                           ? h('span', { className: 'px-2 py-1 bg-purple-100 text-purple-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), "Cron D-1"))
+                          : r.origem === 'reprocesso' // REPROCESSO_PENDENTES_V2
+                          ? h('span', { className: 'px-2 py-1 bg-sky-100 text-sky-700 rounded', title: 'Reimportação de uma data que tinha OS em aberto no BI' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), "Reprocesso"))
                           : r.origem === 'cron_dia'
                           ? h('span', { className: 'px-2 py-1 bg-emerald-100 text-emerald-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Cron do dia"))
                           : h('span', { className: 'px-2 py-1 bg-blue-100 text-blue-700 rounded' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Manual"))
@@ -344,9 +398,10 @@
                         r.status === 'sucesso'
                           ? h('div', null,
                               h('div', { className: 'font-semibold text-green-700' }, `${r.linhas_inseridas || 0} novas`),
-                              h('div', { className: 'text-gray-500' }, `${r.linhas_ignoradas || 0} ignoradas / ${r.total_linhas || 0} total`)
+                              h('div', { className: 'text-gray-500' }, `${r.linhas_ignoradas || 0} ignoradas / ${r.total_linhas || 0} total`),
+                              r.detalhe && h('div', { className: 'text-sky-700 mt-0.5' }, r.detalhe) // REPROCESSO_PENDENTES_V2
                             )
-                          : (r.total_linhas ? `${r.total_linhas} totais` : '—')
+                          : (r.detalhe ? h('div', { className: 'text-sky-700' }, r.detalhe) : (r.total_linhas ? `${r.total_linhas} totais` : '—'))
                       ),
                       h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, r.usuario_nome || '—'),
                       h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, fmtData(r.criado_em)),
