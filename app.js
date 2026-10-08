@@ -1682,7 +1682,7 @@ const hideLoadingScreen = () => {
                         ),
                         semMedicao > 0 && React.createElement("p", {
                             className: "text-[10px] text-amber-700 mt-0.5"
-                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), " sem horário")
+                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), " com horário inconsistente") // BI_SO_CONCLUIDAS_V1
                     )
                 ),
                 React.createElement("div", { className: "flex items-center gap-2" },
@@ -1705,10 +1705,11 @@ const hideLoadingScreen = () => {
                 React.createElement("svg", { className: "ico", style: { width: 12, height: 12, flexShrink: 0, marginTop: 1 }, "aria-hidden": "true" },
                     React.createElement("use", { href: "#i-info" })),
                 React.createElement("span", null,
-                    "Calculado sobre ", total.toLocaleString('pt-BR'), " entregas. ",
+                    // BI_SO_CONCLUIDAS_V1: o BI conta só corridas concluídas
+                    "Calculado sobre ", total.toLocaleString('pt-BR'), " entregas concluídas (corridas em andamento não entram). ",
                     semMedicao > 0
-                        ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega sem horário de conclusão na Mapp foi contada" : " entregas sem horário de conclusão na Mapp foram contadas") + " como no prazo, para a falta de registro não derrubar o SLA.")
-                        : "Todas com horário de conclusão registrado."
+                        ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída tem horário inconsistente na Mapp (ex.: finalização antes da criação) e foi contada" : " entregas concluídas têm horário inconsistente na Mapp (ex.: finalização antes da criação) e foram contadas") + " como no prazo.")
+                        : "Todas com horário registrado."
                 )
             )
         );
@@ -18615,7 +18616,7 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-center bg-green-50"}, 
                                 React.createElement("div", {className: "text-green-700 font-bold"}, nl(e.dentro_prazo).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentro >= 80 ? "bg-green-100 text-green-700" : pctDentro >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentro.toFixed(1), "%"),
-                                nl(e.sem_prazo) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de conclusão na Mapp — contadas como no prazo"}, "inclui ", nl(e.sem_prazo), " sem horário")
+                                nl(e.sem_prazo) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo"}, "inclui ", nl(e.sem_prazo), " com horário inconsistente")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-red-50"}, 
                                 React.createElement("div", {className: "text-red-700 font-bold"}, nl(e.fora_prazo).toLocaleString("pt-BR")),
@@ -18624,7 +18625,7 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
                                 React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%"),
-                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de alocação/conclusão — contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem horário")
+                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Horário de alocação/conclusão inconsistente na Mapp — contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " com horário inconsistente")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
                                 React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
