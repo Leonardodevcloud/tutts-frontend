@@ -1621,7 +1621,7 @@ const hideLoadingScreen = () => {
     // PRAZO_SEM_HORARIO_NO_PRAZO_V1: semMedicao = quantas das "no prazo" sao
     // entregas SEM horario na Mapp. Contam como no prazo (falta de dado nao
     // derruba o SLA) e o card explica o calculo no rodape.
-    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, semMedicao: semProp, titulo, corDentro, corFora }) => {
+    DonutPrazo = ({ dentro: dentroProp, fora: foraProp, semMedicao: semProp, titulo, corDentro, corFora, tipoSem }) => { // PRAZO_REGRA_17H_V1: tipoSem 'prof' = sem alocação
         const dentro = Number(dentroProp) || 0;
         const fora = Number(foraProp) || 0;
         const semMedicao = Number(semProp) || 0;
@@ -1682,7 +1682,7 @@ const hideLoadingScreen = () => {
                         ),
                         semMedicao > 0 && React.createElement("p", {
                             className: "text-[10px] text-amber-700 mt-0.5"
-                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), " com horário inconsistente") // BI_SO_CONCLUIDAS_V1
+                        }, "inclui ", semMedicao.toLocaleString('pt-BR'), tipoSem === "prof" ? " sem alocação" : " com horário inconsistente") // BI_SO_CONCLUIDAS_V1 / PRAZO_REGRA_17H_V1
                     )
                 ),
                 React.createElement("div", { className: "flex items-center gap-2" },
@@ -1708,7 +1708,9 @@ const hideLoadingScreen = () => {
                     // BI_SO_CONCLUIDAS_V1: o BI conta só corridas concluídas
                     "Calculado sobre ", total.toLocaleString('pt-BR'), " entregas concluídas (corridas em andamento não entram). ",
                     semMedicao > 0
-                        ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída tem horário inconsistente na Mapp (ex.: finalização antes da criação) e foi contada" : " entregas concluídas têm horário inconsistente na Mapp (ex.: finalização antes da criação) e foram contadas") + " como no prazo.")
+                        ? (tipoSem === "prof"
+                            ? (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída não tem horário de alocação na Mapp — o prazo do profissional não pode ser medido e ela foi contada" : " entregas concluídas não têm horário de alocação na Mapp — o prazo do profissional não pode ser medido e elas foram contadas") + " como no prazo.")
+                            : (semMedicao.toLocaleString('pt-BR') + (semMedicao === 1 ? " entrega concluída tem horário inconsistente na Mapp (ex.: finalização antes da criação) e foi contada" : " entregas concluídas têm horário inconsistente na Mapp (ex.: finalização antes da criação) e foram contadas") + " como no prazo."))
                         : "Todas com horário registrado."
                 )
             )
@@ -17384,6 +17386,7 @@ const hideLoadingScreen = () => {
                         dentro: nl(ft?.dentro_prazo_prof),
                         fora: nl(ft?.fora_prazo_prof),
                         semMedicao: nl(ft?.sem_prazo_prof), // PRAZO_SEM_HORARIO_NO_PRAZO_V1
+                        tipoSem: "prof", // PRAZO_REGRA_17H_V1
                         titulo: "Prazo Profissional",
                         corDentro: CORES_BI.info,
                         corFora: CORES_BI.aviso
@@ -17571,11 +17574,11 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-purple-600"
             }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contadas como no prazo" }, "inclui ", nl(e.sem_prazo), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(e.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
-            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contadas como no prazo" }, "inclui ", nl(e.sem_prazo_prof), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(e.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -17612,11 +17615,11 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-orange-500"
             }, nl(a.total_retornos || 0).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-600 bg-green-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contadas como no prazo" }, "inclui ", nl(a.sem_prazo), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(a.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-600 bg-red-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
-            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contadas como no prazo" }, "inclui ", nl(a.sem_prazo_prof), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(a.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
@@ -17645,11 +17648,11 @@ const hideLoadingScreen = () => {
                 className: "px-2 py-2 text-right text-purple-700"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-green-700 bg-green-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de conclusão na Mapp — contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-red-700 bg-red-100"
             }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
-            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação/conclusão — contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo_prof), " sem horário") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
+            }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo_prof), " sem alocação") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
                 className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
             }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
@@ -18625,7 +18628,7 @@ const hideLoadingScreen = () => {
                             React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
                                 React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
                                 React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%"),
-                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Horário de alocação/conclusão inconsistente na Mapp — contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " com horário inconsistente")
+                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de alocação na Mapp — prazo do profissional não medido, contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem alocação")
                             ), 
                             React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
                                 React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
