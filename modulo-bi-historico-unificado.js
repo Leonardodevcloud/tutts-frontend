@@ -160,13 +160,21 @@
                   dados.map(function(item) {
                     return h('tr', { key: item.origem + '-' + item.id, className: 'border-b border-gray-100 hover:bg-purple-50' },
                       h('td', { className: 'py-2 px-2' },
+                        // REPROCESSO_PENDENTES_V1: reimportação automática de OS que ficaram em aberto
+                        item.origem_job === 'reprocesso' ? h('span', {
+                          className: 'inline-block px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold',
+                          title: 'Reimportação automática de uma data que tinha OS em aberto (em execução, sem finalização) no BI'
+                        }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-refresh" })), 'Reprocesso')) :
                         h('span', {
                           className: item.origem === 'auto'
                             ? 'inline-block px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-semibold'
                             : 'inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold'
                         }, item.origem === 'auto' ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bot" })), 'Auto') : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), 'Manual'))
                       ),
-                      h('td', { className: 'py-2 px-2 text-gray-800' }, item.arquivo || '-'),
+                      h('td', { className: 'py-2 px-2 text-gray-800' },
+                        h('div', null, item.arquivo || '-'),
+                        item.detalhe && h('div', { className: 'text-[11px] text-gray-500 mt-0.5' }, item.detalhe)
+                      ),
                       h('td', { className: 'py-2 px-2 text-gray-600' }, item.por || '-'),
                       h('td', { className: 'py-2 px-2 text-right font-semibold text-green-700' },
                         Number(item.linhas || 0).toLocaleString('pt-BR')
