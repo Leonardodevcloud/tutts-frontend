@@ -7190,7 +7190,8 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error("Erro ao carregar sugestões:", e)
             }
-        }, Xa = () => {
+        }, Xa = (filtrosArg) => _montarParamsBI(filtrosArg || ua), // BI-OS-LISTA-V2: aceita filtros explícitos
+        _montarParamsBI = (ua) => {
             const e = new URLSearchParams;
             ua.data_inicio && e.append("data_inicio", ua.data_inicio), ua.data_fim && e.append("data_fim", ua.data_fim);
             
@@ -7584,6 +7585,58 @@ const hideLoadingScreen = () => {
                 carregarHistoricoRelatoriosIA();
             }
         }, [Et]);
+
+        // ==================== BI-OS-LISTA-V2: Análise por OS sincronizada com os filtros ====================
+        // Antes a lista (qt) só era carregada dentro do ol() (botão "Aplicar Filtros").
+        // Entrar na aba (card da Home BI, barra de abas, F5 com aba persistida) ou trocar
+        // filtros por outro caminho (Limpar, ll() ao entrar no módulo) deixava a lista
+        // vazia ou com dados de um filtro antigo. Agora a aba compara a "chave" dos filtros
+        // exibidos com a chave da última carga e recarrega sozinha quando divergem.
+        const [osBusca, setOsBusca] = useState("");
+        const [osBuscaRemota, setOsBuscaRemota] = useState(null);
+        const [osListaLoading, setOsListaLoading] = useState(false);
+        const osListaKeyRef = React.useRef(null);
+        const osListaSeqRef = React.useRef(0);
+        function chaveFiltroOS(f) {
+            f = f || {};
+            return JSON.stringify([
+                f.data_inicio || "", f.data_fim || "",
+                f.cod_cliente || [], f.centro_custo || [],
+                f.categorias || (f.categoria ? [f.categoria] : []),
+                f.regiao || "", f.cod_prof || "", f.cidade || "",
+                f.status_prazo || "", f.status_retorno || "", f.tipo_operacao || "",
+                // dependências da resolução região/CC feita no _montarParamsBI
+                (aa || []).length, Object.keys(Tt || {}).length, Array.isArray(kt) ? kt.length : 0
+            ]);
+        }
+        const osFiltroKey = chaveFiltroOS(ua);
+        useEffect(() => {
+            if (Ee !== "bi" || Et !== "os" || wa || ba) return;      // fora da aba, modal aberto ou BI carregando
+            if (!Array.isArray(Ft) || Ft.length === 0) return;       // ll() ainda não trouxe as datas/filtros
+            if (osListaKeyRef.current === osFiltroKey) return;       // lista já corresponde aos filtros exibidos
+            carregarListaOS(ua);
+        }, [Ee, Et, wa, ba, osFiltroKey, Array.isArray(Ft) ? Ft.length : 0]);
+
+        // Busca por nº de OS: filtra local na hora; se não achar na lista carregada
+        // (fora do filtro/período ou além do limite), busca direto na base.
+        const osTermoBusca = String(osBusca || "").replace(/[^0-9]/g, "");
+        const osTemLocal = !!osTermoBusca && (Array.isArray(qt) ? qt : []).some(r => String(r.os).indexOf(osTermoBusca) !== -1);
+        useEffect(() => {
+            if (Ee !== "bi" || Et !== "os" || osTermoBusca.length < 4 || osTemLocal) { setOsBuscaRemota(null); return; }
+            let cancelado = false;
+            setOsBuscaRemota({ termo: osTermoBusca, linhas: [], loading: true });
+            const timer = setTimeout(async () => {
+                try {
+                    const resp = await fetchAuth(`${API_URL}/bi/entregas-lista?os=${encodeURIComponent(osTermoBusca)}`);
+                    const data = resp.ok ? await resp.json() : [];
+                    if (!cancelado) setOsBuscaRemota({ termo: osTermoBusca, linhas: Array.isArray(data) ? data : [], loading: false, erro: !resp.ok });
+                } catch (err) {
+                    console.error("Erro na busca de OS:", err);
+                    if (!cancelado) setOsBuscaRemota({ termo: osTermoBusca, linhas: [], loading: false, erro: true });
+                }
+            }, 450);
+            return () => { cancelado = true; clearTimeout(timer); };
+        }, [Ee, Et, osTermoBusca, osTemLocal]);
         
         // Função para toggle de tipo de relatório
         const toggleRelatorioIATipo = (tipo) => {
@@ -8050,11 +8103,36 @@ const hideLoadingScreen = () => {
             a.length > 0 && (c = c.filter(e => a.includes(String(e.cod_cliente)))), e.centro_custo && e.centro_custo.length > 0 && (c = c.filter(t => e.centro_custo.includes(t.centro_custo)));
             const s = [...new Set(c.map(e => e.categoria).filter(e => e))];
             xa(s.sort())
+        }, carregarListaOS = async (f) => {
+            // BI-OS-LISTA-V2: carga única da lista da Análise por OS.
+            // Usa o mesmo montador de params do dashboard (região → clientes, CC local, categorias multi).
+            const filtros = f || ua;
+            osListaKeyRef.current = chaveFiltroOS(filtros);
+            const seq = ++osListaSeqRef.current;
+            setOsListaLoading(true);
+            try {
+                const params = Xa(filtros);
+                console.log("📋 entregas-lista params:", params.toString());
+                const resp = await fetchAuth(`${API_URL}/bi/entregas-lista?${params}`);
+                if (!resp.ok) throw new Error("HTTP " + resp.status);
+                const data = await resp.json();
+                if (seq !== osListaSeqRef.current) return; // resposta obsoleta (filtro mudou no meio)
+                Ut(Array.isArray(data) ? data : []);
+            } catch (err) {
+                if (seq !== osListaSeqRef.current) return;
+                console.error("Erro ao carregar lista de OS:", err);
+                osListaKeyRef.current = null;
+                ja("Erro ao carregar a lista de OS", "error");
+            } finally {
+                if (seq === osListaSeqRef.current) setOsListaLoading(false);
+            }
         }, ol = async e => {
             try {
                 Ra(!0);
                 // Limpar dados expandidos de profissionais para forçar recarregamento com novos filtros
                 setProfOsExpandido({});
+                // BI-OS-LISTA-V2: lista de OS em paralelo com o dashboard (marca a chave antes do re-render)
+                carregarListaOS(e);
                 const t = new URLSearchParams;
                 e.data_inicio && t.append("data_inicio", e.data_inicio), e.data_fim && t.append("data_fim", e.data_fim);
                 
@@ -8233,33 +8311,6 @@ const hideLoadingScreen = () => {
                     porHora: l.porHora || []
                 }), Xt({});
                 
-                // Também recarregar a lista de OS com os mesmos filtros
-                // 🔧 FIX BI-OS-FILTROS (2026-04): antes usava e.cod_cliente/e.centro_custo
-                // raw, ignorando a resolução de região → clientes feita acima.
-                // Também faltava clientes_sem_filtro_cc (CC local por dono) e
-                // categorias multi (que vinham como categoria singular). Resultado:
-                // a aba Análise por OS retornava TODAS as OS independente do filtro
-                // de região/CC. Agora reusamos clientesParaEnviar/centrosCustoParaEnviar
-                // já resolvidos no fluxo principal acima.
-                const osParams = new URLSearchParams;
-                e.data_inicio && osParams.append("data_inicio", e.data_inicio);
-                e.data_fim && osParams.append("data_fim", e.data_fim);
-                clientesParaEnviar && clientesParaEnviar.length > 0 && osParams.append("cod_cliente", clientesParaEnviar.join(","));
-                centrosCustoParaEnviar && centrosCustoParaEnviar.length > 0 && osParams.append("centro_custo", centrosCustoParaEnviar.join(","));
-                clientesSemFiltroCC && clientesSemFiltroCC.length > 0 && osParams.append("clientes_sem_filtro_cc", clientesSemFiltroCC.join(","));
-                e.cod_prof && osParams.append("cod_prof", e.cod_prof);
-                // Categorias agora é array (e.categorias). Mantemos compat com e.categoria singular (legacy).
-                const _catsOS = e.categorias || (e.categoria ? [e.categoria] : []);
-                _catsOS.length > 0 && osParams.append("categoria", _catsOS.join(","));
-                e.cidade && osParams.append("cidade", e.cidade);
-                e.status_prazo && osParams.append("status_prazo", e.status_prazo);
-                e.status_retorno && osParams.append("status_retorno", e.status_retorno);
-                e.tipo_operacao && osParams.append("tipo_operacao", e.tipo_operacao);
-                console.log("📋 entregas-lista params:", osParams.toString());
-                const osResponse = await fetchAuth(`${API_URL}/bi/entregas-lista?${osParams}`);
-                const osData = await osResponse.json();
-                Ut(Array.isArray(osData) ? osData : []);
-                console.log("📋 Lista de OS recarregada com filtros");
             } catch (e) {
                 console.error("Erro ao carregar BI:", e)
             }
@@ -16525,6 +16576,7 @@ const hideLoadingScreen = () => {
                             };
                             ga(novoFiltro);
                             rl(novoFiltro);
+                            ol(novoFiltro); // BI-OS-LISTA-V2: antes limpava o chip mas os dados continuavam filtrados
                         },
                         className: "ml-auto px-2 py-1 text-xs text-red-600 hover:bg-red-100 rounded-full transition-colors"
                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar"))
@@ -18887,7 +18939,45 @@ const hideLoadingScreen = () => {
                 style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Componente BIGarantidoV2 não foi carregado. Verifique se BIGarantidoV2.js está no index.html antes do app.js."))),
             
-            "os" === Et && React.createElement("div", {
+            "os" === Et && (function() {
+                // ===== BI-OS-LISTA-V2: dados da aba (lista filtrada OU resultado da busca direta) =====
+                var termoBusca = osTermoBusca;
+                var remotoAtivo = !!(termoBusca && osBuscaRemota && osBuscaRemota.termo === termoBusca);
+                var dados = remotoAtivo ? (osBuscaRemota.linhas || []) : (Array.isArray(qt) ? qt : []);
+                var _osAgrupadas = {};
+                dados.forEach(function(row) {
+                    var osNum = row.os;
+                    if (!_osAgrupadas[osNum]) _osAgrupadas[osNum] = [];
+                    _osAgrupadas[osNum].push(row);
+                });
+                Object.keys(_osAgrupadas).forEach(function(os) {
+                    _osAgrupadas[os].sort(function(a, b) { return (parseInt(a.ponto) || 1) - (parseInt(b.ponto) || 1); });
+                });
+                var _osArray = Object.keys(_osAgrupadas).sort(function(a, b) { return parseInt(b) - parseInt(a); });
+                // status_prazo_prof é filtro client-side (campo calculado pelo backend). Não se aplica à busca direta.
+                if (ua.status_prazo_prof && !remotoAtivo) {
+                    _osArray = _osArray.filter(function(osNum) {
+                        var dpp = _osAgrupadas[osNum][0].dentro_prazo_prof;
+                        if (dpp === null || dpp === undefined) return true;
+                        if (ua.status_prazo_prof === "dentro") return dpp === true;
+                        if (ua.status_prazo_prof === "fora") return dpp === false;
+                        return true;
+                    });
+                }
+                if (termoBusca && !remotoAtivo) {
+                    _osArray = _osArray.filter(function(osNum) { return String(osNum).indexOf(termoBusca) !== -1; });
+                }
+                var totalOS = _osArray.length;
+                var buscandoRemoto = !!(osBuscaRemota && osBuscaRemota.loading && osBuscaRemota.termo === termoBusca);
+                var carregando = osListaLoading && !remotoAtivo;
+                var statusTexto = carregando ? "Carregando OS..." :
+                    buscandoRemoto ? "Buscando OS " + termoBusca + " na base..." :
+                    termoBusca ? (totalOS + (totalOS === 1 ? " OS encontrada" : " OS encontradas")) :
+                    (totalOS + (totalOS === 1 ? " OS" : " OS") + " no filtro");
+                var iconeSvg = function(nome, extra) {
+                    return React.createElement("svg", { className: "ico", style: Object.assign({ width: 16, height: 16 }, extra || {}), "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + nome }));
+                };
+                return React.createElement("div", {
                 className: "space-y-4"
             }, 
             // Header
@@ -18898,6 +18988,35 @@ const hideLoadingScreen = () => {
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Análise por OS")), React.createElement("p", {
                 className: "opacity-80"
             }, "Detalhamento de todas as ordens de serviço com pontos expandíveis")),
+            // BI-OS-BUSCA-V1: barra de busca por nº de OS
+            React.createElement("div", {
+                className: "bg-white rounded-xl shadow-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
+            },
+                React.createElement("div", { className: "relative w-full sm:w-80" },
+                    React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none flex" }, iconeSvg("search")),
+                    React.createElement("input", {
+                        type: "text",
+                        inputMode: "numeric",
+                        value: osBusca,
+                        onChange: function(ev) { setOsBusca(ev.target.value.replace(/[^0-9]/g, "")); },
+                        onKeyDown: function(ev) { if (ev.key === "Escape") setOsBusca(""); },
+                        placeholder: "Buscar pelo número da OS",
+                        "aria-label": "Buscar pelo número da OS",
+                        className: "w-full pl-9 pr-9 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    }),
+                    osBusca && React.createElement("button", {
+                        type: "button",
+                        onClick: function() { setOsBusca(""); },
+                        title: "Limpar busca",
+                        "aria-label": "Limpar busca",
+                        className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-purple-700 hover:bg-purple-50 flex"
+                    }, iconeSvg("x"))
+                ),
+                React.createElement("span", { className: "text-xs text-gray-500" }, statusTexto),
+                remotoAtivo && !osBuscaRemota.loading && totalOS > 0 && React.createElement("span", {
+                    className: "sm:ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-full text-xs"
+                }, iconeSvg("alert", { color: "#d97706" }), "Fora do filtro atual — resultado buscado em toda a base")
+            ),
             // Tabela principal
             React.createElement("div", {
                 className: "bg-white rounded-xl shadow-lg overflow-hidden"
@@ -18925,94 +19044,9 @@ const hideLoadingScreen = () => {
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "Prazo Prof"),
                 React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
             )), React.createElement("tbody", null, (function() {
-                // Agrupar dados por OS
-                var osAgrupadas = {};
-                var dados = Array.isArray(qt) ? qt : [];
-                dados.forEach(function(row) {
-                    var osNum = row.os;
-                    if (!osAgrupadas[osNum]) {
-                        osAgrupadas[osNum] = [];
-                    }
-                    osAgrupadas[osNum].push(row);
-                });
-                
-                // Ordenar cada grupo por ponto
-                Object.keys(osAgrupadas).forEach(function(os) {
-                    osAgrupadas[os].sort(function(a, b) {
-                        var pontoA = parseInt(a.ponto) || 1;
-                        var pontoB = parseInt(b.ponto) || 1;
-                        return pontoA - pontoB;
-                    });
-                });
-                
-                // Converter para array e ordenar por OS desc
-                var osArray = Object.keys(osAgrupadas).sort(function(a, b) {
-                    return parseInt(b) - parseInt(a);
-                });
-                
-                // Função para extrair data e hora (para filtro)
-                var parseDateTime = function(str) {
-                    if (!str) return null;
-                    var s = String(str);
-                    var match = s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-                    if (!match) return null;
-                    return {
-                        ano: parseInt(match[1]),
-                        mes: parseInt(match[2]),
-                        dia: parseInt(match[3]),
-                        hora: parseInt(match[4]),
-                        min: parseInt(match[5]),
-                        seg: parseInt(match[6]),
-                        dataStr: match[1] + '-' + match[2] + '-' + match[3]
-                    };
-                };
-                
-                // Função para calcular tempo com regras (para filtro)
-                var calcTempoFiltro = function(dataHoraInicio, dataHoraFim) {
-                    var inicio = parseDateTime(dataHoraInicio);
-                    var fim = parseDateTime(dataHoraFim);
-                    
-                    if (!inicio || !fim) return null;
-                    
-                    var mesmaData = inicio.dataStr === fim.dataStr;
-                    var inicioMinutos, fimMinutos;
-                    
-                    fimMinutos = fim.hora * 60 + fim.min + fim.seg / 60;
-                    
-                    if (!mesmaData) {
-                        inicioMinutos = 8 * 60;
-                    } else {
-                        inicioMinutos = inicio.hora * 60 + inicio.min + inicio.seg / 60;
-                    }
-                    
-                    var difMinutos = fimMinutos - inicioMinutos;
-                    if (difMinutos < 0) return null;
-                    return difMinutos;
-                };
-                
-                // Filtrar pelo status_prazo_prof se estiver selecionado
-                // Agora usa o campo dentro_prazo_prof calculado pelo backend
-                if (ua.status_prazo_prof) {
-                    osArray = osArray.filter(function(osNum) {
-                        var pontos = osAgrupadas[osNum];
-                        var primeiroReg = pontos[0];
-                        
-                        // Usar campo calculado pelo backend
-                        var dentroPrazoProf = primeiroReg.dentro_prazo_prof;
-                        
-                        if (dentroPrazoProf === null || dentroPrazoProf === undefined) return true;
-                        
-                        if (ua.status_prazo_prof === "dentro") {
-                            return dentroPrazoProf === true;
-                        } else if (ua.status_prazo_prof === "fora") {
-                            return dentroPrazoProf === false;
-                        }
-                        return true;
-                    });
-                }
-                
-                // Limitar a 200 resultados após filtro
-                osArray = osArray.slice(0, 200);
+                // BI-OS-LISTA-V2: agrupamento/filtros pré-computados no topo da aba
+                var osAgrupadas = _osAgrupadas;
+                var osArray = _osArray.slice(0, 200);
                 
                 // Estado para controlar expansão (usando window para persistir)
                 if (!window.osExpandidas) window.osExpandidas = {};
@@ -19249,15 +19283,20 @@ const hideLoadingScreen = () => {
                     return rows;
                 }).flat();
             })())))),
+            // Estado vazio
+            totalOS === 0 && !carregando && !buscandoRemoto && React.createElement("div", {
+                className: "bg-white rounded-xl shadow px-4 py-8 text-center text-sm text-gray-500"
+            }, termoBusca
+                ? (termoBusca.length < 4 && !remotoAtivo
+                    ? "Nenhuma OS do filtro atual contém \"" + termoBusca + "\". Digite ao menos 4 dígitos para buscar em toda a base."
+                    : (osBuscaRemota && osBuscaRemota.erro ? "Não foi possível buscar a OS " + termoBusca + ". Tente novamente." : "Nenhuma OS encontrada com o número " + termoBusca + "."))
+                : "Nenhuma OS encontrada para os filtros aplicados. Ajuste o período ou os filtros."),
             // Contador
-            qt.length > 200 && React.createElement("div", {
+            totalOS > 200 && React.createElement("div", {
                 className: "bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-center text-sm text-yellow-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Mostrando 200 de "), (function() {
-                var osUnicas = {};
-                qt.forEach(function(r) { osUnicas[r.os] = true; });
-                return Object.keys(osUnicas).length;
-            })(), " OS únicas. Use os filtros para refinar a busca.")
-            ), "upload" === Et && React.createElement("div", {
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, iconeSvg("alert", { color: "#d97706" }), "Mostrando 200 de " + totalOS + " OS. Use os filtros ou a busca por número para refinar."))
+            );
+            })(), "upload" === Et && React.createElement("div", {
                 className: "space-y-6"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-6"
