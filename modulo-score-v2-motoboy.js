@@ -167,6 +167,32 @@
         );
     }
 
+    // SCORE_AVISO_AVALIACAO_V1: o nível só muda na avaliação semanal (sábado 12h,
+    // horário da Bahia — cron scoreV2AvaliacaoSemanal). As barras são ao vivo;
+    // o card diz claramente quando a subida acontece.
+    function proximaAvaliacao() {
+        const agora = Date.now();
+        const b = new Date(agora - 3 * 3600 * 1000); // America/Bahia = UTC-3 fixo
+        let dias = (6 - b.getUTCDay() + 7) % 7;
+        if (dias === 0 && b.getUTCHours() >= 12) dias = 7;
+        const alvo = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate() + dias, 12, 0, 0) + 3 * 3600 * 1000;
+        const d = new Date(alvo - 3 * 3600 * 1000);
+        const dd = String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        const rotulo = dias === 0 ? ('hoje (sábado, ' + dd + '), às 12h') : ('sábado (' + dd + '), às 12h');
+        const rotuloCurto = dias === 0 ? ('hoje, ' + dd + ', às 12h') : ('sábado, ' + dd + ', às 12h');
+        const horas = Math.max(0, (alvo - agora) / 3600000);
+        const falta = horas < 1 ? 'falta menos de 1h'
+            : horas < 48 ? ('faltam ' + Math.floor(horas) + 'h')
+            : ('faltam ' + Math.floor(horas / 24) + ' dias');
+        return { rotulo, rotuloCurto, falta };
+    }
+
+    function contarReqs(progresso) {
+        const reqs = (progresso && progresso.requisitos) || [];
+        const ok = reqs.filter(r => !!r.ok).length;
+        return { total: reqs.length, ok, todos: reqs.length > 0 && ok === reqs.length };
+    }
+
     function CardNivelAtual({ nivel, stats, thresholds, progresso }) {
         const cor = TIER_COR[nivel] || TIER_COR[1];
         const nome = nivel === 3 ? 'Ouro' : nivel === 2 ? 'Prata' : 'Bronze';
@@ -178,8 +204,13 @@
             progPct = Math.round(soma / progresso.requisitos.length);
         }
         const badge = nivel === 3 ? 'Nível máximo' : 'Nível ' + nivel + ' de 3';
+        const cont = contarReqs(progresso); // SCORE_AVISO_AVALIACAO_V1
+        const aval = proximaAvaliacao();
+        const faltamN = cont.total - cont.ok;
         const msg = nivel === 3 ? 'Mantenha a performance para continuar como Ouro'
-            : (proxNome ? ('Complete os requisitos e vire ' + proxNome) : 'Continue entregando pra subir de nível');
+            : (proxNome
+                ? h('span', null, (faltamN === 1 ? 'Falta ' : 'Faltam '), h('b', null, faltamN + (faltamN === 1 ? ' requisito' : ' requisitos')), ' pra virar ' + proxNome + '. Bata até a avaliação de ', h('b', null, aval.rotulo), '.')
+                : 'Continue entregando pra subir de nível');
 
         return h('div', { className: 'sx-hero sx-rise rounded-2xl p-5 text-white shadow-lg', style: { background: cor.grad, boxShadow: '0 10px 24px -8px ' + cor.sombra } },
             h('div', { className: 'flex items-center gap-3', style: { position: 'relative', zIndex: 1 } },
@@ -194,17 +225,29 @@
             ),
             proxNome && h('div', { style: { position: 'relative', zIndex: 1, marginTop: 18 } },
                 h('div', { className: 'flex justify-between items-baseline mb-1.5' },
-                    h('span', { className: 'text-xs font-semibold', style: { opacity: .95 } }, 'Progresso para ' + proxNome),
-                    h('span', { className: 'text-sm font-extrabold' }, progPct + '%')
+                    h('span', { className: 'text-xs font-semibold', style: { opacity: .95 } }, 'Requisitos para ' + proxNome),
+                    h('span', { className: 'text-sm font-extrabold' }, cont.ok + ' de ' + cont.total)
                 ),
                 h('div', { style: { height: 8, borderRadius: 999, background: 'rgba(0,0,0,.18)', overflow: 'hidden' } },
                     h('div', { className: 'sx-grow', style: { height: '100%', borderRadius: 999, background: '#fff', width: progPct + '%' } })
                 )
             ),
-            h('div', { className: 'flex items-center gap-2', style: { position: 'relative', zIndex: 1, marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '10px 12px' } },
-                h('svg', { className: 'ico', style: { width: 16, height: 16, flexShrink: 0 }, 'aria-hidden': 'true' }, h('use', { href: nivel === 3 ? '#i-lock' : '#i-target' })),
-                h('span', { className: 'text-xs font-semibold' }, msg)
-            )
+            (proxNome && cont.todos)
+                // SCORE_AVISO_AVALIACAO_V1: bateu tudo → avisa QUANDO sobe (o nível muda só no sábado)
+                ? h('div', { className: 'flex items-start gap-3', role: 'status', style: { position: 'relative', zIndex: 1, marginTop: 16, background: '#fff', color: '#1f2937', borderRadius: 14, padding: '12px 14px' } },
+                    h('span', { style: { width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#dcfce7' } },
+                        h('svg', { className: 'ico', style: { width: 18, height: 18, color: '#15803d' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' }))
+                    ),
+                    h('div', null,
+                        h('div', { className: 'text-sm font-extrabold', style: { color: '#15803d' } }, 'Requisitos batidos!'),
+                        h('div', { className: 'text-xs mt-0.5', style: { color: '#374151', lineHeight: 1.45 } },
+                            'Você sobe para ', h('b', null, proxNome), ' na avaliação de ', h('b', null, aval.rotulo), '. Mantenha os números até lá.')
+                    )
+                )
+                : h('div', { className: 'flex items-start gap-2', style: { position: 'relative', zIndex: 1, marginTop: 16, background: 'rgba(255,255,255,.18)', borderRadius: 12, padding: '10px 12px' } },
+                    h('svg', { className: 'ico', style: { width: 16, height: 16, flexShrink: 0, marginTop: 1 }, 'aria-hidden': 'true' }, h('use', { href: nivel === 3 ? '#i-lock' : '#i-target' })),
+                    h('span', { className: 'text-xs font-semibold', style: { lineHeight: 1.45 } }, msg)
+                )
         );
     }
 
@@ -213,10 +256,12 @@
         const proxNivel = progresso.proximo_nivel;
         const proxNome = proxNivel === 3 ? 'Ouro' : proxNivel === 2 ? 'Prata' : null;
         const reqs = progresso.requisitos || [];
+        const cont = contarReqs(progresso); // SCORE_AVISO_AVALIACAO_V1
+        const aval = proximaAvaliacao();
 
         return h('div', { className: 'sx-rise bg-white rounded-2xl p-4 shadow-sm', style: { animationDelay: '.06s' } },
-            h('h3', { className: 'text-sm font-extrabold text-gray-900' }, proxNome ? 'O que falta pra subir de nível' : 'Requisitos do seu nível'),
-            h('p', { className: 'text-[11px] text-gray-500 mb-3', style: { marginBottom: 14 } }, proxNome ? ('Bata os ' + reqs.length + ' pra desbloquear ' + proxNome) : 'Mantenha todos pra continuar no topo'),
+            h('h3', { className: 'text-sm font-extrabold text-gray-900' }, proxNome ? (cont.todos ? 'Tudo certo pra subir' : 'O que falta pra subir de nível') : 'Requisitos do seu nível'),
+            h('p', { className: 'text-[11px] text-gray-500 mb-3', style: { marginBottom: 14, lineHeight: 1.4 } }, proxNome ? 'Os números são de agora. O nível muda uma vez por semana, na avaliação de sábado.' : 'Mantenha todos pra continuar no topo'),
             h('div', { className: 'space-y-4' },
                 reqs.map((r, i) => {
                     const suf = r.sufixo || '';
@@ -247,6 +292,11 @@
                         falta && h('p', { className: 'text-[10px] mt-1 font-semibold', style: { color: '#b45309' } }, falta)
                     );
                 })
+            ),
+            // SCORE_AVISO_AVALIACAO_V1: quando acontece a próxima avaliação
+            proxNome && h('div', { className: 'flex items-center gap-2', style: { marginTop: 16, padding: '10px 12px', borderRadius: 12, background: '#f5f3ff', color: '#5b21b6' } },
+                h('svg', { className: 'ico', style: { width: 16, height: 16, flexShrink: 0 }, 'aria-hidden': 'true' }, h('use', { href: '#i-calendar' })),
+                h('span', { className: 'text-xs', style: { lineHeight: 1.4 } }, 'Próxima avaliação: ', h('b', null, aval.rotuloCurto), ' · ' + aval.falta)
             )
         );
     }
