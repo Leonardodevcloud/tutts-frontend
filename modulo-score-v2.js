@@ -78,14 +78,17 @@
         useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
         useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
-        // pracas com a regra ativa pro seletor
+        // SCORE_APROV_PRACAS_V1: TODAS as praças ativas no seletor (antes só as com
+        // a regra de alerta ligada). A regra só decide se gera alerta semanal;
+        // as corridas por motoboy servem pra qualquer praça.
         useEffect(() => {
             (async () => {
                 try {
                     const cfgs = await fetchApiRef.current('/score-v2/admin/configuracoes');
-                    const comRegra = (cfgs || []).filter(c => c.regra_aproveitamento_ativa);
-                    setConfigs(comRegra);
-                    if (comRegra.length > 0 && !regiaoSel) setRegiaoSel(comRegra[0].regiao);
+                    const ativas = (cfgs || []).filter(c => c.ativo !== false)
+                        .sort((a, b) => (b.regra_aproveitamento_ativa === true) - (a.regra_aproveitamento_ativa === true) || String(a.regiao).localeCompare(String(b.regiao), 'pt-BR'));
+                    setConfigs(ativas);
+                    if (ativas.length > 0 && !regiaoSel) setRegiaoSel(ativas[0].regiao);
                 } catch (err) { showToastRef.current('' + err.message, 'error'); }
             })();
         }, []);
@@ -145,8 +148,8 @@
             return h('div', { className: 'max-w-2xl mx-auto p-6 text-center' },
                 h('div', { className: 'bg-white rounded-xl border border-gray-200 p-8' },
                     h('p', { className: 'text-4xl mb-2' }, h("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, h("use", { href: "#i-trenddown" }))),
-                    h('p', { className: 'text-sm font-medium text-gray-700' }, 'Nenhuma praça com a regra de aproveitamento ativa'),
-                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Ative a regra no botão "Editar" de uma praça, na aba Configurações.')
+                    h('p', { className: 'text-sm font-medium text-gray-700' }, 'Nenhuma praça ativa no Score'),
+                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Ative uma praça na aba Configurações.')
                 )
             );
         }
@@ -217,7 +220,7 @@
                     value: regiaoSel,
                     onChange: (e) => setRegiaoSel(e.target.value),
                     className: 'text-sm border border-gray-300 rounded-lg px-2 py-1'
-                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao))),
+                }, configs.map(c => h('option', { key: c.regiao, value: c.regiao }, c.regiao + (c.regra_aproveitamento_ativa ? '' : ' · sem alerta')))),
                 h('div', { className: 'ml-auto flex items-center gap-2' },
                     h('span', { className: 'text-xs text-gray-500' }, 'De:'),
                     h('input', {
