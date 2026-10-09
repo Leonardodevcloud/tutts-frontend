@@ -18996,8 +18996,7 @@ const hideLoadingScreen = () => {
                 };
                 var _coletaDaOS = function(pontos) {
                     for (var i = 0; i < pontos.length; i++) if (pontos[i].inicio_prof_os) return pontos[i].inicio_prof_os;
-                    var p1 = pontos.find(function(r) { return (parseInt(r.ponto) || 1) === 1; });
-                    return (p1 && p1.finalizado) || null;
+                    return null; // PRAZO_PROF_COLETA_V2: coleta = saída do ponto 1 (vem do backend); "Finalizado" é da OS inteira
                 };
                 var _tProfPonto = function(row, coleta) {
                     if ((parseInt(row.ponto) || 1) < 2) return null;
@@ -19263,7 +19262,7 @@ const hideLoadingScreen = () => {
                             // T. Entrega (loja): criação → finalização, regra das 17h
                             React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 " + corPrazo(vDentro)}, formatTempo(vTLoja)),
                             // T. Entrega Prof: COLETA (finalização do ponto 1) → finalização, regra das 17h
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + corPrazo(vDentroProf), title: vTProf === null && pontoNum >= 2 ? "Sem horário de coleta (ponto 1) — prazo do profissional não medido" : "Da coleta (finalização do ponto 1) até a finalização"}, formatTempo(vTProf)),
+                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + corPrazo(vDentroProf), title: vTProf === null && pontoNum >= 2 ? "Sem horário de coleta (ponto 1) — prazo do profissional não medido" : "Da coleta (saída do ponto 1) até a finalização"}, formatTempo(vTProf)),
                             // KM
                             React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
                             // Prazo
