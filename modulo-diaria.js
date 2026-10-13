@@ -52,6 +52,7 @@
     aberta: { bg: '#dbeafe', fg: '#1e40af' },
     sem:    { bg: '#fee2e2', fg: '#991b1b' },
     longe:  { bg: '#ccfbf1', fg: '#115e59' }, // DIARIA_ENCERROU_LONGE_V1
+    ausente:{ bg: '#fce7f3', fg: '#9d174d' }, // DIARIA_DISPONIBILIDADE_V1
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -142,8 +143,8 @@
 
     const salvarLimiar = async (v, campo) => {
       const n = parseInt(v, 10);
-      const chave = campo === 'velocidade' ? 'velocidade' : 'minutos';
-      const atual = campo === 'velocidade' ? (dados && dados.velocidade_retorno) : (dados && dados.limiar_parou_cedo);
+      const chave = campo === 'velocidade' ? 'velocidade' : (campo === 'ausencia' ? 'ausencia' : 'minutos');
+      const atual = campo === 'velocidade' ? (dados && dados.velocidade_retorno) : (campo === 'ausencia' ? (dados && dados.limiar_ausencia) : (dados && dados.limiar_parou_cedo));
       if (!Number.isFinite(n) || !dados || n === atual) return;
       try {
         const r = await fetchAuth(`${apiUrl}/diaria/fechamento/${centralId}/limiar`, { method: 'PUT', body: JSON.stringify({ [chave]: n }) });
@@ -296,6 +297,7 @@
     const abertos = itens.filter((x) => x.situacao === 'aberta');
     const decidir = itens.filter((x) => x.decisao === 'decidir');
     const cedo = decidir.filter((x) => x.situacao === 'cedo').length;
+    const ausentes = decidir.filter((x) => x.situacao === 'ausente').length;
     const total = comValor.reduce((s, x) => s + Number(x.valor || 0), 0);
     const qtdPagos = comValor.filter((x) => x.valor > 0).length;
     const lista = itens.filter((x) => filtro === 'todos'
@@ -322,7 +324,7 @@
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
         e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
-        e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? (cedo + ' pararam cedo · ' + (decidir.length - cedo) + ' não rodaram') : 'nenhuma' }),
+        e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' não rodou' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
         e(Card, { titulo: 'Com corrida em aberto', cor: '#2563eb', valor: abertos.length, sub: abertos.length ? 'ainda rodando — entram pagos' : 'nenhuma' }),
         e(Card, { escuro: true, titulo: 'Total a pagar', valor: brl(total), sub: itens.length + (itens.length === 1 ? ' motoboy na fila' : ' motoboys na fila') })),
       e('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
@@ -339,7 +341,12 @@
             e('input', { 'aria-label': 'Velocidade média de volta à base (km/h)', type: 'number', min: 5, max: 80, defaultValue: dados.velocidade_retorno, key: 'vel' + dados.velocidade_retorno,
               title: dados.base_tem_coordenada ? 'Distância: da última entrega até a base da central (linha reta × 1,3)' : 'A central não tem coordenada cadastrada — usa a km da própria entrega',
               onBlur: (ev) => salvarLimiar(ev.target.value, 'velocidade'), className: 'w-14 h-7 border border-gray-300 rounded text-center text-xs' }),
-            'km/h')),
+            'km/h · ausência no meio do dia acima de',
+            // DIARIA_DISPONIBILIDADE_V1: fora da fila e fora de corrida, somado, antes da última atividade
+            e('input', { 'aria-label': 'Minutos de ausência no meio do dia', type: 'number', min: 0, max: 600, defaultValue: dados.limiar_ausencia, key: 'aus' + dados.limiar_ausencia,
+              title: 'Soma do tempo fora da fila e fora de corrida (descontando a volta até a base). 0 desliga.',
+              onBlur: (ev) => salvarLimiar(ev.target.value, 'ausencia'), className: 'w-14 h-7 border border-gray-300 rounded text-center text-xs' }),
+            'min vira decisão')),
         itens.length === 0
           ? e('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Ninguém entrou na fila com diária nesse dia.')
           : e('div', { style: { overflowX: 'auto' } },
@@ -371,7 +378,10 @@
                             e('div', { className: 'text-xs', style: { color: '#1e40af' } }, it.aberta_desde ? 'desde ' + it.aberta_desde : 'em execução'))
                         : e('span', { className: 'text-gray-400' }, '—')),
                     e('td', { className: 'px-4 py-3' },
-                      e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', style: { background: sit.bg, color: sit.fg } }, it.rotulo)),
+                      e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', style: { background: sit.bg, color: sit.fg } }, it.rotulo),
+                      // DIARIA_DISPONIBILIDADE_V1: quando ele ficou fora (sem fila e sem corrida)
+                      Array.isArray(it.buracos) && it.buracos.length > 0 && e('div', { className: 'text-xs mt-1', style: { color: it.situacao === 'ausente' ? '#9d174d' : '#6b7280' } },
+                        'fora ' + it.buracos.map((b) => b.de + '–' + b.ate).join(', '))),
                     e('td', { className: 'px-4 py-3 text-right tabular-nums' },
                       e('div', { className: 'font-bold' }, brl(cv.valor)),
                       e('div', { className: 'text-xs text-gray-500' }, it.decisao === 'pagar' ? it.nota : (cv.regra === 'proporcional' ? it.nota : (cv.regra === 'integral' ? 'integral' : 'não pago')))),
@@ -381,7 +391,7 @@
                             e(Ico, { d: 'M20 6 9 17l-5-5' }), it.situacao === 'aberta' ? 'Pagar (ainda rodando)' : 'Pagar')
                         : e('div', { role: 'radiogroup', 'aria-label': 'Decisão da diária de ' + nomeDe(it), className: 'inline-flex border border-gray-300 rounded-lg overflow-hidden' },
                             escolhaBtn(it, 'integral', 'Integral', '#16a34a'),
-                            it.situacao === 'cedo' && escolhaBtn(it, 'proporcional', 'Proporcional', '#7c3aed'),
+                            (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#7c3aed'),
                             escolhaBtn(it, 'nao', 'Não pagar', '#b91c1c'))));
                 }))))),
       itens.length > 0 && e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-3' },
