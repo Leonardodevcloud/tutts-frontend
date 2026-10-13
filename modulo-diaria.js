@@ -53,6 +53,7 @@
     sem:    { bg: '#fee2e2', fg: '#991b1b' },
     longe:  { bg: '#ccfbf1', fg: '#115e59' }, // DIARIA_ENCERROU_LONGE_V1
     ausente:{ bg: '#fce7f3', fg: '#9d174d' }, // DIARIA_DISPONIBILIDADE_V1
+    fila:   { bg: '#e0e7ff', fg: '#3730a3' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -71,6 +72,7 @@
     if (r === 'nao') return { txt: 'Não pago', bg: '#fee2e2', fg: '#991b1b' };
     if (it.minutos_atraso > 0) return { txt: it.nota, bg: '#fef3c7', fg: '#92400e' };
     if (it.situacao === 'aberta') return { txt: 'Integral · corrida em execução', bg: '#dbeafe', fg: '#1e40af' };
+    if (it.situacao === 'fila') return { txt: 'Integral · na fila aguardando (' + it.nota + ')', bg: '#e0e7ff', fg: '#3730a3' };
     if (it.situacao === 'longe') return { txt: 'Integral · encerrou longe (' + it.nota + ')', bg: '#ccfbf1', fg: '#115e59' };
     return { txt: 'Integral', bg: '#dcfce7', fg: '#166534' };
   }
@@ -324,7 +326,7 @@
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
         e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
-        e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' não rodou' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
+        e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' sem corrida' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
         e(Card, { titulo: 'Com corrida em aberto', cor: '#2563eb', valor: abertos.length, sub: abertos.length ? 'ainda rodando — entram pagos' : 'nenhuma' }),
         e(Card, { escuro: true, titulo: 'Total a pagar', valor: brl(total), sub: itens.length + (itens.length === 1 ? ' motoboy na fila' : ' motoboys na fila') })),
       e('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
