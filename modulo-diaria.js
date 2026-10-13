@@ -51,6 +51,7 @@
     cedo:   { bg: '#ffedd5', fg: '#9a3412' },
     aberta: { bg: '#dbeafe', fg: '#1e40af' },
     sem:    { bg: '#fee2e2', fg: '#991b1b' },
+    longe:  { bg: '#ccfbf1', fg: '#115e59' }, // DIARIA_ENCERROU_LONGE_V1
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -69,6 +70,7 @@
     if (r === 'nao') return { txt: 'Não pago', bg: '#fee2e2', fg: '#991b1b' };
     if (it.minutos_atraso > 0) return { txt: it.nota, bg: '#fef3c7', fg: '#92400e' };
     if (it.situacao === 'aberta') return { txt: 'Integral · corrida em execução', bg: '#dbeafe', fg: '#1e40af' };
+    if (it.situacao === 'longe') return { txt: 'Integral · encerrou longe (' + it.nota + ')', bg: '#ccfbf1', fg: '#115e59' };
     return { txt: 'Integral', bg: '#dcfce7', fg: '#166534' };
   }
   function Ico({ d, size }) {
@@ -138,11 +140,13 @@
       } catch (_) { showToast && showToast('Erro ao atualizar', 'error'); }
     };
 
-    const salvarLimiar = async (v) => {
+    const salvarLimiar = async (v, campo) => {
       const n = parseInt(v, 10);
-      if (!Number.isFinite(n) || !dados || n === dados.limiar_parou_cedo) return;
+      const chave = campo === 'velocidade' ? 'velocidade' : 'minutos';
+      const atual = campo === 'velocidade' ? (dados && dados.velocidade_retorno) : (dados && dados.limiar_parou_cedo);
+      if (!Number.isFinite(n) || !dados || n === atual) return;
       try {
-        const r = await fetchAuth(`${apiUrl}/diaria/fechamento/${centralId}/limiar`, { method: 'PUT', body: JSON.stringify({ minutos: n }) });
+        const r = await fetchAuth(`${apiUrl}/diaria/fechamento/${centralId}/limiar`, { method: 'PUT', body: JSON.stringify({ [chave]: n }) });
         const d = await r.json();
         if (r.ok) carregar(); else showToast && showToast(d.erro || 'Erro', 'error');
       } catch (_) {}
@@ -317,7 +321,7 @@
       cabecalho,
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
-        e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) }),
+        e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
         e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? (cedo + ' pararam cedo · ' + (decidir.length - cedo) + ' não rodaram') : 'nenhuma' }),
         e(Card, { titulo: 'Com corrida em aberto', cor: '#2563eb', valor: abertos.length, sub: abertos.length ? 'ainda rodando — entram pagos' : 'nenhuma' }),
         e(Card, { escuro: true, titulo: 'Total a pagar', valor: brl(total), sub: itens.length + (itens.length === 1 ? ' motoboy na fila' : ' motoboys na fila') })),
@@ -330,7 +334,12 @@
             '“Parou cedo” = última finalização mais de',
             e('input', { 'aria-label': 'Minutos antes da saída', type: 'number', min: 0, max: 600, defaultValue: dados.limiar_parou_cedo, key: 'lim' + dados.limiar_parou_cedo,
               onBlur: (ev) => salvarLimiar(ev.target.value), className: 'w-14 h-7 border border-gray-300 rounded text-center text-xs' }),
-            'min antes da ' + (dados.eh_hoje && dados.referencia && dados.referencia < dados.escala_padrao.slice(6) ? 'hora atual' : 'saída'))),
+            'min antes da ' + (dados.eh_hoje && dados.referencia && dados.referencia < dados.escala_padrao.slice(6) ? 'hora atual' : 'saída') + ' · volta à base a',
+            // DIARIA_ENCERROU_LONGE_V1: quem finalizou longe e não voltaria a tempo não é "parou cedo"
+            e('input', { 'aria-label': 'Velocidade média de volta à base (km/h)', type: 'number', min: 5, max: 80, defaultValue: dados.velocidade_retorno, key: 'vel' + dados.velocidade_retorno,
+              title: dados.base_tem_coordenada ? 'Distância: da última entrega até a base da central (linha reta × 1,3)' : 'A central não tem coordenada cadastrada — usa a km da própria entrega',
+              onBlur: (ev) => salvarLimiar(ev.target.value, 'velocidade'), className: 'w-14 h-7 border border-gray-300 rounded text-center text-xs' }),
+            'km/h')),
         itens.length === 0
           ? e('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Ninguém entrou na fila com diária nesse dia.')
           : e('div', { style: { overflowX: 'auto' } },
@@ -353,7 +362,9 @@
                       e('div', { className: 'text-xs text-gray-500' }, it.abertas ? it.abertas + ' em execução' : (it.corridas ? 'finalizadas' : 'nenhuma corrida'))),
                     e('td', { className: 'px-4 py-3 tabular-nums' },
                       e('div', { className: 'font-semibold' }, it.ultima_finalizacao || '—'),
-                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' ? '#9a3412' : '#6b7280' } }, it.ultima_nota || '')),
+                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' ? '#9a3412' : '#6b7280' } }, it.ultima_nota || ''),
+                      it.km_volta !== null && it.km_volta !== undefined && it.situacao !== 'aberta' && e('div', { className: 'text-xs', style: { color: it.situacao === 'longe' ? '#115e59' : '#6b7280' } },
+                        '~' + Math.round(it.km_volta) + ' km da base' + (it.retorno_estimado ? ' · voltaria ~' + it.retorno_estimado : ''))),
                     e('td', { className: 'px-4 py-3' },
                       it.os_aberta
                         ? e('div', null, e('div', { className: 'font-semibold', style: { color: '#1e40af' } }, 'OS ' + it.os_aberta),
