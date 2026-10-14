@@ -7874,10 +7874,14 @@
                                                 title: prof.restricao_motivo || "Restrição ativa"
                                             }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })), "RESTRITO"),
                                             /* 🆕 ACERTO_DEDUP_V1: etiqueta de já pago */
-                                            ehJaPago && React.createElement("span", {
-                                                className: "ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600 align-middle",
-                                                title: "Já pago" + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "") + " — bloqueado contra duplicidade"
-                                            }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "JÁ PAGO")
+                                            /* ACERTO_DEDUP_V2: 'processando' = transferência enviada à Stark, ainda sem confirmação */
+                                            ehJaPago && (function() {
+                                                var _env = !!(prof.pago_info && prof.pago_info.item_status === 'processando');
+                                                return React.createElement("span", {
+                                                    className: "ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold align-middle " + (_env ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"),
+                                                    title: (_env ? "Enviado à Stark, aguardando confirmação" : "Já pago") + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.lote_id ? " · lote #" + prof.pago_info.lote_id : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "") + " — bloqueado contra duplicidade"
+                                                }, React.createElement("svg", { className: "ico", style: { width: 12, height: 12 }, "aria-hidden": "true" }, React.createElement("use", { href: _env ? "#i-clock" : "#i-check" })), _env ? "ENVIADO" : "JÁ PAGO");
+                                            })()
                                         ),
                                         React.createElement("td", { className: "px-3 py-2.5 " + (prof.nome_sistema ? "text-emerald-700" : "text-gray-400") }, prof.nome_sistema || '—'),
                                         React.createElement("td", { className: "px-3 py-2.5 text-xs text-gray-600 max-w-[160px] truncate" }, prof.pix_key || '—'),
@@ -7906,10 +7910,13 @@
                                         /* 🆕 PIX_UX_V1: status reflete a conferencia do DICT (nao mostra "Pronto" quando falhou/diverge) */
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" }, (function() {
                                             /* 🆕 ACERTO_DEDUP_V1: já pago tem prioridade visual */
-                                            if (ehJaPago) return React.createElement("span", {
-                                                className: "px-2 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-600 cursor-help",
-                                                title: "Já pago" + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "")
-                                            }, "Já pago");
+                                            if (ehJaPago) {
+                                                var _envSt = !!(prof.pago_info && prof.pago_info.item_status === 'processando'); /* ACERTO_DEDUP_V2 */
+                                                return React.createElement("span", {
+                                                    className: "px-2 py-1 rounded-full text-xs font-semibold cursor-help " + (_envSt ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"),
+                                                    title: (_envSt ? "Enviado à Stark, aguardando confirmação" : "Já pago") + (prof.pago_info && prof.pago_info.pago_em ? " em " + new Date(prof.pago_info.pago_em).toLocaleString('pt-BR') : "") + (prof.pago_info && prof.pago_info.lote_id ? " · lote #" + prof.pago_info.lote_id : "") + (prof.pago_info && prof.pago_info.transfer_id ? " · transf. " + prof.pago_info.transfer_id : "")
+                                                }, _envSt ? "Enviado · aguardando Stark" : "Já pago");
+                                            }
                                             if (ehRestrito || ehSemPix) return badge(prof.status);
                                             if (divBloqueado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700" }, "Titular diferente");
                                             if (ehDivergente && divConfirmado) return React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800" }, "Confirmado (outro)");
