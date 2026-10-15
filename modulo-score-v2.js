@@ -1,4 +1,4 @@
-/* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */
+/* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */ /* SCORE_VISAO_ATIVOS_V1 */
 // ==================== MÓDULO SCORE V2 (ADMIN) ====================
 // Arquivo: modulo-score-v2.js
 // Tela admin pra configurar score por região + ver sorteios + motoboys.
@@ -199,7 +199,7 @@
         const alertas = [];
         if ((ps.saque_falhou || 0) > 0) alertas.push({ cor: 'red', txt: ps.saque_falhou + ' saque(s) grátis consumido(s) em saque recusado este mês — o motoboy perdeu o benefício.', acao: () => irPara('contemplados', { situacao: 'saque_falhou' }) });
         if ((ps.expirou || 0) > 0) alertas.push({ cor: 'amber', txt: ps.expirou + ' saque(s) grátis expiraram sem uso este mês.', acao: () => irPara('contemplados', { situacao: 'expirou' }) });
-        if ((t.desatualizados || 0) > 0) alertas.push({ cor: 'amber', txt: t.desatualizados + ' motoboy(s) com avaliação congelada (há mais de 9 dias) — ficam fora de saque e sorteio.', acao: null });
+        if ((t.desatualizados || 0) > 0) alertas.push({ cor: 'amber', txt: t.desatualizados + ' motoboy(s) não foram reavaliados na última rodada (saíram do CRM ou mudaram de praça). Ficam fora das contagens, do saque e do sorteio.', acao: null });
 
         return h('div', { className: 'space-y-4' },
             // faixa de status + ações
@@ -226,8 +226,11 @@
             h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
                 h(Kpi, { titulo: 'Praças com score', icone: 'pin', valor: t.pracas_ativas || 0, sub: inativas ? (inativas + ' desativada(s)') : 'todas ativas' }),
                 h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 min-w-0' },
-                    h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, ico('users', 14), 'Motoboys avaliados'),
-                    h('div', { className: 'text-2xl font-bold mt-1 text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, totalAv.toLocaleString('pt-BR')),
+                    // SCORE_VISAO_ATIVOS_V1: so quem rodou nos ultimos 28 dias entra nas categorias
+                    h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, ico('users', 14), 'Rodaram em 28 dias'),
+                    h('div', { className: 'text-2xl font-bold mt-1 text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, totalAv.toLocaleString('pt-BR'),
+                        h('span', { className: 'text-xs font-normal text-gray-500 ml-1.5' }, 'de ' + (t.motoboys || 0).toLocaleString('pt-BR') + ' cadastrados')),
+                    h('div', { className: 'text-[11px] text-gray-500 mt-0.5' }, (t.elegiveis || 0).toLocaleString('pt-BR') + ' na disputa (bateram a entrada da praça)'),
                     h('div', { className: 'mt-2' }, h(BarraNiveis, { niveis: { 1: t.bronze, 2: t.prata, 3: t.ouro } })),
                     h('div', { className: 'flex gap-3 mt-1.5 text-[11px] text-gray-600' },
                         [3, 2, 1].map(k => h('span', { key: k, className: 'inline-flex items-center gap-1' },
@@ -257,7 +260,12 @@
 
             // praças
             h('div', { className: 'flex items-center justify-between pt-1' },
-                h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Praças'),
+                h('div', null,
+                    h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Praças'),
+                    h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                        h('b', null, 'Rodaram'), ': fizeram ao menos 1 entrega em 28 dias (só eles entram nas categorias) · ',
+                        h('b', null, 'Na disputa'), ': bateram a entrada mínima da praça · ',
+                        h('b', null, 'Carência'), ': mudaram de categoria há menos de 7 dias, saque ainda não liberado')),
                 inativas > 0 && h('label', { className: 'flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer' },
                     h('input', { type: 'checkbox', checked: mostrarInativas, onChange: e => setMostrarInativas(e.target.checked), className: 'accent-purple-600' }), 'mostrar desativadas')
             ),
@@ -273,6 +281,8 @@
         const bm = p.beneficios_mes || {};
         const tem = (n) => (p.niveis_ativos || []).includes(n);
         const qtdTxt = (q) => (Number(q) || 1) + '×';
+        // teto 0/vazio na config: o lançamento usa R$ 500 (padrão)
+        const tetoTxt = (v) => Number(v) > 0 ? fmtBRL(v) : fmtBRL(500) + ' (padrão — teto não preenchido)';
         const linha = (rotulo, conteudo) => h('div', { className: 'flex gap-2 text-xs leading-relaxed' },
             h('span', { className: 'text-gray-400 w-20 flex-shrink-0' }, rotulo), h('div', { className: 'text-gray-700 min-w-0 flex-1' }, conteudo));
         const sorteioTxt = [];
@@ -288,7 +298,8 @@
                         p.regra_aproveitamento_ativa && h('span', { className: 'px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700' }, 'alerta ' + (p.pct_min_aproveitamento || 95) + '%')
                     ),
                     h('div', { className: 'text-[11px] text-gray-500 mt-0.5' },
-                        p.motoboys + ' avaliados' + (p.media_pct_prazo != null ? ' · média ' + String(p.media_pct_prazo).replace('.', ',') + '% no prazo' : '') +
+                        (p.rodaram != null ? p.rodaram + ' rodaram · ' + (p.elegiveis || 0) + ' na disputa · ' + (p.sem_entregas || 0) + ' cadastrados sem entrega' : p.motoboys + ' avaliados') +
+                        (p.media_pct_prazo != null ? ' · média ' + String(p.media_pct_prazo).replace('.', ',') + '% no prazo' : '') +
                         (p.ultima_avaliacao ? ' · avaliado ' + p.ultima_avaliacao.slice(8, 10) + '/' + p.ultima_avaliacao.slice(5, 7) + ' ' + p.ultima_avaliacao.slice(11) : ''))
                 )
             ),
@@ -305,8 +316,8 @@
                     (tem(2) && tem(3) ? ' · ' : '') +
                     (tem(3) ? 'Ouro ≥' + c.pct_ouro + '% + ' + c.dias_pico_ouro + ' dias' : '')),
                 linha('Saque grátis', [
-                    tem(2) ? 'Prata ' + qtdTxt(b.saque_qtd_n2) + '/mês até ' + fmtBRL(b.saque_teto_n2) : null,
-                    tem(3) ? 'Ouro ' + qtdTxt(b.saque_qtd_n3) + '/semana até ' + fmtBRL(b.saque_teto_n3) : null,
+                    tem(2) ? 'Prata ' + qtdTxt(b.saque_qtd_n2) + '/mês até ' + tetoTxt(b.saque_teto_n2) : null,
+                    tem(3) ? 'Ouro ' + qtdTxt(b.saque_qtd_n3) + '/semana até ' + tetoTxt(b.saque_teto_n3) : null,
                 ].filter(Boolean).join(' · ') || '—'),
                 linha('Sorteio', sorteioTxt.length ? sorteioTxt.join(' · ') + ' (mensal, ≥20 dias na categoria)' : 'desligado')
             ),
@@ -329,8 +340,8 @@
                 }, ico('trophy', 12), (COR_NIVEL[s.nivel] || {}).nome + ' ' + s.mes.slice(5) + '/' + s.mes.slice(2, 4) + ': ', h('b', null, s.vencedor), ' (' + fmtBRL(s.valor) + ')')))
             ,
             (p.em_carencia > 0 || p.desatualizados > 0) && h('div', { className: 'flex flex-wrap gap-2 mb-3' },
-                p.em_carencia > 0 && h('span', { className: 'text-[11px] bg-amber-50 text-amber-800 rounded-full px-2 py-0.5' }, p.em_carencia + ' em carência (7 dias)'),
-                p.desatualizados > 0 && h('span', { className: 'text-[11px] bg-red-50 text-red-700 rounded-full px-2 py-0.5' }, p.desatualizados + ' com avaliação congelada')
+                p.em_carencia > 0 && h('span', { title: 'Mudaram de categoria há menos de 7 dias. O saque grátis da categoria só é liberado depois disso.', className: 'text-[11px] bg-amber-50 text-amber-800 rounded-full px-2 py-0.5 cursor-help' }, p.em_carencia + ' aguardando liberar saque (carência)'),
+                p.desatualizados > 0 && h('span', { title: 'Estavam nesta praça mas não apareceram na última reavaliação: saíram do CRM ou trocaram de praça no CRM. Não contam nas categorias nem recebem saque/sorteio.', className: 'text-[11px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 cursor-help' }, p.desatualizados + ' saíram da praça/CRM')
             ),
             h('div', { className: 'flex gap-2 flex-wrap pt-2 border-t border-gray-100' },
                 h('button', { onClick: () => irPara('contemplados', { regiao: p.regiao }), className: 'px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50 rounded-lg inline-flex items-center gap-1.5' }, ico('wallet', 14), 'Contemplados'),
