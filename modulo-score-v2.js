@@ -1,4 +1,4 @@
-/* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */ /* SCORE_VISAO_ATIVOS_V1 */
+/* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */ /* SCORE_VISAO_ATIVOS_V1 */ /* SCORE_A_LIBERAR_V1 */
 // ==================== MÓDULO SCORE V2 (ADMIN) ====================
 // Arquivo: modulo-score-v2.js
 // Tela admin pra configurar score por região + ver sorteios + motoboys.
@@ -39,6 +39,7 @@
         1: { nome: 'Bronze', bar: '#b45309', bg: 'bg-amber-50', txt: 'text-amber-800', chip: 'bg-amber-100 text-amber-800' },
     };
     const SITUACAO = {
+        a_liberar: { label: 'A liberar (carência)', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
         sacou: { label: 'Sacou', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
         disponivel: { label: 'Disponível', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
         em_andamento: { label: 'Saque em andamento', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
@@ -224,7 +225,12 @@
 
             // KPIs
             h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
-                h(Kpi, { titulo: 'Praças com score', icone: 'pin', valor: t.pracas_ativas || 0, sub: inativas ? (inativas + ' desativada(s)') : 'todas ativas' }),
+                // SCORE_A_LIBERAR_V1: ja conquistaram e estao na carencia
+                h('button', { onClick: () => irPara('contemplados', { situacao: 'a_liberar' }), className: 'text-left rounded-xl border p-3.5 min-w-0 transition-colors hover:border-amber-400', style: { background: '#fffbeb', borderColor: '#fcd34d' } },
+                    h('div', { className: 'flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide', style: { color: '#92400e' } }, ico('clock', 14), 'A liberar (carência)'),
+                    h('div', { className: 'text-2xl font-bold mt-1', style: { color: '#78350f', fontVariantNumeric: 'tabular-nums' } }, ((t.a_liberar || {}).total || 0) + ' motoboys'),
+                    h('div', { className: 'text-[11px] mt-0.5', style: { color: '#92400e' } }, 'já conquistaram · ' + ((t.a_liberar || {}).ate_sabado || 0) + ' liberam até sábado · Ver lista →')
+                ),
                 h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 min-w-0' },
                     // SCORE_VISAO_ATIVOS_V1: so quem rodou nos ultimos 28 dias entra nas categorias
                     h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, ico('users', 14), 'Rodaram em 28 dias'),
@@ -261,7 +267,7 @@
             // praças
             h('div', { className: 'flex items-center justify-between pt-1' },
                 h('div', null,
-                    h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Praças'),
+                    h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Praças · ' + (t.pracas_ativas || 0) + ' com score' + (inativas ? ' (' + inativas + ' desativada' + (inativas > 1 ? 's' : '') + ')' : '')),
                     h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
                         h('b', null, 'Rodaram'), ': fizeram ao menos 1 entrega em 28 dias (só eles entram nas categorias) · ',
                         h('b', null, 'Na disputa'), ': bateram a entrada mínima da praça · ',
@@ -321,7 +327,12 @@
                 ].filter(Boolean).join(' · ') || '—'),
                 linha('Sorteio', sorteioTxt.length ? sorteioTxt.join(' · ') + ' (mensal, ≥20 dias na categoria)' : 'desligado')
             ),
-            h('div', { className: 'grid grid-cols-4 gap-1.5 mb-3' },
+            h('div', { className: 'grid grid-cols-5 gap-1.5 mb-3' },
+                h('button', {
+                    onClick: () => irPara('contemplados', { regiao: p.regiao, situacao: 'a_liberar' }),
+                    className: 'rounded-lg px-2 py-1.5 text-center transition-colors border',
+                    style: { background: '#fffbeb', borderColor: '#fde68a' }
+                }, h('div', { className: 'text-base font-bold leading-none', style: { color: '#b45309' } }, p.a_liberar || 0), h('div', { className: 'text-[10px] mt-0.5', style: { color: '#92400e' } }, 'a liberar')),
                 [
                     { k: null, n: bm.lancados || 0, l: 'lançados', cls: 'text-gray-900' },
                     { k: 'sacou', n: bm.sacou || 0, l: 'sacaram', cls: 'text-emerald-700' },
@@ -332,6 +343,13 @@
                     onClick: () => irPara('contemplados', { regiao: p.regiao, situacao: x.k || '' }),
                     className: 'bg-gray-50 hover:bg-purple-50 rounded-lg px-2 py-1.5 text-center transition-colors'
                 }, h('div', { className: 'text-base font-bold leading-none ' + x.cls }, x.n), h('div', { className: 'text-[10px] text-gray-500 mt-0.5' }, x.l)))
+            ),
+            (p.proximos_a_liberar || []).length > 0 && h('div', { className: 'mb-3' },
+                h('div', { className: 'text-[11px] font-semibold mb-1', style: { color: '#92400e' } }, 'Próximos a liberar'),
+                p.proximos_a_liberar.map((x, i) => h('button', {
+                    key: i, onClick: () => abrirDiagnostico(x.cod_prof),
+                    className: 'w-full flex items-center gap-2 text-xs py-0.5 text-left hover:text-purple-700'
+                }, chipNivel(x.nivel), h('span', { className: 'flex-1 truncate text-gray-800' }, x.nome || ('#' + x.cod_prof)), h('span', { className: 'font-semibold whitespace-nowrap', style: { color: '#b45309' } }, x.quando)))
             ),
             (p.ultimos_sorteios || []).length > 0 && h('div', { className: 'text-[11px] text-gray-600 mb-3 flex flex-wrap gap-x-3 gap-y-1' },
                 h('span', { className: 'text-gray-400' }, 'Último sorteio:'),
@@ -368,6 +386,19 @@
         const [pracas, setPracas] = useState([]);
         const [dados, setDados] = useState(null);
         const [loading, setLoading] = useState(false);
+        const [aLiberar, setALiberar] = useState(null); // SCORE_A_LIBERAR_V1
+
+        // a liberar nao depende do periodo (e o que vem pela frente)
+        useEffect(() => {
+            (async () => {
+                try {
+                    const q = [];
+                    if (regiao) q.push('regiao=' + encodeURIComponent(regiao));
+                    if (buscaDeb.trim()) q.push('busca=' + encodeURIComponent(buscaDeb.trim()));
+                    setALiberar(await fetchApiRef.current('/score-v2/admin/a-liberar' + (q.length ? '?' + q.join('&') : '')));
+                } catch (_) { setALiberar(null); }
+            })();
+        }, [regiao, buscaDeb]);
 
         useEffect(() => {
             if (!preset) return;
@@ -447,8 +478,11 @@
         const sel = (val, on, opts) => h('select', { value: val, onChange: e => on(e.target.value), className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-white outline-none focus:border-purple-400' },
             opts.map(o => h('option', { key: o[0], value: o[0] }, o[1])));
 
-        const chipsSit = ['', 'sacou', 'disponivel', 'em_andamento', 'expirou', 'saque_falhou', 'removida', 'usada_sem_saque']
-            .filter(k => k === '' || porSit[k] > 0);
+        const listaAL = (aLiberar && aLiberar.a_liberar) || [];
+        porSit.a_liberar = listaAL.length;
+        const chipsSit = ['', 'a_liberar', 'disponivel', 'sacou', 'em_andamento', 'expirou', 'saque_falhou', 'removida', 'usada_sem_saque']
+            .filter(k => k === '' || k === 'a_liberar' || porSit[k] > 0);
+        const modoAL = situacao === 'a_liberar';
 
         return h('div', { className: 'space-y-3' },
             h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3 space-y-2.5' },
@@ -469,14 +503,20 @@
                     chipsSit.map(k => h('button', {
                         key: k || 'todos',
                         onClick: () => setSituacao(k),
-                        className: 'px-2.5 py-1 rounded-full text-[11px] font-medium border transition ' + (situacao === k ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300')
+                        className: 'px-2.5 py-1 rounded-full text-[11px] font-medium border transition ' + (situacao === k
+                            ? (k === 'a_liberar' ? 'text-white' : 'bg-purple-600 text-white border-purple-600')
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'),
+                        style: situacao === k && k === 'a_liberar' ? { background: '#b45309', borderColor: '#b45309' } : undefined
                     }, k ? (SITUACAO[k] || {}).label || k : 'Todos', h('span', { className: 'ml-1.5 opacity-75' }, k ? porSit[k] : todos.length))),
                     h('div', { className: 'ml-auto flex items-center gap-3 text-xs text-gray-500' },
-                        h('span', null, motoboys + ' motoboy(s) · sacado sem taxa ', h('b', { className: 'text-gray-900' }, fmtBRL(valorSacado))),
-                        h('button', { onClick: exportarCsv, disabled: !linhas.length, className: 'px-2.5 py-1.5 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-40 inline-flex items-center gap-1' }, ico('download', 14), 'CSV')
+                        modoAL
+                            ? h('span', null, 'Previsto a liberar em 7 dias: ', h('b', { className: 'text-gray-900' }, 'até ' + fmtBRL(((aLiberar || {}).resumo || {}).valor_previsto_7d || 0)), ' em saques sem taxa')
+                            : h('span', null, motoboys + ' motoboy(s) · sacado sem taxa ', h('b', { className: 'text-gray-900' }, fmtBRL(valorSacado))),
+                        !modoAL && h('button', { onClick: exportarCsv, disabled: !linhas.length, className: 'px-2.5 py-1.5 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-40 inline-flex items-center gap-1' }, ico('download', 14), 'CSV')
                     )
                 )
             ),
+            modoAL ? h(TabelaALiberar, { lista: listaAL, abrirDiagnostico }) :
             loading && !dados ? h('div', { className: 'text-center py-12 text-gray-500 text-sm' }, 'Carregando contemplados...') :
             linhas.length === 0
                 ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center' },
@@ -517,6 +557,49 @@
                     ),
                     dados && dados.resumo && dados.resumo.limitado && h('div', { className: 'px-3 py-2 text-[11px] text-amber-700 bg-amber-50' }, 'Mostrando os 2000 mais recentes — refine o período para ver todos.')
                 )
+        );
+    }
+
+    // ============================================================
+    // SCORE_A_LIBERAR_V1: tabela de quem ja conquistou e esta na carencia
+    // ============================================================
+    function TabelaALiberar({ lista, abrirDiagnostico }) {
+        const aviso = h('div', { className: 'flex gap-2.5 items-center rounded-xl border px-3.5 py-2.5 text-xs', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#78350f' } },
+            ico('clock', 16),
+            h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis é lançado sozinho na data indicada (rotina diária das 07:30 ou avaliação de sábado, 12h — o que vier primeiro). Se caírem de categoria antes, a carência recomeça.'));
+        if (!lista.length) return h('div', { className: 'space-y-3' }, aviso,
+            h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center text-sm text-gray-500' }, 'Ninguém em carência agora.'));
+        const cab = ['Motoboy', 'Praça', 'Conquistou', 'Desde', 'Libera em', 'Carência', 'Vai receber'];
+        return h('div', { className: 'space-y-3' }, aviso,
+            h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-x-auto' },
+                h('table', { className: 'w-full text-sm' },
+                    h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
+                        h('tr', null, cab.map((c, i) => h('th', { key: i, className: 'px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap' }, c)))),
+                    h('tbody', null, lista.map(x => {
+                        const pct = Math.round(100 * (x.dias_cumpridos || 0) / (x.carencia_dias || 7));
+                        const faltam = x.dias_ate_liberar === 0 ? 'hoje' : x.dias_ate_liberar === 1 ? 'falta 1 dia' : 'faltam ' + x.dias_ate_liberar + ' dias';
+                        return h('tr', { key: x.cod_prof, className: 'border-b border-gray-100 hover:bg-amber-50/40' },
+                            h('td', { className: 'px-3 py-2' },
+                                h('button', { onClick: () => abrirDiagnostico(x.cod_prof), className: 'text-left hover:text-purple-700' },
+                                    h('div', { className: 'text-[13px] font-medium text-gray-900' }, x.nome_prof || ('#' + x.cod_prof)),
+                                    h('div', { className: 'text-[11px] text-gray-500' }, 'cód ' + x.cod_prof))),
+                            h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, x.regiao),
+                            h('td', { className: 'px-3 py-2' }, chipNivel(x.nivel)),
+                            h('td', { className: 'px-3 py-2 text-xs text-gray-600 whitespace-nowrap' }, x.conquistou_em),
+                            h('td', { className: 'px-3 py-2 whitespace-nowrap' },
+                                h('div', { className: 'text-[13px] font-semibold text-gray-900' }, x.libera_em),
+                                h('div', { className: 'text-[11px] font-medium', style: { color: '#b45309' } }, faltam)),
+                            h('td', { className: 'px-3 py-2', style: { minWidth: 140 } },
+                                h('div', { className: 'h-1.5 rounded-full overflow-hidden', style: { background: '#f3f4f6' } },
+                                    h('div', { className: 'h-full rounded-full', style: { width: pct + '%', background: '#d97706' } })),
+                                h('div', { className: 'text-[11px] text-gray-500 mt-1' }, (x.dias_cumpridos || 0) + ' de ' + (x.carencia_dias || 7) + ' dias cumpridos')),
+                            h('td', { className: 'px-3 py-2 whitespace-nowrap' },
+                                h('div', { className: 'text-xs font-semibold text-gray-900' }, x.quantidade + '× saque grátis / ' + (x.tipo === 'saque_semanal' ? 'semana' : 'mês')),
+                                h('div', { className: 'text-[11px] text-gray-500' }, 'até ' + fmtBRL(x.teto) + ' · vale até ' + x.vale_ate))
+                        );
+                    }))
+                )
+            )
         );
     }
 
