@@ -1,4 +1,4 @@
-/* DEEMOJI_V1 */
+/* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */
 // ==================== MÓDULO SCORE V2 (ADMIN) ====================
 // Arquivo: modulo-score-v2.js
 // Tela admin pra configurar score por região + ver sorteios + motoboys.
@@ -7,6 +7,9 @@
 //   - Aba "Configurações": ativa/desativa score por região, valores
 //   - Aba "Motoboys por Categoria": lista quem está em cada categoria (Bronze/Prata/Ouro)
 //   - Aba "Sorteios": histórico mensal e disparo manual
+// SCORE_ADMIN_REDESIGN_V1 (2026-10): + Visão geral (painel por praça),
+//   + Contemplados (quem ganhou saque/sorteio, com o quê e se sacou),
+//   + Diagnóstico do motoboy (por que recebeu / não recebeu).
 // =====================================================================
 
 (function() {
@@ -16,7 +19,7 @@
     const h = React.createElement;
 
     function fmtBRL(v) {
-        return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+        return 'R$ ' + (parseFloat(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function fmtData(s) {
         if (!s) return '-';
@@ -24,39 +27,606 @@
         return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
+    // ============================================================
+    // SCORE_ADMIN_REDESIGN_V1: helpers visuais compartilhados
+    // ============================================================
+    function ico(nome, tam, extra) {
+        return h('svg', Object.assign({ className: 'ico', style: { width: tam || 16, height: tam || 16, flexShrink: 0 }, 'aria-hidden': 'true' }, extra || {}), h('use', { href: '#i-' + nome }));
+    }
+    const COR_NIVEL = {
+        3: { nome: 'Ouro', bar: '#eab308', bg: 'bg-yellow-50', txt: 'text-yellow-800', chip: 'bg-yellow-100 text-yellow-800' },
+        2: { nome: 'Prata', bar: '#94a3b8', bg: 'bg-slate-50', txt: 'text-slate-700', chip: 'bg-slate-100 text-slate-700' },
+        1: { nome: 'Bronze', bar: '#b45309', bg: 'bg-amber-50', txt: 'text-amber-800', chip: 'bg-amber-100 text-amber-800' },
+    };
+    const SITUACAO = {
+        sacou: { label: 'Sacou', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        disponivel: { label: 'Disponível', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+        em_andamento: { label: 'Saque em andamento', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+        expirou: { label: 'Expirou sem uso', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+        saque_falhou: { label: 'Saque recusado', cls: 'bg-red-50 text-red-700 border-red-200' },
+        removida: { label: 'Removida', cls: 'bg-gray-100 text-gray-500 border-gray-200' },
+        usada_sem_saque: { label: 'Usada (sem saque)', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+    };
+    const STATUS_SAQUE = {
+        pago_stark: 'pago', aprovado: 'aprovado', aprovado_gratuidade: 'aprovado',
+        aguardando_aprovacao: 'aguardando', aguardando_pagamento_stark: 'aguardando Stark',
+        rejeitado: 'rejeitado', cancelado: 'cancelado', excluido: 'excluído', inativo: 'inativo',
+    };
+    function badgeSituacao(s) {
+        const cfg = SITUACAO[s] || { label: s || '—', cls: 'bg-gray-100 text-gray-600 border-gray-200' };
+        return h('span', { className: 'inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2 py-0.5 rounded-full border ' + cfg.cls }, cfg.label);
+    }
+    function chipNivel(n) {
+        const c = COR_NIVEL[n] || COR_NIVEL[1];
+        return h('span', { className: 'text-[11px] font-bold px-2 py-0.5 rounded ' + c.chip }, c.nome);
+    }
+    function labelOrigem(c) {
+        const mesBR = (p) => (p && /^\d{4}-\d{2}$/.test(p)) ? (p.slice(5) + '/' + p.slice(0, 4)) : (p || '');
+        if (c.tipo === 'saque_mensal') return { titulo: 'Saque Prata', sub: 'mês ' + mesBR(c.periodo) };
+        if (c.tipo === 'saque_semanal') return { titulo: 'Saque Ouro', sub: 'semana ' + String(c.periodo || '').replace(/^\d{4}-W/, '') + '/' + String(c.periodo || '').slice(0, 4) };
+        if (c.tipo === 'sorteio') return { titulo: 'Sorteio ' + ((COR_NIVEL[c.nivel] || {}).nome || ''), sub: 'ref. ' + mesBR(c.mes_referencia) };
+        if (c.tipo === 'legado_v1') return { titulo: 'Score v1', sub: 'legado' };
+        return { titulo: c.tipo || '—', sub: '' };
+    }
+    function BarraNiveis({ niveis, altura }) {
+        const n = niveis || {};
+        const total = (n[1] || 0) + (n[2] || 0) + (n[3] || 0);
+        if (!total) return h('div', { className: 'w-full rounded-full bg-gray-100', style: { height: altura || 8 } });
+        return h('div', { className: 'w-full flex rounded-full overflow-hidden bg-gray-100', style: { height: altura || 8 } },
+            [3, 2, 1].map(k => (n[k] || 0) > 0 && h('div', { key: k, title: COR_NIVEL[k].nome + ': ' + n[k], style: { width: (100 * n[k] / total) + '%', background: COR_NIVEL[k].bar } }))
+        );
+    }
+    function Kpi({ titulo, valor, sub, icone, destaque }) {
+        return h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 min-w-0' },
+            h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, icone && ico(icone, 14), titulo),
+            h('div', { className: 'text-2xl font-bold mt-1 ' + (destaque || 'text-gray-900'), style: { fontVariantNumeric: 'tabular-nums' } }, valor),
+            sub && h('div', { className: 'text-[11px] text-gray-500 mt-0.5 leading-snug' }, sub)
+        );
+    }
+    function useApiRefs(fetchApi, showToast) {
+        const fetchApiRef = useRef(fetchApi);
+        const showToastRef = useRef(showToast);
+        useEffect(() => { fetchApiRef.current = fetchApi; }, [fetchApi]);
+        useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+        return { fetchApiRef, showToastRef };
+    }
+    function hojeISO(offsetDias) {
+        const d = new Date(Date.now() + (offsetDias || 0) * 86400000);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
     window.ModuloScoreV2Component = function(props) {
         const { fetchApi, showToast } = props;
-        const [tab, setTab] = useState('configuracoes');
+        const [tab, setTab] = useState('visao');
+        const [diagCod, setDiagCod] = useState(null);
+        const [presetContemplados, setPresetContemplados] = useState(null); // { regiao, situacao }
+        const [presetMotoboys, setPresetMotoboys] = useState('');
+
+        const abrirDiagnostico = useCallback((cod) => { if (cod) setDiagCod(String(cod)); }, []);
+        const irPara = useCallback((destino, preset) => {
+            if (destino === 'contemplados') setPresetContemplados(Object.assign({ _t: Date.now() }, preset || {}));
+            if (destino === 'motoboys') setPresetMotoboys((preset && preset.busca) || '');
+            setTab(destino);
+        }, []);
+
+        const abas = [
+            { id: 'visao', label: 'Visão geral', icon: 'chart' },
+            { id: 'contemplados', label: 'Contemplados', icon: 'wallet' },
+            { id: 'motoboys', label: 'Categorias', icon: 'medal' },
+            { id: 'aproveitamento', label: 'Corridas', icon: 'trenddown' },
+            { id: 'ranking', label: 'Ranking', icon: 'calendar' },
+            { id: 'sorteios', label: 'Sorteios', icon: 'gift' },
+            { id: 'configuracoes', label: 'Configurações', icon: 'settings' },
+        ];
 
         return h('div', { className: 'max-w-7xl mx-auto p-4 md:p-6' },
             h('div', { className: 'flex items-center gap-3 mb-5' },
-                h('div', { className: 'w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-xl shadow-sm' }, h("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" }))),
+                h('div', { className: 'w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-sm' }, ico('trophy', 22)),
                 h('div', null,
                     h('h2', { className: 'text-lg font-semibold text-gray-900 leading-tight' }, 'Score dos profissionais'),
-                    h('p', { className: 'text-xs text-gray-500' }, 'Gamificação por praça')
+                    h('p', { className: 'text-xs text-gray-500' }, 'Categorias, saques grátis e sorteios por praça')
                 )
             ),
             h('div', { className: 'flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 overflow-x-auto' },
-                [
-                    { id: 'configuracoes', label: 'Configurações', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })) },
-                    { id: 'aproveitamento', label: 'Aproveitamento', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trenddown" })) },
-                    { id: 'motoboys', label: 'Categorias', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) },
-                    { id: 'ranking', label: 'Ranking', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })) },
-                    { id: 'sorteios', label: 'Sorteios', icon: h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-gift" })) },
-                ].map(t => h('button', {
+                abas.map(t => h('button', {
                     key: t.id,
                     onClick: () => setTab(t.id),
                     className: 'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ' +
                         (tab === t.id ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-white/70')
-                }, h('span', null, t.icon), h('span', null, t.label)))
+                }, ico(t.icon, 16), h('span', null, t.label)))
             ),
+            tab === 'visao' && h(AbaVisaoGeral, { fetchApi, showToast, abrirDiagnostico, irPara }),
+            tab === 'contemplados' && h(AbaContemplados, { fetchApi, showToast, abrirDiagnostico, preset: presetContemplados }),
             tab === 'configuracoes' && h(AbaConfiguracoes, { fetchApi, showToast }),
             tab === 'aproveitamento' && h(AbaAproveitamento, { fetchApi, showToast }),
-            tab === 'motoboys' && h(AbaMotoboys, { fetchApi, showToast }),
+            tab === 'motoboys' && h(AbaMotoboys, { fetchApi, showToast, abrirDiagnostico, buscaInicial: presetMotoboys }),
             tab === 'ranking' && h(AbaRanking, { fetchApi, showToast }),
-            tab === 'sorteios' && h(AbaSorteios, { fetchApi, showToast })
+            tab === 'sorteios' && h(AbaSorteios, { fetchApi, showToast, abrirDiagnostico }),
+            diagCod && h(DrawerDiagnostico, { cod: diagCod, fetchApi, showToast, onClose: () => setDiagCod(null) })
         );
     };
+
+    // ============================================================
+    // SCORE_ADMIN_REDESIGN_V1: ABA VISÃO GERAL
+    // ============================================================
+    function AbaVisaoGeral({ fetchApi, showToast, abrirDiagnostico, irPara }) {
+        const { fetchApiRef, showToastRef } = useApiRefs(fetchApi, showToast);
+        const [dados, setDados] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [rodando, setRodando] = useState('');
+        const [codBusca, setCodBusca] = useState('');
+        const [mostrarInativas, setMostrarInativas] = useState(false);
+
+        const carregar = useCallback(async () => {
+            setLoading(true);
+            try { setDados(await fetchApiRef.current('/score-v2/admin/visao-geral')); }
+            catch (err) { showToastRef.current(err.message, 'error'); }
+            finally { setLoading(false); }
+        }, []);
+        useEffect(() => { carregar(); }, [carregar]);
+
+        const lancarPendentes = async () => {
+            setRodando('bonus');
+            try {
+                const r = await fetchApiRef.current('/score-v2/admin/lancar-bonus-pendentes', { method: 'POST', body: '{}' });
+                showToastRef.current(r.lancados + ' saque(s) lançado(s) de ' + r.candidatos + ' Prata/Ouro', 'success');
+                carregar();
+            } catch (err) { showToastRef.current(err.message, 'error'); }
+            finally { setRodando(''); }
+        };
+        const recalcular = async () => {
+            if (!confirm('Recalcular a categoria de TODOS os motoboys de todas as praças agora?\n\nIsso antecipa a avaliação de sábado e pode levar alguns minutos.')) return;
+            setRodando('recalc');
+            try {
+                const r = await fetchApiRef.current('/score-v2/admin/avaliar-agora', { method: 'POST', body: '{}' });
+                showToastRef.current((r.processados || 0) + ' motoboys · ' + (r.mudancas || []).length + ' mudança(s) de categoria', 'success');
+                carregar();
+            } catch (err) { showToastRef.current(err.message, 'error'); }
+            finally { setRodando(''); }
+        };
+
+        if (loading && !dados) return h('div', { className: 'text-center py-12 text-gray-500 text-sm' }, 'Carregando painel...');
+        if (!dados) return h('div', { className: 'text-center py-12 text-gray-400 text-sm' }, 'Não foi possível carregar o painel.');
+
+        const t = dados.totais || {};
+        const ben = t.beneficios_mes || { por_situacao: {}, total: 0 };
+        const ps = ben.por_situacao || {};
+        const totalAv = (t.bronze || 0) + (t.prata || 0) + (t.ouro || 0);
+        const pracas = (dados.pracas || []).filter(p => mostrarInativas || p.ativo);
+        const inativas = (dados.pracas || []).filter(p => !p.ativo).length;
+        const mesBR = dados.mes_atual ? dados.mes_atual.slice(5) + '/' + dados.mes_atual.slice(0, 4) : '';
+
+        const alertas = [];
+        if ((ps.saque_falhou || 0) > 0) alertas.push({ cor: 'red', txt: ps.saque_falhou + ' saque(s) grátis consumido(s) em saque recusado este mês — o motoboy perdeu o benefício.', acao: () => irPara('contemplados', { situacao: 'saque_falhou' }) });
+        if ((ps.expirou || 0) > 0) alertas.push({ cor: 'amber', txt: ps.expirou + ' saque(s) grátis expiraram sem uso este mês.', acao: () => irPara('contemplados', { situacao: 'expirou' }) });
+        if ((t.desatualizados || 0) > 0) alertas.push({ cor: 'amber', txt: t.desatualizados + ' motoboy(s) com avaliação congelada (há mais de 9 dias) — ficam fora de saque e sorteio.', acao: null });
+
+        return h('div', { className: 'space-y-4' },
+            // faixa de status + ações
+            h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 flex flex-wrap items-center gap-x-5 gap-y-2' },
+                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('clock', 15), h('span', null, 'Última avaliação: ', h('b', { className: 'text-gray-900' }, dados.ultima_avaliacao || '—'))),
+                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('calendar', 15), h('span', null, 'Próxima: ', h('b', { className: 'text-gray-900' }, 'sáb ' + (dados.proxima_avaliacao || '12:00')))),
+                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('wallet', 15), h('span', null, 'Saques grátis lançados todo dia às ', h('b', { className: 'text-gray-900' }, '07:30'))),
+                h('div', { className: 'flex items-center gap-2 ml-auto flex-wrap' },
+                    h('form', {
+                        className: 'flex items-center gap-1',
+                        onSubmit: (e) => { e.preventDefault(); if (codBusca.trim()) abrirDiagnostico(codBusca.trim()); }
+                    },
+                        h('input', { value: codBusca, onChange: e => setCodBusca(e.target.value), placeholder: 'Código do motoboy', className: 'w-36 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-400' }),
+                        h('button', { type: 'submit', className: 'px-2.5 py-1.5 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 inline-flex items-center gap-1' }, ico('search', 14), 'Diagnosticar')
+                    ),
+                    h('button', { onClick: lancarPendentes, disabled: !!rodando, className: 'px-3 py-1.5 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-50 inline-flex items-center gap-1.5' },
+                        ico('wallet', 14), rodando === 'bonus' ? 'Lançando...' : 'Lançar saques pendentes'),
+                    h('button', { onClick: recalcular, disabled: !!rodando, className: 'px-3 py-1.5 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 inline-flex items-center gap-1.5' },
+                        ico('refresh', 14), rodando === 'recalc' ? 'Recalculando...' : 'Recalcular categorias')
+                )
+            ),
+
+            // KPIs
+            h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
+                h(Kpi, { titulo: 'Praças com score', icone: 'pin', valor: t.pracas_ativas || 0, sub: inativas ? (inativas + ' desativada(s)') : 'todas ativas' }),
+                h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 min-w-0' },
+                    h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, ico('users', 14), 'Motoboys avaliados'),
+                    h('div', { className: 'text-2xl font-bold mt-1 text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, totalAv.toLocaleString('pt-BR')),
+                    h('div', { className: 'mt-2' }, h(BarraNiveis, { niveis: { 1: t.bronze, 2: t.prata, 3: t.ouro } })),
+                    h('div', { className: 'flex gap-3 mt-1.5 text-[11px] text-gray-600' },
+                        [3, 2, 1].map(k => h('span', { key: k, className: 'inline-flex items-center gap-1' },
+                            h('span', { className: 'inline-block w-2 h-2 rounded-full', style: { background: COR_NIVEL[k].bar } }),
+                            COR_NIVEL[k].nome + ' ' + ((k === 3 ? t.ouro : k === 2 ? t.prata : t.bronze) || 0)))
+                    )
+                ),
+                h('button', { onClick: () => irPara('contemplados', {}), className: 'text-left bg-white rounded-xl border border-gray-200 p-3.5 min-w-0 hover:border-purple-300 transition-colors' },
+                    h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-gray-500 uppercase tracking-wide' }, ico('gift', 14), 'Saques grátis · ' + mesBR),
+                    h('div', { className: 'text-2xl font-bold mt-1 text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, (ben.total || 0) + ' lançados'),
+                    h('div', { className: 'text-[11px] text-gray-600 mt-1 leading-relaxed' },
+                        h('span', { className: 'text-emerald-700 font-semibold' }, (ps.sacou || 0) + ' sacaram'), ' · ',
+                        h('span', { className: 'text-blue-700 font-semibold' }, (ps.disponivel || 0) + ' disponíveis'), ' · ',
+                        h('span', null, (ps.expirou || 0) + ' expiraram'),
+                        (ps.saque_falhou || 0) > 0 && h('span', { className: 'text-red-700' }, ' · ' + ps.saque_falhou + ' recusados')
+                    )
+                ),
+                h(Kpi, { titulo: 'Sacado sem taxa · ' + mesBR, icone: 'trendup', valor: fmtBRL(ben.valor_sacado || 0), sub: 'taxa isenta ≈ ' + fmtBRL(ben.taxa_isenta || 0) + ' · ' + (ben.motoboys || 0) + ' motoboy(s)' })
+            ),
+
+            // alertas
+            alertas.length > 0 && h('div', { className: 'space-y-2' }, alertas.map((a, i) => h('div', {
+                key: i,
+                className: 'flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs ' + (a.cor === 'red' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-900')
+            }, ico('alert', 16), h('span', { className: 'flex-1' }, a.txt),
+                a.acao && h('button', { onClick: a.acao, className: 'font-semibold underline whitespace-nowrap' }, 'Ver lista')))),
+
+            // praças
+            h('div', { className: 'flex items-center justify-between pt-1' },
+                h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Praças'),
+                inativas > 0 && h('label', { className: 'flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer' },
+                    h('input', { type: 'checkbox', checked: mostrarInativas, onChange: e => setMostrarInativas(e.target.checked), className: 'accent-purple-600' }), 'mostrar desativadas')
+            ),
+            pracas.length === 0
+                ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500' }, 'Nenhuma praça com score. Configure na aba Configurações.')
+                : h('div', { className: 'grid lg:grid-cols-2 gap-3' }, pracas.map(p => h(CardPraca, { key: p.id, p, irPara, abrirDiagnostico })))
+        );
+    }
+
+    function CardPraca({ p, irPara, abrirDiagnostico }) {
+        const c = p.criterios || {};
+        const b = p.beneficios || {};
+        const bm = p.beneficios_mes || {};
+        const tem = (n) => (p.niveis_ativos || []).includes(n);
+        const qtdTxt = (q) => (Number(q) || 1) + '×';
+        const linha = (rotulo, conteudo) => h('div', { className: 'flex gap-2 text-xs leading-relaxed' },
+            h('span', { className: 'text-gray-400 w-20 flex-shrink-0' }, rotulo), h('div', { className: 'text-gray-700 min-w-0 flex-1' }, conteudo));
+        const sorteioTxt = [];
+        if (tem(2) && Number(b.sorteio_valor_n2) > 0) sorteioTxt.push('Prata ' + fmtBRL(b.sorteio_valor_n2));
+        if (tem(3) && Number(b.sorteio_valor_n3) > 0) sorteioTxt.push('Ouro ' + fmtBRL(b.sorteio_valor_n3));
+
+        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4 ' + (p.ativo ? '' : 'opacity-60'), style: { borderLeft: '3px solid ' + (p.ativo ? '#7c3aed' : '#cbd5e1') } },
+            h('div', { className: 'flex items-start justify-between gap-2 mb-3' },
+                h('div', { className: 'min-w-0' },
+                    h('div', { className: 'flex items-center gap-2 flex-wrap' },
+                        h('h4', { className: 'font-semibold text-gray-900' }, p.regiao),
+                        h('span', { className: 'px-2 py-0.5 rounded-full text-[10px] font-medium ' + (p.ativo ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500') }, p.ativo ? 'Ativo' : 'Desativado'),
+                        p.regra_aproveitamento_ativa && h('span', { className: 'px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700' }, 'alerta ' + (p.pct_min_aproveitamento || 95) + '%')
+                    ),
+                    h('div', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                        p.motoboys + ' avaliados' + (p.media_pct_prazo != null ? ' · média ' + String(p.media_pct_prazo).replace('.', ',') + '% no prazo' : '') +
+                        (p.ultima_avaliacao ? ' · avaliado ' + p.ultima_avaliacao.slice(8, 10) + '/' + p.ultima_avaliacao.slice(5, 7) + ' ' + p.ultima_avaliacao.slice(11) : ''))
+                )
+            ),
+            h(BarraNiveis, { niveis: p.niveis, altura: 10 }),
+            h('div', { className: 'flex gap-3 mt-1.5 mb-3 text-[11px] text-gray-600' },
+                [3, 2, 1].map(k => h('button', {
+                    key: k, onClick: () => irPara('motoboys', { busca: p.regiao }),
+                    className: 'inline-flex items-center gap-1 hover:text-purple-700'
+                }, h('span', { className: 'inline-block w-2 h-2 rounded-full', style: { background: COR_NIVEL[k].bar } }), COR_NIVEL[k].nome + ' ', h('b', null, (p.niveis || {})[k] || 0)))
+            ),
+            h('div', { className: 'space-y-1 mb-3' },
+                linha('Regras', 'entrada ' + (c.min_elegivel || 0) + ' entregas · ' +
+                    (tem(2) ? 'Prata ≥' + c.pct_prata + '% + ' + c.dias_pico_prata + ' dias pós ' + c.hora_corte + 'h' : '') +
+                    (tem(2) && tem(3) ? ' · ' : '') +
+                    (tem(3) ? 'Ouro ≥' + c.pct_ouro + '% + ' + c.dias_pico_ouro + ' dias' : '')),
+                linha('Saque grátis', [
+                    tem(2) ? 'Prata ' + qtdTxt(b.saque_qtd_n2) + '/mês até ' + fmtBRL(b.saque_teto_n2) : null,
+                    tem(3) ? 'Ouro ' + qtdTxt(b.saque_qtd_n3) + '/semana até ' + fmtBRL(b.saque_teto_n3) : null,
+                ].filter(Boolean).join(' · ') || '—'),
+                linha('Sorteio', sorteioTxt.length ? sorteioTxt.join(' · ') + ' (mensal, ≥20 dias na categoria)' : 'desligado')
+            ),
+            h('div', { className: 'grid grid-cols-4 gap-1.5 mb-3' },
+                [
+                    { k: null, n: bm.lancados || 0, l: 'lançados', cls: 'text-gray-900' },
+                    { k: 'sacou', n: bm.sacou || 0, l: 'sacaram', cls: 'text-emerald-700' },
+                    { k: 'disponivel', n: bm.disponivel || 0, l: 'disponíveis', cls: 'text-blue-700' },
+                    { k: 'expirou', n: bm.expirou || 0, l: 'expiraram', cls: (bm.expirou || 0) > 0 ? 'text-red-700' : 'text-gray-400' },
+                ].map((x, i) => h('button', {
+                    key: i,
+                    onClick: () => irPara('contemplados', { regiao: p.regiao, situacao: x.k || '' }),
+                    className: 'bg-gray-50 hover:bg-purple-50 rounded-lg px-2 py-1.5 text-center transition-colors'
+                }, h('div', { className: 'text-base font-bold leading-none ' + x.cls }, x.n), h('div', { className: 'text-[10px] text-gray-500 mt-0.5' }, x.l)))
+            ),
+            (p.ultimos_sorteios || []).length > 0 && h('div', { className: 'text-[11px] text-gray-600 mb-3 flex flex-wrap gap-x-3 gap-y-1' },
+                h('span', { className: 'text-gray-400' }, 'Último sorteio:'),
+                p.ultimos_sorteios.map((s, i) => h('button', {
+                    key: i, onClick: () => abrirDiagnostico(s.cod_prof), className: 'inline-flex items-center gap-1 hover:text-purple-700'
+                }, ico('trophy', 12), (COR_NIVEL[s.nivel] || {}).nome + ' ' + s.mes.slice(5) + '/' + s.mes.slice(2, 4) + ': ', h('b', null, s.vencedor), ' (' + fmtBRL(s.valor) + ')')))
+            ,
+            (p.em_carencia > 0 || p.desatualizados > 0) && h('div', { className: 'flex flex-wrap gap-2 mb-3' },
+                p.em_carencia > 0 && h('span', { className: 'text-[11px] bg-amber-50 text-amber-800 rounded-full px-2 py-0.5' }, p.em_carencia + ' em carência (7 dias)'),
+                p.desatualizados > 0 && h('span', { className: 'text-[11px] bg-red-50 text-red-700 rounded-full px-2 py-0.5' }, p.desatualizados + ' com avaliação congelada')
+            ),
+            h('div', { className: 'flex gap-2 flex-wrap pt-2 border-t border-gray-100' },
+                h('button', { onClick: () => irPara('contemplados', { regiao: p.regiao }), className: 'px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50 rounded-lg inline-flex items-center gap-1.5' }, ico('wallet', 14), 'Contemplados'),
+                h('button', { onClick: () => irPara('motoboys', { busca: p.regiao }), className: 'px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50 rounded-lg inline-flex items-center gap-1.5' }, ico('medal', 14), 'Motoboys'),
+                h('button', { onClick: () => irPara('configuracoes'), className: 'px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-lg inline-flex items-center gap-1.5 ml-auto' }, ico('pencil', 14), 'Regras')
+            )
+        );
+    }
+
+    // ============================================================
+    // SCORE_ADMIN_REDESIGN_V1: ABA CONTEMPLADOS
+    // ============================================================
+    function AbaContemplados({ fetchApi, showToast, abrirDiagnostico, preset }) {
+        const { fetchApiRef, showToastRef } = useApiRefs(fetchApi, showToast);
+        const inicioMes = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; };
+        const [periodo, setPeriodo] = useState('mes');
+        const [de, setDe] = useState(inicioMes());
+        const [ate, setAte] = useState(hojeISO(0));
+        const [regiao, setRegiao] = useState((preset && preset.regiao) || '');
+        const [tipo, setTipo] = useState('');
+        const [situacao, setSituacao] = useState((preset && preset.situacao) || '');
+        const [busca, setBusca] = useState('');
+        const [buscaDeb, setBuscaDeb] = useState('');
+        const [pracas, setPracas] = useState([]);
+        const [dados, setDados] = useState(null);
+        const [loading, setLoading] = useState(false);
+
+        useEffect(() => {
+            if (!preset) return;
+            setRegiao(preset.regiao || '');
+            setSituacao(preset.situacao || '');
+        }, [preset && preset._t]);
+
+        useEffect(() => { const t = setTimeout(() => setBuscaDeb(busca), 400); return () => clearTimeout(t); }, [busca]);
+
+        useEffect(() => {
+            (async () => {
+                try {
+                    const cfgs = await fetchApiRef.current('/score-v2/admin/configuracoes');
+                    setPracas((cfgs || []).map(c => c.regiao).sort((a, b) => a.localeCompare(b, 'pt-BR')));
+                } catch (_) {}
+            })();
+        }, []);
+
+        const aplicarPeriodo = (p) => {
+            setPeriodo(p);
+            const d = new Date();
+            if (p === 'mes') { setDe(inicioMes()); setAte(hojeISO(0)); }
+            if (p === 'mes_ant') {
+                const ini = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+                const fim = new Date(d.getFullYear(), d.getMonth(), 0);
+                const f = (x) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+                setDe(f(ini)); setAte(f(fim));
+            }
+            if (p === '90d') { setDe(hojeISO(-89)); setAte(hojeISO(0)); }
+            if (p === 'tudo') { setDe(''); setAte(''); }
+        };
+
+        useEffect(() => {
+            (async () => {
+                setLoading(true);
+                try {
+                    const q = [];
+                    if (de) q.push('de=' + de);
+                    if (ate) q.push('ate=' + ate);
+                    if (regiao) q.push('regiao=' + encodeURIComponent(regiao));
+                    if (tipo) q.push('tipo=' + tipo);
+                    if (buscaDeb.trim()) q.push('busca=' + encodeURIComponent(buscaDeb.trim()));
+                    q.push('limite=2000');
+                    setDados(await fetchApiRef.current('/score-v2/admin/contemplados?' + q.join('&')));
+                } catch (err) { showToastRef.current(err.message, 'error'); setDados(null); }
+                finally { setLoading(false); }
+            })();
+        }, [de, ate, regiao, tipo, buscaDeb]);
+
+        const todos = (dados && dados.contemplados) || [];
+        const linhas = situacao ? todos.filter(c => c.situacao === situacao) : todos;
+        const porSit = {};
+        todos.forEach(c => { porSit[c.situacao] = (porSit[c.situacao] || 0) + 1; });
+        const valorSacado = linhas.reduce((s, c) => s + (Number(c.valor_sacado) || 0), 0);
+        const motoboys = new Set(linhas.map(c => c.cod_prof)).size;
+
+        const exportarCsv = () => {
+            const cab = ['lancado_em', 'cod_prof', 'nome', 'praca', 'origem', 'periodo', 'quantidade', 'restantes', 'teto', 'validade', 'situacao', 'valor_sacado', 'saques'];
+            const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+            const rows = linhas.map(c => {
+                const o = labelOrigem(c);
+                const saques = (c.saques || []).map(s => s.em + ' R$' + s.valor + ' ' + s.status).join(' | ');
+                return [c.lancado_em, c.cod_prof, c.nome_prof, c.regiao, o.titulo, o.sub, c.quantidade, c.restantes, c.valor, c.expira_em, (SITUACAO[c.situacao] || {}).label || c.situacao, String(c.valor_sacado).replace('.', ','), saques].map(esc).join(';');
+            });
+            const blob = new Blob(['﻿' + cab.join(';') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'score-contemplados-' + (de || 'inicio') + '_' + (ate || 'hoje') + '.csv';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        };
+
+        const btnPer = (id, label) => h('button', {
+            onClick: () => aplicarPeriodo(id),
+            className: 'px-2.5 py-1.5 text-xs rounded-lg ' + (periodo === id ? 'bg-purple-600 text-white font-semibold' : 'text-gray-600 hover:bg-gray-100')
+        }, label);
+        const sel = (val, on, opts) => h('select', { value: val, onChange: e => on(e.target.value), className: 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-white outline-none focus:border-purple-400' },
+            opts.map(o => h('option', { key: o[0], value: o[0] }, o[1])));
+
+        const chipsSit = ['', 'sacou', 'disponivel', 'em_andamento', 'expirou', 'saque_falhou', 'removida', 'usada_sem_saque']
+            .filter(k => k === '' || porSit[k] > 0);
+
+        return h('div', { className: 'space-y-3' },
+            h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3 space-y-2.5' },
+                h('div', { className: 'flex flex-wrap items-center gap-2' },
+                    h('div', { className: 'flex gap-0.5 bg-gray-50 rounded-lg p-0.5' },
+                        btnPer('mes', 'Este mês'), btnPer('mes_ant', 'Mês passado'), btnPer('90d', '90 dias'), btnPer('tudo', 'Tudo'), btnPer('custom', 'Período')),
+                    periodo === 'custom' && h('div', { className: 'flex items-center gap-1.5 text-xs text-gray-500' },
+                        h('input', { type: 'date', value: de, onChange: e => setDe(e.target.value), className: 'px-2 py-1 border border-gray-200 rounded-lg text-xs' }),
+                        'até',
+                        h('input', { type: 'date', value: ate, onChange: e => setAte(e.target.value), className: 'px-2 py-1 border border-gray-200 rounded-lg text-xs' })),
+                    h('div', { className: 'flex gap-2 flex-wrap ml-auto' },
+                        sel(regiao, setRegiao, [['', 'Todas as praças']].concat(pracas.map(p => [p, p]))),
+                        sel(tipo, setTipo, [['', 'Toda origem'], ['saque_mensal', 'Saque Prata (mês)'], ['saque_semanal', 'Saque Ouro (semana)'], ['sorteio', 'Sorteio'], ['legado_v1', 'Score v1 (legado)']]),
+                        h('input', { value: busca, onChange: e => setBusca(e.target.value), placeholder: 'Nome ou código', className: 'w-40 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-400' })
+                    )
+                ),
+                h('div', { className: 'flex flex-wrap items-center gap-1.5' },
+                    chipsSit.map(k => h('button', {
+                        key: k || 'todos',
+                        onClick: () => setSituacao(k),
+                        className: 'px-2.5 py-1 rounded-full text-[11px] font-medium border transition ' + (situacao === k ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300')
+                    }, k ? (SITUACAO[k] || {}).label || k : 'Todos', h('span', { className: 'ml-1.5 opacity-75' }, k ? porSit[k] : todos.length))),
+                    h('div', { className: 'ml-auto flex items-center gap-3 text-xs text-gray-500' },
+                        h('span', null, motoboys + ' motoboy(s) · sacado sem taxa ', h('b', { className: 'text-gray-900' }, fmtBRL(valorSacado))),
+                        h('button', { onClick: exportarCsv, disabled: !linhas.length, className: 'px-2.5 py-1.5 text-xs font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-40 inline-flex items-center gap-1' }, ico('download', 14), 'CSV')
+                    )
+                )
+            ),
+            loading && !dados ? h('div', { className: 'text-center py-12 text-gray-500 text-sm' }, 'Carregando contemplados...') :
+            linhas.length === 0
+                ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center' },
+                    h('div', { className: 'text-gray-300 flex justify-center mb-2' }, ico('gift', 36)),
+                    h('p', { className: 'text-sm font-medium text-gray-700' }, 'Ninguém contemplado com esses filtros'),
+                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Saques de categoria são lançados todo dia às 07:30 para quem é Prata/Ouro e já passou da carência.'))
+                : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-x-auto' + (loading ? ' opacity-60' : '') },
+                    h('table', { className: 'w-full text-sm' },
+                        h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
+                            h('tr', null, ['Lançado', 'Motoboy', 'Praça', 'Origem', 'Benefício', 'Validade', 'Situação', 'Saques com a gratuidade'].map((c, i) =>
+                                h('th', { key: i, className: 'px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap' }, c)))
+                        ),
+                        h('tbody', null, linhas.map(c => {
+                            const o = labelOrigem(c);
+                            return h('tr', { key: c.gratuidade_id, className: 'border-b border-gray-100 hover:bg-purple-50/40 align-top' },
+                                h('td', { className: 'px-3 py-2 text-xs text-gray-500 whitespace-nowrap' }, c.lancado_em),
+                                h('td', { className: 'px-3 py-2' },
+                                    h('button', { onClick: () => abrirDiagnostico(c.cod_prof), className: 'text-left hover:text-purple-700' },
+                                        h('div', { className: 'text-[13px] font-medium text-gray-900' }, c.nome_prof || ('#' + c.cod_prof)),
+                                        h('div', { className: 'text-[11px] text-gray-500' }, 'cód ' + c.cod_prof))),
+                                h('td', { className: 'px-3 py-2 text-xs text-gray-600' }, c.regiao || '—'),
+                                h('td', { className: 'px-3 py-2' },
+                                    h('div', { className: 'text-xs font-semibold text-gray-800 whitespace-nowrap' }, o.titulo),
+                                    h('div', { className: 'text-[11px] text-gray-500 whitespace-nowrap' }, o.sub)),
+                                h('td', { className: 'px-3 py-2 text-xs text-gray-700 whitespace-nowrap' },
+                                    (c.quantidade || 1) + '× saque grátis',
+                                    h('div', { className: 'text-[11px] text-gray-500' }, 'até ' + fmtBRL(c.valor) + (c.quantidade > 1 ? ' · resta ' + c.restantes : ''))),
+                                h('td', { className: 'px-3 py-2 text-xs text-gray-500 whitespace-nowrap' }, c.expira_em || '—'),
+                                h('td', { className: 'px-3 py-2' }, badgeSituacao(c.situacao)),
+                                h('td', { className: 'px-3 py-2 text-[11px] text-gray-600' },
+                                    (c.saques || []).length === 0 ? h('span', { className: 'text-gray-400' }, '—') :
+                                        (c.saques || []).map(s => h('div', { key: s.id, className: 'whitespace-nowrap' },
+                                            h('b', { className: 'text-gray-800' }, fmtBRL(s.valor)), ' · ',
+                                            h('span', { className: ['rejeitado', 'cancelado', 'excluido', 'inativo'].includes(s.status) ? 'text-red-600' : '' }, STATUS_SAQUE[s.status] || s.status),
+                                            ' · ' + s.em)))
+                            );
+                        }))
+                    ),
+                    dados && dados.resumo && dados.resumo.limitado && h('div', { className: 'px-3 py-2 text-[11px] text-amber-700 bg-amber-50' }, 'Mostrando os 2000 mais recentes — refine o período para ver todos.')
+                )
+        );
+    }
+
+    // ============================================================
+    // SCORE_ADMIN_REDESIGN_V1: DIAGNÓSTICO DO MOTOBOY (painel lateral)
+    // ============================================================
+    function DrawerDiagnostico({ cod, fetchApi, showToast, onClose }) {
+        const { fetchApiRef, showToastRef } = useApiRefs(fetchApi, showToast);
+        const [d, setD] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [reavaliando, setReavaliando] = useState(false);
+
+        const carregar = useCallback(async () => {
+            setLoading(true);
+            try { setD(await fetchApiRef.current('/score-v2/admin/motoboy/' + encodeURIComponent(cod) + '/diagnostico')); }
+            catch (err) { showToastRef.current(err.message, 'error'); setD(null); }
+            finally { setLoading(false); }
+        }, [cod]);
+        useEffect(() => { carregar(); }, [carregar]);
+        useEffect(() => {
+            const esc = (e) => { if (e.key === 'Escape') onClose(); };
+            window.addEventListener('keydown', esc);
+            return () => window.removeEventListener('keydown', esc);
+        }, [onClose]);
+
+        const reavaliar = async () => {
+            setReavaliando(true);
+            try {
+                const r = await fetchApiRef.current('/score-v2/admin/avaliar/' + encodeURIComponent(cod));
+                if (r && r.erro) showToastRef.current('Não encontrado: ' + r.erro, 'error');
+                else if (r && r.regiao_configurada === false) showToastRef.current(r.mensagem || 'Praça sem score', 'warning');
+                else showToastRef.current('Reavaliado: ' + ((COR_NIVEL[r.nivel] || {}).nome || '-') + (r.bonus && r.bonus.lancado ? ' · saque lançado' : ''), 'success');
+                carregar();
+            } catch (err) { showToastRef.current(err.message, 'error'); }
+            finally { setReavaliando(false); }
+        };
+
+        const corVer = { ok: 'bg-emerald-50 border-emerald-200 text-emerald-900', info: 'bg-blue-50 border-blue-200 text-blue-900', alerta: 'bg-amber-50 border-amber-200 text-amber-900', erro: 'bg-red-50 border-red-200 text-red-900' };
+        const icoVer = { ok: 'check', info: 'info', alerta: 'alert', erro: 'x' };
+        const secao = (titulo, conteudo) => h('div', { className: 'mt-5' },
+            h('div', { className: 'text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2' }, titulo), conteudo);
+        const cel = (rotulo, valor) => h('div', { className: 'flex justify-between gap-2 text-xs py-1 border-b border-gray-100 last:border-0' }, h('span', { className: 'text-gray-500' }, rotulo), h('span', { className: 'font-medium text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, valor));
+        const fmtPct = (v) => v == null ? '—' : String(Math.round(Number(v) * 10) / 10).replace('.', ',') + '%';
+
+        return h('div', { className: 'fixed inset-0 z-50 flex justify-end bg-black/40', onClick: (e) => { if (e.target === e.currentTarget) onClose(); } },
+            h('div', { className: 'bg-white w-full max-w-xl h-full overflow-y-auto shadow-2xl flex flex-col' },
+                h('div', { className: 'px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3 sticky top-0 bg-white z-10' },
+                    h('div', { className: 'min-w-0' },
+                        h('div', { className: 'text-[11px] text-gray-500 uppercase tracking-wide' }, 'Diagnóstico do score'),
+                        h('div', { className: 'text-base font-bold text-gray-900 truncate' }, (d && d.nome) || ('Código ' + cod)),
+                        h('div', { className: 'text-xs text-gray-500' }, 'cód ' + cod + (d && d.regiao_crm ? ' · praça no CRM: ' + d.regiao_crm : ''))
+                    ),
+                    h('button', { onClick: onClose, 'aria-label': 'Fechar', className: 'w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg' }, ico('x', 18))
+                ),
+                h('div', { className: 'px-5 pb-6 flex-1' },
+                    loading && !d ? h('div', { className: 'py-12 text-center text-sm text-gray-500' }, 'Analisando...') :
+                    !d ? h('div', { className: 'py-12 text-center text-sm text-gray-400' }, 'Sem dados.') :
+                    h(React.Fragment, null,
+                        secao('Veredito', h('div', { className: 'space-y-1.5' }, (d.veredito || []).map((v, i) =>
+                            h('div', { key: i, className: 'flex gap-2 items-start rounded-lg border px-3 py-2 text-xs leading-relaxed ' + (corVer[v.tipo] || corVer.info) },
+                                h('span', { className: 'mt-0.5' }, ico(icoVer[v.tipo] || 'info', 14)), h('span', null, v.texto))))),
+                        secao('Números (28 dias)', h('div', { className: 'grid grid-cols-2 gap-3' },
+                            h('div', { className: 'rounded-xl border border-gray-200 p-3' },
+                                h('div', { className: 'flex items-center justify-between mb-1.5' }, h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Oficial (sábado)'), d.oficial ? chipNivel(d.oficial.nivel) : null),
+                                d.oficial ? h('div', null,
+                                    cel('Entregas', d.oficial.entregas), cel('Dias pós-corte', d.oficial.dias_pico), cel('% no prazo', fmtPct(d.oficial.pct_prazo)),
+                                    cel('Na categoria desde', d.oficial.nivel_desde || '—'), cel('Avaliado em', d.oficial.avaliado_em || '—'))
+                                    : h('div', { className: 'text-xs text-gray-400 py-3' }, 'Nunca avaliado')),
+                            h('div', { className: 'rounded-xl border border-gray-200 p-3' },
+                                h('div', { className: 'flex items-center justify-between mb-1.5' }, h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Hoje (ao vivo)'), d.ao_vivo ? chipNivel(d.ao_vivo.nivel) : null),
+                                d.ao_vivo ? h('div', null,
+                                    cel('Entregas', d.ao_vivo.stats.entregas), cel('Dias pós-corte', d.ao_vivo.stats.dias_16h), cel('% no prazo', fmtPct(d.ao_vivo.stats.pct_prazo)))
+                                    : h('div', { className: 'text-xs text-gray-400 py-3' }, '—'))
+                        )),
+                        d.ao_vivo && d.ao_vivo.progresso && secao('Falta para ' + ((COR_NIVEL[d.ao_vivo.progresso.proximo_nivel] || {}).nome || ''),
+                            h('div', { className: 'space-y-2' }, d.ao_vivo.progresso.requisitos.map((r, i) => h('div', { key: i },
+                                h('div', { className: 'flex justify-between text-xs mb-1' },
+                                    h('span', { className: 'flex items-center gap-1.5 ' + (r.ok ? 'text-emerald-700' : 'text-gray-700') }, ico(r.ok ? 'check' : 'target', 13), r.label),
+                                    h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, (r.sufixo ? fmtPct(r.atual) : r.atual) + ' / ' + (r.sufixo ? fmtPct(r.meta) : r.meta))),
+                                h('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, Number(r.pct) || 0) + '%', background: r.ok ? '#22c55e' : '#a855f7' } })))))),
+                        secao('Saques grátis do score', (d.beneficios || []).length === 0
+                            ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum benefício lançado ainda.')
+                            : h('div', { className: 'space-y-1.5' }, d.beneficios.map(b => {
+                                const o = labelOrigem(b);
+                                return h('div', { key: b.gratuidade_id, className: 'rounded-lg border border-gray-200 px-3 py-2' },
+                                    h('div', { className: 'flex items-center justify-between gap-2' },
+                                        h('div', { className: 'text-xs font-semibold text-gray-800' }, o.titulo + ' · ' + o.sub),
+                                        badgeSituacao(b.situacao)),
+                                    h('div', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                                        (b.quantidade || 1) + '× até ' + fmtBRL(b.valor) + ' · lançado ' + b.lancado_em + (b.expira_em ? ' · vale até ' + b.expira_em : '')),
+                                    (b.saques || []).map(s => h('div', { key: s.id, className: 'text-[11px] text-gray-600 mt-0.5' },
+                                        '↳ saque ' + fmtBRL(s.valor) + ' · ' + (STATUS_SAQUE[s.status] || s.status) + ' · ' + s.em + (s.motivo_rejeicao ? ' (' + s.motivo_rejeicao + ')' : '')))
+                                );
+                            }))),
+                        (d.gratuidades_ativas || []).length > 0 && secao('Gratuidades ativas agora (qualquer origem)',
+                            h('div', { className: 'space-y-1' }, d.gratuidades_ativas.map(g => h('div', { key: g.id, className: 'text-xs text-gray-700 flex justify-between gap-2' },
+                                h('span', { className: 'truncate' }, (g.reason || g.created_by || 'Gratuidade')), h('span', { className: 'text-gray-500 whitespace-nowrap' }, g.remaining + '/' + g.quantity + ' · até ' + (g.expira_em || '—')))))),
+                        secao('Últimos saques', (d.saques_recentes || []).length === 0
+                            ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum saque.')
+                            : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-xs' },
+                                h('tbody', null, d.saques_recentes.map(s => h('tr', { key: s.id, className: 'border-b border-gray-100' },
+                                    h('td', { className: 'py-1.5 text-gray-500 whitespace-nowrap' }, s.em),
+                                    h('td', { className: 'py-1.5 font-medium text-gray-900 whitespace-nowrap' }, fmtBRL(s.valor)),
+                                    h('td', { className: 'py-1.5 whitespace-nowrap' }, s.has_gratuity ? h('span', { className: 'text-emerald-700' }, 'sem taxa' + (s.gratuity_id ? ' #' + s.gratuity_id : ' (isenção)')) : h('span', { className: 'text-gray-500' }, 'taxa ' + fmtBRL(s.taxa))),
+                                    h('td', { className: 'py-1.5 text-gray-600 whitespace-nowrap text-right' }, STATUS_SAQUE[s.status] || s.status))))))),
+                        d.oficial && (d.oficial.historico || []).length > 0 && secao('Mudanças de categoria',
+                            h('div', { className: 'space-y-1' }, d.oficial.historico.map((m, i) => h('div', { key: i, className: 'text-xs text-gray-600 flex items-center gap-2' },
+                                chipNivel(m.de), ico('arrowright', 12), chipNivel(m.para),
+                                h('span', { className: 'text-gray-400' }, m.em ? new Date(m.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''))))),
+                        d.oficial && d.oficial.ultimo_bonus && d.oficial.ultimo_bonus.motivo && h('div', { className: 'mt-4 text-[11px] text-gray-400' },
+                            'Última tentativa de lançar saque: ' + d.oficial.ultimo_bonus.motivo + ' · ' + (d.oficial.ultimo_bonus.em || ''))
+                    )
+                ),
+                h('div', { className: 'px-5 py-3 border-t border-gray-100 flex gap-2 sticky bottom-0 bg-white' },
+                    h('button', { onClick: onClose, className: 'flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50' }, 'Fechar'),
+                    h('button', { onClick: reavaliar, disabled: reavaliando, className: 'flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 inline-flex items-center justify-center gap-1.5' },
+                        ico('refresh', 15), reavaliando ? 'Reavaliando...' : 'Reavaliar agora')
+                )
+            )
+        );
+    }
 
     // ============================================================
     // 🆕 ABA APROVEITAMENTO SEMANAL
@@ -797,7 +1367,7 @@
                     // Dica
                     h('div', { className: 'bg-blue-50 rounded-xl p-3 text-[11px] text-blue-900 leading-relaxed' },
                         h('span', { className: 'font-semibold' }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bulb" }))),
-                        'Ao salvar, todos os motoboys da praça são recalculados em background com os novos critérios. Pra conferir a contagem por categoria, use a aba "Motoboys por Categoria".'
+                        'Ao salvar, todos os motoboys da praça são recalculados em background com os novos critérios. Pra conferir a contagem por categoria, use a aba "Categorias".'
                     )
                 ),
                 // Footer
@@ -813,9 +1383,10 @@
     // ABA MOTOBOYS POR NÍVEL
     // 🚀 2026-05: Redesign — cards por região com pódio compacto + drilldown modal
     // ============================================================
-    function AbaMotoboys({ fetchApi, showToast }) {
+    function AbaMotoboys({ fetchApi, showToast, abrirDiagnostico, buscaInicial }) {
         const [filtroNivel, setFiltroNivel] = useState('');
-        const [busca, setBusca] = useState('');
+        const [busca, setBusca] = useState(buscaInicial || '');
+        useEffect(() => { setBusca(buscaInicial || ''); }, [buscaInicial]);
         const [motoboys, setMotoboys] = useState([]);
         const [total, setTotal] = useState(0);
         const [loading, setLoading] = useState(false);
@@ -977,6 +1548,7 @@
             regiaoModal && h(ModalMotoboysRegiao, {
                 regiaoModal,
                 onClose: () => setRegiaoModal(null),
+                abrirDiagnostico,
             })
         );
     }
@@ -987,7 +1559,7 @@
     // 🆕 2026-05 v3: componente isolado com chips de filtro Todos | Ouro |
     // Prata | Bronze + renumeração ao filtrar + troféu nas 3 primeiras
     // posições quando ordenação é por classificação (sempre, neste modal).
-    function ModalMotoboysRegiao({ regiaoModal, onClose }) {
+    function ModalMotoboysRegiao({ regiaoModal, onClose, abrirDiagnostico }) {
         const [filtroNivel, setFiltroNivel] = useState('todos'); // 'todos' | 1 | 2 | 3
 
         // Lista filtrada (mantém a ordem já aplicada — classificação + % prazo)
@@ -1076,13 +1648,17 @@
                                 }
                                 return h('tr', {
                                     key: m.cod_prof,
-                                    className: 'border-b border-gray-100 hover:bg-purple-50/40 ' + bgClasse
+                                    onClick: abrirDiagnostico ? () => abrirDiagnostico(m.cod_prof) : undefined,
+                                    title: 'Abrir diagnóstico',
+                                    className: 'border-b border-gray-100 hover:bg-purple-50/40 cursor-pointer ' + bgClasse
                                 },
                                     h('td', { className: 'px-3 py-2 text-gray-600 text-center w-12' },
                                         idx === 0 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : idx === 1 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) : idx === 2 ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-medal" })) :
                                             h('span', { className: 'text-xs font-medium text-gray-500' }, idx + 1)
                                     ),
-                                    h('td', { className: 'px-3 py-2 font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
+                                    h('td', { className: 'px-3 py-2' },
+                                        h('div', { className: 'font-medium text-gray-900' }, m.nome_prof || ('#' + m.cod_prof)),
+                                        h('div', { className: 'text-[11px] text-gray-400' }, 'cód ' + m.cod_prof)),
                                     h('td', { className: 'px-3 py-2' },
                                         h('span', {
                                             className: 'px-2 py-0.5 rounded text-xs font-bold ' + (m.nivel_atual === 3 ? 'bg-yellow-100 text-yellow-800' : m.nivel_atual === 2 ? 'bg-amber-100 text-amber-800' : 'bg-orange-100 text-orange-800')
@@ -1206,7 +1782,7 @@
         );
     }
 
-    function AbaSorteios({ fetchApi, showToast }) {
+    function AbaSorteios({ fetchApi, showToast, abrirDiagnostico }) {
         const [sorteios, setSorteios] = useState([]);
         const [loading, setLoading] = useState(true);
         const [mesManual, setMesManual] = useState('');
@@ -1261,7 +1837,7 @@
                         h('label', { className: 'text-xs text-purple-700' }, 'Disparo manual (mês)'),
                         h('input', { type: 'text', placeholder: 'YYYY-MM', value: mesManual, onChange: e => setMesManual(e.target.value), className: 'px-3 py-1.5 border rounded text-sm mt-1' })
                     ),
-                    h('button', { onClick: sortearAgora, className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-shuffle" })), "Sortear"))
+                    h('button', { onClick: sortearAgora, className: 'px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-gift" })), "Sortear"))
                 )
             ),
             loading ? h('div', { className: 'text-center py-12 text-gray-500' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Carregando...")) :
@@ -1282,7 +1858,11 @@
                             h('td', { className: 'px-3 py-2' },
                                 h('span', { className: 'px-2 py-0.5 rounded text-xs font-bold ' + (s.nivel === 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-800') }, s.nivel === 3 ? 'Ouro' : 'Prata')
                             ),
-                            h('td', { className: 'px-3 py-2 font-bold text-purple-900' }, '' + (s.vencedor_nome || s.vencedor_cod_prof)),
+                            h('td', { className: 'px-3 py-2' },
+                                h('button', {
+                                    onClick: (e) => { e.stopPropagation(); if (abrirDiagnostico) abrirDiagnostico(s.vencedor_cod_prof); },
+                                    className: 'font-bold text-purple-900 hover:underline text-left'
+                                }, '' + (s.vencedor_nome || s.vencedor_cod_prof))),
                             h('td', { className: 'px-3 py-2 font-bold text-green-700' }, fmtBRL(s.valor)),
                             h('td', { className: 'px-3 py-2 text-gray-600' }, (expandido === s.id ? '' : '') + s.total_participantes),
                             h('td', { className: 'px-3 py-2 text-xs text-gray-500' }, fmtData(s.sorteado_em))
@@ -1293,8 +1873,13 @@
                                 participantes.length === 0 ? h('span', { className: 'text-xs text-gray-400' }, 'Nenhum participante registrado (sorteios anteriores a junho/2026 não têm a lista).') :
                                 h('div', null,
                                     h('p', { className: 'text-xs font-bold text-gray-600 mb-1' }, 'Participantes (' + participantes.length + '):'),
+                                    // SCORE_ADMIN_REDESIGN_V1: antes concatenava o <svg> com a string -> "[object Object]Nome"
                                     h('div', { className: 'flex flex-wrap gap-1' }, participantes.map(p =>
-                                        h('span', { key: p.cod_prof, className: 'px-2 py-0.5 rounded text-xs ' + (p.foi_vencedor ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-700') }, (p.foi_vencedor ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" })) : '') + (p.nome_prof || p.cod_prof))
+                                        h('button', {
+                                            key: p.cod_prof,
+                                            onClick: (e) => { e.stopPropagation(); if (abrirDiagnostico) abrirDiagnostico(p.cod_prof); },
+                                            className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs hover:ring-1 hover:ring-purple-300 ' + (p.foi_vencedor ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-700')
+                                        }, p.foi_vencedor ? ico('trophy', 13) : null, p.nome_prof || p.cod_prof)
                                     ))
                                 )
                             )

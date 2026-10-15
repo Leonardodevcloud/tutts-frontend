@@ -1,4 +1,4 @@
-/* DEEMOJI_V1 */
+/* DEEMOJI_V1 */ /* SCORE_BENEFICIO_REAL_V1 */
 // ==================== MÓDULO SCORE V2 (MOTOBOY) ====================
 // Arquivo: modulo-score-v2-motoboy.js
 //
@@ -34,6 +34,66 @@
         return Math.round(n).toLocaleString('pt-BR') + (suf || '');
     }
     window.TuttsScoreFmtReq = fmtReq; // usado também pelo card "Meu Score" da home (app.js)
+
+    // ============================================================
+    // SCORE_BENEFICIO_REAL_V1: card "Meus saques grátis"
+    // ============================================================
+    function textoSaqueGratis(b) {
+        if (!b) return '';
+        const qtd = Number(b.restantes != null ? b.restantes : (b.quantidade || 1)) || 1;
+        const per = b.tipo === 'saque_semanal' ? 'desta semana' : b.tipo === 'sorteio' ? 'do sorteio' : 'deste mês';
+        return (qtd === 1 ? 'Você tem 1 saque sem taxa' : 'Você tem ' + qtd + ' saques sem taxa') + ' ' + per +
+            (b.valor ? ' (até ' + fmtBRL(b.valor) + ')' : '') +
+            (b.expira_em ? '. Vale até ' + String(b.expira_em).slice(0, 10) + '.' : '.');
+    }
+
+    function CardMeusSaquesGratis({ bonus, beneficios, carencia, nivel }) {
+        const LABEL = {
+            disponivel: ['Disponível', 'bg-blue-50 text-blue-700'],
+            sacou: ['Usado', 'bg-emerald-50 text-emerald-700'],
+            em_andamento: ['Em processamento', 'bg-purple-50 text-purple-700'],
+            expirou: ['Expirou', 'bg-gray-100 text-gray-500'],
+            saque_falhou: ['Saque recusado', 'bg-red-50 text-red-700'],
+            removida: ['Cancelado', 'bg-gray-100 text-gray-500'],
+            usada_sem_saque: ['Usado', 'bg-gray-100 text-gray-600'],
+        };
+        const origem = (b) => b.tipo === 'saque_semanal' ? 'Saque Ouro · semana ' + String(b.periodo || '').replace(/^\d{4}-W/, '')
+            : b.tipo === 'saque_mensal' ? 'Saque Prata · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
+            : b.tipo === 'sorteio' ? 'Prêmio do sorteio · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
+            : 'Saque grátis';
+        const lista = (beneficios || []).slice(0, 4);
+        const emCarencia = nivel >= 2 && carencia && carencia.em_carencia;
+
+        if (!bonus && lista.length === 0 && !emCarencia) return null;
+
+        return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
+            h('div', { className: 'flex items-center gap-2 mb-2' },
+                h("svg", { className: "ico", style: { width: 18, height: 18, color: '#7c3aed' }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })),
+                h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Meus saques grátis')
+            ),
+            bonus && bonus.lancado && h('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2' },
+                h('p', { className: 'text-sm font-bold text-blue-900' }, 'Saque liberado!'),
+                h('p', { className: 'text-xs text-blue-800 mt-0.5' }, textoSaqueGratis(bonus)),
+                h('p', { className: 'text-[11px] text-blue-600 mt-1' }, 'É aplicado automaticamente no seu próximo saque.')
+            ),
+            emCarencia && !bonus && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 text-xs text-amber-900' },
+                'Você está em carência na categoria. O saque grátis libera em ' + (carencia.dias_restantes || 1) +
+                (Number(carencia.dias_restantes) === 1 ? ' dia' : ' dias') + ', se mantiver a categoria.'),
+            lista.length > 0 && h('div', { className: 'divide-y divide-gray-100' }, lista.map((b, i) => {
+                const lb = LABEL[b.situacao] || [b.situacao, 'bg-gray-100 text-gray-600'];
+                return h('div', { key: i, className: 'flex items-center justify-between gap-2 py-2' },
+                    h('div', { className: 'min-w-0' },
+                        h('div', { className: 'text-xs font-medium text-gray-800 truncate' }, origem(b)),
+                        h('div', { className: 'text-[11px] text-gray-500' },
+                            b.situacao === 'disponivel' && b.expira_em ? 'vale até ' + String(b.expira_em).slice(0, 10) :
+                            b.situacao === 'sacou' && b.valor_sacado ? fmtBRL(b.valor_sacado) + ' sacados sem taxa' :
+                            'liberado em ' + String(b.lancado_em || '').slice(0, 10))
+                    ),
+                    h('span', { className: 'text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ' + lb[1] }, lb[0])
+                );
+            }))
+        );
+    }
 
     // ============================================================
     // TELA COMPLETA DE SCORE (motoboy)
@@ -105,23 +165,10 @@
                 h('p', { className: 'text-sm font-bold text-green-900' }, 'Você subiu para Nível ' + nivel + '!')
             ),
 
-            // Bônus lançado neste período
-            bonus && bonus.lancado && h('div', { className: 'bg-blue-50 border-2 border-blue-300 rounded-xl p-4' },
-                h('div', { className: 'flex items-start gap-3' },
-                    h('div', { className: 'text-2xl' }, h("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" }))),
-                    h('div', null,
-                        h('p', { className: 'text-sm font-bold text-blue-900' }, 'Saque liberado!'),
-                        h('p', { className: 'text-xs text-blue-700 mt-1' },
-                            'Você tem direito a 1 saque grátis até ' + fmtBRL(bonus.valor) +
-                            ' este ' + (bonus.tipo === 'saque_semanal' ? 'esta semana' : 'mês') + '.'
-                        ),
-                        h('p', { className: 'text-xs text-blue-600 mt-1' }, 'Vá no menu Financeiro → Saques pra usar.')
-                    )
-                )
-            ),
-            bonus && !bonus.lancado && bonus.motivo === 'ja_lancado_no_periodo' && h('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-600' },
-                'Saque grátis deste período já foi liberado anteriormente.'
-            ),
+            // SCORE_BENEFICIO_REAL_V1: saque grátis REAL lançado (vem de /meu-nivel.beneficios).
+            // Antes o card dependia de `bonus`, que o /meu-nivel nunca devolvia — o motoboy
+            // não tinha como saber se o saque da categoria tinha sido liberado nem até quando.
+            h(CardMeusSaquesGratis, { bonus, beneficios: dados.beneficios || [], carencia: dados.carencia, nivel }),
 
             // Progresso pro próximo nível (card de requisitos novo)
             progresso && h(CardRequisitos, { progresso, nivel }),
@@ -912,10 +959,7 @@
                 ),
                 bonus && bonus.lancado && h('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-3 mb-3' },
                     h('p', { className: 'text-sm font-bold text-green-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })), "Saque grátis disponível!")),
-                    h('p', { className: 'text-xs text-green-700 mt-1' },
-                        'Você tem direito a 1 saque grátis até ' + fmtBRL(bonus.valor) +
-                        ' (' + (bonus.tipo === 'saque_semanal' ? 'esta semana' : 'este mês') + ').'
-                    )
+                    h('p', { className: 'text-xs text-green-700 mt-1' }, textoSaqueGratis(bonus))
                 ),
                 progresso && h('div', { className: 'mb-4' },
                     h('h3', { className: 'text-xs font-bold text-gray-700 mb-2' },
