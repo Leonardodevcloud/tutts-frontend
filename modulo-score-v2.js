@@ -600,16 +600,16 @@
                                         '↳ saque ' + fmtBRL(s.valor) + ' · ' + (STATUS_SAQUE[s.status] || s.status) + ' · ' + s.em + (s.motivo_rejeicao ? ' (' + s.motivo_rejeicao + ')' : '')))
                                 );
                             }))),
-                        (d.gratuidades_ativas || []).length > 0 && secao('Gratuidades ativas agora (qualquer origem)',
+                        (d.gratuidades_ativas || []).length > 0 && secao('Saques grátis do score ativos agora', /* SCORE_DIAG_SO_SCORE_V1 */
                             h('div', { className: 'space-y-1' }, d.gratuidades_ativas.map(g => h('div', { key: g.id, className: 'text-xs text-gray-700 flex justify-between gap-2' },
                                 h('span', { className: 'truncate' }, (g.reason || g.created_by || 'Gratuidade')), h('span', { className: 'text-gray-500 whitespace-nowrap' }, g.remaining + '/' + g.quantity + ' · até ' + (g.expira_em || '—')))))),
-                        secao('Últimos saques', (d.saques_recentes || []).length === 0
-                            ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum saque.')
+                        secao('Saques feitos com benefício do score', (d.saques_recentes || []).length === 0
+                            ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum saque usou benefício do score.')
                             : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-xs' },
                                 h('tbody', null, d.saques_recentes.map(s => h('tr', { key: s.id, className: 'border-b border-gray-100' },
                                     h('td', { className: 'py-1.5 text-gray-500 whitespace-nowrap' }, s.em),
                                     h('td', { className: 'py-1.5 font-medium text-gray-900 whitespace-nowrap' }, fmtBRL(s.valor)),
-                                    h('td', { className: 'py-1.5 whitespace-nowrap' }, s.has_gratuity ? h('span', { className: 'text-emerald-700' }, 'sem taxa' + (s.gratuity_id ? ' #' + s.gratuity_id : ' (isenção)')) : h('span', { className: 'text-gray-500' }, 'taxa ' + fmtBRL(s.taxa))),
+                                    h('td', { className: 'py-1.5 whitespace-nowrap' }, h('span', { className: 'text-emerald-700', title: s.origem || '' }, s.origem ? String(s.origem).replace(/^Score Nivel \d - /, '').replace(/^Sorteio Score N[ií]vel \d - /, 'Sorteio ') : ('#' + s.gratuity_id))),
                                     h('td', { className: 'py-1.5 text-gray-600 whitespace-nowrap text-right' }, STATUS_SAQUE[s.status] || s.status))))))),
                         d.oficial && (d.oficial.historico || []).length > 0 && secao('Mudanças de categoria',
                             h('div', { className: 'space-y-1' }, d.oficial.historico.map((m, i) => h('div', { key: i, className: 'text-xs text-gray-600 flex items-center gap-2' },
