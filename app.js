@@ -1106,26 +1106,26 @@ const icoHomeClean = (nome, px) => React.createElement("svg", { className: "ico"
     React.createElement("use", { href: "#i-" + nome }));
 
 /* HOME_CLEAN_V1: tile horizontal (ícone em quadrado roxo 50, título, descrição truncada) */
-const TileHomeClean = ({ icone, titulo, desc, badge, onClick }) => React.createElement("button", {
+const TileHomeClean = ({ icone, titulo, desc, badge, badgeCor, onClick }) => React.createElement("button", {
     type: "button",
     onClick: onClick,
     className: "text-left bg-white border border-gray-200 hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors",
-    style: { borderRadius: 14, padding: 14, display: "flex", gap: 12, alignItems: "center", minWidth: 0, color: "#111827" }
+    style: { borderRadius: 14, padding: 16, display: "flex", gap: 14, alignItems: "center", minWidth: 0, minHeight: 84, boxSizing: "border-box", color: "#111827" } /* HOME_D_V1 */
 },
     React.createElement("span", {
-        style: { width: 38, height: 38, borderRadius: 10, background: "#faf7fd", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" }
-    }, icoHomeClean(icone, 18)),
+        style: { width: 48, height: 48, borderRadius: 13, background: "#f3e8fb", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" }
+    }, icoHomeClean(icone, 23)),
     React.createElement("span", { style: { minWidth: 0, flex: 1 } },
-        React.createElement("span", { style: { display: "block", fontWeight: 600, fontSize: 13.5 } }, titulo),
+        React.createElement("span", { style: { display: "block", fontWeight: 700, fontSize: 14.5 } }, titulo),
         React.createElement("span", {
-            style: { display: "block", fontSize: 12, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+            style: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 12.5, lineHeight: 1.35, marginTop: 3, color: "#4b5563" },
             title: typeof desc === "string" ? desc : undefined
         }, desc)
     ),
-    badge > 0 && React.createElement("span", {
-        style: { flex: "none", minWidth: 22, height: 20, padding: "0 6px", borderRadius: 99, background: "#f3e8fb", color: "#5d0b85", fontSize: 11, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
+    badge > 0 ? React.createElement("span", {
+        style: { flex: "none", minWidth: 24, height: 22, padding: "0 7px", borderRadius: 99, background: (badgeCor || {}).bg || "#f3e8fb", color: (badgeCor || {}).fg || "#5d0b85", fontSize: 11.5, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
         "aria-label": badge + " pendente(s)"
-    }, badge > 9 ? "9+" : badge)
+    }, badge > 99 ? "99+" : badge) : React.createElement("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#9ca3af", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", style: { flex: "none" } }, React.createElement("path", { d: "m9 6 6 6-6 6" }))
 );
 
 /* HOME_CLEAN_V1: seção de tiles com rótulo caixa-alta; some se não houver tile visível */
@@ -1133,8 +1133,10 @@ const SecaoHomeClean = ({ nome, tiles }) => {
     const visiveis = (tiles || []).filter(Boolean);
     if (visiveis.length === 0) return null;
     return React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-        React.createElement("h2", { style: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" } }, nome),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 } },
+        React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } } /* HOME_D_V1 */,
+            React.createElement("h2", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 17, fontWeight: 700, color: "#111827" } }, nome),
+            React.createElement("span", { style: { fontSize: 12, color: "#9ca3af" } }, visiveis.length + (visiveis.length === 1 ? " módulo" : " módulos"))),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 } },
             visiveis.map(t => React.createElement(TileHomeClean, Object.assign({ key: t.key }, t)))
         )
     );
@@ -1208,6 +1210,43 @@ const AB_TH = "px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap
 const AB_TD = "px-3 py-2.5 border-t border-gray-100";
 const abVazio = (texto, acao) => React.createElement("div", { style: { padding: "36px 16px", textAlign: "center", color: "#6b7280", fontSize: 13.5, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 } },
     React.createElement("p", { style: { margin: 0 } }, texto), acao || null);
+
+/* HOME_D_V1: pendências viram contador nos próprios cards do Início (a faixa "Precisa de atenção" saiu) */
+const useHomePendencias = () => {
+    const [dados, setDados] = React.useState(null);
+    React.useEffect(() => {
+        let vivo = true;
+        const carregar = () => {
+            if (typeof document !== "undefined" && document.visibilityState && document.visibilityState !== "visible") return;
+            Promise.resolve()
+                .then(() => fetchAuth(`${API_URL}/home/pendencias`))
+                .then(r => { if (!r || !r.ok) throw new Error("pendencias indisponível"); return r.json(); })
+                .then(j => { if (vivo) setDados(j && typeof j === "object" && !Array.isArray(j) ? j : null); })
+                .catch(() => { if (vivo) setDados(null); });
+        };
+        carregar();
+        const timer = setInterval(carregar, 60000);
+        const onVis = () => { if (document.visibilityState === "visible") carregar(); };
+        document.addEventListener("visibilitychange", onVis);
+        return () => { vivo = false; clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
+    }, []);
+    return dados;
+};
+const HOME_BADGE_CORES = { amb: { bg: "#fffbeb", fg: "#92400e" }, red: { bg: "#fef2f2", fg: "#991b1b" }, rox: { bg: "#f3e8fb", fg: "#5d0b85" } };
+const HomeGruposClean = ({ grupos }) => {
+    const d = useHomePendencias();
+    const num = k => (d && typeof d[k] === "number" && isFinite(d[k]) ? d[k] : 0);
+    const mapa = {
+        financeiro: [num("saques_aguardando"), HOME_BADGE_CORES.amb],
+        disponibilidade: [num("lojas_criticas"), HOME_BADGE_CORES.red],
+        uber: [num("hub_falhas"), HOME_BADGE_CORES.red],
+        todo: [num("tarefas_hoje"), HOME_BADGE_CORES.rox]
+    };
+    return React.createElement(React.Fragment, null, (grupos || []).map(g => React.createElement(SecaoHomeClean, {
+        key: g.nome, nome: g.nome,
+        tiles: (g.tiles || []).map(t => (t && mapa[t.key] && mapa[t.key][0] > 0) ? Object.assign({}, t, { badge: mapa[t.key][0], badgeCor: mapa[t.key][1] }) : t)
+    })));
+};
 
 /* HOME_CLEAN_V1: faixa "Precisa de atenção agora" — GET /api/home/pendencias.
    Falhou / 404 / resposta inválida => a faixa inteira some, sem aviso.
@@ -17202,35 +17241,7 @@ const hideLoadingScreen = () => {
                         "Análise completa de dados operacionais, métricas de desempenho e relatórios inteligentes para tomada de decisão estratégica.")
                 ),
 
-                // Resumo rápido (faixa de KPIs)
-                ft && React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-                    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 } },
-                        React.createElement("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, "Resumo rápido"),
-                        React.createElement("span", { style: { fontSize: 12, color: "#6b7280", display: "inline-flex", alignItems: "center", gap: 6 } },
-                            React.createElement("svg", { className: "ico", style: { fontSize: 13 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })),
-                            ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "-",
-                            " a ",
-                            ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "-"
-                        )
-                    ),
-                    React.createElement("div", { style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", overflow: "hidden" } },
-                        [
-                            ["Total OS", ft.total_os?.toLocaleString() || 0],
-                            ["Entregas", ft.total_entregas?.toLocaleString() || 0],
-                            ["No prazo", (ft.taxa_prazo || 0) + "%", "#166534"],
-                            ["Entregadores", ft.total_profissionais || 0],
-                            ["Valor total", sl(ft.valor_total || 0)],
-                            ["Faturamento", sl(ft.faturamento_total || 0), "#166534"]
-                        ].map((k, idx, arr) => React.createElement("div", {
-                            key: k[0],
-                            style: { padding: "14px 18px", borderRight: idx === arr.length - 1 ? "0" : "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginBottom: -1, minWidth: 0 }
-                        },
-                            React.createElement("div", { style: { fontSize: 12, color: "#6b7280" } }, k[0]),
-                            React.createElement("div", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: 22, fontWeight: 700, marginTop: 4, fontVariantNumeric: "tabular-nums", color: k[2] || "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, k[1])
-                        ))
-                    )
-                ),
-
+                // HOME_D_V1: "Resumo rápido" removido da Home do BI (números ficam no Dashboard)
                 // Tiles de navegação
                 React.createElement(SecaoHomeClean, { nome: "Análises", tiles: [
                     { key: "dashboard", onClick: () => { ht("dashboard"); el(); }, icone: "chart", titulo: "Dashboard", desc: "Visão geral com métricas, gráficos e indicadores de desempenho em tempo real." },
@@ -20589,16 +20600,16 @@ const hideLoadingScreen = () => {
 
             // Conteúdo Principal
             React.createElement("main", {
-                style: { padding: "32px 16px", maxWidth: 1240, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 },
+                style: { padding: "28px 24px 40px", maxWidth: 1280, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 26 } /* HOME_D_V1 */,
                 className: "sm:px-6"
             },
                 // Saudação + busca
                 React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 } },
                     React.createElement("div", { style: { minWidth: 0 } },
                         React.createElement("h1", {
-                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.2, color: "#111827" }
-                        }, getSaudacao(), ", ", React.createElement("span", { style: { color: "#f67602" } }, primeiroNome)),
-                        React.createElement("p", { style: { margin: "6px 0 0", color: "#6b7280", fontStyle: "italic", fontSize: 13.5 } }, "“", mensagemGentileza, "”")
+                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25, color: "#111827" }
+                        }, getSaudacao(), ", ", primeiroNome) /* HOME_D_V1 */,
+                        React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, "“", mensagemGentileza, "”")
                     ),
                     React.createElement("button", {
                         type: "button",
@@ -20613,11 +20624,10 @@ const hideLoadingScreen = () => {
                     )
                 ),
 
-                // Precisa de atenção agora (some sozinha se a API falhar / não existir)
-                React.createElement(HomePendenciasClean, { usuario: l, onNavigate: navegarSidebar }),
+                // HOME_D_V1: faixa "Precisa de atenção agora" removida a pedido (os cards já mostram contador)
 
                 // Tiles agrupados
-                gruposHome.map(g => React.createElement(SecaoHomeClean, { key: g.nome, nome: g.nome, tiles: g.tiles }))
+                React.createElement(HomeGruposClean, { grupos: gruposHome }) /* HOME_D_V1 */
             ),
 
             // Footer
