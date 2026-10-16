@@ -1,4 +1,5 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
+/* HUB_ABAS_V1: Chat 99 no padrão clean — duas colunas, bolhas cinza/roxo-50, status de envio em texto cinza. */
 /**
  * chat99-panel.js  -  Painel do Chat 99 (pagina propria do Hub Logistico)
  *
@@ -44,24 +45,24 @@
   // ── Item da lista de conversas (topo-nivel: nunca definir dentro do render) ──
   function ItemConversa({ conv, ativo, onClick }) {
     const naoLidas = Number(conv.nao_lidas) || 0;
+    // HUB_ABAS_V1: seleção roxa suave (fundo roxo-50 + inset 2px), sem borda colorida grossa
     return h('div', {
-      onClick,
-      className: 'px-3 py-2.5 cursor-pointer border-b border-gray-100 ' +
-        (ativo ? 'bg-purple-50 border-l-4' : 'border-l-4 border-l-transparent hover:bg-gray-50'),
-      style: ativo ? { borderLeftColor: ROXO } : {},
+      onClick, role: 'button', tabIndex: 0, 'aria-pressed': !!ativo,
+      onKeyDown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onClick(); } },
+      className: 'px-4 py-3 cursor-pointer border-t border-gray-100 first:border-t-0 focus:outline-none focus-visible:bg-gray-50 ' + (ativo ? '' : 'hover:bg-gray-50'),
+      style: ativo ? { background: '#faf7fd', boxShadow: 'inset 2px 0 0 #770fa8' } : {},
     },
-      h('div', { className: 'flex items-center justify-between mb-0.5' },
-        h('span', { className: 'text-[13px] font-semibold text-gray-800 truncate' }, conv.motoboy_nome || 'Motoboy'),
-        h('span', { className: 'text-[10px] text-gray-400 flex-shrink-0 ml-2' }, fmtHora(conv.ultima_msg_em)),
+      h('div', { className: 'flex items-center justify-between gap-2' },
+        h('span', { className: 'text-[13.5px] font-semibold text-gray-900 truncate' }, conv.motoboy_nome || 'Motoboy'),
+        h('span', { className: 'text-[11px] text-gray-500 flex-shrink-0', style: { fontVariantNumeric: 'tabular-nums' } }, fmtHora(conv.ultima_msg_em)),
       ),
-      h('div', { className: 'flex items-center gap-1.5 mb-0.5' },
-        h('span', { className: 'text-[9px] text-white rounded px-1.5 py-px', style: { background: ROXO } }, `OS ${conv.codigo_os}`),
-      ),
-      h('div', { className: 'flex items-center justify-between' },
-        h('span', { className: 'text-[11px] text-gray-500 truncate flex-1' }, conv.ultima_msg_texto || '\u2014'),
+      h('div', { className: 'text-[11.5px] text-gray-500 mt-0.5', style: { fontVariantNumeric: 'tabular-nums' } }, `OS ${conv.codigo_os}`),
+      h('div', { className: 'flex items-center justify-between gap-2 mt-0.5' },
+        h('span', { className: 'text-[12.5px] truncate flex-1 ' + (naoLidas > 0 ? 'text-gray-900 font-medium' : 'text-gray-500') }, conv.ultima_msg_texto || '\u2014'),
         (naoLidas > 0) && h('span', {
-          className: 'ml-2 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0',
-          style: { background: LARANJA },
+          className: 'min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center flex-shrink-0',
+          style: { background: LARANJA, color: '#26093a' },
+          'aria-label': `${naoLidas} não lida${naoLidas !== 1 ? 's' : ''}`,
         }, naoLidas > 9 ? '9+' : String(naoLidas)),
       ),
     );
@@ -75,27 +76,28 @@
       let statusTxt = '';
       if (msg.status_envio === 'pendente' || msg.status_envio === 'enviando') statusTxt = 'enviando';
       else if (msg.status_envio === 'erro') statusTxt = 'falhou';
-      else statusTxt = msg.lido ? '\u2713\u2713 Lido' : '\u2713 Enviada';
-      return h('div', { className: 'self-end max-w-[74%]' },
+      else statusTxt = msg.lido ? 'Lida' : 'Enviada';
+      // HUB_ABAS_V1: nossa bolha roxo-50 (#faf7fd) com texto #3a1556; status em texto cinza (falha em vermelho)
+      return h('div', { className: 'self-end max-w-[78%]' },
         h('div', {
-          className: 'text-white rounded-[12px] rounded-br-[3px] px-3 py-2 text-[13px] leading-snug break-words',
-          style: { background: ROXO },
+          className: 'rounded-[12px] rounded-br-[4px] px-3 py-2 text-[13px] leading-snug break-words',
+          style: { background: '#faf7fd', color: '#3a1556', border: '1px solid #f3e8fb' },
         }, msg.texto || (msg.img_url ? '[imagem]' : '')),
-        h('div', { className: 'text-right text-[10px] text-gray-400 mt-0.5' },
+        h('div', { className: 'text-right text-[11px] text-gray-500 mt-1', style: { fontVariantNumeric: 'tabular-nums' } },
           hora, ' \u00b7 ',
-          h('span', { style: msg.status_envio === 'erro' ? { color: '#dc2626' } : { color: ROXO } }, statusTxt),
+          h('span', { style: msg.status_envio === 'erro' ? { color: '#991b1b', fontWeight: 600 } : null }, statusTxt),
         ),
       );
     }
-    return h('div', { className: 'self-start max-w-[74%] flex gap-2 items-end' },
+    return h('div', { className: 'self-start max-w-[78%] flex gap-2 items-end' },
       foto
-        ? h('img', { src: foto, className: 'w-6 h-6 rounded-full object-cover flex-shrink-0 bg-purple-100',
+        ? h('img', { src: foto, alt: '', className: 'w-6 h-6 rounded-full object-cover flex-shrink-0 bg-gray-100',
             onError: (ev) => { ev.target.style.display = 'none'; } })
-        : h('div', { className: 'w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-500 flex-shrink-0' }, Icon('bike')),
+        : h('div', { className: 'w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-500 flex-shrink-0' }, Icon('bike')),
       h('div', null,
-        h('div', { className: 'bg-white border border-gray-200 text-gray-800 rounded-[12px] rounded-bl-[3px] px-3 py-2 text-[13px] leading-snug break-words' },
+        h('div', { className: 'text-gray-900 rounded-[12px] rounded-bl-[4px] px-3 py-2 text-[13px] leading-snug break-words', style: { background: '#f3f4f6' } },
           msg.texto || (msg.img_url ? '[imagem]' : '')),
-        h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, hora),
+        h('div', { className: 'text-[11px] text-gray-500 mt-1', style: { fontVariantNumeric: 'tabular-nums' } }, hora),
       ),
     );
   }
@@ -211,37 +213,41 @@
     const conv = thread && thread.conversa ? thread.conversa : null;
     const foto = conv && conv.motoboy_foto_url;
 
-    return h('div', { className: 'min-h-[calc(100vh-120px)] bg-gray-50 p-3 md:p-4' },
-      h('div', { className: 'max-w-6xl mx-auto' },
+    const naoLidasTot = conversas.reduce((acc, c) => acc + (Number(c.nao_lidas) || 0), 0);
+    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
 
-        // Cabecalho
-        h('div', { className: 'flex items-center justify-between mb-3 px-1' },
-          h('div', { className: 'flex items-center gap-2' },
-            h('div', { className: 'w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm', style: { background: ROXO } }, Icon('message')),
-            h('span', { className: 'text-base font-bold text-gray-800' }, 'Chat 99'),
-            h('span', { className: 'text-xs text-gray-400' }, 'espelho da 99Entrega'),
+        // Cabecalho — HUB_ABAS_V1
+        h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
+          h('div', null,
+            h('h1', { className: 'text-2xl font-bold text-gray-900', style: { fontFamily: 'Sora, Inter, sans-serif', letterSpacing: '-0.01em' } }, 'Chat 99'),
+            h('p', { className: 'text-[13px] text-gray-500 mt-1' },
+              `Espelho do chat da 99Entrega · ${conversas.length} conversa${conversas.length !== 1 ? 's' : ''}`,
+              naoLidasTot > 0 ? ` · ${naoLidasTot} não lida${naoLidasTot !== 1 ? 's' : ''}` : ''),
           ),
           h('button', {
-            onClick: puxarLista,
-            className: 'text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-white',
-          }, h('span', { className: 'inline-flex items-center gap-1.5' }, Icon('refresh'), 'Atualizar')),
+            type: 'button', onClick: puxarLista, title: 'Atualizar', 'aria-label': 'Atualizar conversas',
+            className: 'w-10 h-10 rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 grid place-items-center',
+          }, Icon('refresh')),
         ),
 
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-[280px_1fr] gap-3', style: { height: 'calc(100vh - 180px)' } },
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:h-[max(480px,calc(100vh-230px))]' },
 
           // ── Coluna esquerda: lista ──
-          h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col' },
-            h('div', { className: 'p-2.5 border-b border-gray-100' },
-              h('input', {
-                value: busca,
-                onChange: (ev) => setBusca(ev.target.value),
-                placeholder: 'Buscar por OS ou nome',
-                className: 'w-full text-[13px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-300',
-              }),
+          h('section', { 'aria-label': 'Conversas', className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden flex flex-col min-h-0 max-h-[340px] md:max-h-none' },
+            h('div', { className: 'p-3 border-b border-gray-100' },
+              h('label', { className: 'flex items-center gap-2 h-[38px] px-3 border border-gray-200 rounded-[10px] text-gray-400 focus-within:border-purple-400' },
+                Icon('search'),
+                h('input', {
+                  type: 'search',
+                  value: busca,
+                  onChange: (ev) => setBusca(ev.target.value),
+                  placeholder: 'Buscar por OS ou nome', 'aria-label': 'Buscar conversa por OS ou nome',
+                  className: 'flex-1 min-w-0 border-0 outline-none bg-transparent text-[13px] text-gray-900',
+                })),
               (buscaEhOS && !osNaLista) && h('button', {
+                type: 'button',
                 onClick: () => setSelecionada(termo),
-                className: 'w-full mt-2 text-[12px] py-1.5 rounded-lg text-white font-semibold',
-                style: { background: ROXO },
+                className: 'w-full mt-2 h-9 rounded-[10px] border border-gray-200 bg-white text-[13px] font-semibold text-gray-700 hover:bg-gray-50',
               }, `Abrir chat da OS ${termo}`),
             ),
             h('div', { className: 'flex-1 overflow-y-auto' },
@@ -251,72 +257,74 @@
                     ativo: String(selecionada) === String(c.codigo_os),
                     onClick: () => setSelecionada(String(c.codigo_os)),
                   }))
-                : h('div', { className: 'text-center text-[12px] text-gray-400 py-8 px-3' },
-                    'Nenhuma conversa ativa. O agente cria uma quando o motoboy aceita a corrida e abre o chat na 99.'),
+                : h('div', { className: 'text-center py-10 px-4' },
+                    h('div', { className: 'text-[13.5px] font-semibold text-gray-700' }, termo ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ativa'),
+                    h('div', { className: 'text-[12.5px] text-gray-500 mt-1' }, termo ? 'Busque pelo número da OS para abrir o chat dela.' : 'O agente cria uma quando o motoboy aceita a corrida e abre o chat na 99.')),
             ),
           ),
 
           // ── Coluna direita: thread ──
-          h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col' },
+          h('section', { 'aria-label': 'Conversa', className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden flex flex-col min-h-0 h-[560px] md:h-auto' },
             !selecionada
-              ? h('div', { className: 'flex-1 flex items-center justify-center text-center text-gray-400 text-sm p-6' },
+              ? h('div', { className: 'flex-1 flex items-center justify-center text-center p-6' },
                   h('div', null,
-                    h('div', { className: 'text-4xl mb-2' }, Icon('message')),
-                    h('div', null, 'Selecione uma conversa a esquerda'),
+                    h('div', { className: 'text-[14px] font-semibold text-gray-700' }, 'Selecione uma conversa'),
+                    h('div', { className: 'text-[13px] text-gray-500 mt-1' }, 'Escolha um motoboy na lista para ver e responder as mensagens.'),
                   ))
               : h(React.Fragment, null,
                   // header da thread
-                  h('div', { className: 'flex items-center gap-3 p-3 border-b border-gray-100' },
+                  h('div', { className: 'flex items-center gap-3 px-4 py-3 border-b border-gray-100' },
                     foto
-                      ? h('img', { src: foto, className: 'w-9 h-9 rounded-full object-cover bg-purple-100',
+                      ? h('img', { src: foto, alt: '', className: 'w-9 h-9 rounded-full object-cover bg-gray-100',
                           onError: (ev) => { ev.target.style.display = 'none'; } })
-                      : h('div', { className: 'w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-[12px] font-bold text-purple-700 uppercase' }, iniciais(conv && conv.motoboy_nome)),
+                      : h('div', { className: 'w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold uppercase', style: { background: '#f3e8fb', color: '#5d0b85' } }, iniciais(conv && conv.motoboy_nome)),
                     h('div', { className: 'flex-1 min-w-0' },
-                      h('div', { className: 'text-[13px] font-semibold text-gray-800 truncate' }, (conv && conv.motoboy_nome) || 'Motoboy'),
-                      h('div', { className: 'flex items-center gap-3 text-[11px] text-gray-500' },
+                      h('div', { className: 'text-[14px] font-semibold text-gray-900 truncate' }, (conv && conv.motoboy_nome) || 'Motoboy'),
+                      h('div', { className: 'flex items-center gap-3 flex-wrap text-[12px] text-gray-500' },
+                        h('span', { style: { fontVariantNumeric: 'tabular-nums' } }, `OS ${selecionada}`),
                         (conv && conv.motoboy_rating) && h('span', { className: 'inline-flex items-center gap-1' }, Icon('star'), conv.motoboy_rating),
-                        (conv && conv.motoboy_telefone) && h('span', { className: 'inline-flex items-center gap-1' }, Icon('phone'), conv.motoboy_telefone),
-                        h('span', { className: 'font-semibold', style: { color: ROXO } }, `OS ${selecionada}`),
+                        (conv && conv.motoboy_telefone) && h('span', { className: 'inline-flex items-center gap-1', style: { fontVariantNumeric: 'tabular-nums' } }, Icon('phone'), conv.motoboy_telefone),
                       ),
                     ),
                   ),
                   // mensagens
-                  h('div', { className: 'flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50' },
+                  h('div', { className: 'flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2.5', 'aria-live': 'polite' },
                     carregandoThread
-                      ? h('div', { className: 'text-center text-[12px] text-gray-400 py-8' }, 'Carregando...')
+                      ? h('div', { className: 'text-center text-[13px] text-gray-500 py-8' }, 'Carregando mensagens…')
                       : (thread && thread.mensagens && thread.mensagens.length
                           ? thread.mensagens.map(m => h(Bolha, { key: m.id, msg: m, foto: foto }))
-                          : h('div', { className: 'text-center text-[12px] text-gray-400 py-8' }, 'Sem mensagens ainda.')),
+                          : h('div', { className: 'text-center py-10' },
+                              h('div', { className: 'text-[13.5px] font-semibold text-gray-700' }, 'Sem mensagens ainda'),
+                              h('div', { className: 'text-[12.5px] text-gray-500 mt-1' }, 'Escreva abaixo para falar com o motoboy pela 99.'))),
                     h('div', { ref: fimRef }),
                   ),
                   // rodape / envio
-                  h('div', { className: 'p-2.5 border-t border-gray-100' },
-                    h('div', { className: 'flex gap-2 items-end' },
-                      h('div', { className: 'flex-1' },
+                  h('div', { className: 'px-3 py-3 border-t border-gray-100' },
+                    h('div', { className: 'flex gap-2 items-start' },
+                      h('div', { className: 'flex-1 min-w-0' },
                         h('textarea', {
                           value: texto,
                           onChange: (ev) => setTexto(ev.target.value.slice(0, LIMITE_99)),
                           onKeyDown: (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); enviar(); } },
-                          placeholder: 'Mensagem para o motoboy...',
+                          placeholder: 'Mensagem para o motoboy…', 'aria-label': 'Mensagem para o motoboy',
                           rows: 1,
-                          className: 'w-full text-[13px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-300 resize-none',
+                          className: 'w-full min-h-[40px] text-[13px] px-3 py-2 rounded-[10px] bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 resize-none block',
                         }),
-                        h('div', { className: 'text-right text-[10px] text-gray-400 mt-0.5' }, `${texto.length}/${LIMITE_99}`),
                       ),
                       h('button', {
+                        type: 'button',
                         onClick: enviar,
                         disabled: enviando || !texto.trim(),
-                        className: 'text-[13px] font-semibold text-white rounded-lg h-9 px-4 flex items-center gap-1.5 flex-shrink-0 ' + (enviando || !texto.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'),
-                        style: { background: ROXO },
-                      }, enviando ? '...' : 'Enviar'),
+                        className: 'h-10 px-4 rounded-[10px] bg-purple-700 text-white text-sm font-semibold hover:bg-purple-800 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed',
+                      }, enviando ? 'Enviando…' : 'Enviar'),
                     ),
-                    h('div', { className: 'text-[10px] text-gray-400 mt-1' },
-                      h('span', { className: 'inline-flex items-center gap-1' }, Icon('bot'), 'Enviado pela conta 99 via agente \u00b7 limite de 140 caracteres')),
+                    h('div', { className: 'flex items-center justify-between gap-2 text-[11px] text-gray-500 mt-1.5' },
+                      h('span', { className: 'inline-flex items-center gap-1 min-w-0' }, Icon('bot'), h('span', { className: 'truncate' }, 'Enviado pela conta 99 via agente · limite de 140 caracteres')),
+                      h('span', { style: { fontVariantNumeric: 'tabular-nums', color: texto.length >= LIMITE_99 ? '#991b1b' : undefined } }, `${texto.length}/${LIMITE_99}`)),
                   ),
                 ),
           ),
         ),
-      ),
     );
   }
 

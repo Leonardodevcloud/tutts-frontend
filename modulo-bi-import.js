@@ -79,17 +79,18 @@
     return l.length > (max || 140) ? l.slice(0, max || 140) + '…' : l;
   }
 
+  // BI_ABAS_V1: tons da paleta (cinza/roxo/verde/azul/âmbar/vermelho) — sem emerald/sky/violet
   const TIPOS = {
-    manual:     { label: 'Manual',            cls: 'bg-blue-50 text-blue-700' },
-    cron:       { label: 'Fechamento D-1',    cls: 'bg-violet-50 text-violet-700' },
-    cron_dia:   { label: 'Automática do dia', cls: 'bg-emerald-50 text-emerald-700' },
-    reprocesso: { label: 'Reprocesso',        cls: 'bg-sky-50 text-sky-700' },
+    manual:     { label: 'Manual',            tom: 'cinza' },
+    cron:       { label: 'Fechamento D-1',    tom: 'roxo' },
+    cron_dia:   { label: 'Automática do dia', tom: 'verde' },
+    reprocesso: { label: 'Reprocesso',        tom: 'azul' },
   };
   const STATUS = {
-    sucesso:     { label: 'Sucesso',     cls: 'bg-green-50 text-green-700' },
-    falhou:      { label: 'Falhou',      cls: 'bg-red-50 text-red-700' },
-    processando: { label: 'Importando',  cls: 'bg-violet-50 text-violet-700' },
-    pendente:    { label: 'Na fila',     cls: 'bg-gray-100 text-gray-700' },
+    sucesso:     { label: 'Sucesso',     tom: 'verde' },
+    falhou:      { label: 'Falhou',      tom: 'vermelho' },
+    processando: { label: 'Importando',  tom: 'roxo' },
+    pendente:    { label: 'Na fila',     tom: 'ambar' },
   };
   const FILTROS = [
     { id: 'todas',      label: 'Todas',       params: {} },
@@ -108,8 +109,15 @@
   }
   const PASSOS = ['Entrar no sistema', 'Baixar planilha', 'Tratar dados', 'Atualizar o BI'];
 
+  // Status = pílula suave (fundo 50 + texto 800 + ponto 6px 600)
+  const TONS = {
+    roxo: ['#faf7fd', '#5d0b85', '#770fa8'], verde: ['#f0fdf4', '#166534', '#16a34a'], ambar: ['#fffbeb', '#92400e', '#d97706'],
+    vermelho: ['#fef2f2', '#991b1b', '#dc2626'], azul: ['#eff6ff', '#1e40af', '#2563eb'], cinza: ['#f3f4f6', '#374151', '#9ca3af'],
+  };
   function Pill(props) {
-    return h('span', { className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ' + props.cls }, props.children);
+    const t = TONS[props.tom] || TONS.cinza;
+    return h('span', { role: props.role, className: 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap', style: { background: t[0], color: t[1] } },
+      h('span', { style: { width: 6, height: 6, borderRadius: 999, background: t[2], flexShrink: 0 } }), props.children);
   }
 
   // ── componente ─────────────────────────────────────────────────────────
@@ -274,59 +282,63 @@
     const u24 = (painel && painel.ultimas_24h) || { sucesso: 0, falhou: 0 };
     const totalPaginas = Math.max(1, Math.ceil(total / PER_PAGE));
 
-    // ── render ──
-    const cartao = 'bg-white border border-violet-100 rounded-2xl';
-    const btnSec = 'inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[36px] rounded-lg text-sm font-semibold border bg-white transition disabled:opacity-50 disabled:cursor-not-allowed';
+    // ── render ──  (BI_ABAS_V1: padrão clean — cabeçalho Sora 24, faixa de KPIs, cards brancos, tabela padrão)
+    const cartao = 'bg-white border border-gray-200 rounded-[14px]';
+    const btnSec = 'inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
+    const btnPri = 'inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-[10px] text-[13px] font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
+    const kpiCell = { flex: '1 1 220px', padding: '16px 20px', borderRight: '1px solid #f3f4f6', borderBottom: '1px solid #f3f4f6', marginBottom: -1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 };
+    const kpiLbl = { fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 6 };
+    const kpiNum = { fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, color: '#111827', lineHeight: 1.25, fontVariantNumeric: 'tabular-nums' };
+    const kpiSub = { fontSize: 11.5, color: '#6b7280' };
+    const h3 = 'text-[15px] font-semibold text-gray-900';
 
-    return h('div', { className: 'flex flex-col gap-5', style: { fontVariantNumeric: 'tabular-nums' } },
+    return h('div', { className: 'flex flex-col gap-4', style: { fontVariantNumeric: 'tabular-nums', color: '#111827' } },
 
       // Cabeçalho
-      h('div', { className: 'flex items-end justify-between gap-4 flex-wrap' },
-        h('div', null,
-          h('h2', { className: 'text-2xl font-extrabold text-gray-900 tracking-tight' }, 'Importação de dados'),
-          h('p', { className: 'text-sm text-gray-500 mt-1' }, 'O agente baixa a planilha do sistema, trata os dados e atualiza o BI. Tudo o que entra aparece no histórico abaixo.')
+      h('div', { className: 'flex items-end justify-between gap-3 flex-wrap' },
+        h('div', { className: 'min-w-0' },
+          h('h1', { style: { margin: 0, fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em', color: '#111827' } }, 'Importação de dados'),
+          h('p', { style: { margin: '4px 0 0', fontSize: 13, color: '#6b7280' } }, 'O agente baixa a planilha do sistema, trata os dados e atualiza o BI. Tudo o que entra aparece no histórico abaixo.')
         ),
         filaAtiva
-          ? h('span', { className: 'inline-flex items-center gap-2 text-sm font-bold text-violet-700 bg-violet-50 border border-violet-200 px-3 py-2 rounded-full', role: 'status' },
-              h('span', { className: 'w-2 h-2 rounded-full bg-violet-600 animate-pulse' }),
-              emAndamento ? ('Importando · ' + fila.length + (fila.length === 1 ? ' na fila' : ' na fila')) : (fila.length + ' na fila'))
-          : h('span', { className: 'inline-flex items-center gap-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-full', role: 'status' },
-              h('span', { className: 'w-2 h-2 rounded-full bg-green-600' }), 'Fila vazia')
+          ? h(Pill, { tom: 'roxo', role: 'status' },
+              emAndamento ? ('Importando · ' + fila.length + ' na fila') : (fila.length + ' na fila'))
+          : h(Pill, { tom: 'verde', role: 'status' }, 'Fila vazia')
       ),
 
-      // Cartões de resumo
-      h('section', { 'aria-label': 'Resumo', className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
-        h('div', { className: cartao + ' p-5 flex flex-col gap-2' },
-          h('div', { className: 'flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide' }, ico('check'), 'Última importação'),
-          h('div', { className: 'text-2xl font-extrabold text-gray-900' }, ultima ? fmtQuando(ultima.finalizado_em) : (painel ? 'Nenhuma ainda' : '…')),
-          h('div', { className: 'text-sm text-gray-500' }, ultima
+      // Faixa de KPIs
+      h('section', { 'aria-label': 'Resumo', className: cartao, style: { display: 'flex', flexWrap: 'wrap', overflow: 'hidden' } },
+        h('div', { style: kpiCell },
+          h('div', { style: kpiLbl }, 'Última importação'),
+          h('div', { style: kpiNum }, ultima ? fmtQuando(ultima.finalizado_em) : (painel ? 'Nenhuma ainda' : '…')),
+          h('div', { style: kpiSub }, ultima
             ? (fmtDiaMes(ultima.data_referencia) + ' · ' + fmtNum(ultima.linhas_inseridas) + ' linhas · ' + (limparNome(ultima.usuario_nome) === 'Sistema' ? 'automática' : 'por ' + limparNome(ultima.usuario_nome)))
             : '')
         ),
-        h('div', { className: cartao + ' p-5 flex flex-col gap-2' },
-          h('div', { className: 'flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide' }, ico('clock'), 'Próxima automática'),
-          h('div', { className: 'text-2xl font-extrabold text-gray-900' },
+        h('div', { style: kpiCell },
+          h('div', { style: kpiLbl }, 'Próxima automática'),
+          h('div', { style: kpiNum },
             proxima ? ((proxima.quando.slice(0, 10) === hojeISO(0) ? '' : fmtDiaMes(proxima.quando) + ', ') + proxima.quando.slice(11, 16)) : (painel ? '—' : '…')),
-          h('div', { className: 'text-sm text-gray-500' }, proxima
+          h('div', { style: kpiSub }, proxima
             ? (proxima.tipo === 'fechamento'
                 ? (proxima.fecha_fim_de_semana ? 'Fecha sexta, sábado e domingo' : 'Fecha o dia anterior (' + fmtDiaMes(proxima.data_referencia) + ')')
                 : 'Atualiza o dia (' + fmtDiaMes(proxima.data_referencia) + ')')
             : (painel ? 'Horário automático não identificado' : ''))
         ),
-        h('div', { className: 'bg-violet-50/60 border border-violet-200 rounded-2xl p-5 flex flex-col gap-2' },
-          h('div', { className: 'flex items-center gap-2 text-xs font-bold text-violet-700 uppercase tracking-wide' }, ico('refresh'), 'OS em aberto no BI'),
-          h('div', { className: 'flex items-baseline justify-between gap-3 flex-wrap' },
-            h('div', { className: 'text-2xl font-extrabold text-gray-900' },
+        h('div', { style: Object.assign({}, kpiCell, { borderRight: 0 }) },
+          h('div', { style: kpiLbl }, 'OS em aberto no BI'),
+          h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
+            h('div', { style: kpiNum },
               abertas ? fmtNum(abertas.total_os) + ' OS ' : (painel ? '—' : '…'),
-              abertas && abertas.total_os > 0 && h('span', { className: 'text-sm font-semibold text-gray-500' }, 'em ' + abertas.datas.length + (abertas.datas.length === 1 ? ' data' : ' datas'))
+              abertas && abertas.total_os > 0 && h('span', { style: { fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500, color: '#6b7280' } }, 'em ' + abertas.datas.length + (abertas.datas.length === 1 ? ' data' : ' datas'))
             ),
             h('button', {
               type: 'button', onClick: reprocessar,
               disabled: reprocessando || !abertas || abertas.total_os === 0,
-              className: btnSec + ' text-violet-700 border-violet-300 hover:bg-violet-50',
-            }, reprocessando ? 'Agendando...' : 'Reprocessar agora')
+              className: btnSec,
+            }, ico('refresh', 15), reprocessando ? 'Agendando...' : 'Reprocessar agora')
           ),
-          h('div', { className: 'text-sm text-gray-500' },
+          h('div', { style: kpiSub },
             abertas && abertas.total_os > 0
               ? abertas.datas.slice(0, 4).map(x => fmtDiaMes(x.data_ref) + ' (' + x.qtd_os + (x.em_fila ? ', na fila' : '') + ')').join(' · ') + (abertas.datas.length > 4 ? ' · …' : '')
               : 'Reimportadas sozinhas a cada hora, das 9h às 19h')
@@ -338,31 +350,30 @@
         const passo = passoDaEtapa(emAndamento.etapa_atual, emAndamento.progresso);
         const pct = Math.max(0, Math.min(100, emAndamento.progresso || 0));
         const tipo = TIPOS[emAndamento.origem] || TIPOS.manual;
-        return h('section', { 'aria-labelledby': 'imp-agora', className: 'bg-white border border-violet-200 rounded-2xl p-5 md:p-6 flex flex-col gap-4 shadow-sm' },
+        return h('section', { 'aria-labelledby': 'imp-agora', className: cartao + ' p-5 flex flex-col gap-4' },
           h('div', { className: 'flex items-start justify-between gap-4 flex-wrap' },
             h('div', null,
-              h('div', { className: 'text-xs font-bold text-violet-700 uppercase tracking-wide' }, 'Importando agora'),
-              h('h3', { id: 'imp-agora', className: 'text-xl font-extrabold text-gray-900 mt-1' },
-                fmtDataRef(emAndamento.data_referencia) + ' · ' + tipo.label),
-              h('p', { className: 'text-sm text-gray-500 mt-1' },
+              h('div', { className: 'flex items-center gap-2 flex-wrap' }, h(Pill, { tom: 'roxo' }, 'Importando agora'), h(Pill, { tom: tipo.tom }, tipo.label)),
+              h('h3', { id: 'imp-agora', className: 'text-[15px] font-semibold text-gray-900 mt-2' }, fmtDataRef(emAndamento.data_referencia)),
+              h('p', { className: 'text-[13px] text-gray-500 mt-0.5' },
                 (limparNome(emAndamento.usuario_nome) === 'Sistema' ? 'Automática' : 'Pedido por ' + limparNome(emAndamento.usuario_nome)) +
                 ' · costuma levar de 3 a 5 minutos')
             ),
-            h('div', { className: 'text-3xl font-extrabold text-violet-700' }, pct + '%')
+            h('div', { style: { fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, color: '#5d0b85' } }, pct + '%')
           ),
-          h('div', { className: 'h-2.5 rounded-full bg-violet-100 overflow-hidden', role: 'progressbar', 'aria-valuenow': pct, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': 'Progresso da importação' },
-            h('div', { className: 'h-full rounded-full bg-violet-600 transition-all duration-500', style: { width: pct + '%' } })
+          h('div', { className: 'h-2 rounded-full bg-gray-100 overflow-hidden', role: 'progressbar', 'aria-valuenow': pct, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': 'Progresso da importação' },
+            h('div', { className: 'h-full rounded-full transition-all duration-500', style: { width: pct + '%', background: '#770fa8' } })
           ),
           h('ol', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
             PASSOS.map((nome, i) => {
               const n = i + 1;
               const feito = n < passo, atual = n === passo;
-              return h('li', { key: n, className: 'flex items-center gap-2.5 p-3 rounded-xl ' + (feito ? 'bg-green-50' : atual ? 'bg-violet-50 ring-2 ring-violet-300' : 'bg-gray-50') },
-                h('span', { className: 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold flex-shrink-0 ' + (feito ? 'bg-green-600 text-white' : atual ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-500') },
-                  feito ? ico('check', 14) : String(n)),
+              return h('li', { key: n, className: 'flex items-center gap-2.5 p-3 rounded-[10px] border ' + (atual ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-white') },
+                h('span', { className: 'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0', style: feito ? { background: '#f0fdf4', color: '#166534' } : atual ? { background: '#770fa8', color: '#ffffff' } : { background: '#f3f4f6', color: '#6b7280' } },
+                  feito ? ico('check', 13) : String(n)),
                 h('span', null,
-                  h('span', { className: 'block text-sm font-bold text-gray-900' }, nome),
-                  h('span', { className: 'block text-xs ' + (feito ? 'text-green-700' : atual ? 'text-violet-700' : 'text-gray-500') },
+                  h('span', { className: 'block text-[13px] font-semibold text-gray-900' }, nome),
+                  h('span', { className: 'block text-xs', style: { color: feito ? '#166534' : atual ? '#5d0b85' : '#6b7280' } },
                     feito ? (n === 2 && emAndamento.total_linhas ? fmtNum(emAndamento.total_linhas) + ' linhas' : 'Feito') : atual ? 'Em andamento' : 'Aguardando')
                 )
               );
@@ -373,62 +384,65 @@
 
       // Na fila
       naFila.length > 0 && h('section', { 'aria-labelledby': 'imp-fila', className: cartao + ' overflow-hidden' },
-        h('div', { className: 'px-6 py-4 border-b border-violet-50' },
-          h('h3', { id: 'imp-fila', className: 'text-base font-extrabold text-gray-900' }, 'Na fila (' + naFila.length + ')')
+        h('div', { className: 'px-5 py-3.5 border-b border-gray-100' },
+          h('h3', { id: 'imp-fila', className: h3 }, 'Na fila (' + naFila.length + ')')
         ),
         h('ul', null, naFila.map((item, i) => {
           const tipo = TIPOS[item.origem] || TIPOS.manual;
-          return h('li', { key: item.id, className: 'px-6 py-3.5 flex items-center gap-4 flex-wrap border-b border-violet-50 last:border-b-0' },
-            h('span', { className: 'font-extrabold text-gray-900 w-28' }, fmtDataRef(item.data_referencia)),
-            h(Pill, { cls: tipo.cls }, tipo.label),
-            h('span', { className: 'flex-1 min-w-[200px] text-sm text-gray-700' }, item.detalhe || (limparNome(item.usuario_nome) === 'Sistema' ? 'Automática' : 'Pedido por ' + limparNome(item.usuario_nome))),
-            h('span', { className: 'text-sm text-gray-500' }, 'Aguardando · ' + (i + (emAndamento ? 2 : 1)) + 'º'),
+          return h('li', { key: item.id, className: 'px-5 py-3 flex items-center gap-4 flex-wrap text-[13px] ' + (i > 0 ? 'border-t border-gray-100' : '') },
+            h('span', { className: 'font-semibold text-gray-900 w-28' }, fmtDataRef(item.data_referencia)),
+            h(Pill, { tom: tipo.tom }, tipo.label),
+            h('span', { className: 'flex-1 min-w-[200px] text-[13px] text-gray-700' }, item.detalhe || (limparNome(item.usuario_nome) === 'Sistema' ? 'Automática' : 'Pedido por ' + limparNome(item.usuario_nome))),
+            h('span', { className: 'text-[13px] text-gray-500' }, 'Aguardando · ' + (i + (emAndamento ? 2 : 1)) + 'º'),
             h('button', {
               type: 'button', onClick: () => cancelar(item), disabled: acaoId === item.id,
-              className: btnSec + ' text-gray-700 border-gray-200 hover:bg-gray-50',
+              className: btnSec,
             }, acaoId === item.id ? 'Cancelando...' : 'Cancelar')
           );
         }))
       ),
 
       // Importar uma data agora
-      h('section', { 'aria-labelledby': 'imp-data', className: cartao + ' p-5 md:p-6 flex flex-col gap-4' },
+      h('section', { 'aria-labelledby': 'imp-data', className: cartao + ' p-5 flex flex-col gap-4' },
         h('div', null,
-          h('h3', { id: 'imp-data', className: 'text-lg font-extrabold text-gray-900' }, 'Importar uma data agora'),
-          h('p', { className: 'text-sm text-gray-500 mt-1' }, 'O agente baixa a planilha dessa data e substitui as OS que já estão no BI pelos dados atuais.')
+          h('h3', { id: 'imp-data', className: h3 }, 'Importar uma data agora'),
+          h('p', { className: 'text-[13px] text-gray-500 mt-0.5' }, 'O agente baixa a planilha dessa data e substitui as OS que já estão no BI pelos dados atuais.')
         ),
         h('div', { className: 'flex items-end gap-3 flex-wrap' },
-          h('div', { role: 'group', 'aria-label': 'Atalhos de data', className: 'flex gap-2 flex-wrap' },
-            [['hoje', 'Hoje · ' + fmtDiaMes(hojeISO(0))], ['ontem', 'Ontem · ' + fmtDiaMes(hojeISO(1))]].map(([id, label]) =>
-              h('button', {
-                key: id, type: 'button', onClick: () => setEscolha(id), 'aria-pressed': escolha === id,
-                className: 'px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold border transition ' +
-                  (escolha === id ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'),
-              }, label))
+          h('div', { className: 'flex flex-col gap-1.5' },
+            h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Data'),
+            h('div', { role: 'group', 'aria-label': 'Atalhos de data', className: 'inline-flex bg-gray-100 rounded-[10px] p-1 gap-0.5' },
+              [['hoje', 'Hoje · ' + fmtDiaMes(hojeISO(0))], ['ontem', 'Ontem · ' + fmtDiaMes(hojeISO(1))]].map(([id, label]) =>
+                h('button', {
+                  key: id, type: 'button', onClick: () => setEscolha(id), 'aria-pressed': escolha === id,
+                  className: 'px-3 h-[30px] rounded-lg text-[13px] transition ' +
+                    (escolha === id ? 'bg-white font-semibold text-purple-800 border border-gray-200' : 'font-medium text-gray-600 border border-transparent hover:text-gray-900'),
+                }, label))
+            )
           ),
           h('div', { className: 'flex flex-col gap-1.5' },
-            h('label', { htmlFor: 'imp-outra-data', className: 'text-xs font-bold text-gray-500' }, 'Outra data'),
+            h('label', { htmlFor: 'imp-outra-data', className: 'text-xs font-semibold text-gray-700' }, 'Outra data'),
             h('input', {
               id: 'imp-outra-data', type: 'date', value: dataOutra, max: hojeISO(0),
               onChange: (e) => { setDataOutra(e.target.value); setEscolha(e.target.value ? 'outra' : 'hoje'); },
-              className: 'px-3 py-2.5 min-h-[44px] border rounded-xl text-sm bg-white ' + (escolha === 'outra' ? 'border-violet-500 ring-2 ring-violet-200' : 'border-gray-200'),
+              className: 'px-3 h-[38px] border rounded-[10px] text-[13px] bg-white ' + (escolha === 'outra' ? 'border-purple-500 ring-2 ring-purple-100' : 'border-gray-200'),
             })
           ),
           h('div', { className: 'flex-1' }),
           h('button', {
             type: 'button', onClick: importar, disabled: enviando || !dataEscolhida,
-            className: 'inline-flex items-center gap-2 px-6 py-3 min-h-[48px] rounded-xl text-base font-extrabold text-white bg-violet-700 hover:bg-violet-800 transition disabled:opacity-50 disabled:cursor-not-allowed',
-          }, enviando ? 'Enfileirando...' : h(React.Fragment, null, ico('download', 18), 'Importar ' + (dataEscolhida ? fmtDiaMes(dataEscolhida) : '')))
+            className: btnPri, style: { background: '#770fa8' },
+          }, enviando ? 'Enfileirando...' : h(React.Fragment, null, ico('download', 15), 'Importar ' + (dataEscolhida ? fmtDiaMes(dataEscolhida) : '')))
         ),
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-violet-50' },
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-100' },
           [
-            ['clock', 'bg-green-50 text-green-700', 'De hora em hora, 9h–19h', 'Atualiza o dia de hoje (seg a sex)'],
-            ['calendar', 'bg-violet-50 text-violet-700', '12h fecha o dia anterior', 'Segunda fecha sexta, sábado e domingo'],
-            ['refresh', 'bg-sky-50 text-sky-700', 'Reprocesso de OS em aberto', 'Reimporta datas com OS sem finalização (até 7 dias)'],
-          ].map(([icone, cor, titulo, sub]) => h('div', { key: titulo, className: 'flex gap-2.5 items-start' },
-            h('span', { className: 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ' + cor }, ico(icone)),
+            ['clock', 'De hora em hora, 9h–19h', 'Atualiza o dia de hoje (seg a sex)'],
+            ['calendar', '12h fecha o dia anterior', 'Segunda fecha sexta, sábado e domingo'],
+            ['refresh', 'Reprocesso de OS em aberto', 'Reimporta datas com OS sem finalização (até 7 dias)'],
+          ].map(([icone, titulo, sub]) => h('div', { key: titulo, className: 'flex gap-2.5 items-start' },
+            h('span', { className: 'mt-0.5', style: { color: '#6b7280' } }, ico(icone, 16)),
             h('span', null,
-              h('span', { className: 'block text-sm font-bold text-gray-900' }, titulo),
+              h('span', { className: 'block text-[13px] font-semibold text-gray-900' }, titulo),
               h('span', { className: 'block text-xs text-gray-500 mt-0.5' }, sub))
           ))
         )
@@ -436,90 +450,90 @@
 
       // Histórico
       h('section', { 'aria-labelledby': 'imp-hist', className: cartao + ' overflow-hidden' },
-        h('div', { className: 'px-6 py-4 flex items-center justify-between gap-3 flex-wrap border-b border-violet-50' },
+        h('div', { className: 'px-5 py-4 flex items-center justify-between gap-3 flex-wrap border-b border-gray-100' },
           h('div', null,
-            h('h3', { id: 'imp-hist', className: 'text-lg font-extrabold text-gray-900' }, 'Histórico de importações'),
-            h('p', { className: 'text-sm text-gray-500 mt-1' },
-              fmtNum(painel ? painel.total : total) + ' importações · últimas 24h: ' + u24.sucesso + ' com sucesso, ' + u24.falhou + (u24.falhou === 1 ? ' com falha' : ' com falha'))
+            h('h3', { id: 'imp-hist', className: h3 }, 'Histórico de importações'),
+            h('p', { className: 'text-[13px] text-gray-500 mt-0.5' },
+              fmtNum(painel ? painel.total : total) + ' importações · últimas 24h: ' + u24.sucesso + ' com sucesso, ' + u24.falhou + ' com falha')
           ),
           h('div', { className: 'flex gap-2 items-center flex-wrap' },
-            h('div', { role: 'group', 'aria-label': 'Filtrar por tipo', className: 'flex flex-wrap bg-gray-100 rounded-xl p-1 gap-0.5' },
+            h('div', { role: 'group', 'aria-label': 'Filtrar por tipo', className: 'flex flex-wrap bg-gray-100 rounded-[10px] p-1 gap-0.5' },
               FILTROS.map(f => h('button', {
                 key: f.id, type: 'button', onClick: () => trocarFiltro(f.id), 'aria-pressed': filtro === f.id,
-                className: 'px-3 py-1.5 min-h-[36px] rounded-lg text-sm transition ' +
-                  (filtro === f.id ? 'bg-white font-bold text-gray-900 shadow-sm' : 'font-semibold ' + (f.id === 'falhas' ? 'text-red-700' : 'text-gray-500') + ' hover:text-gray-800'),
+                className: 'px-3 h-[30px] rounded-lg text-[13px] transition ' +
+                  (filtro === f.id ? 'bg-white font-semibold text-purple-800 border border-gray-200' : 'font-medium border border-transparent ' + (f.id === 'falhas' && u24.falhou > 0 ? 'text-red-800' : 'text-gray-600') + ' hover:text-gray-900'),
               }, f.id === 'falhas' && u24.falhou > 0 ? f.label + ' (' + u24.falhou + ')' : f.label))
             ),
             h('label', { htmlFor: 'imp-filtro-data', className: 'sr-only' }, 'Filtrar por data de referência'),
             h('input', {
               id: 'imp-filtro-data', type: 'date', value: filtroData,
               onChange: (e) => trocarData(e.target.value),
-              className: 'px-3 py-2 min-h-[40px] border border-gray-200 rounded-xl text-sm bg-white',
+              className: 'px-3 h-[38px] border border-gray-200 rounded-[10px] text-[13px] bg-white',
             }),
-            filtroData && h('button', { type: 'button', onClick: () => trocarData(''), className: btnSec + ' text-gray-600 border-gray-200 hover:bg-gray-50' }, 'Limpar data')
+            filtroData && h('button', { type: 'button', onClick: () => trocarData(''), className: btnSec }, 'Limpar data')
           )
         ),
-        h('div', { className: 'overflow-x-auto' },
-          h('table', { className: 'w-full text-sm', style: { minWidth: 980 } },
+        h('div', { className: 'overflow-x-auto relative' },
+          h('table', { className: 'w-full text-[13px]', style: { minWidth: 980, borderCollapse: 'collapse' } },
             h('thead', null,
-              h('tr', { className: 'text-left text-xs text-gray-500 uppercase tracking-wide' },
-                h('th', { className: 'px-6 py-3 font-bold' }, 'Data ref.'),
-                h('th', { className: 'px-3 py-3 font-bold' }, 'Tipo'),
-                h('th', { className: 'px-3 py-3 font-bold' }, 'Status'),
-                h('th', { className: 'px-3 py-3 font-bold' }, 'Resultado'),
-                h('th', { className: 'px-3 py-3 font-bold' }, 'Por'),
-                h('th', { className: 'px-3 py-3 font-bold' }, 'Quando'),
-                h('th', { className: 'px-6 py-3' }, h('span', { className: 'sr-only' }, 'Ações'))
+              h('tr', { className: 'text-left text-xs text-gray-500 bg-gray-50' },
+                h('th', { className: 'px-5 py-2.5 font-semibold' }, 'Data ref.'),
+                h('th', { className: 'px-3 py-2.5 font-semibold' }, 'Tipo'),
+                h('th', { className: 'px-3 py-2.5 font-semibold' }, 'Status'),
+                h('th', { className: 'px-3 py-2.5 font-semibold' }, 'Resultado'),
+                h('th', { className: 'px-3 py-2.5 font-semibold' }, 'Por'),
+                h('th', { className: 'px-3 py-2.5 font-semibold' }, 'Quando'),
+                h('th', { className: 'px-5 py-2.5' }, h('span', { className: 'sr-only' }, 'Ações'))
               )
             ),
             h('tbody', null,
               dados.length === 0
-                ? h('tr', null, h('td', { colSpan: 7, className: 'px-6 py-10 text-center text-gray-500' },
+                ? h('tr', null, h('td', { colSpan: 7, className: 'px-6 py-10 text-center text-gray-500 border-t border-gray-100' },
                     carregandoHist ? 'Carregando...' : (filtro !== 'todas' || filtroData ? 'Nenhuma importação com esses filtros.' : 'Nenhuma importação ainda. Use "Importar uma data agora" acima.')))
                 : dados.flatMap(item => {
                     const tipo = TIPOS[item.origem] || TIPOS.manual;
-                    const st = STATUS[item.status] || { label: item.status, cls: 'bg-gray-100 text-gray-700' };
+                    const st = STATUS[item.status] || { label: item.status, tom: 'cinza' };
                     const falhou = item.status === 'falhou';
                     const linhas = [
-                      h('tr', { key: item.id, className: 'border-t border-violet-50 ' + (falhou ? 'bg-red-50/40' : 'hover:bg-gray-50') },
-                        h('td', { className: 'px-6 py-3.5 font-extrabold text-gray-900 whitespace-nowrap' }, fmtDataRef(item.data_referencia)),
-                        h('td', { className: 'px-3 py-3.5' }, h(Pill, { cls: tipo.cls }, tipo.label)),
-                        h('td', { className: 'px-3 py-3.5' }, h(Pill, { cls: st.cls }, st.label)),
-                        h('td', { className: 'px-3 py-3.5' },
+                      h('tr', { key: item.id, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                        h('td', { className: 'px-5 py-3 font-semibold text-gray-900 whitespace-nowrap' }, fmtDataRef(item.data_referencia)),
+                        h('td', { className: 'px-3 py-3' }, h(Pill, { tom: tipo.tom }, tipo.label)),
+                        h('td', { className: 'px-3 py-3' }, h(Pill, { tom: st.tom }, st.label)),
+                        h('td', { className: 'px-3 py-3' },
                           item.status === 'sucesso'
                             ? h(React.Fragment, null,
-                                h('div', { className: 'font-bold text-gray-900' }, fmtNum(item.linhas_inseridas) + ' linhas'),
-                                item.detalhe && h('div', { className: 'text-sky-700 mt-0.5' }, item.detalhe))
+                                h('div', { className: 'font-semibold text-gray-900' }, fmtNum(item.linhas_inseridas) + ' linhas'),
+                                item.detalhe && h('div', { className: 'text-gray-500 text-xs mt-0.5' }, item.detalhe))
                             : falhou
-                              ? h('div', { className: 'text-red-700 font-semibold' }, primeiraLinha(item.erro, 120) || 'Falhou sem mensagem de erro')
+                              ? h('div', { className: 'font-medium', style: { color: '#991b1b' } }, primeiraLinha(item.erro, 120) || 'Falhou sem mensagem de erro')
                               : h('div', { className: 'text-gray-600' }, item.detalhe || (item.status === 'processando' ? 'Em andamento (' + (item.progresso || 0) + '%)' : 'Aguardando na fila'))
                         ),
-                        h('td', { className: 'px-3 py-3.5 text-gray-700' }, limparNome(item.usuario_nome)),
-                        h('td', { className: 'px-3 py-3.5 text-gray-500 whitespace-nowrap' }, fmtQuando(item.finalizado_em || item.criado_em)),
-                        h('td', { className: 'px-6 py-3.5 text-right whitespace-nowrap' },
+                        h('td', { className: 'px-3 py-3 text-gray-700' }, limparNome(item.usuario_nome)),
+                        h('td', { className: 'px-3 py-3 text-gray-500 whitespace-nowrap' }, fmtQuando(item.finalizado_em || item.criado_em)),
+                        h('td', { className: 'px-5 py-3 text-right whitespace-nowrap' },
                           falhou && h('button', {
                             type: 'button', onClick: () => tentarDeNovo(item), disabled: acaoId === item.id,
-                            className: btnSec + ' text-violet-700 border-violet-200 hover:bg-violet-50',
-                          }, acaoId === item.id ? 'Enfileirando...' : 'Tentar de novo'),
+                            className: btnSec,
+                          }, ico('refresh', 14), acaoId === item.id ? 'Enfileirando...' : 'Tentar de novo'),
                           item.erro && h('button', {
                             type: 'button', onClick: () => setLogAberto(logAberto === item.id ? null : item.id), 'aria-expanded': logAberto === item.id,
-                            className: btnSec + ' ml-1.5 text-gray-700 border-gray-200 hover:bg-gray-50',
+                            className: btnSec + ' ml-1.5',
                           }, logAberto === item.id ? 'Ocultar log' : 'Ver log')
                         )
                       ),
                     ];
                     if (logAberto === item.id && item.erro) {
                       linhas.push(h('tr', { key: item.id + '-log', className: 'bg-gray-50' },
-                        h('td', { colSpan: 7, className: 'px-6 py-3' },
+                        h('td', { colSpan: 7, className: 'px-5 py-3' },
                           h('div', { className: 'flex items-center justify-between mb-1.5' },
-                            h('span', { className: 'text-xs font-bold text-gray-600' }, 'Log do agente · importação #' + item.id),
+                            h('span', { className: 'text-xs font-semibold text-gray-600' }, 'Log do agente · importação #' + item.id),
                             h('button', {
                               type: 'button',
                               onClick: () => { try { navigator.clipboard.writeText(item.erro); toast('Log copiado.', 'success'); } catch (e) {} },
-                              className: 'text-xs font-semibold text-violet-700 hover:underline',
-                            }, 'Copiar log')
+                              className: 'inline-flex items-center gap-1 text-xs font-semibold text-purple-700 hover:underline',
+                            }, ico('copy', 13), 'Copiar log')
                           ),
-                          h('pre', { className: 'text-xs text-red-800 bg-white border border-gray-200 rounded-lg p-3 whitespace-pre-wrap break-words max-h-64 overflow-y-auto' }, item.erro)
+                          h('pre', { className: 'text-xs text-gray-700 bg-white border border-gray-200 rounded-[10px] p-3 whitespace-pre-wrap break-words max-h-64 overflow-y-auto font-mono' }, item.erro)
                         )
                       ));
                     }
@@ -528,11 +542,11 @@
             )
           )
         ),
-        h('div', { className: 'px-6 py-3.5 flex items-center justify-between gap-3 flex-wrap border-t border-violet-50 text-sm text-gray-500' },
+        h('div', { className: 'px-5 py-3 flex items-center justify-between gap-3 flex-wrap border-t border-gray-100 text-[13px] text-gray-500' },
           h('span', null, total > 0 ? ('Mostrando ' + ((page - 1) * PER_PAGE + 1) + '–' + Math.min(page * PER_PAGE, total) + ' de ' + fmtNum(total)) : ''),
           h('div', { className: 'flex gap-1.5' },
-            h('button', { type: 'button', disabled: page <= 1 || carregandoHist, onClick: () => carregarHistorico(page - 1, filtro, filtroData), className: btnSec + ' text-gray-700 border-gray-200 hover:bg-gray-50' }, 'Anterior'),
-            h('button', { type: 'button', disabled: page >= totalPaginas || carregandoHist, onClick: () => carregarHistorico(page + 1, filtro, filtroData), className: btnSec + ' text-gray-700 border-gray-200 hover:bg-gray-50' }, 'Próxima')
+            h('button', { type: 'button', disabled: page <= 1 || carregandoHist, onClick: () => carregarHistorico(page - 1, filtro, filtroData), className: btnSec }, ico('arrowleft', 14), 'Anterior'),
+            h('button', { type: 'button', disabled: page >= totalPaginas || carregandoHist, onClick: () => carregarHistorico(page + 1, filtro, filtroData), className: btnSec }, 'Próxima', ico('arrowright', 14))
           )
         )
       ),
@@ -541,38 +555,38 @@
       (props.onUploadManual || props.onRecalcularPrazos) && h('section', { 'aria-labelledby': 'imp-avancado', className: cartao },
         h('button', {
           type: 'button', onClick: () => setAvancadoAberto(!avancadoAberto), 'aria-expanded': avancadoAberto, 'aria-controls': 'imp-avancado-corpo',
-          className: 'w-full px-6 py-4 min-h-[56px] flex items-center justify-between gap-3 text-left ' + (avancadoAberto ? 'border-b border-violet-50' : ''),
+          className: 'w-full px-5 py-4 min-h-[56px] flex items-center justify-between gap-3 text-left ' + (avancadoAberto ? 'border-b border-gray-100' : ''),
         },
           h('span', null,
-            h('span', { id: 'imp-avancado', className: 'block text-base font-extrabold text-gray-900' }, 'Ferramentas avançadas'),
-            h('span', { className: 'block text-sm text-gray-500 mt-0.5' }, 'Subir planilha à mão e recalcular prazos. Use só se o agente estiver fora do ar.')
+            h('span', { id: 'imp-avancado', className: 'block ' + h3 }, 'Ferramentas avançadas'),
+            h('span', { className: 'block text-[13px] text-gray-500 mt-0.5' }, 'Subir planilha à mão e recalcular prazos. Use só se o agente estiver fora do ar.')
           ),
-          ico('arrowdown', 20, { color: '#6b7280', transform: avancadoAberto ? 'rotate(180deg)' : 'none', transition: 'transform .15s' })
+          ico('arrowdown', 18, { color: '#6b7280', transform: avancadoAberto ? 'rotate(180deg)' : 'none', transition: 'transform .15s' })
         ),
-        avancadoAberto && h('div', { id: 'imp-avancado-corpo', className: 'p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4' },
-          props.onUploadManual && h('div', { className: 'border-2 border-dashed border-violet-200 rounded-2xl p-5 flex flex-col gap-2.5 items-start' },
-            h('div', { className: 'flex items-center gap-2.5' },
-              h('span', { className: 'w-9 h-9 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center' }, ico('upload', 18)),
-              h('span', { className: 'text-sm font-extrabold text-gray-900' }, 'Subir planilha manualmente')
+        avancadoAberto && h('div', { id: 'imp-avancado-corpo', className: 'p-5 grid grid-cols-1 md:grid-cols-2 gap-4' },
+          props.onUploadManual && h('div', { className: 'border border-dashed border-gray-300 rounded-[14px] p-5 flex flex-col gap-2.5 items-start' },
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { style: { color: '#6b7280' } }, ico('upload', 16)),
+              h('span', { className: 'text-[13px] font-semibold text-gray-900' }, 'Subir planilha manualmente')
             ),
-            h('p', { className: 'text-sm text-gray-500' }, 'Selecione o arquivo .xlsx exportado do sistema. As OS da planilha substituem as que já estão no BI.'),
+            h('p', { className: 'text-[13px] text-gray-500' }, 'Selecione o arquivo .xlsx exportado do sistema. As OS da planilha substituem as que já estão no BI.'),
             props.uploadManualStatus
-              ? h('p', { className: 'text-sm font-semibold text-violet-700', role: 'status' }, props.uploadManualStatus)
+              ? h('p', { className: 'text-[13px] font-semibold text-purple-800', role: 'status' }, props.uploadManualStatus)
               : h(React.Fragment, null,
                   h('input', { id: 'imp-upload-manual', type: 'file', accept: '.xlsx,.xls', multiple: true, className: 'sr-only', onChange: props.onUploadManual }),
-                  h('label', { htmlFor: 'imp-upload-manual', className: btnSec + ' cursor-pointer text-gray-800 border-gray-300 hover:bg-gray-50' }, ico('filetext'), 'Selecionar arquivo')
+                  h('label', { htmlFor: 'imp-upload-manual', className: btnSec + ' cursor-pointer' }, ico('filetext', 15), 'Selecionar arquivo')
                 )
           ),
-          props.onRecalcularPrazos && h('div', { className: 'border border-violet-100 rounded-2xl p-5 flex flex-col gap-2.5 items-start' },
-            h('div', { className: 'flex items-center gap-2.5' },
-              h('span', { className: 'w-9 h-9 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center' }, ico('clock', 18)),
-              h('span', { className: 'text-sm font-extrabold text-gray-900' }, 'Recalcular prazos')
+          props.onRecalcularPrazos && h('div', { className: 'border border-gray-200 rounded-[14px] p-5 flex flex-col gap-2.5 items-start' },
+            h('div', { className: 'flex items-center gap-2' },
+              h('span', { style: { color: '#6b7280' } }, ico('clock', 16)),
+              h('span', { className: 'text-[13px] font-semibold text-gray-900' }, 'Recalcular prazos')
             ),
-            h('p', { className: 'text-sm text-gray-500' }, 'Refaz o prazo do cliente e do profissional de todo o histórico. Use depois de mudar as faixas de prazo em Configurações.'),
+            h('p', { className: 'text-[13px] text-gray-500' }, 'Refaz o prazo do cliente e do profissional de todo o histórico. Use depois de mudar as faixas de prazo em Configurações.'),
             h('button', {
               type: 'button', onClick: props.onRecalcularPrazos, disabled: !!props.recalculando,
-              className: btnSec + ' text-gray-800 border-gray-300 hover:bg-gray-50',
-            }, props.recalculando ? 'Recalculando...' : 'Recalcular prazos')
+              className: btnSec,
+            }, ico('refresh', 15), props.recalculando ? 'Recalculando...' : 'Recalcular prazos')
           )
         )
       )

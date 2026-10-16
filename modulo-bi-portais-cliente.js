@@ -9,8 +9,18 @@
   var h = React.createElement;
   var useState = React.useState, useEffect = React.useEffect;
   var ROXO = "#770fa8";
-  var inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200";
-  function label(t) { return h("label", { className: "block text-xs font-semibold text-gray-500 mb-1" }, t); }
+  /* BI_ABAS_V1: Portais do cliente no padrão clean (cabeçalho Sora 24, cards brancos sem sombra,
+     labels visíveis 12px, inputs 38px raio 10, status em pílula suave). Lógica e chamadas inalteradas. */
+  var inputCls = "w-full h-[38px] bg-white border border-gray-200 rounded-[10px] px-3 text-[13px] text-gray-900 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100";
+  function label(t, id) { return h("label", { htmlFor: id, className: "block text-xs font-semibold text-gray-700 mb-1.5" }, t); }
+  function ico(nome, sz, extra) { return h("svg", { className: "ico", style: Object.assign({ width: sz || 15, height: sz || 15, flexShrink: 0 }, extra || {}), "aria-hidden": "true" }, h("use", { href: "#i-" + nome })); }
+  var btnSec = "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[10px] text-[12.5px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap";
+  var btnDes = "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[10px] text-[12.5px] font-semibold border bg-white whitespace-nowrap";
+  function pillSt(on, txt) {
+    var t = on ? ["#f0fdf4", "#166534", "#16a34a"] : ["#f3f4f6", "#374151", "#9ca3af"];
+    return h("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0", style: { background: t[0], color: t[1] } },
+      h("span", { style: { width: 6, height: 6, borderRadius: 999, background: t[2] } }), txt);
+  }
 
   function BiPortaisCliente(props) {
     var API_URL = props.API_URL, fetchAuth = props.fetchAuth;
@@ -137,109 +147,119 @@
       var qtd = Object.keys(l.sel).length;
       var termo = (l.filtro || "").toLowerCase();
       var visiveis = termo ? l.centros.filter(function (c) { return String(c.centro_custo).toLowerCase().indexOf(termo) !== -1; }) : l.centros;
-      return h("div", { key: l.cod, className: "border border-gray-200 rounded-xl overflow-hidden mt-3" },
-        h("div", { className: "flex items-center justify-between px-3 py-2.5", style: { background: "#f9fafb", borderBottom: "1px solid #e5e7eb" } },
-          h("div", { className: "font-bold text-sm flex items-center gap-2" },
-            h("span", { className: "text-white rounded-md px-1.5 py-0.5 text-[11px]", style: { background: ROXO } }, l.cod), l.nome),
-          h("div", { className: "flex items-center gap-2" },
-            h("span", { className: "text-[11px] text-gray-500" }, qtd === 0 ? "todos os centros" : (qtd + " de " + l.centros.length)),
-            h("button", { type: "button", onClick: function () { marcarTodos(l.cod, true); }, className: "text-[11px] font-semibold px-2 py-0.5 rounded-full border border-purple-200 text-purple-700" }, "Todos"),
-            h("button", { type: "button", onClick: function () { marcarTodos(l.cod, false); }, className: "text-[11px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 text-gray-600" }, "Limpar"),
-            h("button", { type: "button", onClick: function () { removerLoja(l.cod); }, className: "text-[11px] font-semibold px-2 py-0.5 rounded-full border border-red-200 text-red-600" }, "remover")
+      return h("div", { key: l.cod, className: "border border-gray-200 rounded-[12px] overflow-hidden mt-3" },
+        h("div", { className: "flex items-center justify-between gap-2 flex-wrap px-3 py-2.5", style: { background: "#f9fafb", borderBottom: "1px solid #e5e7eb" } },
+          h("div", { className: "font-semibold text-[13px] text-gray-900 flex items-center gap-2 min-w-0" },
+            h("span", { className: "rounded-md px-1.5 py-0.5 text-[11.5px] font-bold", style: { background: "#f3e8fb", color: "#5d0b85", fontVariantNumeric: "tabular-nums" } }, l.cod),
+            h("span", { className: "truncate" }, l.nome)),
+          h("div", { className: "flex items-center gap-1.5 flex-wrap" },
+            h("span", { className: "text-xs text-gray-500 mr-1" }, qtd === 0 ? "Todos os centros" : (qtd + " de " + l.centros.length + " centros")),
+            h("button", { type: "button", onClick: function () { marcarTodos(l.cod, true); }, className: btnSec + " h-7 px-2.5 text-xs" }, "Marcar todos"),
+            h("button", { type: "button", onClick: function () { marcarTodos(l.cod, false); }, className: btnSec + " h-7 px-2.5 text-xs" }, "Limpar"),
+            h("button", { type: "button", onClick: function () { removerLoja(l.cod); }, title: "Remover loja " + l.cod, className: btnDes + " h-7 px-2.5 text-xs", style: { borderColor: "#fecaca", color: "#991b1b" } }, "Remover")
           )
         ),
         h("div", { className: "p-3" },
-          l.loading ? h("div", { className: "text-sm text-gray-400 py-2" }, "Carregando centros...")
-            : (l.centros.length === 0 ? h("div", { className: "text-sm text-gray-400 py-2" }, "Sem centros para esta loja.")
+          l.loading ? h("div", { className: "text-[13px] text-gray-500 py-2" }, "Carregando centros...")
+            : (l.centros.length === 0 ? h("div", { className: "text-[13px] text-gray-500 py-2" }, "Sem centros para esta loja.")
               : h("div", null,
                 (l.centros.length > 8
-                  ? h("input", {
-                      className: inputCls + " mb-2", value: l.filtro || "",
-                      onChange: function (e) { setFiltroLoja(l.cod, e.target.value); },
-                      placeholder: "Buscar centro... (" + l.centros.length + " no total)"
-                    })
+                  ? h("div", { className: "relative mb-2" },
+                      ico("search", 14, { position: "absolute", left: 11, top: 12, color: "#9ca3af" }),
+                      h("input", {
+                        className: inputCls + " pl-8", value: l.filtro || "", "aria-label": "Buscar centro de custo",
+                        onChange: function (e) { setFiltroLoja(l.cod, e.target.value); },
+                        placeholder: "Buscar centro (" + l.centros.length + " no total)"
+                      }))
                   : null),
                 h("div", { className: "grid sm:grid-cols-2 gap-2", style: { maxHeight: "320px", overflowY: "auto", paddingRight: "4px" } },
                   visiveis.length === 0
-                    ? h("div", { className: "text-sm text-gray-400 py-2 col-span-2" }, "Nenhum centro encontrado.")
+                    ? h("div", { className: "text-[13px] text-gray-500 py-2 col-span-2" }, "Nenhum centro encontrado.")
                     : visiveis.map(function (c) {
                       var on = !!l.sel[c.centro_custo];
-                      return h("label", { key: c.centro_custo, className: "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer " + (on ? "border-purple-400 bg-purple-50" : "border-gray-200") },
-                        h("input", { type: "checkbox", checked: on, onChange: function () { toggleCentro(l.cod, c.centro_custo); }, className: "w-4 h-4 accent-purple-600" }),
-                        h("span", { className: "flex-1" },
-                          h("span", { className: "font-semibold text-sm" }, c.centro_custo),
-                          h("span", { className: "block text-xs text-gray-400" }, (c.entregas_30d || 0) + " entregas / 30d"))
+                      return h("label", { key: c.centro_custo, className: "flex items-center gap-3 p-2.5 rounded-[10px] border cursor-pointer " + (on ? "border-purple-300 bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50") },
+                        h("input", { type: "checkbox", checked: on, onChange: function () { toggleCentro(l.cod, c.centro_custo); }, className: "w-4 h-4", style: { accentColor: ROXO } }),
+                        h("span", { className: "flex-1 min-w-0" },
+                          h("span", { className: "block font-semibold text-[13px] text-gray-900 truncate" }, c.centro_custo),
+                          h("span", { className: "block text-xs text-gray-500" }, (c.entregas_30d || 0) + " entregas em 30 dias"))
                       );
                     })
                 )
               )),
-          h("div", { className: "text-[11px] text-gray-400 mt-2" }, "Nenhum centro marcado = o cliente vê TODOS os centros desta loja.")
+          h("div", { className: "text-xs text-gray-500 mt-2" }, "Nenhum centro marcado = o cliente vê todos os centros desta loja.")
         )
       );
     }
 
-    var formCard = h("div", { className: "bg-white rounded-xl shadow p-6" },
-      h("div", null, label("Nome de exibicao no portal"),
-        h("input", { className: inputCls, value: nome, onChange: function (e) { setNome(e.target.value); }, placeholder: "Ex.: Grupo Comollati" })),
+    var formCard = h("section", { "aria-labelledby": "bipc-form-titulo", className: "bg-white border border-gray-200 rounded-[14px] p-5" },
+      h("div", { className: "flex items-start justify-between gap-3 mb-4" },
+        h("div", null,
+          h("h2", { id: "bipc-form-titulo", className: "text-[15px] font-semibold text-gray-900" }, editId ? "Editar acesso" : "Novo acesso"),
+          h("p", { className: "text-[13px] text-gray-500 mt-0.5" }, editId ? ("Alterando " + (nome || "acesso") + ". Deixe a senha vazia para manter a atual.") : "Defina o nome, as lojas liberadas e o login do cliente.")),
+        editId ? h("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0", style: { background: "#faf7fd", color: "#5d0b85" } }, h("span", { style: { width: 6, height: 6, borderRadius: 999, background: "#770fa8" } }), "Editando") : null),
+      h("div", null, label("Nome de exibição no portal", "bipc-nome"),
+        h("input", { id: "bipc-nome", className: inputCls, value: nome, onChange: function (e) { setNome(e.target.value); }, placeholder: "Ex.: Grupo Comollati" })),
       h("div", { className: "mt-5" },
-        h("div", { className: "flex items-center justify-between mb-1" },
-          label("Lojas do acesso"),
-          h("span", { className: "text-[11px] text-gray-400" }, lojas.length + " loja(s)")),
+        h("div", { className: "flex items-center justify-between" },
+          label("Lojas do acesso", "bipc-add-loja"),
+          h("span", { className: "text-xs text-gray-500 mb-1.5" }, lojas.length + " loja(s)")),
         h("div", { className: "flex gap-2 items-end" },
-          h("select", { className: inputCls, value: addCod, onChange: function (e) { setAddCod(e.target.value); } },
-            h("option", { value: "" }, "+ Adicionar loja..."),
+          h("select", { id: "bipc-add-loja", className: inputCls, value: addCod, onChange: function (e) { setAddCod(e.target.value); } },
+            h("option", { value: "" }, "Escolha uma loja para adicionar"),
             disponiveis.map(function (c) { return h("option", { key: c.cod_cliente, value: c.cod_cliente }, c.cod_cliente + " - " + (c.nome_cliente || "sem nome")); })),
-          h("button", { type: "button", onClick: function () { adicionarLoja(addCod); }, className: "text-sm font-semibold px-4 rounded-lg border whitespace-nowrap", style: { borderColor: ROXO, color: ROXO, height: 38 } }, "Adicionar")
+          h("button", { type: "button", onClick: function () { adicionarLoja(addCod); }, disabled: !addCod, className: "inline-flex items-center gap-1.5 h-[38px] px-3.5 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap disabled:opacity-50" }, ico("plus"), "Adicionar loja")
         ),
-        lojas.length === 0 ? h("div", { className: "text-sm text-gray-400 py-3" }, "Adicione uma ou mais lojas a este acesso.") : lojas.map(cardLoja)
+        lojas.length === 0 ? h("div", { className: "text-[13px] text-gray-500 py-4 text-center border border-dashed border-gray-200 rounded-[12px] mt-3" }, "Nenhuma loja ainda. Adicione uma ou mais lojas a este acesso.") : lojas.map(cardLoja)
       ),
-      h("div", { className: "grid sm:grid-cols-2 gap-4 mt-5 pt-5", style: { borderTop: "1px solid #e5e7eb" } },
-        h("div", null, label("Login (email ou usuario)"),
-          h("input", { className: inputCls, value: login, onChange: function (e) { setLogin(e.target.value); }, placeholder: "comollati" })),
-        h("div", null, label(editId ? "Nova senha (deixe vazio p/ manter)" : "Senha"),
+      h("div", { className: "grid sm:grid-cols-2 gap-4 mt-5 pt-5", style: { borderTop: "1px solid #f3f4f6" } },
+        h("div", null, label("Login (e-mail ou usuário)", "bipc-login"),
+          h("input", { id: "bipc-login", className: inputCls, value: login, onChange: function (e) { setLogin(e.target.value); }, placeholder: "Ex.: comollati", autoComplete: "off" })),
+        h("div", null, label(editId ? "Nova senha (vazio mantém a atual)" : "Senha", "bipc-senha"),
           h("div", { className: "flex gap-2" },
-            h("input", { className: inputCls, value: senha, onChange: function (e) { setSenha(e.target.value); }, placeholder: "min 6 caracteres" }),
-            h("button", { type: "button", onClick: gerarSenha, className: "text-xs font-semibold px-3 rounded-lg border border-gray-200 text-gray-600 whitespace-nowrap" }, "Gerar")))
+            h("input", { id: "bipc-senha", className: inputCls, value: senha, onChange: function (e) { setSenha(e.target.value); }, placeholder: "Mínimo 6 caracteres", autoComplete: "new-password" }),
+            h("button", { type: "button", onClick: gerarSenha, className: "inline-flex items-center gap-1.5 h-[38px] px-3 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap" }, ico("key"), "Gerar")))
       ),
-      h("div", { className: "mt-6 flex gap-2" },
-        h("button", { onClick: salvar, disabled: salvando, className: "text-white font-bold rounded-lg px-5 py-2.5 text-sm", style: { background: ROXO, opacity: salvando ? 0.6 : 1 } },
-          salvando ? "Salvando..." : (editId ? "Salvar alteracoes" : "Criar acesso")),
-        editId ? h("button", { onClick: limparForm, className: "font-semibold rounded-lg px-4 py-2.5 text-sm border border-gray-200 text-gray-600" }, "Cancelar edicao") : null
+      h("div", { className: "mt-5 pt-4 flex gap-2 justify-end flex-wrap", style: { borderTop: "1px solid #f3f4f6" } },
+        editId ? h("button", { type: "button", onClick: limparForm, className: "inline-flex items-center h-10 px-4 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50" }, "Cancelar edição") : null,
+        h("button", { type: "button", onClick: salvar, disabled: salvando, className: "inline-flex items-center gap-1.5 h-10 px-4 rounded-[10px] text-[13px] font-semibold text-white", style: { background: ROXO, opacity: salvando ? 0.6 : 1, cursor: salvando ? "wait" : "pointer" } },
+          salvando ? "Salvando..." : (editId ? h(React.Fragment, null, ico("save"), "Salvar alterações") : h(React.Fragment, null, ico("plus"), "Criar acesso")))
       )
     );
 
-    function pill(txt) { return h("span", { className: "inline-block text-[11px] font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#eff6ff", color: "#770fa8" } }, txt); }
-    var listaCard = h("div", { className: "bg-white rounded-xl shadow p-6" },
-      h("div", { className: "flex items-center justify-between mb-3" },
-        h("h3", { className: "font-bold text-[15px]" }, "Acessos ativos"),
-        h("span", { className: "text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700" }, portais.length + " acesso(s)")),
-      portais.length === 0 ? h("div", { className: "text-sm text-gray-400 py-4" }, "Nenhum acesso criado ainda.")
-        : h("div", { className: "space-y-2" },
-          portais.map(function (p) {
+    function pill(txt, key) { return h("span", { key: key, className: "inline-flex items-center text-xs font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#faf7fd", color: "#5d0b85", border: "1px solid #f3e8fb", fontVariantNumeric: "tabular-nums" } }, txt); }
+    var nAtivos = portais.filter(function (p) { return p.portal_ativo; }).length;
+    var listaCard = h("section", { "aria-labelledby": "bipc-lista-titulo", className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden self-start" },
+      h("div", { className: "flex items-center justify-between gap-2 px-5 py-4", style: { borderBottom: "1px solid #f3f4f6" } },
+        h("div", null,
+          h("h2", { id: "bipc-lista-titulo", className: "text-[15px] font-semibold text-gray-900" }, "Acessos"),
+          h("p", { className: "text-[13px] text-gray-500 mt-0.5" }, portais.length + " acesso(s) · " + nAtivos + " ativo(s)"))),
+      portais.length === 0 ? h("div", { className: "text-[13px] text-gray-500 py-10 px-5 text-center" }, "Nenhum acesso criado ainda. Use o formulário para criar o primeiro.")
+        : h("div", null,
+          portais.map(function (p, i) {
             var cls = (p.clientes || []);
-            return h("div", { key: p.id, className: "p-3 rounded-lg border border-gray-200" },
+            var emEdicao = editId === p.id;
+            return h("div", { key: p.id, className: "px-5 py-3.5", style: { borderTop: i === 0 ? "none" : "1px solid #f3f4f6", background: emEdicao ? "#faf7fd" : "#ffffff", boxShadow: emEdicao ? "inset 3px 0 0 #770fa8" : "none" } },
               h("div", { className: "flex items-start gap-3" },
-                h("div", { className: "w-9 h-9 rounded-lg grid place-items-center text-white text-xs font-bold flex-shrink-0", style: { background: ROXO } }, String((cls[0] && cls[0].cod_cliente) || "").slice(0, 4)),
                 h("div", { className: "flex-1 min-w-0" },
-                  h("div", { className: "font-semibold text-sm truncate" }, p.nome_exibicao),
-                  h("div", { className: "text-xs text-gray-400 truncate" }, p.portal_login),
-                  h("div", { className: "mt-0.5" }, cls.length ? cls.map(function (c) { return pill(c.cod_cliente + " · " + (c.centros > 0 ? (c.centros + " centros") : "todos")); }) : h("span", { className: "text-[11px] text-gray-400" }, "sem loja"))),
-                h("span", { className: "text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 " + (p.portal_ativo ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500") }, p.portal_ativo ? "ativo" : "inativo")),
-              h("div", { className: "flex gap-2 mt-2 flex-wrap" },
-                h("button", { onClick: function () { editar(p); }, className: "text-xs font-semibold px-2.5 py-1 rounded-full border border-purple-200 text-purple-700" }, "Editar"),
-                h("button", { onClick: function () { toggleAtivo(p); }, className: "text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200 text-gray-600" }, p.portal_ativo ? "Desativar" : "Ativar"),
-                h("button", { onClick: function () { resetarSenha(p); }, className: "text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200 text-gray-600" }, "Nova senha"),
-                h("button", { onClick: function () { excluir(p); }, className: "text-xs font-semibold px-2.5 py-1 rounded-full border border-red-200 text-red-600" }, "Excluir"))
+                  h("div", { className: "font-semibold text-[13px] text-gray-900 truncate" }, p.nome_exibicao),
+                  h("div", { className: "text-xs text-gray-500 truncate" }, p.portal_login),
+                  h("div", { className: "mt-0.5" }, cls.length ? cls.map(function (c) { return pill(c.cod_cliente + " · " + (c.centros > 0 ? (c.centros + " centros") : "todos"), c.cod_cliente); }) : h("span", { className: "text-xs text-gray-500" }, "Sem loja"))),
+                pillSt(!!p.portal_ativo, p.portal_ativo ? "Ativo" : "Inativo")),
+              h("div", { className: "flex gap-1.5 mt-2.5 flex-wrap" },
+                h("button", { type: "button", onClick: function () { editar(p); }, className: btnSec }, ico("pencil", 13), "Editar"),
+                h("button", { type: "button", onClick: function () { toggleAtivo(p); }, className: btnSec }, ico("power", 13), p.portal_ativo ? "Desativar" : "Ativar"),
+                h("button", { type: "button", onClick: function () { resetarSenha(p); }, className: btnSec }, ico("key", 13), "Nova senha"),
+                h("button", { type: "button", onClick: function () { excluir(p); }, className: btnDes, style: { borderColor: "#fecaca", color: "#991b1b" } }, ico("trash", 13), "Excluir"))
             );
           })
         )
     );
 
-    return h("div", null,
-      h("div", { className: "mb-4" },
-        h("h2", { className: "text-xl font-extrabold" }, "Portais do Cliente"),
-        h("p", { className: "text-sm text-gray-500 mt-1" }, "Crie um login que pode agrupar VÁRIAS lojas, cada uma com seus centros de custo. Na visualizacao, o cliente escolhe qual loja ver.")),
-      h("div", { className: "grid lg:grid-cols-[1.2fr_.8fr] gap-6" }, formCard, listaCard)
+    return h("div", { className: "flex flex-col gap-4", style: { color: "#111827" } },
+      h("div", null,
+        h("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, "Portais do cliente"),
+        h("p", { style: { margin: "4px 0 0", fontSize: 13, color: "#6b7280" } }, "Crie um login que agrupa várias lojas, cada uma com seus centros de custo. No portal, o cliente escolhe qual loja ver.")),
+      h("div", { className: "grid lg:grid-cols-[1.2fr_.8fr] gap-4 items-start" }, formCard, listaCard)
     );
   }
 

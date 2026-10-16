@@ -48,6 +48,106 @@
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   }
 
+  // ════════════════════════════════════════════════════════
+  // HUB_ABAS_V1 — peças de UI do padrão clean para as demais abas do Hub
+  // (Tracking, Regras, Barrados, Frequentes). Só visual: nenhuma regra aqui.
+  // ════════════════════════════════════════════════════════
+  const HX = {
+    titulo: { fontFamily: 'Sora, Inter, sans-serif', letterSpacing: '-0.01em' },
+    btnPri: 'h-10 px-4 rounded-[10px] bg-purple-700 text-white text-sm font-semibold hover:bg-purple-800 inline-flex items-center justify-center gap-1.5 disabled:opacity-50',
+    btnSec: 'h-10 px-4 rounded-[10px] border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 inline-flex items-center justify-center gap-1.5 disabled:opacity-50',
+    btnIco: 'w-10 h-10 rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 grid place-items-center flex-shrink-0',
+    btnDest: 'h-8 px-3 rounded-[10px] border border-red-200 bg-white text-red-800 text-[13px] font-semibold hover:bg-red-50 inline-flex items-center gap-1.5',
+    input: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
+    area: 'w-full px-3 py-2 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 resize-y',
+    label: 'block text-xs font-semibold text-gray-700 mb-1',
+    hint: 'text-[11.5px] text-gray-500 mt-1 leading-snug',
+    card: 'bg-white rounded-[14px] border border-gray-200',
+    th: 'px-4 py-2.5 text-left text-xs font-semibold text-gray-500 whitespace-nowrap',
+  };
+  const HX_TOM = {
+    verde:    { bg: '#f0fdf4', fg: '#166534', dot: '#16a34a' },
+    ambar:    { bg: '#fffbeb', fg: '#92400e', dot: '#d97706' },
+    vermelho: { bg: '#fef2f2', fg: '#991b1b', dot: '#dc2626' },
+    azul:     { bg: '#eff6ff', fg: '#1e40af', dot: '#2563eb' },
+    roxo:     { bg: '#faf7fd', fg: '#5d0b85', dot: '#770fa8' },
+    cinza:    { bg: '#f3f4f6', fg: '#374151', dot: '#9ca3af' },
+  };
+  const hxIco = (nome, sz, extra) => h('svg', { className: 'ico', style: Object.assign({ width: sz || 16, height: sz || 16 }, extra || {}), 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome }));
+  // Pílula suave: fundo 50 + texto 800 + ponto 6px 600
+  function HxPilula({ tom, children, title, semPonto }) {
+    const t = HX_TOM[tom] || HX_TOM.cinza;
+    return h('span', { title, className: 'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap', style: { background: t.bg, color: t.fg } },
+      !semPonto && h('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 99, background: t.dot, flexShrink: 0 } }),
+      children);
+  }
+  // Tom da pílula a partir da classe Tailwind legada de STATUS_LABELS
+  function hxTomDeCor(cor) {
+    const c = String(cor || '');
+    if (/green|emerald/.test(c)) return 'verde';
+    if (/red/.test(c)) return 'vermelho';
+    if (/amber|orange|yellow/.test(c)) return 'ambar';
+    if (/blue|sky|cyan/.test(c)) return 'azul';
+    if (/purple|indigo|violet/.test(c)) return 'roxo';
+    return 'cinza';
+  }
+  function HxStatus({ entrega }) {
+    const s = resolverStatus(entrega || {});
+    return h(HxPilula, { tom: hxTomDeCor(s.cor) }, s.label);
+  }
+  // Cabeçalho de página: título Sora 24 + subtítulo cinza + ações à direita
+  function HxCabecalho({ titulo, sub, acoes }) {
+    return h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
+      h('div', { className: 'min-w-0' },
+        h('h1', { className: 'text-2xl font-bold text-gray-900', style: HX.titulo }, titulo),
+        sub && h('p', { className: 'text-[13px] text-gray-500 mt-1' }, sub)),
+      acoes && h('div', { className: 'flex gap-2 items-center flex-wrap' }, acoes));
+  }
+  // Faixa única de KPIs: um card, células divididas por borda #f3f4f6
+  function HxKpis({ itens, rotulo }) {
+    return h('section', { 'aria-label': rotulo || 'Indicadores', className: 'bg-white rounded-[14px] border border-gray-200 flex flex-wrap overflow-hidden' },
+      itens.map((k, i) => h('div', { key: i, style: { flex: '1 1 160px', padding: '16px 20px', borderRight: i < itens.length - 1 ? '1px solid #f3f4f6' : 'none', minWidth: 0 } },
+        h('div', { style: { fontSize: 12, color: '#6b7280' } }, k.l),
+        h('div', { style: { fontFamily: 'Sora, Inter, sans-serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: k.cor || '#111827', lineHeight: 1.25, margin: '2px 0' } }, k.v),
+        k.sub && h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, k.sub))));
+  }
+  // Switch no padrão (roxo ligado / cinza desligado), com nome acessível
+  function HxSwitch({ on, onClick, disabled, label }) {
+    return h('button', {
+      // sem role=switch: o index.html força padding/min-size em button[role=switch] no mobile
+      type: 'button', 'aria-pressed': !!on, 'aria-label': label, onClick, disabled,
+      className: 'relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ' + (on ? 'bg-purple-700' : 'bg-gray-300'),
+    }, h('span', { className: 'absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ' + (on ? 'right-0.5' : 'left-0.5') }));
+  }
+  // Linha de configuração: título + descrição à esquerda, switch à direita
+  function HxLinhaSwitch({ titulo, desc, on, onClick, disabled, children }) {
+    return h('div', { className: 'py-3.5 border-t border-gray-100 first:border-t-0' },
+      h('div', { className: 'flex items-start justify-between gap-4' },
+        h('div', { className: 'min-w-0' },
+          h('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, titulo),
+          desc && h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' }, desc)),
+        h(HxSwitch, { on, onClick, disabled, label: typeof titulo === 'string' ? titulo : undefined })),
+      children);
+  }
+  function HxVazio({ titulo, texto, acao }) {
+    return h('div', { className: 'py-14 px-6 text-center' },
+      h('div', { className: 'text-[14px] font-semibold text-gray-700' }, titulo),
+      texto && h('div', { className: 'text-[13px] text-gray-500 mt-1 max-w-md mx-auto' }, texto),
+      acao && h('div', { className: 'mt-4' }, acao));
+  }
+  function HxSpinner() {
+    return h('div', { className: 'py-16 flex justify-center' }, h('div', { className: 'animate-spin w-8 h-8 border-[3px] border-purple-700 border-t-transparent rounded-full', role: 'status', 'aria-label': 'Carregando' }));
+  }
+  // Avatar neutro (foto ou iniciais) — sem cores fortes
+  function HxAvatar({ foto, nome, size }) {
+    const s = size || 32;
+    const ini = (function () { if (!nome) return '?'; const p = String(nome).trim().split(/\s+/); return (p.length === 1 ? p[0].slice(0, 2) : p[0][0] + p[p.length - 1][0]).toUpperCase(); })();
+    return h('div', { className: 'relative flex-shrink-0', style: { width: s, height: s } },
+      foto && h('img', { src: foto, alt: nome || 'Entregador', className: 'rounded-full object-cover', style: { width: s, height: s },
+        onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; } }),
+      h('div', { className: 'rounded-full items-center justify-center font-semibold', style: { width: s, height: s, background: '#f3e8fb', color: '#5d0b85', fontSize: Math.round(s * 0.36), display: foto ? 'none' : 'flex' } }, ini));
+  }
+
   // 🆕 2026-06: badge do codigo (coleta/entrega) da 99/Uber.
   // - codigo presente: mostra destacado e copia ao clicar.
   // - codigo ausente: mostra "aguardando" (a 99 gera apos o despacho, via poller;
@@ -839,90 +939,95 @@
       mapRef.current.panTo(pos);
     }, [posicaoAtual]);
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4' },
-      h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })), 'Tracking em tempo real')),
-      h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-4' },
+    // HUB_ABAS_V1: Tracking no padrão clean — cabeçalho, lista em card com seleção roxa suave,
+    // painel de detalhe limpo (dados do entregador + botão Tracking principal) e estado vazio.
+    const campoTrk = (rot, val) => h('div', { className: 'min-w-0' },
+      h('dt', { className: 'text-xs text-gray-500' }, rot),
+      h('dd', { className: 'text-[13px] text-gray-900 font-medium mt-0.5 truncate' }, val || '—'));
+    const selecionarTrk = (e) => { setSelecionada(e); setPosicaoAtual(e.ultima_posicao ? { lat: e.ultima_posicao.lat, lng: e.ultima_posicao.lng } : null); };
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+      h(HxCabecalho, {
+        titulo: 'Tracking',
+        sub: `${ativas.length} entrega${ativas.length !== 1 ? 's' : ''} em andamento · posição do entregador em tempo real`,
+        acoes: [h('button', { key: 'r', type: 'button', onClick: carregarAtivas, className: HX.btnIco, title: 'Atualizar', 'aria-label': 'Atualizar entregas ativas' }, hxIco('refresh'))],
+      }),
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-[minmax(300px,380px)_1fr] gap-4 items-start' },
         // Lista
-        h('div', { className: 'lg:col-span-1 bg-white rounded-[14px] border border-gray-200 p-3 max-h-[600px] overflow-y-auto' },
-          h('div', { className: 'text-xs font-semibold text-gray-500 uppercase mb-2' }, `${ativas.length} entrega(s) ativas`),
+        h('section', { 'aria-label': 'Entregas em andamento', className: HX.card + ' overflow-hidden' },
+          h('div', { className: 'px-4 py-3 border-b border-gray-100 flex items-center justify-between' },
+            h('span', { className: 'text-[15px] font-semibold text-gray-900' }, 'Em andamento'),
+            h('span', { className: 'text-xs text-gray-500 tabular-nums' }, String(ativas.length))),
           ativas.length === 0
-            ? h('p', { className: 'text-sm text-gray-400 text-center py-8' }, 'Nenhuma entrega em andamento')
-            : ativas.map(e => h('div', {
-                key: e.id,
-                onClick: () => { setSelecionada(e); setPosicaoAtual(e.ultima_posicao ? { lat: e.ultima_posicao.lat, lng: e.ultima_posicao.lng } : null); },
-                className: `p-3 rounded-lg border cursor-pointer mb-2 ${selecionada?.id === e.id ? 'bg-purple-50 border-purple-400' : 'border-gray-100 hover:bg-gray-50'}`
-              },
-                h('div', { className: 'flex items-center justify-between mb-1 gap-2' },
-                  h('span', { className: 'flex items-center gap-1.5 min-w-0' },
-                    h(ProviderLogo, { code: (e.provider_code || e.provider || null), size: 18 }),
-                    h('span', { className: 'text-sm font-bold cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-a', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' })))
-                  ),
-                  h('div', { className: 'flex items-center gap-1.5' },
-                    h(Badge, { entrega: e }),
-                    e.tracking_url && h('a', {
-                      href: e.tracking_url,
-                      target: '_blank',
-                      rel: 'noopener noreferrer',
-                      onClick: (ev) => ev.stopPropagation(),
-                      title: 'Abrir tracking oficial do provedor',
-                      className: 'text-purple-600 hover:text-purple-800 text-base',
-                    }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' }))),
-                  ),
-                ),
-                e.entregador_nome && h('p', { className: 'text-xs text-gray-600' }, `${e.entregador_nome}`),
-                h('p', { className: 'text-xs text-gray-400 truncate' }, e.endereco_entrega)
-              ))
+            ? h(HxVazio, { titulo: 'Nenhuma entrega em andamento', texto: 'Quando uma corrida for despachada, ela aparece aqui com a posição do entregador.' })
+            : h('div', { className: 'max-h-[620px] overflow-y-auto' },
+                ativas.map(e => {
+                  const sel = selecionada?.id === e.id;
+                  return h('div', {
+                    key: e.id, role: 'button', tabIndex: 0, 'aria-pressed': sel,
+                    onClick: () => selecionarTrk(e),
+                    onKeyDown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selecionarTrk(e); } },
+                    className: 'px-4 py-3 cursor-pointer border-t border-gray-100 first:border-t-0 focus:outline-none focus-visible:bg-gray-50 ' + (sel ? '' : 'hover:bg-gray-50'),
+                    style: sel ? { background: '#faf7fd', boxShadow: 'inset 2px 0 0 #770fa8' } : null,
+                  },
+                    h('div', { className: 'flex items-center justify-between gap-2' },
+                      h('span', { className: 'flex items-center gap-2 min-w-0' },
+                        h(ProviderLogo, { code: (e.provider_code || e.provider || null), size: 18 }),
+                        h('span', { className: 'text-[13.5px] font-semibold text-gray-900 cursor-pointer whitespace-nowrap', style: { fontVariantNumeric: 'tabular-nums' }, title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-a', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' })))
+                      ),
+                      h('div', { className: 'flex items-center gap-1.5 flex-shrink-0' },
+                        h(HxStatus, { entrega: e }),
+                        e.tracking_url && h('a', {
+                          href: e.tracking_url, target: '_blank', rel: 'noopener noreferrer',
+                          onClick: (ev) => ev.stopPropagation(),
+                          title: 'Abrir tracking oficial do provedor', 'aria-label': `Abrir tracking oficial da OS ${e.codigo_os}`,
+                          className: 'w-7 h-7 grid place-items-center rounded-lg text-gray-500 hover:text-purple-800 hover:bg-white',
+                        }, hxIco('link', 15)),
+                      ),
+                    ),
+                    h('p', { className: 'text-[12.5px] mt-1 ' + (e.entregador_nome ? 'text-gray-700' : 'text-gray-400') }, e.entregador_nome || 'Sem entregador atribuído'),
+                    h('p', { className: 'text-xs text-gray-500 truncate mt-0.5' }, e.endereco_entrega)
+                  );
+                }))
         ),
         // Mapa + detalhes
-        h('div', { className: 'lg:col-span-2 space-y-3' },
+        h('div', { className: 'space-y-4 min-w-0' },
           selecionada ? [
-            h('div', { key: 'info', className: 'bg-white rounded-[14px] border border-gray-200 p-4' },
-              // Header com OS + botão tracking oficial
-              h('div', { className: 'flex items-start justify-between gap-3 mb-3' },
+            h('section', { key: 'info', 'aria-label': 'Detalhe da entrega', className: HX.card + ' p-4 md:p-5' },
+              h('div', { className: 'flex items-start justify-between gap-3 flex-wrap' },
                 h('div', { className: 'flex items-center gap-3 min-w-0' },
-                  // Foto do entregador
-                  selecionada.entregador_foto
-                    ? h('img', {
-                        src: selecionada.entregador_foto,
-                        alt: selecionada.entregador_nome || 'Entregador',
-                        className: 'w-12 h-12 rounded-full object-cover bg-purple-100 flex-shrink-0',
-                        onError: (ev) => { ev.target.style.display = 'none'; },
-                      })
-                    : null,
+                  (selecionada.entregador_foto || selecionada.entregador_nome) && h(HxAvatar, { foto: selecionada.entregador_foto, nome: selecionada.entregador_nome, size: 44 }),
                   h('div', { className: 'min-w-0' },
-                    h('h3', { className: 'font-bold text-gray-800' }, `OS ${selecionada.codigo_os}`),
-                    h(Badge, { entrega: selecionada })
-                  )
+                    h('div', { className: 'flex items-center gap-2 flex-wrap' },
+                      h('h2', { className: 'text-base font-semibold text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, `OS ${selecionada.codigo_os}`),
+                      h(HxStatus, { entrega: selecionada })),
+                    h('p', { className: 'text-[12.5px] text-gray-500 mt-0.5' }, provedorInfo(selecionada).nome, selecionada.endereco_entrega ? ' · ' + selecionada.endereco_entrega : ''))
                 ),
                 // Botão tracking oficial do provedor
                 selecionada.tracking_url && h('a', {
-                  href: selecionada.tracking_url,
-                  target: '_blank',
-                  rel: 'noopener noreferrer',
-                  className: 'flex items-center gap-1.5 text-xs px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold flex-shrink-0',
+                  href: selecionada.tracking_url, target: '_blank', rel: 'noopener noreferrer',
+                  className: HX.btnPri + ' flex-shrink-0',
                   title: 'Abrir página oficial de rastreio da entrega em nova aba',
-                }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-link' })), 'Tracking')),
+                }, hxIco('link'), 'Tracking'),
               ),
-
               // Dados do entregador
-              selecionada.entregador_nome && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600 pt-3 border-t border-gray-100' },
-                h('div', null, h('strong', null, 'Entregador: '), selecionada.entregador_nome,
-                  selecionada.entregador_rating && h('span', { className: 'ml-2 text-gray-500' }, `${selecionada.entregador_rating}`)),
-                h('div', null, h('strong', null, 'Telefone: '), fmtTelefoneBR(selecionada.entregador_telefone)),
-                h('div', null, h('strong', null, 'Veículo: '), selecionada.entregador_veiculo || '—'),
-                h('div', null, h('strong', null, 'Placa: '), selecionada.entregador_placa || '—')
-              ),
-
+              selecionada.entregador_nome
+                ? h('dl', { className: 'grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gray-100' },
+                    campoTrk('Entregador', h('span', { className: 'inline-flex items-center gap-1.5' }, selecionada.entregador_nome,
+                      selecionada.entregador_rating && h('span', { className: 'inline-flex items-center gap-0.5 text-gray-500 font-normal' }, hxIco('star', 12), String(selecionada.entregador_rating)))),
+                    campoTrk('Telefone', fmtTelefoneBR(selecionada.entregador_telefone)),
+                    campoTrk('Veículo', selecionada.entregador_veiculo),
+                    campoTrk('Placa', selecionada.entregador_placa))
+                : h('p', { className: 'text-[13px] text-gray-500 mt-4 pt-4 border-t border-gray-100' }, 'Ainda sem entregador atribuído.'),
               // Última posição (se houver)
-              posicaoAtual && h('div', { className: 'text-[11px] text-gray-400 mt-2 pt-2 border-t border-gray-100 font-mono' },
-                `${parseFloat(posicaoAtual.lat).toFixed(5)}, ${parseFloat(posicaoAtual.lng).toFixed(5)}`,
-                posicaoAtual.at && h('span', { className: 'ml-2' }, `· ${fmtDT(posicaoAtual.at)}`)
+              posicaoAtual && h('div', { className: 'text-[11.5px] text-gray-500 mt-3', style: { fontVariantNumeric: 'tabular-nums' } },
+                'Última posição ',
+                h('span', { className: 'font-mono text-gray-600' }, `${parseFloat(posicaoAtual.lat).toFixed(5)}, ${parseFloat(posicaoAtual.lng).toFixed(5)}`),
+                posicaoAtual.at && h('span', null, ` · ${fmtDT(posicaoAtual.at)}`)
               )
             ),
-            h('div', { key: 'map', id: 'uber-map', className: 'w-full h-[500px] rounded-[14px] border border-gray-200 bg-gray-100' })
-          ] : h('div', { className: 'bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 p-12 text-center' },
-            h('p', { className: 'text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-arrowleft" })), "Selecione uma entrega para acompanhar"))
-          )
+            h('div', { key: 'map', id: 'uber-map', role: 'region', 'aria-label': 'Mapa da entrega', className: 'w-full h-[420px] md:h-[480px] rounded-[14px] border border-gray-200 bg-gray-100' })
+          ] : h('section', { className: HX.card },
+            h(HxVazio, { titulo: 'Selecione uma entrega', texto: 'Escolha uma entrega na lista para ver o entregador e acompanhar a posição no mapa.' }))
         )
       )
     );
@@ -4340,29 +4445,26 @@
       ? new Date(estado.ultimo_ciclo_em).toLocaleString('pt-BR')
       : '\u2014';
 
-    return h('div', { className: `rounded-xl border p-5 mb-4 ${ligado ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}` },
-      h('div', { className: 'flex items-center justify-between gap-4' },
-        h('div', null,
-          h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-lg' }, h('span', { style: { display: 'inline-block', width: 10, height: 10, borderRadius: 99, background: ligado ? '#16a34a' : '#d1d5db' } })),
-            h('span', { className: 'font-bold text-gray-800' }, 'Despacho automatico'),
-            h('span', { className: `text-[10px] font-semibold px-2 py-0.5 rounded-full ${ligado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}` }, ligado ? 'LIGADO' : 'DESLIGADO')
+    // HUB_ABAS_V1: card branco no padrão; estado em pílula, switch roxo
+    return h('section', { 'aria-label': 'Despacho automático', className: HX.card + ' p-4 md:p-5' },
+      h('div', { className: 'flex items-start justify-between gap-4' },
+        h('div', { className: 'min-w-0' },
+          h('div', { className: 'flex items-center gap-2 flex-wrap' },
+            h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'Despacho automático'),
+            h(HxPilula, { tom: ligado ? 'verde' : 'cinza' }, ligado ? 'Ligado' : 'Desligado')
           ),
-          h('p', { className: 'text-xs text-gray-500 mt-1' },
+          h('p', { className: 'text-[13px] text-gray-500 mt-1' },
             ligado
-              ? 'O worker esta varrendo a Mapp e despachando as OS que casam com as regras ativas.'
-              : 'O worker esta parado \u2014 nenhuma OS e despachada automaticamente.'),
-          h('p', { className: 'text-[11px] text-gray-400 mt-1' }, `Ultimo ciclo: ${ultimoCiclo}`)
+              ? 'O worker está varrendo a Mapp e despachando as OS que casam com as regras ativas.'
+              : 'O worker está parado \u2014 nenhuma OS é despachada automaticamente.'),
+          h('p', { className: 'text-xs text-gray-500 mt-1', style: { fontVariantNumeric: 'tabular-nums' } }, `Último ciclo: ${ultimoCiclo}`)
         ),
-        h('button', {
-          onClick: () => setLigado(!ligado),
-          disabled: salvando || !estado,
-          className: `relative w-14 h-7 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${ligado ? 'bg-green-600' : 'bg-gray-300'}`,
-        }, h('span', { className: `absolute top-0.5 w-6 h-6 rounded-full bg-white transition-all ${ligado ? 'right-0.5' : 'left-0.5'}` }))
+        h(HxSwitch, { on: ligado, onClick: () => setLigado(!ligado), disabled: salvando || !estado, label: 'Despacho automático' })
       ),
       ligado
-        ? h('p', { className: 'text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3' },
-            'Ligado: cada OS que casar com uma regra e despachada de verdade na 99/Uber (gera custo).')
+        ? h('p', { className: 'text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-[10px] px-3 py-2 mt-3 inline-flex items-center gap-1.5' },
+            hxIco('alert', 14, { color: '#d97706' }),
+            'Ligado: cada OS que casar com uma regra é despachada de verdade na 99/Uber (gera custo).')
         : null
     );
   }
@@ -4737,36 +4839,31 @@
       } catch { showToast('Erro ao excluir', 'error'); }
     }
 
-    if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
-      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full' })
-    );
+    if (loading) return h(HxSpinner); // HUB_ABAS_V1
 
     const up = (k, v) => setEditando(e => ({ ...e, [k]: v }));
 
-    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
-      h('div', { className: 'flex items-center justify-between' },
-        h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })), 'Regras por endereço de coleta')),
-          h('p', { className: 'text-xs text-gray-500 mt-1' },
-            'O worker só despacha OS cujo endereço de coleta casa com algum trecho cadastrado aqui. ',
-            'A Mapp não retorna nome do cliente — match é por trecho do endereço. Sem regra ativa = sem despacho automático.')
-        ),
-        h('button', {
-          onClick: novoForm,
-          className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
-        }, '+ Nova regra')
-      ),
+    // HUB_ABAS_V1: Regras no padrão clean — cabeçalho, card do worker, lista de regras em cards brancos
+    const nAtivas = regras.filter(r => r.ativo).length;
+    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+      h(HxCabecalho, {
+        titulo: 'Regras de despacho',
+        sub: 'O worker só despacha OS cujo endereço de coleta casa com algum trecho cadastrado aqui. A Mapp não retorna nome do cliente — o match é por trecho do endereço. Sem regra ativa = sem despacho automático.',
+        acoes: [h('button', { key: 'n', type: 'button', onClick: novoForm, className: HX.btnPri }, hxIco('plus'), 'Nova regra')],
+      }),
 
-      // Padrão global de margem — piso do despacho automático
+      // Liga/desliga o despacho automático
       h(CardWorkerControl, { API_URL, fetchAuth, showToast }),
 
       // Lista de regras
       // REGRAS_CARDS_V1: lista de regras em cards (era tabela inline)
+      h('div', { className: 'flex items-baseline justify-between gap-3 pt-1' },
+        h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'Regras por endereço de coleta'),
+        h('span', { className: 'text-xs text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, `${regras.length} regra${regras.length !== 1 ? 's' : ''} · ${nAtivas} ativa${nAtivas !== 1 ? 's' : ''}`)),
       regras.length === 0
-        ? h('div', { className: 'bg-white rounded-[14px] border border-gray-200 p-12 text-center text-gray-400' },
-            h('div', { className: 'text-4xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-list' }))),
-            h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
-            h('p', { className: 'text-xs mt-1' }, 'Enquanto nao houver regras, o worker nao vai despachar nada automaticamente.'))
+        ? h('div', { className: HX.card },
+            h(HxVazio, { titulo: 'Nenhuma regra cadastrada', texto: 'Enquanto não houver regras, o worker não despacha nada automaticamente.',
+              acao: h('button', { type: 'button', onClick: novoForm, className: HX.btnPri }, hxIco('plus'), 'Nova regra') }))
         : h('div', { className: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5' },
             regras.map(function (r) {
               var fmt = function (v) { var n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? v : n.toFixed(2).replace('.', ','); };
@@ -4774,74 +4871,72 @@
               var temRetorno = (r.preco_retorno_valor != null && r.preco_retorno_valor !== '') || (r.preco_retorno_percentual != null && r.preco_retorno_percentual !== '');
               var provs = (r.providers_preferidos && r.providers_preferidos.length > 0) ? r.providers_preferidos : ['todos'];
               var provNome = function (p) { return (p === '99' || p === 'noventanove') ? '99' : (p === 'uber' ? 'Uber' : (p === 'tutts' ? 'Tutts' : p)); };
-              return h('div', { key: r.id, className: 'bg-white rounded-[14px] border border-gray-200 overflow-hidden flex flex-col ' + (r.ativo ? '' : 'opacity-70') },
-                h('div', { className: 'h-1 ' + (r.ativo ? 'bg-purple-700' : 'bg-gray-300') /* HUB_CLEAN_V1 */ }),
-                h('div', { className: 'px-4 pt-3.5 pb-2 flex items-start gap-2' },
-                  h('div', { className: 'font-bold text-[15px] text-gray-800 leading-tight flex-1' }, r.cliente_nome),
-                  h('button', { onClick: function () { toggleAtivo(r); }, className: 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ' + (r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400') }, r.ativo ? 'Ativa' : 'Inativa')
+              var linha = function (rot, val) { return h('div', { className: 'flex gap-3 text-[12.5px] items-baseline' }, h('span', { className: 'text-gray-500 w-16 flex-shrink-0' }, rot), h('span', { className: 'text-gray-800 min-w-0 truncate' }, val)); };
+              return h('article', { key: r.id, className: HX.card + ' overflow-hidden flex flex-col' },
+                h('div', { className: 'px-4 pt-4 pb-2 flex items-start gap-2' },
+                  h('h3', { className: 'font-semibold text-[15px] leading-snug flex-1 min-w-0 ' + (r.ativo ? 'text-gray-900' : 'text-gray-500') }, r.cliente_nome),
+                  h('button', { type: 'button', onClick: function () { toggleAtivo(r); }, title: r.ativo ? 'Clique para desativar' : 'Clique para ativar', 'aria-label': (r.ativo ? 'Desativar' : 'Ativar') + ' a regra ' + r.cliente_nome, className: 'flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300' },
+                    h(HxPilula, { tom: r.ativo ? 'verde' : 'cinza' }, r.ativo ? 'Ativa' : 'Inativa'))
                 ),
-                h('div', { className: 'px-4 pb-3.5 flex flex-col gap-2 flex-1' },
-                  h('div', { className: 'flex gap-2 text-[12.5px] text-gray-600 items-start' },
-                    h('svg', { className: 'ico flex-shrink-0', style: { width: 15, height: 15, color: '#770fa8', marginTop: 1 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })),
+                h('div', { className: 'px-4 pb-4 flex flex-col gap-2 flex-1' },
+                  h('div', { className: 'flex gap-2 text-[12.5px] text-gray-700 items-start' },
+                    hxIco('pin', 15, { color: '#9ca3af', marginTop: 1, flexShrink: 0 }),
                     h('span', { className: 'leading-snug' }, r.trecho_endereco || r.cliente_nome)),
-                  r.cliente_identificador && h('div', { className: 'text-[11px] text-gray-400 pl-6 -mt-1' }, '+ alt: ' + r.cliente_identificador),
-                  h('div', { className: 'flex gap-2 text-[12.5px] items-center' },
-                    h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Regiao'),
-                    (r.regioes_permitidas && r.regioes_permitidas.length > 0)
-                      ? h('span', { className: 'text-gray-600 truncate' }, r.regioes_permitidas.join(', '))
-                      : h('span', { className: 'text-amber-600 font-semibold' }, 'qualquer regiao')),
-                  h('div', { className: 'flex gap-2 text-[12.5px] items-center' },
-                    h('span', { className: 'text-gray-400 w-16 flex-shrink-0' }, 'Horario'),
-                    h('span', { className: 'text-gray-600' }, (r.horario_inicio && r.horario_fim) ? (r.horario_inicio + ' \u2013 ' + r.horario_fim) : 'sempre')),
-                  (r.preco_valor_fixo != null && r.preco_valor_fixo !== '') && h('div', { className: 'bg-purple-50 border border-purple-100 rounded-xl px-3 py-2 mt-0.5' },
-                    h('div', { className: 'flex justify-between items-center' },
-                      h('span', { className: 'font-bold text-purple-700 text-[15px]' }, 'R$ ' + fmt(r.preco_valor_fixo)),
-                      h('span', { className: 'text-[11.5px] text-gray-500' }, 'fixo ate ' + (r.preco_km_base || 0) + 'km')),
-                    h('div', { className: 'text-[11.5px] text-gray-500' }, temFaixas ? 'faixas por km' : ('+ R$ ' + fmt(r.preco_valor_km_adicional) + ' / km excedente'))),
+                  r.cliente_identificador && h('div', { className: 'text-[11.5px] text-gray-500 pl-6 -mt-1' }, 'Alternativo: ' + r.cliente_identificador),
+                  linha('Região', (r.regioes_permitidas && r.regioes_permitidas.length > 0)
+                    ? r.regioes_permitidas.join(', ')
+                    : h(HxPilula, { tom: 'ambar' }, 'Qualquer região')),
+                  linha('Horário', (r.horario_inicio && r.horario_fim) ? (r.horario_inicio + ' – ' + r.horario_fim) : 'Sempre'),
+                  (r.preco_valor_fixo != null && r.preco_valor_fixo !== '') && h('div', { className: 'rounded-[10px] bg-gray-50 px-3 py-2 mt-0.5' },
+                    h('div', { className: 'flex justify-between items-baseline gap-2' },
+                      h('span', { className: 'font-semibold text-gray-900 text-[15px]', style: { fontVariantNumeric: 'tabular-nums' } }, 'R$ ' + fmt(r.preco_valor_fixo)),
+                      h('span', { className: 'text-[11.5px] text-gray-500' }, 'fixo até ' + (r.preco_km_base || 0) + ' km')),
+                    h('div', { className: 'text-[11.5px] text-gray-500' }, temFaixas ? 'Faixas por km' : ('+ R$ ' + fmt(r.preco_valor_km_adicional) + ' por km excedente'))),
                   h('div', { className: 'flex gap-1.5 flex-wrap mt-0.5' },
-                    temFaixas && h('span', { className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700' }, 'faixas'),
-                    temRetorno && h('span', { className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700' }, 'retorno'),
-                    provs.map(function (p) { return h('span', { key: p, className: 'text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-white border border-gray-200 text-gray-600' }, provNome(p)); }))
+                    temFaixas && h(HxPilula, { tom: 'roxo', semPonto: true }, 'Faixas'),
+                    temRetorno && h(HxPilula, { tom: 'azul', semPonto: true }, 'Retorno'),
+                    provs.map(function (p) { return h('span', { key: p, className: 'text-[11.5px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 text-gray-700' }, provNome(p)); }))
                 ),
                 h('div', { className: 'border-t border-gray-100 flex' },
-                  h('button', { onClick: function () { editarRegra(r); }, className: 'flex-1 py-2.5 text-[13px] font-bold text-purple-700 hover:bg-gray-50' }, 'Editar'),
-                  h('button', { onClick: function () { excluir(r); }, className: 'flex-1 py-2.5 text-[13px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 border-l border-gray-100' }, 'Excluir'))
+                  h('button', { type: 'button', onClick: function () { editarRegra(r); }, className: 'flex-1 h-10 text-[13px] font-semibold text-purple-800 hover:bg-gray-50 inline-flex items-center justify-center gap-1.5' }, hxIco('pencil', 14), 'Editar'),
+                  h('button', { type: 'button', onClick: function () { excluir(r); }, className: 'flex-1 h-10 text-[13px] font-semibold text-red-800 hover:bg-red-50 border-l border-gray-100 inline-flex items-center justify-center gap-1.5' }, hxIco('trash', 14), 'Excluir'))
               );
             })
           ),
 
-      // Modal de edição
+      // Modal de edição — HUB_ABAS_V1: cabeçalho branco, abas internas no padrão, campos em grupos
       editando && h('div', {
-        className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4',
+        className: 'fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3 md:p-4',
         onClick: e => { if (e.target === e.currentTarget) setEditando(null); },
       },
-        h('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto' },
-          h('div', { className: 'p-5 border-b sticky top-0 bg-white z-10' },
-            h('h3', { className: 'font-bold text-gray-800' },
-              editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pencil" })), "Editar regra") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Nova regra")),
+        h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'regra-modal-titulo', className: 'bg-white rounded-[14px] border border-gray-200 w-full max-w-3xl max-h-[92vh] overflow-y-auto' },
+          h('div', { className: 'sticky top-0 bg-white z-10' },
+            h('div', { className: 'px-5 pt-4 pb-3 flex items-start justify-between gap-3' },
+              h('div', { className: 'min-w-0' },
+                h('h3', { id: 'regra-modal-titulo', className: 'text-base font-semibold text-gray-900' }, editando.id ? 'Editar regra' : 'Nova regra'),
+                h('p', { className: 'text-[13px] text-gray-500 mt-0.5 truncate' }, editando.id ? (editando.cliente_nome || 'Regra de despacho') : 'Defina o cliente, a cobertura, o preço e como despachar.')),
+              h('button', { type: 'button', onClick: () => setEditando(null), 'aria-label': 'Fechar', className: 'w-8 h-8 grid place-items-center rounded-lg text-gray-500 hover:bg-gray-100 flex-shrink-0' }, hxIco('x'))
+            ),
+            // REGRAS_ABAS_BAR_V1
+            h('div', { role: 'tablist', 'aria-label': 'Seções da regra', className: 'flex gap-1 px-3 border-b border-gray-200 overflow-x-auto' },
+              [['ident', 'Identificação'], ['cobertura', 'Cobertura'], ['preco', 'Preço'], ['despacho', 'Despacho']].map(function (t) {
+                var on = abaRegra === t[0];
+                return h('button', { key: t[0], type: 'button', role: 'tab', 'aria-selected': on, onClick: function () { setAbaRegra(t[0]); },
+                  className: 'px-3 py-2.5 text-[13px] whitespace-nowrap -mb-px border-b-2 ' + (on ? 'text-purple-800 font-semibold border-purple-700' : 'text-gray-500 border-transparent hover:text-gray-800') },
+                  t[1]);
+              }))
           ),
-          // REGRAS_ABAS_BAR_V1
-          h('div', { className: 'flex gap-1 px-4 border-b bg-gray-50' },
-            [['ident', 'Identificacao'], ['cobertura', 'Cobertura'], ['preco', 'Preco'], ['despacho', 'Despacho']].map(function (t, i) {
-              var on = abaRegra === t[0];
-              return h('button', { key: t[0], type: 'button', onClick: function () { setAbaRegra(t[0]); },
-                className: 'relative px-4 py-2.5 text-[13px] font-bold ' + (on ? 'text-purple-700' : 'text-gray-400 hover:text-gray-600') },
-                h('span', { className: 'inline-flex items-center gap-1.5' },
-                  h('span', { className: 'w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ' + (on ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500') }, String(i + 1)),
-                  t[1]),
-                on && h('span', { className: 'absolute left-3 right-3 rounded h-0.5 bg-purple-600', style: { bottom: '-1px' } }));
-            })),
-          h('div', { className: 'p-5 space-y-3' },
+          h('div', { className: 'p-5 space-y-4' },
 
             (abaRegra === 'ident') && h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Nome do cliente *'),
+              h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Nome do cliente *'),
               h('input', {
                 type: 'text', value: editando.cliente_nome || '',
                 onChange: e => up('cliente_nome', e.target.value),
                 placeholder: 'ex: Auto Peças Pereira',
-                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
               }),
-              h('p', { className: 'text-xs text-gray-500 mt-1' },
+              h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' },
                 'Nome de exibição do cliente — usado nos cards e no dashboard de margem por cliente.')
             ),
 
@@ -4849,100 +4944,100 @@
             // irmaos (principal + alternativa), e juntos encurtam o modal.
             (abaRegra === 'ident') && h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Trecho do endereço de coleta *'),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Trecho do endereço de coleta *'),
                 h('input', {
                   type: 'text', value: editando.trecho_endereco || '',
                   onChange: e => up('trecho_endereco', e.target.value),
                   placeholder: 'ex: pernambuco, 1500',
-                  className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                 }),
-                h('p', { className: 'text-xs text-gray-500 mt-1' },
+                h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' },
                   h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "A Mapp não retorna nome de cliente — match é feito contra o ENDEREÇO de coleta da OS. "),
                   'Trecho ÚNICO do endereço (mín. 5 caracteres, lowercase).')
               ),
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Identificador alternativo (opcional)'),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Identificador alternativo (opcional)'),
                 h('input', {
                   type: 'text', value: editando.cliente_identificador || '',
                   onChange: e => up('cliente_identificador', e.target.value),
                   placeholder: 'outro trecho de endereço (alternativa)',
-                  className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                 }),
-                h('p', { className: 'text-xs text-gray-500 mt-1' },
+                h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' },
                   'Segunda opção de match — se este trecho aparecer no endereço de coleta, também casa.')
               ),
             ),
 
             (abaRegra === 'cobertura') && h('div', null,
-              h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Regiões permitidas (CSV)'),
+              h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Regiões permitidas (CSV)'),
               h('input', {
                 type: 'text', value: editando.regioes_permitidas_csv || '',
                 onChange: e => up('regioes_permitidas_csv', e.target.value),
                 placeholder: 'salvador, lauro de freitas, simões filho',
-                className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
               }),
-              h('p', { className: 'text-xs text-amber-700 mt-1 font-semibold' },
+              h('p', { className: 'text-[11.5px] text-amber-800 mt-1.5' },
                 h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })), "Deixar vazio = aceita qualquer região (não recomendado). Preencher evita que OS fora da cobertura sejam travadas na Mapp."))
             ),
 
             (abaRegra === 'cobertura') && h('div', { className: 'grid grid-cols-2 gap-3' },
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Horário início'),
-                h('input', { type: 'time', value: editando.horario_inicio || '', onChange: e => up('horario_inicio', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Horário início'),
+                h('input', { type: 'time', value: editando.horario_inicio || '', onChange: e => up('horario_inicio', e.target.value), className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' })),
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Horário fim'),
-                h('input', { type: 'time', value: editando.horario_fim || '', onChange: e => up('horario_fim', e.target.value), className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Horário fim'),
+                h('input', { type: 'time', value: editando.horario_fim || '', onChange: e => up('horario_fim', e.target.value), className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' })),
             ),
 
             (abaRegra === 'preco') && h('div', { className: 'grid grid-cols-2 gap-3' },
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor mínimo (R$)'),
-                h('input', { type: 'number', step: '0.01', value: editando.valor_minimo || '', onChange: e => up('valor_minimo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Valor mínimo (R$)'),
+                h('input', { type: 'number', step: '0.01', value: editando.valor_minimo || '', onChange: e => up('valor_minimo', e.target.value), placeholder: 'sem limite', className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' })),
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Valor máximo (R$)'),
-                h('input', { type: 'number', step: '0.01', value: editando.valor_maximo || '', onChange: e => up('valor_maximo', e.target.value), placeholder: 'sem limite', className: 'w-full px-3 py-2 border rounded-lg text-sm' })),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Valor máximo (R$)'),
+                h('input', { type: 'number', step: '0.01', value: editando.valor_maximo || '', onChange: e => up('valor_maximo', e.target.value), placeholder: 'sem limite', className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' })),
             ),
 
             // Tabela de preço por distância — override do cliente
-            (abaRegra === 'preco') && h('div', { className: 'border border-purple-200 bg-purple-50 rounded-lg p-4' },
+            (abaRegra === 'preco') && h('div', { className: 'border border-gray-200 rounded-[14px] p-4' },
               h('div', { className: 'mb-3' }, // COD_CLIENTE_TUTTS_RENDER_V1
-                h('label', { className: 'text-xs font-semibold text-purple-800 uppercase block mb-1' }, 'Cod. cliente na Tutts (cancelar OS da Mapp)'),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Cód. cliente na Tutts (cancelar OS da Mapp)'),
                 h('input', {
                   type: 'text',
                   value: editando.cod_cliente_tutts || '',
                   onChange: (e) => setEditando(function (prev) { return Object.assign({}, prev, { cod_cliente_tutts: e.target.value }); }),
                   placeholder: 'ex: 6ea2ef73...',
-                  className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm bg-white',
+                  className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                 }),
-                h('p', { className: 'text-[10px] text-purple-700 mt-1' }, 'So pra OS que vem direto da Mapp (sem portal). O token vem da env TUTTS_CANCEL_TOKEN.')),
-              h('div', { className: 'text-xs font-semibold text-purple-800 uppercase mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" })), "Tabela de preço por distância — override deste cliente")),
+                h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' }, 'Só para OS que vem direto da Mapp (sem portal). O token vem da env TUTTS_CANCEL_TOKEN.')),
+              h('div', { className: 'text-[15px] font-semibold text-gray-900 mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" })), "Tabela de preço por distância — override deste cliente")),
               h('div', { className: 'grid grid-cols-3 gap-3 mb-2' },
                 h('div', null,
-                  h('label', { className: 'block text-xs text-purple-700 mb-1' }, 'Valor fixo (R$)'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Valor fixo (R$)'),
                   h('input', { type: 'number', step: '0.5', min: '0',
                     value: editando.preco_valor_fixo ?? '',
                     onChange: e => up('preco_valor_fixo', e.target.value),
                     placeholder: 'deixe vazio = usa global',
-                    className: 'w-full px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
                 ),
                 h('div', null,
-                  h('label', { className: 'block text-xs text-purple-700 mb-1' }, 'Distância base (km)'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Distância base (km)'),
                   h('input', { type: 'number', step: '0.5', min: '1',
                     value: editando.preco_km_base ?? '',
                     onChange: e => up('preco_km_base', e.target.value),
                     placeholder: 'ex: 5',
-                    className: 'w-full px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
                 ),
                 h('div', null,
-                  h('label', { className: 'block text-xs text-purple-700 mb-1' }, 'Por km adicional (R$)'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Por km adicional (R$)'),
                   h('input', { type: 'number', step: '0.1', min: '0',
                     value: editando.preco_valor_km_adicional ?? '',
                     onChange: e => up('preco_valor_km_adicional', e.target.value),
                     placeholder: 'ex: 2,50',
-                    className: 'w-full px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
                 ),
               ),
-              h('p', { className: 'text-[11px] text-purple-600' },
+              h('p', { className: 'text-[11.5px] text-gray-500' },
                 'Deixe todos em branco pra usar a tabela padrão global. Se preenchido, substitui o padrão inteiramente pra este cliente.'),
 
               (function () { // FAIXAS_RENDER_V2
@@ -4951,22 +5046,22 @@
                 var upFaixa = function (i, campo, val) { var c = faixas.map(function (x) { return Object.assign({}, x); }); c[i][campo] = val; setFaixas(c); };
                 var addFaixa = function () { setFaixas(faixas.concat([{ inicio_km: '', valor_km: '' }])); };
                 var rmFaixa = function (i) { setFaixas(faixas.filter(function (_x, j) { return j !== i; })); };
-                return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
+                return h('div', { className: 'mt-4 pt-4 border-t border-gray-100' },
                   h('div', { className: 'flex items-center justify-between mb-2' },
-                    h('span', { className: 'text-xs font-semibold text-purple-800 uppercase' }, 'Faixas por km (opcional)'),
-                    h('span', { className: 'text-[10px] text-purple-700' }, 'vazio = usa "por km adicional" acima')),
+                    h('span', { className: 'text-[13.5px] font-semibold text-gray-900' }, 'Faixas por km (opcional)'),
+                    h('span', { className: 'text-[11.5px] text-gray-500' }, 'vazio = usa "por km adicional" acima')),
                   faixas.map(function (f, i) {
-                    return h('div', { key: i, className: 'flex items-center gap-1.5 mb-1.5' },
-                      h('span', { className: 'text-[11px] text-purple-700' }, 'a partir de'),
-                      h('input', { type: 'number', step: '1', min: '0', value: f.inicio_km == null ? '' : f.inicio_km, onChange: function (e) { upFaixa(i, 'inicio_km', e.target.value); }, placeholder: 'km', className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
-                      h('span', { className: 'text-[11px] text-purple-600' }, 'km'),
-                      h('span', { className: 'text-[11px] text-purple-700', style: { marginLeft: 'auto' } }, 'R$'),
-                      h('input', { type: 'number', step: '0.1', min: '0', value: f.valor_km == null ? '' : f.valor_km, onChange: function (e) { upFaixa(i, 'valor_km', e.target.value); }, className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
-                      h('span', { className: 'text-[11px] text-purple-600' }, '/km'),
-                      h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'p-1 rounded hover:bg-purple-100', title: 'remover' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#991b1b' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
+                    return h('div', { key: i, className: 'flex items-center gap-2 mb-2' },
+                      h('span', { className: 'text-[12px] text-gray-600' }, 'a partir de'),
+                      h('input', { type: 'number', step: '1', min: '0', value: f.inicio_km == null ? '' : f.inicio_km, onChange: function (e) { upFaixa(i, 'inicio_km', e.target.value); }, placeholder: 'km', className: 'w-20 text-center h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
+                      h('span', { className: 'text-[11.5px] text-gray-500' }, 'km'),
+                      h('span', { className: 'text-[12px] text-gray-600', style: { marginLeft: 'auto' } }, 'R$'),
+                      h('input', { type: 'number', step: '0.1', min: '0', value: f.valor_km == null ? '' : f.valor_km, onChange: function (e) { upFaixa(i, 'valor_km', e.target.value); }, className: 'w-20 text-center h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
+                      h('span', { className: 'text-[11.5px] text-gray-500' }, '/km'),
+                      h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'w-8 h-8 grid place-items-center rounded-lg hover:bg-red-50', title: 'Remover faixa', 'aria-label': 'Remover faixa' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#991b1b' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
                   }),
-                  h('button', { type: 'button', onClick: addFaixa, className: 'mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50' }, h('svg', { className: 'ico', style: { width: 13, height: 13, display: 'inline', verticalAlign: '-2px', marginRight: 3 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar faixa'),
-                  h('p', { className: 'text-[10px] text-purple-700 mt-1' }, 'Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima.'));
+                  h('button', { type: 'button', onClick: addFaixa, className: 'mt-1 h-8 px-3 rounded-[10px] border border-gray-200 bg-white text-[13px] font-semibold text-gray-700 hover:bg-gray-50' }, h('svg', { className: 'ico', style: { width: 13, height: 13, display: 'inline', verticalAlign: '-2px', marginRight: 3 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar faixa'),
+                  h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' }, 'Cada faixa vale do km informado em diante, até a próxima começar. Ex.: a partir de 3 = 1,50; de 7 = 1,80. Distância quebrada sobe para o km de cima.'));
               })(),
 
               // [preco-retorno-v1] Adicional cobrado quando a corrida vira devolução.
@@ -4983,14 +5078,14 @@
                 var adic = modo === 'pct' ? Math.round(vf * (pct / 100) * 100) / 100 : fix;
                 var brl = function (n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
                 var opt = function (val, rotulo) {
-                  return h('label', { key: val, className: 'flex items-center gap-1.5 cursor-pointer text-xs text-purple-700' },
+                  return h('label', { key: val, className: 'flex items-center gap-1.5 cursor-pointer text-[13px] text-gray-700' },
                     h('input', { type: 'radio', checked: modo === val,
                       onChange: function () { up('preco_retorno_modo', val); },
                       style: { accentColor: '#770fa8' } }),
                     rotulo);
                 };
-                return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
-                  h('label', { className: 'block text-xs font-semibold text-purple-700 mb-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })), 'Adicional por retorno')),
+                return h('div', { className: 'mt-4 pt-4 border-t border-gray-100' },
+                  h('label', { className: 'block text-[13.5px] font-semibold text-gray-900 mb-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-corner' })), 'Adicional por retorno')),
                   h('div', { className: 'flex items-center gap-4 mb-2' }, opt('fixo', 'Valor fixo'), opt('pct', 'Percentual')),
                   modo === 'pct'
                     ? h('div', { className: 'flex items-center gap-2' },
@@ -4998,105 +5093,105 @@
                           value: editando.preco_retorno_percentual ?? '',
                           onChange: function (e) { up('preco_retorno_percentual', e.target.value); },
                           placeholder: 'ex: 50',
-                          className: 'w-24 px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
-                        h('span', { className: 'text-xs text-purple-700' }, '% do valor da corrida'))
+                          className: 'w-28 h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
+                        h('span', { className: 'text-[13px] text-gray-600' }, '% do valor da corrida'))
                     : h('div', { className: 'flex items-center gap-2' },
                         h('input', { type: 'number', step: '0.5', min: '0',
                           value: editando.preco_retorno_valor ?? '',
                           onChange: function (e) { up('preco_retorno_valor', e.target.value); },
                           placeholder: 'ex: 8,00',
-                          className: 'w-24 px-2 py-1.5 border border-purple-200 rounded-lg text-sm bg-white' }),
-                        h('span', { className: 'text-xs text-purple-700' }, 'R$')),
+                          className: 'w-28 h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' }),
+                        h('span', { className: 'text-[13px] text-gray-600' }, 'R$')),
                   adic > 0 && vf > 0
-                    ? h('p', { className: 'text-[11px] text-purple-800 mt-2 bg-purple-100 rounded px-2 py-1 inline-block' },
+                    ? h('p', { className: 'text-[12px] text-gray-700 mt-2 bg-gray-50 border border-gray-200 rounded-[10px] px-2.5 py-1.5 inline-block' },
                         'Corrida de ' + brl(vf) + '  →  +' + brl(adic) + '  →  total ' + brl(Math.round((vf + adic) * 100) / 100))
                     : null,
-                  h('p', { className: 'text-[11px] text-purple-600 mt-2' },
+                  h('p', { className: 'text-[11.5px] text-gray-500 mt-2' },
                     'Somado ao valor da corrida quando a entrega vira devolução. Em branco = não cobra retorno.')
                 );
               })(),
             ),
 
             // PROV_D_RENDER_V1 - bloco multi-provider (substitui o checkbox Usar Uber)
-            (abaRegra === 'despacho') && h('div', { className: 'pt-2 border-t space-y-3' },
+            (abaRegra === 'despacho') && h('div', { className: 'space-y-4' },
               h('div', null,
-                h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Provedores do Hub'),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Provedores do Hub'),
                 h('div', { className: 'flex flex-wrap gap-2' },
-                  h('label', { className: 'inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer ' + ((editando.providers_preferidos || ['uber']).includes('uber') ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-600') },
-                    h('input', { type: 'checkbox', className: 'w-4 h-4', checked: (editando.providers_preferidos || ['uber']).includes('uber'),
+                  h('label', { className: 'inline-flex items-center gap-2 text-[13px] font-medium border rounded-[10px] px-3 h-[38px] cursor-pointer ' + ((editando.providers_preferidos || ['uber']).includes('uber') ? 'border-purple-400 bg-purple-50 text-purple-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50') },
+                    h('input', { type: 'checkbox', className: 'w-4 h-4 accent-purple-700', checked: (editando.providers_preferidos || ['uber']).includes('uber'),
                       onChange: e => setEditando(prev => { const cur = Array.isArray(prev.providers_preferidos) ? prev.providers_preferidos.slice() : ['uber']; const next = e.target.checked ? (cur.includes('uber') ? cur : cur.concat('uber')) : cur.filter(p => p !== 'uber'); return { ...prev, providers_preferidos: next, usar_uber: next.includes('uber') }; }) }),
                     'Uber Direct'),
-                  h('label', { className: 'inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer ' + ((editando.providers_preferidos || []).includes('noventanove') ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-600') },
-                    h('input', { type: 'checkbox', className: 'w-4 h-4', checked: (editando.providers_preferidos || []).includes('noventanove'),
+                  h('label', { className: 'inline-flex items-center gap-2 text-[13px] font-medium border rounded-[10px] px-3 h-[38px] cursor-pointer ' + ((editando.providers_preferidos || []).includes('noventanove') ? 'border-purple-400 bg-purple-50 text-purple-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50') },
+                    h('input', { type: 'checkbox', className: 'w-4 h-4 accent-purple-700', checked: (editando.providers_preferidos || []).includes('noventanove'),
                       onChange: e => setEditando(prev => { const cur = Array.isArray(prev.providers_preferidos) ? prev.providers_preferidos.slice() : []; const next = e.target.checked ? (cur.includes('noventanove') ? cur : cur.concat('noventanove')) : cur.filter(p => p !== 'noventanove'); return { ...prev, providers_preferidos: next }; }) }),
                     '99Entrega'),
                 ),
-                h('p', { className: 'text-[11px] text-gray-500 mt-1' }, 'Marque um ou mais. Sem nenhum marcado, a regra nao despacha no Hub.'),
+                h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' }, 'Marque um ou mais. Sem nenhum marcado, a regra não despacha no Hub.'),
               ),
               h('div', { className: 'grid grid-cols-2 gap-3' },
                 h('div', null,
-                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Estrategia'),
-                  h('select', { value: editando.estrategia || 'provider_unico', onChange: e => up('estrategia', e.target.value), className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white' },
-                    h('option', { value: 'provider_unico' }, 'Provedor unico'),
-                    h('option', { value: 'melhor_preco' }, 'Melhor preco'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Estratégia'),
+                  h('select', { value: editando.estrategia || 'provider_unico', onChange: e => up('estrategia', e.target.value), className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' },
+                    h('option', { value: 'provider_unico' }, 'Provedor único'),
+                    h('option', { value: 'melhor_preco' }, 'Melhor preço'),
                     h('option', { value: 'melhor_eta' }, 'Melhor ETA'),
                     h('option', { value: 'fallback' }, 'Fallback'),
-                    h('option', { value: 'disparo_simultaneo' }, 'Disparo simultaneo (99 + Uber juntos)'), /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
+                    h('option', { value: 'disparo_simultaneo' }, 'Disparo simultâneo (99 + Uber juntos)'), /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
                   ),
-                  h('p', { className: 'text-[11px] text-gray-500 mt-1' },
+                  h('p', { className: 'text-[11.5px] text-gray-500 mt-1 leading-snug' },
                     editando.estrategia === 'disparo_simultaneo'
-                      ? 'Disparo simultaneo: chama TODOS os provedores preferidos ao mesmo tempo — o primeiro que aceitar leva. Precisa de 2+ provedores; com 1 (ou flag desligada) vira melhor preco.' /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
-                      : 'Com 1 provedor, qualquer estrategia vira provedor unico.'),
+                      ? 'Disparo simultâneo: chama TODOS os provedores preferidos ao mesmo tempo — o primeiro que aceitar leva. Precisa de 2+ provedores; com 1 (ou flag desligada) vira melhor preço.' /* BUSCA_SIMULTANEA_REGRA_UI_V1 */
+                      : 'Com 1 provedor, qualquer estratégia vira provedor único.'),
                 ),
                 h('div', null,
-                  h('label', { className: 'block text-xs font-semibold text-gray-600 mb-1 uppercase' }, 'Veiculo'),
-                  h('select', { value: editando.vehicle_type_preferido || '', onChange: e => up('vehicle_type_preferido', e.target.value), className: 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white' },
-                    h('option', { value: '' }, 'Padrao do provedor'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Veículo'),
+                  h('select', { value: editando.vehicle_type_preferido || '', onChange: e => up('vehicle_type_preferido', e.target.value), className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100' },
+                    h('option', { value: '' }, 'Padrão do provedor'),
                     h('option', { value: 'motorcycle' }, 'Moto'),
                     h('option', { value: 'car' }, 'Carro'),
                   ),
                 ),
               ),
-              h('label', { className: 'inline-flex items-center text-sm' },
-                h('input', { type: 'checkbox', checked: !!editando.ativo, onChange: e => up('ativo', e.target.checked), className: 'mr-2' }),
+              h('label', { className: 'inline-flex items-center text-[13px] text-gray-800 font-medium' },
+                h('input', { type: 'checkbox', checked: !!editando.ativo, onChange: e => up('ativo', e.target.checked), className: 'mr-2 w-4 h-4 accent-purple-700' }),
                 'Regra ativa'),
             ),
 
-            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' },
               h('div', null,
-                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Alterar valores na Mapp (cliente + motoboy)'),
-                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
-                  'Ligado: o Hub envia pra Mapp o valor do cliente (preco da tabela) e o do motoboy (custo do provedor). Desligado: nao altera nada na Mapp.')
+                h('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, 'Alterar valores na Mapp (cliente + motoboy)'),
+                h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
+                  'Ligado: o Hub envia para a Mapp o valor do cliente (preço da tabela) e o do motoboy (custo do provedor). Desligado: não altera nada na Mapp.')
               ),
               h('button', {
                 type: 'button',
                 onClick: () => up('alterar_valor_mapp_ativo', editando.alterar_valor_mapp_ativo === false),
-                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.alterar_valor_mapp_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.alterar_valor_mapp_ativo !== false ? 'bg-purple-700' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.alterar_valor_mapp_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
             ),
-            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' }, // RESTAURAR_CANCEL_TOGGLE_FRONT_V1
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' }, // RESTAURAR_CANCEL_TOGGLE_FRONT_V1
               h('div', null,
-                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Devolver valores originais ao cancelar'),
-                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
-                  'Ligado: ao cancelar a corrida, a Mapp volta aos valores originais (loja + motoboy). Desligado: mantem os valores do Hub.')
+                h('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, 'Devolver valores originais ao cancelar'),
+                h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
+                  'Ligado: ao cancelar a corrida, a Mapp volta aos valores originais (loja + motoboy). Desligado: mantém os valores do Hub.')
               ),
               h('button', {
                 type: 'button',
                 onClick: () => up('restaurar_valor_cancel_ativo', editando.restaurar_valor_cancel_ativo === false),
-                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.restaurar_valor_cancel_ativo !== false ? 'bg-purple-600' : 'bg-gray-300'}`,
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.restaurar_valor_cancel_ativo !== false ? 'bg-purple-700' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.restaurar_valor_cancel_ativo !== false ? 'right-0.5' : 'left-0.5'}` })),
             ),
-            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' }, // MAPP_CARENCIA_UI_V1
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t border-gray-100' }, // MAPP_CARENCIA_UI_V1
               h('div', { className: 'flex items-center justify-between gap-3' },
                 h('div', null,
-                  h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Carência na Mapp antes do Hub'),
-                  h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                  h('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, 'Carência na Mapp antes do Hub'),
+                  h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
                     'Ligado: a corrida fica um tempo na fila da Mapp (buscando entregador próprio). Só vai pro Hub se continuar sem entregador depois desse tempo. Desligado: vai pro Hub assim que elegível.')
                 ),
                 h('button', {
                   type: 'button',
                   onClick: () => up('mapp_carencia_ativa', editando.mapp_carencia_ativa !== true),
-                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.mapp_carencia_ativa === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.mapp_carencia_ativa === true ? 'bg-purple-700' : 'bg-gray-300'}`,
                 }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.mapp_carencia_ativa === true ? 'right-0.5' : 'left-0.5'}` })),
               ),
               (editando.mapp_carencia_ativa === true) && h('div', { className: 'mt-3 flex items-center gap-2' },
@@ -5105,75 +5200,75 @@
                   type: 'number', min: 1, max: 120,
                   value: editando.mapp_carencia_minutos == null ? '' : editando.mapp_carencia_minutos,
                   onChange: e => up('mapp_carencia_minutos', e.target.value),
-                  className: 'w-20 border rounded-lg px-2 py-1.5 text-sm text-center',
+                  className: 'w-20 text-center h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                 }),
                 h('span', { className: 'text-[13px] text-gray-700' }, 'minuto(s) na Mapp antes de mandar pro Hub'),
               ),
             ),
-            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t' }, // REGRA_GEOCODE_TOGGLE_UI_V1
+            (abaRegra === 'despacho') && h('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' }, // REGRA_GEOCODE_TOGGLE_UI_V1
               h('div', null,
-                h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Forçar geocode do Google'),
-                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                h('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, 'Forçar geocode do Google'),
+                h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
                   'Ligado: o Hub ignora a lat/lng que a Mapp manda e geocodifica o endereço no Google pra cotar. Use quando a coord da Mapp desse cliente vier errada.')
               ),
               h('button', {
                 type: 'button',
                 onClick: () => up('forcar_geocode_google', editando.forcar_geocode_google !== true),
-                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.forcar_geocode_google === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.forcar_geocode_google === true ? 'bg-purple-700' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.forcar_geocode_google === true ? 'right-0.5' : 'left-0.5'}` })),
             ),
 
             // APENAS_MOTO_PROPRIA_UI_V1: regra so-moto-propria (nao despacha no Hub)
-            (abaRegra === 'despacho') && h('div', { className: `flex items-center justify-between gap-3 pt-3 border-t ${editando.apenas_moto_propria === true ? 'bg-purple-50 -mx-4 px-4 py-3 rounded-lg' : ''}` },
+            (abaRegra === 'despacho') && h('div', { className: `flex items-center justify-between gap-3 pt-3 border-t ${editando.apenas_moto_propria === true ? 'bg-purple-50 -mx-3 px-3 py-3 rounded-[10px]' : ''}` },
               h('div', null,
-                h('div', { className: 'text-sm font-semibold text-gray-800 inline-flex items-center gap-1.5' },
+                h('div', { className: 'text-[13.5px] font-semibold text-gray-900 inline-flex items-center gap-1.5' },
                   h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })),
                   'Apenas moto própria (não despachar no Hub)'),
-                h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
+                h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
                   'Ligado: a regra fica ativa só pra IDENTIFICAR as moto próprias deste cliente no painel — o Hub NUNCA despacha estas OS em 99/Uber. Use pra cliente que só usa motoboy próprio.')
               ),
               h('button', {
                 type: 'button',
                 onClick: () => up('apenas_moto_propria', editando.apenas_moto_propria !== true),
-                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.apenas_moto_propria === true ? 'bg-purple-600' : 'bg-gray-300'}`,
+                className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.apenas_moto_propria === true ? 'bg-purple-700' : 'bg-gray-300'}`,
               }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.apenas_moto_propria === true ? 'right-0.5' : 'left-0.5'}` })),
             ),
 
             // PORTAL_CLIENTE_ACESSO_UI: acesso da loja ao painel (1 login por regra)
-            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t border-gray-100' },
               h('div', { className: 'flex items-center justify-between gap-3 mb-2' },
                 h('div', null,
-                  h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-lock' })), 'Acesso do cliente ao painel')),
-                  h('p', { className: 'text-[11px] text-gray-500 mt-0.5' },
-                    'A loja ve so as entregas desta regra, em tempo real. Sem chat, editar, cancelar ou valores.')),
+                  h('span', { className: 'text-[13.5px] font-semibold text-gray-900' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-lock' })), 'Acesso do cliente ao painel')),
+                  h('p', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' },
+                    'A loja vê só as entregas desta regra, em tempo real. Sem chat, editar, cancelar ou valores.')),
                 h('button', {
                   type: 'button',
                   onClick: () => up('portal_ativo', !editando.portal_ativo),
-                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.portal_ativo ? 'bg-purple-600' : 'bg-gray-300'}`,
+                  className: `relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editando.portal_ativo ? 'bg-purple-700' : 'bg-gray-300'}`,
                 }, h('span', { className: `absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editando.portal_ativo ? 'right-0.5' : 'left-0.5'}` })),
               ),
               h('div', { className: 'grid grid-cols-2 gap-3' },
                 h('div', null,
-                  h('label', { className: 'block text-xs text-gray-600 mb-1' }, 'Login da loja'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Login da loja'),
                   h('input', {
                     type: 'text', value: editando.portal_login || '',
                     onChange: e => up('portal_login', e.target.value.toLowerCase().replace(/\s+/g, '')),
                     placeholder: 'ex: kampeao', autoComplete: 'off',
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                   })),
                 h('div', null,
-                  h('label', { className: 'block text-xs text-gray-600 mb-1' },
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' },
                     editando.portal_tem_senha ? 'Senha (vazio = manter)' : 'Senha'),
                   h('input', {
                     type: 'text', value: editando.portal_senha || '',
                     onChange: e => up('portal_senha', e.target.value),
                     placeholder: editando.portal_tem_senha ? 'senha definida' : 'defina uma senha',
                     autoComplete: 'new-password',
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                   })),
               ),
-              h('div', { className: 'mt-2 flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' },
-                h('span', { className: 'text-[11px] text-purple-700 flex-1 truncate' },
+              h('div', { className: 'mt-3 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-[10px] px-3 py-2' },
+                h('span', { className: 'text-[12px] text-gray-600 flex-1 truncate inline-flex items-center gap-1.5' },
                   h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), (typeof window !== 'undefined' ? window.location.origin : ''), '/loja'),
                 h('button', {
                   type: 'button',
@@ -5182,70 +5277,70 @@
                     try { navigator.clipboard.writeText(_u); showToast('Link do painel copiado', 'success'); }
                     catch (_) { showToast('Nao foi possivel copiar', 'error'); }
                   },
-                  className: 'text-[11px] px-2 py-1 bg-white border border-purple-200 rounded text-purple-700 hover:bg-purple-100',
+                  className: 'h-8 px-3 rounded-[10px] border border-gray-200 bg-white text-[12.5px] font-semibold text-gray-700 hover:bg-gray-50 flex-shrink-0',
                 }, 'Copiar link'),
               ),
             ),
 
-            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t' },
+            (abaRegra === 'despacho') && h('div', { className: 'pt-3 border-t border-gray-100' },
               h('div', { className: 'flex items-center gap-2 mb-1' },
-                h('span', { className: 'text-sm font-semibold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-message' })), 'Mensagem pro entregador (99)'))),
-              h('p', { className: 'text-[11px] text-gray-500 mb-3' },
-                'Em branco usa a configuracao global. Preenchido, sobrescreve so para este cliente.'),
+                h('span', { className: 'text-[13.5px] font-semibold text-gray-900' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-message' })), 'Mensagem pro entregador (99)'))),
+              h('p', { className: 'text-[12px] text-gray-500 mb-3' },
+                'Em branco usa a configuração global. Preenchido, sobrescreve só para este cliente.'),
               h('div', { className: 'mb-3' },
-                h('label', { className: 'block text-xs text-gray-600 mb-1' }, 'Nome do remetente'),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Nome do remetente'),
                 h('input', {
                   type: 'text', value: editando.nome_remetente || '',
                   onChange: e => up('nome_remetente', e.target.value),
                   maxLength: 100, placeholder: 'vazio = usa o global',
-                  className: 'w-full px-3 py-2 border rounded-lg text-sm',
+                  className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                 })),
               h('div', { className: 'grid grid-cols-2 gap-3 mb-3' },
                 h('div', null,
-                  h('label', { className: 'block text-xs text-gray-600 mb-1' }, 'Tipo de transporte'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Tipo de transporte'),
                   h('select', {
                     value: editando.package_type || '',
                     onChange: e => up('package_type', e.target.value),
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm bg-white',
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                   },
-                    h('option', { value: '' }, 'Global (padrao)'),
+                    h('option', { value: '' }, 'Global (padrão)'),
                     h('option', { value: 'medication' }, 'Medicamentos'),
                     h('option', { value: 'documents' }, 'Documentos'),
                     h('option', { value: 'food' }, 'Alimentos'),
                     h('option', { value: 'groceries' }, 'Mantimentos'),
-                    h('option', { value: 'electronics' }, 'Eletronicos'),
-                    h('option', { value: 'apparel' }, 'Vestuario'),
+                    h('option', { value: 'electronics' }, 'Eletrônicos'),
+                    h('option', { value: 'apparel' }, 'Vestuário'),
                     h('option', { value: 'others' }, 'Outros'),
                   )),
                 h('div', null,
-                  h('label', { className: 'block text-xs text-gray-600 mb-1' }, 'Peso da mercadoria'),
+                  h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' }, 'Peso da mercadoria'),
                   h('select', {
                     value: editando.package_weight || '',
                     onChange: e => up('package_weight', e.target.value),
-                    className: 'w-full px-3 py-2 border rounded-lg text-sm bg-white',
+                    className: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
                   },
-                    h('option', { value: '' }, 'Global (padrao)'),
-                    h('option', { value: '1kg' }, 'Ate 1kg'),
-                    h('option', { value: '5kg' }, 'Ate 5kg'),
-                    h('option', { value: '10kg' }, 'Ate 10kg'),
-                    h('option', { value: '20kg' }, 'Ate 20kg'),
-                    h('option', { value: '30kg' }, 'Ate 30kg'),
+                    h('option', { value: '' }, 'Global (padrão)'),
+                    h('option', { value: '1kg' }, 'Até 1kg'),
+                    h('option', { value: '5kg' }, 'Até 5kg'),
+                    h('option', { value: '10kg' }, 'Até 10kg'),
+                    h('option', { value: '20kg' }, 'Até 20kg'),
+                    h('option', { value: '30kg' }, 'Até 30kg'),
                   )),
               ),
               h('div', null,
-                h('label', { className: 'block text-xs text-gray-600 mb-1' },
-                  `Observacao sobre o transporte (${(editando.aviso_entregador || '').length}/127)`),
+                h('label', { className: 'block text-xs font-semibold text-gray-700 mb-1' },
+                  `Observação sobre o transporte (${(editando.aviso_entregador || '').length}/127)`),
                 h('textarea', {
                   value: editando.aviso_entregador || '',
                   onChange: e => up('aviso_entregador', e.target.value.slice(0, 127)),
                   maxLength: 127, rows: 2, placeholder: 'vazio = usa o aviso global',
-                  className: 'w-full px-3 py-2 border rounded-lg text-sm resize-y',
+                  className: 'w-full px-3 py-2 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 resize-y',
                 })),
             ),
           ),
-          h('div', { className: 'p-5 border-t flex justify-end gap-2 bg-gray-50' },
-            h('button', { onClick: () => setEditando(null), className: 'px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300' }, 'Cancelar'),
-            h('button', { onClick: salvar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold' },
+          h('div', { className: 'px-5 py-3.5 border-t border-gray-200 flex justify-end gap-2 bg-white sticky bottom-0' },
+            h('button', { type: 'button', onClick: () => setEditando(null), className: HX.btnSec }, 'Cancelar'),
+            h('button', { type: 'button', onClick: salvar, className: HX.btnPri },
               editando.id ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-save" })), "Salvar") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-plus" })), "Criar")),
           )
         )
@@ -5404,72 +5499,58 @@
     const m = (dados && dados.metricas) || {};
     const lista = (dados && dados.bloqueados) || [];
 
-    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
-      h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-ban' })), 'Entregadores barrados')),
-        h('div', { className: 'flex gap-2' },
-          h('input', {
-            value: busca, onChange: (ev) => setBusca(ev.target.value),
-            onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
-            placeholder: 'Buscar por nome ou telefone',
-            className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-56 focus:border-purple-400 focus:outline-none',
-          }),
-          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
-        ),
-      ),
-      h('div', { className: 'grid grid-cols-3 gap-3' },
-        [
-          { l: 'Bloqueados ativos', v: m.bloqueados_ativos || 0, c: 'text-gray-800' },
-          { l: 'Reatribuicoes (7 dias)', v: m.reatribuicoes_7d || 0, c: 'text-amber-600' },
-          { l: 'Cancelamentos hoje', v: m.cancelamentos_hoje || 0, c: 'text-gray-800' },
-        ].map((k, i) => h('div', { key: i, className: 'bg-gray-50 rounded-lg px-4 py-3' },
-          h('div', { className: 'text-xs text-gray-500' }, k.l),
-          h('div', { className: `text-2xl font-bold ${k.c}` }, String(k.v)),
-        )),
-      ),
-      loading
-        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' }))
-        : lista.length === 0
-          ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum entregador bloqueado')
-          : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
-              h('div', { className: 'grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide' },
-                h('div', { className: 'col-span-3' }, 'Entregador'),
-                h('div', { className: 'col-span-3' }, 'Contato / placa'),
-                h('div', { className: 'col-span-3' }, 'Motivo'),
-                h('div', { className: 'col-span-2' }, 'Bloqueado em'),
-                h('div', { className: 'col-span-1' }, ''),
-              ),
-              lista.map((b) => h('div', { key: b.id, className: 'grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center' },
-                h('div', { className: 'col-span-3 flex items-center gap-2 min-w-0' },
-                  h('div', { className: 'relative flex-shrink-0' },
-                    b.foto
-                      ? h('img', {
-                          src: b.foto, alt: b.nome || 'Entregador',
-                          className: 'w-8 h-8 rounded-full object-cover',
-                          onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; },
-                        })
-                      : null,
-                    h('div', {
-                      className: 'w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-[11px] font-bold',
-                      style: b.foto ? { display: 'none' } : {},
-                    }, iniciaisDoNome(b.nome)),
+    // HUB_ABAS_V1: Barrados no padrão clean — KPIs em faixa única, busca em card, tabela, Desbloquear destrutivo
+    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+      h(HxCabecalho, {
+        titulo: 'Entregadores barrados',
+        sub: 'Bloqueio do nosso lado (a 99/Uber têm os protocolos deles). Casamos por telefone e placa.',
+        acoes: [h('button', { key: 'r', type: 'button', onClick: carregar, className: HX.btnIco, title: 'Atualizar', 'aria-label': 'Atualizar lista de barrados' }, hxIco('refresh'))],
+      }),
+      h(HxKpis, { rotulo: 'Indicadores de bloqueio', itens: [
+        { l: 'Bloqueados ativos', v: String(m.bloqueados_ativos || 0) },
+        { l: 'Reatribuições (7 dias)', v: String(m.reatribuicoes_7d || 0), cor: (m.reatribuicoes_7d || 0) > 0 ? '#92400e' : '#111827' },
+        { l: 'Cancelamentos hoje', v: String(m.cancelamentos_hoje || 0) },
+      ] }),
+      h('div', { className: HX.card + ' overflow-hidden' },
+        h('div', { className: 'p-3 border-b border-gray-100 flex flex-wrap items-center gap-2' },
+          h('label', { className: 'flex items-center gap-2 h-[38px] px-3 border border-gray-200 rounded-[10px] text-gray-400 focus-within:border-purple-400', style: { flex: '1 1 260px', minWidth: 0, maxWidth: 420 } },
+            hxIco('search'),
+            h('input', {
+              type: 'search', value: busca, onChange: (ev) => setBusca(ev.target.value),
+              onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
+              placeholder: 'Buscar por nome ou telefone', 'aria-label': 'Buscar entregador barrado',
+              className: 'flex-1 min-w-0 border-0 outline-none bg-transparent text-[13px] text-gray-900',
+            })),
+          h('button', { type: 'button', onClick: carregar, className: 'h-[38px] px-3 rounded-[10px] border border-gray-200 bg-white text-[13px] font-semibold text-gray-700 hover:bg-gray-50' }, 'Buscar'),
+          h('span', { className: 'ml-auto text-xs text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, loading ? '' : `${lista.length} na lista`)),
+        loading
+          ? h(HxSpinner)
+          : lista.length === 0
+            ? h(HxVazio, { titulo: busca.trim() ? 'Nenhum entregador encontrado' : 'Nenhum entregador bloqueado', texto: busca.trim() ? 'Confira o nome ou o telefone e busque de novo.' : 'Para barrar alguém, use "Reportar ocorrência" no card da entrega.' })
+            : h('div', { className: 'overflow-x-auto' },
+                h('table', { className: 'w-full text-[13px] min-w-[760px]' },
+                  h('thead', null, h('tr', { className: 'bg-gray-50' },
+                    ['Entregador', 'Contato / placa', 'Motivo', 'Bloqueado em', ''].map((t, i) => h('th', { key: i, className: HX.th }, t)))),
+                  h('tbody', null,
+                    lista.map((b) => h('tr', { key: b.id, className: 'border-t border-gray-100 align-top' },
+                      h('td', { className: 'px-4 py-3' },
+                        h('div', { className: 'flex items-center gap-2.5 min-w-0' },
+                          h(HxAvatar, { foto: b.foto, nome: b.nome, size: 32 }),
+                          h('span', { className: 'font-semibold text-gray-900 truncate' }, b.nome || 'Entregador'))),
+                      h('td', { className: 'px-4 py-3 text-gray-700 whitespace-nowrap' },
+                        h('div', { style: { fontVariantNumeric: 'tabular-nums' } }, b.telefone_norm ? fmtTelefoneBR(b.telefone_norm) : 'sem telefone'),
+                        h('div', { className: 'text-xs text-gray-500 mt-0.5' }, [b.placa_norm, b.provider_code ? provNome(b.provider_code) : null].filter(Boolean).join(' · ') || '—')),
+                      h('td', { className: 'px-4 py-3 text-gray-700 max-w-[320px] break-words' }, b.motivo || '—'),
+                      h('td', { className: 'px-4 py-3 text-gray-700 whitespace-nowrap' },
+                        h('div', { style: { fontVariantNumeric: 'tabular-nums' } }, fmtDT(b.criado_em)),
+                        h('div', { className: 'text-xs text-gray-500 mt-0.5' }, `por ${b.bloqueado_por || '—'}`)),
+                      h('td', { className: 'px-4 py-3 text-right' },
+                        h('button', { type: 'button', onClick: () => desbloquear(b.id, b.nome), className: HX.btnDest, 'aria-label': `Desbloquear ${b.nome || 'entregador'}` }, 'Desbloquear')),
+                    )),
                   ),
-                  h('span', { className: 'font-semibold text-gray-800 truncate' }, b.nome || 'Entregador'),
                 ),
-                h('div', { className: 'col-span-3 text-xs text-gray-500' },
-                  fmtTelefoneBR(b.telefone_norm) || 'sem telefone',
-                  h('br'),
-                  [b.placa_norm, b.provider_code].filter(Boolean).join(' · '),
-                ),
-                h('div', { className: 'col-span-3 text-xs text-gray-500 break-words' }, b.motivo || '—'),
-                h('div', { className: 'col-span-2 text-xs text-gray-500' },
-                  fmtDT(b.criado_em), h('br'), `por ${b.bloqueado_por || '—'}`),
-                h('div', { className: 'col-span-1' },
-                  h('button', { onClick: () => desbloquear(b.id, b.nome), className: 'text-[11px] px-2.5 py-1 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50' }, 'Desbloquear'),
-                ),
-              )),
-            ),
-      h('div', { className: 'text-xs text-gray-400 flex items-center gap-1.5' }, 'ℹ️ Bloqueio do nosso lado (a 99/Uber tem os protocolos deles). Casamos por telefone e placa.'),
+              ),
+      ),
     );
   }
 
@@ -5507,73 +5588,63 @@
       return `${diff} dias`;
     }
 
-    return h('div', { className: 'max-w-5xl mx-auto p-4 space-y-4' },
-      h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
-        h('h2', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' })), 'Motoboys frequentes')),
-        h('div', { className: 'flex gap-2' },
-          h('input', {
-            value: busca, onChange: (ev) => setBusca(ev.target.value),
-            onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
-            placeholder: 'Buscar por nome',
-            className: 'text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:border-purple-400 focus:outline-none',
-          }),
-          h('button', { onClick: carregar, className: 'text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
-        ),
-      ),
-      h('div', { className: 'grid grid-cols-3 gap-3' },
-        [
-          { l: 'Parceiros frequentes', v: m.parceiros || 0, c: 'text-amber-600' },
-          { l: `Pedidos (${m.dias || 30} dias)`, v: m.pedidos_periodo || 0, c: 'text-gray-800' },
-          { l: 'Top parceiro', v: m.top_parceiro || 0, c: 'text-gray-800' },
-        ].map((k, i) => h('div', { key: i, className: 'bg-gray-50 rounded-lg px-4 py-3' },
-          h('div', { className: 'text-xs text-gray-500' }, k.l),
-          h('div', { className: `text-2xl font-bold ${k.c}` }, String(k.v)),
-        )),
-      ),
-      h('div', { className: 'text-xs text-gray-400' }, 'Regra: entregador com mais de 3 pedidos concluidos. Ordenado por volume.'),
-      loading
-        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' }))
-        : lista.length === 0
-          ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum motoboy frequente ainda')
-          : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
-              h('div', { className: 'grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide' },
-                h('div', { className: 'col-span-1' }, '#'),
-                h('div', { className: 'col-span-4' }, 'Entregador'),
-                h('div', { className: 'col-span-3' }, 'Contato / placa'),
-                h('div', { className: 'col-span-2' }, 'Pedidos'),
-                h('div', { className: 'col-span-2' }, 'Ultimo'),
+    // HUB_ABAS_V1: Frequentes no padrão clean — KPIs em faixa única, busca em card e tabela
+    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+      h(HxCabecalho, {
+        titulo: 'Motoboys frequentes',
+        sub: `Entregadores com mais de 3 pedidos concluídos via Hub nos últimos ${m.dias || 30} dias · contagem por telefone, ordenada por volume.`,
+        acoes: [h('button', { key: 'r', type: 'button', onClick: carregar, className: HX.btnIco, title: 'Atualizar', 'aria-label': 'Atualizar lista de frequentes' }, hxIco('refresh'))],
+      }),
+      h(HxKpis, { rotulo: 'Indicadores de parceiros frequentes', itens: [
+        { l: 'Parceiros frequentes', v: String(m.parceiros || 0), sub: 'com mais de 3 pedidos' },
+        { l: `Pedidos (${m.dias || 30} dias)`, v: String(m.pedidos_periodo || 0) },
+        { l: 'Top parceiro', v: String(m.top_parceiro || 0), sub: lista[0] && lista[0].nome ? `pedidos · ${lista[0].nome}` : 'pedidos do 1º colocado' },
+      ] }),
+      h('div', { className: HX.card + ' overflow-hidden' },
+        h('div', { className: 'p-3 border-b border-gray-100 flex flex-wrap items-center gap-2' },
+          h('label', { className: 'flex items-center gap-2 h-[38px] px-3 border border-gray-200 rounded-[10px] text-gray-400 focus-within:border-purple-400', style: { flex: '1 1 260px', minWidth: 0, maxWidth: 420 } },
+            hxIco('search'),
+            h('input', {
+              type: 'search', value: busca, onChange: (ev) => setBusca(ev.target.value),
+              onKeyDown: (ev) => { if (ev.key === 'Enter') carregar(); },
+              placeholder: 'Buscar por nome', 'aria-label': 'Buscar motoboy frequente',
+              className: 'flex-1 min-w-0 border-0 outline-none bg-transparent text-[13px] text-gray-900',
+            })),
+          h('button', { type: 'button', onClick: carregar, className: 'h-[38px] px-3 rounded-[10px] border border-gray-200 bg-white text-[13px] font-semibold text-gray-700 hover:bg-gray-50' }, 'Buscar'),
+          h('span', { className: 'ml-auto text-xs text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, loading ? '' : `${lista.length} na lista`)),
+        loading
+          ? h(HxSpinner)
+          : lista.length === 0
+            ? h(HxVazio, { titulo: busca.trim() ? 'Nenhum motoboy encontrado' : 'Nenhum motoboy frequente ainda', texto: busca.trim() ? 'Confira o nome e busque de novo.' : 'Quem concluir mais de 3 pedidos pelo Hub aparece aqui.' })
+            : h('div', { className: 'overflow-x-auto' },
+                h('table', { className: 'w-full text-[13px] min-w-[640px]' },
+                  h('thead', null, h('tr', { className: 'bg-gray-50' },
+                    h('th', { className: HX.th + ' w-12' }, '#'),
+                    h('th', { className: HX.th }, 'Entregador'),
+                    h('th', { className: HX.th }, 'Contato / placa'),
+                    h('th', { className: HX.th + ' text-right' }, 'Pedidos'),
+                    h('th', { className: HX.th + ' text-right' }, 'Último'))),
+                  h('tbody', null,
+                    lista.map((f, i) => {
+                      const top = i === 0;
+                      return h('tr', { key: (f.telefone || '') + i, className: 'border-t border-gray-100' },
+                        h('td', { className: 'px-4 py-3 text-gray-500 font-semibold', style: { fontVariantNumeric: 'tabular-nums' } }, String(i + 1)),
+                        h('td', { className: 'px-4 py-3' },
+                          h('div', { className: 'flex items-center gap-2.5 min-w-0' },
+                            h(HxAvatar, { foto: f.foto, nome: f.nome, size: 32 }),
+                            h('span', { className: 'font-semibold text-gray-900 truncate' }, f.nome || 'Entregador'),
+                            top && h(HxPilula, { tom: 'ambar', title: 'Top parceiro' }, 'Top parceiro'))),
+                        h('td', { className: 'px-4 py-3 text-gray-700 whitespace-nowrap' },
+                          h('div', { style: { fontVariantNumeric: 'tabular-nums' } }, f.telefone ? fmtTelefoneBR(f.telefone) : '—'),
+                          h('div', { className: 'text-xs text-gray-500 mt-0.5' }, [f.placa, f.provider ? provNome(f.provider) : null].filter(Boolean).join(' · ') || '—')),
+                        h('td', { className: 'px-4 py-3 text-right font-semibold text-gray-900', style: { fontVariantNumeric: 'tabular-nums' } }, String(f.pedidos)),
+                        h('td', { className: 'px-4 py-3 text-right text-gray-700 whitespace-nowrap' }, fmtUltimo(f.ultimo)),
+                      );
+                    }),
+                  ),
+                ),
               ),
-              lista.map((f, i) => {
-                const top = i === 0;
-                return h('div', { key: (f.telefone || '') + i, className: `grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 text-sm items-center ${top ? 'bg-amber-50' : ''}` },
-                  h('div', { className: `col-span-1 font-bold ${top ? 'text-amber-600' : 'text-gray-400'}` }, String(i + 1)),
-                  h('div', { className: 'col-span-4 flex items-center gap-2 min-w-0' },
-                    h('div', { className: 'relative flex-shrink-0' },
-                    f.foto
-                      ? h('img', {
-                          src: f.foto,
-                          alt: f.nome || 'Entregador',
-                          className: `w-8 h-8 rounded-full object-cover ${top ? 'ring-2 ring-amber-300' : ''}`,
-                          onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; },
-                        })
-                      : null,
-                    h('div', {
-                      className: `w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${top ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-700'}`,
-                      style: f.foto ? { display: 'none' } : {},
-                    }, iniciaisDoNome(f.nome)),
-                    top && h('span', { className: 'absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-100 border border-white flex items-center justify-center text-[9px]', title: 'Top parceiro' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' }))),
-                  ),
-                    h('span', { className: `font-semibold truncate ${top ? 'text-amber-700' : 'text-gray-800'}` }, f.nome || 'Entregador'),
-                  ),
-                  h('div', { className: 'col-span-3 text-xs text-gray-500' },
-                    fmtTelefoneBR(f.telefone) || '—', h('br'),
-                    [f.placa, f.provider].filter(Boolean).join(' · ')),
-                  h('div', { className: 'col-span-2' }, h('span', { className: `font-bold ${top ? 'text-amber-700' : 'text-gray-800'}` }, String(f.pedidos))),
-                  h('div', { className: 'col-span-2 text-xs text-gray-500' }, fmtUltimo(f.ultimo)),
-                );
-              }),
-            ),
-      h('div', { className: 'text-xs text-gray-400' }, 'ℹ️ Contagem por telefone do entregador (corridas concluidas via Hub).'),
+      ),
     );
   }
 

@@ -1140,6 +1140,75 @@ const SecaoHomeClean = ({ nome, tiles }) => {
     );
 };
 
+// ==================== APP_ABAS_V1: helpers visuais das abas do BI renderizadas em app.js ====================
+/* APP_ABAS_V1: só apresentação — nenhum estado/handler novo. Usados em Por Profissional, Análise por OS,
+   Cliente 767, Relatório IA, Configurações do BI e no modal "Filtros inteligentes". */
+const abIco = (nome, px, extra) => React.createElement("svg", { className: "ico", style: Object.assign({ fontSize: (px || 16) + "px", width: "1em", height: "1em", flex: "none" }, extra || {}), "aria-hidden": "true" },
+    React.createElement("use", { href: "#i-" + nome }));
+const AB_FOCO = "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors";
+const AB_TONS = {
+    verde: { bg: "#f0fdf4", bd: "#bbf7d0", dot: "#16a34a", tx: "#166534" },
+    ambar: { bg: "#fffbeb", bd: "#fde68a", dot: "#d97706", tx: "#92400e" },
+    vermelho: { bg: "#fef2f2", bd: "#fecaca", dot: "#dc2626", tx: "#991b1b" },
+    azul: { bg: "#eff6ff", bd: "#bfdbfe", dot: "#2563eb", tx: "#1e40af" },
+    roxo: { bg: "#faf7fd", bd: "#e9d5f9", dot: "#770fa8", tx: "#5d0b85" },
+    cinza: { bg: "#f3f4f6", bd: "#e5e7eb", dot: "#9ca3af", tx: "#374151" }
+};
+/* APP_ABAS_V1: botões — principal (roxo), secundario (branco), destrutivo (borda vermelha), link (texto roxo) */
+const abBtnStyle = (tipo, compacto) => {
+    const base = { height: compacto ? 32 : 38, padding: compacto ? "0 10px" : "0 14px", borderRadius: 10, fontSize: compacto ? 12.5 : 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", cursor: "pointer" };
+    if (tipo === "principal") return Object.assign(base, { background: "#770fa8", color: "#ffffff", border: "1px solid #770fa8" });
+    if (tipo === "destrutivo") return Object.assign(base, { background: "#ffffff", color: "#991b1b", border: "1px solid #fecaca" });
+    if (tipo === "link") return Object.assign(base, { background: "transparent", color: "#770fa8", border: "1px solid transparent", padding: "0 6px", fontWeight: 500 });
+    return Object.assign(base, { background: "#ffffff", color: "#374151", border: "1px solid #e5e7eb", fontWeight: 500 });
+};
+const abBtnClass = tipo => AB_FOCO + " disabled:opacity-50 disabled:cursor-not-allowed " + (tipo === "principal" ? "hover:bg-[#5d0b85]" : tipo === "destrutivo" ? "hover:bg-[#fef2f2]" : tipo === "link" ? "hover:underline" : "hover:bg-[#f9fafb] hover:border-[#d1d5db]");
+const abBtn = (tipo, props, ...filhos) => React.createElement("button", Object.assign({ type: "button" }, props || {}, {
+    className: abBtnClass(tipo) + (props && props.className ? " " + props.className : ""),
+    style: Object.assign(abBtnStyle(tipo, props && props.compacto), (props && props.style) || {}),
+    compacto: undefined
+}), ...filhos);
+/* APP_ABAS_V1: cabeçalho de página (Sora 24 + subtítulo cinza + ações à direita) */
+const abCabecalho = (titulo, subtitulo, acoes) => React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 } },
+    React.createElement("div", { style: { minWidth: 0 } },
+        React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, titulo),
+        subtitulo && React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, subtitulo)),
+    acoes && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } }, acoes));
+/* APP_ABAS_V1: card branco (borda #e5e7eb, raio 14, sem sombra) com título 15px opcional */
+const abCard = (props, ...filhos) => React.createElement("section", Object.assign({}, props || {}, {
+    style: Object.assign({ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, minWidth: 0 }, (props && props.style) || {})
+}), ...filhos);
+const abCardTitulo = (titulo, sub, acoes) => React.createElement("div", { style: { padding: "14px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 } },
+    React.createElement("div", { style: { minWidth: 0 } },
+        React.createElement("h3", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, titulo),
+        sub && React.createElement("p", { style: { margin: "2px 0 0", fontSize: 12.5, color: "#6b7280" } }, sub)),
+    acoes && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } }, acoes));
+/* APP_ABAS_V1: faixa única de KPIs — itens: {label, valor, sub, cor} */
+const abFaixaKpi = (itens, minCol) => React.createElement("section", {
+    style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(" + (minCol || 170) + "px, 1fr))", overflow: "hidden" }
+}, itens.filter(Boolean).map((k, i) => React.createElement("div", {
+    key: k.label + i,
+    style: { padding: "14px 18px", borderRight: "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginRight: -1, marginBottom: -1, minWidth: 0 }
+},
+    React.createElement("div", { style: { fontSize: 12, color: "#6b7280" } }, k.label),
+    React.createElement("div", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: k.pequeno ? 20 : 24, fontWeight: 700, lineHeight: 1.2, marginTop: 4, fontVariantNumeric: "tabular-nums", color: k.cor || "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, k.valor),
+    k.sub != null && k.sub !== "" && React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280", marginTop: 2 } }, k.sub))));
+/* APP_ABAS_V1: pílula de status (fundo 50 + texto 800 + ponto 600) */
+const abPilula = (tom, texto, extra) => {
+    const t = AB_TONS[tom] || AB_TONS.cinza;
+    return React.createElement("span", { style: Object.assign({ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 9px", borderRadius: 99, background: t.bg, color: t.tx, fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", lineHeight: "18px" }, extra || {}) },
+        React.createElement("span", { style: { width: 6, height: 6, borderRadius: 99, background: t.dot, flex: "none" }, "aria-hidden": "true" }), texto);
+};
+const abTomTaxa = (taxa, verde, ambar) => taxa >= (verde == null ? 95 : verde) ? "verde" : taxa >= (ambar == null ? 90 : ambar) ? "ambar" : "vermelho";
+/* APP_ABAS_V1: rótulo de campo, input/select e estado vazio */
+const abLabel = (texto, extra) => React.createElement("label", Object.assign({ style: { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 } }, extra || {}), texto);
+const AB_INPUT = "w-full bg-white border border-gray-200 rounded-[10px] px-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9] disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
+const AB_INPUT_ST = { height: 38 };
+const AB_TH = "px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap";
+const AB_TD = "px-3 py-2.5 border-t border-gray-100";
+const abVazio = (texto, acao) => React.createElement("div", { style: { padding: "36px 16px", textAlign: "center", color: "#6b7280", fontSize: 13.5, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 } },
+    React.createElement("p", { style: { margin: 0 } }, texto), acao || null);
+
 /* HOME_CLEAN_V1: faixa "Precisa de atenção agora" — GET /api/home/pendencias.
    Falhou / 404 / resposta inválida => a faixa inteira some, sem aviso.
    Recarrega ao montar (entrar na home) e a cada 60s só com a aba do navegador visível. */
@@ -8036,7 +8105,7 @@ const hideLoadingScreen = () => {
         var lev = _min(tempo);
         var tin = _min(prazo);
         if (lev === null) {
-            return React.createElement("div", {className: "text-[10px] text-amber-700", title: "Sem horário registrado na Mapp — conta como no prazo"},
+            return React.createElement("div", {className: "text-[10px] text-[#92400e]", title: "Sem horário registrado na Mapp — conta como no prazo"},
                 "sem horário",
                 tin !== null ? React.createElement("div", {className: "text-gray-400"}, "tinha ", tin, " min") : null
             );
@@ -8047,9 +8116,9 @@ const hideLoadingScreen = () => {
         // "85 / 75 min · sobrou -10 min" pintado de verde.
         var estourou = (tin !== null) ? (lev > tin) : (dentro === false);
         return React.createElement("div", {className: "leading-tight"},
-            React.createElement("span", {className: "font-bold " + (estourou ? "text-red-700" : "text-green-700")}, lev),
+            React.createElement("span", {className: "font-semibold " + (estourou ? "text-[#991b1b]" : "text-[#166534]")}, lev), /* APP_ABAS_V1: tons 800 */
             React.createElement("span", {className: "text-gray-400"}, " / ", tin !== null ? tin : "-", " min"),
-            React.createElement("div", {className: "text-[9px] " + (estourou ? "text-red-600" : "text-green-600")},
+            React.createElement("div", {className: "text-[10px] " + (estourou ? "text-[#991b1b]" : "text-[#166534]")},
                 tin === null ? "" :
                 estourou
                     ? ("+" + (lev - tin) + " min acima")
@@ -16353,6 +16422,7 @@ const hideLoadingScreen = () => {
                     relatoriosDiarios, relatoriosNaoLidos, relatoriosLoading,
                     abrirNovoRelatorio, abrirEditarRelatorio,
                     salvarRelatorio, excluirRelatorio, gerarLinkWaze,
+                    copiarParaClipboard, aplicarFormatacao, /* APP_ABAS_V1: faltavam (botoes Waze e B/I do Relatorio Diario davam erro) */
                     // Regiões
                     aa,
                     // Incentivos Operacionais
@@ -16820,479 +16890,265 @@ const hideLoadingScreen = () => {
                 );
             })(),
 
-            wa && React.createElement("div", {
-                className: "fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 overflow-hidden"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-y-auto"
-            }, React.createElement("div", {
-                className: "sticky top-0 bg-purple-700 text-white px-6 py-4 flex justify-between items-center z-10"
-            }, React.createElement("h2", {
-                className: "text-lg font-bold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtros Inteligentes")), React.createElement("button", {
-                onClick: () => _a(!1),
-                className: "text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))), React.createElement("div", {
-                className: "p-6"
-            }, React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"
-            }, 
-            // Calendário Data Início
-            React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50 relative"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Início")),
-            React.createElement("div", {
-                className: "relative"
-            },
-                React.createElement("input", {
-                    type: "text",
-                    readOnly: true,
-                    value: ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '',
-                    onClick: () => { setCalDataInicioAberto(!calDataInicioAberto); setCalDataFimAberto(false); setCalMesAtual(ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00') : new Date()); },
-                    placeholder: "Selecione...",
-                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer"
-                })
-            ),
-            // Calendário dropdown Data Início
-            calDataInicioAberto && React.createElement("div", {
-                className: "absolute z-50 mt-1 bg-white border rounded-lg shadow-xl p-3 left-0 right-0"
-            },
-                // Header do calendário
-                React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                    React.createElement("button", {
-                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() - 1, 1)),
-                        className: "p-1 hover:bg-gray-100 rounded"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowleft" }))),
-                    React.createElement("span", {className: "font-semibold text-sm"},
-                        calMesAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'})
+            /* APP_ABAS_V1: modal "Filtros inteligentes" — cabeçalho branco, seções com rótulos, checkboxes limpos,
+               rodapé Limpar/Aplicar. Mesmos estados (ua/ga/rl/ol/_a) e mesmas regras de antes. */
+            wa && (function () {
+                const secTitulo = (txt, extra) => React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 } },
+                    React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "#374151" } }, txt), extra || null);
+                const selCls = AB_INPUT;
+                const calendario = (campo, aberto, setAberto) => aberto && React.createElement("div", {
+                    style: { position: "absolute", zIndex: 60, top: "100%", left: 0, right: 0, marginTop: 6, background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, minWidth: 240 }
+                },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } },
+                        React.createElement("button", {
+                            type: "button", "aria-label": "Mês anterior",
+                            onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() - 1, 1)),
+                            className: "p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 " + AB_FOCO
+                        }, abIco("arrowleft", 14)),
+                        React.createElement("span", { style: { fontWeight: 600, fontSize: 13, color: "#111827" } }, (function () { const t = calMesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); })()),
+                        React.createElement("button", {
+                            type: "button", "aria-label": "Próximo mês",
+                            onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() + 1, 1)),
+                            className: "p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 " + AB_FOCO
+                        }, abIco("arrowright", 14))
                     ),
-                    React.createElement("button", {
-                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() + 1, 1)),
-                        className: "p-1 hover:bg-gray-100 rounded"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })))
-                ),
-                // Dias da semana
-                React.createElement("div", {className: "grid grid-cols-7 gap-1 mb-1"},
-                    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => 
-                        React.createElement("div", {key: i, className: "text-center text-xs font-semibold text-gray-500 py-1"}, d)
-                    )
-                ),
-                // Dias do mês
-                React.createElement("div", {className: "grid grid-cols-7 gap-1"},
-                    (() => {
+                    React.createElement("div", { className: "grid grid-cols-7 gap-1 mb-1" },
+                        ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => React.createElement("div", { key: i, style: { textAlign: "center", fontSize: 11, fontWeight: 600, color: "#9ca3af", padding: "2px 0" } }, d))
+                    ),
+                    React.createElement("div", { className: "grid grid-cols-7 gap-1" }, (() => {
                         const ano = calMesAtual.getFullYear();
                         const mes = calMesAtual.getMonth();
                         const primeiroDia = new Date(ano, mes, 1).getDay();
                         const ultimoDia = new Date(ano, mes + 1, 0).getDate();
                         const dias = [];
-                        // Dias vazios antes
-                        for (let i = 0; i < primeiroDia; i++) {
-                            dias.push(React.createElement("div", {key: 'empty-' + i}));
-                        }
-                        // Dias do mês
+                        for (let i = 0; i < primeiroDia; i++) dias.push(React.createElement("div", { key: 'empty-' + i }));
                         for (let dia = 1; dia <= ultimoDia; dia++) {
                             const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                             const temDados = biDatasComDados.has(dataStr);
-                            const selecionado = ua.data_inicio === dataStr;
+                            const selecionado = ua[campo] === dataStr;
                             dias.push(React.createElement("button", {
-                                key: dia,
-                                onClick: () => { ga({...ua, data_inicio: dataStr}); setCalDataInicioAberto(false); },
-                                className: "p-1.5 text-xs rounded-full transition-all " + 
-                                    (selecionado ? "bg-purple-600 text-white font-bold" : 
-                                    temDados ? "bg-green-100 text-green-700 hover:bg-green-200 font-semibold" : 
-                                    "text-gray-400 hover:bg-gray-100")
+                                key: dia, type: "button",
+                                onClick: () => { ga({ ...ua, [campo]: dataStr }); setAberto(false); },
+                                className: AB_FOCO + " " + (selecionado ? "" : temDados ? "hover:bg-[#bbf7d0]" : "hover:bg-gray-100"),
+                                style: { height: 28, borderRadius: 8, fontSize: 12, fontVariantNumeric: "tabular-nums", border: 0, background: selecionado ? "#770fa8" : temDados ? "#f0fdf4" : "transparent", color: selecionado ? "#ffffff" : temDados ? "#166534" : "#9ca3af", fontWeight: selecionado || temDados ? 600 : 400 }
                             }, dia));
                         }
                         return dias;
-                    })()
-                ),
-                // Legenda
-                React.createElement("div", {className: "flex items-center justify-center gap-4 mt-3 pt-2 border-t text-xs"},
-                    React.createElement("span", {className: "flex items-center gap-1"},
-                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-green-200"}),
-                        "Com dados"
-                    ),
-                    React.createElement("span", {className: "flex items-center gap-1"},
-                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-gray-200"}),
-                        "Sem dados"
-                    )
-                ),
-                // Botão fechar
-                React.createElement("button", {
-                    onClick: () => setCalDataInicioAberto(false),
-                    className: "w-full mt-2 py-1 text-xs text-gray-500 hover:text-gray-700"
-                }, "Fechar")
-            )),
-            
-            // Calendário Data Fim
-            React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50 relative"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Fim")),
-            React.createElement("div", {
-                className: "relative"
-            },
-                React.createElement("input", {
-                    type: "text",
-                    readOnly: true,
-                    value: ua.data_fim ? new Date(ua.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '',
-                    onClick: () => { setCalDataFimAberto(!calDataFimAberto); setCalDataInicioAberto(false); setCalMesAtual(ua.data_fim ? new Date(ua.data_fim + 'T12:00:00') : new Date()); },
-                    placeholder: "Selecione...",
-                    className: "w-full px-3 py-2 border rounded text-sm cursor-pointer"
-                })
-            ),
-            // Calendário dropdown Data Fim
-            calDataFimAberto && React.createElement("div", {
-                className: "absolute z-50 mt-1 bg-white border rounded-lg shadow-xl p-3 left-0 right-0"
-            },
-                // Header do calendário
-                React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                    React.createElement("button", {
-                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() - 1, 1)),
-                        className: "p-1 hover:bg-gray-100 rounded"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowleft" }))),
-                    React.createElement("span", {className: "font-semibold text-sm"},
-                        calMesAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'})
-                    ),
-                    React.createElement("button", {
-                        onClick: () => setCalMesAtual(new Date(calMesAtual.getFullYear(), calMesAtual.getMonth() + 1, 1)),
-                        className: "p-1 hover:bg-gray-100 rounded"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })))
-                ),
-                // Dias da semana
-                React.createElement("div", {className: "grid grid-cols-7 gap-1 mb-1"},
-                    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => 
-                        React.createElement("div", {key: i, className: "text-center text-xs font-semibold text-gray-500 py-1"}, d)
-                    )
-                ),
-                // Dias do mês
-                React.createElement("div", {className: "grid grid-cols-7 gap-1"},
-                    (() => {
-                        const ano = calMesAtual.getFullYear();
-                        const mes = calMesAtual.getMonth();
-                        const primeiroDia = new Date(ano, mes, 1).getDay();
-                        const ultimoDia = new Date(ano, mes + 1, 0).getDate();
-                        const dias = [];
-                        // Dias vazios antes
-                        for (let i = 0; i < primeiroDia; i++) {
-                            dias.push(React.createElement("div", {key: 'empty-' + i}));
-                        }
-                        // Dias do mês
-                        for (let dia = 1; dia <= ultimoDia; dia++) {
-                            const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                            const temDados = biDatasComDados.has(dataStr);
-                            const selecionado = ua.data_fim === dataStr;
-                            dias.push(React.createElement("button", {
-                                key: dia,
-                                onClick: () => { ga({...ua, data_fim: dataStr}); setCalDataFimAberto(false); },
-                                className: "p-1.5 text-xs rounded-full transition-all " + 
-                                    (selecionado ? "bg-purple-600 text-white font-bold" : 
-                                    temDados ? "bg-green-100 text-green-700 hover:bg-green-200 font-semibold" : 
-                                    "text-gray-400 hover:bg-gray-100")
-                            }, dia));
-                        }
-                        return dias;
-                    })()
-                ),
-                // Legenda
-                React.createElement("div", {className: "flex items-center justify-center gap-4 mt-3 pt-2 border-t text-xs"},
-                    React.createElement("span", {className: "flex items-center gap-1"},
-                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-green-200"}),
-                        "Com dados"
-                    ),
-                    React.createElement("span", {className: "flex items-center gap-1"},
-                        React.createElement("span", {className: "w-3 h-3 rounded-full bg-gray-200"}),
-                        "Sem dados"
-                    )
-                ),
-                // Botão fechar
-                React.createElement("button", {
-                    onClick: () => setCalDataFimAberto(false),
-                    className: "w-full mt-2 py-1 text-xs text-gray-500 hover:text-gray-700"
-                }, "Fechar")
-            )),
-            
-            React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Status Prazo")), React.createElement("select", {
-                value: ua.status_prazo,
-                onChange: e => ga({
-                    ...ua,
-                    status_prazo: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todos"), React.createElement("option", {
-                value: "dentro"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Dentro do Prazo")), React.createElement("option", {
-                value: "fora"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora do Prazo")))), Et === "os" && React.createElement("div", {
-                className: "border rounded-lg p-3 bg-blue-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-blue-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Prazo Prof")), React.createElement("select", {
-                value: ua.status_prazo_prof || "",
-                onChange: e => ga({
-                    ...ua,
-                    status_prazo_prof: e.target.value
-                }),
-                className: "w-full px-3 py-2 border border-blue-300 rounded text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todos"), React.createElement("option", {
-                value: "dentro"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Dentro do Prazo Prof")), React.createElement("option", {
-                value: "fora"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora do Prazo Prof")))), React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Retorno")), React.createElement("select", {
-                value: ua.status_retorno || "",
-                onChange: e => ga({
-                    ...ua,
-                    status_retorno: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todos"), React.createElement("option", {
-                value: "com_retorno"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Com Retorno")), React.createElement("option", {
-                value: "sem_retorno"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Sem Retorno")))), React.createElement("div", {
-                className: "border rounded-lg p-3 bg-gray-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Região")), React.createElement("select", {
-                value: ua.regiao || "",
-                onChange: e => {
-                    const t = e.target.value;
-                    let a;
-                    if (t) {
-                        const e = aa.find(e => e.id === parseInt(t)),
-                            l = e?.clientes?.map(e => String(e)) || [];
-                        a = {
-                            ...ua,
-                            regiao: t,
-                            cod_cliente: l,
-                            centro_custo: [],
-                            categoria: ""
-                        }
-                    } else a = {
-                        ...ua,
-                        regiao: "",
-                        cod_cliente: [],
-                        centro_custo: [],
-                        categoria: ""
-                    };
-                    ga(a), rl(a)
-                },
-                className: "w-full px-3 py-2 border rounded text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todas as Regiões"), aa.map(e => React.createElement("option", {
-                key: e.id,
-                value: e.id
-            }, e.nome, " (", e.clientes?.length || 0, " clientes)"))))), React.createElement("div", {
-                className: "grid grid-cols-1 gap-4 mb-4"
-            }, React.createElement("div", {
-                className: "border rounded-lg p-3 bg-blue-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Categoria")), React.createElement("div", {
-                className: "max-h-40 overflow-y-auto border-2 border-blue-200 rounded-lg bg-white"
-            }, pa.map(cat => {
-                const isChecked = (ua.categorias || []).includes(cat);
-                return React.createElement("label", {
-                    key: cat,
-                    className: "flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-blue-100" : "")
-                }, React.createElement("input", {
-                    type: "checkbox",
-                    checked: isChecked,
-                    onChange: () => {
-                        const current = ua.categorias || [];
-                        const next = isChecked ? current.filter(c => c !== cat) : current.concat([cat]);
-                        const newUa = Object.assign({}, ua, { categorias: next });
-                        ga(newUa); rl(newUa);
-                    },
-                    className: "w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                }), React.createElement("span", {
-                    className: "text-sm " + (isChecked ? "font-semibold text-blue-800" : "text-gray-700")
-                }, cat));
-            })), React.createElement("p", {
-                className: "text-xs text-blue-600 mt-1"
-            }, (ua.categorias || []).length > 0 ? `${(ua.categorias || []).length} selecionada(s) | Clique pra desmarcar` : `${pa.length} disponíveis | Sem seleção = Todas`))),
-            React.createElement("div", {
-                className: "grid grid-cols-1 gap-4 mb-4"
-            }, React.createElement("div", {
-                className: "border rounded-lg p-3 bg-cyan-50"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" })), "Tipo de Operação")), React.createElement("div", { className: "flex gap-2" }, [{ v: "", l: "Todas" }, { v: "app_externo", l: "App Externo" }, { v: "moto_propria", l: "Moto Própria" }].map(function(opt) { return React.createElement("button", { key: opt.v || "todas", type: "button", onClick: function() { ga(Object.assign({}, ua, { tipo_operacao: opt.v })); }, className: "flex-1 px-3 py-2 rounded-lg text-sm font-semibold border-2 transition " + ((ua.tipo_operacao || "") === opt.v ? "border-cyan-500 bg-cyan-100 text-cyan-800" : "border-gray-200 bg-white text-gray-600 hover:border-cyan-300") }, opt.l); })))),
-            React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, 
-            // ===== CLIENTE - CHECKBOXES =====
-            React.createElement("div", {
-                className: "border rounded-lg p-4 bg-purple-50"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center mb-3"
-            }, React.createElement("h3", {
-                className: "font-bold text-purple-800"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Cliente (Loja)")), (ua.cod_cliente || []).length > 0 ? React.createElement("button", {
-                onClick: () => {
-                    const e = {
-                        ...ua,
-                        cod_cliente: [],
-                        centro_custo: [],
-                        regiao: ""
-                    };
-                    ga(e), rl(e)
-                },
-                className: "text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-semibold hover:bg-purple-300 cursor-pointer"
-            }, (ua.cod_cliente || []).length, " selecionado(s) ✕") : React.createElement("span", {
-                className: "text-xs text-purple-600"
-            }, "Todas")), 
-            // Campo de busca
-            React.createElement("input", {
-                type: "text",
-                placeholder: "Buscar por código ou nome...",
-                value: buscaClienteModal,
-                onChange: e => setBuscaClienteModal(e.target.value),
-                className: "w-full px-3 py-2 border-2 border-purple-200 rounded-lg text-sm mb-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-            }),
-            // Lista com checkboxes
-            React.createElement("div", {
-                className: "max-h-64 overflow-y-auto border-2 border-purple-200 rounded-lg bg-white"
-            }, (function() {
-                var clientesUnicos = [];
-                var codigosVistos = {};
-                ia.filter(function(e) {
-                    if (!buscaClienteModal) return true;
-                    var termo = buscaClienteModal.toLowerCase();
-                    var codigo = String(e.cod_cliente).toLowerCase();
-                    var nome = (il(e.cod_cliente) || e.nome_cliente || "").toLowerCase();
-                    return codigo.includes(termo) || nome.includes(termo);
-                }).forEach(function(e) {
-                    if (!codigosVistos[e.cod_cliente]) {
-                        codigosVistos[e.cod_cliente] = true;
-                        clientesUnicos.push(e);
-                    }
-                });
-                return clientesUnicos;
-            })().map(function(cliente) {
-                var isChecked = (ua.cod_cliente || []).includes(String(cliente.cod_cliente));
-                return React.createElement("label", {
-                    key: cliente.cod_cliente,
-                    className: "flex items-center gap-2 px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-purple-100" : "")
-                },
-                    React.createElement("input", {
-                        type: "checkbox",
-                        checked: isChecked,
-                        onChange: function() {
-                            var codStr = String(cliente.cod_cliente);
-                            var current = ua.cod_cliente || [];
-                            var next = isChecked ? current.filter(function(c) { return c !== codStr; }) : current.concat([codStr]);
-                            var newUa = Object.assign({}, ua, { cod_cliente: next, regiao: "" });
-                            ga(newUa);
-                            rl(newUa);
-                        },
-                        className: "w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                    }),
-                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-purple-800" : "text-gray-700")},
-                        cliente.cod_cliente, " - ", il(cliente.cod_cliente) || cliente.nome_cliente || "Cliente"
+                    })()),
+                    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 6, marginTop: 10, paddingTop: 8, borderTop: "1px solid #f3f4f6", fontSize: 11.5, color: "#6b7280", whiteSpace: "nowrap" } },
+                        React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 10 } },
+                            React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4 } }, React.createElement("span", { style: { width: 8, height: 8, borderRadius: 99, background: "#16a34a" } }), "Com dados"),
+                            React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4 } }, React.createElement("span", { style: { width: 8, height: 8, borderRadius: 99, background: "#d1d5db" } }), "Sem dados")),
+                        abBtn("link", { compacto: true, onClick: () => setAberto(false) }, "Fechar")
                     )
                 );
-            })), React.createElement("p", {
-                className: "text-xs text-purple-600 mt-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Marque os clientes desejados | Sem seleção = Todas"))), 
-            
-            // ===== CENTRO DE CUSTO - CHECKBOXES =====
-            React.createElement("div", {
-                className: "border rounded-lg p-4 bg-green-50"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center mb-3"
-            }, React.createElement("h3", {
-                className: "font-bold text-green-800"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centro de Custo")), (ua.centro_custo || []).length > 0 ? React.createElement("button", {
-                onClick: () => {
-                    const e = {
-                        ...ua,
-                        centro_custo: []
-                    };
-                    ga(e), rl(e)
-                },
-                className: "text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold hover:bg-green-300 cursor-pointer"
-            }, (ua.centro_custo || []).length, " selecionado(s) ✕") : React.createElement("span", {
-                className: "text-xs text-green-600"
-            }, "Todos")), 
-            React.createElement("div", {
-                className: "max-h-64 overflow-y-auto border-2 border-green-200 rounded-lg bg-white"
-            }, (function() {
-                var centrosUnicos = [];
-                var centrosVistos = {};
-                kt.forEach(function(e) {
-                    if (e.centro_custo && !centrosVistos[e.centro_custo]) {
-                        centrosVistos[e.centro_custo] = true;
-                        centrosUnicos.push(e);
-                    }
-                });
-                return centrosUnicos;
-            })().map(function(cc) {
-                var isChecked = (ua.centro_custo || []).includes(cc.centro_custo);
-                var clienteDoCC = Object.keys(Tt).find(function(t) { return (Tt[t] || []).includes(cc.centro_custo); });
-                return React.createElement("label", {
-                    key: cc.centro_custo,
-                    className: "flex items-center gap-2 px-3 py-2 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0 " + (isChecked ? "bg-green-100" : "")
-                },
-                    React.createElement("input", {
-                        type: "checkbox",
-                        checked: isChecked,
-                        onChange: function() {
-                            var current = ua.centro_custo || [];
-                            var next = isChecked ? current.filter(function(c) { return c !== cc.centro_custo; }) : current.concat([cc.centro_custo]);
-                            var newUa = Object.assign({}, ua, { centro_custo: next });
-                            ga(newUa);
-                            rl(newUa);
-                        },
-                        className: "w-4 h-4 rounded border-green-300 text-green-600 focus:ring-green-500"
-                    }),
-                    React.createElement("span", {className: "text-sm " + (isChecked ? "font-semibold text-green-800" : "text-gray-700")},
-                        clienteDoCC ? clienteDoCC + " - " : "", cc.centro_custo
-                    )
+                const campoData = (rotulo, campo, aberto, abrir, setAberto) => React.createElement("div", { style: { position: "relative" } },
+                    abLabel(rotulo),
+                    React.createElement("button", {
+                        type: "button", onClick: abrir,
+                        className: selCls + " text-left inline-flex items-center gap-2",
+                        style: Object.assign({}, AB_INPUT_ST, { color: ua[campo] ? "#111827" : "#9ca3af" })
+                    }, abIco("calendar", 14, { color: "#6b7280" }), ua[campo] ? new Date(ua[campo] + 'T12:00:00').toLocaleDateString('pt-BR') : "Selecione..."),
+                    calendario(campo, aberto, setAberto)
                 );
-            })), React.createElement("p", {
-                className: "text-xs text-green-600 mt-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Marque os centros desejados | Sem seleção = Todos"))))), React.createElement("div", {
-                className: "sticky bottom-0 bg-gray-100 px-6 py-4 flex justify-between border-t"
-            }, React.createElement("button", {
-                onClick: () => {
-                    const e = {
-                        ...ua,
-                        cod_cliente: [],
-                        centro_custo: [],
-                        categoria: "",
-                        tipo_operacao: "",
-                        status_prazo: "",
-                        status_prazo_prof: "",
-                        status_retorno: "",
-                        regiao: ""
-                    };
-                    ga(e), da(jt), Pt(At), xa(ra)
+                const checkLista = (itens) => React.createElement("div", {
+                    style: { maxHeight: 232, overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: 10, background: "#ffffff" }
+                }, itens.length === 0
+                    ? React.createElement("p", { style: { margin: 0, padding: "14px 12px", fontSize: 12.5, color: "#9ca3af", textAlign: "center" } }, "Nenhum item disponível")
+                    : itens);
+                const checkItem = (key, marcado, onChange, texto) => React.createElement("label", {
+                    key: key,
+                    className: "hover:bg-[#f9fafb] first:!border-t-0",
+                    style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: "1px solid #f3f4f6", cursor: "pointer", background: marcado ? "#faf7fd" : undefined }
                 },
-                className: "px-5 py-2.5 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Limpar Filtros")), React.createElement("button", {
-                onClick: () => {
-                    _a(!1), ol(ua)
+                    React.createElement("input", { type: "checkbox", checked: marcado, onChange: onChange, style: { width: 16, height: 16, accentColor: "#770fa8", flex: "none" } }),
+                    React.createElement("span", { style: { fontSize: 13, color: marcado ? "#5d0b85" : "#374151", fontWeight: marcado ? 600 : 400, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, texto)
+                );
+                const contador = (n, vazio, onLimpar) => n > 0
+                    ? React.createElement("button", { type: "button", onClick: onLimpar, className: "hover:bg-[#f3e8fb] " + AB_FOCO, style: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#5d0b85", background: "#faf7fd", border: "1px solid #e9d5f9", borderRadius: 99, padding: "1px 8px", cursor: "pointer" }, title: "Desmarcar todos" }, n, " selecionado(s)", abIco("x", 11))
+                    : React.createElement("span", { style: { fontSize: 12, color: "#9ca3af" } }, vazio);
+
+                const clientesUnicos = (function () {
+                    var lista = [];
+                    var vistos = {};
+                    ia.filter(function (e) {
+                        if (!buscaClienteModal) return true;
+                        var termo = buscaClienteModal.toLowerCase();
+                        var codigo = String(e.cod_cliente).toLowerCase();
+                        var nome = (il(e.cod_cliente) || e.nome_cliente || "").toLowerCase();
+                        return codigo.includes(termo) || nome.includes(termo);
+                    }).forEach(function (e) {
+                        if (!vistos[e.cod_cliente]) { vistos[e.cod_cliente] = true; lista.push(e); }
+                    });
+                    return lista;
+                })();
+                const centrosUnicos = (function () {
+                    var lista = [];
+                    var vistos = {};
+                    kt.forEach(function (e) {
+                        if (e.centro_custo && !vistos[e.centro_custo]) { vistos[e.centro_custo] = true; lista.push(e); }
+                    });
+                    return lista;
+                })();
+
+                return React.createElement("div", {
+                    className: "fixed inset-0 z-50 flex items-start justify-center",
+                    style: { background: "rgba(17,24,39,0.45)", padding: "40px 16px", overflow: "hidden" },
+                    onClick: ev => { if (ev.target === ev.currentTarget) _a(!1); }
+                }, React.createElement("div", {
+                    role: "dialog", "aria-modal": "true", "aria-label": "Filtros inteligentes",
+                    style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 16, width: "100%", maxWidth: 1024, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }
                 },
-                className: "px-6 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition shadow-lg"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Aplicar Filtros"))))), React.createElement("div", {
+                    // Cabeçalho branco
+                    React.createElement("div", { style: { padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 } },
+                        React.createElement("div", null,
+                            React.createElement("h2", { style: { margin: 0, fontSize: 16, fontWeight: 600, color: "#111827" } }, "Filtros inteligentes"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: 13, color: "#6b7280" } }, "Refine o BI por período, status, região, categoria, cliente e centro de custo.")),
+                        React.createElement("button", { type: "button", onClick: () => _a(!1), "aria-label": "Fechar", className: "rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 " + AB_FOCO, style: { width: 32, height: 32, display: "grid", placeItems: "center", border: 0, background: "transparent", flex: "none" } }, abIco("x", 16))
+                    ),
+                    // Corpo
+                    React.createElement("div", { style: { padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 } },
+                        // Período e status
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280", marginBottom: 10 } }, "Período e status"),
+                            React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" },
+                                campoData("Data início", "data_inicio", calDataInicioAberto, () => { setCalDataInicioAberto(!calDataInicioAberto); setCalDataFimAberto(false); setCalMesAtual(ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00') : new Date()); }, setCalDataInicioAberto),
+                                campoData("Data fim", "data_fim", calDataFimAberto, () => { setCalDataFimAberto(!calDataFimAberto); setCalDataInicioAberto(false); setCalMesAtual(ua.data_fim ? new Date(ua.data_fim + 'T12:00:00') : new Date()); }, setCalDataFimAberto),
+                                React.createElement("div", null,
+                                    abLabel("Status do prazo", { htmlFor: "bi-filtro-status-prazo" }),
+                                    React.createElement("select", {
+                                        id: "bi-filtro-status-prazo",
+                                        value: ua.status_prazo,
+                                        onChange: e => ga({ ...ua, status_prazo: e.target.value }),
+                                        className: selCls, style: AB_INPUT_ST
+                                    }, React.createElement("option", { value: "" }, "Todos"), React.createElement("option", { value: "dentro" }, "Dentro do prazo"), React.createElement("option", { value: "fora" }, "Fora do prazo"))),
+                                Et === "os" && React.createElement("div", null,
+                                    abLabel("Prazo do profissional", { htmlFor: "bi-filtro-prazo-prof" }),
+                                    React.createElement("select", {
+                                        id: "bi-filtro-prazo-prof",
+                                        value: ua.status_prazo_prof || "",
+                                        onChange: e => ga({ ...ua, status_prazo_prof: e.target.value }),
+                                        className: selCls, style: AB_INPUT_ST
+                                    }, React.createElement("option", { value: "" }, "Todos"), React.createElement("option", { value: "dentro" }, "Dentro do prazo prof."), React.createElement("option", { value: "fora" }, "Fora do prazo prof."))),
+                                React.createElement("div", null,
+                                    abLabel("Retorno", { htmlFor: "bi-filtro-retorno" }),
+                                    React.createElement("select", {
+                                        id: "bi-filtro-retorno",
+                                        value: ua.status_retorno || "",
+                                        onChange: e => ga({ ...ua, status_retorno: e.target.value }),
+                                        className: selCls, style: AB_INPUT_ST
+                                    }, React.createElement("option", { value: "" }, "Todos"), React.createElement("option", { value: "com_retorno" }, "Com retorno"), React.createElement("option", { value: "sem_retorno" }, "Sem retorno"))),
+                                React.createElement("div", null,
+                                    abLabel("Região", { htmlFor: "bi-filtro-regiao" }),
+                                    React.createElement("select", {
+                                        id: "bi-filtro-regiao",
+                                        value: ua.regiao || "",
+                                        onChange: e => {
+                                            const t = e.target.value;
+                                            let a;
+                                            if (t) {
+                                                const e = aa.find(e => e.id === parseInt(t)),
+                                                    l = e?.clientes?.map(e => String(e)) || [];
+                                                a = { ...ua, regiao: t, cod_cliente: l, centro_custo: [], categoria: "" }
+                                            } else a = { ...ua, regiao: "", cod_cliente: [], centro_custo: [], categoria: "" };
+                                            ga(a), rl(a)
+                                        },
+                                        className: selCls, style: AB_INPUT_ST
+                                    }, React.createElement("option", { value: "" }, "Todas as regiões"), aa.map(e => React.createElement("option", { key: e.id, value: e.id }, e.nome, " (", e.clientes?.length || 0, " clientes)"))))
+                            )
+                        ),
+                        // Tipo de operação (segmentado) + Categoria
+                        React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" },
+                            React.createElement("div", null,
+                                secTitulo("Tipo de operação"),
+                                React.createElement("div", { role: "radiogroup", "aria-label": "Tipo de operação", style: { display: "inline-flex", flexWrap: "wrap", background: "#f3f4f6", borderRadius: 10, padding: 3, gap: 2 } },
+                                    [{ v: "", l: "Todas" }, { v: "app_externo", l: "App externo" }, { v: "moto_propria", l: "Moto própria" }].map(function (opt) {
+                                        const ativo = (ua.tipo_operacao || "") === opt.v;
+                                        return React.createElement("button", {
+                                            key: opt.v || "todas", type: "button", role: "radio", "aria-checked": ativo ? "true" : "false",
+                                            onClick: function () { ga(Object.assign({}, ua, { tipo_operacao: opt.v })); },
+                                            className: AB_FOCO,
+                                            style: { height: 32, padding: "0 14px", borderRadius: 8, border: 0, fontSize: 13, fontWeight: ativo ? 600 : 500, background: ativo ? "#ffffff" : "transparent", color: ativo ? "#5d0b85" : "#6b7280", boxShadow: ativo ? "0 0 0 1px #e5e7eb" : "none", cursor: "pointer" }
+                                        }, opt.l);
+                                    })
+                                )
+                            ),
+                            React.createElement("div", null,
+                                secTitulo("Categoria", contador((ua.categorias || []).length, pa.length + " disponíveis · sem seleção = todas", () => { const n = Object.assign({}, ua, { categorias: [] }); ga(n); rl(n); })),
+                                checkLista(pa.map(cat => {
+                                    const isChecked = (ua.categorias || []).includes(cat);
+                                    return checkItem(cat, isChecked, () => {
+                                        const current = ua.categorias || [];
+                                        const next = isChecked ? current.filter(c => c !== cat) : current.concat([cat]);
+                                        const newUa = Object.assign({}, ua, { categorias: next });
+                                        ga(newUa); rl(newUa);
+                                    }, cat);
+                                }))
+                            )
+                        ),
+                        // Cliente + Centro de custo
+                        React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-5" },
+                            React.createElement("div", null,
+                                secTitulo("Cliente (loja)", contador((ua.cod_cliente || []).length, "Sem seleção = todas", () => {
+                                    const e = { ...ua, cod_cliente: [], centro_custo: [], regiao: "" };
+                                    ga(e), rl(e)
+                                })),
+                                React.createElement("div", { style: { position: "relative", marginBottom: 8 } },
+                                    React.createElement("span", { style: { position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex", pointerEvents: "none" } }, abIco("search", 14)),
+                                    React.createElement("input", {
+                                        type: "text",
+                                        placeholder: "Buscar por código ou nome",
+                                        "aria-label": "Buscar cliente",
+                                        value: buscaClienteModal,
+                                        onChange: e => setBuscaClienteModal(e.target.value),
+                                        className: AB_INPUT, style: Object.assign({}, AB_INPUT_ST, { paddingLeft: 32 })
+                                    })
+                                ),
+                                checkLista(clientesUnicos.map(function (cliente) {
+                                    var isChecked = (ua.cod_cliente || []).includes(String(cliente.cod_cliente));
+                                    return checkItem(cliente.cod_cliente, isChecked, function () {
+                                        var codStr = String(cliente.cod_cliente);
+                                        var current = ua.cod_cliente || [];
+                                        var next = isChecked ? current.filter(function (c) { return c !== codStr; }) : current.concat([codStr]);
+                                        var newUa = Object.assign({}, ua, { cod_cliente: next, regiao: "" });
+                                        ga(newUa);
+                                        rl(newUa);
+                                    }, cliente.cod_cliente + " - " + (il(cliente.cod_cliente) || cliente.nome_cliente || "Cliente"));
+                                }))
+                            ),
+                            React.createElement("div", null,
+                                secTitulo("Centro de custo", contador((ua.centro_custo || []).length, "Sem seleção = todos", () => {
+                                    const e = { ...ua, centro_custo: [] };
+                                    ga(e), rl(e)
+                                })),
+                                checkLista(centrosUnicos.map(function (cc) {
+                                    var isChecked = (ua.centro_custo || []).includes(cc.centro_custo);
+                                    var clienteDoCC = Object.keys(Tt).find(function (t) { return (Tt[t] || []).includes(cc.centro_custo); });
+                                    return checkItem(cc.centro_custo, isChecked, function () {
+                                        var current = ua.centro_custo || [];
+                                        var next = isChecked ? current.filter(function (c) { return c !== cc.centro_custo; }) : current.concat([cc.centro_custo]);
+                                        var newUa = Object.assign({}, ua, { centro_custo: next });
+                                        ga(newUa);
+                                        rl(newUa);
+                                    }, (clienteDoCC ? clienteDoCC + " - " : "") + cc.centro_custo);
+                                }))
+                            )
+                        )
+                    ),
+                    // Rodapé
+                    React.createElement("div", { style: { padding: "12px 20px", borderTop: "1px solid #f3f4f6", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#ffffff" } },
+                        abBtn("secundario", {
+                            onClick: () => {
+                                const e = { ...ua, cod_cliente: [], centro_custo: [], categoria: "", tipo_operacao: "", status_prazo: "", status_prazo_prof: "", status_retorno: "", regiao: "" };
+                                ga(e), da(jt), Pt(At), xa(ra)
+                            }
+                        }, "Limpar filtros"),
+                        React.createElement("div", { style: { display: "flex", gap: 8 } },
+                            abBtn("secundario", { onClick: () => _a(!1) }, "Cancelar"),
+                            abBtn("principal", { onClick: () => { _a(!1), ol(ua) } }, "Aplicar filtros"))
+                    )
+                ));
+            })(), React.createElement("div", {
                 className: "max-w-full mx-auto p-4"
             }, ba ? React.createElement("div", {
                 className: "flex flex-col items-center justify-center py-20"
@@ -18165,623 +18021,471 @@ const hideLoadingScreen = () => {
                 )
             ),
             // === SEÇÃO CLIENTE 767 ===
-            "cliente767" === Et && React.createElement("div", {className: "space-y-4"}, 
-                React.createElement("div", {className: "bg-purple-700 rounded-2xl p-5 text-white"}, 
-                    React.createElement("div", {className: "flex items-center justify-between"},
-                        React.createElement("div", null,
-                            React.createElement("h2", {className: "text-xl font-medium"}, "Cliente 767 — Grupo Comollati"),
-                            React.createElement("p", {className: "text-purple-200 text-sm mt-1"}, "SLA: 120 minutos (2 horas) — Prazo especial")
-                        ),
-                        React.createElement("div", {className: "flex flex-wrap gap-2 items-center"}, 
-                            cliente767Filtros.data_inicio && React.createElement("span", {className: "px-3 py-1 bg-white/15 rounded-lg text-xs"}, cliente767Filtros.data_inicio, " a ", cliente767Filtros.data_fim),
-                            cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0 && React.createElement("span", {className: "px-3 py-1 bg-white/15 rounded-lg text-xs"}, cliente767Filtros.centros_custo.length, " CC"),
-                            React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(true); }, className: "px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10"}, "Filtros"),
-                            React.createElement("button", {onClick: carregarCliente767, className: "px-3 py-2 bg-white/15 rounded-xl text-sm hover:bg-white/25 ring-1 ring-white/10"}, "Recarregar")
-                        )
-                    )
-                ),
-                
-                // Modal de Filtro específico do Cliente 767
-                cliente767ModalFiltro && React.createElement("div", {className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"},
-                    React.createElement("div", {className: "bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"},
-                        React.createElement("div", {className: "sticky top-0 bg-purple-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center"},
-                            React.createElement("h3", {className: "text-lg font-bold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtrar - Cliente 767")),
-                            React.createElement("button", {onClick: function(){ setCliente767ModalFiltro(false); }, className: "text-white hover:bg-white/20 rounded-lg px-3 py-1 text-xl"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
-                        ),
-                        React.createElement("div", {className: "p-6 space-y-4"},
-                            // Filtros de Data
-                            React.createElement("div", {className: "grid grid-cols-2 gap-4"},
+            /* APP_ABAS_V1: Cliente 767 — cabeçalho de página, KPIs em faixas, tabelas no padrão e modal de filtro branco.
+               Mesmos estados (cliente767Filtros/Dados/Loading/ModalFiltro) e mesmas ações (carregarCliente767). */
+            "cliente767" === Et && (function () {
+                const d = cliente767Dados;
+                const m = d && d.metricas;
+                const fmtN = v => Number(v || 0).toLocaleString("pt-BR");
+                const fmtR = v => "R$ " + parseFloat(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0 });
+                const fmtD = s => s ? new Date(s + "T12:00:00").toLocaleDateString("pt-BR") : "";
+                const pctDe = (a, b) => ((a || 0) / Math.max(b || 1, 1) * 100).toFixed(1) + "%";
+                const subtitulo = [
+                    "prazo especial de 2 horas",
+                    cliente767Filtros.data_inicio ? fmtD(cliente767Filtros.data_inicio) + " a " + fmtD(cliente767Filtros.data_fim) : null,
+                    cliente767Filtros.centros_custo && cliente767Filtros.centros_custo.length > 0 ? cliente767Filtros.centros_custo.length + " centro(s) de custo" : null
+                ].filter(Boolean).join(" · ");
+                const secao = (titulo, conteudo, extraTitulo) => React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+                        React.createElement("h2", { style: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" } }, titulo), extraTitulo || null),
+                    conteudo);
+                const thR = AB_TH + " text-right", thL = AB_TH + " text-left", thC = AB_TH + " text-center";
+                const tdR = AB_TD + " text-right tabular-nums text-gray-700";
+                const meta = d && d.indicadorMeta;
+                const taxaMeta = meta ? parseFloat(meta.taxa_atual) : 0;
+
+                return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, paddingTop: 4 } },
+                    abCabecalho("Grupo Comollati — SLA 120 min", "Cliente 767 · " + subtitulo, [
+                        abBtn("secundario", { key: "f", onClick: function () { setCliente767ModalFiltro(true); } }, abIco("filter", 14), "Filtros"),
+                        abBtn("principal", { key: "r", onClick: carregarCliente767 }, abIco("refresh", 14), "Recarregar")
+                    ]),
+
+                    // Modal de Filtro específico do Cliente 767
+                    cliente767ModalFiltro && React.createElement("div", {
+                        className: "fixed inset-0 z-50 flex items-center justify-center",
+                        style: { background: "rgba(17,24,39,0.45)", padding: 16 },
+                        onClick: function (ev) { if (ev.target === ev.currentTarget) setCliente767ModalFiltro(false); }
+                    },
+                        React.createElement("div", { role: "dialog", "aria-modal": "true", "aria-label": "Filtrar Cliente 767", style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 16, width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" } },
+                            React.createElement("div", { style: { padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 } },
                                 React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Início"),
-                                    React.createElement("input", {
-                                        type: "date",
-                                        value: cliente767Filtros.data_inicio,
-                                        onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_inicio: e.target.value}; }); },
-                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    })
+                                    React.createElement("h3", { style: { margin: 0, fontSize: 16, fontWeight: 600, color: "#111827" } }, "Filtrar Cliente 767"),
+                                    React.createElement("p", { style: { margin: "2px 0 0", fontSize: 13, color: "#6b7280" } }, "Período e centros de custo do Grupo Comollati.")),
+                                React.createElement("button", { type: "button", onClick: function () { setCliente767ModalFiltro(false); }, "aria-label": "Fechar", className: "rounded-lg text-gray-500 hover:bg-gray-100 " + AB_FOCO, style: { width: 32, height: 32, display: "grid", placeItems: "center", border: 0, background: "transparent" } }, abIco("x", 16))
+                            ),
+                            React.createElement("div", { style: { padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 } },
+                                React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                                    React.createElement("div", null,
+                                        abLabel("Data início", { htmlFor: "c767-data-inicio" }),
+                                        React.createElement("input", {
+                                            id: "c767-data-inicio", type: "date",
+                                            value: cliente767Filtros.data_inicio,
+                                            onChange: function (e) { setCliente767Filtros(function (f) { return { ...f, data_inicio: e.target.value }; }); },
+                                            className: AB_INPUT, style: AB_INPUT_ST
+                                        })),
+                                    React.createElement("div", null,
+                                        abLabel("Data fim", { htmlFor: "c767-data-fim" }),
+                                        React.createElement("input", {
+                                            id: "c767-data-fim", type: "date",
+                                            value: cliente767Filtros.data_fim,
+                                            onChange: function (e) { setCliente767Filtros(function (f) { return { ...f, data_fim: e.target.value }; }); },
+                                            className: AB_INPUT, style: AB_INPUT_ST
+                                        }))
+                                ),
+                                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                                    abBtn("secundario", {
+                                        compacto: true,
+                                        onClick: function () {
+                                            var hoje = new Date();
+                                            var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+                                            var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+                                            setCliente767Filtros(function (f) { return { ...f, data_inicio: primeiroDia, data_fim: ultimoDia }; });
+                                        }
+                                    }, "Mês atual"),
+                                    abBtn("secundario", {
+                                        compacto: true,
+                                        onClick: function () {
+                                            var hoje = new Date();
+                                            var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1).toISOString().split('T')[0];
+                                            var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).toISOString().split('T')[0];
+                                            setCliente767Filtros(function (f) { return { ...f, data_inicio: primeiroDia, data_fim: ultimoDia }; });
+                                        }
+                                    }, "Mês anterior")
                                 ),
                                 React.createElement("div", null,
-                                    React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, "Data Fim"),
-                                    React.createElement("input", {
-                                        type: "date",
-                                        value: cliente767Filtros.data_fim,
-                                        onChange: function(e) { setCliente767Filtros(function(f) { return {...f, data_fim: e.target.value}; }); },
-                                        className: "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    })
-                                )
-                            ),
-                            React.createElement("div", {className: "flex gap-2"},
-                                React.createElement("button", {
-                                    onClick: function() {
-                                        var hoje = new Date();
-                                        var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-                                        var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
-                                        setCliente767Filtros(function(f) { return {...f, data_inicio: primeiroDia, data_fim: ultimoDia}; });
-                                    },
-                                    className: "flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
-                                }, "Mês Atual"),
-                                React.createElement("button", {
-                                    onClick: function() {
-                                        var hoje = new Date();
-                                        var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1).toISOString().split('T')[0];
-                                        var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).toISOString().split('T')[0];
-                                        setCliente767Filtros(function(f) { return {...f, data_inicio: primeiroDia, data_fim: ultimoDia}; });
-                                    },
-                                    className: "flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200"
-                                }, "Mês Anterior")
-                            ),
-                            
-                            // Filtro de Centro de Custo
-                            React.createElement("div", null,
-                                React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Centro de Custo")),
-                                React.createElement("div", {className: "border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50"},
-                                    cliente767Dados && cliente767Dados.centrosCustoDisponiveis && cliente767Dados.centrosCustoDisponiveis.length > 0 ? 
-                                        React.createElement(React.Fragment, null,
-                                            React.createElement("div", {className: "flex gap-2 mb-2 pb-2 border-b"},
-                                                React.createElement("button", {
-                                                    onClick: function() { 
-                                                        setCliente767Filtros(function(f) { 
-                                                            return {...f, centros_custo: cliente767Dados.centrosCustoDisponiveis.slice()}; 
-                                                        }); 
-                                                    },
-                                                    className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200"
-                                                }, "Selecionar Todos"),
-                                                React.createElement("button", {
-                                                    onClick: function() { 
-                                                        setCliente767Filtros(function(f) { return {...f, centros_custo: []}; }); 
-                                                    },
-                                                    className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200"
-                                                }, "Limpar Seleção")
-                                            ),
-                                            cliente767Dados.centrosCustoDisponiveis.map(function(cc) {
+                                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 } },
+                                        React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "#374151" } }, "Centro de custo"),
+                                        d && d.centrosCustoDisponiveis && d.centrosCustoDisponiveis.length > 0 && React.createElement("span", { style: { display: "inline-flex", gap: 4 } },
+                                            abBtn("link", { compacto: true, onClick: function () { setCliente767Filtros(function (f) { return { ...f, centros_custo: d.centrosCustoDisponiveis.slice() }; }); } }, "Selecionar todos"),
+                                            abBtn("link", { compacto: true, onClick: function () { setCliente767Filtros(function (f) { return { ...f, centros_custo: [] }; }); } }, "Limpar seleção"))
+                                    ),
+                                    React.createElement("div", { style: { maxHeight: 200, overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: 10 } },
+                                        d && d.centrosCustoDisponiveis && d.centrosCustoDisponiveis.length > 0
+                                            ? d.centrosCustoDisponiveis.map(function (cc, i) {
                                                 var selecionado = cliente767Filtros.centros_custo.includes(cc);
                                                 return React.createElement("label", {
                                                     key: cc,
-                                                    className: "flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-white " + (selecionado ? "bg-purple-100" : "")
+                                                    className: "hover:bg-[#f9fafb]",
+                                                    style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: i ? "1px solid #f3f4f6" : 0, cursor: "pointer", background: selecionado ? "#faf7fd" : undefined }
                                                 },
                                                     React.createElement("input", {
-                                                        type: "checkbox",
-                                                        checked: selecionado,
-                                                        onChange: function() {
-                                                            setCliente767Filtros(function(f) {
-                                                                var novosCentros = selecionado 
-                                                                    ? f.centros_custo.filter(function(c) { return c !== cc; })
+                                                        type: "checkbox", checked: selecionado,
+                                                        onChange: function () {
+                                                            setCliente767Filtros(function (f) {
+                                                                var novosCentros = selecionado
+                                                                    ? f.centros_custo.filter(function (c) { return c !== cc; })
                                                                     : f.centros_custo.concat([cc]);
-                                                                return {...f, centros_custo: novosCentros};
+                                                                return { ...f, centros_custo: novosCentros };
                                                             });
                                                         },
-                                                        className: "w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                                        style: { width: 16, height: 16, accentColor: "#770fa8" }
                                                     }),
-                                                    React.createElement("span", {className: "text-sm " + (selecionado ? "font-medium text-purple-700" : "text-gray-700")}, cc)
-                                                );
+                                                    React.createElement("span", { style: { fontSize: 13, color: selecionado ? "#5d0b85" : "#374151", fontWeight: selecionado ? 600 : 400 } }, cc));
                                             })
-                                        )
-                                    : React.createElement("p", {className: "text-gray-500 text-sm text-center py-4"}, "Carregue os dados primeiro para ver os centros de custo disponíveis")
-                                ),
-                                cliente767Filtros.centros_custo.length > 0 && React.createElement("p", {className: "text-xs text-purple-600 mt-1"}, cliente767Filtros.centros_custo.length, " centro(s) selecionado(s)")
-                            ),
-                            
-                            // Botão Limpar Tudo
-                            React.createElement("button", {
-                                onClick: function() { var h = new Date(); setCliente767Filtros({ data_inicio: new Date(h.getFullYear(), h.getMonth(), 1).toISOString().split('T')[0], data_fim: new Date(h.getFullYear(), h.getMonth() + 1, 0).toISOString().split('T')[0], centros_custo: [] }); },
-                                className: "w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Limpar Todos os Filtros"))
-                        ),
-                        React.createElement("div", {className: "sticky bottom-0 bg-white px-6 py-4 border-t flex gap-3"},
-                            React.createElement("button", {
-                                onClick: function() { setCliente767ModalFiltro(false); },
-                                className: "flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
-                            }, "Cancelar"),
-                            React.createElement("button", {
-                                onClick: function() { setCliente767ModalFiltro(false); carregarCliente767(); },
-                                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
-                            }, "Aplicar Filtros")
-                        )
-                    )
-                ),
-                
-                cliente767Loading && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-12 text-center"}, 
-                    React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), 
-                    React.createElement("p", {className: "text-gray-600"}, "Carregando dados...")
-                ),
-                
-                !cliente767Loading && cliente767Dados && cliente767Dados.metricas && React.createElement(React.Fragment, null,
-                    // ═══ VOLUMETRIA ═══
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
-                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Volumetria"),
-                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Total OS"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, Number(cliente767Dados.metricas.total_os || 0).toLocaleString("pt-BR"))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Total entregas"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, Number(cliente767Dados.metricas.total_entregas || 0).toLocaleString("pt-BR"))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "No prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#16a34a"}}, Number(cliente767Dados.metricas.dentro_prazo || 0).toLocaleString("pt-BR")),
-                                React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.dentro_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #dc2626"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Fora do prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#dc2626"}}, Number(cliente767Dados.metricas.fora_prazo || 0).toLocaleString("pt-BR")),
-                                React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.fora_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
-                            )
-                        )
-                    ),
-
-                    // ═══ PERFORMANCE ═══
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
-                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Performance"),
-                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa no prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#16a34a"}}, cliente767Dados.metricas.taxa_prazo + "%"),
-                                React.createElement("div", {className: "w-full h-1.5 bg-gray-200 rounded-full mt-2"}, React.createElement("div", {style: {width: Math.min(parseFloat(cliente767Dados.metricas.taxa_prazo) || 0, 100) + "%", background: "#16a34a", height: "100%", borderRadius: "9999px"}}))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #770fa8"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. entrega"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio || "00:00")
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #2563eb"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. coleta"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_coleta || "00:00")
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #2563eb"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. alocacao"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_alocacao || "00:00")
-                            )
-                        )
-                    ),
-
-                    // ═══ FINANCEIRO ═══
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
-                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Financeiro"),
-                        React.createElement("div", {className: "grid grid-cols-4 gap-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Valor total"),
-                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Valor profissional"),
-                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_prof_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Faturamento"),
-                                React.createElement("div", {className: "text-lg font-medium", style: {color: "#16a34a"}}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Entregadores"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.total_profissionais)
-                            )
-                        )
-                    ),
-
-                    // ═══ META MENSAL ═══
-                    cliente767Dados.indicadorMeta && React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-3"},
-                            React.createElement("div", {className: "flex items-center gap-2"},
-                                React.createElement("p", {className: "text-sm font-medium text-gray-800"}, "Meta mensal de 95%"),
-                                React.createElement("span", {className: "text-xs px-2.5 py-0.5 rounded-full font-medium " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "bg-green-50 text-green-700 border border-green-200" : parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 90 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-red-50 text-red-700 border border-red-200")}, parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "Acima da meta" : "Atenção")
-                            ),
-                            React.createElement("span", {className: "text-xs text-gray-400"}, cliente767Dados.indicadorMeta.mes_referencia)
-                        ),
-                        React.createElement("div", {className: "grid grid-cols-4 gap-3 mb-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#16a34a" : "#dc2626")}},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa atual"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#16a34a" : "#dc2626"}}, cliente767Dados.indicadorMeta.taxa_atual + "%")
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Dias restantes"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.indicadorMeta.dias_restantes)
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "No prazo / total"),
-                                React.createElement("div", {className: "text-lg font-medium text-gray-800"}, cliente767Dados.indicadorMeta.dentro_prazo_ate_agora, " / ", cliente767Dados.indicadorMeta.total_entregas_ate_agora)
-                            ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
-                                React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa min. necessária"),
-                                React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.indicadorMeta.taxa_minima_restante > 100 ? ">100" : cliente767Dados.indicadorMeta.taxa_minima_restante, "%"),
-                                React.createElement("div", {className: "text-xs text-gray-400"}, "Para manter a meta")
-                            )
-                        ),
-                        React.createElement("div", {className: "rounded-lg px-4 py-3 " + (cliente767Dados.indicadorMeta.meta_atingivel ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100")},
-                            React.createElement("p", {className: "text-sm font-medium " + (cliente767Dados.indicadorMeta.meta_atingivel ? "text-green-800" : "text-red-800")}, cliente767Dados.indicadorMeta.mensagem),
-                            cliente767Dados.indicadorMeta.dias_restantes > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante > 0 && cliente767Dados.indicadorMeta.taxa_minima_restante <= 100 && React.createElement("p", {className: "text-xs mt-1 " + (cliente767Dados.indicadorMeta.meta_atingivel ? "text-green-600" : "text-red-600")}, "Faltam ", cliente767Dados.indicadorMeta.entregas_no_prazo_faltam, " entregas no prazo de ~", cliente767Dados.indicadorMeta.entregas_estimadas_restantes, " estimadas")
-                        )
-                    ),
-
-                    // ═══ CENTRO DE CUSTO ═══
-                    cliente767Dados.porCentroCusto && cliente767Dados.porCentroCusto.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
-                        React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Desempenho por centro de custo"),
-                        React.createElement("div", {className: "overflow-x-auto"},
-                            React.createElement("table", {className: "w-full text-sm"},
-                                React.createElement("thead", null,
-                                    React.createElement("tr", {className: "border-b border-gray-200"},
-                                        React.createElement("th", {className: "px-3 py-2.5 text-left text-gray-500 font-normal text-xs"}, "Centro de custo"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "OS"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Entregas"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "No prazo"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Fora prazo"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-center text-gray-500 font-normal text-xs"}, "Taxa")
-                                    )
-                                ),
-                                React.createElement("tbody", null,
-                                    cliente767Dados.porCentroCusto.map(function(cc, i) {
-                                        var taxa = parseFloat(cc.taxa_prazo) || 0;
-                                        return React.createElement("tr", {key: i, className: "border-b border-gray-50 hover:bg-gray-50"},
-                                            React.createElement("td", {className: "px-3 py-2.5 font-medium text-gray-800"}, cc.centro_custo),
-                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.total_os),
-                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.total_entregas),
-                                            React.createElement("td", {className: "px-3 py-2.5 text-right text-gray-700"}, cc.dentro_prazo),
-                                            React.createElement("td", {className: "px-3 py-2.5 text-right " + (cc.fora_prazo > 0 ? "text-red-600" : "text-gray-400")}, cc.fora_prazo),
-                                            React.createElement("td", {className: "px-3 py-2.5 text-center"},
-                                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-medium " + (taxa >= 95 ? "bg-green-50 text-green-700" : taxa >= 90 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700")}, cc.taxa_prazo + "%")
-                                            )
-                                        );
-                                    })
+                                            : React.createElement("p", { style: { margin: 0, padding: "14px 12px", fontSize: 12.5, color: "#6b7280", textAlign: "center" } }, "Carregue os dados primeiro para ver os centros de custo disponíveis")
+                                    ),
+                                    cliente767Filtros.centros_custo.length > 0 && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: "#6b7280" } }, cliente767Filtros.centros_custo.length, " centro(s) selecionado(s)")
                                 )
+                            ),
+                            React.createElement("div", { style: { padding: "12px 20px", borderTop: "1px solid #f3f4f6", display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 } },
+                                abBtn("secundario", { onClick: function () { var h = new Date(); setCliente767Filtros({ data_inicio: new Date(h.getFullYear(), h.getMonth(), 1).toISOString().split('T')[0], data_fim: new Date(h.getFullYear(), h.getMonth() + 1, 0).toISOString().split('T')[0], centros_custo: [] }); } }, "Limpar filtros"),
+                                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                                    abBtn("secundario", { onClick: function () { setCliente767ModalFiltro(false); } }, "Cancelar"),
+                                    abBtn("principal", { onClick: function () { setCliente767ModalFiltro(false); carregarCliente767(); } }, "Aplicar filtros"))
                             )
                         )
                     ),
-                    
-                    // Tabela por data
-                    cliente767Dados.porData && cliente767Dados.porData.length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-4"},
-                        React.createElement("h3", {className: "font-medium text-gray-800 text-base mb-4"}, "Evolução diária"),
-                        
-                        // Gráfico de evolução de prazo
-                        React.createElement("div", {style: {position: "relative", height: "260px", marginBottom: "24px"}, ref: function(ct) {
-                            if (!ct || !window.Chart) return;
-                            var sorted = cliente767Dados.porData.slice().sort(function(a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); });
-                            var hash = sorted.map(function(d) { return d.taxa_prazo; }).join(",");
-                            if (ct.dataset.chartHash === hash) return;
-                            ct.dataset.chartHash = hash;
-                            ct.innerHTML = "";
-                            var cvs = document.createElement("canvas"); ct.appendChild(cvs);
-                            var labels = sorted.map(function(d) { return d.data_formatada; });
-                            var taxas = sorted.map(function(d) { return parseFloat(d.taxa_prazo) || 0; });
-                            var entregas = sorted.map(function(d) { return d.total_entregas || 0; });
-                            new Chart(cvs, {
-                                type: "bar",
-                                data: {
-                                    labels: labels,
-                                    datasets: [
-                                        { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", borderWidth: 2.5, tension: 0.3, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: "#16a34a", pointBorderColor: "#fff", pointBorderWidth: 2, fill: true, yAxisID: "y1", order: 0 },
-                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#e9d5f9", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true, maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: { display: true, position: "bottom", labels: { padding: 20, usePointStyle: true, pointStyle: "circle", font: { size: 12 } } },
-                                        tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return ctx.dataset.label === "Taxa prazo (%)" ? " " + ctx.parsed.y.toFixed(1) + "%" : " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas"; } } }
-                                    },
-                                    scales: {
-                                        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
-                                        y: { position: "left", grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true, title: { display: true, text: "Entregas", color: "#9ca3af", font: { size: 11 } } },
-                                        y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#16a34a", font: { size: 12 }, callback: function(v) { return v + "%"; } }, min: 80, max: 100, title: { display: true, text: "Taxa prazo", color: "#16a34a", font: { size: 11 } } }
-                                    },
-                                    layout: { padding: { top: 8 } }
+
+                    cliente767Loading && abCard(null, abVazio("Carregando dados do Cliente 767...")),
+
+                    !cliente767Loading && d && m && React.createElement(React.Fragment, null,
+                        secao("Volumetria e performance", abFaixaKpi([
+                            { label: "Total de OS", valor: fmtN(m.total_os), sub: fmtN(m.total_entregas) + " entregas" },
+                            { label: "No prazo", valor: fmtN(m.dentro_prazo), sub: pctDe(m.dentro_prazo, m.total_entregas) + " das entregas", cor: "#166534" },
+                            { label: "Fora do prazo", valor: fmtN(m.fora_prazo), sub: pctDe(m.fora_prazo, m.total_entregas) + " das entregas", cor: (m.fora_prazo || 0) > 0 ? "#991b1b" : "#111827" },
+                            { label: "Taxa no prazo", valor: m.taxa_prazo + "%", sub: "SLA de 120 min", cor: AB_TONS[abTomTaxa(parseFloat(m.taxa_prazo) || 0)].tx },
+                            { label: "Tempo méd. entrega", valor: m.tempo_medio || "00:00" },
+                            { label: "Tempo méd. coleta", valor: m.tempo_medio_coleta || "00:00" },
+                            { label: "Tempo méd. alocação", valor: m.tempo_medio_alocacao || "00:00" }
+                        ], 150)),
+                        secao("Financeiro", abFaixaKpi([
+                            { label: "Valor total", valor: fmtR(m.valor_total), pequeno: true },
+                            { label: "Valor profissional", valor: fmtR(m.valor_prof_total), pequeno: true },
+                            { label: "Faturamento", valor: fmtR(parseFloat(m.valor_total || 0) - parseFloat(m.valor_prof_total || 0)), cor: "#166534", pequeno: true },
+                            { label: "Entregadores", valor: fmtN(m.total_profissionais), pequeno: true }
+                        ], 150)),
+
+                        // ═══ META MENSAL ═══
+                        meta && secao("Meta mensal de 95%", React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+                            abFaixaKpi([
+                                { label: "Taxa atual", valor: meta.taxa_atual + "%", cor: taxaMeta >= 95 ? "#166534" : "#991b1b" },
+                                { label: "Dias restantes", valor: meta.dias_restantes },
+                                { label: "No prazo / total", valor: meta.dentro_prazo_ate_agora + " / " + meta.total_entregas_ate_agora, pequeno: true },
+                                { label: "Taxa mín. necessária", valor: (meta.taxa_minima_restante > 100 ? ">100" : meta.taxa_minima_restante) + "%", sub: "Para manter a meta" }
+                            ], 150),
+                            React.createElement("div", { style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 10 } },
+                                abPilula(meta.meta_atingivel ? "verde" : "vermelho", meta.meta_atingivel ? "Atingível" : "Em risco"),
+                                React.createElement("div", { style: { minWidth: 0 } },
+                                    React.createElement("p", { style: { margin: 0, fontSize: 13.5, fontWeight: 500, color: "#111827" } }, meta.mensagem),
+                                    meta.dias_restantes > 0 && meta.taxa_minima_restante > 0 && meta.taxa_minima_restante <= 100 && React.createElement("p", { style: { margin: "2px 0 0", fontSize: 12.5, color: "#6b7280" } }, "Faltam ", meta.entregas_no_prazo_faltam, " entregas no prazo de ~", meta.entregas_estimadas_restantes, " estimadas")))
+                        ), React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 8 } },
+                            abPilula(taxaMeta >= 95 ? "verde" : taxaMeta >= 90 ? "ambar" : "vermelho", taxaMeta >= 95 ? "Acima da meta" : "Atenção"),
+                            React.createElement("span", { style: { fontSize: 12, color: "#6b7280" } }, meta.mes_referencia))),
+
+                        // ═══ CENTRO DE CUSTO ═══
+                        d.porCentroCusto && d.porCentroCusto.length > 0 && abCard(null,
+                            abCardTitulo("Desempenho por centro de custo", d.porCentroCusto.length + " centro(s) de custo"),
+                            React.createElement("div", { className: "overflow-x-auto" },
+                                React.createElement("table", { className: "w-full text-sm" },
+                                    React.createElement("thead", { style: { background: "#f9fafb" } },
+                                        React.createElement("tr", null,
+                                            React.createElement("th", { className: thL }, "Centro de custo"),
+                                            React.createElement("th", { className: thR }, "OS"),
+                                            React.createElement("th", { className: thR }, "Entregas"),
+                                            React.createElement("th", { className: thR }, "No prazo"),
+                                            React.createElement("th", { className: thR }, "Fora do prazo"),
+                                            React.createElement("th", { className: thC }, "Taxa"))),
+                                    React.createElement("tbody", null,
+                                        d.porCentroCusto.map(function (cc, i) {
+                                            var taxa = parseFloat(cc.taxa_prazo) || 0;
+                                            return React.createElement("tr", { key: i, className: "hover:bg-[#f9fafb]" },
+                                                React.createElement("td", { className: AB_TD + " font-medium text-gray-900" }, cc.centro_custo),
+                                                React.createElement("td", { className: tdR }, cc.total_os),
+                                                React.createElement("td", { className: tdR }, cc.total_entregas),
+                                                React.createElement("td", { className: tdR }, cc.dentro_prazo),
+                                                React.createElement("td", { className: AB_TD + " text-right tabular-nums " + (cc.fora_prazo > 0 ? "text-[#991b1b] font-medium" : "text-gray-400") }, cc.fora_prazo),
+                                                React.createElement("td", { className: AB_TD + " text-center" }, abPilula(abTomTaxa(taxa), cc.taxa_prazo + "%")));
+                                        }))))
+                        ),
+
+                        // Evolução diária
+                        d.porData && d.porData.length > 0 && abCard(null,
+                            abCardTitulo("Evolução diária", "Taxa no prazo e volume de entregas por dia"),
+                            React.createElement("div", {
+                                style: { position: "relative", height: "260px", margin: "0 18px 16px" }, ref: function (ct) {
+                                    if (!ct || !window.Chart) return;
+                                    var sorted = d.porData.slice().sort(function (a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); });
+                                    var hash = sorted.map(function (x) { return x.taxa_prazo; }).join(",");
+                                    if (ct.dataset.chartHash === hash) return;
+                                    ct.dataset.chartHash = hash;
+                                    ct.innerHTML = "";
+                                    var cvs = document.createElement("canvas"); ct.appendChild(cvs);
+                                    var labels = sorted.map(function (x) { return x.data_formatada; });
+                                    var taxas = sorted.map(function (x) { return parseFloat(x.taxa_prazo) || 0; });
+                                    var entregas = sorted.map(function (x) { return x.total_entregas || 0; });
+                                    new Chart(cvs, {
+                                        type: "bar",
+                                        data: {
+                                            labels: labels,
+                                            datasets: [
+                                                { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#16a34a", backgroundColor: "#16a34a", borderWidth: 2, tension: 0.3, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: "#16a34a", pointBorderColor: "#fff", pointBorderWidth: 2, fill: false, yAxisID: "y1", order: 0 },
+                                                { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#e9d5f9", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
+                                            ]
+                                        },
+                                        options: {
+                                            responsive: true, maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: { display: true, position: "bottom", labels: { padding: 20, usePointStyle: true, pointStyle: "circle", font: { size: 12 }, color: "#374151" } },
+                                                tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function (ctx) { return ctx.dataset.label === "Taxa prazo (%)" ? " " + ctx.parsed.y.toFixed(1) + "%" : " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas"; } } }
+                                            },
+                                            scales: {
+                                                x: { grid: { display: false }, border: { display: false }, ticks: { color: "#6b7280", font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
+                                                y: { position: "left", grid: { color: "#f3f4f6" }, border: { display: false }, ticks: { color: "#6b7280", font: { size: 12 }, callback: function (v) { return v >= 1000 ? (v / 1000).toFixed(0) + "k" : v; } }, beginAtZero: true, title: { display: true, text: "Entregas", color: "#9ca3af", font: { size: 11 } } },
+                                                y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#166534", font: { size: 12 }, callback: function (v) { return v + "%"; } }, min: 80, max: 100, title: { display: true, text: "Taxa prazo", color: "#166534", font: { size: 11 } } }
+                                            },
+                                            layout: { padding: { top: 8 } }
+                                        }
+                                    });
                                 }
-                            });
-                        }}),
-
-                        // Tabela ordenada por data
-                        React.createElement("div", {className: "overflow-x-auto"},
-                            React.createElement("table", {className: "w-full text-sm"},
-                                React.createElement("thead", null,
-                                    React.createElement("tr", {className: "border-b border-gray-200"},
-                                        React.createElement("th", {className: "px-3 py-2.5 text-left text-gray-500 font-normal text-xs"}, "Data"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "OS"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Entregas"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "No prazo"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Fora"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-center text-gray-500 font-normal text-xs"}, "Taxa"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "T. entrega"),
-                                        React.createElement("th", {className: "px-3 py-2.5 text-right text-gray-500 font-normal text-xs"}, "Valor")
-                                    )
-                                ),
-                                React.createElement("tbody", null,
-                                    cliente767Dados.porData.slice().sort(function(a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); }).map(function(d, i) {
-                                        var mins = parseFloat(d.tempo_medio_entrega)||0;
-                                        var h = Math.floor(mins/60);
-                                        var m = Math.floor(mins%60);
-                                        var taxa = parseFloat(d.taxa_prazo) || 0;
-                                        return React.createElement("tr", {key: i, className: "border-b border-gray-50 hover:bg-gray-50"},
-                                            React.createElement("td", {className: "px-3 py-2 font-medium text-gray-800"}, d.data_formatada),
-                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.total_os),
-                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.total_entregas),
-                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, d.dentro_prazo),
-                                            React.createElement("td", {className: "px-3 py-2 text-right " + (d.fora_prazo > 0 ? "text-red-600" : "text-gray-400")}, d.fora_prazo),
-                                            React.createElement("td", {className: "px-3 py-2 text-center"},
-                                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-medium " + (taxa >= 95 ? "bg-green-50 text-green-700" : taxa >= 90 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700")}, d.taxa_prazo + "%")
-                                            ),
-                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")),
-                                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-700"}, "R$ ", parseFloat(d.valor_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
-                                        );
-                                    })
-                                )
-                            )
+                            }),
+                            React.createElement("div", { className: "overflow-x-auto" },
+                                React.createElement("table", { className: "w-full text-sm" },
+                                    React.createElement("thead", { style: { background: "#f9fafb" } },
+                                        React.createElement("tr", null,
+                                            React.createElement("th", { className: thL }, "Data"),
+                                            React.createElement("th", { className: thR }, "OS"),
+                                            React.createElement("th", { className: thR }, "Entregas"),
+                                            React.createElement("th", { className: thR }, "No prazo"),
+                                            React.createElement("th", { className: thR }, "Fora"),
+                                            React.createElement("th", { className: thC }, "Taxa"),
+                                            React.createElement("th", { className: thR }, "T. entrega"),
+                                            React.createElement("th", { className: thR }, "Valor"))),
+                                    React.createElement("tbody", null,
+                                        d.porData.slice().sort(function (a, b) { return new Date(a.data_solicitado) - new Date(b.data_solicitado); }).map(function (x, i) {
+                                            var mins = parseFloat(x.tempo_medio_entrega) || 0;
+                                            var h = Math.floor(mins / 60);
+                                            var mm = Math.floor(mins % 60);
+                                            var taxa = parseFloat(x.taxa_prazo) || 0;
+                                            return React.createElement("tr", { key: i, className: "hover:bg-[#f9fafb]" },
+                                                React.createElement("td", { className: AB_TD + " font-medium text-gray-900 tabular-nums" }, x.data_formatada),
+                                                React.createElement("td", { className: tdR }, x.total_os),
+                                                React.createElement("td", { className: tdR }, x.total_entregas),
+                                                React.createElement("td", { className: tdR }, x.dentro_prazo),
+                                                React.createElement("td", { className: AB_TD + " text-right tabular-nums " + (x.fora_prazo > 0 ? "text-[#991b1b] font-medium" : "text-gray-400") }, x.fora_prazo),
+                                                React.createElement("td", { className: AB_TD + " text-center" }, abPilula(abTomTaxa(taxa), x.taxa_prazo + "%")),
+                                                React.createElement("td", { className: tdR }, String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0")),
+                                                React.createElement("td", { className: tdR }, fmtR(x.valor_total)));
+                                        }))))
                         )
-                    )
-                ),
-                
-                !cliente767Loading && !cliente767Dados && React.createElement("div", {className: "bg-purple-50 border border-purple-200 rounded-xl p-8 text-center"},
-                    React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })),
-                    React.createElement("p", {className: "text-purple-800 font-semibold mb-4"}, "Clique para carregar dados do Cliente 767"),
-                    React.createElement("button", {onClick: carregarCliente767, className: "px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Carregar Dados"))
-                )
-            ),
-            
-            "profissionais" === Et && React.createElement("div", {
-                className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden" /* BI_CLEAN_V1 */
-            }, React.createElement("div", {
-                className: "bg-white px-5 py-4 flex justify-between items-center"
-            }, React.createElement("h3", {
-                className: "font-semibold text-gray-900 text-[15px]"
-            }, "Análise por Profissional"), React.createElement("span", {
-                className: "text-sm text-purple-700"
-            }, Vt.filter(e => parseInt(e.total_entregas) > 0).length, " profissional(is)")), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-sm"
-            }, React.createElement("thead", {
-                className: "bg-gray-50 border-t border-gray-100"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left text-gray-500 font-semibold text-xs w-10"
-            }), React.createElement("th", {
-                className: "px-3 py-2 text-left text-gray-500 font-semibold text-xs"
-            }, "Profissional"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "Entregas"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "T.Alocação"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "T.Coleta"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "T.Entrega"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo Prof")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo Prof")), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "Distância"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "Retorno"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
-            }, "Valor"))), React.createElement("tbody", null, 
-                // Paginação: 20 por página - filtrar apenas profissionais com dados
-                Vt.filter(e => parseInt(e.total_entregas) > 0).slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
-                    var indexReal = (profPaginaAtual - 1) * 20 + t;
-                    var expandido = Kt["prof-" + indexReal];
-                    var osDoProf = profOsExpandido[e.cod_prof] || [];
-                    var carregandoOS = profOsLoading === e.cod_prof;
-                    // PRAZO_PROF_TABELA_V1: base = dentro+fora (mesma do card e da
-                    // linha de Total). Com o backend alinhado isso equivale ao total
-                    // de entregas, e as duas colunas passam a somar 100%.
-                    var _baseCli = (nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1;
-                    var _baseProf = (nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1;
-                    var pctDentro = (nl(e.dentro_prazo) / _baseCli * 100);
-                    var pctFora = (nl(e.fora_prazo) / _baseCli * 100);
-                    var pctDentroProf = (nl(e.dentro_prazo_prof) / _baseProf * 100);
-                    var pctForaProf = (nl(e.fora_prazo_prof) / _baseProf * 100);
-                    return React.createElement(React.Fragment, {key: indexReal},
-                        React.createElement("tr", {
-                            className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
-                        }, 
-                            React.createElement("td", {className: "px-3 py-2"}, 
-                                React.createElement("button", {
-                                    onClick: function() { toggleProfissionalExpand(e.cod_prof, indexReal); },
-                                    className: "text-purple-600 hover:text-purple-800 font-bold"
-                                }, expandido ? Icon("minus") : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))
-                            ), 
-                            React.createElement("td", {className: "px-3 py-2 font-medium"}, e.cod_prof, " - ", e.nome_prof), 
-                            React.createElement("td", {className: "px-3 py-2 text-right font-bold text-blue-600"}, nl(e.total_entregas).toLocaleString("pt-BR")), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-pink-600"}, cl(e.tempo_alocado)), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-600"}, cl(e.tempo_coleta)), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-rose-600"}, cl(e.tempo_medio)), 
-                            React.createElement("td", {className: "px-3 py-2 text-center bg-green-50"}, 
-                                React.createElement("div", {className: "text-green-700 font-bold"}, nl(e.dentro_prazo).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentro >= 80 ? "bg-green-100 text-green-700" : pctDentro >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentro.toFixed(1), "%"),
-                                nl(e.sem_prazo) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo"}, "inclui ", nl(e.sem_prazo), " com horário inconsistente")
-                            ), 
-                            React.createElement("td", {className: "px-3 py-2 text-center bg-red-50"}, 
-                                React.createElement("div", {className: "text-red-700 font-bold"}, nl(e.fora_prazo).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "text-xs text-red-500"}, pctFora.toFixed(1), "%")
-                            ), 
-                            React.createElement("td", {className: "px-3 py-2 text-center bg-violet-50"}, 
-                                React.createElement("div", {className: "text-emerald-700 font-bold"}, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pctDentroProf >= 80 ? "bg-violet-100 text-violet-700" : pctDentroProf >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pctDentroProf.toFixed(1), "%"),
-                                nl(e.sem_prazo_prof) > 0 && React.createElement("div", {className: "text-[10px] text-amber-700 mt-0.5", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo"}, "inclui ", nl(e.sem_prazo_prof), " sem coleta")
-                            ), 
-                            React.createElement("td", {className: "px-3 py-2 text-center bg-orange-50"}, 
-                                React.createElement("div", {className: "text-purple-700 font-bold"}, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")),
-                                React.createElement("span", {className: "text-xs text-orange-500"}, pctForaProf.toFixed(1), "%")
-                            ), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-gray-600"}, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-purple-600"}, e.retornos || 0), 
-                            React.createElement("td", {className: "px-3 py-2 text-right text-purple-600 font-medium"}, sl(e.valor_prof))
-                        ),
-                        // Linha expandida com tabela de OS
-                        expandido && React.createElement("tr", {className: "bg-blue-50"},
-                            React.createElement("td", {colSpan: "13", className: "px-4 py-3"},
-                                carregandoOS ? 
-                                    React.createElement("div", {className: "text-center py-4"},
-                                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
-                                        "Carregando OS..."
-                                    ) :
-                                osDoProf.length > 0 ?
-                                    React.createElement("div", null,
-                                        React.createElement("h4", {className: "font-bold text-blue-800 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "OS Realizadas ("), osDoProf.length, ")"),
-                                        React.createElement("div", {className: "overflow-x-auto max-h-64 overflow-y-auto"},
-                                            React.createElement("table", {className: "w-full text-xs"},
-                                                React.createElement("thead", {className: "bg-blue-100 sticky top-0"},
-                                                    React.createElement("tr", null,
-                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "OS"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "Cliente"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-left"}, "Centro Custo"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Data"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Alocação"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "T.Coleta"),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center"}, "Dist."),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-green-100", title: "Solicitado pela loja ate a chegada no destino, contra o prazo contratado do cliente"}, "Prazo Cliente", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha (min)")),
-                                                        React.createElement("th", {className: "px-2 py-1 text-center bg-violet-100", title: "Da alocacao ate a finalizacao, contra a regua de prazo do profissional"}, "Prazo Motoboy", React.createElement("div", {className: "text-[9px] font-normal text-gray-600"}, "levou / tinha (min)")),
-                                                        React.createElement("th", {className: "px-2 py-1 text-right"}, "Valor")
-                                                    )
+                    ),
+
+                    !cliente767Loading && !d && abCard(null, abVazio("Os dados do Cliente 767 ainda não foram carregados.",
+                        abBtn("principal", { onClick: carregarCliente767 }, abIco("refresh", 14), "Carregar dados")))
+                );
+            })(),
+
+            /* APP_ABAS_V1: Por Profissional — faixa de KPIs, tabela no padrão (status em pílulas), linha expandida limpa
+               e paginação no padrão. Mesmos dados (Vt/ft), mesma página (profPaginaAtual) e mesmo expand (toggleProfissionalExpand). */
+            "profissionais" === Et && (function () {
+                const comDados = Vt.filter(e => parseInt(e.total_entregas) > 0);
+                const totalPaginas = Math.ceil(Vt.length / 20);
+                const somaDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
+                const somaFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
+                const somaDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
+                const somaForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
+                const pctTot = (a, b) => (a + b) > 0 ? (a / (a + b) * 100) : 0;
+                const pctTotTxt = (a, b) => (a + b) > 0 ? (a / (a + b) * 100).toFixed(1) : "0.0";
+                const tomPct = p => p >= 80 ? "verde" : p >= 60 ? "ambar" : "vermelho";
+                const corPct = p => AB_TONS[tomPct(p)].tx;
+                const fmtPctBR = p => p.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+                const thR = AB_TH + " text-right", thL = AB_TH + " text-left", thC = AB_TH + " text-center";
+                const tdN = AB_TD + " text-right tabular-nums text-gray-700 whitespace-nowrap";
+                const celPrazo = (qtd, pct, dentro, nota, notaTitulo) => React.createElement("td", { className: AB_TD + " text-center whitespace-nowrap" },
+                    React.createElement("div", { style: { display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 3 } },
+                        React.createElement("span", { style: { fontWeight: 600, color: "#111827", fontVariantNumeric: "tabular-nums" } }, qtd),
+                        dentro ? abPilula(tomPct(pct), pct.toFixed(1) + "%", { fontSize: 11, padding: "0 7px" })
+                            : React.createElement("span", { style: { fontSize: 11.5, color: "#6b7280", fontVariantNumeric: "tabular-nums" } }, pct.toFixed(1), "%"),
+                        nota && React.createElement("span", { style: { fontSize: 10.5, color: "#92400e" }, title: notaTitulo }, nota)));
+                const pagBtn = (rotulo, alvo, desabilitado, ativo, aria) => React.createElement("button", {
+                    type: "button", key: aria || rotulo,
+                    onClick: function () { setProfPaginaAtual(alvo); },
+                    disabled: desabilitado,
+                    "aria-label": aria, "aria-current": ativo ? "page" : undefined,
+                    className: AB_FOCO + " disabled:opacity-40 disabled:cursor-not-allowed " + (ativo ? "" : "hover:bg-[#f9fafb]"),
+                    style: { minWidth: 32, height: 32, padding: "0 8px", borderRadius: 8, border: "1px solid " + (ativo ? "#770fa8" : "#e5e7eb"), background: ativo ? "#770fa8" : "#ffffff", color: ativo ? "#ffffff" : "#374151", fontSize: 13, fontWeight: ativo ? 600 : 500, fontVariantNumeric: "tabular-nums", display: "inline-flex", alignItems: "center", justifyContent: "center" }
+                }, rotulo);
+
+                return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
+                    abFaixaKpi([
+                        { label: "Profissionais", valor: comDados.length.toLocaleString("pt-BR"), sub: "com entregas no período" },
+                        { label: "Entregas", valor: Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR"), sub: "tempo médio " + cl(ft?.tempo_medio) },
+                        { label: "No prazo (cliente)", valor: fmtPctBR(pctTot(somaDentro, somaFora)), sub: somaFora.toLocaleString("pt-BR") + " fora do prazo", cor: (somaDentro + somaFora) > 0 ? corPct(pctTot(somaDentro, somaFora)) : "#9ca3af" },
+                        { label: "No prazo (profissional)", valor: fmtPctBR(pctTot(somaDentroProf, somaForaProf)), sub: somaForaProf.toLocaleString("pt-BR") + " fora do prazo prof.", cor: (somaDentroProf + somaForaProf) > 0 ? corPct(pctTot(somaDentroProf, somaForaProf)) : "#9ca3af" },
+                        { label: "Valor profissional", valor: sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)), sub: Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " km rodados", pequeno: true }
+                    ], 150),
+                    React.createElement("div", {
+                        className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden" /* BI_CLEAN_V1 */
+                    },
+                        abCardTitulo("Análise por profissional", comDados.length + " profissional(is) · 20 por página · clique em + para ver as OS"),
+                        comDados.length === 0 ? abVazio("Nenhum profissional com entregas para os filtros aplicados. Ajuste o período ou os filtros.") :
+                        React.createElement("div", { className: "overflow-x-auto" },
+                            React.createElement("table", { className: "w-full text-sm" },
+                                React.createElement("thead", { style: { background: "#f9fafb" } },
+                                    React.createElement("tr", null,
+                                        React.createElement("th", { className: AB_TH + " w-10" }),
+                                        React.createElement("th", { className: thL }, "Profissional"),
+                                        React.createElement("th", { className: thR }, "Entregas"),
+                                        React.createElement("th", { className: thR }, "T. alocação"),
+                                        React.createElement("th", { className: thR }, "T. coleta"),
+                                        React.createElement("th", { className: thR }, "T. entrega"),
+                                        React.createElement("th", { className: thC }, "No prazo"),
+                                        React.createElement("th", { className: thC }, "Fora do prazo"),
+                                        React.createElement("th", { className: thC }, "No prazo prof."),
+                                        React.createElement("th", { className: thC }, "Fora prazo prof."),
+                                        React.createElement("th", { className: thR }, "Distância"),
+                                        React.createElement("th", { className: thR }, "Retornos"),
+                                        React.createElement("th", { className: thR }, "Valor"))),
+                                React.createElement("tbody", null,
+                                    // Paginação: 20 por página - filtrar apenas profissionais com dados
+                                    comDados.slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
+                                        var indexReal = (profPaginaAtual - 1) * 20 + t;
+                                        var expandido = Kt["prof-" + indexReal];
+                                        var osDoProf = profOsExpandido[e.cod_prof] || [];
+                                        var carregandoOS = profOsLoading === e.cod_prof;
+                                        // PRAZO_PROF_TABELA_V1: base = dentro+fora (mesma do card e da linha de Total).
+                                        var _baseCli = (nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1;
+                                        var _baseProf = (nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1;
+                                        var pctDentro = (nl(e.dentro_prazo) / _baseCli * 100);
+                                        var pctFora = (nl(e.fora_prazo) / _baseCli * 100);
+                                        var pctDentroProf = (nl(e.dentro_prazo_prof) / _baseProf * 100);
+                                        var pctForaProf = (nl(e.fora_prazo_prof) / _baseProf * 100);
+                                        return React.createElement(React.Fragment, { key: indexReal },
+                                            React.createElement("tr", { className: expandido ? "bg-[#faf7fd]" : "hover:bg-[#f9fafb]" },
+                                                React.createElement("td", { className: AB_TD + " text-center" },
+                                                    React.createElement("button", {
+                                                        type: "button",
+                                                        onClick: function () { toggleProfissionalExpand(e.cod_prof, indexReal); },
+                                                        "aria-expanded": expandido ? "true" : "false",
+                                                        "aria-label": (expandido ? "Ocultar" : "Ver") + " OS de " + e.nome_prof,
+                                                        title: expandido ? "Ocultar OS" : "Ver OS",
+                                                        className: "hover:bg-[#f3e8fb] " + AB_FOCO,
+                                                        style: { width: 26, height: 26, borderRadius: 8, border: "1px solid " + (expandido ? "#e9d5f9" : "#e5e7eb"), background: expandido ? "#f3e8fb" : "#ffffff", color: "#770fa8", display: "inline-grid", placeItems: "center" }
+                                                    }, abIco(expandido ? "minus" : "plus", 13))
                                                 ),
-                                                React.createElement("tbody", null,
-                                                    osDoProf.map(function(os, idx) {
-                                                        return React.createElement("tr", {key: os.os + "-" + idx, className: idx % 2 === 0 ? "bg-white" : "bg-blue-50/50"},
-                                                            React.createElement("td", {className: "px-2 py-1 font-mono font-bold text-blue-700"}, os.os),
-                                                            React.createElement("td", {className: "px-2 py-1"}, os.cod_cliente, " - ", (os.cliente || "").substring(0, 20)),
-                                                            React.createElement("td", {className: "px-2 py-1 text-gray-600"}, (os.centro_custo || "-").substring(0, 15)),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center"}, os.data_solicitado_br || (os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-")), // DATA_FUSO_EXPAND_V1
-                                                            React.createElement("td", {className: "px-2 py-1 text-center text-pink-600"}, os.tempo_alocacao ? (Math.floor(os.tempo_alocacao / 60) + ":" + String(Math.round(os.tempo_alocacao) % 60).padStart(2, "0")) : "-"),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center text-fuchsia-600"}, os.tempo_coleta ? (Math.floor(os.tempo_coleta / 60) + ":" + String(Math.round(os.tempo_coleta) % 60).padStart(2, "0")) : "-"),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center", title: (os.pontos_entrega > 1 ? ("Soma de " + os.pontos_entrega + " pontos. O prazo vale por ponto (" + (os.km_do_prazo || 0).toFixed(1) + "km).") : "")},
-                                                                (os.distancia || 0).toFixed(1), "km",
-                                                                os.pontos_entrega > 1 && React.createElement("div", {className: "text-[9px] text-gray-500"}, os.pontos_entrega, " pts \u00b7 ", (os.km_do_prazo || 0).toFixed(1), "km/pt")
-                                                            ),
-                                                            // EXPAND_PRAZOS_V1: cada lado mostra quanto LEVOU / quanto TINHA
-                                                            React.createElement("td", {className: "px-2 py-1 text-center bg-green-50"}, _celulaPrazo(os.tempo_cliente, os.prazo_cliente, os.dentro_prazo)),
-                                                            React.createElement("td", {className: "px-2 py-1 text-center bg-violet-50"}, _celulaPrazo(os.tempo_prof, os.prazo_prof, os.dentro_prazo_prof)),
-                                                            React.createElement("td", {className: "px-2 py-1 text-right text-purple-600"}, "R$", (os.valor_prof || 0).toFixed(2))
-                                                        );
-                                                    })
+                                                React.createElement("td", { className: AB_TD + " text-gray-900 whitespace-nowrap" },
+                                                    React.createElement("span", { style: { color: "#6b7280", fontVariantNumeric: "tabular-nums", marginRight: 6 } }, e.cod_prof),
+                                                    React.createElement("span", { style: { fontWeight: 500 } }, e.nome_prof)),
+                                                React.createElement("td", { className: AB_TD + " text-right tabular-nums font-semibold text-gray-900" }, nl(e.total_entregas).toLocaleString("pt-BR")),
+                                                React.createElement("td", { className: tdN }, cl(e.tempo_alocado)),
+                                                React.createElement("td", { className: tdN }, cl(e.tempo_coleta)),
+                                                React.createElement("td", { className: tdN }, cl(e.tempo_medio)),
+                                                celPrazo(nl(e.dentro_prazo).toLocaleString("pt-BR"), pctDentro, true,
+                                                    nl(e.sem_prazo) > 0 ? "inclui " + nl(e.sem_prazo) + " com horário inconsistente" : null,
+                                                    "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo"),
+                                                celPrazo(nl(e.fora_prazo).toLocaleString("pt-BR"), pctFora, false),
+                                                celPrazo(nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR"), pctDentroProf, true,
+                                                    nl(e.sem_prazo_prof) > 0 ? "inclui " + nl(e.sem_prazo_prof) + " sem coleta" : null,
+                                                    "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo"),
+                                                celPrazo(nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR"), pctForaProf, false),
+                                                React.createElement("td", { className: tdN }, parseFloat(e.distancia_total || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " km"),
+                                                React.createElement("td", { className: tdN }, e.retornos || 0),
+                                                React.createElement("td", { className: AB_TD + " text-right tabular-nums font-medium text-gray-900 whitespace-nowrap" }, sl(e.valor_prof))
+                                            ),
+                                            // Linha expandida com tabela de OS
+                                            expandido && React.createElement("tr", null,
+                                                React.createElement("td", { colSpan: "13", style: { padding: "4px 16px 16px 52px", background: "#faf7fd" } },
+                                                    carregandoOS ? React.createElement("div", { style: { padding: "16px 0", textAlign: "center", color: "#6b7280", fontSize: 13 } }, "Carregando OS...") :
+                                                    osDoProf.length > 0 ?
+                                                        React.createElement("div", { style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" } },
+                                                            React.createElement("div", { style: { padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "#111827" } }, "OS realizadas ", React.createElement("span", { style: { color: "#6b7280", fontWeight: 400 } }, "(", osDoProf.length, ")")),
+                                                            React.createElement("div", { className: "overflow-x-auto max-h-64 overflow-y-auto" },
+                                                                React.createElement("table", { className: "w-full text-xs" },
+                                                                    React.createElement("thead", { className: "sticky top-0", style: { background: "#f9fafb" } },
+                                                                        React.createElement("tr", null,
+                                                                            React.createElement("th", { className: "px-3 py-2 text-left font-semibold text-gray-500" }, "OS"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-left font-semibold text-gray-500" }, "Cliente"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-left font-semibold text-gray-500" }, "Centro de custo"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500" }, "Data"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500" }, "T. alocação"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500" }, "T. coleta"),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500" }, "Dist."),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500", title: "Solicitado pela loja ate a chegada no destino, contra o prazo contratado do cliente" }, "Prazo cliente", React.createElement("div", { className: "text-[10px] font-normal text-gray-400" }, "levou / tinha (min)")),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-center font-semibold text-gray-500", title: "Da alocacao ate a finalizacao, contra a regua de prazo do profissional" }, "Prazo motoboy", React.createElement("div", { className: "text-[10px] font-normal text-gray-400" }, "levou / tinha (min)")),
+                                                                            React.createElement("th", { className: "px-3 py-2 text-right font-semibold text-gray-500" }, "Valor"))),
+                                                                    React.createElement("tbody", null,
+                                                                        osDoProf.map(function (os, idx) {
+                                                                            var td = "px-3 py-1.5 border-t border-gray-100 ";
+                                                                            return React.createElement("tr", { key: os.os + "-" + idx },
+                                                                                React.createElement("td", { className: td + "font-medium tabular-nums", style: { color: "#5d0b85" } }, os.os),
+                                                                                React.createElement("td", { className: td + "text-gray-700" }, os.cod_cliente, " - ", (os.cliente || "").substring(0, 20)),
+                                                                                React.createElement("td", { className: td + "text-gray-500" }, (os.centro_custo || "-").substring(0, 15)),
+                                                                                React.createElement("td", { className: td + "text-center tabular-nums text-gray-700" }, os.data_solicitado_br || (os.data_solicitado ? new Date(os.data_solicitado).toLocaleDateString("pt-BR") : "-")), // DATA_FUSO_EXPAND_V1
+                                                                                React.createElement("td", { className: td + "text-center tabular-nums text-gray-700" }, os.tempo_alocacao ? (Math.floor(os.tempo_alocacao / 60) + ":" + String(Math.round(os.tempo_alocacao) % 60).padStart(2, "0")) : "-"),
+                                                                                React.createElement("td", { className: td + "text-center tabular-nums text-gray-700" }, os.tempo_coleta ? (Math.floor(os.tempo_coleta / 60) + ":" + String(Math.round(os.tempo_coleta) % 60).padStart(2, "0")) : "-"),
+                                                                                React.createElement("td", { className: td + "text-center tabular-nums text-gray-700", title: (os.pontos_entrega > 1 ? ("Soma de " + os.pontos_entrega + " pontos. O prazo vale por ponto (" + (os.km_do_prazo || 0).toFixed(1) + "km).") : "") },
+                                                                                    (os.distancia || 0).toFixed(1), "km",
+                                                                                    os.pontos_entrega > 1 && React.createElement("div", { className: "text-[10px] text-gray-400" }, os.pontos_entrega, " pts · ", (os.km_do_prazo || 0).toFixed(1), "km/pt")
+                                                                                ),
+                                                                                // EXPAND_PRAZOS_V1: cada lado mostra quanto LEVOU / quanto TINHA
+                                                                                React.createElement("td", { className: td + "text-center" }, _celulaPrazo(os.tempo_cliente, os.prazo_cliente, os.dentro_prazo)),
+                                                                                React.createElement("td", { className: td + "text-center" }, _celulaPrazo(os.tempo_prof, os.prazo_prof, os.dentro_prazo_prof)),
+                                                                                React.createElement("td", { className: td + "text-right tabular-nums text-gray-900" }, "R$", (os.valor_prof || 0).toFixed(2))
+                                                                            );
+                                                                        })))))
+                                                        : React.createElement("div", { style: { padding: "16px 0", textAlign: "center", color: "#6b7280", fontSize: 13 } }, "Nenhuma OS encontrada para este período")
                                                 )
                                             )
-                                        )
-                                    ) :
-                                    React.createElement("div", {className: "text-center py-4 text-gray-500"}, "Nenhuma OS encontrada para este período")
+                                        );
+                                    })
+                                ),
+                                React.createElement("tfoot", { style: { background: "#f9fafb" } },
+                                    React.createElement("tr", { className: "font-semibold text-gray-900" },
+                                        React.createElement("td", { className: AB_TD }),
+                                        React.createElement("td", { className: AB_TD + " whitespace-nowrap" }, "Total (", comDados.length, " prof.)"),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums" }, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")),
+                                        // Médias de tempo: métricas globais (ft) calculadas pelo SQL
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums" }, cl(ft?.tempo_medio_alocacao)),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums" }, cl(ft?.tempo_medio_coleta)),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums" }, cl(ft?.tempo_medio)),
+                                        celPrazo(somaDentro.toLocaleString("pt-BR"), parseFloat(pctTotTxt(somaDentro, somaFora)), true),
+                                        celPrazo(somaFora.toLocaleString("pt-BR"), parseFloat(pctTotTxt(somaFora, somaDentro)), false),
+                                        celPrazo(somaDentroProf.toLocaleString("pt-BR"), parseFloat(pctTotTxt(somaDentroProf, somaForaProf)), true),
+                                        celPrazo(somaForaProf.toLocaleString("pt-BR"), parseFloat(pctTotTxt(somaForaProf, somaDentroProf)), false),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums whitespace-nowrap" }, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " km"),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums" }, Vt.reduce((e, t) => e + nl(t.retornos || 0), 0)),
+                                        React.createElement("td", { className: AB_TD + " text-right tabular-nums whitespace-nowrap" }, sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)))
+                                    )
+                                )
+                            )
+                        ),
+                        // Paginação
+                        Vt.length > 20 && React.createElement("nav", {
+                            "aria-label": "Paginação de profissionais",
+                            style: { borderTop: "1px solid #f3f4f6", padding: "10px 16px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 }
+                        },
+                            React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280" } }, "Página ", profPaginaAtual, " de ", totalPaginas),
+                            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" } },
+                                pagBtn("«", 1, profPaginaAtual === 1, false, "Primeira página"),
+                                pagBtn(abIco("arrowleft", 13), Math.max(1, profPaginaAtual - 1), profPaginaAtual === 1, false, "Página anterior"),
+                                Array.from({ length: totalPaginas }, function (_, i) { return i + 1; })
+                                    .filter(function (pg) { return pg === 1 || pg === totalPaginas || Math.abs(pg - profPaginaAtual) <= 2; })
+                                    .map(function (pg, idx, arr) {
+                                        var showEllipsis = idx > 0 && pg - arr[idx - 1] > 1;
+                                        return React.createElement(React.Fragment, { key: pg },
+                                            showEllipsis && React.createElement("span", { style: { padding: "0 4px", color: "#9ca3af" } }, "…"),
+                                            pagBtn(pg, pg, false, profPaginaAtual === pg, "Página " + pg));
+                                    }),
+                                pagBtn(abIco("arrowright", 13), Math.min(totalPaginas, profPaginaAtual + 1), profPaginaAtual === totalPaginas, false, "Próxima página"),
+                                pagBtn("»", totalPaginas, profPaginaAtual === totalPaginas, false, "Última página")
                             )
                         )
-                    );
-                })
-            ), React.createElement("tfoot", {
-                className: "bg-gray-50 border-t border-gray-200 font-bold"
-            }, React.createElement("tr", null, 
-                React.createElement("td", {className: "px-3 py-2"}), 
-                React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.filter(e => parseInt(e.total_entregas) > 0).length, " prof.)"), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.total_entregas), 0).toLocaleString("pt-BR")), 
-                // Média T.Alocação - usar métricas globais (ft) que são calculadas corretamente pelo SQL
-                React.createElement("td", {className: "px-3 py-2 text-right text-pink-700"}, cl(ft?.tempo_medio_alocacao)), 
-                // Média T.Coleta - usar métricas globais (ft)
-                React.createElement("td", {className: "px-3 py-2 text-right text-fuchsia-700"}, cl(ft?.tempo_medio_coleta)), 
-                // Média T.Entrega - usar métricas globais (ft)
-                React.createElement("td", {className: "px-3 py-2 text-right text-rose-700"}, cl(ft?.tempo_medio)), 
-                // No Prazo - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center bg-green-100"}, (function() {
-                    var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
-                    var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
-                    var total = totalDentro + totalFora;
-                    var pct = total > 0 ? (totalDentro / total * 100).toFixed(1) : "0.0";
-                    return React.createElement("div", null,
-                        React.createElement("div", {className: "text-green-800"}, totalDentro.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-green-200 text-green-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
-                    );
-                })()), 
-                // Fora Prazo - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center bg-red-100"}, (function() {
-                    var totalDentro = Vt.reduce((e, t) => e + nl(t.dentro_prazo), 0);
-                    var totalFora = Vt.reduce((e, t) => e + nl(t.fora_prazo), 0);
-                    var total = totalDentro + totalFora;
-                    var pct = total > 0 ? (totalFora / total * 100).toFixed(1) : "0.0";
-                    return React.createElement("div", null,
-                        React.createElement("div", {className: "text-red-800"}, totalFora.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "text-xs text-red-600"}, pct + "%")
-                    );
-                })()), 
-                // No Prazo Prof - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center bg-emerald-100"}, (function() {
-                    var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
-                    var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
-                    var total = totalDentroProf + totalForaProf;
-                    var pct = total > 0 ? (totalDentroProf / total * 100).toFixed(1) : "0.0";
-                    return React.createElement("div", null,
-                        React.createElement("div", {className: "text-violet-800"}, totalDentroProf.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "px-2 py-0.5 rounded text-xs font-bold " + (pct >= 80 ? "bg-violet-200 text-violet-800" : pct >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")}, pct + "%")
-                    );
-                })()), 
-                // Fora Prazo Prof - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"}, (function() {
-                    var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
-                    var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
-                    var total = totalDentroProf + totalForaProf;
-                    var pct = total > 0 ? (totalForaProf / total * 100).toFixed(1) : "0.0";
-                    return React.createElement("div", null,
-                        React.createElement("div", {className: "text-purple-800"}, totalForaProf.toLocaleString("pt-BR")),
-                        React.createElement("span", {className: "text-xs text-purple-600"}, pct + "%")
-                    );
-                })()), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + parseFloat(t.distancia_total || 0), 0).toLocaleString("pt-BR", {maximumFractionDigits: 1}), " km"), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, Vt.reduce((e, t) => e + nl(t.retornos || 0), 0)), 
-                React.createElement("td", {className: "px-3 py-2 text-right"}, sl(Vt.reduce((e, t) => e + nl(t.valor_prof), 0)))
-            )))),
-            // Paginação
-            Vt.length > 20 && React.createElement("div", {className: "bg-purple-50 px-4 py-3 flex justify-center items-center gap-2"},
-                React.createElement("button", {
-                    onClick: function() { setProfPaginaAtual(1); },
-                    disabled: profPaginaAtual === 1,
-                    className: "px-3 py-1 rounded " + (profPaginaAtual === 1 ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
-                }, "«"),
-                React.createElement("button", {
-                    onClick: function() { setProfPaginaAtual(Math.max(1, profPaginaAtual - 1)); },
-                    disabled: profPaginaAtual === 1,
-                    className: "px-3 py-1 rounded " + (profPaginaAtual === 1 ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
-                }, "‹"),
-                Array.from({length: Math.ceil(Vt.length / 20)}, function(_, i) { return i + 1; })
-                    .filter(function(p) { return p === 1 || p === Math.ceil(Vt.length / 20) || Math.abs(p - profPaginaAtual) <= 2; })
-                    .map(function(p, idx, arr) {
-                        var showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
-                        return React.createElement(React.Fragment, {key: p},
-                            showEllipsis && React.createElement("span", {className: "px-2 text-gray-500"}, "..."),
-                            React.createElement("button", {
-                                onClick: function() { setProfPaginaAtual(p); },
-                                className: "px-3 py-1 rounded " + (profPaginaAtual === p ? "bg-purple-800 text-white font-bold" : "bg-purple-100 text-purple-700 hover:bg-purple-200")
-                            }, p)
-                        );
-                    }),
-                React.createElement("button", {
-                    onClick: function() { setProfPaginaAtual(Math.min(Math.ceil(Vt.length / 20), profPaginaAtual + 1)); },
-                    disabled: profPaginaAtual === Math.ceil(Vt.length / 20),
-                    className: "px-3 py-1 rounded " + (profPaginaAtual === Math.ceil(Vt.length / 20) ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
-                }, "›"),
-                React.createElement("button", {
-                    onClick: function() { setProfPaginaAtual(Math.ceil(Vt.length / 20)); },
-                    disabled: profPaginaAtual === Math.ceil(Vt.length / 20),
-                    className: "px-3 py-1 rounded " + (profPaginaAtual === Math.ceil(Vt.length / 20) ? "bg-gray-200 text-gray-400" : "bg-purple-600 text-white hover:bg-purple-700")
-                }, "»"),
-                React.createElement("span", {className: "ml-4 text-sm text-purple-700"}, "Página ", profPaginaAtual, " de ", Math.ceil(Vt.length / 20))
-            )), 
-            
+                    )
+                );
+            })(),
+
             // ==================== ABA PORTAIS DO CLIENTE (BI) ====================
             /* ESCALA_V1: minimo de profissionais por loja x quem rodou */
-            "escala" === Et && (window.BiEscala ? React.createElement(window.BiEscala, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de escala...")),
+            "escala" === Et && (window.BiEscala ? React.createElement(window.BiEscala, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : abCard(null, abVazio("Carregando o módulo de disponibilidade...")) /* APP_ABAS_V1 */),
             "portais-cliente" === Et && (window.BiPortaisCliente ? React.createElement(window.BiPortaisCliente, { API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800" }, "Aguardando carregamento do modulo de portais do cliente...")),
 
             // ==================== ABA GARANTIDO ====================
@@ -19033,22 +18737,15 @@ const hideLoadingScreen = () => {
                     return React.createElement("svg", { className: "ico", style: Object.assign({ width: 16, height: 16 }, extra || {}), "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + nome }));
                 };
                 return React.createElement("div", {
-                className: "space-y-4"
+                className: "space-y-4" /* APP_ABAS_V1 */
             }, 
-            // Header
+            /* APP_ABAS_V1: sem faixa roxa (o título "Análise por OS" já está no cabeçalho da página).
+               Busca por nº de OS num card branco; status do resultado à direita. */
             React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-6 text-white"
-            }, React.createElement("h2", {
-                className: "text-2xl font-bold mb-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Análise por OS")), React.createElement("p", {
-                className: "opacity-80"
-            }, "Detalhamento de todas as ordens de serviço com pontos expandíveis")),
-            // BI-OS-BUSCA-V1: barra de busca por nº de OS
-            React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
+                className: "bg-white border border-gray-200 rounded-[14px] px-3 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
             },
                 React.createElement("div", { className: "relative w-full sm:w-80" },
-                    React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none flex" }, iconeSvg("search")),
+                    React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex" }, iconeSvg("search")),
                     React.createElement("input", {
                         type: "text",
                         inputMode: "numeric",
@@ -19057,47 +18754,48 @@ const hideLoadingScreen = () => {
                         onKeyDown: function(ev) { if (ev.key === "Escape") setOsBusca(""); },
                         placeholder: "Buscar pelo número da OS",
                         "aria-label": "Buscar pelo número da OS",
-                        className: "w-full pl-9 pr-9 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className: AB_INPUT + " pl-9 pr-9",
+                        style: AB_INPUT_ST
                     }),
                     osBusca && React.createElement("button", {
                         type: "button",
                         onClick: function() { setOsBusca(""); },
                         title: "Limpar busca",
                         "aria-label": "Limpar busca",
-                        className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-purple-700 hover:bg-purple-50 flex"
+                        className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex " + AB_FOCO
                     }, iconeSvg("x"))
                 ),
-                React.createElement("span", { className: "text-xs text-gray-500" }, statusTexto),
-                remotoAtivo && !osBuscaRemota.loading && totalOS > 0 && React.createElement("span", {
-                    className: "sm:ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-full text-xs"
-                }, iconeSvg("alert", { color: "#d97706" }), "Fora do filtro atual — resultado buscado em toda a base")
+                React.createElement("span", { className: "text-[13px] text-gray-500 tabular-nums" }, statusTexto),
+                remotoAtivo && !osBuscaRemota.loading && totalOS > 0 && React.createElement("span", { className: "sm:ml-auto" },
+                    abPilula("ambar", "Fora do filtro atual — resultado buscado em toda a base")),
+                !remotoAtivo && React.createElement("span", { className: "sm:ml-auto text-xs text-gray-500" }, "Clique em + para ver os pontos da OS")
             ),
             // Tabela principal
             React.createElement("div", {
-                className: "bg-white rounded-xl shadow-lg overflow-hidden"
+                className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden" /* APP_ABAS_V1 */
             }, React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-xs"
+                className: "w-full text-[13px]"
             }, React.createElement("thead", {
-                className: "bg-purple-100"
+                style: { background: "#f9fafb" }
             }, React.createElement("tr", null, 
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 w-8"}, ""),
-                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "OS"),
-                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900"}, "Profissional"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Tipo"),
-                React.createElement("th", {className: "px-2 py-2 text-left text-purple-900 max-w-xs"}, "Endereço"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Data Solic."),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Solicitação"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Alocação"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Chegada"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "H. Entregue"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-green-200"}, "T. Entrega"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "T. Entrega Prof"),
-                React.createElement("th", {className: "px-2 py-2 text-right text-purple-900"}, "KM"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Prazo"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900 bg-orange-200"}, "Prazo Prof"),
-                React.createElement("th", {className: "px-2 py-2 text-center text-purple-900"}, "Finalizado")
+                React.createElement("th", {className: AB_TH + " w-10"}, ""),
+                React.createElement("th", {className: AB_TH + " text-left"}, "OS"),
+                React.createElement("th", {className: AB_TH + " text-left"}, "Profissional"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "Tipo"),
+                React.createElement("th", {className: AB_TH + " text-left"}, "Endereço"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "Data Solic."),
+                React.createElement("th", {className: AB_TH + " text-center"}, "H. Solicitação"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "H. Alocação"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "H. Chegada"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "H. Entregue"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "T. Entrega"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "T. Entrega Prof"),
+                React.createElement("th", {className: AB_TH + " text-right"}, "KM"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "Prazo"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "Prazo Prof"),
+                React.createElement("th", {className: AB_TH + " text-center"}, "Finalizado")
             )), React.createElement("tbody", null, (function() {
                 // BI-OS-LISTA-V2: agrupamento/filtros pré-computados no topo da aba
                 var osAgrupadas = _osAgrupadas;
@@ -19174,8 +18872,7 @@ const hideLoadingScreen = () => {
                         
                         // Determinar tipo: Coleta (ponto 1), Entrega (ponto >= 2), ou Retorno
                         var tipo = isRetorno ? "Retorno" : (pontoNum === 1 ? "Coleta" : "Entrega");
-                        var tipoClass = isRetorno ? "bg-purple-100 text-purple-700" : 
-                                        (pontoNum === 1 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700");
+                        var tipoTom = isRetorno ? "roxo" : (pontoNum === 1 ? "azul" : "verde"); /* APP_ABAS_V1 */
                         
                         // Função para extrair hora de uma string datetime sem conversão de timezone
                         var extrairHora = function(dataHoraStr) {
@@ -19197,7 +18894,7 @@ const hideLoadingScreen = () => {
                         var vTProf = isFirst ? metOS.tProf : _tProfPonto(row, coletaOS);
                         var vDentro = isFirst ? metOS.dentro : (ehEntrega ? row.dentro_prazo : null);
                         var vDentroProf = isFirst ? metOS.dentroProf : (ehEntrega ? row.dentro_prazo_prof : null);
-                        var corPrazo = function(v) { return v === true ? "text-green-700" : v === false ? "text-red-600" : "text-gray-500"; };
+                        var corPrazo = function(v) { return v === true ? "text-[#166534]" : v === false ? "text-[#991b1b]" : "text-gray-500"; };
                         var horaAlocado = extrairHora(row.data_hora_alocado);
                         var horaSolicitado = row.hora_solicitado || extrairHora(row.data_hora);
                         
@@ -19213,61 +18910,68 @@ const hideLoadingScreen = () => {
                         
                         return React.createElement("tr", {
                             key: osNum + "-" + rowIdx,
-                            className: "border-b hover:bg-purple-50 " + (isFirst ? (idx % 2 === 0 ? "bg-white" : "bg-gray-50") : "bg-blue-50")
+                            className: isFirst ? (isExpanded ? "bg-[#faf7fd]" : "hover:bg-[#f9fafb]") : "bg-[#faf7fd]"
                         },
                             // Botão expandir (só na primeira linha)
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
+                            /* APP_ABAS_V1: linha do tempo — botão na OS; pontos expandidos com marcador roxo */
+                            React.createElement("td", {className: "px-2 text-center border-t " + (isFirst ? "border-gray-100 py-2" : "border-transparent py-0"), style: !isFirst ? { position: "relative", height: 36 } : undefined}, 
                                 isFirst && temMaisPontos ? React.createElement("button", {
+                                    type: "button",
                                     onClick: function() {
                                         window.osExpandidas[osNum] = !window.osExpandidas[osNum];
                                         // Forçar re-render
                                         Ut([...qt]);
                                     },
-                                    className: "w-5 h-5 rounded bg-purple-600 text-white text-xs font-bold hover:bg-purple-700"
-                                }, isExpanded ? "−" : "+") : ""
+                                    "aria-expanded": isExpanded ? "true" : "false",
+                                    "aria-label": (isExpanded ? "Ocultar" : "Ver") + " pontos da OS " + osNum,
+                                    title: isExpanded ? "Ocultar pontos" : "Ver pontos (" + pontos.length + ")",
+                                    className: "hover:bg-[#f3e8fb] " + AB_FOCO,
+                                    style: { width: 26, height: 26, borderRadius: 8, border: "1px solid " + (isExpanded ? "#e9d5f9" : "#e5e7eb"), background: isExpanded ? "#f3e8fb" : "#ffffff", color: "#770fa8", display: "inline-grid", placeItems: "center" }
+                                }, abIco(isExpanded ? "minus" : "plus", 13)) : (!isFirst ? React.createElement(React.Fragment, null,
+                                    React.createElement("span", { "aria-hidden": "true", style: { position: "absolute", left: "50%", top: 0, bottom: rowIdx === pontos.length - 1 ? "50%" : 0, width: 2, marginLeft: -1, background: "#e9d5f9" } }),
+                                    React.createElement("span", { "aria-hidden": "true", style: { position: "absolute", left: "50%", top: "50%", width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: 99, background: "#770fa8", boxShadow: "0 0 0 3px #faf7fd" } })
+                                ) : "")
                             ),
                             // OS
-                            React.createElement("td", {className: "px-2 py-1 font-medium text-purple-700"}, row.os),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 font-medium tabular-nums whitespace-nowrap", style: { color: isFirst ? "#5d0b85" : "#6b7280" }}, isFirst ? row.os : "Ponto " + pontoNum),
                             // Profissional
-                            React.createElement("td", {className: "px-2 py-1 truncate max-w-[120px]", title: row.nome_prof}, row.nome_prof || "-"),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-900 truncate max-w-[140px]", title: row.nome_prof}, row.nome_prof || "-"),
                             // Tipo (Coleta/Entrega/Retorno)
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
-                                React.createElement("span", {
-                                    className: "px-2 py-0.5 rounded text-xs font-medium " + tipoClass
-                                }, tipo)
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, 
+                                abPilula(tipoTom, tipo, { fontSize: 11.5 })
                             ),
                             // Endereço
-                            React.createElement("td", {className: "px-2 py-1 truncate max-w-[200px]", title: row.endereco}, row.endereco || "-"),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 truncate max-w-[180px]", title: row.endereco}, row.endereco || "-"),
                             // Data Solicitado
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, dataSolic),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, dataSolic),
                             // Hora Solicitação
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaSolicitado),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, horaSolicitado),
                             // Hora Alocação
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, horaAlocado),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, horaAlocado),
                             // Hora Chegada
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, row.hora_chegada || "-"),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, row.hora_chegada || "-"),
                             // Hora Entregue — linha da OS: última finalização; linha de ponto: a do ponto
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, isFirst ? horaEntregueOS : extrairHora(row.finalizado)),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, isFirst ? horaEntregueOS : extrairHora(row.finalizado)),
                             // T. Entrega (loja): criação → finalização, regra das 17h
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-green-50 " + corPrazo(vDentro)}, formatTempo(vTLoja)),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-center tabular-nums font-medium " + corPrazo(vDentro)}, formatTempo(vTLoja)),
                             // T. Entrega Prof: COLETA (finalização do ponto 1) → finalização, regra das 17h
-                            React.createElement("td", {className: "px-2 py-1 text-center font-medium bg-orange-50 " + corPrazo(vDentroProf), title: vTProf === null && pontoNum >= 2 ? "Sem horário de coleta (ponto 1) — prazo do profissional não medido" : "Da coleta (saída do ponto 1) até a finalização"}, formatTempo(vTProf)),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-center tabular-nums font-medium " + corPrazo(vDentroProf), title: vTProf === null && pontoNum >= 2 ? "Sem horário de coleta (ponto 1) — prazo do profissional não medido" : "Da coleta (saída do ponto 1) até a finalização"}, formatTempo(vTProf)),
                             // KM
-                            React.createElement("td", {className: "px-2 py-1 text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-right"}, parseFloat(row.distancia || 0).toFixed(2) + " km"),
                             // Prazo
-                            React.createElement("td", {className: "px-2 py-1 text-center"}, 
-                                vDentro === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
-                                vDentro === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center"}, 
+                                vDentro === true ? abPilula("verde", "Dentro", { fontSize: 11.5 }) :
+                                vDentro === false ? abPilula("vermelho", "Fora", { fontSize: 11.5 }) :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Prazo Prof (baseado no T. Entrega Prof vs prazo por km)
-                            React.createElement("td", {className: "px-2 py-1 text-center bg-orange-50"}, 
-                                vDentroProf === true ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) :
-                                vDentroProf === false ? React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })) :
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-center"}, 
+                                vDentroProf === true ? abPilula("verde", "Dentro", { fontSize: 11.5 }) :
+                                vDentroProf === false ? abPilula("vermelho", "Fora", { fontSize: 11.5 }) :
                                 React.createElement("span", {className: "text-gray-400"}, "-")
                             ),
                             // Finalizado
-                            React.createElement("td", {className: "px-2 py-1 text-center text-xs"}, row.finalizado ? formatData(row.finalizado) : "-")
+                            React.createElement("td", {className: "px-2 py-2 border-t border-gray-100 text-gray-700 whitespace-nowrap text-center text-xs"}, row.finalizado ? formatData(row.finalizado) : "-")
                         );
                     };
                     
@@ -19286,7 +18990,7 @@ const hideLoadingScreen = () => {
             })())))),
             // Estado vazio
             totalOS === 0 && !carregando && !buscandoRemoto && React.createElement("div", {
-                className: "bg-white rounded-xl shadow px-4 py-8 text-center text-sm text-gray-500"
+                className: "bg-white border border-gray-200 rounded-[14px] px-4 py-9 text-center text-sm text-gray-500"
             }, termoBusca
                 ? (termoBusca.length < 4 && !remotoAtivo
                     ? "Nenhuma OS do filtro atual contém \"" + termoBusca + "\". Digite ao menos 4 dígitos para buscar em toda a base."
@@ -19294,8 +18998,8 @@ const hideLoadingScreen = () => {
                 : "Nenhuma OS encontrada para os filtros aplicados. Ajuste o período ou os filtros."),
             // Contador
             totalOS > 200 && React.createElement("div", {
-                className: "bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-center text-sm text-yellow-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, iconeSvg("alert", { color: "#d97706" }), "Mostrando 200 de " + totalOS + " OS. Use os filtros ou a busca por número para refinar."))
+                className: "bg-white border border-gray-200 rounded-[14px] px-4 py-3 flex items-center gap-2 text-[13px] text-gray-700"
+            }, abPilula("ambar", "Mostrando 200 de " + totalOS), "Use os filtros ou a busca por número para refinar.")
             );
             })(), "upload" === Et && (
                 // BI_IMPORT_REDESIGN_V1: aba "Importação" redesenhada (modulo-bi-import.js).
@@ -19445,419 +19149,287 @@ const hideLoadingScreen = () => {
             ), 
             
             // ========== ABA RELATÓRIO IA ==========
-            "relatorio-ia" === Et && React.createElement("div", {className: "space-y-6"},
-                // Header
-                React.createElement("div", {className: "bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white"},
-                    React.createElement("div", {className: "flex items-center gap-4"},
-                        React.createElement("img", {
-                            src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png",
-                            alt: "IA",
-                            className: "w-16 h-16 rounded-xl shadow-lg"
-                        }),
-                        React.createElement("div", null,
-                            React.createElement("h2", {className: "text-2xl font-bold"}, "Relatório Inteligente com IA"),
-                            React.createElement("p", {className: "text-violet-100 mt-1"}, "Análises automáticas dos seus dados usando Inteligência Artificial")
+            /* APP_ABAS_V1: Relatório IA — cabeçalho de página, formulário em cards (filtros + tipos), botão principal no padrão,
+               resultado em card de leitura e histórico em lista. Mesmos estados e ações (gerarRelatorioIA, gerarPDFRelatorioIA,
+               gerarWordHistorico, deletarRelatorioHistorico, toggleRelatorioIATipo). */
+            "relatorio-ia" === Et && (function () {
+                const LABELS_TIPO = { performance: "Performance", tendencias: "Tendências", alertas: "Alertas", gestao_profissionais: "Gestão de profissionais", personalizado: "Personalizado" };
+                const tipos = [
+                    { id: "performance", ic: "trendup", t: "Performance", d: "Análise geral de desempenho" },
+                    { id: "tendencias", ic: "trenddown", t: "Tendências", d: "Padrões e comportamentos" },
+                    { id: "alertas", ic: "alert", t: "Alertas", d: "Anomalias e problemas" },
+                    { id: "gestao_profissionais", ic: "users", t: "Gestão de Profissionais", d: "Produtividade e rotatividade" },
+                    { id: "personalizado", ic: "sparkles", t: "Personalizado", d: "Sua própria pergunta" }
+                ];
+                const nomeClienteSel = (function () {
+                    if (!relatorioIAFiltros.cod_cliente) return null;
+                    var mascara = il(relatorioIAFiltros.cod_cliente);
+                    if (mascara) return mascara;
+                    var cliente = jt.find(c => String(c.cod_cliente) === String(relatorioIAFiltros.cod_cliente));
+                    return (cliente?.nome_cliente && cliente.nome_cliente.trim()) || "Cliente " + relatorioIAFiltros.cod_cliente;
+                })();
+                const temFiltroIA = relatorioIAFiltros.data_inicio || relatorioIAFiltros.data_fim || relatorioIAFiltros.cod_cliente;
+                const desabilitado = relatorioIALoading || relatorioIATipos.length === 0 || (relatorioIATipos.includes("personalizado") && relatorioIATipos.length === 1 && !relatorioIAPromptCustom.trim());
+                const pad = { padding: "4px 18px 18px" };
+                const chip = (txt, key) => React.createElement("span", { key: key, style: { display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 99, background: "#faf7fd", border: "1px solid #e9d5f9", color: "#5d0b85", fontSize: 12, fontWeight: 500 } }, txt);
+                const fmtDataBR = v => v ? new Date(v).toLocaleDateString("pt-BR") : "-";
+
+                return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, paddingTop: 4 } },
+                    abCabecalho("Relatório IA", "Análises automáticas dos dados do BI geradas por Inteligência Artificial"),
+
+                    // Filtros editáveis
+                    abCard(null,
+                        abCardTitulo("Filtros da análise", "Sem filtros, a IA analisa todos os dados disponíveis",
+                            temFiltroIA ? abBtn("link", {
+                                compacto: true,
+                                onClick: () => {
+                                    setRelatorioIAFiltros({ data_inicio: '', data_fim: '', cod_cliente: '', centro_custo: '' });
+                                    setRelatorioIACentrosCusto([]);
+                                }
+                            }, "Limpar filtros") : null),
+                        React.createElement("div", { style: pad },
+                            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" },
+                                React.createElement("div", null,
+                                    abLabel("Data início", { htmlFor: "ria-data-inicio" }),
+                                    React.createElement("input", {
+                                        id: "ria-data-inicio", type: "date",
+                                        value: relatorioIAFiltros.data_inicio,
+                                        onChange: (e) => setRelatorioIAFiltros(prev => ({ ...prev, data_inicio: e.target.value })),
+                                        className: AB_INPUT, style: AB_INPUT_ST
+                                    })),
+                                React.createElement("div", null,
+                                    abLabel("Data fim", { htmlFor: "ria-data-fim" }),
+                                    React.createElement("input", {
+                                        id: "ria-data-fim", type: "date",
+                                        value: relatorioIAFiltros.data_fim,
+                                        onChange: (e) => setRelatorioIAFiltros(prev => ({ ...prev, data_fim: e.target.value })),
+                                        className: AB_INPUT, style: AB_INPUT_ST
+                                    })),
+                                React.createElement("div", null,
+                                    abLabel("Cliente", { htmlFor: "ria-cliente" }),
+                                    React.createElement("div", { style: { position: "relative", marginBottom: 6 } },
+                                        React.createElement("span", { style: { position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex", pointerEvents: "none" } }, abIco("search", 14)),
+                                        React.createElement("input", {
+                                            type: "text",
+                                            placeholder: "Buscar cliente",
+                                            "aria-label": "Buscar cliente",
+                                            value: buscaClienteRelatorioIA,
+                                            onChange: (e) => setBuscaClienteRelatorioIA(e.target.value),
+                                            className: AB_INPUT, style: Object.assign({}, AB_INPUT_ST, { paddingLeft: 32 })
+                                        })),
+                                    React.createElement("select", {
+                                        id: "ria-cliente",
+                                        value: relatorioIAFiltros.cod_cliente,
+                                        onChange: (e) => {
+                                            const codCliente = e.target.value;
+                                            setRelatorioIAFiltros(prev => ({ ...prev, cod_cliente: codCliente, centro_custo: '' }));
+                                            setBuscaClienteRelatorioIA('');
+                                            // Carregar centros de custo do cliente
+                                            if (codCliente && Tt[codCliente]) {
+                                                setRelatorioIACentrosCusto(Tt[codCliente] || []);
+                                            } else {
+                                                setRelatorioIACentrosCusto([]);
+                                            }
+                                        },
+                                        className: AB_INPUT, style: AB_INPUT_ST
+                                    },
+                                        React.createElement("option", { value: "" }, "Todos os clientes"),
+                                        jt && jt.filter(function (c) {
+                                            if (!buscaClienteRelatorioIA) return true;
+                                            var termo = buscaClienteRelatorioIA.toLowerCase();
+                                            var codigo = String(c.cod_cliente).toLowerCase();
+                                            var mascara = il(c.cod_cliente);
+                                            var nome = (mascara || c.nome_cliente || "").toLowerCase();
+                                            return codigo.includes(termo) || nome.includes(termo);
+                                        }).map(function (c) {
+                                            // Prioridade: 1) Máscara configurada, 2) nome_cliente do banco, 3) fallback
+                                            var mascara = il(c.cod_cliente);
+                                            var nomeExibir = mascara || (c.nome_cliente && c.nome_cliente.trim()) || "Cliente " + c.cod_cliente;
+                                            return React.createElement("option", { key: c.cod_cliente, value: c.cod_cliente }, c.cod_cliente + " - " + nomeExibir);
+                                        })
+                                    )),
+                                React.createElement("div", null,
+                                    abLabel("Centro de custo", { htmlFor: "ria-cc" }),
+                                    React.createElement("select", {
+                                        id: "ria-cc",
+                                        value: relatorioIAFiltros.centro_custo,
+                                        onChange: (e) => setRelatorioIAFiltros(prev => ({ ...prev, centro_custo: e.target.value })),
+                                        disabled: !relatorioIAFiltros.cod_cliente,
+                                        className: AB_INPUT, style: AB_INPUT_ST
+                                    },
+                                        React.createElement("option", { value: "" }, relatorioIAFiltros.cod_cliente ? "Todos os centros" : "Selecione um cliente primeiro"),
+                                        relatorioIACentrosCusto && relatorioIACentrosCusto.map(function (cc) {
+                                            return React.createElement("option", { key: cc, value: cc }, cc);
+                                        })
+                                    ))
+                            ),
+                            // Resumo dos filtros aplicados
+                            React.createElement("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12.5, color: "#6b7280" } },
+                                React.createElement("span", null, "Análise:"),
+                                relatorioIAFiltros.data_inicio && chip("De " + new Date(relatorioIAFiltros.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"), "di"),
+                                relatorioIAFiltros.data_fim && chip("Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR"), "df"),
+                                nomeClienteSel && chip(nomeClienteSel, "cl"),
+                                relatorioIAFiltros.centro_custo && chip("" + relatorioIAFiltros.centro_custo, "cc"),
+                                !relatorioIAFiltros.data_inicio && !relatorioIAFiltros.data_fim && !relatorioIAFiltros.cod_cliente && React.createElement("span", null, "todos os dados (nenhum filtro aplicado)")
+                            )
                         )
-                    )
-                ),
-                
-                // Filtros editáveis
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                    React.createElement("h3", {className: "text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"},
-                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })),
-                        "Filtros da Análise"
                     ),
-                    React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"},
-                        // Data Início
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Início")),
-                            React.createElement("input", {
-                                type: "date",
-                                value: relatorioIAFiltros.data_inicio,
-                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_inicio: e.target.value})),
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                            })
-                        ),
-                        // Data Fim
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Fim")),
-                            React.createElement("input", {
-                                type: "date",
-                                value: relatorioIAFiltros.data_fim,
-                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, data_fim: e.target.value})),
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                            })
-                        ),
-                        // Cliente com busca
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Cliente")),
-                            React.createElement("input", {
-                                type: "text",
-                                placeholder: "Buscar cliente...",
-                                value: buscaClienteRelatorioIA,
-                                onChange: (e) => setBuscaClienteRelatorioIA(e.target.value),
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 mb-1 text-sm"
-                            }),
-                            React.createElement("select", {
-                                value: relatorioIAFiltros.cod_cliente,
-                                onChange: (e) => {
-                                    const codCliente = e.target.value;
-                                    setRelatorioIAFiltros(prev => ({...prev, cod_cliente: codCliente, centro_custo: ''}));
-                                    setBuscaClienteRelatorioIA('');
-                                    // Carregar centros de custo do cliente
-                                    if (codCliente && Tt[codCliente]) {
-                                        setRelatorioIACentrosCusto(Tt[codCliente] || []);
-                                    } else {
-                                        setRelatorioIACentrosCusto([]);
-                                    }
-                                },
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                            },
-                                React.createElement("option", {value: ""}, "Todos os clientes"),
-                                jt && jt.filter(function(c) {
-                                    if (!buscaClienteRelatorioIA) return true;
-                                    var termo = buscaClienteRelatorioIA.toLowerCase();
-                                    var codigo = String(c.cod_cliente).toLowerCase();
-                                    var mascara = il(c.cod_cliente);
-                                    var nome = (mascara || c.nome_cliente || "").toLowerCase();
-                                    return codigo.includes(termo) || nome.includes(termo);
-                                }).map(function(c) {
-                                    // Prioridade: 1) Máscara configurada, 2) nome_cliente do banco, 3) fallback
-                                    var mascara = il(c.cod_cliente);
-                                    var nomeExibir = mascara || (c.nome_cliente && c.nome_cliente.trim()) || "Cliente " + c.cod_cliente;
-                                    return React.createElement("option", {key: c.cod_cliente, value: c.cod_cliente}, 
-                                        c.cod_cliente + " - " + nomeExibir
+
+                    // Tipos de relatório
+                    abCard(null,
+                        abCardTitulo("Tipos de análise", "Selecione uma ou mais; a IA gera um relatório único combinando todas",
+                            React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4 } },
+                                React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280", marginRight: 4 } }, relatorioIATipos.length > 0 ? relatorioIATipos.length + " selecionada(s)" : "Nenhuma selecionada"),
+                                abBtn("link", { compacto: true, onClick: () => setRelatorioIATipos(["performance", "tendencias", "alertas", "gestao_profissionais"]) }, "Selecionar todos"),
+                                abBtn("link", { compacto: true, onClick: () => setRelatorioIATipos([]) }, "Limpar seleção"))),
+                        React.createElement("div", { style: pad },
+                            React.createElement("div", { role: "group", "aria-label": "Tipos de análise", className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2" },
+                                tipos.map(function (tp) {
+                                    const sel = relatorioIATipos.includes(tp.id);
+                                    return React.createElement("button", {
+                                        key: tp.id, type: "button",
+                                        onClick: () => toggleRelatorioIATipo(tp.id),
+                                        "aria-pressed": sel ? "true" : "false",
+                                        className: "text-left " + AB_FOCO + (sel ? "" : " hover:border-[#c084e6]"),
+                                        style: { position: "relative", padding: "12px 14px", borderRadius: 12, border: "1px solid " + (sel ? "#770fa8" : "#e5e7eb"), background: sel ? "#faf7fd" : "#ffffff", display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }
+                                    },
+                                        React.createElement("span", { style: { color: sel ? "#770fa8" : "#6b7280", marginTop: 1, display: "flex" } }, abIco(tp.ic, 16)),
+                                        React.createElement("span", { style: { minWidth: 0, flex: 1 } },
+                                            React.createElement("span", { style: { display: "block", fontSize: 13.5, fontWeight: 600, color: sel ? "#5d0b85" : "#111827" } }, tp.t),
+                                            React.createElement("span", { style: { display: "block", fontSize: 12, color: "#6b7280" } }, tp.d)),
+                                        React.createElement("span", { "aria-hidden": "true", style: { width: 18, height: 18, borderRadius: 6, border: "1px solid " + (sel ? "#770fa8" : "#d1d5db"), background: sel ? "#770fa8" : "#ffffff", color: "#ffffff", display: "grid", placeItems: "center", flex: "none" } }, sel ? abIco("check", 12) : null));
+                                })
+                            ),
+
+                            // Campo de prompt personalizado
+                            relatorioIATipos.includes("personalizado") && React.createElement("div", { style: { marginTop: 14 } },
+                                abLabel("Sua pergunta personalizada", { htmlFor: "ria-prompt" }),
+                                React.createElement("textarea", {
+                                    id: "ria-prompt",
+                                    value: relatorioIAPromptCustom,
+                                    onChange: (e) => setRelatorioIAPromptCustom(e.target.value),
+                                    placeholder: "Ex.: Quais profissionais estão com desempenho abaixo da média? Existe algum padrão nos atrasos de segunda-feira?",
+                                    className: AB_INPUT + " py-2.5",
+                                    style: { minHeight: 84, resize: "vertical" },
+                                    rows: 3
+                                })
+                            ),
+
+                            // Rodapé do formulário: resumo + botão gerar
+                            React.createElement("div", { style: { marginTop: 16, paddingTop: 14, borderTop: "1px solid #f3f4f6", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 } },
+                                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12.5, color: "#6b7280", minWidth: 0 } },
+                                    relatorioIATipos.length > 0
+                                        ? [React.createElement("span", { key: "l" }, "Análises selecionadas:")].concat(relatorioIATipos.map(t => chip(LABELS_TIPO[t] || t, t)))
+                                        : React.createElement("span", null, "Selecione ao menos um tipo de análise para gerar o relatório.")),
+                                abBtn("principal", {
+                                    onClick: () => gerarRelatorioIA(),
+                                    disabled: desabilitado,
+                                    style: { height: 40, padding: "0 18px" }
+                                }, relatorioIALoading ? "Analisando dados..." : React.createElement(React.Fragment, null, abIco("sparkles", 15), "Gerar relatório com IA"))
+                            )
+                        )
+                    ),
+
+                    // Erro
+                    relatorioIAErro && React.createElement("div", { role: "alert", style: { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 14, padding: "12px 16px", color: "#991b1b" } },
+                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 13.5 } }, abIco("alert", 15), "Não foi possível gerar o relatório"),
+                        React.createElement("p", { style: { margin: "4px 0 0", fontSize: 13 } }, relatorioIAErro, " Revise os filtros e tente novamente.")
+                    ),
+
+                    // Resultado
+                    relatorioIAResultado && abCard(null,
+                        abCardTitulo("Relatório gerado", relatorioIAResultado.tipo_analise + " · " + new Date().toLocaleString("pt-BR"), [
+                            abBtn("secundario", {
+                                key: "c", compacto: true,
+                                onClick: () => {
+                                    navigator.clipboard.writeText(relatorioIAResultado.relatorio);
+                                    alert("Relatório copiado!");
+                                }
+                            }, abIco("copy", 14), "Copiar"),
+                            abBtn("secundario", { key: "w", compacto: true, onClick: () => gerarPDFRelatorioIA() }, abIco("download", 14), "Baixar Word")
+                        ]),
+                        React.createElement("div", { style: { padding: "0 18px 22px", display: "flex", flexDirection: "column", gap: 18 } },
+                            // Métricas resumidas
+                            relatorioIAResultado.metricas && abFaixaKpi([
+                                { label: "Entregas", valor: relatorioIAResultado.metricas.total_entregas?.toLocaleString() || "0" },
+                                { label: "No prazo", valor: (relatorioIAResultado.metricas.taxa_prazo || 0).toFixed(1) + "%" },
+                                { label: "Tempo médio", valor: (relatorioIAResultado.metricas.tempo_medio_entrega || 0).toFixed(0) + " min" },
+                                { label: "Motos por dia", valor: relatorioIAResultado.metricas.media_profissionais_por_dia || "0" }
+                            ], 150),
+                            // Relatório em texto (card de leitura)
+                            React.createElement("div", { id: "relatorio-ia-content", className: "prose prose-sm max-w-none", style: { maxWidth: 760 } },
+                                React.createElement("div", {
+                                    className: "whitespace-pre-wrap",
+                                    style: { color: "#374151", fontSize: 14.5, lineHeight: 1.7 },
+                                    dangerouslySetInnerHTML: { __html: (relatorioIAResultado.relatorio || "").replace(/\*\*(.*?)\*\*/g, '<strong style="color:#111827">$1</strong>').replace(/\n/g, '<br/>') }
+                                })
+                            )
+                        )
+                    ),
+
+                    // Histórico de Relatórios do Banco de Dados
+                    abCard(null,
+                        abCardTitulo("Histórico de relatórios", relatorioIAHistoricoDB.length + " relatório(s)"),
+                        relatorioIAHistoricoDB.length === 0
+                            ? abVazio("Nenhum relatório gerado ainda.")
+                            : React.createElement("div", { style: { maxHeight: 384, overflowY: "auto" } },
+                                relatorioIAHistoricoDB.map(function (item) {
+                                    return React.createElement("div", {
+                                        key: item.id,
+                                        className: "hover:bg-[#f9fafb]",
+                                        style: { borderTop: "1px solid #f3f4f6", padding: "12px 18px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }
+                                    },
+                                        React.createElement("div", { style: { flex: 1, minWidth: 220 } },
+                                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+                                                React.createElement("span", { style: { fontWeight: 600, fontSize: 13.5, color: "#111827" } },
+                                                    item.cod_cliente ? item.cod_cliente + " - " + (item.nome_cliente || "Cliente") : "Todos os clientes"),
+                                                item.centro_custo && abPilula("azul", "" + item.centro_custo, { fontSize: 11.5 })),
+                                            React.createElement("div", { style: { fontSize: 13, color: "#374151", marginTop: 2 } }, "" + (item.tipo_analise || "Análise Geral")),
+                                            React.createElement("div", { style: { fontSize: 12, color: "#6b7280", marginTop: 2 } },
+                                                "Período: " + fmtDataBR(item.data_inicio) + " a " + fmtDataBR(item.data_fim) + " · " + (item.usuario_nome || "Usuário") + " · " + new Date(item.created_at).toLocaleString("pt-BR"))
+                                        ),
+                                        React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } },
+                                            abBtn("secundario", { compacto: true, onClick: () => gerarWordHistorico(item) }, abIco("download", 14), "Word"),
+                                            abBtn("destrutivo", { compacto: true, onClick: () => deletarRelatorioHistorico(item.id), "aria-label": "Excluir relatório", title: "Excluir relatório", style: { width: 32, padding: 0 } }, abIco("trash", 14))
+                                        )
                                     );
                                 })
                             )
-                        ),
-                        // Centro de Custo
-                        React.createElement("div", null,
-                            React.createElement("label", {className: "block text-sm font-medium text-gray-700 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centro de Custo")),
-                            React.createElement("select", {
-                                value: relatorioIAFiltros.centro_custo,
-                                onChange: (e) => setRelatorioIAFiltros(prev => ({...prev, centro_custo: e.target.value})),
-                                disabled: !relatorioIAFiltros.cod_cliente,
-                                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            },
-                                React.createElement("option", {value: ""}, relatorioIAFiltros.cod_cliente ? "Todos os centros" : "Selecione um cliente primeiro"),
-                                relatorioIACentrosCusto && relatorioIACentrosCusto.map(function(cc) {
-                                    return React.createElement("option", {key: cc, value: cc}, cc);
-                                })
-                            )
-                        )
-                    ),
-                    // Resumo dos filtros aplicados
-                    React.createElement("div", {className: "mt-4 flex flex-wrap items-center gap-2 text-sm"},
-                        React.createElement("span", {className: "text-gray-500"}, "Análise:"),
-                        relatorioIAFiltros.data_inicio && React.createElement("span", {className: "bg-violet-100 text-violet-800 px-2 py-1 rounded"},
-                            "De " + new Date(relatorioIAFiltros.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")
-                        ),
-                        relatorioIAFiltros.data_fim && React.createElement("span", {className: "bg-violet-100 text-violet-800 px-2 py-1 rounded"},
-                            "Até " + new Date(relatorioIAFiltros.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
-                        ),
-                        relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "bg-purple-100 text-purple-800 px-2 py-1 rounded"},
-                            "" + (function() {
-                                var mascara = il(relatorioIAFiltros.cod_cliente);
-                                if (mascara) return mascara;
-                                var cliente = jt.find(c => String(c.cod_cliente) === String(relatorioIAFiltros.cod_cliente));
-                                return (cliente?.nome_cliente && cliente.nome_cliente.trim()) || "Cliente " + relatorioIAFiltros.cod_cliente;
-                            })()
-                        ),
-                        relatorioIAFiltros.centro_custo && React.createElement("span", {className: "bg-blue-100 text-blue-800 px-2 py-1 rounded"},
-                            "" + relatorioIAFiltros.centro_custo
-                        ),
-                        !relatorioIAFiltros.data_inicio && !relatorioIAFiltros.data_fim && !relatorioIAFiltros.cod_cliente && React.createElement("span", {className: "text-gray-400 italic"},
-                            "Nenhum filtro aplicado - analisará todos os dados"
-                        ),
-                        // Botão limpar filtros
-                        (relatorioIAFiltros.data_inicio || relatorioIAFiltros.data_fim || relatorioIAFiltros.cod_cliente) && React.createElement("button", {
-                            onClick: () => {
-                                setRelatorioIAFiltros({ data_inicio: '', data_fim: '', cod_cliente: '', centro_custo: '' });
-                                setRelatorioIACentrosCusto([]);
-                            },
-                            className: "ml-2 text-red-500 hover:text-red-700 text-xs underline"
-                        }, "Limpar filtros")
                     )
-                ),
-                
-                // Tipos de relatório
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                    React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Escolha os Tipos de Análise")),
-                        React.createElement("span", {className: "text-sm text-gray-500"}, 
-                            relatorioIATipos.length > 0 ? relatorioIATipos.length + " selecionado(s)" : "Selecione um ou mais"
-                        )
-                    ),
-                    React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Clique nos cards para selecionar múltiplas análises. A IA gerará um relatório completo combinando todas."),
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 gap-4"},
-                        // Performance
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("performance"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("performance") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
-                        },
-                            relatorioIATipos.includes("performance") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Performance"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Análise geral de desempenho")
-                        ),
-                        // Tendências
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("tendencias"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("tendencias") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
-                        },
-                            relatorioIATipos.includes("tendencias") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trenddown" })),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Tendências"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Padrões e comportamentos")
-                        ),
-                        // Alertas
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("alertas"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("alertas") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
-                        },
-                            relatorioIATipos.includes("alertas") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("svg", { className: "ico", style: { width: 30, height: 30, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Alertas"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Anomalias e problemas")
-                        ),
-                        // Gestão de Profissionais
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("gestao_profissionais"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("gestao_profissionais") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
-                        },
-                            relatorioIATipos.includes("gestao_profissionais") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Gestão de Profissionais"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Produtividade e rotatividade")
-                        ),
-                        // Personalizado
-                        React.createElement("button", {
-                            onClick: () => toggleRelatorioIATipo("personalizado"),
-                            className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("personalizado") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
-                        },
-                            relatorioIATipos.includes("personalizado") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("div", {className: "text-3xl mb-2"}, Icon("sparkles")),
-                            React.createElement("div", {className: "font-semibold text-gray-800"}, "Personalizado"),
-                            React.createElement("div", {className: "text-xs text-gray-500"}, "Sua própria pergunta")
-                        )
-                    ),
-                    
-                    // Seleção rápida
-                    React.createElement("div", {className: "mt-4 flex gap-2"},
-                        React.createElement("button", {
-                            onClick: () => setRelatorioIATipos(["performance", "tendencias", "alertas", "gestao_profissionais"]),
-                            className: "px-3 py-1 text-xs bg-violet-100 text-violet-700 rounded-full hover:bg-violet-200"
-                        }, "Selecionar todos"),
-                        React.createElement("button", {
-                            onClick: () => setRelatorioIATipos([]),
-                            className: "px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200"
-                        }, "Limpar seleção")
-                    ),
-                    
-                    // Campo de prompt personalizado
-                    relatorioIATipos.includes("personalizado") && React.createElement("div", {className: "mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200"},
-                        React.createElement("label", {className: "block text-sm font-medium text-purple-800 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("sparkles"), "Sua pergunta personalizada:")),
-                        React.createElement("textarea", {
-                            value: relatorioIAPromptCustom,
-                            onChange: (e) => setRelatorioIAPromptCustom(e.target.value),
-                            placeholder: "Ex: Quais profissionais estão com desempenho abaixo da média? Existe algum padrão nos atrasos de segunda-feira? Compare o desempenho entre os turnos da manhã e tarde.",
-                            className: "w-full px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500",
-                            rows: 3
-                        })
-                    ),
-                    
-                    // Resumo da seleção
-                    relatorioIATipos.length > 0 && React.createElement("div", {className: "mt-4 p-3 bg-violet-50 rounded-lg border border-violet-200"},
-                        React.createElement("div", {className: "flex items-center gap-2 text-sm text-violet-800"},
-                            React.createElement("span", {className: "font-semibold"}, "Análises selecionadas:"),
-                            relatorioIATipos.map(function(t) {
-                                var labels = {performance: "Performance", tendencias: "Tendências", alertas: "Alertas", gestao_profissionais: "Gestão de Profissionais", personalizado: "Personalizado"};
-                                return React.createElement("span", {key: t, className: "px-2 py-0.5 bg-violet-200 rounded text-xs"}, labels[t] || t);
-                            })
-                        )
-                    ),
-                    
-                    // Botão gerar
-                    React.createElement("button", {
-                        onClick: () => gerarRelatorioIA(),
-                        disabled: relatorioIALoading || relatorioIATipos.length === 0 || (relatorioIATipos.includes("personalizado") && relatorioIATipos.length === 1 && !relatorioIAPromptCustom.trim()),
-                        className: "mt-6 w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all"
-                    },
-                        relatorioIALoading ? React.createElement("span", {className: "flex items-center gap-2"},
-                            React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
-                            "Analisando dados..."
-                        ) : React.createElement("span", {className: "flex items-center gap-2"},
-                            React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })),
-                            "Gerar Relatório com IA",
-                            relatorioIATipos.length > 0 && React.createElement("span", {className: "bg-white/20 px-2 py-0.5 rounded text-sm"}, relatorioIATipos.length + " análise(s)")
-                        )
-                    )
-                ),
-                
-                // Erro
-                relatorioIAErro && React.createElement("div", {className: "bg-red-50 border border-red-200 rounded-xl p-4 text-red-800"},
-                    React.createElement("div", {className: "flex items-center gap-2"},
-                        React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })),
-                        React.createElement("span", {className: "font-semibold"}, "Erro ao gerar relatório"),
-                    ),
-                    React.createElement("p", {className: "mt-2 text-sm"}, relatorioIAErro)
-                ),
-                
-                // Resultado
-                relatorioIAResultado && React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
-                    React.createElement("div", {className: "bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 text-white"},
-                        React.createElement("div", {className: "flex items-center justify-between"},
-                            React.createElement("div", {className: "flex items-center gap-3"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })),
-                                React.createElement("div", null,
-                                    React.createElement("h3", {className: "font-bold"}, "Relatório Gerado"),
-                                    React.createElement("p", {className: "text-sm text-violet-100"}, 
-                                        relatorioIAResultado.tipo_analise + " • " + new Date().toLocaleString("pt-BR")
-                                    )
-                                )
-                            ),
-                            React.createElement("div", {className: "flex gap-2"},
-                                React.createElement("button", {
-                                    onClick: () => {
-                                        navigator.clipboard.writeText(relatorioIAResultado.relatorio);
-                                        alert("Relatório copiado!");
-                                    },
-                                    className: "px-3 py-1 bg-white/20 rounded-lg text-sm hover:bg-white/30"
-                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Copiar")),
-                                React.createElement("button", {
-                                    onClick: () => gerarPDFRelatorioIA(),
-                                    className: "px-3 py-1 bg-white/20 rounded-lg text-sm hover:bg-white/30"
-                                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Word"))
-                            )
-                        )
-                    ),
-                    React.createElement("div", {className: "p-6"},
-                        // Métricas resumidas
-                        relatorioIAResultado.metricas && React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"},
-                            React.createElement("div", {className: "bg-blue-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-blue-600"}, relatorioIAResultado.metricas.total_entregas?.toLocaleString() || "0"),
-                                React.createElement("div", {className: "text-xs text-blue-800"}, "Entregas")
-                            ),
-                            React.createElement("div", {className: "bg-green-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-green-600"}, (relatorioIAResultado.metricas.taxa_prazo || 0).toFixed(1) + "%"),
-                                React.createElement("div", {className: "text-xs text-green-800"}, "No Prazo")
-                            ),
-                            React.createElement("div", {className: "bg-purple-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, (relatorioIAResultado.metricas.tempo_medio_entrega || 0).toFixed(0) + " min"),
-                                React.createElement("div", {className: "text-xs text-purple-800"}, "Tempo Médio")
-                            ),
-                            React.createElement("div", {className: "bg-orange-50 rounded-lg p-3 text-center"},
-                                React.createElement("div", {className: "text-2xl font-bold text-purple-600"}, relatorioIAResultado.metricas.media_profissionais_por_dia || "0"),
-                                React.createElement("div", {className: "text-xs text-purple-800"}, "Motos/Dia")
-                            )
-                        ),
-                        
-                        // Relatório em texto
-                        React.createElement("div", {id: "relatorio-ia-content", className: "prose prose-sm max-w-none"},
-                            React.createElement("div", {
-                                className: "whitespace-pre-wrap text-gray-700 leading-relaxed",
-                                dangerouslySetInnerHTML: { __html: (relatorioIAResultado.relatorio || "").replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>') }
-                            })
-                        )
-                    )
-                ),
-                
-                // Histórico de Relatórios do Banco de Dados
-                React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
-                    React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                        React.createElement("h3", {className: "text-lg font-bold text-gray-800 flex items-center gap-2"},
-                            React.createElement("span", null, Icon("filetext")),
-                            "Histórico de Relatórios"
-                        ),
-                        React.createElement("span", {className: "text-sm text-gray-500"}, 
-                            relatorioIAHistoricoDB.length + " relatório(s)"
-                        )
-                    ),
-                    relatorioIAHistoricoDB.length === 0 
-                        ? React.createElement("div", {className: "text-center py-8 text-gray-400"},
-                            React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })),
-                            "Nenhum relatório gerado ainda"
-                        )
-                        : React.createElement("div", {className: "space-y-3 max-h-96 overflow-y-auto"},
-                            relatorioIAHistoricoDB.map(function(item) {
-                                return React.createElement("div", {
-                                    key: item.id, 
-                                    className: "p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100"
-                                },
-                                    React.createElement("div", {className: "flex items-start justify-between gap-4"},
-                                        React.createElement("div", {className: "flex-1 min-w-0"},
-                                            // Título com cliente
-                                            React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
-                                                React.createElement("span", {className: "font-bold text-violet-800"}, 
-                                                    item.cod_cliente ? item.cod_cliente + " - " + (item.nome_cliente || "Cliente") : "Todos os Clientes"
-                                                ),
-                                                item.centro_custo && React.createElement("span", {className: "text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"},
-                                                    "" + item.centro_custo
-                                                )
-                                            ),
-                                            // Tipo de análise
-                                            React.createElement("div", {className: "text-sm text-gray-600 mt-1"},
-                                                "" + (item.tipo_analise || "Análise Geral")
-                                            ),
-                                            // Período
-                                            React.createElement("div", {className: "text-xs text-gray-500 mt-1"},
-                                                "Período: " + (item.data_inicio ? new Date(item.data_inicio).toLocaleDateString("pt-BR") : "-") + 
-                                                " a " + (item.data_fim ? new Date(item.data_fim).toLocaleDateString("pt-BR") : "-")
-                                            ),
-                                            // Usuário e data de criação
-                                            React.createElement("div", {className: "flex items-center gap-3 mt-2 text-xs text-gray-400"},
-                                                React.createElement("span", null, "" + (item.usuario_nome || "Usuário")),
-                                                React.createElement("span", null, "" + new Date(item.created_at).toLocaleString("pt-BR"))
-                                            )
-                                        ),
-                                        // Botões de ação
-                                        React.createElement("div", {className: "flex flex-col gap-2"},
-                                            React.createElement("button", {
-                                                onClick: () => gerarWordHistorico(item),
-                                                className: "px-3 py-1.5 bg-violet-600 text-white text-xs rounded-lg hover:bg-violet-700 flex items-center gap-1 whitespace-nowrap"
-                                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Word")),
-                                            React.createElement("button", {
-                                                onClick: () => deletarRelatorioHistorico(item.id),
-                                                className: "px-3 py-1.5 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 flex items-center gap-1"
-                                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
-                                        )
-                                    )
-                                );
-                            })
-                        )
-                )
-            ),
-            
+                );
+            })(),
+
+            /* APP_ABAS_V1: Configurações do BI — cabeçalho de página, seções em cards brancos colapsáveis (sem gradiente),
+               formulários com rótulos/inputs no padrão, listas limpas. Mesmos estados/ações/IDs de antes. */
             "config" === Et && React.createElement("div", {
                 className: "space-y-4"
-            }, 
+            }, abCabecalho("Configurações do BI", "Regiões, máscaras de clientes e réguas de prazo usadas no BI"), 
             // ========== SEÇÃO 1: REGIÕES (Dropdown) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+            React.createElement("div", {className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden"},
                 // Header clicável do dropdown
                 React.createElement("button", {
-                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "regioes" ? "" : "regioes"); },
-                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "regioes" ? "" : "regioes"); }, type: "button", "aria-expanded": configSecaoAberta === "regioes" ? "true" : "false",
+                    className: "w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-[#f9fafb] text-left " + AB_FOCO
                 },
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })),
+                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8", flex: "none" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })),
                         React.createElement("div", {className: "text-left"},
-                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Configuração de Regiões"),
+                            React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900"}, "Configuração de Regiões"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, aa.length + " região(ões) configurada(s)")
                         )
                     ),
-                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "regioes" ? "rotate-180" : "")}, "▼")
+                    React.createElement("span", {className: "text-gray-400 inline-flex transition-transform " + (configSecaoAberta === "regioes" ? "rotate-180" : ""), "aria-hidden": "true"}, abIco("arrowdown", 16))
                 ),
                 // Conteúdo expansível da seção Regiões
-                configSecaoAberta === "regioes" && React.createElement("div", {className: "p-6 border-t"},
+                configSecaoAberta === "regioes" && React.createElement("div", {className: "p-5 border-t border-gray-100"},
             React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Agrupe clientes e centros de custo em regiões para facilitar a filtragem no dashboard."), React.createElement("div", {
-                className: "border rounded-lg p-4 mb-4 bg-gray-50"
+                className: "border border-gray-200 rounded-[12px] p-4 mb-4 bg-white"
             },
             // Título do formulário com modo edição
             React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                React.createElement("h3", {className: "font-semibold text-purple-800"}, 
+                React.createElement("h3", {className: "text-[14px] font-semibold text-gray-900"}, 
                     regiaoEditando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" })), "Editando Região") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Nova Região")
                 ),
                 regiaoEditando && React.createElement("button", {
@@ -19868,33 +19440,33 @@ const hideLoadingScreen = () => {
                         setRegiaoCentrosCusto({});
                         setRegiaoItensAdicionados([]);
                     },
-                    className: "text-sm text-gray-500 hover:text-red-600"
+                    className: "text-sm text-gray-600 hover:text-[#991b1b]"
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Cancelar edição"))
             ), 
             // Nome da região
             React.createElement("div", {className: "mb-4"}, 
-                React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, "Nome da Região"),
+                React.createElement("label", {className: "block text-xs font-semibold text-gray-700 mb-1.5"}, "Nome da Região"),
                 React.createElement("input", {
                     type: "text",
                     value: regiaoNome,
                     onChange: function(e) { setRegiaoNome(e.target.value); },
                     placeholder: "Ex: Grande Recife, Interior, Zona Sul...",
-                    className: "w-full px-3 py-2 border rounded-lg mt-1"
+                    className: AB_INPUT, style: AB_INPUT_ST
                 })
             ),
             // Seleção de Clientes (múltiplos) + Centros de Custo
             React.createElement("div", {className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"},
                 // Coluna 1: Lista de Clientes com checkboxes
                 React.createElement("div", null,
-                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes")),
-                    React.createElement("div", {className: "border rounded-lg mt-1 bg-white max-h-64 overflow-y-auto"},
+                    React.createElement("label", {className: "block text-xs font-semibold text-gray-700 mb-1.5"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes")),
+                    React.createElement("div", {className: "border border-gray-200 rounded-[10px] bg-white max-h-64 overflow-y-auto"},
                         // Campo de busca
-                        React.createElement("div", {className: "sticky top-0 bg-white p-2 border-b"},
+                        React.createElement("div", {className: "sticky top-0 bg-white p-2 border-b border-gray-100"},
                             React.createElement("input", {
                                 type: "text",
                                 id: "regiao-busca-cliente",
                                 placeholder: "Buscar cliente...",
-                                className: "w-full px-2 py-1 text-sm border rounded",
+                                className: AB_INPUT, style: { height: 32 },
                                 onChange: function(e) {
                                     var termo = e.target.value.toLowerCase();
                                     var items = document.querySelectorAll('.regiao-cliente-item');
@@ -19911,7 +19483,7 @@ const hideLoadingScreen = () => {
                                 var isSelected = regiaoClienteSelecionado && regiaoClienteSelecionado.includes(String(c.cod_cliente));
                                 return React.createElement("label", {
                                     key: c.cod_cliente,
-                                    className: "regiao-cliente-item flex items-center gap-2 p-2 hover:bg-purple-50 rounded cursor-pointer " + (isSelected ? "bg-purple-100" : "")
+                                    className: "regiao-cliente-item flex items-center gap-2 px-2 py-1.5 hover:bg-[#f9fafb] rounded-lg cursor-pointer " + (isSelected ? "bg-[#faf7fd]" : "")
                                 },
                                     React.createElement("input", {
                                         type: "checkbox",
@@ -19964,9 +19536,9 @@ const hideLoadingScreen = () => {
                                                 });
                                             }
                                         },
-                                        className: "w-4 h-4 accent-purple-600"
+                                        className: "w-4 h-4", style: { accentColor: "#770fa8" }
                                     }),
-                                    React.createElement("span", {className: "text-sm flex-1"}, 
+                                    React.createElement("span", {className: "text-sm flex-1 text-gray-700"}, 
                                         c.cod_cliente + " - " + (il(c.cod_cliente) || c.nome_cliente)
                                     )
                                 );
@@ -19979,16 +19551,16 @@ const hideLoadingScreen = () => {
                 ),
                 // Coluna 2: Centros de Custo dos Clientes Selecionados
                 React.createElement("div", null,
-                    React.createElement("label", {className: "text-sm font-semibold text-gray-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centros de Custo")),
+                    React.createElement("label", {className: "block text-xs font-semibold text-gray-700 mb-1.5"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centros de Custo")),
                     (regiaoClienteSelecionado && regiaoClienteSelecionado.length > 0) ? 
-                    React.createElement("div", {className: "border rounded-lg mt-1 bg-white max-h-64 overflow-y-auto p-2"},
+                    React.createElement("div", {className: "border border-gray-200 rounded-[10px] bg-white max-h-64 overflow-y-auto p-2"},
                         regiaoClienteSelecionado.map(function(codCliente) {
                             var cliente = jt.find(function(c) { return String(c.cod_cliente) === codCliente; });
                             var nomeCliente = il(codCliente) || cliente?.nome_cliente || "Cliente " + codCliente;
                             var centros = regiaoCentrosCusto[codCliente] || [];
                             
                             return React.createElement("div", {key: codCliente, className: "mb-3 pb-3 border-b last:border-b-0"},
-                                React.createElement("div", {className: "font-medium text-purple-700 text-sm mb-2"}, 
+                                React.createElement("div", {className: "font-semibold text-gray-900 text-sm mb-1"}, 
                                     "" + codCliente + " - " + nomeCliente
                                 ),
                                 // Opção "Todos os centros"
@@ -20022,9 +19594,9 @@ const hideLoadingScreen = () => {
                                                 });
                                             }
                                         },
-                                        className: "w-3 h-3"
+                                        className: "w-3.5 h-3.5", style: { accentColor: "#770fa8" }
                                     }),
-                                    React.createElement("span", {className: "text-xs font-medium text-green-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), "TODOS os centros"))
+                                    React.createElement("span", {className: "text-xs font-medium text-gray-900"}, "Todos os centros")
                                 ),
                                 // Lista de centros
                                 centros.length > 0 ? centros.map(function(cc) {
@@ -20072,30 +19644,30 @@ const hideLoadingScreen = () => {
                                                     });
                                                 }
                                             },
-                                            className: "w-3 h-3"
+                                            className: "w-3.5 h-3.5", style: { accentColor: "#770fa8" }
                                         }),
-                                        React.createElement("span", {className: "text-xs"}, cc.centro_custo),
+                                        React.createElement("span", {className: "text-xs text-gray-700"}, cc.centro_custo),
                                         React.createElement("span", {className: "text-xs text-gray-400 ml-auto"}, cc.total_entregas)
                                     );
                                 }) : React.createElement("p", {className: "text-xs text-gray-400 ml-4"}, "Sem centros de custo")
                             );
                         })
                     ) :
-                    React.createElement("div", {className: "border rounded-lg mt-1 p-4 bg-white text-center text-gray-400 text-sm"},
+                    React.createElement("div", {className: "border border-gray-200 rounded-[10px] p-4 bg-white text-center text-gray-500 text-sm"},
                         "Selecione clientes à esquerda para ver os centros de custo"
                     )
                 )
             ),
             // Lista de itens adicionados
             regiaoItensAdicionados.length > 0 && React.createElement("div", {className: "mb-4"},
-                React.createElement("label", {className: "text-sm font-semibold text-gray-700 mb-2 block"}, 
+                React.createElement("label", {className: "text-xs font-semibold text-gray-700 mb-2 block"}, 
                     "Itens na Região (" + regiaoItensAdicionados.length + ")"
                 ),
                 React.createElement("div", {className: "flex flex-wrap gap-2"},
                     regiaoItensAdicionados.map(function(item, idx) {
                         return React.createElement("span", {
                             key: idx,
-                            className: "inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                            className: "inline-flex items-center gap-1 pl-3 pr-1 h-7 bg-[#faf7fd] border border-[#e9d5f9] text-[#5d0b85] rounded-full text-[13px] font-medium"
                         },
                             React.createElement("span", null, 
                                 item.cod_cliente + " - " + (item.centro_custo || "Todos CC")
@@ -20106,8 +19678,10 @@ const hideLoadingScreen = () => {
                                         return prev.filter(function(_, i) { return i !== idx; });
                                     });
                                 },
-                                className: "ml-1 text-purple-600 hover:text-red-600 font-bold"
-                            }, "×")
+                                type: "button",
+                                "aria-label": "Remover item",
+                                className: "ml-0.5 w-5 h-5 rounded-full inline-grid place-items-center text-[#770fa8] hover:bg-[#f3e8fb] " + AB_FOCO
+                            }, abIco("x", 11))
                         );
                     })
                 )
@@ -20152,9 +19726,9 @@ const hideLoadingScreen = () => {
                         ja("Erro ao salvar região", "error");
                     }
                 },
-                className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                className: abBtnClass("principal"), style: abBtnStyle("principal")
             }, regiaoEditando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Atualizar Região") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Criar Região"))), 0 === aa.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-4 bg-gray-50 rounded-lg"
+                className: "text-gray-500 text-sm text-center py-6 border border-dashed border-gray-200 rounded-[12px]"
             }, "Nenhuma região configurada") : React.createElement("div", {
                 className: "space-y-3"
             }, aa.map(e => {
@@ -20171,13 +19745,13 @@ const hideLoadingScreen = () => {
                 
                 return React.createElement("div", {
                     key: e.id,
-                    className: "border border-blue-200 rounded-lg p-4 bg-blue-50"
+                    className: "border border-gray-200 rounded-[12px] p-4 bg-white"
                 }, React.createElement("div", {
                     className: "flex justify-between items-start mb-2"
                 }, React.createElement("div", null, React.createElement("h3", {
-                    className: "font-bold text-blue-900"
+                    className: "font-semibold text-gray-900"
                 }, e.nome), React.createElement("p", {
-                    className: "text-sm text-blue-600"
+                    className: "text-[12.5px] text-gray-500"
                 }, clientesUnicos.length, " cliente(s), ", totalItens, " item(ns)")), 
                 // Botões editar e excluir
                 React.createElement("div", {className: "flex gap-2"},
@@ -20210,7 +19784,7 @@ const hideLoadingScreen = () => {
                             setRegiaoCentrosCusto(novosCC);
                             ja("Editando região: " + e.nome, "success");
                         },
-                        className: "text-blue-500 hover:text-blue-700 p-1",
+                        className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-gray-200 bg-white hover:bg-[#f9fafb] " + AB_FOCO, "aria-label": "Editar região",
                         title: "Editar região"
                     }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))),
                     // Botão excluir
@@ -20228,7 +19802,7 @@ const hideLoadingScreen = () => {
                                 }
                             }
                         },
-                        className: "text-red-500 hover:text-red-700 p-1",
+                        className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Excluir região",
                         title: "Excluir região"
                     }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                 )), React.createElement("div", {
@@ -20238,34 +19812,34 @@ const hideLoadingScreen = () => {
                     var nomeCliente = il(item.cod_cliente) || cliente?.nome_cliente || "";
                     return React.createElement("span", {
                         key: idx,
-                        className: "text-xs bg-white border border-blue-300 px-2 py-0.5 rounded"
+                        className: "text-xs bg-[#f9fafb] border border-gray-200 text-gray-700 px-2 py-0.5 rounded-full"
                     }, item.cod_cliente, " - ", item.centro_custo || nomeCliente || "Todos CC");
                 })));
             })))),
             
             // ========== SEÇÃO 2: MÁSCARAS (Dropdown) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+            React.createElement("div", {className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden"},
                 React.createElement("button", {
-                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "mascaras" ? "" : "mascaras"); },
-                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "mascaras" ? "" : "mascaras"); }, type: "button", "aria-expanded": configSecaoAberta === "mascaras" ? "true" : "false",
+                    className: "w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-[#f9fafb] text-left " + AB_FOCO
                 },
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })),
+                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8", flex: "none" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })),
                         React.createElement("div", {className: "text-left"},
-                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Máscaras de Clientes"),
+                            React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900"}, "Máscaras de Clientes"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, ea.length + " máscara(s) configurada(s)")
                         )
                     ),
-                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "mascaras" ? "rotate-180" : "")}, "▼")
+                    React.createElement("span", {className: "text-gray-400 inline-flex transition-transform " + (configSecaoAberta === "mascaras" ? "rotate-180" : ""), "aria-hidden": "true"}, abIco("arrowdown", 16))
                 ),
-                configSecaoAberta === "mascaras" && React.createElement("div", {className: "p-6 border-t"},
+                configSecaoAberta === "mascaras" && React.createElement("div", {className: "p-5 border-t border-gray-100"},
             React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Defina apelidos para os códigos de clientes. Esses apelidos aparecerão nos filtros e visualizações."), React.createElement("div", {
                 className: "flex gap-3 mb-4 flex-wrap"
             }, React.createElement("select", {
                 id: "bi-mascara-cliente",
-                className: "flex-1 min-w-48 px-3 py-2 border rounded-lg"
+                className: AB_INPUT + " flex-1 min-w-48", style: Object.assign({}, AB_INPUT_ST, { width: "auto" })
             }, React.createElement("option", {
                 value: ""
             }, "-- Selecione um Cliente --"), jt.map(e => React.createElement("option", {
@@ -20275,7 +19849,7 @@ const hideLoadingScreen = () => {
                 type: "text",
                 id: "bi-mascara-nome",
                 placeholder: "Digite a máscara (apelido)",
-                className: "flex-1 min-w-48 px-3 py-2 border rounded-lg"
+                className: AB_INPUT + " flex-1 min-w-48", style: Object.assign({}, AB_INPUT_ST, { width: "auto" })
             }), React.createElement("button", {
                 onClick: () => {
                     const e = document.getElementById("bi-mascara-cliente").value,
@@ -20301,20 +19875,20 @@ const hideLoadingScreen = () => {
                         }
                     })(a, t), document.getElementById("bi-mascara-cliente").value = "", document.getElementById("bi-mascara-nome").value = ""
                 },
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 whitespace-nowrap"
+                className: abBtnClass("principal"), style: abBtnStyle("principal")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Máscara"))), 0 === ea.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-4 bg-gray-50 rounded-lg"
+                className: "text-gray-500 text-sm text-center py-6 border border-dashed border-gray-200 rounded-[12px]"
             }, "Nenhuma máscara configurada") : React.createElement("div", {
                 className: "space-y-2"
             }, ea.map(e => React.createElement("div", {
                 key: e.id,
-                className: "flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200"
+                className: "flex items-center justify-between px-3 py-2.5 bg-white rounded-[12px] border border-gray-200"
             }, React.createElement("div", null, React.createElement("span", {
-                className: "font-mono bg-purple-200 px-2 py-0.5 rounded text-purple-900"
+                className: "tabular-nums bg-[#f3f4f6] px-2 py-0.5 rounded-md text-gray-700 text-[13px]"
             }, e.cod_cliente), React.createElement("span", {
-                className: "mx-2"
+                className: "mx-2 text-gray-400"
             }, "→"), React.createElement("span", {
-                className: "font-semibold text-purple-900"
+                className: "font-semibold text-gray-900"
             }, e.mascara)), React.createElement("button", {
                 onClick: () => (async e => {
                     if (confirm("Excluir esta máscara?")) try {
@@ -20325,36 +19899,36 @@ const hideLoadingScreen = () => {
                         ja("Erro ao excluir", "error")
                     }
                 })(e.id),
-                className: "text-red-500 hover:text-red-700 p-1"
+                className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Excluir", title: "Excluir"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))),
             
             // ========== SEÇÃO 3: PRAZOS (Dropdown) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden"},
+            React.createElement("div", {className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden"},
                 React.createElement("button", {
-                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos" ? "" : "prazos"); },
-                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-all"
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos" ? "" : "prazos"); }, type: "button", "aria-expanded": configSecaoAberta === "prazos" ? "true" : "false",
+                    className: "w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-[#f9fafb] text-left " + AB_FOCO
                 },
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
+                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8", flex: "none" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
                         React.createElement("div", {className: "text-left"},
-                            React.createElement("h2", {className: "text-lg font-bold text-purple-900"}, "Configuração de Prazos"),
+                            React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900"}, "Configuração de Prazos"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, yt.length + " prazo(s) específico(s)")
                         )
                     ),
-                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "prazos" ? "rotate-180" : "")}, "▼")
+                    React.createElement("span", {className: "text-gray-400 inline-flex transition-transform " + (configSecaoAberta === "prazos" ? "rotate-180" : ""), "aria-hidden": "true"}, abIco("arrowdown", 16))
                 ),
-                configSecaoAberta === "prazos" && React.createElement("div", {className: "p-6 border-t"},
+                configSecaoAberta === "prazos" && React.createElement("div", {className: "p-5 border-t border-gray-100"},
             React.createElement("h3", {
-                className: "font-bold text-purple-800 mb-2"
+                className: "text-[14px] font-semibold text-gray-900 mb-1"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Prazo Padrão")), React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Usado para clientes/centros sem configuração específica"), React.createElement("div", {
                 className: "space-y-3 mb-4"
             }, fa.map((e, t) => React.createElement("div", {
                 key: t,
-                className: "flex items-center gap-2 p-3 bg-purple-50 rounded-lg flex-wrap"
+                className: "flex items-center gap-2 px-3 py-2.5 bg-[#f9fafb] border border-gray-100 rounded-[12px] flex-wrap"
             }, React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "De"), React.createElement("input", {
                 type: "number",
                 value: e.km_min,
@@ -20362,10 +19936,10 @@ const hideLoadingScreen = () => {
                     const a = [...fa];
                     a[t].km_min = Number(e.target.value), Na(a)
                 },
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "0"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "até"), React.createElement("input", {
                 type: "number",
                 value: e.km_max || "",
@@ -20374,10 +19948,10 @@ const hideLoadingScreen = () => {
                     a[t].km_max = e.target.value ? Number(e.target.value) : null, Na(a)
                 },
                 placeholder: "∞",
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "0"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "km →"), React.createElement("input", {
                 type: "number",
                 value: e.prazo_minutos,
@@ -20385,13 +19959,13 @@ const hideLoadingScreen = () => {
                     const a = [...fa];
                     a[t].prazo_minutos = Number(e.target.value), Na(a)
                 },
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "1"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "minutos"), fa.length > 1 && React.createElement("button", {
                 onClick: () => Na(fa.filter((e, a) => a !== t)),
-                className: "text-red-500 hover:text-red-700 ml-2"
+                className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Remover faixa", title: "Remover faixa"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))), React.createElement("div", {
                 className: "flex gap-3"
             }, React.createElement("button", {
@@ -20403,7 +19977,7 @@ const hideLoadingScreen = () => {
                         prazo_minutos: 60
                     }])
                 },
-                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                className: abBtnClass("secundario"), style: abBtnStyle("secundario")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Faixa")), React.createElement("button", {
                 onClick: () => (async e => {
                     try {
@@ -20422,20 +19996,20 @@ const hideLoadingScreen = () => {
                         ja("Erro ao salvar", "error")
                     }
                 })(fa),
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                className: abBtnClass("principal"), style: abBtnStyle("principal")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Prazo Padrão")))), configSecaoAberta === "prazos" && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6 mt-4"
+                className: "bg-white border border-gray-200 rounded-[14px] p-5 mt-4"
             }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-2"
+                className: "text-[15px] font-semibold text-gray-900 mb-1"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Prazo por Cliente ou Centro de Custo")), React.createElement("p", {
                 className: "text-sm text-gray-500 mb-4"
             }, "Configure prazos específicos que sobrescrevem o padrão"), React.createElement("div", {
                 className: "mb-4"
             }, React.createElement("label", {
-                className: "text-sm text-gray-600 font-medium"
+                className: "block text-xs font-semibold text-gray-700 mb-1.5"
             }, "Selecionar Cliente ou Centro de Custo"), React.createElement("select", {
                 id: "bi-novo-codigo",
-                className: "w-full px-3 py-2 border rounded-lg mt-1"
+                className: AB_INPUT, style: AB_INPUT_ST
             }, React.createElement("option", {
                 value: ""
             }, "-- Selecione --"), React.createElement("optgroup", {
@@ -20452,9 +20026,9 @@ const hideLoadingScreen = () => {
                 className: "space-y-3 mb-4"
             }, ya.map((e, t) => React.createElement("div", {
                 key: t,
-                className: "flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap"
+                className: "flex items-center gap-2 px-3 py-2.5 bg-[#f9fafb] border border-gray-100 rounded-[12px] flex-wrap"
             }, React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "De"), React.createElement("input", {
                 type: "number",
                 value: e.km_min,
@@ -20462,10 +20036,10 @@ const hideLoadingScreen = () => {
                     const a = [...ya];
                     a[t].km_min = Number(e.target.value), va(a)
                 },
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "0"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "até"), React.createElement("input", {
                 type: "number",
                 value: e.km_max || "",
@@ -20474,10 +20048,10 @@ const hideLoadingScreen = () => {
                     a[t].km_max = e.target.value ? Number(e.target.value) : null, va(a)
                 },
                 placeholder: "∞",
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "0"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "km →"), React.createElement("input", {
                 type: "number",
                 value: e.prazo_minutos,
@@ -20485,13 +20059,13 @@ const hideLoadingScreen = () => {
                     const a = [...ya];
                     a[t].prazo_minutos = Number(e.target.value), va(a)
                 },
-                className: "w-20 px-2 py-1 border rounded text-center",
+                className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                 min: "1"
             }), React.createElement("span", {
-                className: "text-sm font-medium"
+                className: "text-sm text-gray-600"
             }, "minutos"), ya.length > 1 && React.createElement("button", {
                 onClick: () => va(ya.filter((e, a) => a !== t)),
-                className: "text-red-500 hover:text-red-700 ml-2"
+                className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Remover faixa", title: "Remover faixa"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))), React.createElement("div", {
                 className: "flex gap-3"
             }, React.createElement("button", {
@@ -20503,7 +20077,7 @@ const hideLoadingScreen = () => {
                         prazo_minutos: 60
                     }])
                 },
-                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                className: abBtnClass("secundario"), style: abBtnStyle("secundario")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Faixa")), React.createElement("button", {
                 onClick: () => {
                     const e = document.getElementById("bi-novo-codigo").value;
@@ -20534,24 +20108,24 @@ const hideLoadingScreen = () => {
                         prazo_minutos: 45
                     }]), document.getElementById("bi-novo-codigo").value = ""
                 },
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                className: abBtnClass("principal"), style: abBtnStyle("principal")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Configuração")))), configSecaoAberta === "prazos" && React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6 mt-4"
+                className: "bg-white border border-gray-200 rounded-[14px] p-5 mt-4"
             }, React.createElement("h2", {
-                className: "text-xl font-bold text-purple-900 mb-4"
+                className: "text-[15px] font-semibold text-gray-900 mb-3"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Prazos Configurados ("), yt.length, ")"), 0 === yt.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-8"
+                className: "text-gray-500 text-sm text-center py-8"
             }, "Nenhum prazo específico configurado") : React.createElement("div", {
                 className: "space-y-3"
             }, yt.map(e => React.createElement("div", {
                 key: e.id,
-                className: "border border-purple-200 rounded-lg p-4 bg-purple-50"
+                className: "border border-gray-200 rounded-[12px] p-4 bg-white"
             }, React.createElement("div", {
                 className: "flex justify-between items-start mb-3"
             }, React.createElement("div", null, React.createElement("span", {
-                className: "text-xs px-2 py-0.5 rounded " + ("cliente" === e.tipo ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+                className: "text-xs px-2 py-0.5 rounded-full font-medium " + ("cliente" === e.tipo ? "bg-[#eff6ff] text-[#1e40af]" : "bg-[#f0fdf4] text-[#166534]")
             }, "cliente" === e.tipo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Cliente") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Centro de Custo")), React.createElement("p", {
-                className: "font-semibold mt-1 text-purple-900"
+                className: "font-semibold mt-1.5 text-gray-900"
             }, e.nome || e.codigo)), React.createElement("button", {
                 onClick: () => (async e => {
                     if (confirm("Remover esta configuração de prazo?")) try {
@@ -20562,33 +20136,33 @@ const hideLoadingScreen = () => {
                         ja("Erro ao remover", "error")
                     }
                 })(e.id),
-                className: "text-red-500 hover:text-red-700 p-1"
+                className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Excluir", title: "Excluir"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))), React.createElement("div", {
                 className: "flex flex-wrap gap-2"
             }, e.faixas && e.faixas.map((e, t) => React.createElement("span", {
                 key: t,
-                className: "bg-white border border-purple-300 px-3 py-1 rounded text-sm"
+                className: "bg-[#f9fafb] border border-gray-200 px-3 py-1 rounded-full text-[13px] text-gray-700 tabular-nums"
             }, e.km_min, " - ", e.km_max || "∞", " km → ", React.createElement("strong", null, e.prazo_minutos, " min")))))))))),
             
             // ========== SEÇÃO 4: PRAZOS PROFISSIONAIS (Dropdown) - APENAS NA ABA CONFIG ==========
-            "config" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow overflow-hidden mt-4"},
+            "config" === Et && React.createElement("div", {className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden mt-4"},
                 React.createElement("button", {
-                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos_prof" ? "" : "prazos_prof"); },
-                    className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-orange-50 to-white hover:from-orange-100 transition-all"
+                    onClick: function() { setConfigSecaoAberta(configSecaoAberta === "prazos_prof" ? "" : "prazos_prof"); }, type: "button", "aria-expanded": configSecaoAberta === "prazos_prof" ? "true" : "false",
+                    className: "w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-[#f9fafb] text-left " + AB_FOCO
                 },
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("span", {className: "text-2xl"}, Icon("wrench")),
+                        React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8", flex: "none" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wrench" })),
                         React.createElement("div", {className: "text-left"},
-                            React.createElement("h2", {className: "text-lg font-bold text-orange-900"}, "Prazo Profissional"),
+                            React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900"}, "Prazo Profissional"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, prazosProfissionais.length + " prazo(s) específico(s)")
                         )
                     ),
-                    React.createElement("span", {className: "text-2xl text-purple-600 transition-transform " + (configSecaoAberta === "prazos_prof" ? "rotate-180" : "")}, "▼")
+                    React.createElement("span", {className: "text-gray-400 inline-flex transition-transform " + (configSecaoAberta === "prazos_prof" ? "rotate-180" : ""), "aria-hidden": "true"}, abIco("arrowdown", 16))
                 ),
-                configSecaoAberta === "prazos_prof" && React.createElement("div", {className: "p-6 border-t"},
+                configSecaoAberta === "prazos_prof" && React.createElement("div", {className: "p-5 border-t border-gray-100"},
                     // Prazo Padrão Profissional
                     React.createElement("h3", {
-                        className: "font-bold text-purple-800 mb-2"
+                        className: "text-[14px] font-semibold text-gray-900 mb-1"
                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Prazo Padrão Profissional")),
                     React.createElement("p", {
                         className: "text-sm text-gray-500 mb-4"
@@ -20597,9 +20171,9 @@ const hideLoadingScreen = () => {
                         className: "space-y-3 mb-4"
                     }, prazoProfPadrao.map((e, t) => React.createElement("div", {
                         key: t,
-                        className: "flex items-center gap-2 p-3 bg-orange-50 rounded-lg flex-wrap"
+                        className: "flex items-center gap-2 px-3 py-2.5 bg-[#f9fafb] border border-gray-100 rounded-[12px] flex-wrap"
                     },
-                        React.createElement("span", {className: "text-sm font-medium"}, "De"),
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "De"),
                         React.createElement("input", {
                             type: "number",
                             value: e.km_min,
@@ -20608,10 +20182,10 @@ const hideLoadingScreen = () => {
                                 a[t].km_min = Number(e.target.value);
                                 setPrazoProfPadrao(a);
                             },
-                            className: "w-20 px-2 py-1 border rounded text-center",
+                            className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                             min: "0"
                         }),
-                        React.createElement("span", {className: "text-sm font-medium"}, "até"),
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "até"),
                         React.createElement("input", {
                             type: "number",
                             value: e.km_max || "",
@@ -20621,10 +20195,10 @@ const hideLoadingScreen = () => {
                                 setPrazoProfPadrao(a);
                             },
                             placeholder: "∞",
-                            className: "w-20 px-2 py-1 border rounded text-center",
+                            className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                             min: "0"
                         }),
-                        React.createElement("span", {className: "text-sm font-medium"}, "km →"),
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "km →"),
                         React.createElement("input", {
                             type: "number",
                             value: e.prazo_minutos,
@@ -20633,13 +20207,13 @@ const hideLoadingScreen = () => {
                                 a[t].prazo_minutos = Number(e.target.value);
                                 setPrazoProfPadrao(a);
                             },
-                            className: "w-20 px-2 py-1 border rounded text-center",
+                            className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                             min: "1"
                         }),
-                        React.createElement("span", {className: "text-sm font-medium"}, "minutos"),
+                        React.createElement("span", {className: "text-sm text-gray-600"}, "minutos"),
                         prazoProfPadrao.length > 1 && React.createElement("button", {
                             onClick: () => setPrazoProfPadrao(prazoProfPadrao.filter((e, a) => a !== t)),
-                            className: "text-red-500 hover:text-red-700 ml-2"
+                            className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Remover faixa", title: "Remover faixa"
                         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                     ))),
                     React.createElement("div", {className: "flex gap-3 mb-6"},
@@ -20652,7 +20226,7 @@ const hideLoadingScreen = () => {
                                     prazo_minutos: 60
                                 }]);
                             },
-                            className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                            className: abBtnClass("secundario"), style: abBtnStyle("secundario")
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Faixa")),
                         React.createElement("button", {
                             onClick: async () => {
@@ -20672,19 +20246,19 @@ const hideLoadingScreen = () => {
                                     ja("Erro ao salvar", "error");
                                 }
                             },
-                            className: "px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
+                            className: abBtnClass("principal"), style: abBtnStyle("principal")
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Prazo Padrão"))
                     ),
                     
                     // Prazo por Cliente/Centro
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-orange-200"},
-                        React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Prazo Prof. por Cliente ou Centro de Custo")),
+                    React.createElement("div", {className: "bg-white rounded-[14px] p-5 border border-gray-200"},
+                        React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Prazo Prof. por Cliente ou Centro de Custo")),
                         React.createElement("p", {className: "text-sm text-gray-500 mb-4"}, "Configure prazos profissionais específicos que sobrescrevem o padrão (mesma contagem: da coleta até finalizar a entrega)"),
                         React.createElement("div", {className: "mb-4"},
-                            React.createElement("label", {className: "text-sm text-gray-600 font-medium"}, "Selecionar Cliente ou Centro de Custo"),
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-700 mb-1.5"}, "Selecionar Cliente ou Centro de Custo"),
                             React.createElement("select", {
                                 id: "bi-prazo-prof-codigo",
-                                className: "w-full px-3 py-2 border rounded-lg mt-1"
+                                className: AB_INPUT, style: AB_INPUT_ST
                             },
                                 React.createElement("option", {value: ""}, "-- Selecione --"),
                                 React.createElement("optgroup", {label: "Clientes"},
@@ -20704,9 +20278,9 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {className: "space-y-3 mb-4"},
                             prazoProfNovo.map((e, t) => React.createElement("div", {
                                 key: t,
-                                className: "flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap"
+                                className: "flex items-center gap-2 px-3 py-2.5 bg-[#f9fafb] border border-gray-100 rounded-[12px] flex-wrap"
                             },
-                                React.createElement("span", {className: "text-sm font-medium"}, "De"),
+                                React.createElement("span", {className: "text-sm text-gray-600"}, "De"),
                                 React.createElement("input", {
                                     type: "number",
                                     value: e.km_min,
@@ -20715,10 +20289,10 @@ const hideLoadingScreen = () => {
                                         a[t].km_min = Number(e.target.value);
                                         setPrazoProfNovo(a);
                                     },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                                     min: "0"
                                 }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "até"),
+                                React.createElement("span", {className: "text-sm text-gray-600"}, "até"),
                                 React.createElement("input", {
                                     type: "number",
                                     value: e.km_max || "",
@@ -20728,10 +20302,10 @@ const hideLoadingScreen = () => {
                                         setPrazoProfNovo(a);
                                     },
                                     placeholder: "∞",
-                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                                     min: "0"
                                 }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "km →"),
+                                React.createElement("span", {className: "text-sm text-gray-600"}, "km →"),
                                 React.createElement("input", {
                                     type: "number",
                                     value: e.prazo_minutos,
@@ -20740,13 +20314,13 @@ const hideLoadingScreen = () => {
                                         a[t].prazo_minutos = Number(e.target.value);
                                         setPrazoProfNovo(a);
                                     },
-                                    className: "w-20 px-2 py-1 border rounded text-center",
+                                    className: "w-20 px-2 bg-white border border-gray-200 rounded-[8px] text-center text-sm tabular-nums focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#e9d5f9]", style: { height: 32 },
                                     min: "1"
                                 }),
-                                React.createElement("span", {className: "text-sm font-medium"}, "minutos"),
+                                React.createElement("span", {className: "text-sm text-gray-600"}, "minutos"),
                                 prazoProfNovo.length > 1 && React.createElement("button", {
                                     onClick: () => setPrazoProfNovo(prazoProfNovo.filter((e, a) => a !== t)),
-                                    className: "text-red-500 hover:text-red-700 ml-2"
+                                    className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Remover faixa", title: "Remover faixa"
                                 }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                             ))
                         ),
@@ -20760,7 +20334,7 @@ const hideLoadingScreen = () => {
                                         prazo_minutos: 60
                                     }]);
                                 },
-                                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
+                                className: abBtnClass("secundario"), style: abBtnStyle("secundario")
                             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar Faixa")),
                             React.createElement("button", {
                                 onClick: async () => {
@@ -20794,27 +20368,27 @@ const hideLoadingScreen = () => {
                                     setPrazoProfNovo([{km_min: 0, km_max: 15, prazo_minutos: 60}]);
                                     document.getElementById("bi-prazo-prof-codigo").value = "";
                                 },
-                                className: "px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
+                                className: abBtnClass("principal"), style: abBtnStyle("principal")
                             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Configuração"))
                         )
                     ),
                     
                     // Lista de Prazos Profissionais Configurados
-                    React.createElement("div", {className: "bg-white rounded-xl shadow p-6 mt-4 border border-orange-200"},
-                        React.createElement("h2", {className: "text-xl font-bold text-orange-900 mb-4"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Prazos Prof. Configurados ("), prazosProfissionais.length, ")"),
+                    React.createElement("div", {className: "bg-white rounded-[14px] p-5 mt-4 border border-gray-200"},
+                        React.createElement("h2", {className: "text-[15px] font-semibold text-gray-900 mb-3"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Prazos Prof. Configurados ("), prazosProfissionais.length, ")"),
                         prazosProfissionais.length === 0 
-                            ? React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Nenhum prazo profissional específico configurado")
+                            ? React.createElement("p", {className: "text-gray-500 text-sm text-center py-8"}, "Nenhum prazo profissional específico configurado")
                             : React.createElement("div", {className: "space-y-3"},
                                 prazosProfissionais.map(e => React.createElement("div", {
                                     key: e.id,
-                                    className: "border border-orange-200 rounded-lg p-4 bg-orange-50"
+                                    className: "border border-gray-200 rounded-[12px] p-4 bg-white"
                                 },
                                     React.createElement("div", {className: "flex justify-between items-start mb-3"},
                                         React.createElement("div", null,
                                             React.createElement("span", {
-                                                className: "text-xs px-2 py-0.5 rounded " + (e.tipo === "cliente" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700")
+                                                className: "text-xs px-2 py-0.5 rounded-full font-medium " + (e.tipo === "cliente" ? "bg-[#eff6ff] text-[#1e40af]" : "bg-[#f0fdf4] text-[#166534]")
                                             }, e.tipo === "cliente" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Cliente") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Centro de Custo")),
-                                            React.createElement("p", {className: "font-semibold mt-1 text-orange-900"}, e.nome || e.codigo)
+                                            React.createElement("p", {className: "font-semibold mt-1.5 text-gray-900"}, e.nome || e.codigo)
                                         ),
                                         React.createElement("button", {
                                             onClick: async () => {
@@ -20831,13 +20405,13 @@ const hideLoadingScreen = () => {
                                                     }
                                                 }
                                             },
-                                            className: "text-red-500 hover:text-red-700 p-1"
+                                            className: "w-8 h-8 inline-grid place-items-center rounded-lg border border-[#fecaca] bg-white hover:bg-[#fef2f2] " + AB_FOCO, "aria-label": "Excluir", title: "Excluir"
                                         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                                     ),
                                     React.createElement("div", {className: "flex flex-wrap gap-2"},
                                         e.faixas && e.faixas.map((f, idx) => React.createElement("span", {
                                             key: idx,
-                                            className: "bg-white border border-orange-300 px-3 py-1 rounded text-sm"
+                                            className: "bg-[#f9fafb] border border-gray-200 px-3 py-1 rounded-full text-[13px] text-gray-700 tabular-nums"
                                         }, f.km_min, " - ", f.km_max || "∞", " km → ", React.createElement("strong", null, f.prazo_minutos, " min")))
                                     )
                                 ))
@@ -20845,8 +20419,8 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // Botão para recalcular prazos profissionais
-                    React.createElement("div", {className: "bg-gradient-to-r from-orange-100 to-yellow-100 rounded-xl p-6 mt-4 border-2 border-orange-300"},
-                        React.createElement("h3", {className: "font-bold text-purple-800 mb-2 flex items-center gap-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Recalcular Prazos Profissionais")),
+                    React.createElement("div", {className: "bg-white rounded-[14px] p-5 mt-4 border border-gray-200"},
+                        React.createElement("h3", {className: "text-[14px] font-semibold text-gray-900 mb-1 flex items-center gap-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Recalcular Prazos Profissionais")),
                         React.createElement("p", {className: "text-sm text-gray-600 mb-4"}, "Atualiza o status de prazo profissional para todas as entregas existentes com base nas configurações atuais."),
                         React.createElement("button", {
                             onClick: async () => {
@@ -20871,7 +20445,7 @@ const hideLoadingScreen = () => {
                                 }
                                 s(false);
                             },
-                            className: "px-6 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                            className: abBtnClass("secundario"), style: abBtnStyle("secundario")
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Recalcular Agora"))
                     )
                 )

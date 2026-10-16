@@ -1,5 +1,8 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
+/* BI_ABAS_V1: BI Monitoramento no padrão clean — cabeçalho Sora 24, abas internas, faixa única
+   de KPIs, tabelas com cabeçalho #f9fafb e status em pílula suave, modal de filtros branco.
+   Cálculos, filtros e chamadas de API inalterados. */
 /* ============================================================================
  * modulo-bi-monitoramento.js
  *
@@ -62,17 +65,62 @@
   }
   function corPct(taxa) {
     if (taxa === null || taxa === undefined) return 'text-gray-500';
-    if (taxa >= 90) return 'text-green-700';
-    if (taxa >= 75) return 'text-emerald-700';
-    if (taxa >= 60) return 'text-yellow-700';
-    return 'text-red-700';
+    if (taxa >= 75) return 'text-green-800';
+    if (taxa >= 60) return 'text-amber-800';
+    return 'text-red-800';
   }
-  function corPctBg(taxa) {
-    if (taxa === null || taxa === undefined) return 'bg-gray-100 text-gray-700';
-    if (taxa >= 90) return 'bg-green-50 text-green-700';
-    if (taxa >= 75) return 'bg-emerald-50 text-emerald-700';
-    if (taxa >= 60) return 'bg-yellow-50 text-yellow-700';
-    return 'bg-red-50 text-red-700';
+  // BI_ABAS_V1: tom da pílula de % prazo (fundo 50 + texto 800 + ponto 600)
+  function tomPct(taxa) {
+    if (taxa === null || taxa === undefined) return ['#f3f4f6', '#374151', '#9ca3af'];
+    if (taxa >= 75) return ['#f0fdf4', '#166534', '#16a34a'];
+    if (taxa >= 60) return ['#fffbeb', '#92400e', '#d97706'];
+    return ['#fef2f2', '#991b1b', '#dc2626'];
+  }
+  function pillPct(taxa) {
+    const t = tomPct(taxa);
+    return h('span', { className: 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap', style: { background: t[0], color: t[1] } },
+      h('span', { style: { width: 6, height: 6, borderRadius: 999, background: t[2] } }),
+      taxa != null ? Number(taxa).toFixed(1) + '%' : '—');
+  }
+  function ico(nome, sz, extra) {
+    return h('svg', { className: 'ico', style: Object.assign({ width: sz || 15, height: sz || 15, flexShrink: 0 }, extra || {}), 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome }));
+  }
+  const CARD = 'bg-white border border-gray-200 rounded-[14px]';
+  const TH = 'px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap';
+  const TD = 'px-3 py-2.5';
+  const INPUT = 'w-full h-[38px] bg-white border border-gray-200 rounded-[10px] px-3 text-[13px] text-gray-900 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100';
+  const BTN_SEC = 'inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap';
+  const BTN_PRI = 'inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[10px] text-[13px] font-semibold text-white whitespace-nowrap';
+  function cabecalhoCard(titulo, sub, direita) {
+    return h('div', { className: 'flex items-center justify-between gap-3 flex-wrap px-4 py-3 border-b border-gray-100' },
+      h('div', { className: 'min-w-0' },
+        h('h2', { className: 'text-[15px] font-semibold text-gray-900', style: { margin: 0 } }, titulo),
+        sub ? h('div', { className: 'text-[13px] text-gray-500 mt-0.5' }, sub) : null),
+      direita || null);
+  }
+  function busca(valor, setValor, placeholder) {
+    return h('div', { className: 'relative' },
+      ico('search', 14, { position: 'absolute', left: 10, top: 10, color: '#9ca3af' }),
+      h('input', {
+        type: 'text', placeholder, 'aria-label': placeholder,
+        value: valor, onChange: (e) => setValor(e.target.value),
+        className: 'h-[34px] pl-8 pr-3 border border-gray-200 rounded-[10px] w-52 bg-white text-[13px]'
+      }));
+  }
+  // Faixa única de KPIs: [{ label, valor, sub }]
+  function FaixaKpis({ itens, rotulo }) {
+    return h('section', { 'aria-label': rotulo || 'Indicadores', className: CARD + ' overflow-hidden', style: { display: 'flex', flexWrap: 'wrap' } },
+      itens.map((k, i) => h('div', {
+        key: k.label,
+        style: { flex: '1 1 180px', padding: '14px 20px', borderRight: i === itens.length - 1 ? 0 : '1px solid #f3f4f6', borderBottom: '1px solid #f3f4f6', marginBottom: -1, minWidth: 0 }
+      },
+        h('div', { style: { fontSize: 12, color: '#6b7280' } }, k.label),
+        h('div', { style: { fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, color: k.cor || '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1.25, margin: '2px 0', whiteSpace: 'nowrap' } }, k.valor),
+        k.sub ? h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, k.sub) : null
+      )));
+  }
+  function estadoErro(msg) {
+    return h('div', { role: 'alert', className: 'rounded-[14px] p-4 text-[13px]', style: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' } }, msg);
   }
   function iniciaisDe(nome) {
     if (!nome) return '??';
@@ -94,66 +142,36 @@
   }
 
   /* ───────── DONUT SVG ───────── */
+  // BI_ABAS_V1: par semântico sucesso (#16a34a) x erro (#dc2626)
   function DonutPrazo({ taxa, dentro, fora }) {
     const t = Number(taxa) || 0;
     const r = 78, c = 2 * Math.PI * r;
     const offset = c * (1 - t / 100);
-    return h('div', { className: 'flex flex-col items-center justify-center' },
-      h('svg', { viewBox: '0 0 200 200', width: 180, height: 180 },
-        h('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: '#fef2f2', strokeWidth: 22 }),
+    return h('div', { className: 'flex items-center justify-center gap-8 flex-wrap' },
+      h('svg', { viewBox: '0 0 200 200', width: 168, height: 168, role: 'img', 'aria-label': t.toFixed(1) + '% no prazo' },
+        h('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: '#dc2626', strokeWidth: 20 }),
         h('circle', {
-          cx: 100, cy: 100, r, fill: 'none', stroke: '#16a34a', strokeWidth: 22,
+          cx: 100, cy: 100, r, fill: 'none', stroke: '#16a34a', strokeWidth: 20,
           strokeDasharray: c, strokeDashoffset: offset,
           transform: 'rotate(-90 100 100)', strokeLinecap: 'butt'
         }),
-        h('text', { x: 100, y: 98, textAnchor: 'middle', fontSize: 32, fontWeight: 500, fill: '#16a34a' },
+        h('text', { x: 100, y: 100, textAnchor: 'middle', fontSize: 30, fontWeight: 700, fill: '#111827', fontFamily: 'Sora, Inter, sans-serif' },
           t.toFixed(1) + '%'),
-        h('text', { x: 100, y: 118, textAnchor: 'middle', fontSize: 10, letterSpacing: 2, fill: '#6b7280' },
-          'NO PRAZO')
+        h('text', { x: 100, y: 122, textAnchor: 'middle', fontSize: 12, fill: '#6b7280' },
+          'no prazo')
       ),
-      h('div', { className: 'flex justify-between w-full px-2 pt-2 mt-2 border-t border-gray-100 text-xs' },
-        h('div', null,
-          h('span', { className: 'text-emerald-500' }, '● '),
-          h('span', { className: 'text-gray-600' }, 'No Prazo'),
-          h('br'),
-          h('span', { className: 'font-semibold text-gray-900' }, fmtNum(dentro)),
-          ' ',
-          h('span', { className: 'text-emerald-600' }, '(' + t.toFixed(1) + '%)')
-        ),
-        h('div', { className: 'text-right' },
-          h('span', { className: 'text-gray-600' }, 'Fora Prazo '),
-          h('span', { className: 'text-red-500' }, '●'),
-          h('br'),
-          h('span', { className: 'font-semibold text-gray-900' }, fmtNum(fora)),
-          ' ',
-          h('span', { className: 'text-red-600' }, '(' + (100 - t).toFixed(1) + '%)')
-        )
+      h('div', { className: 'flex flex-col gap-3 text-[13px]', style: { minWidth: 180 } },
+        h('div', { className: 'flex items-start gap-2' },
+          h('span', { style: { width: 10, height: 10, borderRadius: 3, background: '#16a34a', marginTop: 4, flexShrink: 0 } }),
+          h('div', null,
+            h('div', { className: 'text-gray-500' }, 'No prazo'),
+            h('div', { className: 'font-semibold text-gray-900 tabular-nums' }, fmtNum(dentro), h('span', { className: 'font-normal text-gray-500' }, ' · ' + t.toFixed(1) + '%')))),
+        h('div', { className: 'flex items-start gap-2' },
+          h('span', { style: { width: 10, height: 10, borderRadius: 3, background: '#dc2626', marginTop: 4, flexShrink: 0 } }),
+          h('div', null,
+            h('div', { className: 'text-gray-500' }, 'Fora do prazo'),
+            h('div', { className: 'font-semibold text-gray-900 tabular-nums' }, fmtNum(fora), h('span', { className: 'font-normal text-gray-500' }, ' · ' + (100 - t).toFixed(1) + '%'))))
       )
-    );
-  }
-
-  /* ───────── KPI CARD ───────── */
-  function KpiCard({ icone, iconeBg, label, labelCor, labelBg, valor, sub, accent }) {
-    return h('div', {
-      className: 'bg-white border border-gray-200 rounded-xl p-4 relative'
-    },
-      accent ? h('div', {
-        className: 'absolute left-0 top-3 bottom-3 w-1 rounded-r',
-        style: { background: accent }
-      }) : null,
-      h('div', { className: 'flex justify-between items-start' },
-        h('div', {
-          className: 'w-9 h-9 rounded-lg flex items-center justify-center',
-          style: { background: iconeBg || '#faf7fd' }
-        }, h('span', { style: { fontSize: '18px' } }, icone)),
-        h('span', {
-          className: 'text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full',
-          style: { color: labelCor || '#770fa8', background: labelBg || '#faf7fd' }
-        }, label)
-      ),
-      h('div', { className: 'text-[28px] font-medium text-gray-900 leading-none mt-3 tabular-nums' },
-        valor),
-      sub ? h('div', { className: 'text-[11px] text-gray-500 mt-1.5' }, sub) : null
     );
   }
 
@@ -226,46 +244,60 @@
       });
     }
 
+    const caixaLista = (titulo, qtdSel, onLimpar, conteudo, rodape) =>
+      h('div', { className: 'border border-gray-200 rounded-[12px] overflow-hidden bg-white' },
+        h('div', { className: 'flex justify-between items-center px-3 py-2 bg-gray-50 border-b border-gray-100' },
+          h('div', { className: 'text-xs font-semibold text-gray-700' }, titulo,
+            qtdSel > 0 ? h('span', { className: 'font-medium text-purple-800' }, ' · ' + qtdSel + ' selec.') : null),
+          h('button', { type: 'button', className: 'text-xs font-semibold text-gray-500 hover:text-gray-900', onClick: onLimpar }, 'Limpar')
+        ),
+        h('div', { className: 'p-2' }, conteudo),
+        rodape ? h('div', { className: 'px-3 py-1.5 text-xs text-gray-500 border-t border-gray-100' }, rodape) : null
+      );
+    const itemCheck = (key, checked, onChange, texto) =>
+      h('label', { key, className: 'flex items-center gap-2 text-[13px] text-gray-700 py-1 cursor-pointer hover:bg-gray-50 rounded-md px-1.5' },
+        h('input', { type: 'checkbox', checked, onChange, style: { accentColor: '#770fa8' } }), texto);
+
     return h('div', {
       className: 'fixed inset-0 z-50 flex items-center justify-center p-4',
-      style: { background: 'rgba(0,0,0,0.5)' }, onClick: onFechar
+      style: { background: 'rgba(17,24,39,0.45)' }, onClick: onFechar
     },
       h('div', {
-        className: 'bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl',
+        role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'bimon-filtros-titulo',
+        className: 'bg-white rounded-[14px] border border-gray-200 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col',
         onClick: (e) => e.stopPropagation()
       },
-        h('div', {
-          className: 'flex items-center justify-between px-5 py-3',
-          style: { background: 'linear-gradient(135deg, #b43aed, #a128d9)' }
-        },
-          h('div', { className: 'flex items-center gap-2 text-white font-medium' },
-            h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-search" }))), 'Filtros Inteligentes'),
-          h('button', { className: 'text-white text-2xl leading-none px-2', onClick: onFechar }, '×')
+        h('div', { className: 'flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-100' },
+          h('div', null,
+            h('div', { id: 'bimon-filtros-titulo', className: 'text-base font-semibold text-gray-900' }, 'Filtros'),
+            h('div', { className: 'text-[13px] text-gray-500 mt-0.5' }, 'Valem para todas as abas do BI Monitoramento.')),
+          h('button', { type: 'button', 'aria-label': 'Fechar', title: 'Fechar', className: 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100', onClick: onFechar }, ico('x', 16))
         ),
-        h('div', { className: 'p-4 overflow-y-auto flex-1' },
-          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 mb-3' },
+        h('div', { className: 'p-5 overflow-y-auto flex-1 flex flex-col gap-4' },
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Data Início")),
+              h('label', { htmlFor: 'bimon-ini', className: 'text-xs font-semibold text-gray-700 block mb-1.5' }, 'Data início'),
               h('input', {
-                type: 'date', value: local.data_inicio || '',
+                id: 'bimon-ini', type: 'date', value: local.data_inicio || '',
                 onChange: (e) => setLocal({ ...local, data_inicio: e.target.value }),
-                className: 'w-full text-sm border border-gray-300 rounded-md px-2 py-1.5'
+                className: INPUT
               })
             ),
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-calendar" })), "Data Fim")),
+              h('label', { htmlFor: 'bimon-fim', className: 'text-xs font-semibold text-gray-700 block mb-1.5' }, 'Data fim'),
               h('input', {
-                type: 'date', value: local.data_fim || '',
+                id: 'bimon-fim', type: 'date', value: local.data_fim || '',
                 onChange: (e) => setLocal({ ...local, data_fim: e.target.value }),
-                className: 'w-full text-sm border border-gray-300 rounded-md px-2 py-1.5'
+                className: INPUT
               })
             ),
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Status Prazo")),
+              h('label', { htmlFor: 'bimon-prazo', className: 'text-xs font-semibold text-gray-700 block mb-1.5' }, 'Status do prazo'),
               h('select', {
+                id: 'bimon-prazo',
                 value: local.status_prazo || '',
                 onChange: (e) => setLocal({ ...local, status_prazo: e.target.value }),
-                className: 'w-full text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white'
+                className: INPUT
               },
                 h('option', { value: '' }, 'Todos'),
                 h('option', { value: 'dentro' }, 'No Prazo'),
@@ -273,11 +305,12 @@
               )
             ),
             h('div', null,
-              h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, '↩️ Retorno'),
+              h('label', { htmlFor: 'bimon-ret', className: 'text-xs font-semibold text-gray-700 block mb-1.5' }, 'Retorno'),
               h('select', {
+                id: 'bimon-ret',
                 value: local.status_retorno || '',
                 onChange: (e) => setLocal({ ...local, status_retorno: e.target.value }),
-                className: 'w-full text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white'
+                className: INPUT
               },
                 h('option', { value: '' }, 'Todos'),
                 h('option', { value: 'com_retorno' }, 'Com Retorno'),
@@ -285,109 +318,50 @@
               )
             )
           ),
-          h('div', { className: 'mb-3' },
-            h('label', { className: 'text-xs text-gray-600 font-medium block mb-1' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Região")),
+          h('div', { className: 'md:w-1/3' },
+            h('label', { htmlFor: 'bimon-regiao', className: 'text-xs font-semibold text-gray-700 block mb-1.5' }, 'Região'),
             h('select', {
+              id: 'bimon-regiao',
               value: local.regiao || '',
               onChange: (e) => setLocal({ ...local, regiao: e.target.value }),
-              className: 'text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white w-full md:w-1/3'
+              className: INPUT
             },
               h('option', { value: '' }, 'Todas as Regiões'),
               regioes.map(r => h('option', { key: r.id, value: r.nome }, r.nome))
             )
           ),
-          h('div', { className: 'border border-gray-200 rounded-lg p-3 mb-3 bg-blue-50/30' },
-            h('div', { className: 'flex justify-between items-center mb-2' },
-              h('div', { className: 'text-xs font-semibold text-gray-700' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-tag" })), "Categoria")),
-              h('button', {
-                className: 'text-[10px] text-blue-600 hover:underline',
-                onClick: () => setLocal({ ...local, categoria: [] })
-              }, 'Limpar')
-            ),
+          caixaLista('Categoria', arrCat.length, () => setLocal({ ...local, categoria: [] }),
             h('div', { className: 'max-h-32 overflow-y-auto' },
-              categorias.map(cat =>
-                h('label', { key: cat, className: 'flex items-center gap-2 text-xs text-gray-700 py-1 cursor-pointer hover:bg-white rounded px-1' },
-                  h('input', {
-                    type: 'checkbox',
-                    checked: arrCat.includes(cat),
-                    onChange: () => setLocal({ ...local, categoria: toggleArr(arrCat, cat) })
-                  }), cat)
-              )
+              categorias.map(cat => itemCheck(cat, arrCat.includes(cat), () => setLocal({ ...local, categoria: toggleArr(arrCat, cat) }), cat))
             ),
-            h('div', { className: 'text-[10px] text-amber-600 mt-1' },
-              `${categorias.length} disponíveis · ${arrCat.length === 0 ? 'Sem seleção = Todas' : arrCat.length + ' selecionada(s)'}`)
-          ),
+            `${categorias.length} disponíveis · ${arrCat.length === 0 ? 'Sem seleção = Todas' : arrCat.length + ' selecionada(s)'}`),
           h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
-            h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-purple-50/30' },
-              h('div', { className: 'flex justify-between items-center mb-2' },
-                h('div', { className: 'text-xs font-semibold text-gray-700' },
-                  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-building" })), "Cliente (Loja) "),
-                  arrCli.length > 0 ? h('span', { className: 'text-purple-700' }, `· ${arrCli.length} selec.`) : null
-                ),
-                h('button', {
-                  className: 'text-[10px] text-purple-600 hover:underline',
-                  onClick: () => setLocal({ ...local, cod_cliente: [] })
-                }, 'Limpar')
-              ),
-              h('input', {
-                type: 'text', placeholder: 'Buscar por código ou nome...',
-                value: buscaCliente, onChange: (e) => setBuscaCliente(e.target.value),
-                className: 'w-full text-xs border border-gray-300 rounded-md px-2 py-1.5 mb-2'
-              }),
-              h('div', { className: 'max-h-32 overflow-y-auto' },
-                clientesFiltrados.slice(0, 200).map(c =>
-                  h('label', {
-                    key: c.cod_cliente,
-                    className: 'flex items-center gap-2 text-xs text-gray-700 py-0.5 cursor-pointer hover:bg-white rounded px-1'
-                  },
-                    h('input', {
-                      type: 'checkbox',
-                      checked: arrCli.some(v => String(v) === String(c.cod_cliente)),
-                      onChange: () => setLocal({ ...local, cod_cliente: toggleArr(arrCli, c.cod_cliente) })
-                    }),
-                    `${c.cod_cliente} - ${c.nome_fantasia || ''}`)
+            caixaLista('Cliente (loja)', arrCli.length, () => setLocal({ ...local, cod_cliente: [] }),
+              h(React.Fragment, null,
+                h('div', { className: 'relative mb-2' },
+                  ico('search', 14, { position: 'absolute', left: 10, top: 12, color: '#9ca3af' }),
+                  h('input', {
+                    type: 'text', placeholder: 'Buscar por código ou nome', 'aria-label': 'Buscar cliente',
+                    value: buscaCliente, onChange: (e) => setBuscaCliente(e.target.value),
+                    className: INPUT + ' pl-8'
+                  })),
+                h('div', { className: 'max-h-32 overflow-y-auto' },
+                  clientesFiltrados.slice(0, 200).map(c =>
+                    itemCheck(c.cod_cliente, arrCli.some(v => String(v) === String(c.cod_cliente)), () => setLocal({ ...local, cod_cliente: toggleArr(arrCli, c.cod_cliente) }), `${c.cod_cliente} - ${c.nome_fantasia || ''}`))
                 )
-              )
-            ),
-            h('div', { className: 'border border-gray-200 rounded-lg p-3 bg-emerald-50/30' },
-              h('div', { className: 'flex justify-between items-center mb-2' },
-                h('div', { className: 'text-xs font-semibold text-gray-700' },
-                  h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" })), "Centro de Custo "),
-                  arrCC.length > 0 ? h('span', { className: 'text-emerald-700' }, `· ${arrCC.length} selec.`) : null
-                ),
-                h('button', {
-                  className: 'text-[10px] text-emerald-600 hover:underline',
-                  onClick: () => setLocal({ ...local, centro_custo: [] })
-                }, 'Limpar')
-              ),
+              )),
+            caixaLista('Centro de custo', arrCC.length, () => setLocal({ ...local, centro_custo: [] }),
               h('div', { className: 'max-h-40 overflow-y-auto' },
-                centros.slice(0, 500).map(cc =>
-                  h('label', {
-                    key: cc,
-                    className: 'flex items-center gap-2 text-xs text-gray-700 py-0.5 cursor-pointer hover:bg-white rounded px-1'
-                  },
-                    h('input', {
-                      type: 'checkbox',
-                      checked: arrCC.includes(cc),
-                      onChange: () => setLocal({ ...local, centro_custo: toggleArr(arrCC, cc) })
-                    }), cc)
-                )
+                centros.slice(0, 500).map(cc => itemCheck(cc, arrCC.includes(cc), () => setLocal({ ...local, centro_custo: toggleArr(arrCC, cc) }), cc))
               ),
-              h('div', { className: 'text-[10px] text-emerald-700 mt-1' },
-                `${centros.length} disponíveis · ${arrCC.length === 0 ? 'Sem seleção = Todos' : arrCC.length + ' selecionado(s)'}`)
-            )
+              `${centros.length} disponíveis · ${arrCC.length === 0 ? 'Sem seleção = Todos' : arrCC.length + ' selecionado(s)'}`)
           )
         ),
-        h('div', { className: 'border-t border-gray-200 p-3 flex justify-between bg-gray-50' },
-          h('button', {
-            className: 'text-xs text-gray-700 px-4 py-2 rounded-md border border-gray-300 hover:bg-white',
-            onClick: limpar
-          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Limpar Filtros")),
-          h('button', {
-            className: 'text-xs text-white px-5 py-2 rounded-md font-medium',
-            style: { background: 'linear-gradient(135deg, #b43aed, #a128d9)' },
-            onClick: aplicar
-          }, '● Aplicar Filtros')
+        h('div', { className: 'border-t border-gray-100 px-5 py-3 flex justify-between gap-2 flex-wrap' },
+          h('button', { type: 'button', className: BTN_SEC, onClick: limpar }, 'Limpar filtros'),
+          h('div', { className: 'flex gap-2' },
+            h('button', { type: 'button', className: BTN_SEC, onClick: onFechar }, 'Cancelar'),
+            h('button', { type: 'button', className: BTN_PRI, style: { background: '#770fa8' }, onClick: aplicar }, 'Aplicar filtros'))
         )
       )
     );
@@ -398,7 +372,7 @@
     const [dados, setDados] = useState(null);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
-    const [busca, setBusca] = useState('');
+    const [busca_, setBusca] = useState('');
     const [expandidos, setExpandidos] = useState(() => new Set());
 
     function toggleExpand(codCliente) {
@@ -439,7 +413,7 @@
     const m = dados?.metricas || {};
     const linhas = useMemo(() => {
       const fonte = dados?.porCliente || [];
-      const q = (busca || '').toLowerCase().trim();
+      const q = (busca_ || '').toLowerCase().trim();
       if (!q) return fonte;
       return fonte.filter(l =>
         String(l.nome_display || '').toLowerCase().includes(q) ||
@@ -447,166 +421,129 @@
         String(l.nome_cliente || '').toLowerCase().includes(q) ||
         String(l.cod_cliente || '').includes(q)
       );
-    }, [dados, busca]);
+    }, [dados, busca_]);
 
     if (erro) {
-      return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        'Erro ao carregar dados: ' + erro);
+      return estadoErro('Não foi possível carregar o dashboard (' + erro + '). Tente de novo em instantes.');
     }
 
-    return h('div', null,
-      // Linha 1: KPIs operacionais
-      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4' },
-        h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8" }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), iconeBg: '#faf7fd', accent: '#770fa8',
-          label: 'Ordens de Serviço', labelCor: '#770fa8', labelBg: '#faf7fd',
-          valor: loading ? '—' : fmtNum(m.total_os),
-          sub: 'Total de OS no período'
-        }),
-        h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#2563eb" }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), iconeBg: '#eff6ff', accent: '#2563eb',
-          label: 'Entregas', labelCor: '#2563eb', labelBg: '#eff6ff',
-          valor: loading ? '—' : fmtNum(m.total_entregas),
-          sub: loading ? '' : `Realizadas — ${fmtNum(m.retornos)} retornos`
-        }),
-        h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#2563eb" }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), iconeBg: '#f9fafb', accent: '#2563eb',
-          label: 'Tempo Médio', labelCor: '#2563eb', labelBg: '#f9fafb',
-          valor: loading ? '—' : fmtMin(m.tempo_medio),
-          sub: 'Da coleta até a entrega'
-        }),
-        h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), iconeBg: '#fffbeb', accent: '#d97706',
-          label: 'Média Ent./Prof.', labelCor: '#d97706', labelBg: '#fffbeb',
-          valor: loading ? '—' : (m.media_entregas_entregador != null ? Number(m.media_entregas_entregador).toFixed(1) : '—'),
-          sub: loading ? '' : `${fmtNum(m.total_entregadores)} profissionais ativos`
-        })
+    return h('div', { className: 'flex flex-col gap-4' },
+      // Faixa de KPIs operacionais
+      h(FaixaKpis, { rotulo: 'Indicadores operacionais', itens: [
+        { label: 'Ordens de serviço', valor: loading ? '—' : fmtNum(m.total_os), sub: 'Total de OS no período' },
+        { label: 'Entregas', valor: loading ? '—' : fmtNum(m.total_entregas), sub: loading ? '' : `Realizadas · ${fmtNum(m.retornos)} retornos` },
+        { label: 'Tempo médio', valor: loading ? '—' : fmtMin(m.tempo_medio), sub: 'Da coleta até a entrega' },
+        { label: 'Média ent./profissional', valor: loading ? '—' : (m.media_entregas_entregador != null ? Number(m.media_entregas_entregador).toFixed(1) : '—'), sub: loading ? '' : `${fmtNum(m.total_entregadores)} profissionais ativos` }
+      ] }),
+
+      // Prazo de entrega
+      h('section', { className: CARD },
+        cabecalhoCard('Prazo de entrega', 'Entregas no prazo x fora do prazo no período'),
+        h('div', { className: 'p-5' },
+          loading ? h('div', { className: 'h-40 flex items-center justify-center text-gray-500 text-[13px]' }, 'Carregando...')
+          : h(DonutPrazo, {
+              taxa: m.taxa_dentro,
+              dentro: m.dentro_prazo,
+              fora: m.fora_prazo
+            })
+        )
       ),
 
-      // Linha 2: Donut grande
-      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
-        h('div', { className: 'flex justify-between items-center mb-3' },
-          h('div', { className: 'text-sm font-medium text-gray-900' }, 'Prazo de Entrega'),
-          h('span', {
-            className: 'text-[10px] font-semibold px-2.5 py-1 rounded-full',
-            style: { color: '#166534', background: '#f0fdf4' }
-          }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" })), "Performance"))
-        ),
-        loading ? h('div', { className: 'h-44 flex items-center justify-center text-gray-400' }, 'Carregando...')
-        : h(DonutPrazo, {
-            taxa: m.taxa_dentro,
-            dentro: m.dentro_prazo,
-            fora: m.fora_prazo
-          })
-      ),
-
-      // Linha 3: tabela por cliente
-      h('div', { className: 'bg-purple-50/40 border border-purple-200 rounded-xl p-4' },
-        h('div', { className: 'flex justify-between items-center mb-3' },
-          h('div', { className: 'text-sm font-medium text-purple-900' },
-            h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Resumo Operacional por Cliente")),
-          h('div', { className: 'flex items-center gap-2' },
-            h('input', {
-              type: 'text', placeholder: 'Buscar cliente...',
-              value: busca, onChange: (e) => setBusca(e.target.value),
-              className: 'text-xs px-2 py-1 border border-purple-200 rounded-md w-44 bg-white'
-            }),
-            h('span', { className: 'text-[11px] text-purple-700' },
-              `${linhas.length} clientes`)
-          )
-        ),
-        h('div', { className: 'bg-white rounded-lg overflow-hidden border border-purple-100' },
-          h('div', { className: 'overflow-x-auto' },
-            h('table', { className: 'w-full text-xs' },
-              h('thead', null,
-                h('tr', { className: 'bg-gray-50 text-gray-600 font-semibold' },
-                  h('th', { className: 'px-3 py-2 text-left' }, 'Cliente'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'OS'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Entregas'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Retornos'),
-                  h('th', { className: 'px-3 py-2 text-right bg-green-50 text-green-700' }, 'No Prazo'),
-                  h('th', { className: 'px-3 py-2 text-right bg-amber-50 text-amber-700' }, 'Fora Prazo'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Tempo Médio'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Profissionais'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Ent/Prof'),
-                  h('th', { className: 'px-3 py-2 text-right' }, 'Últ. Entrega')
-                )
-              ),
-              h('tbody', null,
-                loading ?
-                  h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Carregando...'))
-                : linhas.length === 0 ?
-                  h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Nenhum dado encontrado'))
-                : linhas.flatMap(l => {
-                    const aberto = expandidos.has(l.cod_cliente);
-                    const temCcs = (l.centros_custo || []).length > 0;
-                    const linhaCli = h('tr', { key: 'cli-' + l.cod_cliente, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
-                      h('td', { className: 'px-3 py-2 text-gray-900' },
+      // Tabela por cliente
+      h('section', { className: CARD + ' overflow-hidden' },
+        cabecalhoCard('Resumo operacional por cliente', `${linhas.length} clientes`, busca(busca_, setBusca, 'Buscar cliente')),
+        h('div', { className: 'overflow-x-auto' },
+          h('table', { className: 'w-full text-[13px]', style: { minWidth: 1000, borderCollapse: 'collapse' } },
+            h('thead', null,
+              h('tr', { className: 'bg-gray-50' },
+                h('th', { className: TH + ' text-left' }, 'Cliente'),
+                h('th', { className: TH + ' text-right' }, 'OS'),
+                h('th', { className: TH + ' text-right' }, 'Entregas'),
+                h('th', { className: TH + ' text-right' }, 'Retornos'),
+                h('th', { className: TH + ' text-right' }, 'No prazo'),
+                h('th', { className: TH + ' text-right' }, 'Fora do prazo'),
+                h('th', { className: TH + ' text-right' }, 'Tempo médio'),
+                h('th', { className: TH + ' text-right' }, 'Profissionais'),
+                h('th', { className: TH + ' text-right' }, 'Ent./prof.'),
+                h('th', { className: TH + ' text-right' }, 'Últ. entrega')
+              )
+            ),
+            h('tbody', { className: 'tabular-nums' },
+              loading ?
+                h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, 'Carregando...'))
+              : linhas.length === 0 ?
+                h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, busca_ ? 'Nenhum cliente para essa busca.' : 'Nenhum dado encontrado no período.'))
+              : linhas.flatMap(l => {
+                  const aberto = expandidos.has(l.cod_cliente);
+                  const temCcs = (l.centros_custo || []).length > 0;
+                  const linhaCli = h('tr', { key: 'cli-' + l.cod_cliente, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                    h('td', { className: TD + ' text-gray-900' },
+                      h('div', { className: 'flex items-center gap-2' },
                         h('button', {
-                          className: 'inline-flex items-center justify-center w-5 h-5 mr-2 rounded text-purple-600 hover:bg-purple-100 ' + (temCcs ? '' : 'opacity-30 cursor-not-allowed'),
+                          type: 'button',
+                          className: 'inline-flex items-center justify-center w-6 h-6 rounded-md text-gray-500 hover:bg-gray-100 ' + (temCcs ? '' : 'opacity-30 cursor-not-allowed'),
                           onClick: () => temCcs && toggleExpand(l.cod_cliente),
                           disabled: !temCcs,
+                          'aria-expanded': temCcs ? aberto : undefined,
+                          'aria-label': temCcs ? (aberto ? 'Recolher centros de custo' : 'Expandir centros de custo') : 'Sem centros de custo',
                           title: temCcs ? (aberto ? 'Recolher centros de custo' : 'Expandir centros de custo') : 'Sem centros de custo'
-                        }, aberto ? '−' : '+'),
-                        h('span', { className: 'font-medium' }, l.cod_cliente),
-                        h('span', { className: 'text-gray-400' }, ' · '),
-                        h('span', null, l.nome_display || l.nome_fantasia || l.nome_cliente || '—')
-                      ),
-                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_os)),
-                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_entregas)),
-                      h('td', { className: 'px-3 py-2 text-right text-purple-700 font-medium' }, fmtNum(l.retornos)),
-                      h('td', { className: 'px-3 py-2 text-right bg-green-50/50' },
-                        h('span', { className: 'font-medium text-green-700' }, fmtNum(l.dentro_prazo)),
-                        ' ',
-                        h('span', { className: 'text-[10px] text-green-600 opacity-80' },
-                          l.taxa_prazo != null ? Number(l.taxa_prazo).toFixed(1) + '%' : '')
-                      ),
-                      h('td', { className: 'px-3 py-2 text-right bg-amber-50/50' },
-                        h('span', { className: 'font-medium text-amber-700' }, fmtNum(l.fora_prazo)),
-                        ' ',
-                        h('span', { className: 'text-[10px] text-amber-600 opacity-80' },
-                          l.taxa_prazo != null ? (100 - Number(l.taxa_prazo)).toFixed(1) + '%' : '')
-                      ),
-                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtMin(l.tempo_medio)),
-                      h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(l.total_profissionais)),
-                      h('td', { className: 'px-3 py-2 text-right tabular-nums' },
-                        l.media_ent_prof != null ? Number(l.media_ent_prof).toFixed(2) : '—'),
-                      h('td', { className: 'px-3 py-2 text-right text-emerald-700 text-[11px]' },
-                        h('span', null, '● ' + fmtDataBr(l.ultima_entrega)))
-                    );
-
-                    if (!aberto || !temCcs) return [linhaCli];
-
-                    // Linhas-filhas (centros de custo)
-                    const filhas = l.centros_custo.map(cc =>
-                      h('tr', { key: `cc-${l.cod_cliente}-${cc.centro_custo}`, className: 'border-t border-purple-100 bg-purple-50/30' },
-                        h('td', { className: 'px-3 py-1.5 text-gray-700 text-[11px]' },
-                          h('span', { style: { paddingLeft: '32px' } },
-                            h('span', { className: 'text-gray-400 mr-2' }, '└'),
-                            h('span', { className: 'text-purple-700 font-medium' }, cc.centro_custo)
-                          )
-                        ),
-                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_os)),
-                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_entregas)),
-                        h('td', { className: 'px-3 py-1.5 text-right text-purple-700 text-[11px]' }, fmtNum(cc.retornos)),
-                        h('td', { className: 'px-3 py-1.5 text-right text-[11px]' },
-                          h('span', { className: 'text-green-700' }, fmtNum(cc.dentro_prazo)),
-                          ' ',
-                          h('span', { className: 'text-[10px] text-green-600' },
-                            cc.taxa_prazo != null ? Number(cc.taxa_prazo).toFixed(1) + '%' : '')
-                        ),
-                        h('td', { className: 'px-3 py-1.5 text-right text-[11px]' },
-                          h('span', { className: 'text-amber-700' }, fmtNum(cc.fora_prazo))
-                        ),
-                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtMin(cc.tempo_medio)),
-                        h('td', { className: 'px-3 py-1.5 text-right tabular-nums text-[11px]' }, fmtNum(cc.total_profissionais)),
-                        h('td', { className: 'px-3 py-1.5 text-right text-gray-400 text-[11px]' }, '—'),
-                        h('td', { className: 'px-3 py-1.5 text-right text-gray-400 text-[11px]' }, '')
+                        }, ico('arrowright', 13, { transform: aberto ? 'rotate(90deg)' : 'none', transition: 'transform .15s' })),
+                        h('span', { className: 'font-semibold' }, l.cod_cliente),
+                        h('span', { className: 'text-gray-400' }, '·'),
+                        h('span', { className: 'truncate' }, l.nome_display || l.nome_fantasia || l.nome_cliente || '—')
                       )
-                    );
-                    return [linhaCli, ...filhas];
-                  })
-              )
+                    ),
+                    h('td', { className: TD + ' text-right' }, fmtNum(l.total_os)),
+                    h('td', { className: TD + ' text-right' }, fmtNum(l.total_entregas)),
+                    h('td', { className: TD + ' text-right' }, fmtNum(l.retornos)),
+                    h('td', { className: TD + ' text-right whitespace-nowrap' },
+                      h('span', { className: 'font-semibold text-gray-900' }, fmtNum(l.dentro_prazo)),
+                      ' ',
+                      h('span', { className: 'text-xs', style: { color: '#166534' } },
+                        l.taxa_prazo != null ? Number(l.taxa_prazo).toFixed(1) + '%' : '')
+                    ),
+                    h('td', { className: TD + ' text-right whitespace-nowrap' },
+                      h('span', { className: 'font-semibold text-gray-900' }, fmtNum(l.fora_prazo)),
+                      ' ',
+                      h('span', { className: 'text-xs', style: { color: '#991b1b' } },
+                        l.taxa_prazo != null ? (100 - Number(l.taxa_prazo)).toFixed(1) + '%' : '')
+                    ),
+                    h('td', { className: TD + ' text-right' }, fmtMin(l.tempo_medio)),
+                    h('td', { className: TD + ' text-right' }, fmtNum(l.total_profissionais)),
+                    h('td', { className: TD + ' text-right' },
+                      l.media_ent_prof != null ? Number(l.media_ent_prof).toFixed(2) : '—'),
+                    h('td', { className: TD + ' text-right text-gray-500 whitespace-nowrap' }, fmtDataBr(l.ultima_entrega))
+                  );
+
+                  if (!aberto || !temCcs) return [linhaCli];
+
+                  // Linhas-filhas (centros de custo)
+                  const filhas = l.centros_custo.map(cc =>
+                    h('tr', { key: `cc-${l.cod_cliente}-${cc.centro_custo}`, className: 'border-t border-gray-100 bg-gray-50 text-[12.5px]' },
+                      h('td', { className: 'px-3 py-2 text-gray-700' },
+                        h('span', { style: { paddingLeft: 32 }, className: 'inline-flex items-center gap-1.5' },
+                          ico('pin', 12, { color: '#9ca3af' }),
+                          h('span', { className: 'font-medium' }, cc.centro_custo)
+                        )
+                      ),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtNum(cc.total_os)),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtNum(cc.total_entregas)),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtNum(cc.retornos)),
+                      h('td', { className: 'px-3 py-2 text-right whitespace-nowrap' },
+                        fmtNum(cc.dentro_prazo),
+                        ' ',
+                        h('span', { className: 'text-xs', style: { color: '#166534' } },
+                          cc.taxa_prazo != null ? Number(cc.taxa_prazo).toFixed(1) + '%' : '')
+                      ),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtNum(cc.fora_prazo)),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtMin(cc.tempo_medio)),
+                      h('td', { className: 'px-3 py-2 text-right' }, fmtNum(cc.total_profissionais)),
+                      h('td', { className: 'px-3 py-2 text-right text-gray-400' }, '—'),
+                      h('td', { className: 'px-3 py-2 text-right text-gray-400' }, '')
+                    )
+                  );
+                  return [linhaCli, ...filhas];
+                })
             )
           )
         )
@@ -619,7 +556,7 @@
     const [dados, setDados] = useState(null);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
-    const [busca, setBusca] = useState('');
+    const [busca_, setBusca] = useState('');
     const [ordem, setOrdem] = useState('total_entregas');
 
     useEffect(() => {
@@ -652,7 +589,7 @@
 
     const linhas = useMemo(() => {
       let fonte = dados?.profissionais || [];
-      const q = (busca || '').toLowerCase().trim();
+      const q = (busca_ || '').toLowerCase().trim();
       if (q) {
         fonte = fonte.filter(p =>
           String(p.nome_prof || '').toLowerCase().includes(q) ||
@@ -660,86 +597,72 @@
         );
       }
       return [...fonte].sort((a, b) => (Number(b[ordem]) || 0) - (Number(a[ordem]) || 0));
-    }, [dados, busca, ordem]);
+    }, [dados, busca_, ordem]);
 
     if (erro) {
-      return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        'Erro ao carregar profissionais: ' + erro);
+      return estadoErro('Não foi possível carregar os profissionais (' + erro + '). Tente de novo em instantes.');
     }
 
-    return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-      h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-100' },
-        h('div', { className: 'text-sm font-medium text-gray-900' },
-          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), "Por Profissional "),
-          h('span', { className: 'text-xs text-gray-500 font-normal' },
-            `(${linhas.length})`)
-        ),
-        h('div', { className: 'flex gap-2' },
-          h('input', {
-            type: 'text', placeholder: 'Buscar nome ou código...',
-            value: busca, onChange: (e) => setBusca(e.target.value),
-            className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-48 bg-white'
-          }),
+    return h('section', { className: CARD + ' overflow-hidden' },
+      cabecalhoCard('Por profissional', `${linhas.length} profissionais`,
+        h('div', { className: 'flex gap-2 flex-wrap' },
+          busca(busca_, setBusca, 'Buscar nome ou código'),
           h('select', {
-            value: ordem, onChange: (e) => setOrdem(e.target.value),
-            className: 'text-xs px-2 py-1 border border-gray-200 rounded-md bg-white'
+            value: ordem, onChange: (e) => setOrdem(e.target.value), 'aria-label': 'Ordenar por',
+            className: 'h-[34px] px-2 border border-gray-200 rounded-[10px] bg-white text-[13px]'
           },
             h('option', { value: 'total_entregas' }, 'Mais entregas'),
             h('option', { value: 'taxa_prazo' }, 'Maior % prazo'),
             h('option', { value: 'retornos' }, 'Mais retornos'),
             h('option', { value: 'km_total' }, 'Maior KM')
           )
-        )
-      ),
+        )),
       h('div', { className: 'overflow-x-auto' },
-        h('table', { className: 'w-full text-xs' },
+        h('table', { className: 'w-full text-[13px]', style: { minWidth: 960, borderCollapse: 'collapse' } },
           h('thead', null,
-            h('tr', { className: 'bg-gray-50 text-gray-600 font-semibold' },
-              h('th', { className: 'px-3 py-2 text-left' }, 'Profissional'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'OS'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Entregas'),
-              h('th', { className: 'px-3 py-2 text-right bg-green-50 text-green-700' }, 'No Prazo'),
-              h('th', { className: 'px-3 py-2 text-right bg-amber-50 text-amber-700' }, 'Fora Prazo'),
-              h('th', { className: 'px-3 py-2 text-right' }, '% Prazo'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Retornos'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Tempo Médio'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'KM Total'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Clientes')
+            h('tr', { className: 'bg-gray-50' },
+              h('th', { className: TH + ' text-left' }, 'Profissional'),
+              h('th', { className: TH + ' text-right' }, 'OS'),
+              h('th', { className: TH + ' text-right' }, 'Entregas'),
+              h('th', { className: TH + ' text-right' }, 'No prazo'),
+              h('th', { className: TH + ' text-right' }, 'Fora do prazo'),
+              h('th', { className: TH + ' text-right' }, '% prazo'),
+              h('th', { className: TH + ' text-right' }, 'Retornos'),
+              h('th', { className: TH + ' text-right' }, 'Tempo médio'),
+              h('th', { className: TH + ' text-right' }, 'KM total'),
+              h('th', { className: TH + ' text-right' }, 'Clientes')
             )
           ),
-          h('tbody', null,
+          h('tbody', { className: 'tabular-nums' },
             loading ?
-              h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Carregando...'))
+              h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, 'Carregando...'))
             : linhas.length === 0 ?
-              h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Nenhum profissional encontrado'))
+              h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, busca_ ? 'Nenhum profissional para essa busca.' : 'Nenhum profissional encontrado no período.'))
             : linhas.map(p =>
-                h('tr', { key: p.cod_prof, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
-                  h('td', { className: 'px-3 py-2' },
-                    h('div', { className: 'flex items-center gap-2' },
+                h('tr', { key: p.cod_prof, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                  h('td', { className: TD },
+                    h('div', { className: 'flex items-center gap-2.5' },
                       h('div', {
-                        className: 'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium',
-                        style: { background: '#faf7fd', color: '#770fa8' }
+                        'aria-hidden': 'true',
+                        className: 'w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0',
+                        style: { background: '#f3e8fb', color: '#5d0b85' }
                       }, iniciaisDe(p.nome_prof)),
-                      h('div', null,
-                        h('div', { className: 'text-gray-900 font-medium leading-tight' }, p.nome_prof || '—'),
-                        h('div', { className: 'text-[10px] text-gray-500' }, '#' + p.cod_prof)
+                      h('div', { className: 'min-w-0' },
+                        h('div', { className: 'text-gray-900 font-semibold leading-tight truncate' }, p.nome_prof || '—'),
+                        h('div', { className: 'text-xs text-gray-500' }, 'Cód. ' + p.cod_prof)
                       )
                     )
                   ),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(p.total_os)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums font-medium' }, fmtNum(p.total_entregas)),
-                  h('td', { className: 'px-3 py-2 text-right bg-green-50/50 text-green-700' }, fmtNum(p.dentro_prazo)),
-                  h('td', { className: 'px-3 py-2 text-right bg-amber-50/50 text-amber-700' }, fmtNum(p.fora_prazo)),
-                  h('td', { className: 'px-3 py-2 text-right' },
-                    h('span', {
-                      className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ' + corPctBg(p.taxa_prazo)
-                    }, p.taxa_prazo != null ? Number(p.taxa_prazo).toFixed(1) + '%' : '—')
-                  ),
-                  h('td', { className: 'px-3 py-2 text-right text-purple-700' }, fmtNum(p.retornos)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtMin(p.tempo_medio)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' },
+                  h('td', { className: TD + ' text-right' }, fmtNum(p.total_os)),
+                  h('td', { className: TD + ' text-right font-semibold text-gray-900' }, fmtNum(p.total_entregas)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(p.dentro_prazo)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(p.fora_prazo)),
+                  h('td', { className: TD + ' text-right' }, pillPct(p.taxa_prazo)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(p.retornos)),
+                  h('td', { className: TD + ' text-right' }, fmtMin(p.tempo_medio)),
+                  h('td', { className: TD + ' text-right whitespace-nowrap' },
                     p.km_total != null ? Number(p.km_total).toFixed(1) + ' km' : '—'),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(p.total_clientes))
+                  h('td', { className: TD + ' text-right' }, fmtNum(p.total_clientes))
                 )
               )
           )
@@ -783,75 +706,61 @@
     }, [apiUrl, fetchAuth, JSON.stringify(filtros)]);
 
     if (erro) {
-      return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        'Erro ao carregar regiões: ' + erro);
+      return estadoErro('Não foi possível carregar as regiões (' + erro + '). Tente de novo em instantes.');
     }
 
     const regioes = dados?.regioes || [];
     const totalEntregas = regioes.reduce((s, r) => s + (r.total_entregas || 0), 0);
 
-    return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-      h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-100' },
-        h('div', { className: 'text-sm font-medium text-gray-900' },
-          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Por Região "),
-          h('span', { className: 'text-xs text-gray-500 font-normal' },
-            `(${regioes.length} regiões)`)
-        ),
-        h('div', { className: 'text-xs text-gray-500' },
-          'Total: ', h('span', { className: 'font-medium text-gray-900' }, fmtNum(totalEntregas)),
-          ' entregas')
-      ),
+    return h('section', { className: CARD + ' overflow-hidden' },
+      cabecalhoCard('Por região', `${regioes.length} regiões · ${fmtNum(totalEntregas)} entregas no total`),
       h('div', { className: 'overflow-x-auto' },
-        h('table', { className: 'w-full text-xs' },
+        h('table', { className: 'w-full text-[13px]', style: { minWidth: 960, borderCollapse: 'collapse' } },
           h('thead', null,
-            h('tr', { className: 'bg-gray-50 text-gray-600 font-semibold' },
-              h('th', { className: 'px-3 py-2 text-left' }, 'Região'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'OS'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Entregas'),
-              h('th', { className: 'px-3 py-2 text-right bg-green-50 text-green-700' }, 'No Prazo'),
-              h('th', { className: 'px-3 py-2 text-right bg-amber-50 text-amber-700' }, 'Fora Prazo'),
-              h('th', { className: 'px-3 py-2 text-right' }, '% Prazo'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Tempo Médio'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Profissionais'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Clientes'),
-              h('th', { className: 'px-3 py-2 text-right' }, 'Retornos')
+            h('tr', { className: 'bg-gray-50' },
+              h('th', { className: TH + ' text-left' }, 'Região'),
+              h('th', { className: TH + ' text-right' }, 'OS'),
+              h('th', { className: TH + ' text-right' }, 'Entregas'),
+              h('th', { className: TH + ' text-right' }, 'No prazo'),
+              h('th', { className: TH + ' text-right' }, 'Fora do prazo'),
+              h('th', { className: TH + ' text-right' }, '% prazo'),
+              h('th', { className: TH + ' text-right' }, 'Tempo médio'),
+              h('th', { className: TH + ' text-right' }, 'Profissionais'),
+              h('th', { className: TH + ' text-right' }, 'Clientes'),
+              h('th', { className: TH + ' text-right' }, 'Retornos')
             )
           ),
-          h('tbody', null,
+          h('tbody', { className: 'tabular-nums' },
             loading ?
-              h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Carregando...'))
+              h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, 'Carregando...'))
             : regioes.length === 0 ?
-              h('tr', null, h('td', { colSpan: 10, className: 'p-4 text-center text-gray-400' }, 'Nenhuma região com dados'))
+              h('tr', null, h('td', { colSpan: 10, className: 'p-6 text-center text-gray-500 border-t border-gray-100' }, 'Nenhuma região com dados no período.'))
             : regioes.map(r => {
                 const pctTotal = totalEntregas > 0 ? (100 * r.total_entregas / totalEntregas) : 0;
-                return h('tr', { key: r.regiao, className: 'border-t border-gray-100 hover:bg-purple-50/30' },
-                  h('td', { className: 'px-3 py-2' },
+                return h('tr', { key: r.regiao, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                  h('td', { className: TD },
                     h('div', { className: 'flex items-center gap-2' },
-                      h('span', null, r.regiao === 'Sem Região' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-help" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" }))),
+                      ico(r.regiao === 'Sem Região' ? 'help' : 'pin', 14, { color: '#9ca3af' }),
                       h('div', null,
-                        h('div', { className: 'text-gray-900 font-medium' }, r.regiao),
-                        h('div', { className: 'mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-32' },
+                        h('div', { className: 'text-gray-900 font-semibold' }, r.regiao),
+                        h('div', { className: 'mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-32', title: pctTotal.toFixed(1) + '% das entregas' },
                           h('div', {
-                            className: 'h-full',
+                            className: 'h-full rounded-full',
                             style: { width: pctTotal + '%', background: '#770fa8' }
                           })
                         )
                       )
                     )
                   ),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(r.total_os)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums font-medium' }, fmtNum(r.total_entregas)),
-                  h('td', { className: 'px-3 py-2 text-right bg-green-50/50 text-green-700' }, fmtNum(r.dentro_prazo)),
-                  h('td', { className: 'px-3 py-2 text-right bg-amber-50/50 text-amber-700' }, fmtNum(r.fora_prazo)),
-                  h('td', { className: 'px-3 py-2 text-right' },
-                    h('span', {
-                      className: 'inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ' + corPctBg(r.taxa_prazo)
-                    }, r.taxa_prazo != null ? Number(r.taxa_prazo).toFixed(1) + '%' : '—')
-                  ),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtMin(r.tempo_medio)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(r.total_profissionais)),
-                  h('td', { className: 'px-3 py-2 text-right tabular-nums' }, fmtNum(r.total_clientes)),
-                  h('td', { className: 'px-3 py-2 text-right text-purple-700' }, fmtNum(r.retornos))
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.total_os)),
+                  h('td', { className: TD + ' text-right font-semibold text-gray-900' }, fmtNum(r.total_entregas)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.dentro_prazo)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.fora_prazo)),
+                  h('td', { className: TD + ' text-right' }, pillPct(r.taxa_prazo)),
+                  h('td', { className: TD + ' text-right' }, fmtMin(r.tempo_medio)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.total_profissionais)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.total_clientes)),
+                  h('td', { className: TD + ' text-right' }, fmtNum(r.retornos))
                 );
               })
           )
@@ -895,105 +804,62 @@
     }, [apiUrl, fetchAuth, JSON.stringify(filtros)]);
 
     if (erro) {
-      return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm' },
-        'Erro ao carregar hora a hora: ' + erro);
+      return estadoErro('Não foi possível carregar a distribuição por hora (' + erro + '). Tente de novo em instantes.');
     }
 
     const horas = dados?.horas || [];
     const resumo = dados?.resumo || {};
     const maxOs = Math.max(...horas.map(h => h.total_os || 0), 1);
 
-    return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-      // Header
-      h('div', { className: 'flex justify-between items-center mb-3' },
-        h('div', { className: 'text-sm font-medium text-gray-900' },
-          h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Acompanhamento hora a hora "),
-          resumo.pct_pico != null ?
-            h('span', {
-              className: 'text-[10px] font-medium px-2 py-0.5 rounded-full ml-1',
-              style: { background: '#faf7fd', color: '#770fa8' }
-            }, resumo.pct_pico.toFixed(1) + '% entre 8h–18h')
-            : null
-        ),
-        h('span', { className: 'text-xs text-gray-500' },
-          fmtNum(resumo.total_os) + ' OS')
-      ),
-
-      // Cards resumo
-      h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2 mb-4' },
-        h('div', { className: 'bg-gray-50 rounded-lg p-3' },
-          h('div', { className: 'text-[10px] text-gray-500 uppercase font-semibold' }, 'Horário de pico'),
-          h('div', { className: 'text-lg font-medium text-gray-900 mt-1' },
-            loading ? '—' : (resumo.hora_pico != null ? String(resumo.hora_pico).padStart(2, '0') + ':00' : '—')),
-          h('div', { className: 'text-[10px] text-gray-500' },
-            loading ? '' : fmtNum(resumo.os_hora_pico) + ' OS')
-        ),
-        h('div', { className: 'bg-gray-50 rounded-lg p-3' },
-          h('div', { className: 'text-[10px] text-gray-500 uppercase font-semibold' }, 'OS no pico (8h–18h)'),
-          h('div', { className: 'text-lg font-medium text-gray-900 mt-1' },
-            loading ? '—' : fmtNum(resumo.os_pico)),
-          h('div', { className: 'text-[10px] text-gray-500' },
-            loading ? '' : (resumo.pct_pico != null ? resumo.pct_pico.toFixed(1) + '% do total' : ''))
-        ),
-        h('div', { className: 'bg-gray-50 rounded-lg p-3' },
-          h('div', { className: 'text-[10px] text-gray-500 uppercase font-semibold' }, 'Média por hora (pico)'),
-          h('div', { className: 'text-lg font-medium text-gray-900 mt-1' },
-            loading ? '—' : fmtNum(resumo.media_por_hora_pico)),
-          h('div', { className: 'text-[10px] text-gray-500' }, 'OS/hora')
-        ),
-        h('div', { className: 'bg-gray-50 rounded-lg p-3' },
-          h('div', { className: 'text-[10px] text-gray-500 uppercase font-semibold' }, 'Fora do pico'),
-          h('div', { className: 'text-lg font-medium text-gray-900 mt-1' },
-            loading ? '—' : fmtNum(resumo.os_fora_pico)),
-          h('div', { className: 'text-[10px] text-gray-500' },
-            loading ? '' : (resumo.pct_fora_pico != null ? resumo.pct_fora_pico.toFixed(1) + '%' : ''))
-        )
-      ),
-
-      // Gráfico de barras SVG
-      loading ?
-        h('div', { className: 'h-72 flex items-center justify-center text-gray-400 text-sm' }, 'Carregando...')
-      : h('div', null,
-          h('svg', { viewBox: '0 0 760 280', width: '100%', height: 280 },
-            // grid
-            [0, 0.25, 0.5, 0.75, 1].map(p => {
-              const y = 30 + (200 - 200 * p);
-              return h('g', { key: 'g' + p },
-                h('line', { x1: 40, y1: y, x2: 740, y2: y, stroke: '#f3f4f6', strokeWidth: 1 }),
-                h('text', { x: 36, y: y + 3, textAnchor: 'end', fontSize: 9, fill: '#9ca3af' },
-                  Math.round(maxOs * p))
-              );
-            }),
-            // barras
-            horas.map((hh, i) => {
-              const x = 50 + i * 28;
-              const altura = (hh.total_os || 0) / maxOs * 200;
-              const y = 230 - altura;
-              const noPico = i >= 8 && i <= 18;
-              return h('g', { key: 'b' + i },
-                h('rect', {
-                  x, y, width: 22, height: Math.max(altura, 2),
-                  fill: noPico ? '#770fa8' : '#d1d5db', rx: 2
-                }),
-                hh.total_os > 0 ? h('text', {
-                  x: x + 11, y: y - 4, textAnchor: 'middle',
-                  fontSize: 9, fill: '#374151', fontWeight: 500
-                }, hh.total_os) : null,
-                h('text', {
-                  x: x + 11, y: 248, textAnchor: 'middle',
-                  fontSize: 9, fill: '#6b7280'
-                }, String(i).padStart(2, '0') + 'h')
-              );
-            }),
-            // legenda
-            h('g', null,
-              h('rect', { x: 50, y: 262, width: 10, height: 10, fill: '#770fa8', rx: 2 }),
-              h('text', { x: 65, y: 271, fontSize: 10, fill: '#6b7280' }, 'Pico (8h–18h)'),
-              h('rect', { x: 160, y: 262, width: 10, height: 10, fill: '#d1d5db', rx: 2 }),
-              h('text', { x: 175, y: 271, fontSize: 10, fill: '#6b7280' }, 'Fora do pico')
+    return h('div', { className: 'flex flex-col gap-4' },
+      h(FaixaKpis, { rotulo: 'Resumo por hora', itens: [
+        { label: 'Horário de pico', valor: loading ? '—' : (resumo.hora_pico != null ? String(resumo.hora_pico).padStart(2, '0') + ':00' : '—'), sub: loading ? '' : fmtNum(resumo.os_hora_pico) + ' OS' },
+        { label: 'OS no pico (8h–18h)', valor: loading ? '—' : fmtNum(resumo.os_pico), sub: loading ? '' : (resumo.pct_pico != null ? resumo.pct_pico.toFixed(1) + '% do total' : '') },
+        { label: 'Média por hora (pico)', valor: loading ? '—' : fmtNum(resumo.media_por_hora_pico), sub: 'OS por hora' },
+        { label: 'Fora do pico', valor: loading ? '—' : fmtNum(resumo.os_fora_pico), sub: loading ? '' : (resumo.pct_fora_pico != null ? resumo.pct_fora_pico.toFixed(1) + '% do total' : '') }
+      ] }),
+      h('section', { className: CARD },
+        cabecalhoCard('Acompanhamento hora a hora', fmtNum(resumo.total_os) + ' OS no período' + (resumo.pct_pico != null ? ' · ' + resumo.pct_pico.toFixed(1) + '% entre 8h e 18h' : ''),
+          h('div', { className: 'flex items-center gap-4 text-xs text-gray-500' },
+            h('span', { className: 'inline-flex items-center gap-1.5' }, h('span', { style: { width: 10, height: 10, borderRadius: 3, background: '#770fa8' } }), 'Pico (8h–18h)'),
+            h('span', { className: 'inline-flex items-center gap-1.5' }, h('span', { style: { width: 10, height: 10, borderRadius: 3, background: '#d1d5db' } }), 'Fora do pico'))),
+        loading ?
+          h('div', { className: 'h-72 flex items-center justify-center text-gray-500 text-[13px]' }, 'Carregando...')
+        : h('div', { className: 'px-4 py-3 overflow-x-auto' },
+            h('svg', { viewBox: '0 0 760 260', width: '100%', height: 260, style: { minWidth: 600 }, role: 'img', 'aria-label': 'OS por hora do dia' },
+              // grid
+              [0, 0.25, 0.5, 0.75, 1].map(p => {
+                const y = 30 + (200 - 200 * p);
+                return h('g', { key: 'g' + p },
+                  h('line', { x1: 40, y1: y, x2: 740, y2: y, stroke: '#f3f4f6', strokeWidth: 1 }),
+                  h('text', { x: 36, y: y + 3, textAnchor: 'end', fontSize: 10, fill: '#6b7280' },
+                    Math.round(maxOs * p))
+                );
+              }),
+              // barras
+              horas.map((hh, i) => {
+                const x = 50 + i * 28;
+                const altura = (hh.total_os || 0) / maxOs * 200;
+                const y = 230 - altura;
+                const noPico = i >= 8 && i <= 18;
+                return h('g', { key: 'b' + i },
+                  h('rect', {
+                    x, y, width: 22, height: Math.max(altura, 2),
+                    fill: noPico ? '#770fa8' : '#d1d5db', rx: 3
+                  }),
+                  hh.total_os > 0 ? h('text', {
+                    x: x + 11, y: y - 4, textAnchor: 'middle',
+                    fontSize: 9.5, fill: '#374151', fontWeight: 500
+                  }, hh.total_os) : null,
+                  h('text', {
+                    x: x + 11, y: 248, textAnchor: 'middle',
+                    fontSize: 10, fill: '#6b7280'
+                  }, String(i).padStart(2, '0') + 'h')
+                );
+              })
             )
           )
-        )
+      )
     );
   }
 
@@ -1057,57 +923,60 @@
       return out;
     }, [filtros]);
 
-    return h('div', { className: 'min-h-screen bg-gray-50' },
+    const ABAS = [
+      { id: 'dashboard',    label: 'Dashboard' },
+      { id: 'profissional', label: 'Por profissional' },
+      { id: 'regiao',       label: 'Por região' },
+      { id: 'hora',         label: 'Hora a hora' }
+    ];
+
+    return h('div', { className: 'min-h-screen', style: { background: '#f9fafb', color: '#111827' } },
       // Navbar global do app (mesma de todos os módulos)
       HeaderCompacto ? h(HeaderCompacto, {
         usuario, moduloAtivo, abaAtiva, socialProfile, isLoading, lastUpdate,
         onRefresh, onLogout, onGoHome, onNavigate, onChangeTab
       }) : null,
 
-      // Sub-header do módulo (tabs internas + filtros)
-      h('div', { className: 'bg-white border-b border-gray-200' },
-        h('div', { className: 'px-5 py-3 flex items-center justify-between flex-wrap gap-2' },
-          h('div', null,
-            h('div', { className: 'flex items-center gap-2 text-sm font-medium text-gray-900' },
-              h('span', { style: { fontSize: '18px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" }))),
-              'BI Monitoramento'
-            ),
-            h('div', { className: 'text-[11px] text-gray-500 mt-0.5' },
-              `Visão operacional · admin / master · `,
+      h('div', { className: 'px-4 md:px-5 pt-5 pb-8 max-w-[1600px] mx-auto flex flex-col gap-4' },
+        // Cabeçalho da página
+        h('div', { className: 'flex flex-wrap items-end justify-between gap-3' },
+          h('div', { className: 'min-w-0' },
+            h('h1', { style: { margin: 0, fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em', color: '#111827' } }, 'BI Monitoramento'),
+            h('p', { style: { margin: '4px 0 0', fontSize: 13, color: '#6b7280' } },
+              'Visão operacional sem dados financeiros · ',
               info.ultima_data ? `dados até ${fmtDataBr(info.ultima_data)}` : 'carregando...')
           ),
-          h('div', { className: 'flex items-center gap-2' },
+          h('div', { className: 'flex items-center gap-2 flex-wrap min-w-0' },
             filtrosResumo.length > 0 ?
-              h('div', { className: 'text-[11px] text-gray-600 max-w-sm truncate' },
-                h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), ' ' + filtrosResumo.join(' · '))
+              h('div', { className: 'text-[13px] text-gray-600 truncate', style: { maxWidth: 420 }, title: filtrosResumo.join(' · ') },
+                filtrosResumo.join(' · '))
               : null,
             h('button', {
-              className: 'text-xs px-3 py-1.5 rounded-md border border-purple-200 bg-purple-50 text-purple-700 font-medium hover:bg-purple-100',
+              type: 'button',
+              className: BTN_SEC,
               onClick: () => setFiltrosAbertos(true)
-            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtros"))
+            }, ico('filter', 15), 'Filtros')
           )
         ),
-        h('div', { className: 'px-5 flex gap-1 border-t border-gray-100' },
-          [
-            { id: 'dashboard',   label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), 'Dashboard') },
-            { id: 'profissional', label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-user" })), 'Por Profissional') },
-            { id: 'regiao',      label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), 'Por Região') },
-            { id: 'hora',        label: h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), 'Hora a Hora') }
-          ].map(t =>
+
+        // Abas internas
+        h('div', { role: 'tablist', 'aria-label': 'Visões do BI Monitoramento', className: 'flex gap-1 border-b border-gray-200 overflow-x-auto' },
+          ABAS.map(t =>
             h('button', {
               key: t.id,
+              type: 'button',
+              role: 'tab',
+              'aria-selected': aba === t.id,
               onClick: () => setAba(t.id),
-              className: 'px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ' +
+              className: 'px-3 py-2.5 text-[13px] border-b-2 -mb-px whitespace-nowrap transition-colors ' +
                 (aba === t.id
-                  ? 'border-purple-600 text-purple-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-700')
+                  ? 'font-semibold text-purple-800 border-purple-700'
+                  : 'font-medium border-transparent text-gray-500 hover:text-gray-800')
             }, t.label)
           )
-        )
-      ),
+        ),
 
-      // Conteúdo
-      h('div', { className: 'p-4 max-w-[1600px] mx-auto' },
+        // Conteúdo
         aba === 'dashboard'    ? h(AbaDashboard,    { apiUrl, fetchAuth, filtros }) :
         aba === 'profissional' ? h(AbaProfissional, { apiUrl, fetchAuth, filtros }) :
         aba === 'regiao'       ? h(AbaRegiao,       { apiUrl, fetchAuth, filtros }) :
@@ -1125,5 +994,5 @@
   }
 
   window.ModuloBiMonitoramento = ModuloBiMonitoramento;
-  console.log('✅ [bi-monitoramento] window.ModuloBiMonitoramento registrado');
+  console.log('[bi-monitoramento] window.ModuloBiMonitoramento registrado');
 })();

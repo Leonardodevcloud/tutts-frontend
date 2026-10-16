@@ -551,35 +551,36 @@
                     onClick: onFechar
                 },
                     React.createElement("div", {
-                        className: "bg-white border border-gray-300 rounded-lg shadow-2xl w-full max-w-md",
+                        className: "bg-white border border-gray-200 rounded-[14px] w-full max-w-md overflow-hidden" /* DISP_ABAS_V1: modal limpo */,
                         onClick: (e) => e.stopPropagation(),
                         style: { textAlign: "left" }
                     },
                         // Header com título + nome da loja + botão fechar
                         React.createElement("div", {
-                            className: "flex items-center justify-between px-4 py-3 border-b bg-gray-50 rounded-t-lg"
+                            className: "flex items-start justify-between px-5 py-4 border-b border-gray-100 bg-white"
                         },
                             React.createElement("div", null,
-                                React.createElement("div", { className: "text-sm font-semibold text-gray-800" },
+                                React.createElement("div", { className: "text-base font-semibold text-gray-900" },
                                     `${titulo} (${linhas.length})`
                                 ),
                                 React.createElement("div", { className: "text-xs text-gray-500 mt-0.5 truncate max-w-[300px]" }, nomeLoja)
                             ),
                             React.createElement("button", {
                                 onClick: onFechar,
-                                className: "text-gray-400 hover:text-gray-700 text-lg leading-none px-2"
+                                "aria-label": "Fechar",
+                                className: "w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
                             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                         ),
                         // Lista de linhas (scroll interno se muitas)
                         linhas.length === 0
                             ? React.createElement("div", {
-                                className: "px-4 py-6 text-sm text-gray-500 text-center italic"
+                                className: "px-5 py-8 text-sm text-gray-500 text-center"
                             }, `Nenhum ${rotuloTipo} cadastrado`)
                             : React.createElement("div", {
                                 className: "max-h-[60vh] overflow-y-auto"
                             }, linhas.map((linha, idx) => React.createElement("div", {
                                 key: linha.id,
-                                className: "flex items-center justify-between px-4 py-2.5 border-b last:border-b-0 hover:bg-gray-50"
+                                className: "flex items-center justify-between px-5 py-2.5 border-t border-gray-100 first:border-t-0 hover:bg-gray-50"
                             },
                                 React.createElement("div", { className: "flex-1 min-w-0 mr-3" },
                                     React.createElement("div", { className: "text-sm font-medium text-gray-800 truncate" },
@@ -588,22 +589,23 @@
                                             : React.createElement("span", { className: "text-gray-400 italic" }, `${idx + 1}. (vazia)`)
                                     ),
                                     linha.nome_profissional && React.createElement("div", {
-                                        className: "text-xs text-gray-500 mt-0.5"
-                                    }, linha.status || 'A CONFIRMAR')
+                                        className: "mt-1"
+                                    }, _dsPill(linha.status || 'A CONFIRMAR'))
                                 ),
                                 React.createElement("button", {
                                     onClick: () => removerLinhaIndividual(linha, titulo.slice(0, -1), nomeLoja, reload, toast),
-                                    className: "px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded text-sm flex-shrink-0",
-                                    title: `Remover ${rotuloTipo}`
+                                    className: "w-8 h-8 inline-flex items-center justify-center bg-white border border-red-200 text-red-800 hover:bg-red-50 rounded-lg flex-shrink-0",
+                                    title: `Remover ${rotuloTipo}`,
+                                    "aria-label": `Remover ${rotuloTipo}`
                                 }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))
                             ))),
                         // Footer com ação secundária de fechar
                         React.createElement("div", {
-                            className: "px-4 py-2 border-t bg-gray-50 rounded-b-lg flex justify-end"
+                            className: "px-5 py-3 border-t border-gray-100 bg-white flex justify-end"
                         },
                             React.createElement("button", {
                                 onClick: onFechar,
-                                className: "px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                                className: "h-[38px] px-4 bg-white border border-gray-200 text-gray-700 rounded-[10px] text-sm font-semibold hover:bg-gray-50"
                             }, "Fechar")
                         )
                     )
@@ -1177,6 +1179,809 @@
                         _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.reposicao, border: "1px solid #bfdbfe" } }), "Reposição"),
                         _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.falta, border: "1px solid #fecaca" } }), "Titular com falta")));
             };
+
+            /* DISP_ABAS_V1 — demais abas da Disponibilidade no padrão clean (Faltosos, Espelho, Relatórios, Motoboys, Restrições, Config).
+               Mesmas chamadas de API, mesmos nomes de estado e handlers; só a apresentação mudou. */
+            const DS_IN = "w-full h-[38px] px-3 rounded-[10px] border border-gray-200 bg-white text-[13px] text-gray-900 focus:outline-none focus:border-[#770fa8] focus:ring-2 focus:ring-[#f3e8fb]";
+            const DS_BTN_PRI = { height: 38, padding: "0 16px", borderRadius: 10, border: 0, background: "#770fa8", color: "#ffffff", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" };
+            const DS_BTN_DEST = { ...DS_BTN, fontWeight: 600, border: "1px solid #fecaca", color: "#991b1b", whiteSpace: "nowrap" };
+            const DS_ICOBTN = { width: 32, height: 32, borderRadius: 8, border: "1px solid #e5e7eb", background: "#ffffff", color: "#374151", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none", fontFamily: "inherit" };
+            const DS_ICOBTN_DEST = { ...DS_ICOBTN, border: "1px solid #fecaca", color: "#991b1b" };
+            const _dsLabel = (txt, htmlFor) => _h("label", { htmlFor, style: { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 } }, txt);
+            const _dsCampo = (txt, ctrl, id) => _h("div", { style: { minWidth: 0 } }, _dsLabel(txt, id), ctrl);
+            const _dsCabecalho = (titulo, sub, acoes) => _h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 } },
+                _h("div", { style: { minWidth: 0 } },
+                    _h("h1", { style: { margin: 0, fontFamily: DS_SORA, fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, titulo),
+                    sub ? _h("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, sub) : null),
+                acoes ? _h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, acoes) : null);
+            const _dsCardTitulo = (txt, extra, dir) => _h("div", { style: { padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", borderBottom: "1px solid #f3f4f6" } },
+                _h("div", { style: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } },
+                    _h("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, txt),
+                    extra ? _h("span", { style: { fontSize: 12, color: "#6b7280" } }, extra) : null),
+                dir || null);
+            const _dsVazio = (txt, sub, acao) => _h("div", { style: { padding: "36px 18px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 } },
+                _h("p", { style: { margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" } }, txt),
+                sub ? _h("p", { style: { margin: 0, fontSize: 12.5, color: "#6b7280" } }, sub) : null,
+                acao ? _h("div", { style: { marginTop: 10 } }, acao) : null);
+            const _dsCarregando = (txt) => _h("div", { style: { padding: "36px 18px", textAlign: "center", color: "#6b7280", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 } },
+                _h("span", { className: "animate-spin", style: { width: 16, height: 16, borderRadius: 99, border: "2px solid #e9d5f9", borderTopColor: "#770fa8", display: "inline-block" } }), txt || "Carregando...");
+            const _dsTh = (txt, dir, extra) => { const ex = Object.assign({}, extra || {}); const k = ex.key; delete ex.key; return _h("th", { key: k, style: Object.assign({ padding: "10px 14px", fontWeight: 600, fontSize: 12, color: "#6b7280", textAlign: dir ? "right" : "left", whiteSpace: "nowrap" }, ex) }, txt); };
+            const DS_TD = { padding: "10px 14px", verticalAlign: "middle" };
+            const DS_TD_NUM = { ...DS_TD, textAlign: "right", fontVariantNumeric: "tabular-nums" };
+            const _dsTabela = (minW, cab, corpo) => _h("div", { style: { overflowX: "auto", position: "relative" } },
+                _h("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 13, color: "#111827", minWidth: minW || 0 } },
+                    _h("thead", null, _h("tr", { style: { background: "#f9fafb" } }, cab)),
+                    _h("tbody", null, corpo)));
+            const _dsTr = (key, cels, extra) => _h("tr", Object.assign({ key, style: { borderTop: "1px solid #f3f4f6" } }, extra || {}), cels);
+            const _dsTom = { verde: ["#f0fdf4", "#166534", "#16a34a"], ambar: ["#fffbeb", "#92400e", "#d97706"], vermelho: ["#fef2f2", "#991b1b", "#dc2626"], azul: ["#eff6ff", "#1e40af", "#2563eb"], cinza: ["#f3f4f6", "#374151", "#6b7280"], roxo: ["#faf7fd", "#5d0b85", "#770fa8"] };
+            const _dsPillTom = (tom, txt, semPonto) => { const c = _dsTom[tom] || _dsTom.cinza; return _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, padding: "2px 9px", fontWeight: 600, fontSize: 11.5, background: c[0], color: c[1], whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" } }, semPonto ? null : _dsDot(c[2]), txt); };
+            const _dsTag = (txt) => _h("span", { style: { display: "inline-flex", alignItems: "center", borderRadius: 6, padding: "1px 7px", fontSize: 11, fontWeight: 600, background: "#f3f4f6", color: "#374151", fontFamily: DS_MONO, whiteSpace: "nowrap" } }, txt);
+            const _dsIniciais = (nome) => String(nome || "?").split(" ").filter(Boolean).slice(0, 2).map(z => z[0]).join("").toUpperCase() || "?";
+            const _dsAvatar = (nome) => _h("span", { "aria-hidden": "true", style: { width: 32, height: 32, borderRadius: 99, background: "#f3e8fb", color: "#5d0b85", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" } }, _dsIniciais(nome));
+            const _dsDataBR = (v) => { if (!v) return "-"; const s = String(v).split("T")[0]; const [aa, mm, dd] = s.split("-"); return aa && mm && dd ? `${dd}/${mm}/${aa}` : new Date(v).toLocaleDateString("pt-BR"); };
+            const _dsSecao = (filhos, extra) => _h("section", { style: { ...DS_CARD, overflow: "hidden", ...(extra || {}) } }, filhos);
+
+            /* DISP_ABAS_V1 — Faltosos */
+            const _dispFaltososClean = () => {
+                const buscar = async () => {
+                    try {
+                        let e = `${API_URL}/disponibilidade/faltosos?`;
+                        p.faltososDataInicio && (e += `data_inicio=${p.faltososDataInicio}&`), p.faltososDataFim && (e += `data_fim=${p.faltososDataFim}&`), p.faltososLojaId && (e += `loja_id=${p.faltososLojaId}`);
+                        const t = await _fetch(e),
+                            a = await t.json();
+                        x(e => ({
+                            ...e,
+                            faltososLista: a
+                        }))
+                    } catch (e) {
+                        ja("Erro ao buscar faltosos", "error")
+                    }
+                };
+                const limpar = async () => {
+                    x(e => ({
+                        ...e,
+                        faltososDataInicio: "",
+                        faltososDataFim: "",
+                        faltososLojaId: "",
+                        faltososRegiao: ""
+                    }));
+                    try {
+                        const e = await _fetch(`${API_URL}/disponibilidade/faltosos`),
+                            t = await e.json();
+                        x(e => ({
+                            ...e,
+                            faltososLista: t
+                        }))
+                    } catch (e) {
+                        ja("Erro ao buscar faltosos", "error")
+                    }
+                };
+                const excluir = async (e) => {
+                    if (window.confirm(`Excluir registro de falta de ${e.nome_profissional||e.cod_profissional}?`)) try {
+                        await _fetch(`${API_URL}/disponibilidade/faltosos/${e.id}`, {
+                            method: "DELETE"
+                        }), x(t => ({
+                            ...t,
+                            faltososLista: t.faltososLista.filter(t => t.id !== e.id)
+                        })), ja("Falta excluída", "success")
+                    } catch (e) {
+                        ja("Erro ao excluir", "error")
+                    }
+                };
+                const todos = Array.isArray(p.faltososLista) ? p.faltososLista : [];
+                const regioesLista = [...new Set(todos.map(f => f.regiao_nome).filter(Boolean))].sort();
+                // Filtro de região é local (a API filtra por período e loja)
+                const lista = p.faltososRegiao ? todos.filter(f => f.regiao_nome === p.faltososRegiao) : todos;
+                const motoboysN = new Set(lista.map(f => f.cod_profissional || f.nome_profissional).filter(Boolean)).size;
+                const lojasN = new Set(lista.map(f => f.loja_codigo).filter(Boolean)).size;
+                const contMotivo = {};
+                lista.forEach(f => { const k = (f.motivo || "").trim(); k && (contMotivo[k] = (contMotivo[k] || 0) + 1) });
+                const topMotivo = Object.entries(contMotivo).sort((a1, b1) => b1[1] - a1[1])[0];
+                const periodoTxt = p.faltososDataInicio || p.faltososDataFim ? "Período: " + (p.faltososDataInicio ? _dsDataBR(p.faltososDataInicio) : "início") + " a " + (p.faltososDataFim ? _dsDataBR(p.faltososDataFim) : "hoje") : "Todos os registros";
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Faltosos", periodoTxt + " · " + lista.length + (lista.length === 1 ? " falta registrada" : " faltas registradas")),
+                    _h("section", { className: "grid grid-cols-2 lg:grid-cols-4", style: { ...DS_CARD, overflow: "hidden" } },
+                        _dsKpi("Faltas", lista.length, "no filtro atual", lista.length > 0 ? "#991b1b" : "#111827"),
+                        _dsKpi("Motoboys", motoboysN, "com ao menos 1 falta"),
+                        _dsKpi("Lojas afetadas", lojasN, "com falta registrada"),
+                        _dsKpi("Motivo mais comum", _h("span", { style: { fontSize: 16, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: topMotivo ? topMotivo[0] : "" }, topMotivo ? topMotivo[0] : "—"), topMotivo ? topMotivo[1] + (topMotivo[1] === 1 ? " ocorrência" : " ocorrências") : "sem registros", null, { borderRight: 0 })),
+                    _dsSecao(_h("div", { style: { padding: 16, display: "grid", gap: 12, alignItems: "end" }, className: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.4fr_1.2fr_auto]" },
+                        _dsCampo("Data início", _h("input", { id: "flt-ini", type: "date", value: p.faltososDataInicio || "", onChange: e => x({ ...p, faltososDataInicio: e.target.value }), className: DS_IN }), "flt-ini"),
+                        _dsCampo("Data fim", _h("input", { id: "flt-fim", type: "date", value: p.faltososDataFim || "", onChange: e => x({ ...p, faltososDataFim: e.target.value }), className: DS_IN }), "flt-fim"),
+                        _dsCampo("Loja", _h("select", { id: "flt-loja", value: p.faltososLojaId || "", onChange: e => x({ ...p, faltososLojaId: e.target.value }), className: DS_IN },
+                            _h("option", { value: "" }, "Todas as lojas"), (e.lojas || []).map(e => _h("option", { key: e.id, value: e.id }, e.codigo, " - ", e.nome))), "flt-loja"),
+                        _dsCampo("Região", _h("select", { id: "flt-reg", value: p.faltososRegiao || "", onChange: ev => x({ ...p, faltososRegiao: ev.target.value }), className: DS_IN },
+                            _h("option", { value: "" }, "Todas as regiões"), regioesLista.map(rg => _h("option", { key: rg, value: rg }, rg))), "flt-reg"),
+                        _h("div", { style: { display: "flex", gap: 8 } },
+                            _h("button", { type: "button", onClick: buscar, style: DS_BTN_PRI }, _dsIco("search", 15), "Buscar"),
+                            _h("button", { type: "button", onClick: limpar, className: "hover:bg-gray-50", style: { ...DS_BTN, fontWeight: 600 } }, "Limpar")))),
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Registro de faltas", lista.length + (lista.length === 1 ? " registro" : " registros"))),
+                        0 === lista.length
+                            ? _h(React.Fragment, { key: "v" }, _dsVazio("Nenhuma falta encontrada", "Ajuste o período, a loja ou a região para ver outros registros."))
+                            : _h(React.Fragment, { key: "l" }, _dsTabela(820,
+                                [_dsTh("Data", 0, { key: 1 }), _dsTh("Região", 0, { key: 2 }), _dsTh("Loja", 0, { key: 3 }), _dsTh("Profissional", 0, { key: 4 }), _dsTh("Motivo", 0, { key: 5 }), _h("th", { key: 6, style: { width: 56 } }, _h("span", { className: "sr-only" }, "Ações"))],
+                                lista.map(f => _dsTr(f.id, [
+                                    _h("td", { key: 1, style: { ...DS_TD, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", color: "#374151" } }, new Date(f.data_falta).toLocaleDateString("pt-BR")),
+                                    _h("td", { key: 2, style: { ...DS_TD, color: "#6b7280", whiteSpace: "nowrap" } }, f.regiao_nome || "-"),
+                                    _h("td", { key: 3, style: DS_TD }, _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 8 } }, _dsTag(f.loja_codigo || "-"), _h("span", { style: { fontWeight: 500 } }, f.loja_nome || ""))),
+                                    _h("td", { key: 4, style: DS_TD }, _h("div", { style: { fontWeight: 600 } }, f.nome_profissional || "-"), f.cod_profissional ? _h("div", { style: { fontFamily: DS_MONO, fontSize: 11.5, color: "#6b7280" } }, f.cod_profissional) : null),
+                                    _h("td", { key: 5, style: { ...DS_TD, maxWidth: 260 } }, f.motivo ? _dsPillTom("vermelho", f.motivo) : _h("span", { style: { color: "#9ca3af" } }, "-")),
+                                    _h("td", { key: 6, style: { ...DS_TD, textAlign: "right" } }, _h("button", { type: "button", onClick: () => excluir(f), title: "Excluir falta", "aria-label": "Excluir falta", className: "hover:bg-red-50", style: DS_ICOBTN_DEST }, _dsIco("trash", 15)))
+                                ]))))
+                    ]));
+            };
+
+            /* DISP_ABAS_V1 — Espelho (histórico dos dias salvos) */
+            const _dispEspelhoClean = () => {
+                const selecionarData = async e => {
+                    const t = e.target.value;
+                    if (x(e => ({
+                            ...e,
+                            espelhoDataSelecionada: t,
+                            espelhoCarregando: !0
+                        })), t) try {
+                        const e = await _fetch(`${API_URL}/disponibilidade/espelho/${t}`),
+                            a = await e.json();
+                        console.log("Espelho carregado:", a), x(e => ({
+                            ...e,
+                            espelhoDados: a.dados,
+                            espelhoCarregando: !1
+                        }))
+                    } catch (e) {
+                        console.error("Erro ao carregar espelho:", e), ja("Erro ao carregar espelho", "error"), x(e => ({
+                            ...e,
+                            espelhoCarregando: !1
+                        }))
+                    } else x(e => ({
+                        ...e,
+                        espelhoDados: null,
+                        espelhoCarregando: !1
+                    }))
+                };
+                const atualizarDatas = async () => {
+                    try {
+                        const e = await _fetch(`${API_URL}/disponibilidade/espelho`),
+                            t = await e.json();
+                        console.log("Datas espelho:", t), x(e => ({
+                            ...e,
+                            espelhoDatas: t
+                        })), ja(`${t.length} data(s) encontrada(s)!`, "success")
+                    } catch (e) {
+                        ja("Erro ao carregar datas", "error")
+                    }
+                };
+                const excluirEspelho = async () => {
+                    const e = (p.espelhoDatas || []).find(e => (e.data_registro?.split("T")[0] || e.data_registro) === p.espelhoDataSelecionada);
+                    if (!e) return;
+                    const t = p.espelhoDataSelecionada.split("-").reverse().join("/");
+                    if (window.confirm(`Excluir espelho de ${t}?\n\nEssa ação não pode ser desfeita.`)) try {
+                        await _fetch(`${API_URL}/disponibilidade/espelho/${e.id}`, {
+                            method: "DELETE"
+                        });
+                        const a = await _fetch(`${API_URL}/disponibilidade/espelho`),
+                            l = await a.json();
+                        x(e => ({
+                            ...e,
+                            espelhoDatas: l,
+                            espelhoDataSelecionada: "",
+                            espelhoDados: null
+                        })), ja(`Espelho de ${t} excluído`, "success")
+                    } catch (e) {
+                        ja("Erro ao excluir espelho", "error")
+                    }
+                };
+                const datas = p.espelhoDatas || [];
+                const dados = p.espelhoDados ? ("string" == typeof p.espelhoDados ? JSON.parse(p.espelhoDados) : p.espelhoDados) : null;
+                const conteudo = () => {
+                    if (p.espelhoCarregando) return _dsSecao(_dsCarregando("Carregando espelho..."));
+                    if (!dados) return _dsSecao(_dsVazio(datas.length ? "Selecione uma data" : "Nenhum espelho salvo ainda", datas.length ? "Escolha um dia salvo acima para ver como estava a escala." : 'O espelho é salvo ao usar "Resetar dia" no Painel.'));
+                    if (!dados.regioes || 0 === dados.regioes.length) return _dsSecao(_dsVazio("Espelho vazio ou sem dados"));
+                    const lin = dados.linhas || [];
+                    const tit = lin.filter(li => !li.is_excedente && !li.is_reposicao).length;
+                    const emL = lin.filter(li => "EM LOJA" === li.status).length;
+                    const falt = lin.filter(li => "FALTANDO" === li.status).length;
+                    const semC = lin.filter(li => "SEM CONTATO" === li.status).length;
+                    const perc = tit > 0 ? Math.round(Math.min(emL / tit * 100, 100)) : 0;
+                    const fx = _dsFaixa(perc);
+                    const ordenar = (arr) => [...arr].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0);
+                    return _h(React.Fragment, null,
+                        _h("section", { className: "grid grid-cols-2 lg:grid-cols-4", style: { ...DS_CARD, overflow: "hidden" } },
+                            _h("div", { style: { padding: "16px 20px", borderRight: "1px solid #f3f4f6", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 } },
+                                _h("span", { style: { fontSize: 12, color: "#6b7280" } }, "Cobertura do dia"),
+                                _h("div", { style: { fontFamily: DS_SORA, fontSize: 26, fontWeight: 700, color: fx[1], lineHeight: 1.2, fontVariantNumeric: "tabular-nums" } }, perc + "%"),
+                                _h("div", { style: { display: "flex" } }, _dsBar(perc, fx[0]))),
+                            _dsKpi("Em loja", _h(React.Fragment, null, emL, _h("span", { style: { fontSize: 15, color: "#9ca3af", fontWeight: 600 } }, " / " + tit)), "titulares"),
+                            _dsKpi("Faltas", falt, falt === 1 ? "motoboy faltou" : "motoboys faltaram", falt > 0 ? DS.FALTANDO.txt : "#111827"),
+                            _dsKpi("Sem contato", semC, "sem retorno no dia", "#111827", { borderRight: 0 })),
+                        _dsSecao([
+                            _h("div", { key: "leg", style: { padding: "12px 18px", display: "flex", flexWrap: "wrap", gap: 14, fontSize: 12, color: "#6b7280", borderBottom: "1px solid #f3f4f6" } },
+                                DS_ORDEM.map(st => _h("span", { key: st, style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot(DS[st].cor, 8), DS[st].label)),
+                                _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, marginLeft: "auto" } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.excedente, border: "1px solid #fde68a" } }), "Excedente"),
+                                _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.reposicao, border: "1px solid #bfdbfe" } }), "Reposição")),
+                            _h(React.Fragment, { key: "tb" }, _dsTabela(640,
+                                [_dsTh("Código", 0, { key: 1, width: 96, paddingLeft: 18 }), _dsTh("Motoboy", 0, { key: 2 }), _dsTh("Status", 0, { key: 3, width: 150 }), _dsTh("Observação", 0, { key: 4 })],
+                                (dados.regioes || []).map(rg => {
+                                    const lojasRg = (dados.lojas || []).filter(lj => lj.regiao_id === rg.id);
+                                    return 0 === lojasRg.length ? null : _h(React.Fragment, { key: rg.id },
+                                        _h("tr", { style: { background: "#f9fafb", borderTop: "1px solid #e5e7eb" } },
+                                            _h("td", { colSpan: 4, style: { padding: "8px 18px", fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#6b7280" } }, rg.nome, rg.gestores ? " · " + rg.gestores : "")),
+                                        lojasRg.map(lj => {
+                                            const ll = lin.filter(li => li.loja_id === lj.id);
+                                            const llTit = ll.filter(li => !li.is_excedente && !li.is_reposicao).length;
+                                            const llEm = ll.filter(li => "EM LOJA" === li.status).length;
+                                            const llPerc = llTit > 0 ? Math.min(llEm / llTit * 100, 100) : 0;
+                                            return _h(React.Fragment, { key: lj.id },
+                                                _h("tr", { style: { borderTop: "1px solid #f3f4f6" } },
+                                                    _h("td", { colSpan: 4, style: { padding: "10px 18px" } },
+                                                        _h("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } },
+                                                            _h("span", { style: { fontFamily: DS_MONO, fontSize: 12, color: "#5d0b85", fontWeight: 700 } }, lj.codigo),
+                                                            _h("b", { style: { fontWeight: 600 } }, lj.nome),
+                                                            _h("span", { style: { marginLeft: "auto", fontSize: 12, color: "#6b7280" } }, llEm + " em loja de " + llTit),
+                                                            _h("b", { style: { fontVariantNumeric: "tabular-nums", color: _dsFaixa(llPerc)[1], fontSize: 12.5, width: 40, textAlign: "right" } }, Math.round(llPerc) + "%")))),
+                                                ordenar(ll).map(li => _h("tr", { key: li.id, style: { borderTop: "1px solid #f3f4f6", background: li.is_reposicao ? DS_ROW.reposicao : li.is_excedente ? DS_ROW.excedente : "#ffffff" } },
+                                                    _h("td", { style: { ...DS_TD, paddingLeft: 18, fontFamily: DS_MONO, fontSize: 12, color: "#374151" } }, li.cod_profissional || "-"),
+                                                    _h("td", { style: DS_TD }, _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 8 } },
+                                                        _h("span", { style: { fontWeight: 500 } }, li.nome_profissional || (li.is_reposicao || li.is_excedente ? "" : "-")),
+                                                        li.is_reposicao ? _h("span", { style: { fontSize: 11, color: "#1e40af" } }, "reposição") : null,
+                                                        li.is_excedente ? _h("span", { style: { fontSize: 11, color: "#92400e" } }, "excedente") : null)),
+                                                    _h("td", { style: DS_TD }, _dsPill(li.status || "A CONFIRMAR")),
+                                                    _h("td", { style: { ...DS_TD, color: "#6b7280", fontSize: 12.5 } }, li.observacao || ""))));
+                                        }));
+                                })))
+                        ]));
+                };
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Espelho", "Histórico dos dias salvos · " + datas.length + (datas.length === 1 ? " espelho disponível" : " espelhos disponíveis"),
+                        [_h("select", { key: "d", "aria-label": "Data do espelho", value: p.espelhoDataSelecionada || "", onChange: selecionarData, style: { ...DS_BTN, minWidth: 190 } },
+                            _h("option", { value: "" }, "Selecione uma data..."),
+                            datas.map(e => {
+                                const t = e.data_registro?.split("T")[0] || e.data_registro,
+                                    [a, l, r] = (t || "").split("-"),
+                                    o = a && l && r ? `${r}/${l}/${a}` : t;
+                                return _h("option", { key: e.id, value: t }, o)
+                            })),
+                        _h("button", { key: "a", type: "button", onClick: atualizarDatas, className: "hover:bg-gray-50", style: { ...DS_BTN, fontWeight: 600 } }, _dsIco("refresh", 15), "Atualizar"),
+                        p.espelhoDataSelecionada ? _h("button", { key: "x", type: "button", onClick: excluirEspelho, className: "hover:bg-red-50", style: DS_BTN_DEST }, _dsIco("trash", 15), "Excluir espelho") : null]),
+                    conteudo());
+            };
+
+            /* DISP_ABAS_V1 — Relatórios */
+            const _dispRelatoriosClean = () => {
+                if (p.relatoriosLoading) return _h("div", { className: "space-y-4" }, _dsCabecalho("Relatórios", "Comparativo, evolução e rankings da disponibilidade"), _dsSecao(_dsCarregando("Carregando relatórios...")));
+                const rd = p.relatoriosData || {};
+                const comp = rd.comparativo || {};
+                const labels = comp.labels || {};
+                const cols = [{ key: "hoje", data: comp.hoje, padrao: "Mais recente" }, { key: "ontem", data: comp.ontem, padrao: "Anterior" }, { key: "semanaPassada", data: comp.semanaPassada, padrao: "3º anterior" }];
+                const delta = (a1, b1) => {
+                    const v = a1 - b1, pos = v >= 0;
+                    return _h("span", { style: { fontWeight: 700, color: pos ? "#166534" : "#991b1b", fontVariantNumeric: "tabular-nums" } }, (pos ? "+" : "") + v.toFixed(1) + "%");
+                };
+                const metricas = Array.isArray(rd.metricas) ? rd.metricas : [];
+                const rankL = Array.isArray(rd.rankingLojas) ? rd.rankingLojas : [];
+                const rankF = Array.isArray(rd.rankingFaltosos) ? rd.rankingFaltosos : [];
+                const hm = rd.heatmap || {};
+                const hmLojas = Array.isArray(hm.lojas) ? hm.lojas : [];
+                const hmDias = Array.isArray(hm.diasSemana) && hm.diasSemana.length ? hm.diasSemana : ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+                const corHeat = (v, mx) => { const q = v / mx; return 0 === v ? ["#f9fafb", "#d1d5db"] : q >= .8 ? ["#dc2626", "#ffffff"] : q >= .5 ? ["#fecaca", "#991b1b"] : q >= .3 ? ["#fef2f2", "#991b1b"] : ["#fffbeb", "#92400e"]; };
+                const linhaRank = (key, pos, nome, sub, perc) => {
+                    const fx = _dsFaixa(perc);
+                    return _h("div", { key, style: { display: "grid", gridTemplateColumns: "28px minmax(0,1fr) 120px 44px", gap: 10, alignItems: "center", padding: "9px 18px", borderTop: "1px solid #f3f4f6", fontSize: 13 } },
+                        _h("span", { style: { color: "#9ca3af", fontVariantNumeric: "tabular-nums" } }, pos + "º"),
+                        _h("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, _h("b", { style: { fontWeight: 600 } }, nome), sub ? _h("span", { style: { color: "#6b7280" } }, " · " + sub) : null),
+                        _h("span", { style: { display: "flex" } }, _dsBar(perc, fx[0])),
+                        _h("b", { style: { textAlign: "right", color: fx[1], fontVariantNumeric: "tabular-nums" } }, perc + "%"));
+                };
+                const subRank = (txt) => _h("div", { style: { padding: "10px 18px 6px", fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#6b7280", borderTop: "1px solid #f3f4f6" } }, txt);
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Relatórios", "Comparativo, evolução e rankings da disponibilidade"),
+                    // Comparativo em faixa
+                    _h("section", { style: { ...DS_CARD, overflow: "hidden" } },
+                        _h("div", { className: "grid grid-cols-1 md:grid-cols-3" },
+                            cols.map((c, i) => {
+                                const d = c.data;
+                                const fx = d ? _dsFaixa(d.perc) : ["#9ca3af", "#6b7280"];
+                                return _h("div", { key: c.key, style: { padding: "16px 20px", borderRight: i < 2 ? "1px solid #f3f4f6" : 0, borderBottom: "1px solid #f3f4f6", minWidth: 0 } },
+                                    _h("div", { style: { fontSize: 12, color: "#6b7280" } }, labels[c.key] || c.padrao),
+                                    d ? _h(React.Fragment, null,
+                                        _h("div", { style: { fontFamily: DS_SORA, fontSize: 26, fontWeight: 700, color: fx[1], lineHeight: 1.25, marginTop: 2, fontVariantNumeric: "tabular-nums" } }, d.perc + "%", _h("span", { style: { fontFamily: "inherit", fontSize: 12, fontWeight: 500, color: "#6b7280", marginLeft: 6 } }, "em loja")),
+                                        _h("div", { style: { display: "flex", margin: "8px 0" } }, _dsBar(d.perc, fx[0])),
+                                        _h("div", { style: { display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 12, color: "#6b7280" } },
+                                            _h("span", null, _h("b", { style: { color: DS["EM LOJA"].txt } }, d.emLoja || 0), " em loja de ", _h("b", { style: { color: "#111827" } }, d.titulares || 0)),
+                                            _h("span", null, _h("b", { style: { color: DS.FALTANDO.txt } }, d.faltando || 0), " faltando"),
+                                            _h("span", null, _h("b", { style: { color: "#374151" } }, d.semContato || 0), " sem contato")))
+                                        : _h("div", { style: { fontSize: 13, color: "#9ca3af", marginTop: 6 } }, "Sem dados"));
+                            })),
+                        comp.hoje && comp.ontem ? _h("div", { style: { padding: "10px 20px", display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.5, color: "#6b7280" } },
+                            _h("span", null, "vs anterior: ", delta(comp.hoje.perc, comp.ontem.perc)),
+                            comp.semanaPassada ? _h("span", null, "vs semana: ", delta(comp.hoje.perc, comp.semanaPassada.perc)) : null) : null),
+                    // Evolução
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Evolução % em loja", "últimos 7 dias", _h("span", { style: { display: "flex", gap: 12, fontSize: 12, color: "#6b7280" } },
+                            _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot("#16a34a", 8), "≥ 80%"),
+                            _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot("#d97706", 8), "≥ 50%"),
+                            _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot("#dc2626", 8), "< 50%")))),
+                        0 === metricas.length
+                            ? _h(React.Fragment, { key: "v" }, _dsVazio("Sem dados históricos", "Salve espelhos diários para ver o gráfico."))
+                            : _h("div", { key: "g", style: { padding: "18px 18px 14px", display: "flex", alignItems: "flex-end", gap: 12, height: 220 } },
+                                metricas.slice(0, 7).reverse().map((m, i) => {
+                                    let dl = "-";
+                                    if (m.data) { const [, mm, dd] = m.data.split("T")[0].split("-"); dl = `${dd}/${mm}`; }
+                                    const v = m.percOperacao || 0, fx = _dsFaixa(v);
+                                    return _h("div", { key: i, style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" } },
+                                        _h("span", { style: { fontSize: 12, fontWeight: 700, color: fx[1], fontVariantNumeric: "tabular-nums" } }, v + "%"),
+                                        _h("div", { title: dl + ": " + v + "% · " + (m.emLoja || 0) + " em loja", style: { width: "100%", maxWidth: 56, height: Math.max(4, v * 1.3) + "px", background: fx[0], borderRadius: "6px 6px 2px 2px" } }),
+                                        _h("span", { style: { fontSize: 11.5, color: "#374151", fontVariantNumeric: "tabular-nums" } }, dl),
+                                        _h("span", { style: { fontSize: 11, color: "#6b7280", whiteSpace: "nowrap" } }, (m.emLoja || 0) + " em loja"));
+                                }))
+                    ]),
+                    _h("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
+                        _dsSecao([
+                            _h(React.Fragment, { key: "t" }, _dsCardTitulo("Ranking de lojas", "média de 7 dias")),
+                            0 === rankL.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Sem dados de lojas")) : _h("div", { key: "l", style: { maxHeight: 420, overflowY: "auto" } },
+                                subRank("5 melhores"),
+                                rankL.slice(0, 5).map((it, i) => linhaRank("m" + (it.loja_id || i), i + 1, it.loja_nome || "-", it.regiao_nome || "", it.mediaPerc || 0)),
+                                rankL.length > 5 ? subRank("5 piores") : null,
+                                rankL.length > 5 ? rankL.slice(-5).reverse().map((it, i) => linhaRank("p" + (it.loja_id || i), rankL.length - i, it.loja_nome || "-", it.regiao_nome || "", it.mediaPerc || 0)) : null)
+                        ]),
+                        _dsSecao([
+                            _h(React.Fragment, { key: "t" }, _dsCardTitulo("Ranking de faltosos", "últimos 30 dias")),
+                            0 === rankF.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Nenhuma falta registrada")) : _h("div", { key: "l", style: { maxHeight: 420, overflowY: "auto" } },
+                                rankF.slice(0, 10).map((it, i) => _h("div", { key: it.cod || it.nome || i, style: { display: "grid", gridTemplateColumns: "28px 32px minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: "9px 18px", borderTop: i ? "1px solid #f3f4f6" : 0, fontSize: 13 } },
+                                    _h("span", { style: { color: "#9ca3af", fontVariantNumeric: "tabular-nums" } }, i + 1 + "º"),
+                                    _dsAvatar(it.nome),
+                                    _h("span", { style: { minWidth: 0 } },
+                                        _h("span", { style: { display: "block", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.nome || "Sem nome"),
+                                        _h("span", { style: { display: "block", fontSize: 11.5, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, _h("span", { style: { fontFamily: DS_MONO } }, it.cod || "-"), it.loja_nome ? " · " + it.loja_nome : "")),
+                                    _dsPillTom("vermelho", (it.totalFaltas || 0) + (1 === it.totalFaltas ? " falta" : " faltas")))))
+                        ])),
+                    // Heatmap
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Faltas por dia da semana", "últimos 30 dias · até 15 lojas")),
+                        0 === hmLojas.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Sem dados de faltas para o mapa de calor")) : _h(React.Fragment, { key: "hm" },
+                            _dsTabela(620,
+                                [_dsTh("Loja", 0, { key: "l", paddingLeft: 18 })].concat(hmDias.map((dn, i) => _h("th", { key: i, style: { padding: "10px 6px", fontWeight: 600, fontSize: 12, color: "#6b7280", textAlign: "center", width: 56 } }, dn)), [_dsTh("Total", 1, { key: "t", paddingRight: 18 })]),
+                                hmLojas.slice(0, 15).map((lj, i) => {
+                                    const ds = Array.isArray(lj.dias) ? lj.dias : [0, 0, 0, 0, 0, 0, 0],
+                                        tot = ds.reduce((a1, b1) => a1 + b1, 0),
+                                        mx = Math.max(...ds, 1);
+                                    return _dsTr(lj.loja_nome || i, [
+                                        _h("td", { key: "l", style: { ...DS_TD, paddingLeft: 18, fontWeight: 500, whiteSpace: "nowrap" } }, lj.loja_nome || "-")
+                                    ].concat(ds.map((v, j) => { const c = corHeat(v, mx); return _h("td", { key: j, style: { padding: 3 } }, _h("div", { style: { height: 30, borderRadius: 6, background: c[0], color: c[1], fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums" } }, v || "–")); }),
+                                        [_h("td", { key: "t", style: { ...DS_TD_NUM, paddingRight: 18, fontWeight: 700 } }, tot)]));
+                                })),
+                            _h("div", { style: { padding: "10px 18px 14px", display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: "#6b7280", borderTop: "1px solid #f3f4f6" } },
+                                [["#f9fafb", "Nenhuma", "#e5e7eb"], ["#fffbeb", "Baixo", "#fde68a"], ["#fef2f2", "Médio", "#fecaca"], ["#fecaca", "Alto", "#fecaca"], ["#dc2626", "Crítico", "#dc2626"]].map(([bg, tx, bd]) => _h("span", { key: tx, style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: bg, border: "1px solid " + bd } }), tx))))
+                    ]));
+            };
+
+            /* DISP_ABAS_V1 — Motoboys (histórico) */
+            const _dispMotoboysClean = () => {
+                const buscar = async () => {
+                    x(e => ({
+                        ...e,
+                        motoboysLoading: !0
+                    }));
+                    try {
+                        const e = new URLSearchParams;
+                        e.append("dias", p.motoboysDias || 30), p.motoboysLojaFiltro && e.append("loja_id", p.motoboysLojaFiltro), p.motoboysBusca && e.append("busca", p.motoboysBusca);
+                        const t = await _fetch(`${API_URL}/disponibilidade/motoboys?${e}`),
+                            a = await t.json();
+                        x(e => ({
+                            ...e,
+                            motoboysList: a,
+                            motoboysLoading: !1
+                        }))
+                    } catch (e) {
+                        console.error("Erro ao buscar motoboys:", e), ja("Erro ao buscar motoboys", "error"), x(e => ({
+                            ...e,
+                            motoboysLoading: !1
+                        }))
+                    }
+                };
+                const ml = p.motoboysList;
+                const lista = ml && Array.isArray(ml.motoboys) ? ml.motoboys : [];
+                const dm = (v) => new Date(v).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                const celNum = (key, v, cor, sub) => _h("td", { key, style: DS_TD_NUM },
+                    _h("div", { style: { fontWeight: 700, color: v > 0 ? cor : "#d1d5db" } }, v),
+                    sub ? _h("div", { style: { fontSize: 11, color: "#6b7280", fontWeight: 400 } }, sub) : null);
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Motoboys", ml ? (ml.total || 0) + " motoboys · últimos " + (ml.periodo_dias || p.motoboysDias || 30) + " dias" : "Histórico de presença, faltas e lojas por motoboy"),
+                    _dsSecao(_h("form", { onSubmit: ev => { ev.preventDefault(); buscar(); }, style: { padding: 16, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" } },
+                        _h("div", { style: { position: "relative", flex: "1 1 240px", minWidth: 200 } },
+                            _h("span", { style: { position: "absolute", left: 11, top: 11, color: "#9ca3af", display: "inline-flex" } }, _dsIco("search", 16)),
+                            _h("input", { type: "text", "aria-label": "Buscar por código ou nome", placeholder: "Buscar por código ou nome", value: p.motoboysBusca || "", onChange: e => x(t => ({ ...t, motoboysBusca: e.target.value })), className: DS_IN, style: { paddingLeft: 34 } })),
+                        _h("select", { "aria-label": "Loja", value: p.motoboysLojaFiltro || "", onChange: e => x(t => ({ ...t, motoboysLojaFiltro: e.target.value })), style: { ...DS_BTN, maxWidth: 260 } },
+                            _h("option", { value: "" }, "Todas as lojas"), (e.lojas || []).map(e => _h("option", { key: e.id, value: e.id }, e.codigo, " - ", e.nome))),
+                        _h("select", { "aria-label": "Período", value: p.motoboysDias || 30, onChange: e => x(t => ({ ...t, motoboysDias: parseInt(e.target.value) })), style: DS_BTN },
+                            [7, 15, 30, 60, 90].map(d => _h("option", { key: d, value: d }, "Últimos " + d + " dias"))),
+                        _h("button", { type: "submit", style: DS_BTN_PRI }, _dsIco("search", 15), "Buscar"))),
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Histórico de motoboys", ml ? lista.length + " na lista" : null)),
+                        p.motoboysLoading ? _h(React.Fragment, { key: "c" }, _dsCarregando())
+                            : !ml ? _h(React.Fragment, { key: "n" }, _dsVazio("Busque para ver o histórico", 'Use os filtros acima e clique em "Buscar".'))
+                            : 0 === lista.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Nenhum motoboy encontrado", "Tente outro nome, loja ou período."))
+                            : _h(React.Fragment, { key: "l" }, _dsTabela(860,
+                                [_dsTh("Motoboy", 0, { key: 1, paddingLeft: 18 }), _dsTh("Loja atual", 0, { key: 2 }), _dsTh("Em loja", 1, { key: 3 }), _dsTh("Faltas", 1, { key: 4 }), _dsTh("Sem contato", 1, { key: 5 }), _dsTh("Lojas onde rodou", 0, { key: 6, paddingRight: 18 })],
+                                lista.map(m => _dsTr(m.cod, [
+                                    _h("td", { key: 1, style: { ...DS_TD, paddingLeft: 18 } }, _h("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, _dsAvatar(m.nome),
+                                        _h("div", { style: { minWidth: 0 } }, _h("div", { style: { fontWeight: 600, whiteSpace: "nowrap" } }, m.nome || "-"), _h("div", { style: { fontFamily: DS_MONO, fontSize: 11.5, color: "#6b7280" } }, m.cod)))),
+                                    _h("td", { key: 2, style: DS_TD }, m.loja_atual ? _h("div", null, _h("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, _dsTag(m.loja_atual.codigo), _h("span", { style: { fontWeight: 500 } }, m.loja_atual.nome)), m.loja_atual.regiao_nome ? _h("div", { style: { fontSize: 11.5, color: "#6b7280", marginTop: 2 } }, m.loja_atual.regiao_nome) : null) : _h("span", { style: { color: "#9ca3af" } }, "Sem loja")),
+                                    celNum(3, m.estatisticas.em_loja.total, DS["EM LOJA"].txt, m.estatisticas.em_loja.ultima_vez ? "últ. " + dm(m.estatisticas.em_loja.ultima_vez) : null),
+                                    celNum(4, m.estatisticas.faltas.total, DS.FALTANDO.txt, m.estatisticas.faltas.ultima_falta ? "últ. " + dm(m.estatisticas.faltas.ultima_falta) : null),
+                                    celNum(5, m.estatisticas.sem_contato.total, "#374151", m.estatisticas.sem_contato.max_dias_consecutivos > 0 ? "máx. " + m.estatisticas.sem_contato.max_dias_consecutivos + " dias seg." : null),
+                                    _h("td", { key: 6, style: { ...DS_TD, paddingRight: 18 } }, m.lojas_rodou && m.lojas_rodou.length > 0 ? _h("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } }, m.lojas_rodou.slice(0, 3).map(lj => _h(React.Fragment, { key: lj.id }, _dsTag(lj.codigo))), m.lojas_rodou.length > 3 ? _dsTag("+" + (m.lojas_rodou.length - 3)) : null) : _h("span", { style: { color: "#9ca3af" } }, "-"))
+                                ])))),
+                        _h("p", { key: "f", style: { margin: 0, padding: "10px 18px 12px", fontSize: 12, color: "#6b7280", borderTop: "1px solid #f3f4f6" } }, "Em loja = vezes com status Em loja · Faltas = vezes marcado como Faltando · Sem contato = vezes sem retorno no período.")
+                    ]));
+            };
+
+            /* DISP_ABAS_V1 — Restrições */
+            const _dispRestricoesClean = () => {
+                const cadastrar = async () => {
+                    if (p.restricaoCod && p.restricaoMotivo)
+                        if (p.restricaoTodasLojas || p.restricaoLojaId) try {
+                            const e = await _fetch(`${API_URL}/disponibilidade/restricoes`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    cod_profissional: p.restricaoCod,
+                                    nome_profissional: p.restricaoNome,
+                                    loja_id: p.restricaoLojaId || null,
+                                    todas_lojas: p.restricaoTodasLojas || !1,
+                                    motivo: p.restricaoMotivo,
+                                    criado_por: l?.fullName || l?.username
+                                })
+                            });
+                            if (!e.ok) {
+                                const t = await e.json();
+                                throw new Error(t.error || "Erro ao cadastrar")
+                            }
+                            ja("Restrição cadastrada com sucesso!", "success"), x(e => ({
+                                ...e,
+                                restricaoCod: "",
+                                restricaoNome: "",
+                                restricaoLojaId: "",
+                                restricaoTodasLojas: !1,
+                                restricaoMotivo: ""
+                            }));
+                            const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
+                                a = await t.json();
+                            x(e => ({
+                                ...e,
+                                restricoesList: a
+                            }))
+                        } catch (e) {
+                            ja(e.message, "error")
+                        } else ja('Selecione uma loja ou "Todas as Lojas"', "error");
+                        else ja("Preencha o código e o motivo", "error")
+                };
+                const liberar = async (e) => {
+                    if (confirm(`Remover restrição de ${e.cod_profissional} - ${e.nome_profissional||"N/A"}?`)) try {
+                        await _fetch(`${API_URL}/disponibilidade/restricoes/${e.id}`, {
+                            method: "DELETE"
+                        }), ja("Restrição removida!", "success");
+                        const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
+                            a = await t.json();
+                        x(e => ({
+                            ...e,
+                            restricoesList: a
+                        }))
+                    } catch (e) {
+                        ja("Erro ao remover restrição", "error")
+                    }
+                };
+                const lista = p.restricoesList || [];
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Restrições", lista.length + (lista.length === 1 ? " restrição ativa" : " restrições ativas") + " · motoboys impedidos de rodar em lojas"),
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Nova restrição")),
+                        _h("div", { key: "f", style: { padding: 16, display: "grid", gap: 12, alignItems: "end" }, className: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-[0.8fr_1.2fr_1.2fr_1.6fr_auto]" },
+                            _dsCampo("Código *", _h("input", {
+                                id: "rst-cod", type: "text", placeholder: "Ex: 12345", value: p.restricaoCod || "",
+                                onChange: e => {
+                                    const t = e.target.value;
+                                    x(e => ({
+                                        ...e,
+                                        restricaoCod: t
+                                    }));
+                                    const a = pe.find(e => e.codigo === t);
+                                    a && x(e => ({
+                                        ...e,
+                                        restricaoNome: a.nome
+                                    }))
+                                },
+                                className: DS_IN
+                            }), "rst-cod"),
+                            _dsCampo("Nome", _h("input", { id: "rst-nome", type: "text", placeholder: "Preenchido pelo código", value: p.restricaoNome || "", onChange: e => x(t => ({ ...t, restricaoNome: e.target.value })), className: DS_IN }), "rst-nome"),
+                            _dsCampo("Loja *", _h("select", {
+                                id: "rst-loja",
+                                value: p.restricaoTodasLojas ? "TODAS" : p.restricaoLojaId || "",
+                                onChange: e => {
+                                    "TODAS" === e.target.value ? x(e => ({
+                                        ...e,
+                                        restricaoTodasLojas: !0,
+                                        restricaoLojaId: ""
+                                    })) : x(t => ({
+                                        ...t,
+                                        restricaoTodasLojas: !1,
+                                        restricaoLojaId: e.target.value
+                                    }))
+                                },
+                                className: DS_IN
+                            }, _h("option", { value: "" }, "Selecione uma loja..."), _h("option", { value: "TODAS" }, "Todas as lojas"), (e.lojas || []).map(e => _h("option", { key: e.id, value: e.id }, e.codigo, " - ", e.nome))), "rst-loja"),
+                            _dsCampo("Motivo *", _h("input", { id: "rst-mot", type: "text", placeholder: "Ex: Comportamento inadequado", value: p.restricaoMotivo || "", onChange: e => x(t => ({ ...t, restricaoMotivo: e.target.value })), className: DS_IN }), "rst-mot"),
+                            _h("button", { type: "button", onClick: cadastrar, className: "hover:bg-red-50", style: DS_BTN_DEST }, _dsIco("ban", 15), "Cadastrar restrição"))
+                    ]),
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Restrições ativas", String(lista.length))),
+                        p.restricoesLoading ? _h(React.Fragment, { key: "c" }, _dsCarregando())
+                            : 0 === lista.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Nenhuma restrição ativa", "Motoboys restritos aparecem aqui."))
+                            : _h(React.Fragment, { key: "l" }, _dsTabela(820,
+                                [_dsTh("Motoboy", 0, { key: 1, paddingLeft: 18 }), _dsTh("Loja", 0, { key: 2 }), _dsTh("Motivo", 0, { key: 3 }), _dsTh("Criado por", 0, { key: 4 }), _dsTh("Data", 0, { key: 5 }), _h("th", { key: 6, style: { width: 100 } }, _h("span", { className: "sr-only" }, "Ações"))],
+                                lista.map(it => _dsTr(it.id, [
+                                    _h("td", { key: 1, style: { ...DS_TD, paddingLeft: 18 } }, _h("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, _dsAvatar(it.nome_profissional || it.cod_profissional),
+                                        _h("div", null, _h("div", { style: { fontWeight: 600, whiteSpace: "nowrap" } }, it.nome_profissional || "-"), _h("div", { style: { fontFamily: DS_MONO, fontSize: 11.5, color: "#6b7280" } }, it.cod_profissional)))),
+                                    _h("td", { key: 2, style: DS_TD }, it.todas_lojas ? _dsPillTom("vermelho", "Todas as lojas") : it.loja_nome ? _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" } }, _dsTag(it.loja_codigo), it.loja_nome) : "-"),
+                                    _h("td", { key: 3, style: { ...DS_TD, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: it.motivo }, it.motivo),
+                                    _h("td", { key: 4, style: { ...DS_TD, color: "#6b7280" } }, it.criado_por || "-"),
+                                    _h("td", { key: 5, style: { ...DS_TD, color: "#6b7280", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" } }, new Date(it.created_at).toLocaleDateString("pt-BR")),
+                                    _h("td", { key: 6, style: { ...DS_TD, textAlign: "right", paddingRight: 18 } }, _h("button", { type: "button", onClick: () => liberar(it), title: "Remover a restrição", className: "hover:bg-gray-50", style: DS_BTN_SM }, _dsIco("check", 14), "Liberar"))
+                                ]))))
+                    ]));
+            };
+
+            /* DISP_ABAS_V1 — Config (link público, regiões, lojas e quantidades) */
+            const _dispConfigClean = () => {
+                const linkPub = `${API_URL}/disponibilidade/publico`;
+                const removerRegiao = (async (e, t) => {
+                    if (window.confirm(`Remover região "${t}" e todas suas lojas?`)) try {
+                        await _fetch(`${API_URL}/disponibilidade/regioes/${e}`, {
+                            method: "DELETE"
+                        }), ja(`Região "${t}" removida!`, "success"), r()
+                    } catch (e) {
+                        ja("Erro ao remover região", "error")
+                    }
+                });
+                const salvarGestores = async (t, a) => {
+                    const l = a.target.value,
+                        r = e.regioes.map(e => e.id === t.id ? {
+                            ...e,
+                            gestores: l
+                        } : e);
+                    x(t => ({
+                        ...t,
+                        dispData: {
+                            ...e,
+                            regioes: r
+                        }
+                    })), clearTimeout(window.gestoresDebounce), window.gestoresDebounce = setTimeout(async () => {
+                        try {
+                            await _fetch(`${API_URL}/disponibilidade/regioes/${t.id}`, {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    gestores: l
+                                })
+                            })
+                        } catch (e) {
+                            console.error("Erro ao salvar gestores:", e)
+                        }
+                    }, 500)
+                };
+                const adicionarLoja = async () => {
+                    const e = p.novaCodLoja?.trim(),
+                        t = p.novaNomeLoja?.trim(),
+                        a = p.novaLojaRegiaoId,
+                        l = parseInt(p.novaQtdTitulares) || 0,
+                        o = parseInt(p.novaQtdExcedentes) || 0;
+                    if (e && t && a)
+                        if (0 !== l || 0 !== o) try {
+                            if (!(await _fetch(`${API_URL}/disponibilidade/lojas`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        regiao_id: a,
+                                        codigo: e,
+                                        nome: t,
+                                        qtd_titulares: l,
+                                        qtd_excedentes: o
+                                    })
+                                })).ok) throw new Error("Erro ao criar loja");
+                            x(e => ({
+                                ...e,
+                                novaCodLoja: "",
+                                novaNomeLoja: "",
+                                novaQtdTitulares: "",
+                                novaQtdExcedentes: "",
+                                novaLojaRegiaoId: ""
+                            })), ja(`Loja "${t}" adicionada com ${l} titular(es) e ${o} excedente(s)!`, "success"), r()
+                        } catch (e) {
+                            ja("Erro ao criar loja", "error")
+                        } else ja("Adicione pelo menos 1 linha", "error");
+                        else ja("Preencha todos os campos", "error")
+                };
+                const salvarLoja = async (t) => {
+                    // Optimistic: aplica o novo código/nome no estado local imediatamente e fecha edição.
+                    // Se o PUT falhar, reverte pro valor original.
+                    const novoCodigo = p.editLojaCodigo;
+                    const novoNome = p.editLojaNome;
+                    const lojaOriginal = (p.dispData?.lojas || []).find(l => l.id === t.id);
+                    x(prev => ({
+                        ...prev,
+                        editandoLoja: null,
+                        dispData: {
+                            ...prev.dispData,
+                            lojas: (prev.dispData?.lojas || []).map(l =>
+                                l.id === t.id ? { ...l, codigo: novoCodigo, nome: novoNome } : l
+                            )
+                        }
+                    }));
+                    try {
+                        const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ codigo: novoCodigo, nome: novoNome })
+                        });
+                        if (!resp.ok) throw new Error("PUT falhou");
+                        ja("Loja atualizada!", "success");
+                    } catch (e) {
+                        // Rollback: restaura código/nome anteriores.
+                        if (lojaOriginal) {
+                            x(prev => ({
+                                ...prev,
+                                dispData: {
+                                    ...prev.dispData,
+                                    lojas: (prev.dispData?.lojas || []).map(l =>
+                                        l.id === t.id ? { ...l, codigo: lojaOriginal.codigo, nome: lojaOriginal.nome } : l
+                                    )
+                                }
+                            }));
+                        }
+                        ja("Erro ao atualizar", "error");
+                    }
+                };
+                const removerLoja = (async (lojaId, lojaNome) => {
+                    if (!window.confirm(`Remover loja "${lojaNome}"?`)) return;
+                    // Optimistic: guarda loja + linhas pra rollback, remove tudo do estado local.
+                    const lojasAntes = p.dispData?.lojas || [];
+                    const linhasAntes = p.dispData?.linhas || [];
+                    const lojaRemovida = lojasAntes.find(l => l.id === lojaId);
+                    const linhasRemovidas = linhasAntes.filter(l => l.loja_id === lojaId);
+                    x(prev => ({
+                        ...prev,
+                        dispData: {
+                            ...prev.dispData,
+                            lojas: (prev.dispData?.lojas || []).filter(l => l.id !== lojaId),
+                            linhas: (prev.dispData?.linhas || []).filter(l => l.loja_id !== lojaId)
+                        }
+                    }));
+                    try {
+                        const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${lojaId}`, { method: "DELETE" });
+                        if (!resp.ok) throw new Error("DELETE falhou");
+                        ja("Loja removida!", "success");
+                    } catch (e) {
+                        // Rollback: recoloca loja e linhas.
+                        if (lojaRemovida) {
+                            x(prev => ({
+                                ...prev,
+                                dispData: {
+                                    ...prev.dispData,
+                                    lojas: [...(prev.dispData?.lojas || []), lojaRemovida],
+                                    linhas: [...(prev.dispData?.linhas || []), ...linhasRemovidas]
+                                }
+                            }));
+                        }
+                        ja("Erro ao remover loja", "error");
+                    }
+                });
+                const limparLinhas = async () => {
+                    if (window.confirm("Limpar TODAS as linhas? (mantém a estrutura de regiões e lojas)")) try {
+                        await _fetch(`${API_URL}/disponibilidade/limpar-linhas`, {
+                            method: "DELETE"
+                        }), ja("Todas as linhas foram resetadas!", "success"), r()
+                    } catch (e) {
+                        ja("Erro ao limpar linhas", "error")
+                    }
+                };
+                const regioes = e.regioes || [];
+                const qtdBadge = (n, tom, titulo, onClick) => _h("button", { type: "button", onClick, title: titulo, className: "hover:opacity-80", style: { border: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, padding: "2px 10px", fontWeight: 600, fontSize: 12, background: _dsTom[tom][0], color: _dsTom[tom][1], fontVariantNumeric: "tabular-nums", fontFamily: "inherit" } }, _dsDot(_dsTom[tom][2]), n);
+                const toggleVer = (lojaId, tipo) => x({
+                    ...p,
+                    verLinhas: (p.verLinhas && p.verLinhas.lojaId === lojaId && p.verLinhas.tipo === tipo)
+                        ? null
+                        : { lojaId, tipo }
+                });
+                return _h("div", { className: "space-y-4" },
+                    _dsCabecalho("Configuração", regioes.length + (regioes.length === 1 ? " região" : " regiões") + " · " + (e.lojas || []).length + " lojas · " + (e.linhas || []).length + " linhas"),
+                    // Link público
+                    _dsSecao([
+                        _h(React.Fragment, { key: "t" }, _dsCardTitulo("Link público", "somente leitura")),
+                        _h("div", { key: "c", style: { padding: 16 } },
+                            _h("p", { style: { margin: "0 0 10px", fontSize: 13, color: "#6b7280" } }, "Compartilhe com gestores para ver o panorama em tempo real, sem login. A página atualiza a cada 2 minutos."),
+                            _h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                                _h("input", { type: "text", readOnly: !0, "aria-label": "Link público", value: linkPub, className: DS_IN, style: { flex: "1 1 280px", width: "auto", fontFamily: DS_MONO, fontSize: 12, background: "#f9fafb" } }),
+                                _h("button", { type: "button", onClick: () => { navigator.clipboard.writeText(linkPub), ja("Link copiado!", "success") }, className: "hover:bg-gray-50", style: { ...DS_BTN, fontWeight: 600 } }, _dsIco("copy", 15), "Copiar link"),
+                                _h("button", { type: "button", onClick: () => window.open(linkPub, "_blank"), className: "hover:bg-gray-50", style: { ...DS_BTN, fontWeight: 600 } }, _dsIco("link", 15), "Abrir")))
+                    ]),
+                    _h("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
+                        // Regiões
+                        _dsSecao([
+                            _h(React.Fragment, { key: "t" }, _dsCardTitulo("Regiões", String(regioes.length))),
+                            _h("div", { key: "f", style: { padding: 16, display: "flex", gap: 8, alignItems: "flex-end" } },
+                                _h("div", { style: { flex: 1 } }, _dsCampo("Nova região", _h("input", { id: "cfg-reg", type: "text", placeholder: "Ex: GOIÂNIA", value: p.novaRegiao || "", onChange: e => x({ ...p, novaRegiao: e.target.value.toUpperCase() }), onKeyPress: e => "Enter" === e.key && o(), className: DS_IN }), "cfg-reg")),
+                                _h("button", { type: "button", onClick: o, style: DS_BTN_PRI }, _dsIco("plus", 15), "Adicionar")),
+                            0 === regioes.length ? _h(React.Fragment, { key: "v" }, _dsVazio("Nenhuma região cadastrada", "Adicione a primeira região acima.")) :
+                                _h("div", { key: "l" }, regioes.map(t => _h("div", { key: t.id, style: { display: "grid", gridTemplateColumns: "minmax(110px, 0.8fr) minmax(0, 1.4fr) 32px", gap: 10, alignItems: "center", padding: "8px 16px", borderTop: "1px solid #f3f4f6" } },
+                                    _h("b", { style: { fontWeight: 600, fontSize: 13, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.nome),
+                                    _h("input", { type: "text", "aria-label": "Gestores de " + t.nome, placeholder: "Gestores (ex: LIS / LEO)", value: t.gestores || "", onChange: a => salvarGestores(t, a), className: DS_IN, style: { height: 34 } }),
+                                    _h("button", { type: "button", onClick: () => removerRegiao(t.id, t.nome), title: "Remover região", "aria-label": "Remover região " + t.nome, className: "hover:bg-red-50", style: DS_ICOBTN_DEST }, _dsIco("trash", 14)))))
+                        ]),
+                        // Adicionar loja
+                        _dsSecao([
+                            _h(React.Fragment, { key: "t" }, _dsCardTitulo("Adicionar loja")),
+                            _h("div", { key: "f", style: { padding: 16, display: "grid", gap: 12 }, className: "grid-cols-1 sm:grid-cols-2" },
+                                _dsCampo("Região *", _h("select", { id: "cfg-lreg", value: p.novaLojaRegiaoId || "", onChange: e => x({ ...p, novaLojaRegiaoId: e.target.value }), className: DS_IN }, _h("option", { value: "" }, "Selecione a região"), regioes.map(e => _h("option", { key: e.id, value: e.id }, e.nome))), "cfg-lreg"),
+                                _dsCampo("Código *", _h("input", { id: "cfg-lcod", type: "text", placeholder: "Ex: 249", value: p.novaCodLoja || "", onChange: e => x({ ...p, novaCodLoja: e.target.value }), className: DS_IN }), "cfg-lcod"),
+                                _h("div", { className: "sm:col-span-2" }, _dsCampo("Nome da loja *", _h("input", { id: "cfg-lnome", type: "text", placeholder: "Nome da loja", value: p.novaNomeLoja || "", onChange: e => x({ ...p, novaNomeLoja: e.target.value.toUpperCase() }), className: DS_IN }), "cfg-lnome")),
+                                _dsCampo("Titulares", _h("input", { id: "cfg-ltit", type: "number", min: "0", placeholder: "0", value: p.novaQtdTitulares || "", onChange: e => x({ ...p, novaQtdTitulares: e.target.value }), title: "Quantidade de linhas titulares", className: DS_IN }), "cfg-ltit"),
+                                _dsCampo("Excedentes", _h("input", { id: "cfg-lexc", type: "number", min: "0", placeholder: "0", value: p.novaQtdExcedentes || "", onChange: e => x({ ...p, novaQtdExcedentes: e.target.value }), title: "Quantidade de linhas excedentes", className: DS_IN }), "cfg-lexc"),
+                                _h("div", { className: "sm:col-span-2", style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } },
+                                    _h("span", { style: { fontSize: 12, color: "#6b7280" } }, "Titulares = linhas principais · Excedentes = linhas extras"),
+                                    _h("button", { type: "button", onClick: adicionarLoja, style: DS_BTN_PRI }, _dsIco("plus", 15), "Adicionar loja")))
+                        ])),
+                    // Lojas por região
+                    regioes.map(t => {
+                        const a = (e.lojas || []).filter(e => e.regiao_id === t.id);
+                        return 0 === a.length ? null : _h("section", { key: t.id, style: { ...DS_CARD, overflow: "hidden" } },
+                            _dsCardTitulo(t.nome, (t.gestores ? t.gestores + " · " : "") + a.length + (a.length === 1 ? " loja" : " lojas")),
+                            _dsTabela(720,
+                                [_dsTh("Código", 0, { key: 1, paddingLeft: 18, width: 110 }), _dsTh("Nome da loja", 0, { key: 2 }), _dsTh("Titulares", 1, { key: 3 }), _dsTh("Excedentes", 1, { key: 4 }), _dsTh("Total", 1, { key: 5 }), _dsTh("Ações", 1, { key: 6, paddingRight: 18 })],
+                                a.map(t => {
+                                    const a = (e.linhas || []).filter(e => e.loja_id === t.id),
+                                        l = a.filter(e => !e.is_excedente).length,
+                                        o = a.filter(e => e.is_excedente).length,
+                                        c = p.editandoLoja === t.id;
+                                    return _dsTr(t.id, [
+                                        _h("td", { key: 1, style: { ...DS_TD, paddingLeft: 18 } }, c ? _h("input", { type: "text", "aria-label": "Código da loja", value: p.editLojaCodigo || "", onChange: e => x({ ...p, editLojaCodigo: e.target.value }), className: DS_IN, style: { width: 84, height: 32 } }) : _h("span", { style: { fontFamily: DS_MONO, fontSize: 12, color: "#5d0b85", fontWeight: 700 } }, t.codigo)),
+                                        _h("td", { key: 2, style: DS_TD }, c ? _h("input", { type: "text", "aria-label": "Nome da loja", value: p.editLojaNome || "", onChange: e => x({ ...p, editLojaNome: e.target.value.toUpperCase() }), className: DS_IN, style: { height: 32 } }) : _h("span", { style: { fontWeight: 500 } }, t.nome)),
+                                        _h("td", { key: 3, style: DS_TD_NUM },
+                                            // Badge clicável: abre modal com as linhas desse tipo para remoção individual
+                                            qtdBadge(l, "azul", "Gerenciar titulares", () => toggleVer(t.id, "titular")),
+                                            p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'titular' &&
+                                                renderPopoverLinhas(a.filter(e => !e.is_excedente), 'Titulares', () => x({ ...p, verLinhas: null }), s, r, ja, t.nome)),
+                                        _h("td", { key: 4, style: DS_TD_NUM },
+                                            qtdBadge(o, "ambar", "Gerenciar excedentes", () => toggleVer(t.id, "excedente")),
+                                            p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'excedente' &&
+                                                renderPopoverLinhas(a.filter(e => e.is_excedente), 'Excedentes', () => x({ ...p, verLinhas: null }), s, r, ja, t.nome)),
+                                        _h("td", { key: 5, style: { ...DS_TD_NUM, fontWeight: 700 } }, a.length),
+                                        _h("td", { key: 6, style: { ...DS_TD, paddingRight: 18 } }, _h("div", { style: { display: "flex", gap: 6, justifyContent: "flex-end" } },
+                                            c ? [
+                                                _h("button", { key: "s", type: "button", onClick: () => salvarLoja(t), title: "Salvar", "aria-label": "Salvar loja", className: "hover:bg-gray-50", style: { ...DS_ICOBTN, color: "#166534" } }, _dsIco("check", 15)),
+                                                _h("button", { key: "c", type: "button", onClick: () => x({ ...p, editandoLoja: null }), title: "Cancelar edição", "aria-label": "Cancelar edição", className: "hover:bg-gray-50", style: DS_ICOBTN }, _dsIco("x", 15))
+                                            ] : [
+                                                _h("button", { key: "e", type: "button", onClick: () => x({ ...p, editandoLoja: t.id, editLojaCodigo: t.codigo, editLojaNome: t.nome }), title: "Editar loja", "aria-label": "Editar loja", className: "hover:bg-gray-50", style: DS_ICOBTN }, _dsIco("pencil", 14)),
+                                                _h("button", { key: "t", type: "button", onClick: () => s(t.id, 1, !1), title: "Adicionar titular", className: "hover:bg-gray-50", style: { ...DS_BTN_SM, height: 32, padding: "0 9px" } }, "+ Titular"),
+                                                _h("button", { key: "x", type: "button", onClick: () => s(t.id, 1, !0), title: "Adicionar excedente", className: "hover:bg-gray-50", style: { ...DS_BTN_SM, height: 32, padding: "0 9px" } }, "+ Excedente"),
+                                                _h("button", { key: "r", type: "button", onClick: () => removerLoja(t.id, t.nome), title: "Remover loja", "aria-label": "Remover loja", className: "hover:bg-red-50", style: DS_ICOBTN_DEST }, _dsIco("trash", 14))
+                                            ]))
+                                    ]);
+                                })));
+                    }),
+                    // Zona de risco
+                    (e.linhas || []).length > 0 && _dsSecao(_h("div", { style: { padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } },
+                        _h("div", null,
+                            _h("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, "Limpar todas as linhas"),
+                            _h("p", { style: { margin: "4px 0 0", fontSize: 13, color: "#6b7280" } }, "Reseta todos os entregadores e mantém a estrutura de regiões e lojas.")),
+                        _h("button", { type: "button", onClick: limparLinhas, className: "hover:bg-red-50", style: DS_BTN_DEST }, _dsIco("trash", 15), "Limpar linhas"))));
+            };
+
             return a ? React.createElement("div", {
                 className: "flex items-center justify-center py-12"
             }, React.createElement("div", {
@@ -1339,1299 +2144,7 @@
                     dispSubTab: "config"
                 }),
                 className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("config" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Config")))), "panorama" === t && _dispPanoramaClean(), "relatorios" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, p.relatoriosLoading ? React.createElement("div", {
-                className: "flex items-center justify-center py-12"
-            }, React.createElement("div", {
-                className: "text-center"
-            }, React.createElement("div", {
-                className: "animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"
-            }), React.createElement("p", {
-                className: "mt-4 text-gray-600"
-            }, "Carregando relatórios..."))) : React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Comparativo")), React.createElement("div", {
-                className: "grid grid-cols-3 gap-4"
-            }, [{
-                key: "hoje",
-                data: p.relatoriosData?.comparativo?.hoje,
-                color: "blue"
-            }, {
-                key: "ontem",
-                data: p.relatoriosData?.comparativo?.ontem,
-                color: "gray"
-            }, {
-                key: "semanaPassada",
-                data: p.relatoriosData?.comparativo?.semanaPassada,
-                color: "purple"
-            }].map(e => {
-                const t = (p.relatoriosData?.comparativo?.labels || {})[e.key] || ("hoje" === e.key ? "MAIS RECENTE" : "ontem" === e.key ? "ANTERIOR" : "3º ANTERIOR");
-                return React.createElement("div", {
-                    key: e.key,
-                    className: `p-4 rounded-lg bg-${e.color}-50 border border-${e.color}-200`
-                }, React.createElement("h4", {
-                    className: `font-bold text-${e.color}-800 text-center mb-2`
-                }, t), e.data ? React.createElement("div", {
-                    className: "space-y-1 text-sm"
-                }, React.createElement("div", {
-                    className: "flex justify-between"
-                }, React.createElement("span", null, "% EM LOJA:"), React.createElement("span", {
-                    className: "font-bold " + (e.data.perc >= 80 ? "text-green-600" : e.data.perc >= 50 ? "text-yellow-600" : "text-red-600")
-                }, e.data.perc, "%")), React.createElement("div", {
-                    className: "flex justify-between"
-                }, React.createElement("span", null, "Em Loja:"), React.createElement("span", {
-                    className: "font-bold text-blue-600"
-                }, e.data.emLoja || 0)), React.createElement("div", {
-                    className: "flex justify-between"
-                }, React.createElement("span", null, "Titulares:"), React.createElement("span", {
-                    className: "font-bold"
-                }, e.data.titulares || 0)), React.createElement("div", {
-                    className: "flex justify-between"
-                }, React.createElement("span", null, "Faltando:"), React.createElement("span", {
-                    className: "font-bold text-red-600"
-                }, e.data.faltando || 0)), React.createElement("div", {
-                    className: "flex justify-between"
-                }, React.createElement("span", null, "Sem Contato:"), React.createElement("span", {
-                    className: "font-bold text-orange-600"
-                }, e.data.semContato || 0))) : React.createElement("p", {
-                    className: "text-gray-400 text-center text-sm"
-                }, "Sem dados"))
-            })), p.relatoriosData?.comparativo?.hoje && p.relatoriosData?.comparativo?.ontem && React.createElement("div", {
-                className: "mt-3 flex justify-center gap-4 text-sm"
-            }, React.createElement("span", {
-                className: "px-3 py-1 rounded-full bg-gray-100"
-            }, "vs Ontem:", React.createElement("span", {
-                className: "ml-1 font-bold " + (p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.ontem.perc >= 0 ? "text-green-600" : "text-red-600")
-            }, p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.ontem.perc >= 0 ? "+" : "", (p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.ontem.perc).toFixed(1), "%")), p.relatoriosData?.comparativo?.semanaPassada && React.createElement("span", {
-                className: "px-3 py-1 rounded-full bg-gray-100"
-            }, "vs Semana:", React.createElement("span", {
-                className: "ml-1 font-bold " + (p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.semanaPassada.perc >= 0 ? "text-green-600" : "text-red-600")
-            }, p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.semanaPassada.perc >= 0 ? "+" : "", (p.relatoriosData.comparativo.hoje.perc - p.relatoriosData.comparativo.semanaPassada.perc).toFixed(1), "%")))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Evolução % EM LOJA (7 dias)")), (() => {
-                const e = Array.isArray(p.relatoriosData?.metricas) ? p.relatoriosData.metricas : [];
-                return 0 === e.length ? React.createElement("p", {
-                    className: "text-gray-400 text-center py-8"
-                }, "Sem dados históricos. Salve espelhos diários para ver o gráfico.") : React.createElement("div", {
-                    className: "h-48 flex items-end gap-2 justify-around bg-gray-50 rounded-lg p-4"
-                }, e.slice(0, 7).reverse().map((e, t) => {
-                    let a = "-";
-                    if (e.data) {
-                        const t = e.data.split("T")[0],
-                            [l, r, o] = t.split("-");
-                        a = `${o}/${r}`
-                    }
-                    const l = e.percOperacao || 0,
-                        r = Math.max(10, l);
-                    return React.createElement("div", {
-                        key: t,
-                        className: "flex flex-col items-center flex-1"
-                    }, React.createElement("span", {
-                        className: "text-xs font-bold mb-1"
-                    }, l, "%"), React.createElement("div", {
-                        className: "w-full rounded-t-lg transition-all " + (l >= 80 ? "bg-green-500" : l >= 50 ? "bg-yellow-500" : "bg-red-500"),
-                        style: {
-                            height: 1.5 * r + "px",
-                            maxHeight: "140px"
-                        }
-                    }), React.createElement("span", {
-                        className: "text-[10px] text-gray-500 mt-1"
-                    }, a), React.createElement("span", {
-                        className: "text-[9px] text-blue-600"
-                    }, e.emLoja || 0, " em loja"))
-                }))
-            })()), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trophy" })), "Ranking de Lojas (7 dias)")), React.createElement("div", {
-                className: "space-y-1 max-h-64 overflow-y-auto"
-            }, (() => {
-                const e = Array.isArray(p.relatoriosData?.rankingLojas) ? p.relatoriosData.rankingLojas : [];
-                return 0 === e.length ? React.createElement("p", {
-                    className: "text-gray-400 text-center py-4"
-                }, "Sem dados de lojas") : React.createElement(React.Fragment, null, React.createElement("p", {
-                    className: "text-xs font-semibold text-green-700 mb-1"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "TOP 5 MELHORES")), e.slice(0, 5).map((e, t) => React.createElement("div", {
-                    key: e.loja_id || t,
-                    className: "flex items-center gap-2 p-1.5 bg-green-50 rounded text-xs"
-                }, React.createElement("span", {
-                    className: "font-bold text-green-700 w-5"
-                }, t + 1, "º"), React.createElement("span", {
-                    className: "flex-1 truncate"
-                }, e.loja_nome || "-"), React.createElement("span", {
-                    className: "text-gray-500 text-[10px]"
-                }, e.regiao_nome || ""), React.createElement("span", {
-                    className: "font-bold text-green-700"
-                }, e.mediaPerc || 0, "%"))), e.length > 5 && React.createElement(React.Fragment, null, React.createElement("p", {
-                    className: "text-xs font-semibold text-red-700 mt-3 mb-1"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "TOP 5 PIORES")), e.slice(-5).reverse().map((t, a) => React.createElement("div", {
-                    key: `worst-${t.loja_id||a}`,
-                    className: "flex items-center gap-2 p-1.5 bg-red-50 rounded text-xs"
-                }, React.createElement("span", {
-                    className: "font-bold text-red-700 w-5"
-                }, e.length - 4 + a, "º"), React.createElement("span", {
-                    className: "flex-1 truncate"
-                }, t.loja_nome || "-"), React.createElement("span", {
-                    className: "text-gray-500 text-[10px]"
-                }, t.regiao_nome || ""), React.createElement("span", {
-                    className: "font-bold text-red-700"
-                }, t.mediaPerc || 0, "%")))))
-            })())), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Ranking de Faltosos (30 dias)")), React.createElement("div", {
-                className: "space-y-1 max-h-64 overflow-y-auto"
-            }, (() => {
-                const e = Array.isArray(p.relatoriosData?.rankingFaltosos) ? p.relatoriosData.rankingFaltosos : [];
-                return 0 === e.length ? React.createElement("p", {
-                    className: "text-gray-400 text-center py-4"
-                }, "Nenhuma falta registrada") : e.slice(0, 10).map((e, t) => React.createElement("div", {
-                    key: e.cod || e.nome || t,
-                    className: "flex items-center gap-2 p-1.5 bg-red-50 rounded text-xs"
-                }, React.createElement("span", {
-                    className: "font-bold text-red-700 w-5"
-                }, t + 1, "º"), React.createElement("span", {
-                    className: "font-mono text-gray-600 w-12"
-                }, e.cod || "-"), React.createElement("span", {
-                    className: "flex-1 truncate"
-                }, e.nome || "Sem nome"), React.createElement("span", {
-                    className: "text-gray-500 text-[10px] truncate max-w-20"
-                }, e.loja_nome || ""), React.createElement("span", {
-                    className: "font-bold text-red-700 bg-red-200 px-1.5 rounded"
-                }, e.totalFaltas || 0, "x")))
-            })()))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Heatmap de Faltas por Dia da Semana (30 dias)")), (() => {
-                const e = p.relatoriosData?.heatmap || {},
-                    t = Array.isArray(e.lojas) ? e.lojas : [],
-                    a = Array.isArray(e.diasSemana) ? e.diasSemana : ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-                return 0 === t.length ? React.createElement("p", {
-                    className: "text-gray-400 text-center py-4"
-                }, "Sem dados de faltas para gerar heatmap") : React.createElement("div", {
-                    className: "overflow-x-auto"
-                }, React.createElement("table", {
-                    className: "w-full text-xs"
-                }, React.createElement("thead", null, React.createElement("tr", {
-                    className: "bg-gray-100"
-                }, React.createElement("th", {
-                    className: "px-2 py-1 text-left"
-                }, "Loja"), a.map((e, t) => React.createElement("th", {
-                    key: t,
-                    className: "px-2 py-1 text-center w-12"
-                }, e)), React.createElement("th", {
-                    className: "px-2 py-1 text-center"
-                }, "Total"))), React.createElement("tbody", null, t.slice(0, 15).map((e, t) => {
-                    const a = Array.isArray(e.dias) ? e.dias : [0, 0, 0, 0, 0, 0, 0],
-                        l = a.reduce((e, t) => e + t, 0),
-                        r = Math.max(...a, 1);
-                    return React.createElement("tr", {
-                        key: e.loja_nome || t,
-                        className: "border-t"
-                    }, React.createElement("td", {
-                        className: "px-2 py-1 font-medium truncate max-w-32"
-                    }, e.loja_nome || "-"), a.map((e, t) => {
-                        const a = e / r,
-                            l = 0 === e ? "bg-gray-50" : a >= .8 ? "bg-red-500 text-white" : a >= .5 ? "bg-orange-400 text-white" : a >= .3 ? "bg-yellow-300" : "bg-yellow-100";
-                        return React.createElement("td", {
-                            key: t,
-                            className: `px-2 py-1 text-center font-bold ${l}`
-                        }, e || "-")
-                    }), React.createElement("td", {
-                        className: "px-2 py-1 text-center font-bold bg-gray-200"
-                    }, l))
-                }))))
-            })(), React.createElement("div", {
-                className: "flex justify-center gap-2 mt-3 text-[10px]"
-            }, React.createElement("span", {
-                className: "px-2 py-0.5 bg-gray-50 rounded"
-            }, "0"), React.createElement("span", {
-                className: "px-2 py-0.5 bg-yellow-100 rounded"
-            }, "Baixo"), React.createElement("span", {
-                className: "px-2 py-0.5 bg-yellow-300 rounded"
-            }, "Médio"), React.createElement("span", {
-                className: "px-2 py-0.5 bg-orange-400 text-white rounded"
-            }, "Alto"), React.createElement("span", {
-                className: "px-2 py-0.5 bg-red-500 text-white rounded"
-            }, "Crítico"))))), "motoboys" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Histórico de Motoboys")), React.createElement("div", {
-                className: "flex flex-wrap gap-3 mb-4"
-            }, React.createElement("div", {
-                className: "flex-1 min-w-[200px]"
-            }, React.createElement("input", {
-                type: "text",
-                placeholder: "Buscar por código ou nome...",
-                value: p.motoboysBusca || "",
-                onChange: e => x(t => ({
-                    ...t,
-                    motoboysBusca: e.target.value
-                })),
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            })), React.createElement("select", {
-                value: p.motoboysLojaFiltro || "",
-                onChange: e => x(t => ({
-                    ...t,
-                    motoboysLojaFiltro: e.target.value
-                })),
-                className: "px-3 py-2 border rounded-lg text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todas as Lojas"), (e.lojas || []).map(e => React.createElement("option", {
-                key: e.id,
-                value: e.id
-            }, e.codigo, " - ", e.nome))), React.createElement("select", {
-                value: p.motoboysDias || 30,
-                onChange: e => x(t => ({
-                    ...t,
-                    motoboysDias: parseInt(e.target.value)
-                })),
-                className: "px-3 py-2 border rounded-lg text-sm"
-            }, React.createElement("option", {
-                value: 7
-            }, "Últimos 7 dias"), React.createElement("option", {
-                value: 15
-            }, "Últimos 15 dias"), React.createElement("option", {
-                value: 30
-            }, "Últimos 30 dias"), React.createElement("option", {
-                value: 60
-            }, "Últimos 60 dias"), React.createElement("option", {
-                value: 90
-            }, "Últimos 90 dias")), React.createElement("button", {
-                onClick: async () => {
-                    x(e => ({
-                        ...e,
-                        motoboysLoading: !0
-                    }));
-                    try {
-                        const e = new URLSearchParams;
-                        e.append("dias", p.motoboysDias || 30), p.motoboysLojaFiltro && e.append("loja_id", p.motoboysLojaFiltro), p.motoboysBusca && e.append("busca", p.motoboysBusca);
-                        const t = await _fetch(`${API_URL}/disponibilidade/motoboys?${e}`),
-                            a = await t.json();
-                        x(e => ({
-                            ...e,
-                            motoboysList: a,
-                            motoboysLoading: !1
-                        }))
-                    } catch (e) {
-                        console.error("Erro ao buscar motoboys:", e), ja("Erro ao buscar motoboys", "error"), x(e => ({
-                            ...e,
-                            motoboysLoading: !1
-                        }))
-                    }
-                },
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Buscar"))), p.motoboysLoading && React.createElement("div", {
-                className: "flex items-center justify-center py-8"
-            }, React.createElement("div", {
-                className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"
-            }), React.createElement("span", {
-                className: "ml-3 text-gray-600"
-            }, "Carregando...")), !p.motoboysLoading && p.motoboysList && React.createElement("div", null, React.createElement("div", {
-                className: "mb-4 p-3 bg-gray-100 rounded-lg flex items-center justify-between"
-            }, React.createElement("span", {
-                className: "text-sm text-gray-700"
-            }, React.createElement("strong", null, p.motoboysList.total || 0), " motoboys encontrados (últimos ", React.createElement("strong", null, p.motoboysList.periodo_dias), " dias)")), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-xs border-collapse"
-            }, React.createElement("thead", null, React.createElement("tr", {
-                className: "bg-gray-800 text-white"
-            }, React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "COD"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "NOME"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "LOJA ATUAL"), React.createElement("th", {
-                className: "px-2 py-2 text-center bg-green-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "EM LOJA")), React.createElement("th", {
-                className: "px-2 py-2 text-center bg-red-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "FALTAS")), React.createElement("th", {
-                className: "px-2 py-2 text-center bg-orange-600"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), "S/ CONTATO"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "LOJAS ONDE RODOU"))), React.createElement("tbody", null, (p.motoboysList.motoboys || []).map((e, t) => React.createElement("tr", {
-                key: e.cod,
-                className: `border-b ${t%2==0?"bg-white":"bg-gray-50"} hover:bg-blue-50`
-            }, React.createElement("td", {
-                className: "px-2 py-2 font-mono font-bold text-purple-700"
-            }, e.cod), React.createElement("td", {
-                className: "px-2 py-2 font-semibold"
-            }, e.nome || "-"), React.createElement("td", {
-                className: "px-2 py-2"
-            }, e.loja_atual ? React.createElement("span", {
-                className: "text-gray-700"
-            }, React.createElement("span", {
-                className: "font-semibold"
-            }, e.loja_atual.codigo), " - ", e.loja_atual.nome, e.loja_atual.regiao_nome && React.createElement("span", {
-                className: "text-gray-400 text-[10px] ml-1"
-            }, "(", e.loja_atual.regiao_nome, ")")) : "-"), React.createElement("td", {
-                className: "px-2 py-2 text-center"
-            }, React.createElement("span", {
-                className: "font-bold " + (e.estatisticas.em_loja.total > 0 ? "text-green-600" : "text-gray-400")
-            }, e.estatisticas.em_loja.total, "x"), e.estatisticas.em_loja.ultima_vez && React.createElement("span", {
-                className: "text-[9px] text-gray-400 block"
-            }, "últ: ", new Date(e.estatisticas.em_loja.ultima_vez).toLocaleDateString("pt-BR", {
-                day: "2-digit",
-                month: "2-digit"
-            }))), React.createElement("td", {
-                className: "px-2 py-2 text-center"
-            }, React.createElement("span", {
-                className: "font-bold " + (e.estatisticas.faltas.total > 0 ? "text-red-600" : "text-gray-400")
-            }, e.estatisticas.faltas.total, "x"), e.estatisticas.faltas.ultima_falta && React.createElement("span", {
-                className: "text-[9px] text-gray-400 block"
-            }, "últ: ", new Date(e.estatisticas.faltas.ultima_falta).toLocaleDateString("pt-BR", {
-                day: "2-digit",
-                month: "2-digit"
-            }))), React.createElement("td", {
-                className: "px-2 py-2 text-center"
-            }, React.createElement("span", {
-                className: "font-bold " + (e.estatisticas.sem_contato.total > 0 ? "text-orange-600" : "text-gray-400")
-            }, e.estatisticas.sem_contato.total, "x"), e.estatisticas.sem_contato.max_dias_consecutivos > 0 && React.createElement("span", {
-                className: "text-[9px] text-orange-500 block"
-            }, "máx: ", e.estatisticas.sem_contato.max_dias_consecutivos, " dias seg.")), React.createElement("td", {
-                className: "px-2 py-2"
-            }, e.lojas_rodou && e.lojas_rodou.length > 0 ? React.createElement("div", {
-                className: "flex flex-wrap gap-1"
-            }, e.lojas_rodou.slice(0, 3).map(e => React.createElement("span", {
-                key: e.id,
-                className: "px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]"
-            }, e.codigo)), e.lojas_rodou.length > 3 && React.createElement("span", {
-                className: "px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px]"
-            }, "+", e.lojas_rodou.length - 3)) : React.createElement("span", {
-                className: "text-gray-400"
-            }, "-"))))))), (!p.motoboysList.motoboys || 0 === p.motoboysList.motoboys.length) && React.createElement("div", {
-                className: "text-center py-8 text-gray-500"
-            }, React.createElement("p", {
-                className: "text-4xl mb-2"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" }))), React.createElement("p", null, "Nenhum motoboy encontrado com os filtros selecionados."))), !p.motoboysLoading && !p.motoboysList && React.createElement("div", {
-                className: "text-center py-8 text-gray-500"
-            }, React.createElement("p", {
-                className: "text-4xl mb-2"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))), React.createElement("p", null, 'Use os filtros acima e clique em "Buscar" para ver o histórico dos motoboys.'))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h4", {
-                className: "font-semibold text-gray-700 mb-2 text-sm"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Legenda das Estatísticas")), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-3 gap-3 text-xs"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "w-3 h-3 bg-green-500 rounded"
-            }), React.createElement("span", null, React.createElement("strong", null, "EM LOJA:"), ' Quantas vezes recebeu status "EM LOJA" (trabalhou)')), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "w-3 h-3 bg-red-500 rounded"
-            }), React.createElement("span", null, React.createElement("strong", null, "FALTAS:"), ' Quantas vezes foi marcado como "FALTANDO"')), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "w-3 h-3 bg-orange-500 rounded"
-            }), React.createElement("span", null, React.createElement("strong", null, "S/ CONTATO:"), ' Quantas vezes ficou "SEM CONTATO"'))))), "restricoes" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Cadastrar Nova Restrição")), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold text-gray-700 mb-1"
-            }, "Código *"), React.createElement("input", {
-                type: "text",
-                placeholder: "Ex: 12345",
-                value: p.restricaoCod || "",
-                onChange: e => {
-                    const t = e.target.value;
-                    x(e => ({
-                        ...e,
-                        restricaoCod: t
-                    }));
-                    const a = pe.find(e => e.codigo === t);
-                    a && x(e => ({
-                        ...e,
-                        restricaoNome: a.nome
-                    }))
-                },
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold text-gray-700 mb-1"
-            }, "Nome"), React.createElement("input", {
-                type: "text",
-                placeholder: "Auto-preenchido",
-                value: p.restricaoNome || "",
-                onChange: e => x(t => ({
-                    ...t,
-                    restricaoNome: e.target.value
-                })),
-                className: "w-full px-3 py-2 border rounded-lg text-sm bg-gray-50"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold text-gray-700 mb-1"
-            }, "Loja"), React.createElement("select", {
-                value: p.restricaoTodasLojas ? "TODAS" : p.restricaoLojaId || "",
-                onChange: e => {
-                    "TODAS" === e.target.value ? x(e => ({
-                        ...e,
-                        restricaoTodasLojas: !0,
-                        restricaoLojaId: ""
-                    })) : x(t => ({
-                        ...t,
-                        restricaoTodasLojas: !1,
-                        restricaoLojaId: e.target.value
-                    }))
-                },
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Selecione uma loja..."), React.createElement("option", {
-                value: "TODAS",
-                className: "font-bold text-red-600"
-            }, "TODAS AS LOJAS"), (e.lojas || []).map(e => React.createElement("option", {
-                key: e.id,
-                value: e.id
-            }, e.codigo, " - ", e.nome)))), React.createElement("div", null, React.createElement("label", {
-                className: "block text-sm font-semibold text-gray-700 mb-1"
-            }, "Motivo *"), React.createElement("input", {
-                type: "text",
-                placeholder: "Ex: Comportamento inadequado",
-                value: p.restricaoMotivo || "",
-                onChange: e => x(t => ({
-                    ...t,
-                    restricaoMotivo: e.target.value
-                })),
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            }))), React.createElement("button", {
-                onClick: async () => {
-                    if (p.restricaoCod && p.restricaoMotivo)
-                        if (p.restricaoTodasLojas || p.restricaoLojaId) try {
-                            const e = await _fetch(`${API_URL}/disponibilidade/restricoes`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    cod_profissional: p.restricaoCod,
-                                    nome_profissional: p.restricaoNome,
-                                    loja_id: p.restricaoLojaId || null,
-                                    todas_lojas: p.restricaoTodasLojas || !1,
-                                    motivo: p.restricaoMotivo,
-                                    criado_por: l?.fullName || l?.username
-                                })
-                            });
-                            if (!e.ok) {
-                                const t = await e.json();
-                                throw new Error(t.error || "Erro ao cadastrar")
-                            }
-                            ja("Restrição cadastrada com sucesso!", "success"), x(e => ({
-                                ...e,
-                                restricaoCod: "",
-                                restricaoNome: "",
-                                restricaoLojaId: "",
-                                restricaoTodasLojas: !1,
-                                restricaoMotivo: ""
-                            }));
-                            const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
-                                a = await t.json();
-                            x(e => ({
-                                ...e,
-                                restricoesList: a
-                            }))
-                        } catch (e) {
-                            ja(e.message, "error")
-                        } else ja('Selecione uma loja ou "Todas as Lojas"', "error");
-                        else ja("Preencha o código e o motivo", "error")
-                },
-                className: "px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Cadastrar Restrição"))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Restrições Ativas ("), (p.restricoesList || []).length, ")"), p.restricoesLoading ? React.createElement("div", {
-                className: "flex items-center justify-center py-8"
-            }, React.createElement("div", {
-                className: "animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"
-            }), React.createElement("span", {
-                className: "ml-3 text-gray-600"
-            }, "Carregando...")) : 0 === (p.restricoesList || []).length ? React.createElement("div", {
-                className: "text-center py-8 text-gray-500"
-            }, React.createElement("p", {
-                className: "text-4xl mb-2"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("p", null, "Nenhuma restrição ativa no momento.")) : React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-xs border-collapse"
-            }, React.createElement("thead", null, React.createElement("tr", {
-                className: "bg-red-700 text-white"
-            }, React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "COD"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "NOME"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "LOJA"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "MOTIVO"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "CRIADO POR"), React.createElement("th", {
-                className: "px-2 py-2 text-left"
-            }, "DATA"), React.createElement("th", {
-                className: "px-2 py-2 text-center"
-            }, "AÇÃO"))), React.createElement("tbody", null, (p.restricoesList || []).map((e, t) => React.createElement("tr", {
-                key: e.id,
-                className: `border-b ${t%2==0?"bg-white":"bg-red-50"} hover:bg-red-100`
-            }, React.createElement("td", {
-                className: "px-2 py-2 font-mono font-bold text-red-700"
-            }, e.cod_profissional), React.createElement("td", {
-                className: "px-2 py-2 font-semibold"
-            }, e.nome_profissional || "-"), React.createElement("td", {
-                className: "px-2 py-2"
-            }, e.todas_lojas ? React.createElement("span", {
-                className: "px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-bold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "TODAS")) : e.loja_nome ? React.createElement("span", null, e.loja_codigo, " - ", e.loja_nome) : "-"), React.createElement("td", {
-                className: "px-2 py-2 max-w-[200px] truncate",
-                title: e.motivo
-            }, e.motivo), React.createElement("td", {
-                className: "px-2 py-2 text-gray-600"
-            }, e.criado_por || "-"), React.createElement("td", {
-                className: "px-2 py-2 text-gray-600"
-            }, new Date(e.created_at).toLocaleDateString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-center"
-            }, React.createElement("button", {
-                onClick: async () => {
-                    if (confirm(`Remover restrição de ${e.cod_profissional} - ${e.nome_profissional||"N/A"}?`)) try {
-                        await _fetch(`${API_URL}/disponibilidade/restricoes/${e.id}`, {
-                            method: "DELETE"
-                        }), ja("Restrição removida!", "success");
-                        const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
-                            a = await t.json();
-                        x(e => ({
-                            ...e,
-                            restricoesList: a
-                        }))
-                    } catch (e) {
-                        ja("Erro ao remover restrição", "error")
-                    }
-                },
-                className: "px-2 py-1 bg-green-600 text-white rounded text-[10px] font-bold hover:bg-green-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Liberar")))))))))), "config" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" })), "Link Público (Somente Leitura)")), React.createElement("p", {
-                className: "text-sm text-gray-600 mb-3"
-            }, "Compartilhe este link com gestores para visualizar o panorama em tempo real, sem precisar de login. A página atualiza automaticamente a cada 2 minutos."), React.createElement("div", {
-                className: "flex gap-2 flex-wrap"
-            }, React.createElement("input", {
-                type: "text",
-                readOnly: !0,
-                value: `${API_URL}/disponibilidade/publico`,
-                className: "flex-1 px-3 py-2 bg-gray-100 border rounded-lg text-sm font-mono"
-            }), React.createElement("button", {
-                onClick: () => {
-                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("Link copiado!", "success")
-                },
-                className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Copiar Link")), React.createElement("button", {
-                onClick: () => window.open(`${API_URL}/disponibilidade/publico`, "_blank"),
-                className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" })), "Abrir")))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Regiões")), React.createElement("div", {
-                className: "flex gap-2 mb-4"
-            }, React.createElement("input", {
-                type: "text",
-                placeholder: "Nome da região (ex: GOIÂNIA)",
-                value: p.novaRegiao || "",
-                onChange: e => x({
-                    ...p,
-                    novaRegiao: e.target.value.toUpperCase()
-                }),
-                className: "flex-1 px-3 py-2 border rounded-lg",
-                onKeyPress: e => "Enter" === e.key && o()
-            }), React.createElement("button", {
-                onClick: o,
-                className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, "+ Adicionar")), React.createElement("div", {
-                className: "space-y-2"
-            }, (e.regioes || []).map(t => React.createElement("div", {
-                key: t.id,
-                className: "flex items-center gap-2 p-2 bg-purple-50 rounded-lg"
-            }, React.createElement("span", {
-                className: "font-semibold text-purple-800 min-w-[150px]"
-            }, t.nome), React.createElement("input", {
-                type: "text",
-                placeholder: "Gestores (ex: LIS / LEO / ERICK)",
-                value: t.gestores || "",
-                onChange: async a => {
-                    const l = a.target.value,
-                        r = e.regioes.map(e => e.id === t.id ? {
-                            ...e,
-                            gestores: l
-                        } : e);
-                    x(t => ({
-                        ...t,
-                        dispData: {
-                            ...e,
-                            regioes: r
-                        }
-                    })), clearTimeout(window.gestoresDebounce), window.gestoresDebounce = setTimeout(async () => {
-                        try {
-                            await _fetch(`${API_URL}/disponibilidade/regioes/${t.id}`, {
-                                method: "PUT",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    gestores: l
-                                })
-                            })
-                        } catch (e) {
-                            console.error("Erro ao salvar gestores:", e)
-                        }
-                    }, 500)
-                },
-                className: "flex-1 px-2 py-1 border border-purple-200 rounded text-sm"
-            }), React.createElement("button", {
-                onClick: () => (async (e, t) => {
-                    if (window.confirm(`Remover região "${t}" e todas suas lojas?`)) try {
-                        await _fetch(`${API_URL}/disponibilidade/regioes/${e}`, {
-                            method: "DELETE"
-                        }), ja(`Região "${t}" removida!`, "success"), r()
-                    } catch (e) {
-                        ja("Erro ao remover região", "error")
-                    }
-                })(t.id, t.nome),
-                className: "text-red-600 hover:text-red-800 font-bold px-2",
-                title: "Remover região"
-            }, "×"))), 0 === (e.regioes || []).length && React.createElement("p", {
-                className: "text-gray-500 text-sm"
-            }, "Nenhuma região cadastrada"))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Adicionar Loja")), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-6 gap-3"
-            }, React.createElement("select", {
-                value: p.novaLojaRegiaoId || "",
-                onChange: e => x({
-                    ...p,
-                    novaLojaRegiaoId: e.target.value
-                }),
-                className: "px-3 py-2 border rounded-lg"
-            }, React.createElement("option", {
-                value: ""
-            }, "Selecione a Região"), (e.regioes || []).map(e => React.createElement("option", {
-                key: e.id,
-                value: e.id
-            }, e.nome))), React.createElement("input", {
-                type: "text",
-                placeholder: "Código (ex: 249)",
-                value: p.novaCodLoja || "",
-                onChange: e => x({
-                    ...p,
-                    novaCodLoja: e.target.value
-                }),
-                className: "px-3 py-2 border rounded-lg"
-            }), React.createElement("input", {
-                type: "text",
-                placeholder: "Nome da Loja",
-                value: p.novaNomeLoja || "",
-                onChange: e => x({
-                    ...p,
-                    novaNomeLoja: e.target.value.toUpperCase()
-                }),
-                className: "px-3 py-2 border rounded-lg"
-            }), React.createElement("input", {
-                type: "number",
-                placeholder: "Titulares",
-                min: "0",
-                value: p.novaQtdTitulares || "",
-                onChange: e => x({
-                    ...p,
-                    novaQtdTitulares: e.target.value
-                }),
-                className: "px-3 py-2 border rounded-lg",
-                title: "Quantidade de linhas titulares"
-            }), React.createElement("input", {
-                type: "number",
-                placeholder: "Excedentes",
-                min: "0",
-                value: p.novaQtdExcedentes || "",
-                onChange: e => x({
-                    ...p,
-                    novaQtdExcedentes: e.target.value
-                }),
-                className: "px-3 py-2 border rounded-lg bg-red-50",
-                title: "Quantidade de linhas excedentes"
-            }), React.createElement("button", {
-                onClick: async () => {
-                    const e = p.novaCodLoja?.trim(),
-                        t = p.novaNomeLoja?.trim(),
-                        a = p.novaLojaRegiaoId,
-                        l = parseInt(p.novaQtdTitulares) || 0,
-                        o = parseInt(p.novaQtdExcedentes) || 0;
-                    if (e && t && a)
-                        if (0 !== l || 0 !== o) try {
-                            if (!(await _fetch(`${API_URL}/disponibilidade/lojas`, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        regiao_id: a,
-                                        codigo: e,
-                                        nome: t,
-                                        qtd_titulares: l,
-                                        qtd_excedentes: o
-                                    })
-                                })).ok) throw new Error("Erro ao criar loja");
-                            x(e => ({
-                                ...e,
-                                novaCodLoja: "",
-                                novaNomeLoja: "",
-                                novaQtdTitulares: "",
-                                novaQtdExcedentes: "",
-                                novaLojaRegiaoId: ""
-                            })), ja(`Loja "${t}" adicionada com ${l} titular(es) e ${o} excedente(s)!`, "success"), r()
-                        } catch (e) {
-                            ja("Erro ao criar loja", "error")
-                        } else ja("Adicione pelo menos 1 linha", "error");
-                        else ja("Preencha todos os campos", "error")
-                },
-                className: "px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-            }, "+ Adicionar Loja")), React.createElement("p", {
-                className: "text-xs text-gray-500 mt-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Titulares = linhas principais | Excedentes = linhas extras (aparecem em vermelho claro)"))), (e.regioes || []).map(t => {
-                const a = (e.lojas || []).filter(e => e.regiao_id === t.id);
-                return 0 === a.length ? null : React.createElement("div", {
-                    key: t.id,
-                    className: "bg-white rounded-xl shadow p-4"
-                }, React.createElement("h3", {
-                    className: "font-bold text-gray-800 mb-3"
-                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), t.nome, " ", t.gestores && React.createElement("span", {
-                    className: "font-normal text-gray-500"
-                }, "(", t.gestores, ")")), React.createElement("div", {
-                    className: "overflow-x-auto"
-                }, React.createElement("table", {
-                    className: "w-full text-sm"
-                }, React.createElement("thead", {
-                    className: "bg-gray-100"
-                }, React.createElement("tr", null, React.createElement("th", {
-                    className: "px-3 py-2 text-left"
-                }, "Código"), React.createElement("th", {
-                    className: "px-3 py-2 text-left"
-                }, "Nome da Loja"), React.createElement("th", {
-                    className: "px-3 py-2 text-center"
-                }, "Titulares"), React.createElement("th", {
-                    className: "px-3 py-2 text-center"
-                }, "Excedentes"), React.createElement("th", {
-                    className: "px-3 py-2 text-center"
-                }, "Total"), React.createElement("th", {
-                    className: "px-3 py-2 text-center"
-                }, "Ações"))), React.createElement("tbody", null, a.map(t => {
-                    const a = (e.linhas || []).filter(e => e.loja_id === t.id),
-                        l = a.filter(e => !e.is_excedente).length,
-                        o = a.filter(e => e.is_excedente).length,
-                        c = p.editandoLoja === t.id;
-                    return React.createElement("tr", {
-                        key: t.id,
-                        className: "border-t"
-                    }, React.createElement("td", {
-                        className: "px-3 py-2"
-                    }, c ? React.createElement("input", {
-                        type: "text",
-                        value: p.editLojaCodigo || "",
-                        onChange: e => x({
-                            ...p,
-                            editLojaCodigo: e.target.value
-                        }),
-                        className: "w-20 px-2 py-1 border rounded text-xs"
-                    }) : React.createElement("span", {
-                        className: "font-mono font-bold"
-                    }, t.codigo)), React.createElement("td", {
-                        className: "px-3 py-2"
-                    }, c ? React.createElement("input", {
-                        type: "text",
-                        value: p.editLojaNome || "",
-                        onChange: e => x({
-                            ...p,
-                            editLojaNome: e.target.value.toUpperCase()
-                        }),
-                        className: "w-full px-2 py-1 border rounded text-xs"
-                    }) : t.nome), React.createElement("td", {
-                        className: "px-3 py-2 text-center"
-                    },
-                        // Badge clicável de titulares: abre modal com listagem das linhas desse tipo
-                        // pra permitir remoção individual (feature nova, além do botão +T que só adiciona).
-                        React.createElement("button", {
-                            onClick: () => x({
-                                ...p,
-                                verLinhas: (p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'titular')
-                                    ? null
-                                    : { lojaId: t.id, tipo: 'titular' }
-                            }),
-                            className: "px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 cursor-pointer",
-                            title: "Clique para gerenciar titulares"
-                        }, l),
-                        // Modal de gerenciamento — aparece só pra (loja, tipo) ativos
-                        p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'titular' &&
-                            renderPopoverLinhas(a.filter(e => !e.is_excedente), 'Titulares', () => x({ ...p, verLinhas: null }), s, r, ja, t.nome)
-                    ), React.createElement("td", {
-                        className: "px-3 py-2 text-center"
-                    },
-                        React.createElement("button", {
-                            onClick: () => x({
-                                ...p,
-                                verLinhas: (p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'excedente')
-                                    ? null
-                                    : { lojaId: t.id, tipo: 'excedente' }
-                            }),
-                            className: "px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 cursor-pointer",
-                            title: "Clique para gerenciar excedentes"
-                        }, o),
-                        p.verLinhas && p.verLinhas.lojaId === t.id && p.verLinhas.tipo === 'excedente' &&
-                            renderPopoverLinhas(a.filter(e => e.is_excedente), 'Excedentes', () => x({ ...p, verLinhas: null }), s, r, ja, t.nome)
-                    ), React.createElement("td", {
-                        className: "px-3 py-2 text-center font-semibold"
-                    }, a.length), React.createElement("td", {
-                        className: "px-3 py-2 text-center"
-                    }, c ? React.createElement(React.Fragment, null, React.createElement("button", {
-                        onClick: async () => {
-                            // Optimistic: aplica o novo código/nome no estado local imediatamente e fecha edição.
-                            // Se o PUT falhar, reverte pro valor original.
-                            const novoCodigo = p.editLojaCodigo;
-                            const novoNome = p.editLojaNome;
-                            const lojaOriginal = (p.dispData?.lojas || []).find(l => l.id === t.id);
-                            
-                            x(prev => ({
-                                ...prev,
-                                editandoLoja: null,
-                                dispData: {
-                                    ...prev.dispData,
-                                    lojas: (prev.dispData?.lojas || []).map(l =>
-                                        l.id === t.id ? { ...l, codigo: novoCodigo, nome: novoNome } : l
-                                    )
-                                }
-                            }));
-                            
-                            try {
-                                const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${t.id}`, {
-                                    method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ codigo: novoCodigo, nome: novoNome })
-                                });
-                                if (!resp.ok) throw new Error("PUT falhou");
-                                ja("Loja atualizada!", "success");
-                            } catch (e) {
-                                // Rollback: restaura código/nome anteriores.
-                                if (lojaOriginal) {
-                                    x(prev => ({
-                                        ...prev,
-                                        dispData: {
-                                            ...prev.dispData,
-                                            lojas: (prev.dispData?.lojas || []).map(l =>
-                                                l.id === t.id ? { ...l, codigo: lojaOriginal.codigo, nome: lojaOriginal.nome } : l
-                                            )
-                                        }
-                                    }));
-                                }
-                                ja("Erro ao atualizar", "error");
-                            }
-                        },
-                        className: "px-2 py-1 bg-green-100 text-green-700 rounded text-xs mr-1"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("button", {
-                        onClick: () => x({
-                            ...p,
-                            editandoLoja: null
-                        }),
-                        className: "px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))) : React.createElement(React.Fragment, null, React.createElement("button", {
-                        onClick: () => x({
-                            ...p,
-                            editandoLoja: t.id,
-                            editLojaCodigo: t.codigo,
-                            editLojaNome: t.nome
-                        }),
-                        className: "px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs mr-1",
-                        title: "Editar loja"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
-                        onClick: () => s(t.id, 1, !1),
-                        className: "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs mr-1",
-                        title: "Adicionar titular"
-                    }, "+T"), React.createElement("button", {
-                        onClick: () => s(t.id, 1, !0),
-                        className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs mr-1",
-                        title: "Adicionar excedente"
-                    }, "+E"), React.createElement("button", {
-                        onClick: () => (async (lojaId, lojaNome) => {
-                            if (!window.confirm(`Remover loja "${lojaNome}"?`)) return;
-                            
-                            // Optimistic: guarda loja + linhas pra rollback, remove tudo do estado local.
-                            // Sem flash da tabela inteira — a linha da loja simplesmente some.
-                            const lojasAntes = p.dispData?.lojas || [];
-                            const linhasAntes = p.dispData?.linhas || [];
-                            const lojaRemovida = lojasAntes.find(l => l.id === lojaId);
-                            const linhasRemovidas = linhasAntes.filter(l => l.loja_id === lojaId);
-                            
-                            x(prev => ({
-                                ...prev,
-                                dispData: {
-                                    ...prev.dispData,
-                                    lojas: (prev.dispData?.lojas || []).filter(l => l.id !== lojaId),
-                                    linhas: (prev.dispData?.linhas || []).filter(l => l.loja_id !== lojaId)
-                                }
-                            }));
-                            
-                            try {
-                                const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${lojaId}`, { method: "DELETE" });
-                                if (!resp.ok) throw new Error("DELETE falhou");
-                                ja("Loja removida!", "success");
-                            } catch (e) {
-                                // Rollback: recoloca loja e linhas.
-                                if (lojaRemovida) {
-                                    x(prev => ({
-                                        ...prev,
-                                        dispData: {
-                                            ...prev.dispData,
-                                            lojas: [...(prev.dispData?.lojas || []), lojaRemovida],
-                                            linhas: [...(prev.dispData?.linhas || []), ...linhasRemovidas]
-                                        }
-                                    }));
-                                }
-                                ja("Erro ao remover loja", "error");
-                            }
-                        })(t.id, t.nome),
-                        className: "px-2 py-1 bg-red-100 text-red-700 rounded text-xs",
-                        title: "Remover loja"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))
-                })))))
-            }), (e.linhas || []).length > 0 && React.createElement("div", {
-                className: "bg-red-50 border border-red-200 rounded-xl p-4"
-            }, React.createElement("div", {
-                className: "flex items-center justify-between"
-            }, React.createElement("div", null, React.createElement("h4", {
-                className: "font-semibold text-red-800"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Limpar Todas as Linhas")), React.createElement("p", {
-                className: "text-sm text-red-600"
-            }, "Reseta todos os entregadores, mantém a estrutura de regiões e lojas.")), React.createElement("button", {
-                onClick: async () => {
-                    if (window.confirm("Limpar TODAS as linhas? (mantém a estrutura de regiões e lojas)")) try {
-                        await _fetch(`${API_URL}/disponibilidade/limpar-linhas`, {
-                            method: "DELETE"
-                        }), ja("Todas as linhas foram resetadas!", "success"), r()
-                    } catch (e) {
-                        ja("Erro ao limpar linhas", "error")
-                    }
-                },
-                className: "px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "Limpar Linhas")))), "principal" === t && _dispPainelClean(), "faltosos" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtros")), React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-4 gap-3"
-            }, React.createElement("div", null, React.createElement("label", {
-                className: "text-xs text-gray-600"
-            }, "Data Início"), React.createElement("input", {
-                type: "date",
-                value: p.faltososDataInicio || "",
-                onChange: e => x({
-                    ...p,
-                    faltososDataInicio: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "text-xs text-gray-600"
-            }, "Data Fim"), React.createElement("input", {
-                type: "date",
-                value: p.faltososDataFim || "",
-                onChange: e => x({
-                    ...p,
-                    faltososDataFim: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            })), React.createElement("div", null, React.createElement("label", {
-                className: "text-xs text-gray-600"
-            }, "Loja"), React.createElement("select", {
-                value: p.faltososLojaId || "",
-                onChange: e => x({
-                    ...p,
-                    faltososLojaId: e.target.value
-                }),
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Todas as lojas"), (e.lojas || []).map(e => React.createElement("option", {
-                key: e.id,
-                value: e.id
-            }, e.codigo, " - ", e.nome)))), React.createElement("div", {
-                className: "flex items-end gap-2"
-            }, React.createElement("button", {
-                onClick: async () => {
-                    try {
-                        let e = `${API_URL}/disponibilidade/faltosos?`;
-                        p.faltososDataInicio && (e += `data_inicio=${p.faltososDataInicio}&`), p.faltososDataFim && (e += `data_fim=${p.faltososDataFim}&`), p.faltososLojaId && (e += `loja_id=${p.faltososLojaId}`);
-                        const t = await _fetch(e),
-                            a = await t.json();
-                        x(e => ({
-                            ...e,
-                            faltososLista: a
-                        }))
-                    } catch (e) {
-                        ja("Erro ao buscar faltosos", "error")
-                    }
-                },
-                className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Buscar")), React.createElement("button", {
-                onClick: async () => {
-                    x(e => ({
-                        ...e,
-                        faltososDataInicio: "",
-                        faltososDataFim: "",
-                        faltososLojaId: ""
-                    }));
-                    try {
-                        const e = await _fetch(`${API_URL}/disponibilidade/faltosos`),
-                            t = await e.json();
-                        x(e => ({
-                            ...e,
-                            faltososLista: t
-                        }))
-                    } catch (e) {
-                        ja("Erro ao buscar faltosos", "error")
-                    }
-                },
-                className: "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Limpar"))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow overflow-hidden"
-            }, React.createElement("div", {
-                className: "px-4 py-3 bg-gray-50 border-b flex justify-between items-center"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Registro de Faltas ("), (p.faltososLista || []).length, ")")), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-xs"
-            }, React.createElement("thead", {
-                className: "bg-gray-100"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "DATA"), React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "REGIÃO"), React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "LOJA"), React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "COD"), React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "PROFISSIONAL"), React.createElement("th", {
-                className: "px-3 py-2 text-left"
-            }, "MOTIVO"), React.createElement("th", {
-                className: "px-3 py-2 text-center w-16"
-            }, "AÇÃO"))), React.createElement("tbody", null, 0 === (p.faltososLista || []).length ? React.createElement("tr", null, React.createElement("td", {
-                colSpan: "7",
-                className: "px-3 py-8 text-center text-gray-500"
-            }, "Nenhum registro de falta encontrado.")) : (p.faltososLista || []).map(e => React.createElement("tr", {
-                key: e.id,
-                className: "border-t hover:bg-gray-50"
-            }, React.createElement("td", {
-                className: "px-3 py-2"
-            }, new Date(e.data_falta).toLocaleDateString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2"
-            }, e.regiao_nome), React.createElement("td", {
-                className: "px-3 py-2 font-mono"
-            }, e.loja_codigo, " - ", e.loja_nome), React.createElement("td", {
-                className: "px-3 py-2 font-mono"
-            }, e.cod_profissional || "-"), React.createElement("td", {
-                className: "px-3 py-2"
-            }, e.nome_profissional || "-"), React.createElement("td", {
-                className: "px-3 py-2 text-red-600"
-            }, e.motivo), React.createElement("td", {
-                className: "px-3 py-2 text-center"
-            }, React.createElement("button", {
-                onClick: async () => {
-                    if (window.confirm(`Excluir registro de falta de ${e.nome_profissional||e.cod_profissional}?`)) try {
-                        await _fetch(`${API_URL}/disponibilidade/faltosos/${e.id}`, {
-                            method: "DELETE"
-                        }), x(t => ({
-                            ...t,
-                            faltososLista: t.faltososLista.filter(t => t.id !== e.id)
-                        })), ja("Falta excluída", "success")
-                    } catch (e) {
-                        ja("Erro ao excluir", "error")
-                    }
-                },
-                className: "text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded",
-                title: "Excluir falta"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))))))), "espelho" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4"
-            }, React.createElement("h3", {
-                className: "font-bold text-gray-800 mb-3"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-copy" })), "Histórico de Planilhas")), React.createElement("div", {
-                className: "flex gap-3 items-end"
-            }, React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("label", {
-                className: "text-xs text-gray-600"
-            }, "Selecione a data"), React.createElement("select", {
-                value: p.espelhoDataSelecionada || "",
-                onChange: async e => {
-                    const t = e.target.value;
-                    if (x(e => ({
-                            ...e,
-                            espelhoDataSelecionada: t,
-                            espelhoCarregando: !0
-                        })), t) try {
-                        const e = await _fetch(`${API_URL}/disponibilidade/espelho/${t}`),
-                            a = await e.json();
-                        console.log("Espelho carregado:", a), x(e => ({
-                            ...e,
-                            espelhoDados: a.dados,
-                            espelhoCarregando: !1
-                        }))
-                    } catch (e) {
-                        console.error("Erro ao carregar espelho:", e), ja("Erro ao carregar espelho", "error"), x(e => ({
-                            ...e,
-                            espelhoCarregando: !1
-                        }))
-                    } else x(e => ({
-                        ...e,
-                        espelhoDados: null,
-                        espelhoCarregando: !1
-                    }))
-                },
-                className: "w-full px-3 py-2 border rounded-lg text-sm"
-            }, React.createElement("option", {
-                value: ""
-            }, "Selecione uma data..."), (p.espelhoDatas || []).map(e => {
-                const t = e.data_registro?.split("T")[0] || e.data_registro,
-                    [a, l, r] = (t || "").split("-"),
-                    o = a && l && r ? `${r}/${l}/${a}` : t;
-                return React.createElement("option", {
-                    key: e.id,
-                    value: t
-                }, o)
-            }))), React.createElement("button", {
-                onClick: async () => {
-                    try {
-                        const e = await _fetch(`${API_URL}/disponibilidade/espelho`),
-                            t = await e.json();
-                        console.log("Datas espelho:", t), x(e => ({
-                            ...e,
-                            espelhoDatas: t
-                        })), ja(`${t.length} data(s) encontrada(s)!`, "success")
-                    } catch (e) {
-                        ja("Erro ao carregar datas", "error")
-                    }
-                },
-                className: "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar")), p.espelhoDataSelecionada && React.createElement("button", {
-                onClick: async () => {
-                    const e = (p.espelhoDatas || []).find(e => (e.data_registro?.split("T")[0] || e.data_registro) === p.espelhoDataSelecionada);
-                    if (!e) return;
-                    const t = p.espelhoDataSelecionada.split("-").reverse().join("/");
-                    if (window.confirm(`Excluir espelho de ${t}?\n\nEssa ação não pode ser desfeita.`)) try {
-                        await _fetch(`${API_URL}/disponibilidade/espelho/${e.id}`, {
-                            method: "DELETE"
-                        });
-                        const a = await _fetch(`${API_URL}/disponibilidade/espelho`),
-                            l = await a.json();
-                        x(e => ({
-                            ...e,
-                            espelhoDatas: l,
-                            espelhoDataSelecionada: "",
-                            espelhoDados: null
-                        })), ja(`Espelho de ${t} excluído`, "success")
-                    } catch (e) {
-                        ja("Erro ao excluir espelho", "error")
-                    }
-                },
-                className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir"))), React.createElement("p", {
-                className: "text-xs text-gray-500 mt-2"
-            }, 0 === (p.espelhoDatas || []).length ? 'Nenhum espelho salvo ainda. Use "Resetar Status" para criar o primeiro.' : `${(p.espelhoDatas||[]).length} espelho(s) disponível(is)`)), p.espelhoCarregando ? React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-8 text-center"
-            }, React.createElement("div", {
-                className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"
-            }), React.createElement("p", {
-                className: "mt-2 text-gray-500"
-            }, "Carregando...")) : p.espelhoDados ? React.createElement("div", {
-                className: "space-y-4"
-            }, (() => {
-                const e = "string" == typeof p.espelhoDados ? JSON.parse(p.espelhoDados) : p.espelhoDados;
-                return console.log("Dados do espelho:", e), e && e.regioes && 0 !== e.regioes.length ? (e.regioes || []).map(t => {
-                    const a = (e.lojas || []).filter(e => e.regiao_id === t.id);
-                    return 0 === a.length ? null : React.createElement("div", {
-                        key: t.id,
-                        className: "bg-white rounded-xl shadow overflow-hidden"
-                    }, React.createElement("div", {
-                        className: "bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2"
-                    }, React.createElement("h3", {
-                        className: "font-bold text-white text-sm"
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), t.nome)), a.map(t => {
-                        const a = (e.linhas || []).filter(e => e.loja_id === t.id);
-                        return React.createElement("div", {
-                            key: t.id,
-                            className: "border-t"
-                        }, React.createElement("div", {
-                            className: "px-3 py-2 bg-gray-50 font-semibold text-sm"
-                        }, t.codigo, " - ", t.nome), React.createElement("table", {
-                            className: "w-full text-xs"
-                        }, React.createElement("tbody", null, [...a].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0).map(e => React.createElement("tr", {
-                            key: e.id,
-                            className: `border-t ${e.is_excedente?"bg-red-50":""} ${e.is_reposicao?"bg-blue-50":""}`
-                        }, React.createElement("td", {
-                            className: `w-1 ${e.is_excedente?"bg-red-400":""} ${e.is_reposicao?"bg-blue-400":""}`
-                        }), React.createElement("td", {
-                            className: "px-2 py-1 font-mono w-20"
-                        }, e.cod_profissional || "-"), React.createElement("td", {
-                            className: "px-2 py-1"
-                        }, React.createElement("div", {
-                            className: "flex items-center gap-1"
-                        }, e.is_reposicao && React.createElement("span", {
-                            className: "text-[9px] text-blue-400 italic"
-                        }, "reposição"), e.is_excedente && React.createElement("span", {
-                            className: "text-[9px] text-red-400 italic"
-                        }, "excedente"), React.createElement("span", null, e.nome_profissional || (e.is_reposicao || e.is_excedente ? "" : "-")))), React.createElement("td", {
-                            className: "px-2 py-1 w-28"
-                        }, React.createElement("span", {
-                            className: "px-2 py-0.5 rounded-full text-xs font-semibold " + (n[e.status] || n["A CONFIRMAR"]) /* DISP_CLEAN_V1 */
-                        }, e.status)), React.createElement("td", {
-                            className: "px-2 py-1 text-gray-500"
-                        }, e.observacao || ""))))))
-                    }))
-                }) : React.createElement("div", {
-                    className: "bg-white rounded-xl shadow p-8 text-center"
-                }, React.createElement("p", {
-                    className: "text-gray-500"
-                }, "Espelho vazio ou sem dados"))
-            })()) : React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-8 text-center"
-            }, React.createElement("p", {
-                className: "text-gray-500"
-            }, "Selecione uma data para visualizar o histórico"))))
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Config")))), "panorama" === t && _dispPanoramaClean(), "relatorios" === t && _dispRelatoriosClean(), "motoboys" === t && _dispMotoboysClean(), "restricoes" === t && _dispRestricoesClean(), "config" === t && _dispConfigClean(), "principal" === t && _dispPainelClean(), "faltosos" === t && _dispFaltososClean(), "espelho" === t && _dispEspelhoClean() /* DISP_ABAS_V1 */)
 
     };
 

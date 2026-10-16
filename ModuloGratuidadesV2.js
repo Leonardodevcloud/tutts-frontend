@@ -1,5 +1,7 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* GRAT_ICONS_V1 */
+/* FIN_ABAS_V1: Gratuidades alinhada ao padrão clean — cabeçalho de página, faixa única de KPIs,
+   abas internas roxas, cabeçalho de tabela #f9fafb, linhas sem zebra, status em pílula com ponto. */
 /**
  * ModuloGratuidadesV2.js
  * ─────────────────────────────────────────────────────────────────────────
@@ -247,48 +249,39 @@
   // Componentes atômicos
   // ───────────────────────────────────────────────────────────────────────
 
+  // FIN_ABAS_V1: célula da faixa de KPIs (o container usa a classe .fin-kpis)
   function KpiCard({ label, valor, sub, cor }) {
-    return React.createElement('div', {
-      style: {
-        background: cores.graySoft,
-        borderRadius: 10,
-        padding: '14px 16px',
-      },
-    },
-      React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '0 0 4px' } }, label),
-      React.createElement('p', {
-        style: { fontSize: 22, fontWeight: 600, margin: 0, color: cor || cores.text, lineHeight: 1.1 },
-      }, valor),
-      sub && React.createElement('p', {
-        style: { fontSize: 11, color: cores.textMuted, margin: '3px 0 0' },
-      }, sub)
+    return React.createElement('div', null,
+      React.createElement('div', { className: 'fin-kpi-l' }, label),
+      React.createElement('div', { className: 'fin-kpi-v', style: cor ? { color: cor } : null }, valor),
+      sub && React.createElement('div', { className: 'fin-kpi-s' }, sub)
     );
   }
 
-  function StatusBadge({ status }) {
+  function StatusBadge({ status, rotulo }) {
     // 2026-05 v3: separação utilizada vs expirada
     //   ATIVA      → consumível
     //   UTILIZADA  → remaining = 0 (consumida pelo motoboy)
     //   EXPIRADA   → passou prazo de 10 dias sem uso
     //   REMOVIDA   → soft-delete
     const map = {
-      ativa: { txt: 'ativa', bg: cores.successSoft, fg: '#166534' },
-      utilizada: { txt: 'utilizada', bg: cores.graySoft, fg: cores.gray },
-      expirada: { txt: 'expirada', bg: '#fffbeb', fg: '#92400e' },
-      removida: { txt: 'removida', bg: cores.dangerSoft, fg: '#991b1b' },
+      ativa: { txt: 'Ativa', bg: '#f0fdf4', fg: '#166534', dot: '#16a34a' },
+      utilizada: { txt: 'Utilizada', bg: cores.graySoft, fg: '#374151', dot: '#9ca3af' },
+      expirada: { txt: 'Expirada', bg: '#fffbeb', fg: '#92400e', dot: '#d97706' },
+      removida: { txt: 'Removida', bg: cores.dangerSoft, fg: '#991b1b', dot: '#dc2626' },
     };
-    const m = map[status] || map.utilizada;
+    const m = Object.assign({}, map[status] || map.utilizada, rotulo ? { txt: rotulo } : null);
     return React.createElement('span', {
       style: {
-        display: 'inline-block',
-        padding: '3px 10px',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '3px 9px',
         background: m.bg,
         color: m.fg,
-        borderRadius: 10,
-        fontSize: 11,
-        fontWeight: 600,
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 600, whiteSpace: 'nowrap',
       },
-    }, m.txt);
+    }, React.createElement('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 999, background: m.dot } }), m.txt);
   }
 
   // Badge sutil mostrando prazo de expiração
@@ -357,7 +350,7 @@
     },
       React.createElement('div', {
         style: {
-          background: '#fff', borderRadius: 12,
+          background: '#fff', borderRadius: 14,
           width: largura || 520, maxWidth: '100%', maxHeight: '90vh',
           overflow: 'auto',
         },
@@ -559,19 +552,19 @@
   }
   function btnPrimary() {
     return {
-      height: 36, padding: '0 16px',
+      height: 38, padding: '0 16px',
       background: cores.primary, color: '#fff',
-      border: 'none', borderRadius: 8,
-      fontSize: 13, fontWeight: 500, cursor: 'pointer',
+      border: '1px solid ' + cores.primary, borderRadius: 10,
+      fontSize: 13, fontWeight: 600, cursor: 'pointer',
       whiteSpace: 'nowrap',
     };
   }
   function btnSecondary() {
     return {
-      height: 36, padding: '0 16px',
-      background: '#fff', color: cores.text,
-      border: `1px solid ${cores.border}`, borderRadius: 8,
-      fontSize: 13, fontWeight: 500, cursor: 'pointer',
+      height: 38, padding: '0 16px',
+      background: '#fff', color: '#374151',
+      border: `1px solid ${cores.border}`, borderRadius: 10,
+      fontSize: 13, fontWeight: 600, cursor: 'pointer',
     };
   }
 
@@ -748,8 +741,8 @@
   }
   function inputStyle() {
     return {
-      width: '100%', height: 36, padding: '0 12px',
-      border: `1px solid ${cores.border}`, borderRadius: 8,
+      width: '100%', height: 38, padding: '0 12px',
+      border: `1px solid ${cores.border}`, borderRadius: 10,
       fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
     };
   }
@@ -884,11 +877,11 @@
     };
 
     // ─── Render ─────────────────────────────────────────────────────────
-    return React.createElement('div', { style: { padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif', color: cores.text } },
+    return React.createElement('div', { style: { paddingTop: 16, color: cores.text } },
 
-      // KPIs (5 cards: ativas, utilizadas, expiradas, valor ativo, total cadastrado)
+      // KPIs (5 cards: ativas, utilizadas, expiradas, valor ativo, total cadastrado) — FIN_ABAS_V1: faixa única
       React.createElement('div', {
-        style: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 },
+        className: 'fin-kpis', style: { marginBottom: 16 },
       },
         React.createElement(KpiCard, { label: 'Ativas', valor: kpis.ativas, sub: 'a vencer este mês', cor: '#166534' }),
         React.createElement(KpiCard, { label: 'Utilizadas (mês)', valor: kpis.utilizadas_mes || 0, sub: 'já consumidas' }),
@@ -901,7 +894,7 @@
       React.createElement('div', {
         style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
       },
-        React.createElement('h2', { style: { fontSize: 18, fontWeight: 600, margin: 0 } }, 'Gratuidades'),
+        React.createElement('h2', { className: 'fin-sec-t' }, 'Gratuidades cadastradas'),
         React.createElement('button', { onClick: () => setModalCadastro(true), style: btnPrimary() }, '+ Cadastrar gratuidade')
       ),
 
@@ -909,12 +902,12 @@
       React.createElement('div', {
         style: {
           background: '#fff', border: `1px solid ${cores.border}`,
-          borderRadius: 12, overflow: 'hidden',
+          borderRadius: 14, overflow: 'hidden',
         },
       },
         // Abas
         React.createElement('div', {
-          style: { display: 'flex', gap: 0, padding: '8px 12px 0', borderBottom: `1px solid ${cores.border}`, background: cores.graySoft },
+          style: { display: 'flex', gap: 0, padding: '4px 12px 0', borderBottom: `1px solid ${cores.border}`, background: '#fff', overflowX: 'auto' },
         },
           [
             { id: 'ativa', label: 'Ativas', count: kpis.ativas },
@@ -929,7 +922,7 @@
                 padding: '10px 16px',
                 background: 'transparent', border: 'none',
                 borderBottom: `2px solid ${aba === t.id ? cores.primary : 'transparent'}`,
-                color: aba === t.id ? cores.text : cores.textMuted,
+                color: aba === t.id ? '#5d0b85' : cores.textMuted,
                 fontWeight: aba === t.id ? 600 : 400, fontSize: 13,
                 cursor: 'pointer', marginBottom: -1,
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -1008,7 +1001,7 @@
                     style: {
                       textAlign: i === 2 || i === 3 || i === 7 || i === 8 ? 'center' : i === 4 || i === 9 ? 'right' : 'left',
                       padding: '10px 14px', fontWeight: 600, color: cores.textMuted,
-                      fontSize: 12, background: cores.graySoft, borderBottom: `1px solid ${cores.border}`,
+                      fontSize: 12, background: '#f9fafb', borderBottom: `1px solid ${cores.border}`,
                     },
                   }, h)
                 )
@@ -1033,7 +1026,7 @@
                     React.createElement('tr', {
                       key: g.id,
                       style: {
-                        background: idx % 2 === 0 ? '#fff' : '#f9fafb',
+                        background: '#fff',
                       },
                     },
                       td(g.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
@@ -1061,11 +1054,12 @@
                         React.createElement('button', {
                           onClick: () => excluir(g),
                           style: {
-                            padding: '5px 10px', background: cores.dangerSoft, color: '#991b1b',
-                            border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                            height: 30, padding: '0 10px', background: '#fff', color: '#991b1b',
+                            border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
                           },
                           disabled: g.status_ui === 'removida',
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir"))
+                        }, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir")
                       )
                     )
                   )
@@ -1128,15 +1122,15 @@
   }
 
   function tdBase() {
-    return { padding: '11px 14px', borderBottom: `1px solid ${cores.border}`, verticalAlign: 'middle' };
+    return { padding: '11px 14px', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' };
   }
   function td(conteudo, extra = {}) {
     return React.createElement('td', { style: Object.assign(tdBase(), extra) }, conteudo);
   }
   function selectStyle() {
     return {
-      height: 36, padding: '0 32px 0 12px',
-      border: `1px solid ${cores.border}`, borderRadius: 8,
+      height: 38, padding: '0 32px 0 12px',
+      border: `1px solid ${cores.border}`, borderRadius: 10,
       background: '#fff', fontSize: 13, minWidth: 160,
       appearance: 'none',
       backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>")`,
@@ -1283,11 +1277,11 @@
       }
     };
 
-    return React.createElement('div', { style: { padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif', color: cores.text } },
+    return React.createElement('div', { style: { paddingTop: 16, color: cores.text } },
 
-      // KPIs
+      // KPIs — FIN_ABAS_V1: faixa única
       React.createElement('div', {
-        style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 },
+        className: 'fin-kpis', style: { marginBottom: 16 },
       },
         React.createElement(KpiCard, { label: 'Isenções ativas', valor: kpis.ativas || 0, sub: 'permanentes', cor: '#166534' }),
         React.createElement(KpiCard, { label: 'Criadas no mês', valor: kpis.criadas_mes || 0 }),
@@ -1299,7 +1293,7 @@
         style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
       },
         React.createElement('div', null,
-          React.createElement('h2', { style: { fontSize: 18, fontWeight: 600, margin: 0 } }, 'Isenções'),
+          React.createElement('h2', { className: 'fin-sec-t' }, 'Isenções cadastradas'),
           React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '2px 0 0' } },
             'Motoboys isentos não pagam taxa quando não têm gratuidade disponível. A isenção conta como saque gratuito do mês.')
         ),
@@ -1308,11 +1302,11 @@
 
       // Card da tabela
       React.createElement('div', {
-        style: { background: '#fff', border: `1px solid ${cores.border}`, borderRadius: 12, overflow: 'hidden' },
+        style: { background: '#fff', border: `1px solid ${cores.border}`, borderRadius: 14, overflow: 'hidden' },
       },
         // Abas
         React.createElement('div', {
-          style: { display: 'flex', gap: 0, padding: '8px 12px 0', borderBottom: `1px solid ${cores.border}`, background: cores.graySoft },
+          style: { display: 'flex', gap: 0, padding: '4px 12px 0', borderBottom: `1px solid ${cores.border}`, background: '#fff', overflowX: 'auto' },
         },
           [
             { id: 'ativa', label: 'Ativas', count: kpis.ativas || 0 },
@@ -1325,7 +1319,7 @@
               style: {
                 padding: '10px 16px', background: 'transparent', border: 'none',
                 borderBottom: `2px solid ${aba === t.id ? cores.primary : 'transparent'}`,
-                color: aba === t.id ? cores.text : cores.textMuted,
+                color: aba === t.id ? '#5d0b85' : cores.textMuted,
                 fontWeight: aba === t.id ? 600 : 400, fontSize: 13,
                 cursor: 'pointer', marginBottom: -1,
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -1384,7 +1378,7 @@
                     style: {
                       textAlign: i === 4 || i === 5 ? 'center' : i === 6 ? 'right' : 'left',
                       padding: '10px 14px', fontWeight: 600, color: cores.textMuted,
-                      fontSize: 12, background: cores.graySoft, borderBottom: `1px solid ${cores.border}`,
+                      fontSize: 12, background: '#f9fafb', borderBottom: `1px solid ${cores.border}`,
                     },
                   }, h)
                 )
@@ -1400,7 +1394,7 @@
                   : dados.map((e, idx) =>
                     React.createElement('tr', {
                       key: e.id,
-                      style: { background: idx % 2 === 0 ? '#fff' : '#f9fafb', opacity: e.ativa ? 1 : 0.6 },
+                      style: { background: '#fff', opacity: e.ativa ? 1 : 0.6 },
                     },
                       td(e.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
                       td(e.user_name || '—', { fontWeight: 500 }),
@@ -1413,22 +1407,15 @@
                       ),
                       td(e.usos || 0, { textAlign: 'center', fontWeight: 600 }),
                       React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'center' }) },
-                        React.createElement('span', {
-                          style: {
-                            display: 'inline-block', padding: '3px 10px',
-                            background: e.ativa ? cores.successSoft : cores.graySoft,
-                            color: e.ativa ? '#166534' : cores.gray,
-                            borderRadius: 10, fontSize: 11, fontWeight: 600,
-                          },
-                        }, e.ativa ? 'ativa' : 'desativada')
+                        React.createElement(StatusBadge, { status: e.ativa ? 'ativa' : 'utilizada', rotulo: e.ativa ? null : 'Desativada' })
                       ),
                       React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'right' }) },
                         e.ativa
                           ? React.createElement('button', {
                             onClick: () => desativar(e),
                             style: {
-                              padding: '5px 10px', background: cores.warningSoft, color: '#92400e',
-                              border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                              height: 30, padding: '0 10px', background: '#fff', color: '#991b1b',
+                              border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                             },
                           }, 'Desativar')
                           : React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } },
@@ -1698,13 +1685,15 @@
       ? React.createElement(TelaIsencoes, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn })
       : React.createElement(TelaGratuidades, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn });
 
-    return React.createElement('div', null,
+    return React.createElement('div', { style: { color: cores.text, fontSize: 13 } },
+      // FIN_ABAS_V1: cabeçalho de página
+      global.FinUI ? global.FinUI.cabecalho('Gratuidades e isenções', 'Saques sem taxa concedidos aos profissionais — premiações, bonificações e isenções permanentes') : null,
       // Sub-abas top-level (Gratuidades | Isenções)
       React.createElement('div', {
         style: {
-          display: 'flex', gap: 4, padding: '0 16px',
+          display: 'flex', gap: 8,
           borderBottom: `1px solid ${cores.border}`,
-          background: '#fff',
+          overflowX: 'auto',
         },
       },
         [
@@ -1715,12 +1704,12 @@
             key: s.id,
             onClick: () => setSubAba(s.id),
             style: {
-              padding: '12px 18px',
+              padding: '10px 12px',
               background: 'transparent', border: 'none',
               borderBottom: `2px solid ${subAba === s.id ? cores.primary : 'transparent'}`,
-              color: subAba === s.id ? cores.primaryDark : cores.textMuted,
-              fontWeight: subAba === s.id ? 600 : 500, fontSize: 14,
-              cursor: 'pointer', marginBottom: -1,
+              color: subAba === s.id ? '#5d0b85' : cores.textMuted,
+              fontWeight: subAba === s.id ? 600 : 400, fontSize: 13.5,
+              cursor: 'pointer', marginBottom: -1, whiteSpace: 'nowrap',
             },
           }, s.label)
         )

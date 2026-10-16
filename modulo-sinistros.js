@@ -17,6 +17,8 @@
 
   var h = React.createElement;
   var useState = React.useState, useEffect = React.useEffect, useCallback = React.useCallback;
+  /* FIN_ABAS_V1: ícone do sprite */
+  function Ico(nome, cls, style) { return h('svg', { className: cls || 'ico', style: style || { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome })); }
 
   // ── Formatadores ────────────────────────────────────────────────
   function fR(n) {
@@ -91,7 +93,7 @@
   function Etiqueta(p) {
     var c = p.cor;
     return h('span', {
-      className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap',
+      className: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap',
       style: { background: c.bg, color: c.fg }
     },
       h('span', { className: 'w-1.5 h-1.5 rounded-full flex-shrink-0', style: { background: c.ponto } }),
@@ -100,25 +102,12 @@
   }
 
   // ── Card de indicador ───────────────────────────────────────────
+  /* FIN_ABAS_V1: célula da faixa única de KPIs (container .fin-kpis) — sem gradiente */
   function Card(p) {
-    return h('div', {
-      className: p.destaque
-        ? 'rounded-xl p-4 text-white flex flex-col gap-1'
-        : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1',
-      style: p.destaque ? { background: 'linear-gradient(135deg,#b43aed,#b033ea)' } : null
-    },
-      h('div', {
-        className: 'text-[10.5px] font-extrabold uppercase tracking-wider',
-        style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' }
-      }, p.rotulo),
-      h('div', {
-        className: 'text-[22px] font-extrabold tabular-nums leading-tight',
-        style: { color: p.destaque ? '#ffffff' : (p.cor || '#111827') }
-      }, p.valor),
-      p.auxiliar ? h('div', {
-        className: 'text-[11px]',
-        style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' }
-      }, p.auxiliar) : null
+    return h('div', { title: p.auxiliar || undefined },
+      h('div', { className: 'fin-kpi-l' }, p.rotulo),
+      h('div', { className: 'fin-kpi-v', style: p.cor ? { color: p.cor } : null }, p.valor),
+      p.auxiliar ? h('div', { className: 'fin-kpi-s' }, p.auxiliar) : null
     );
   }
 
@@ -131,13 +120,13 @@
           key: e.id,
           type: 'button',
           onClick: function () { p.onChange(e.id); },
-          className: 'flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-colors ' +
-            (on ? 'border-purple-600 bg-purple-50 ring-1 ring-purple-300' : 'border-gray-200 bg-white hover:bg-gray-50'),
+          className: 'flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] border text-left transition-colors ' +
+            (on ? 'border-purple-700 bg-purple-50 ring-1 ring-purple-200' : 'border-gray-200 bg-white hover:bg-gray-50'),
           style: { minHeight: 44 }
         },
           h('span', {
             className: 'w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center text-[11px] font-extrabold ' +
-              (on ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500')
+              (on ? 'bg-purple-50 text-purple-800' : 'bg-gray-100 text-gray-500')
           }, String(e.n)),
           h('span', {
             className: 'flex-1 text-[12.5px] leading-snug ' + (on ? 'font-bold text-purple-900' : 'font-medium text-gray-700')
@@ -300,33 +289,33 @@
       return String(c.cod_cliente).indexOf(t) >= 0 || (c.nome || '').toLowerCase().indexOf(t) >= 0;
     }).slice(0, 60);
 
-    var rotuloCampo = 'block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-1';
-    var caixa = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300';
+    var rotuloCampo = 'fin-lbl'; /* FIN_ABAS_V1 */
+    var caixa = 'w-full fin-inp';
 
     return h('div', { className: 'fixed inset-0 z-50 flex justify-end' },
       h('div', { className: 'absolute inset-0 bg-black/30', onClick: fechar, 'aria-hidden': 'true' }),
       h('div', {
-        className: 'relative bg-white w-full max-w-[560px] h-full overflow-y-auto shadow-2xl flex flex-col',
+        className: 'relative bg-white w-full max-w-[560px] h-full overflow-y-auto flex flex-col border border-gray-200',
         role: 'dialog', 'aria-label': ehNovo ? 'Novo sinistro' : 'Editar sinistro'
       },
         // Cabecalho
         h('div', { className: 'sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-start gap-3 z-10' },
           h('div', { className: 'flex-1' },
-            h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' },
+            h('div', { className: 'text-[12px] text-gray-500' },
               ehNovo ? 'Novo sinistro' : ('Editar sinistro' + (form && form.nome_cliente ? ' · ' + form.nome_cliente : ''))),
-            h('h2', { className: 'text-xl font-extrabold text-gray-900' },
+            h('h2', { className: 'text-base font-semibold text-gray-900' },
               ehNovo ? 'Cadastro' : (p.codigo || ''))
           ),
           h('button', {
             type: 'button', onClick: fechar, 'aria-label': 'Fechar painel',
-            className: 'w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50'
+            className: 'w-9 h-9 rounded-[10px] border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50'
           }, '×')
         ),
 
         carregando ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') :
         h('div', { className: 'flex-1 px-5 py-4 flex flex-col gap-4' },
 
-          erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+          erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
 
           // Cliente
           h('div', null,
@@ -338,7 +327,7 @@
               onFocus: function () { setAbertoCli(true); setBuscaCli(''); },
               onChange: function (e) { setBuscaCli(e.target.value); }
             }),
-            abertoCli ? h('div', { className: 'mt-1 border border-gray-200 rounded-lg max-h-56 overflow-y-auto bg-white shadow-sm' },
+            abertoCli ? h('div', { className: 'mt-1 border border-gray-200 rounded-lg max-h-56 overflow-y-auto bg-white' },
               clientesFiltrados.length === 0
                 ? h('div', { className: 'px-3 py-3 text-[12.5px] text-gray-400' }, 'Nenhum cliente encontrado')
                 : clientesFiltrados.map(function (c) {
@@ -351,7 +340,7 @@
                       },
                       className: 'w-full text-left px-3 py-2 hover:bg-purple-50 flex items-center gap-2'
                     },
-                      h('span', { className: 'text-[12.5px] font-semibold text-gray-800 flex-1' }, c.nome),
+                      h('span', { className: 'text-[12.5px] font-semibold text-gray-900 flex-1' }, c.nome),
                       h('span', { className: 'text-[11px] text-gray-400 tabular-nums' }, c.cod_cliente)
                     );
                   })
@@ -401,7 +390,7 @@
                 }, e.nome_arquivo),
                 h('span', { className: 'text-gray-400 tabular-nums' }, Math.round((e.tamanho_bytes || 0) / 1024) + ' KB'),
                 h('button', { type: 'button', onClick: function () { removerAnexo(e.id); },
-                  'aria-label': 'Remover ' + e.nome_arquivo, className: 'text-gray-400 hover:text-red-600 font-bold' }, '×')
+                  'aria-label': 'Remover ' + e.nome_arquivo, className: 'text-gray-400 hover:text-red-800 font-bold' }, '×')
               );
             })
           ) : null,
@@ -422,8 +411,8 @@
                 var on = form.origem_profissional === o[0];
                 return h('button', {
                   key: o[0], type: 'button', onClick: function () { mudar('origem_profissional', o[0]); },
-                  className: 'px-3 py-2.5 rounded-lg text-[12px] font-bold border ' +
-                    (on ? 'bg-purple-700 text-white border-purple-700' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'),
+                  className: 'px-3 py-2.5 rounded-[10px] text-[12px] font-bold border ' +
+                    (on ? 'text-white bg-purple-700 hover:bg-purple-800 border border-purple-700' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'),
                   style: { minHeight: 44 }
                 }, o[1]);
               })
@@ -433,7 +422,7 @@
               h('input', { className: caixa, autoComplete: 'off',
                 placeholder: 'Buscar no cadastro da Central (nome, ID ou CPF)',
                 value: buscaProf, onChange: function (e) { setBuscaProf(e.target.value); } }),
-              form.profissional_id ? h('div', { className: 'mt-2 flex items-center gap-2.5 px-3 py-2.5 border border-purple-300 bg-purple-50 rounded-lg' },
+              form.profissional_id ? h('div', { className: 'mt-2 flex items-center gap-2.5 px-3 py-2.5 border border-purple-200 bg-purple-50 rounded-lg' },
                 h('span', { className: 'w-8 h-8 rounded-full bg-purple-700 text-white flex items-center justify-center text-[11px] font-extrabold flex-shrink-0' },
                   (form.profissional_nome || '?').split(' ').map(function (x) { return x[0]; }).slice(0, 2).join('').toUpperCase()),
                 h('span', { className: 'flex-1 min-w-0' },
@@ -454,7 +443,7 @@
                     className: 'w-full text-left px-3 py-2 hover:bg-purple-50 flex items-center gap-2'
                   },
                     h('span', { className: 'flex-1 min-w-0' },
-                      h('span', { className: 'block text-[12.5px] font-semibold text-gray-800 truncate' }, pr.nome || '(sem nome)'),
+                      h('span', { className: 'block text-[12.5px] font-semibold text-gray-900 truncate' }, pr.nome || '(sem nome)'),
                       h('span', { className: 'block text-[11px] text-gray-400' },
                         'ID ' + pr.cod + (pr.categoria ? ' · ' + pr.categoria : '') + (pr.cpf ? ' · ' + pr.cpf : ''))),
                     h('span', { className: 'text-[11.5px] font-bold text-purple-700' }, 'Vincular')
@@ -494,7 +483,7 @@
                 return h('li', { key: hh.id, className: 'flex gap-2.5' },
                   h('span', { className: 'w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0 mt-1.5' }),
                   h('span', { className: 'flex-1' },
-                    h('span', { className: 'block text-[12px] text-gray-800' }, hh.descricao),
+                    h('span', { className: 'block text-[12px] text-gray-900' }, hh.descricao),
                     h('span', { className: 'block text-[11px] text-gray-400' },
                       fDataHora(hh.criado_em) + (hh.usuario_id ? ' · ' + hh.usuario_id : '')))
                 );
@@ -506,9 +495,9 @@
         // Rodape
         h('div', { className: 'sticky bottom-0 bg-white border-t border-gray-200 px-5 py-3 flex justify-end gap-2' },
           h('button', { type: 'button', onClick: fechar, style: { minHeight: 44 },
-            className: 'px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50' }, 'Cancelar'),
+            className: 'px-4 py-2 rounded-[10px] border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50' }, 'Cancelar'),
           h('button', { type: 'button', onClick: salvar, disabled: salvando || carregando, style: { minHeight: 44 },
-            className: 'px-5 py-2 rounded-lg bg-purple-700 text-white text-sm font-bold hover:bg-purple-800 disabled:opacity-60' },
+            className: 'px-5 py-2 rounded-[10px] text-white text-sm font-bold disabled:opacity-60 bg-purple-700 hover:bg-purple-800 border border-purple-700' },
             salvando ? 'Salvando...' : 'Salvar sinistro')
         )
       )
@@ -584,36 +573,27 @@
 
     var th = function (txt, right) {
       return h('th', {
-        className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide text-gray-500'
+        className: (right ? 'text-right' : 'text-left')
       }, txt);
     };
 
     return h('div', { className: 'space-y-4' },
 
-      // Cabecalho
-      h('div', { className: 'flex flex-col sm:flex-row sm:items-end gap-3' },
-        h('div', { className: 'flex-1' },
-          h('h2', { className: 'text-xl font-extrabold text-gray-900' }, 'Apuracao de sinistros'),
-          h('p', { className: 'text-[12.5px] text-gray-500' },
-            'Acompanhe cada sinistro em duas frentes: tratativa com o cliente e tratativa com o entregador.')
+      // Cabecalho — FIN_ABAS_V1
+      h('div', { className: 'flex flex-wrap items-end justify-between gap-3' },
+        h('div', { className: 'min-w-0' },
+          h('h1', { className: 'fin-page-t' }, 'Apuração de sinistros'),
+          h('p', { className: 'fin-page-s' },
+            'Cada sinistro em duas frentes: tratativa com o cliente e tratativa com o entregador.')
         ),
-        h('div', { className: 'flex items-center gap-2' },
-          h('input', { type: 'date', value: dataInicio, 'aria-label': 'Data inicial',
-            onChange: function (e) { setDataInicio(e.target.value); },
-            className: 'px-2.5 py-2 border border-gray-200 rounded-lg text-[12.5px]' }),
-          h('span', { className: 'text-gray-400 text-xs' }, 'ate'),
-          h('input', { type: 'date', value: dataFim, 'aria-label': 'Data final',
-            onChange: function (e) { setDataFim(e.target.value); },
-            className: 'px-2.5 py-2 border border-gray-200 rounded-lg text-[12.5px]' }),
-          h('button', {
-            type: 'button', onClick: function () { setPainel({ id: null }); }, style: { minHeight: 44 },
-            className: 'px-4 py-2 rounded-lg bg-purple-700 text-white text-sm font-bold hover:bg-purple-800 whitespace-nowrap'
-          }, '+ Novo sinistro')
-        )
+        h('button', {
+          type: 'button', onClick: function () { setPainel({ id: null }); }, style: { height: 40 },
+          className: 'fin-btn fin-btn-p'
+        }, Ico('plus', 'ico', { width: 15, height: 15 }), 'Novo sinistro')
       ),
 
-      // Cards (item 3)
-      cards ? h('div', { className: 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3' },
+      // Cards (item 3) — faixa única
+      cards ? h('div', { className: 'fin-kpis' },
         h(Card, { rotulo: 'Sinistros em andamento', valor: String(cards.em_andamento),
           auxiliar: cards.total + ' no total' }),
         h(Card, { rotulo: 'Aprovados · aguardando devolucao', valor: String(cards.aguardando_devolucao),
@@ -628,32 +608,32 @@
           auxiliar: '+ ' + fR(cards.ressarcido_plataforma) + ' ressarcido por plataformas' })
       ) : null,
 
-      // Abas + busca
-      h('div', { className: 'flex flex-col sm:flex-row sm:items-center gap-3' },
-        h('div', { className: 'flex bg-white border border-gray-200 rounded-lg overflow-hidden' },
-          abas.map(function (a) {
-            var on = aba === a.id;
-            return h('button', {
-              key: a.id, type: 'button', onClick: function () { setAba(a.id); },
-              className: 'px-4 py-2 text-[12.5px] font-bold ' + (on ? 'bg-purple-700 text-white' : 'text-gray-600 hover:bg-gray-50'),
-              style: { minHeight: 44 }
-            }, a.rotulo + (a.n == null ? '' : ' · ' + a.n));
-          })
+      // Filtros (abas em pílulas + busca + período) e lista no mesmo card — FIN_ABAS_V1
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-[14px] p-5 text-center text-red-800 text-sm' }, erro) :
+      h('div', { className: 'fin-card overflow-hidden' },
+        h('div', { className: 'flex flex-wrap items-center gap-2 p-3', style: { borderBottom: '1px solid #f3f4f6' } },
+          window.FinUI.chips(abas.map(function (a) { return { id: a.id, label: a.rotulo, n: a.n == null ? null : a.n }; }), aba, setAba, 'Situação'),
+          h('label', { style: { marginLeft: 'auto', flex: '1 1 240px', maxWidth: 340, display: 'flex', alignItems: 'center', gap: 8, height: 38, padding: '0 12px', border: '1px solid #e5e7eb', borderRadius: 10, color: '#9ca3af', background: '#fff' } },
+            Ico('search', 'ico', { width: 15, height: 15 }),
+            h('input', {
+              type: 'search', value: busca, onChange: function (e) { setBusca(e.target.value); },
+              placeholder: 'Nº, cliente, OS ou profissional', 'aria-label': 'Buscar sinistro',
+              style: { border: 0, outline: 0, flex: 1, minWidth: 0, font: 'inherit', fontSize: 13, color: '#111827', background: 'transparent' }
+            })),
+          h('div', { className: 'flex items-center gap-2' },
+            h('input', { type: 'date', value: dataInicio, 'aria-label': 'Data inicial',
+              onChange: function (e) { setDataInicio(e.target.value); },
+              className: 'fin-inp' }),
+            h('span', { className: 'text-gray-500 text-xs' }, 'até'),
+            h('input', { type: 'date', value: dataFim, 'aria-label': 'Data final',
+              onChange: function (e) { setDataFim(e.target.value); },
+              className: 'fin-inp' }))
         ),
-        h('input', {
-          type: 'search', value: busca, onChange: function (e) { setBusca(e.target.value); },
-          placeholder: 'Buscar por nº, cliente, OS ou profissional', 'aria-label': 'Buscar sinistro',
-          className: 'flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm'
-        })
-      ),
-
-      // Lista (item 4)
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-5 text-center text-red-700 text-sm' }, erro) :
-      h('div', { className: 'bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto' },
-        carregando ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') :
-        lista.length === 0 ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Nenhum sinistro nesta visao.') :
-        h('table', { className: 'w-full border-collapse text-sm' },
-          h('thead', null, h('tr', { className: 'bg-gray-50 border-b border-gray-200' },
+      h('div', { className: 'overflow-x-auto' },
+        carregando ? h('div', { className: 'p-10 text-center text-gray-500 text-sm' }, 'Carregando...') :
+        lista.length === 0 ? h('div', { className: 'p-10 text-center text-gray-500 text-sm' }, 'Nenhum sinistro nesta visão.') :
+        h('table', { className: 'w-full border-collapse text-sm fin-tbl' },
+          h('thead', null, h('tr', null,
             th('Nº'), th('Data'), th('Cliente'), th('OS'), th('Profissional'),
             th('Valor', true), th('Tratativa cliente'), th('Tratativa entregador / plataforma')
           )),
@@ -663,14 +643,14 @@
               key: s.id, tabIndex: 0, role: 'button',
               onClick: function () { setPainel({ id: s.id, codigo: s.codigo }); },
               onKeyDown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPainel({ id: s.id, codigo: s.codigo }); } },
-              className: 'border-b border-gray-100 hover:bg-purple-50/50 cursor-pointer'
+              className: 'cursor-pointer'
             },
-              h('td', { className: 'px-3 py-3 font-extrabold text-purple-700 whitespace-nowrap' }, s.codigo),
-              h('td', { className: 'px-3 py-3 text-gray-600 whitespace-nowrap tabular-nums' }, fData(s.data_ocorrencia)),
-              h('td', { className: 'px-3 py-3 font-semibold text-gray-800 max-w-[200px] truncate' }, s.nome_cliente || '—'),
-              h('td', { className: 'px-3 py-3 text-gray-600 whitespace-nowrap' }, s.os_numero || '—'),
+              h('td', { className: 'px-3 py-3 font-semibold text-purple-800 whitespace-nowrap' }, s.codigo),
+              h('td', { className: 'px-3 py-3 text-gray-500 whitespace-nowrap tabular-nums' }, fData(s.data_ocorrencia)),
+              h('td', { className: 'px-3 py-3 font-semibold text-gray-900 max-w-[200px] truncate' }, s.nome_cliente || '—'),
+              h('td', { className: 'px-3 py-3 text-gray-500 whitespace-nowrap' }, s.os_numero || '—'),
               h('td', { className: 'px-3 py-3' },
-                h('span', { className: 'block font-semibold text-gray-800 text-[13px] max-w-[170px] truncate' },
+                h('span', { className: 'block font-semibold text-gray-900 text-[13px] max-w-[170px] truncate' },
                   plataforma ? (s.origem_profissional === 'uber' ? 'Uber' : '99') : (s.profissional_nome || '—')),
                 h('span', { className: 'block text-[11px] text-gray-400' },
                   plataforma ? 'Plataforma parceira' : ('Central · ID ' + (s.profissional_id || '?')))),
@@ -682,7 +662,7 @@
             );
           }))
         )
-      ),
+      )),
 
       painel ? h(Painel, {
         sinistroId: painel.id, codigo: painel.codigo, api: api, clientes: clientes,

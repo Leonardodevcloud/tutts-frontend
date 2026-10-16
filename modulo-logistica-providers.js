@@ -1,5 +1,6 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
+/* HUB_ABAS_V1: aba Provedores no padrão clean (cabeçalho, pílulas, credenciais em cards). */
 // ============================================================
 // MÓDULO LOGÍSTICA — Painel de Provedores (Hub) v1
 // ------------------------------------------------------------
@@ -144,8 +145,34 @@
         dangerouslySetInnerHTML: { __html: svg },
       });
     }
+    // HUB_ABAS_V1: provider sem logo nem ícone → círculo cinza com a inicial
+    if (!iconDe(code)) return e('span', { 'aria-hidden': 'true', style: { width: size, height: size, borderRadius: '50%', background: '#f3f4f6', color: '#374151', fontSize: size * 0.42, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, String(code || '?').charAt(0).toUpperCase());
     return e('span', { style: { fontSize: size * 0.75 } }, iconDe(code));
   }
+
+  // ────────────────────────────────────────────────────────────
+  // HUB_ABAS_V1: peças do padrão clean (pílula suave, botões, campos)
+  // ────────────────────────────────────────────────────────────
+  const TOM = {
+    verde: ['#f0fdf4', '#166534', '#16a34a'], ambar: ['#fffbeb', '#92400e', '#d97706'],
+    vermelho: ['#fef2f2', '#991b1b', '#dc2626'], azul: ['#eff6ff', '#1e40af', '#2563eb'],
+    cinza: ['#f3f4f6', '#374151', '#9ca3af'],
+  };
+  const Pilula = (tom, texto, key) => {
+    const t = TOM[tom] || TOM.cinza;
+    return e('span', { key, className: 'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap', style: { background: t[0], color: t[1] } },
+      e('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 99, background: t[2] } }), texto);
+  };
+  const Ico = (nome, sz, extra) => e('svg', { className: 'ico', style: Object.assign({ width: sz || 16, height: sz || 16 }, extra || {}), 'aria-hidden': 'true' }, e('use', { href: '#i-' + nome }));
+  const CLS = {
+    input: 'w-full h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100',
+    label: 'block text-xs font-semibold text-gray-700 mb-1',
+    hint: 'text-[11.5px] text-gray-500 mt-1 leading-snug',
+    btnPri: 'h-10 px-4 rounded-[10px] bg-purple-700 text-white text-sm font-semibold hover:bg-purple-800 inline-flex items-center gap-1.5 disabled:opacity-50',
+    btnSec: 'h-10 px-4 rounded-[10px] border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 inline-flex items-center gap-1.5 disabled:opacity-50',
+  };
+  const Spinner = () => e('div', { className: 'flex items-center justify-center py-10' },
+    e('div', { className: 'animate-spin w-8 h-8 border-[3px] border-purple-700 border-t-transparent rounded-full', role: 'status', 'aria-label': 'Carregando' }));
 
   // Heurística pra provider sem schema: detecta o que é segredo.
   function ehChaveSecreta(k) {
@@ -205,24 +232,26 @@
 
     useEffect(() => { carregarLista(); }, [carregarLista]);
 
-    // ─── Render ───
-    return e('div', { className: 'max-w-3xl mx-auto p-4 md:p-6' },
-      e('div', { className: 'mb-5' },
-        e('h2', { className: 'text-2xl font-semibold text-gray-900 mb-1 flex items-center gap-2' },
-          e('span', null, e("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, e("use", { href: "#i-power" }))),
-          e('span', null, 'Provedores logísticos')
+    // ─── Render ─── HUB_ABAS_V1: cabeçalho de página + lista em cards no padrão clean
+    const nAtivos = providers.filter(p => p.ativo).length;
+    return e('div', { className: 'max-w-4xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+      e('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
+        e('div', null,
+          e('h1', { className: 'text-2xl font-bold text-gray-900', style: { fontFamily: 'Sora, Inter, sans-serif', letterSpacing: '-0.01em' } }, 'Provedores'),
+          e('p', { className: 'text-[13px] text-gray-500 mt-1' },
+            loadingList ? 'Credenciais, modo sandbox e ativação de cada parceiro do hub.'
+              : `${providers.length} provedor${providers.length !== 1 ? 'es' : ''} · ${nAtivos} ativo${nAtivos !== 1 ? 's' : ''} · credenciais, modo sandbox e ativação de cada parceiro do hub`)
         ),
-        e('p', { className: 'text-sm text-gray-500' },
-          'Configure credenciais, modo sandbox e ativação de cada parceiro do hub.')
+        e('button', { type: 'button', onClick: carregarLista, title: 'Atualizar', 'aria-label': 'Atualizar provedores', className: 'w-10 h-10 rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 grid place-items-center' }, Ico('refresh'))
       ),
 
       loadingList
-        ? e('div', { className: 'flex items-center justify-center py-16' },
-            e('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' }))
+        ? e('div', { className: 'bg-white rounded-[14px] border border-gray-200' }, Spinner())
         : providers.length === 0
-          ? e('div', { className: 'text-center py-16 text-gray-400 bg-gray-50 rounded-xl' },
-              e('div', { className: 'text-3xl mb-2' }, e("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, e("use", { href: "#i-map" }))),
-              e('p', { className: 'text-sm' }, 'Nenhum provider cadastrado no hub.'))
+          ? e('div', { className: 'bg-white rounded-[14px] border border-gray-200 py-14 px-6 text-center' },
+              e('div', { className: 'text-[14px] font-semibold text-gray-700' }, 'Nenhum provedor cadastrado no hub'),
+              e('div', { className: 'text-[13px] text-gray-500 mt-1' }, 'Os provedores aparecem aqui quando o backend do hub logístico os registra.'),
+              e('button', { type: 'button', onClick: carregarLista, className: CLS.btnSec + ' mt-4' }, Ico('refresh'), 'Tentar de novo'))
           : e('div', { className: 'space-y-3' },
               providers.map(p => e(ProviderCard, {
                 key: p.provider_code,
@@ -363,51 +392,41 @@
       }
     };
 
-    // ─── Header do card ───
-    const pill = (texto, classe) => e('span', {
-      className: `text-[11px] font-medium px-2 py-0.5 rounded-md ${classe}`
-    }, texto);
-
+    // ─── Header do card ─── HUB_ABAS_V1: pílulas Ativo/Inativo e Sandbox/Produção
     return e('div', {
-      className: `bg-white border rounded-xl ${expandido ? 'border-purple-300 shadow-sm' : 'border-gray-200'}`
+      className: 'bg-white border rounded-[14px] overflow-hidden ' + (expandido ? 'border-purple-200' : 'border-gray-200')
     },
       // Header (clicável)
-      e('div', {
-        className: 'flex items-center gap-3 p-3.5 cursor-pointer',
-        onClick: onToggle
+      e('button', {
+        type: 'button',
+        className: 'w-full text-left flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50',
+        onClick: onToggle, 'aria-expanded': !!expandido,
       },
         e('span', { className: 'inline-flex items-center' }, ProviderLogo(code, 36)),
         e('div', { className: 'flex-1 min-w-0' },
-          e('div', { className: 'font-semibold text-gray-900 text-sm' }, provider.display_name),
-          e('div', { className: 'text-[11px] text-gray-500' },
-            `provider_code: ${code} · prioridade ${provider.prioridade}`)
+          e('div', { className: 'font-semibold text-gray-900 text-[15px]' }, provider.display_name),
+          e('div', { className: 'text-xs text-gray-500 mt-0.5' },
+            `${code} · prioridade ${provider.prioridade != null ? provider.prioridade : '—'}`)
         ),
-        provider.ativo
-          ? pill('Ativo', 'bg-green-100 text-green-700')
-          : pill('Inativo', 'bg-gray-100 text-gray-600'),
-        provider.sandbox_mode
-          ? pill('Sandbox', 'bg-amber-100 text-amber-700')
-          : pill('Produção', 'bg-blue-100 text-blue-700'),
-        !provider.has_adapter_class && pill('Sem adapter', 'bg-red-100 text-red-700'),
-        e('span', { className: 'text-gray-400 text-lg leading-none' }, expandido ? '' : '')
+        e('div', { className: 'flex items-center gap-1.5 flex-wrap justify-end' },
+          provider.ativo ? Pilula('verde', 'Ativo', 'a') : Pilula('cinza', 'Inativo', 'a'),
+          provider.sandbox_mode ? Pilula('ambar', 'Sandbox', 's') : Pilula('azul', 'Produção', 's'),
+          !provider.has_adapter_class && Pilula('vermelho', 'Sem adapter', 'x')
+        ),
+        Ico('arrowdown', 16, { color: '#9ca3af', flexShrink: 0, transform: expandido ? 'rotate(180deg)' : 'none', transition: 'transform .15s' })
       ),
 
       // Corpo expandido
-      expandido && e('div', { className: 'border-t border-gray-100 p-4' },
+      expandido && e('div', { className: 'border-t border-gray-100 p-4 md:p-5 bg-gray-50' },
         carregandoDet
-          ? e('div', { className: 'flex items-center justify-center py-8' },
-              e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
+          ? Spinner()
           : erroDet
             ? e('div', { className: 'text-center py-8' },
-                e('div', { className: 'text-3xl mb-2' }, e("svg", { className: "ico", style: { width: 30, height: 30, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
-                e('p', { className: 'text-sm text-red-600 mb-3' }, erroDet),
-                e('button', {
-                  onClick: carregarDetalhe,
-                  className: 'inline-flex items-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200'
-                }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Tentar de novo")))
+                e('div', { className: 'text-[14px] font-semibold text-gray-700' }, 'Não foi possível carregar este provedor'),
+                e('p', { className: 'text-[13px] text-gray-500 mt-1 mb-4' }, erroDet),
+                e('button', { type: 'button', onClick: carregarDetalhe, className: CLS.btnSec }, Ico('refresh'), 'Tentar de novo'))
             : (!form || !detalhe)
-              ? e('div', { className: 'flex items-center justify-center py-8' },
-                  e('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }))
+              ? Spinner()
               : e(ProviderForm, {
                   code, provider, detalhe, schema, form,
                   updateForm, updateConfig,
@@ -426,45 +445,50 @@
     const { provider, detalhe, schema, form, updateForm, updateConfig,
             webhookUrl, salvar, salvando, testarConexao, testando, testResult } = p;
 
-    // Toggle estilo switch (mesmo padrão visual do modulo-uber)
+    // HUB_ABAS_V1: formulário de credenciais em cards brancos; labels visíveis 12px; inputs 38px.
+    // Toggle estilo switch (roxo ligado / cinza desligado)
     const Toggle = (label, sub, checked, onChange) =>
-      e('div', { className: 'flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5' },
-        e('div', null,
-          e('div', { className: 'text-sm font-medium text-gray-800' }, label),
-          sub && e('div', { className: 'text-[11px] text-gray-500' }, sub)
+      e('div', { className: 'flex items-center justify-between gap-4 py-2.5' },
+        e('div', { className: 'min-w-0' },
+          e('div', { className: 'text-[13.5px] font-semibold text-gray-900' }, label),
+          sub && e('div', { className: 'text-[12px] text-gray-500 mt-0.5 leading-snug' }, sub)
         ),
-        e('label', { className: 'inline-flex items-center cursor-pointer' },
-          e('input', { type: 'checkbox', checked: !!checked, onChange: ev => onChange(ev.target.checked), className: 'sr-only peer' }),
-          e('div', { className: "w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 relative" })
+        e('label', { className: 'inline-flex items-center cursor-pointer flex-shrink-0' },
+          e('input', { type: 'checkbox', checked: !!checked, onChange: ev => onChange(ev.target.checked), className: 'sr-only peer', 'aria-label': label }),
+          e('div', { className: "w-11 h-6 bg-gray-300 peer-focus-visible:ring-2 peer-focus-visible:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-700 relative" })
         )
       );
 
+    const idDe = (k) => `prov-${provider.provider_code}-${k}`;
+
     // Campo comum
     const Field = (campo) =>
-      e('div', { className: 'mb-3', key: campo.key },
-        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
+      e('div', { key: campo.key },
+        e('label', { className: CLS.label, htmlFor: idDe(campo.key) }, campo.label),
         e('input', {
+          id: idDe(campo.key),
           type: 'text',
           value: form.config[campo.key] || '',
           onChange: ev => updateConfig(campo.key, ev.target.value),
           placeholder: campo.hint || '',
-          className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+          className: CLS.input
         })
       );
 
     // Campo select — enum fechado (ex: package_type/package_weight da 99).
     const SelectField = (campo) =>
-      e('div', { className: 'mb-3', key: campo.key },
-        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
+      e('div', { key: campo.key },
+        e('label', { className: CLS.label, htmlFor: idDe(campo.key) }, campo.label),
         e('select', {
+          id: idDe(campo.key),
           value: form.config[campo.key] || '',
           onChange: ev => updateConfig(campo.key, ev.target.value),
-          className: 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+          className: CLS.input
         },
           e('option', { value: '' }, '— selecione —'),
           (campo.options || []).map(opt => e('option', { key: opt, value: opt }, opt))
         ),
-        campo.hint && e('p', { className: 'text-[11px] text-gray-400 mt-1' }, campo.hint)
+        campo.hint && e('p', { className: CLS.hint }, campo.hint)
       );
 
     // Campo de segredo — backend nunca devolve o valor; só a flag _setado.
@@ -473,21 +497,20 @@
       const setado = campo.topLevel
         ? !!(detalhe && detalhe[campo.key + '_setado'])
         : !!(form.config && form.config[campo.key + '_setado']);
-      return e('div', { className: 'mb-3', key: campo.key },
-        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
+      return e('div', { key: campo.key },
+        e('label', { className: CLS.label, htmlFor: idDe(campo.key) }, campo.label),
         e('input', {
+          id: idDe(campo.key),
           type: 'password',
           value: form.config[campo.key] || '',
           onChange: ev => updateConfig(campo.key, ev.target.value),
-          placeholder: setado
-            ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Configurado · cole novo valor só pra alterar")
-            : (campo.hint || 'Cole o valor aqui'),
-          className: `w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-            setado ? 'border-green-300 bg-green-50' : 'border-gray-300'
-          }`
+          // HUB_ABAS_V1: placeholder precisa ser texto (antes ia um elemento e aparecia "[object Object]")
+          placeholder: setado ? 'Configurado · cole um novo valor só para alterar' : (campo.hint || 'Cole o valor aqui'),
+          autoComplete: 'new-password',
+          className: CLS.input
         }),
-        setado && e('p', { className: 'text-[11px] text-green-700 mt-1' },
-          e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Já existe valor salvo. Deixe em branco pra preservar."))
+        setado && e('p', { className: 'text-[11.5px] text-green-800 mt-1 inline-flex items-center gap-1' },
+          Ico('check', 13, { color: '#16a34a' }), 'Já existe valor salvo. Deixe em branco para preservar.')
       );
     };
 
@@ -496,86 +519,97 @@
     // nao configura (ex.: codigo de coleta nativo da Uber). Sem esse tipo, a
     // unica alternativa seria manter um toggle que mente sobre o que faz.
     const InfoField = (campo) =>
-      e('div', { className: 'mb-3', key: campo.key },
-        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, campo.label),
-        e('div', { className: 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700' },
+      e('div', { key: campo.key },
+        e('div', { className: CLS.label }, campo.label),
+        e('div', { className: 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-[10px] text-[13px] text-gray-700' },
           campo.texto || ''),
-        campo.hint && e('p', { className: 'text-[11px] text-gray-400 mt-1' }, campo.hint)
+        campo.hint && e('p', { className: CLS.hint }, campo.hint)
       );
 
     // Campo boolean — renderizado como toggle (ex: códigos de verificação da 99).
     const BooleanField = (campo) => {
       const val = form.config[campo.key] === true || form.config[campo.key] === 'true';
-      return e('div', { className: 'mb-2', key: campo.key },
+      return e('div', { key: campo.key, className: 'border-t border-gray-100 first:border-t-0' },
         Toggle(campo.label, campo.hint, val, v => updateConfig(campo.key, v))
       );
     };
 
-    return e('div', null,
-      // Toggles de status
-      e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4' },
-        Toggle('Ativo', 'registra o adapter no hub', form.ativo, v => updateForm('ativo', v)),
-        Toggle('Sandbox', 'sem corridas/entregas reais', form.sandbox_mode, v => updateForm('sandbox_mode', v))
-      ),
+    const Grupo = (titulo, filhos, key, sub) =>
+      e('section', { key, className: 'bg-white rounded-[14px] border border-gray-200 p-4' },
+        e('h3', { className: 'text-[15px] font-semibold text-gray-900' }, titulo),
+        sub && e('p', { className: 'text-[12px] text-gray-500 mt-0.5' }, sub),
+        e('div', { className: 'mt-3' }, filhos));
 
-      // Aviso quando marcado ativo mas adapter não instanciou
-      provider.ativo && provider.instanciado === false && e('div', {
-        className: 'mb-4 text-[12px] bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2'
-      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Marcado como ativo, mas o adapter não está instanciado — confira se a config está completa.")),
+    return e('div', { className: 'space-y-3' },
+      // Status
+      Grupo('Status', [
+        e('div', { key: 't', className: 'divide-y divide-gray-100' },
+          Toggle('Ativo', 'registra o adapter no hub', form.ativo, v => updateForm('ativo', v)),
+          Toggle('Sandbox', 'sem corridas/entregas reais', form.sandbox_mode, v => updateForm('sandbox_mode', v))
+        ),
+        // Aviso quando marcado ativo mas adapter não instanciou
+        provider.ativo && provider.instanciado === false && e('div', {
+          key: 'w', className: 'mt-2 text-[12px] bg-amber-50 border border-amber-200 text-amber-800 rounded-[10px] px-3 py-2 inline-flex items-center gap-1.5'
+        }, Ico('alert', 14, { color: '#d97706' }), 'Marcado como ativo, mas o adapter não está instanciado — confira se a config está completa.'),
+        // Prioridade
+        e('div', { key: 'p', className: 'mt-3 pt-3 border-t border-gray-100' },
+          e('label', { className: CLS.label, htmlFor: idDe('prioridade') }, 'Prioridade'),
+          e('div', { className: 'flex items-center gap-3 flex-wrap' },
+            e('input', {
+              id: idDe('prioridade'),
+              type: 'number',
+              value: form.prioridade,
+              onChange: ev => updateForm('prioridade', parseInt(ev.target.value, 10) || 0),
+              className: CLS.input + ' max-w-[120px]'
+            }),
+            e('span', { className: 'text-[12px] text-gray-500' }, 'menor = preferido nas estratégias multi-provider'))
+        ),
+      ], 'status'),
 
       // Grupos de campos do schema
-      schema.grupos.map((grupo, gi) =>
-        e('div', { key: gi, className: 'mb-4' },
-          e('div', { className: 'text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2' }, grupo.titulo),
-          grupo.campos.map(campo =>
-            campo.type === 'info' ? InfoField(campo)
-              : campo.type === 'boolean' ? BooleanField(campo)
-              : campo.type === 'select' ? SelectField(campo)
-              : campo.secret ? SecretField(campo)
-              : Field(campo))
-        )
-      ),
-
-      // Prioridade
-      e('div', { className: 'mb-4' },
-        e('label', { className: 'block text-[11px] font-semibold text-gray-600 mb-1 uppercase' }, 'Prioridade'),
-        e('input', {
-          type: 'number',
-          value: form.prioridade,
-          onChange: ev => updateForm('prioridade', parseInt(ev.target.value, 10) || 0),
-          className: 'w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-        }),
-        e('span', { className: 'text-[11px] text-gray-400 ml-2' }, 'menor = preferido nas estratégias multi-provider')
-      ),
+      schema.grupos.map((grupo, gi) => {
+        const soBool = grupo.campos.every(c => c.type === 'boolean');
+        return Grupo(grupo.titulo,
+          e('div', { className: soBool ? '' : 'grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3' },
+            grupo.campos.map(campo =>
+              campo.type === 'info' ? InfoField(campo)
+                : campo.type === 'boolean' ? (soBool ? BooleanField(campo) : e('div', { key: campo.key, className: 'sm:col-span-2' }, BooleanField(campo)))
+                : campo.type === 'select' ? SelectField(campo)
+                : campo.secret ? SecretField(campo)
+                : Field(campo))),
+          'g' + gi);
+      }),
 
       // URL do webhook
-      e('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4' },
-        e('p', { className: 'text-[11px] text-blue-800 mb-1 font-medium' },
-          'URL do webhook pra cadastrar no painel do provedor:'),
-        e('code', {
-          className: 'block bg-white rounded px-2 py-1.5 text-[11px] text-blue-900 break-all font-mono'
-        }, webhookUrl)
-      ),
+      Grupo('Webhook', [
+        e('p', { key: 'l', className: 'text-[12px] text-gray-500 mb-1.5' }, 'URL para cadastrar no painel do provedor:'),
+        e('div', { key: 'u', className: 'flex items-center gap-2' },
+          e('code', { className: 'flex-1 min-w-0 block bg-gray-50 border border-gray-200 rounded-[10px] px-3 py-2 text-[12px] text-gray-800 break-all font-mono' }, webhookUrl),
+          e('button', {
+            type: 'button', title: 'Copiar URL', 'aria-label': 'Copiar URL do webhook',
+            onClick: () => { try { navigator.clipboard.writeText(webhookUrl); } catch (_) {} },
+            className: 'w-10 h-10 rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 grid place-items-center flex-shrink-0'
+          }, Ico('copy')))
+      ], 'wh'),
 
       // Ações
-      e('div', { className: 'flex items-center gap-2 flex-wrap pt-2 border-t border-gray-100' },
+      e('div', { className: 'flex items-center gap-2 flex-wrap pt-1' },
         e('button', {
-          onClick: testarConexao, disabled: testando,
-          className: 'inline-flex items-center gap-1.5 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 disabled:opacity-50'
-        }, testando ? 'Testando…' : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-power" })), "Testar conexão")),
+          type: 'button', onClick: testarConexao, disabled: testando,
+          className: CLS.btnSec
+        }, Ico('power'), testando ? 'Testando…' : 'Testar conexão'),
 
-        testResult && e('span', {
-          className: `inline-flex items-center gap-1 text-[12px] px-2.5 py-1 rounded-md ${
-            testResult.ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`
-        }, `${testResult.ok ? e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })) : e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" }))} ${testResult.msg}${testResult.latencyMs != null ? ` (${testResult.latencyMs}ms)` : ''}`),
+        // HUB_ABAS_V1: resultado em pílula (antes o ícone virava "[object Object]" no texto)
+        testResult && e('span', { role: 'status' },
+          Pilula(testResult.ok ? 'verde' : 'vermelho',
+            `${testResult.ok ? 'Conectado' : 'Falhou'} · ${testResult.msg}${testResult.latencyMs != null ? ` (${testResult.latencyMs} ms)` : ''}`)),
 
         e('div', { className: 'flex-1' }),
 
         e('button', {
-          onClick: salvar, disabled: salvando,
-          className: 'inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50'
-        }, salvando ? 'Salvando…' : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-save" })), "Salvar"))
+          type: 'button', onClick: salvar, disabled: salvando,
+          className: CLS.btnPri
+        }, Ico('save'), salvando ? 'Salvando…' : 'Salvar')
       )
     );
   }

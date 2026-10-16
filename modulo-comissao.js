@@ -61,33 +61,35 @@
 
   // ── UI helpers ──────────────────────────────────────────────────
   function Ico(nome, cls, style) { return h('svg', { className: cls || 'ico', style: style || { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome })); }
-  var CORES_FAIXA = { 20: { bg: '#3a1556', fg: '#fff' }, 10: { bg: '#f3e8fb', fg: '#770fa8' }, 5: { bg: '#fffbeb', fg: '#d97706' }, 2.5: { bg: '#fffbeb', fg: '#d97706' }, 0: { bg: '#e5e7eb', fg: '#374151' } };
+  var CORES_FAIXA = { 20: { bg: '#f3e8fb', fg: '#5d0b85' }, 10: { bg: '#eff6ff', fg: '#1e40af' }, 5: { bg: '#fffbeb', fg: '#92400e' }, 2.5: { bg: '#fffbeb', fg: '#92400e' }, 0: { bg: '#f3f4f6', fg: '#374151' } };
   function TagFaixa(p) {
     var txt = p.encerrada ? 'Encerrada' : (p.pct + '%' + (p.dividida ? ' ÷2' : ''));
     var c = CORES_FAIXA[p.encerrada ? 0 : p.pct] || CORES_FAIXA[0];
     return h('span', { className: 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap', style: { background: c.bg, color: c.fg }, title: p.title || '' }, txt);
   }
+  /* FIN_ABAS_V1: célula da faixa única de KPIs (container .fin-kpis) — destaque = número roxo, sem gradiente */
   function Card(p) {
-    return h('div', { className: p.destaque ? 'rounded-xl p-4 text-white flex flex-col gap-1' : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1', style: p.destaque ? { background: 'linear-gradient(135deg,#b43aed,#b033ea)' } : null },
-      h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider', style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' } }, p.rotulo),
-      h('div', { className: 'text-[22px] font-extrabold tabular-nums leading-tight', style: { color: p.destaque ? '#fff' : (p.cor || '#111827') } }, p.valor),
-      p.auxiliar ? h('div', { className: 'text-[11px]', style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' } }, p.auxiliar) : null
+    return h('div', null,
+      h('div', { className: 'fin-kpi-l' }, p.rotulo),
+      h('div', { className: 'fin-kpi-v', style: { color: p.destaque ? '#5d0b85' : (p.cor || '#111827') } }, p.valor),
+      p.auxiliar ? h('div', { className: 'fin-kpi-s' }, p.auxiliar) : null
     );
   }
-  var caixa = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300';
-  var rotulo = 'block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-1';
-  var btnP = 'px-4 py-2 rounded-lg text-sm font-semibold text-white bg-purple-700 hover:bg-purple-800 disabled:opacity-50';
-  var btnS = 'px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50';
+  /* FIN_ABAS_V1: campos/botões no padrão clean (classes .fin-* injetadas pelo ModuloFinanceiro.js) */
+  var caixa = 'w-full fin-inp';
+  var rotulo = 'fin-lbl';
+  var btnP = 'fin-btn fin-btn-p';
+  var btnS = 'fin-btn fin-btn-s';
   var btnL = 'px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white hover:opacity-90 disabled:opacity-50';
   function Lateral(p) {
     return h('div', { className: 'fixed inset-0 z-50 flex justify-end' },
       h('div', { className: 'absolute inset-0 bg-black/30', onClick: p.fechar, 'aria-hidden': 'true' }),
-      h('div', { className: 'relative bg-white w-full h-full overflow-y-auto shadow-2xl flex flex-col', style: { maxWidth: p.largura || 560 }, role: 'dialog', 'aria-label': p.titulo },
+      h('div', { className: 'relative bg-white w-full h-full overflow-y-auto flex flex-col border border-gray-200', style: { maxWidth: p.largura || 560 }, role: 'dialog', 'aria-label': p.titulo },
         h('div', { className: 'sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-start gap-3 z-10' },
           h('div', { className: 'flex-1 min-w-0' },
-            h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, p.sobretitulo || ''),
-            h('h2', { className: 'text-xl font-extrabold text-purple-900 truncate' }, p.titulo)),
-          h('button', { type: 'button', onClick: p.fechar, 'aria-label': 'Fechar', className: 'w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50' }, '×')),
+            h('div', { className: 'text-[12px] text-gray-500' }, p.sobretitulo || ''),
+            h('h2', { className: 'text-base font-semibold text-gray-900 truncate' }, p.titulo)),
+          h('button', { type: 'button', onClick: p.fechar, 'aria-label': 'Fechar', className: 'w-9 h-9 rounded-[10px] border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50' }, '×')),
         h('div', { className: 'flex-1 px-5 py-4 flex flex-col gap-4' }, p.children),
         p.rodape ? h('div', { className: 'sticky bottom-0 bg-white border-t border-gray-200 px-5 py-3 flex justify-end gap-2' }, p.rodape) : null
       ));
@@ -152,13 +154,13 @@
     var botoesVend = function (campo, excluir) {
       return h('div', { className: 'grid grid-cols-2 sm:grid-cols-3 gap-2' }, vendedores.filter(function (v) { return v.ativo && String(v.id) !== String(excluir); }).map(function (v) {
         var sel = String(form[campo]) === String(v.id);
-        return h('button', { key: v.id, type: 'button', onClick: function () { set(campo, v.id); }, className: 'px-3 py-2 rounded-lg text-[13px] font-semibold border ' + (sel ? 'bg-purple-800 text-white border-purple-800' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300') }, v.nome);
+        return h('button', { key: v.id, type: 'button', onClick: function () { set(campo, v.id); }, className: 'px-3 py-2 rounded-[10px] text-[13px] font-semibold border ' + (sel ? 'text-white bg-purple-700 hover:bg-purple-800 border border-purple-700' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-200') }, v.nome);
       }));
     };
 
     return h(Lateral, { titulo: edit ? 'Editar cliente em comissão' : 'Novo cliente em comissão', sobretitulo: 'Cadastro', fechar: p.fechar,
-      rodape: [edit ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluir }, 'Excluir cadastro') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, 'Cancelar'), h('button', { key: 's', className: btnP, disabled: salvando, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar cliente')] },
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+      rodape: [edit ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-[10px] text-sm font-semibold text-red-800 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluir }, 'Excluir cadastro') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, 'Cancelar'), h('button', { key: 's', className: btnP, disabled: salvando, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar cliente')] },
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
       h('div', null, h('label', { className: rotulo }, 'Cliente'),
         edit ? h('div', { className: 'px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm' }, form.nome_cliente, h('span', { className: 'text-gray-400 text-xs ml-2' }, 'ID ' + form.cod_cliente))
         : h('div', null,
@@ -171,7 +173,7 @@
                   return h('button', { key: c.cod_cliente, type: 'button', disabled: c.ja_em_comissao, onClick: function () { set('cod_cliente', c.cod_cliente); set('nome_cliente', c.nome); set('nome_exibicao', ''); set('centros_custo', []); set('modo_cc', 'todos'); },
                     className: 'w-full text-left px-3 py-2 text-[13px] hover:bg-purple-50 disabled:opacity-40 flex items-center gap-2' },
                     h('span', { className: 'flex-1 truncate' }, c.nome), h('span', { className: 'text-gray-400 text-xs' }, 'ID ' + c.cod_cliente),
-                    c.ja_em_comissao ? h('span', { className: 'text-[10px] text-amber-700 font-bold' }, 'JÁ EM COMISSÃO (TODOS OS CC)') : (c.tem_cadastro ? h('span', { className: 'text-[10px] text-purple-700 font-bold', title: c.centros_em_comissao.join(', ') }, c.centros_em_comissao.length + ' CC EM COMISSÃO') : null));
+                    c.ja_em_comissao ? h('span', { className: 'text-[10px] text-amber-800 font-bold' }, 'JÁ EM COMISSÃO (TODOS OS CC)') : (c.tem_cadastro ? h('span', { className: 'text-[10px] text-purple-700 font-bold', title: c.centros_em_comissao.join(', ') }, c.centros_em_comissao.length + ' CC EM COMISSÃO') : null));
                 }), opcoes.length === 0 ? h('div', { className: 'px-3 py-3 text-xs text-gray-400' }, 'Nenhum cliente encontrado') : null)))),
       form.cod_cliente ? h('div', { className: 'space-y-3' },
         h('div', null, h('label', { className: rotulo }, 'Nome de exibição'),
@@ -180,29 +182,29 @@
         h('div', null, h('label', { className: rotulo }, 'Centros de custo que entram na comissão'),
           h('div', { className: 'flex gap-2 mb-2' }, [['todos', 'Todos os centros'], ['especificos', 'Centros específicos']].map(function (o) {
             var sel = form.modo_cc === o[0]; var bloq = o[0] === 'todos' && ccInfo && ccInfo.todos_ocupado_por;
-            return h('button', { key: o[0], type: 'button', disabled: !!bloq, title: bloq ? 'Já existe cadastro com todos os centros: ' + bloq : '', onClick: function () { set('modo_cc', o[0]); }, className: 'px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border disabled:opacity-40 ' + (sel ? 'bg-purple-800 text-white border-purple-800' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300') }, o[1]);
+            return h('button', { key: o[0], type: 'button', disabled: !!bloq, title: bloq ? 'Já existe cadastro com todos os centros: ' + bloq : '', onClick: function () { set('modo_cc', o[0]); }, className: 'px-3 py-1.5 rounded-[10px] text-[12.5px] font-semibold border disabled:opacity-40 ' + (sel ? 'text-white bg-purple-700 hover:bg-purple-800 border border-purple-700' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-200') }, o[1]);
           })),
-          form.modo_cc === 'especificos' ? (!ccInfo ? h('div', { className: 'text-xs text-gray-400' }, 'Carregando centros...') : ccInfo.centros.length === 0 ? h('div', { className: 'text-xs text-amber-700' }, 'O BI não tem centro de custo para esta loja.') :
+          form.modo_cc === 'especificos' ? (!ccInfo ? h('div', { className: 'text-xs text-gray-400' }, 'Carregando centros...') : ccInfo.centros.length === 0 ? h('div', { className: 'text-xs text-amber-800' }, 'O BI não tem centro de custo para esta loja.') :
             h('div', { className: 'max-h-52 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100' }, ccInfo.centros.map(function (c) {
               var sel = form.centros_custo.indexOf(c.centro_custo) >= 0; var ocup = c.ocupado_por;
               return h('label', { key: c.centro_custo, className: 'flex items-center gap-2 px-3 py-1.5 text-[12.5px] ' + (ocup ? 'opacity-50' : 'cursor-pointer hover:bg-purple-50') },
                 h('input', { type: 'checkbox', className: 'accent-purple-700', checked: sel, disabled: !!ocup, onChange: function () { alternarCc(c.centro_custo); } }),
                 h('span', { className: 'flex-1 truncate font-medium' }, c.centro_custo),
                 h('span', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, c.entregas_30d + ' entregas/30d'),
-                ocup ? h('span', { className: 'text-[10px] text-amber-700 font-bold whitespace-nowrap', title: 'Em comissão no cadastro ' + ocup }, 'EM OUTRO CADASTRO') : null);
+                ocup ? h('span', { className: 'text-[10px] text-amber-800 font-bold whitespace-nowrap', title: 'Em comissão no cadastro ' + ocup }, 'EM OUTRO CADASTRO') : null);
             })))
           : h('p', { className: 'text-[11px] text-gray-400' }, 'Entregas, faturamento e repasse de toda a loja (todos os centros de custo do BI).'))) : null,
       h('div', null, h('label', { className: rotulo }, 'Data de início do cliente'),
         h('input', { type: 'date', className: caixa, value: form.data_inicio, onChange: function (e) { set('data_inicio', e.target.value); } }),
         h('p', { className: 'text-[11px] text-gray-400 mt-1' }, 'As faixas contam a partir desta data exata (pode ser no meio do mês). O que for faturado antes não gera comissão.')),
-      h('div', null, h('label', { className: rotulo }, 'Vendedor responsável'), vendedores.length ? botoesVend('vendedor_1_id', null) : h('p', { className: 'text-xs text-amber-700' }, 'Cadastre vendedores primeiro (botão "Vendedores").')),
+      h('div', null, h('label', { className: rotulo }, 'Vendedor responsável'), vendedores.length ? botoesVend('vendedor_1_id', null) : h('p', { className: 'text-xs text-amber-800' }, 'Cadastre vendedores primeiro (botão "Vendedores").')),
       h('label', { className: 'flex items-start gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer' },
         h('input', { type: 'checkbox', className: 'mt-1 accent-purple-700', checked: form.comissao_dividida, onChange: function (e) { set('comissao_dividida', e.target.checked); if (!e.target.checked) set('vendedor_2_id', ''); } }),
-        h('div', null, h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Dividir comissão'), h('div', { className: 'text-[11.5px] text-gray-500' }, 'Cada vendedor recebe metade do % de cada período. O total do cliente não muda.'))),
+        h('div', null, h('div', { className: 'text-sm font-semibold text-gray-900' }, 'Dividir comissão'), h('div', { className: 'text-[11.5px] text-gray-500' }, 'Cada vendedor recebe metade do % de cada período. O total do cliente não muda.'))),
       form.comissao_dividida ? h('div', null, h('label', { className: rotulo }, 'Segundo vendedor'), botoesVend('vendedor_2_id', form.vendedor_1_id)) : null,
       previa ? h('div', { className: 'rounded-xl p-3 bg-purple-50 border border-purple-100' },
         h('div', { className: 'text-[11px] font-extrabold uppercase tracking-wider text-purple-800 mb-2' }, 'Faixas calculadas'),
-        previa.faixas.map(function (f, i) { return h('div', { key: i, className: 'flex items-center justify-between text-[12.5px] py-1' }, h('span', null, h('b', null, f.pct + '%' + (form.comissao_dividida ? ' para cada vendedor' : ' do lucro')), h('span', { className: 'text-gray-500' }, ' · ' + f.rotulo)), h('span', { className: 'text-gray-600 tabular-nums' }, fData(f.inicio) + ' a ' + fData(f.fim))); }),
+        previa.faixas.map(function (f, i) { return h('div', { key: i, className: 'flex items-center justify-between text-[12.5px] py-1' }, h('span', null, h('b', null, f.pct + '%' + (form.comissao_dividida ? ' para cada vendedor' : ' do lucro')), h('span', { className: 'text-gray-500' }, ' · ' + f.rotulo)), h('span', { className: 'text-gray-500 tabular-nums' }, fData(f.inicio) + ' a ' + fData(f.fim))); }),
         h('div', { className: 'text-[11.5px] text-gray-500 mt-1 border-t border-purple-100 pt-1.5' }, 'A partir de ' + fData(previa.saida) + ' o cliente sai do período de comissão.')) : null,
       edit ? h('label', { className: 'flex items-center gap-2 text-sm' }, h('input', { type: 'checkbox', className: 'accent-purple-700', checked: form.ativo, onChange: function (e) { set('ativo', e.target.checked); } }), 'Cadastro ativo') : null
     );
@@ -244,23 +246,23 @@
         .then(function () { p.aoSalvar(); }).catch(function (e) { setErro(e.message); }).finally(function () { setSalvando(false); });
     }
 
-    var linha = function (rot, val, cls, neg) { return h('div', { className: 'flex items-center justify-between text-[12.5px] py-0.5' }, h('span', { className: 'text-gray-500' }, rot), h('span', { className: 'tabular-nums font-semibold ' + (neg ? 'text-red-600' : (cls || 'text-gray-800')) }, val)); };
+    var linha = function (rot, val, cls, neg) { return h('div', { className: 'flex items-center justify-between text-[12.5px] py-0.5' }, h('span', { className: 'text-gray-500' }, rot), h('span', { className: 'tabular-nums font-semibold ' + (neg ? 'text-red-800' : (cls || 'text-gray-900')) }, val)); };
 
     return h(Lateral, { titulo: dados ? dados.cliente.nome : 'Carregando...', sobretitulo: 'Lançamento · ' + fComp(p.competencia), fechar: p.fechar,
-      rodape: [dados && dados.lancado && !soLeitura ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluirLanc }, 'Remover lançamento') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, soLeitura ? 'Fechar' : 'Cancelar'), !soLeitura ? h('button', { key: 's', className: btnP, disabled: salvando || !dados, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar lançamento') : null] },
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+      rodape: [dados && dados.lancado && !soLeitura ? h('button', { key: 'x', className: 'mr-auto px-4 py-2 rounded-[10px] text-sm font-semibold text-red-800 border border-red-200 hover:bg-red-50 disabled:opacity-50', disabled: salvando, onClick: excluirLanc }, 'Remover lançamento') : null, h('button', { key: 'c', className: btnS, onClick: p.fechar }, soLeitura ? 'Fechar' : 'Cancelar'), !soLeitura ? h('button', { key: 's', className: btnP, disabled: salvando || !dados, onClick: salvar }, salvando ? 'Salvando...' : 'Salvar lançamento') : null] },
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
       !dados ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') : [
-        soLeitura ? h('div', { key: 'ro', className: 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-[12.5px] text-gray-600' }, 'Competência ' + dados.status.status + ' — somente leitura.') : null,
+        soLeitura ? h('div', { key: 'ro', className: 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-[12.5px] text-gray-500' }, 'Competência ' + dados.status.status + ' — somente leitura.') : null,
         h('div', { key: 'bi', className: 'rounded-xl p-3 bg-purple-50 border border-purple-100 flex items-center justify-between' },
           h('div', null, h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-purple-700' }, 'Qtd. entregas no mês'), h('div', { className: 'text-xl font-extrabold text-purple-900' }, dados.bi_sem_dados ? 'Sem dados no BI' : (dados.entregas_bi + ' entregas'))),
-          h('span', { className: 'px-2 py-0.5 rounded-full bg-purple-800 text-white text-[10.5px] font-bold' }, 'Puxado do BI')),
+          h('span', { className: 'px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-purple-50 text-purple-800' }, 'Puxado do BI')),
         dados.periodos.length > 1 ? h('div', { key: 'av', className: 'bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[12.5px] text-amber-800' }, 'O cliente muda de faixa neste mês. Lance os valores separados por período.') : null,
-        dados.saldo_entrada.valor > 0 ? h('div', { key: 'sn', className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, h('b', null, fR(dados.saldo_entrada.valor) + ' de saldo negativo pendente'), ' de ' + fComp(dados.saldo_entrada.origem) + ' será somado ao repasse do entregador neste mês.') : null,
+        dados.saldo_entrada.valor > 0 ? h('div', { key: 'sn', className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, h('b', null, fR(dados.saldo_entrada.valor) + ' de saldo negativo pendente'), ' de ' + fComp(dados.saldo_entrada.origem) + ' será somado ao repasse do entregador neste mês.') : null,
         dados.periodos.map(function (per, i) {
           var v = vals[i] || {};
           return h('div', { key: i, className: 'border border-gray-200 rounded-xl p-3 space-y-2' },
             h('div', { className: 'flex items-center justify-between' },
-              h('div', { className: 'text-[13px] font-bold text-gray-800' }, fDiaMes(per.inicio) + ' a ' + fDiaMes(per.fim)),
+              h('div', { className: 'text-[13px] font-bold text-gray-900' }, fDiaMes(per.inicio) + ' a ' + fDiaMes(per.fim)),
               h('div', { className: 'flex items-center gap-2' }, per.bi.tem_dados ? h('span', { className: 'text-[10.5px] text-gray-400' }, per.bi.entregas + ' entregas') : null, h(TagFaixa, { pct: per.faixa_pct, encerrada: per.encerrada, dividida: dados.cliente.comissao_dividida, title: per.faixa_rotulo }))),
             h('div', { className: 'grid grid-cols-2 gap-3' },
               h('div', null, h('label', { className: rotulo }, 'Faturamento bruto (R$)'),
@@ -280,11 +282,11 @@
           h('div', { className: 'border-t border-purple-200 my-1' }),
           linha('Comissão do vendedor (lucro × faixa)', fR(calc.comissao), 'text-purple-800 text-[16px] font-extrabold'),
           dados.cliente.comissao_dividida ? linha('Para cada vendedor', fR(calc.comissao_por_vendedor), 'text-purple-900') : linha('Vendedor', dados.cliente.vendedores)) : null,
-        h('label', { key: 'ck', className: 'flex items-start gap-3 p-3 border rounded-xl cursor-pointer ' + (calc && calc.tem_negativo ? 'border-red-300 bg-red-50' : 'border-gray-200') },
+        h('label', { key: 'ck', className: 'flex items-start gap-3 p-3 border rounded-xl cursor-pointer ' + (calc && calc.tem_negativo ? 'border-red-200 bg-red-50' : 'border-gray-200') },
           h('input', { type: 'checkbox', className: 'mt-1 accent-purple-700', disabled: soLeitura, checked: manter, onChange: function (e) { setManter(e.target.checked); } }),
-          h('div', null, h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Manter saldo negativo pendente'),
+          h('div', null, h('div', { className: 'text-sm font-semibold text-gray-900' }, 'Manter saldo negativo pendente'),
             h('div', { className: 'text-[11.5px] text-gray-500' }, 'Se a comissão líquida do mês ficar negativa, o valor é somado ao repasse do entregador no mês seguinte.'),
-            calc && calc.tem_negativo && manter ? h('div', { className: 'text-[11.5px] text-red-700 font-semibold mt-1' }, fR(calc.saldo_pendente_saida) + ' será somado ao repasse de ' + fComp(compAdd(p.competencia, 1))) : null)),
+            calc && calc.tem_negativo && manter ? h('div', { className: 'text-[11.5px] text-red-800 font-semibold mt-1' }, fR(calc.saldo_pendente_saida) + ' será somado ao repasse de ' + fComp(compAdd(p.competencia, 1))) : null)),
         dados.lancado ? h('div', { key: 'lp', className: 'text-[11px] text-gray-400' }, 'Lançado por ' + (dados.lancado_por || '—') + (dados.lancado_em ? ' em ' + fDataHora(dados.lancado_em) : '')) : null
       ]
     );
@@ -309,15 +311,15 @@
         .then(function (j) { setRetroRes(j); setRetro(null); p.mudou && p.mudou(); return carregarExtrato(); })
         .catch(function (e) { setErro(e.message); }).finally(function () { setRetroBusy(false); });
     }
-    var th = function (t, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-2 py-2 text-[10px] font-extrabold uppercase tracking-wide' }, t); };
+    var th = function (t, right) { return h('th', { className: (right ? 'text-right' : 'text-left') }, t); };
     var td = function (t, cls) { return h('td', { className: 'px-2 py-1.5 tabular-nums whitespace-nowrap ' + (cls || '') }, t); };
     return h(Lateral, { titulo: d ? d.cliente.nome : 'Carregando...', sobretitulo: 'Extrato de comissão · ID ' + (d ? d.cliente.cod_cliente : ''), fechar: p.fechar, largura: 860,
       rodape: [h('button', { key: 'e', className: btnS, onClick: function () { p.editar(d.cliente); } }, 'Editar cadastro'), h('button', { key: 'c', className: btnP, onClick: p.fechar }, 'Fechar')] },
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
       !d ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') : [
         h('div', { key: 'r', className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
           [['Vendedor(es)', d.cliente.vendedores], ['Data de início', fData(d.cliente.data_inicio)], ['Comissão dividida', d.cliente.comissao_dividida ? 'Sim' : 'Não'], ['Centros de custo', d.cliente.centros_custo && d.cliente.centros_custo.length ? d.cliente.centros_custo.join(', ') : 'Todos']].map(function (x, i) {
-            return h('div', { key: i, className: 'bg-gray-50 rounded-xl p-3' }, h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, x[0]), h('div', { className: 'text-sm font-bold text-gray-800' }, x[1]));
+            return h('div', { key: i, className: 'bg-gray-50 rounded-xl p-3' }, h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, x[0]), h('div', { className: 'text-sm font-bold text-gray-900' }, x[1]));
           })),
         h('div', { key: 'tabs', className: 'flex gap-1 border-b border-gray-200' }, [['extrato', 'Extrato'], ['historico', 'Histórico (' + d.historico.length + ')']].map(function (t) {
           return h('button', { key: t[0], type: 'button', onClick: function () { setAba(t[0]); }, className: 'px-3 py-2 text-[13px] font-semibold border-b-2 -mb-px ' + (aba === t[0] ? 'border-purple-700 text-purple-800' : 'border-transparent text-gray-500') }, t[1]);
@@ -325,18 +327,18 @@
         aba === 'extrato' ? h('div', { key: 'ex', className: 'space-y-4' },
           mesesRetro.length > 0 && !retro ? h('div', { className: 'flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] text-amber-800' },
             h('span', { className: 'flex-1' }, h('b', null, mesesRetro.length + ' mês(es) anterior(es) sem lançamento'), ' (' + fComp3(mesesRetro[0].competencia) + ' a ' + fComp3(mesesRetro[mesesRetro.length - 1].competencia) + '). Aparecem como prévia e não entram no total.'),
-            h('button', { className: btnP + ' bg-amber-600 hover:bg-amber-700', onClick: function () { setRetro({ ate: mesesRetro[mesesRetro.length - 1].competencia, fechar: false }); } }, 'Lançar meses anteriores')) : null,
-          retro ? h('div', { className: 'rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-3' },
-            h('div', { className: 'text-[13px] font-bold text-amber-900' }, 'Lançar meses anteriores com os valores do BI'),
+            h('button', { className: btnP, onClick: function () { setRetro({ ate: mesesRetro[mesesRetro.length - 1].competencia, fechar: false }); } }, 'Lançar meses anteriores')) : null,
+          retro ? h('div', { className: 'rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3' },
+            h('div', { className: 'text-[13px] font-bold text-amber-800' }, 'Lançar meses anteriores com os valores do BI'),
             h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
               h('div', null, h('label', { className: rotulo }, 'Do início (' + fComp3(d.cliente.data_inicio.slice(0, 7)) + ') até'),
                 h('select', { className: caixa, value: retro.ate, onChange: function (e) { setRetro(Object.assign({}, retro, { ate: e.target.value })); } }, mesesRetro.map(function (m) { return h('option', { key: m.competencia, value: m.competencia }, fComp(m.competencia)); }))),
               h('label', { className: 'flex items-start gap-2 text-[12.5px] mt-5 cursor-pointer' }, h('input', { type: 'checkbox', className: 'mt-0.5 accent-purple-700', checked: retro.fechar, onChange: function (e) { setRetro(Object.assign({}, retro, { fechar: e.target.checked })); } }),
                 h('span', null, h('b', null, 'Fechar e marcar como pago'), ' essas competências', h('span', { className: 'block text-[11px] text-gray-500' }, 'Só fecha a competência se nenhum outro cliente estiver pendente nela.')))),
-            h('div', { className: 'overflow-x-auto max-h-56 overflow-y-auto border border-amber-200 rounded-lg bg-white' }, h('table', { className: 'w-full text-[12px]' },
-              h('thead', { className: 'bg-amber-100/60 text-amber-900' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Faixa'), th('Comissão', 1))),
+            h('div', { className: 'overflow-x-auto max-h-56 overflow-y-auto border border-amber-200 rounded-lg bg-white' }, h('table', { className: 'w-full text-[12px] fin-tbl' },
+              h('thead', { className: 'bg-amber-50/60 text-amber-800' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Faixa'), th('Comissão', 1))),
               h('tbody', null, mesesRetro.filter(function (m) { return m.competencia <= retro.ate; }).map(function (m) {
-                return h('tr', { key: m.competencia, className: 'border-t border-gray-100' }, td(fComp3(m.competencia), 'font-bold'), td(m.bi_sem_dados ? 'sem dados' : m.entregas, 'text-right ' + (m.bi_sem_dados ? 'text-red-600' : '')), td(fR(m.faturamento_bruto), 'text-right'), td(fR(m.repasse_entregador), 'text-right'), td(m.faixa_rotulo), td(fR(m.comissao), 'text-right font-bold text-purple-800'));
+                return h('tr', { key: m.competencia, className: 'border-t border-gray-100' }, td(fComp3(m.competencia), 'font-bold'), td(m.bi_sem_dados ? 'sem dados' : m.entregas, 'text-right ' + (m.bi_sem_dados ? 'text-red-800' : '')), td(fR(m.faturamento_bruto), 'text-right'), td(fR(m.repasse_entregador), 'text-right'), td(m.faixa_rotulo), td(fR(m.comissao), 'text-right font-bold text-purple-800'));
               })))),
             h('p', { className: 'text-[11px] text-amber-800' }, 'Os valores podem ser ajustados depois, mês a mês, pelo botão Editar do painel (enquanto a competência estiver aberta). Meses sem dados no BI são lançados com zero.'),
             h('div', { className: 'flex justify-end gap-2' }, h('button', { className: btnS, disabled: retroBusy, onClick: function () { setRetro(null); } }, 'Cancelar'), h('button', { className: btnP, disabled: retroBusy, onClick: executarRetro }, retroBusy ? 'Lançando...' : 'Confirmar lançamentos'))) : null,
@@ -344,7 +346,7 @@
             h('b', null, retroRes.criados.length + ' lançamento(s) criado(s)'), retroRes.criados.length ? ' (' + retroRes.criados.map(function (c) { return fComp3(c.competencia); }).join(', ') + ')' : '',
             retroRes.fechados.length ? h('div', null, 'Fechadas e pagas: ' + retroRes.fechados.map(fComp3).join(', ')) : null,
             retroRes.nao_fechados.length ? h('div', { className: 'text-amber-800' }, 'Não fechadas (outros clientes pendentes): ' + retroRes.nao_fechados.map(function (n) { return fComp3(n.competencia) + ' — ' + n.pendentes.join(', '); }).join(' · ')) : null,
-            retroRes.pulados.length ? h('div', { className: 'text-gray-600' }, 'Puladas: ' + retroRes.pulados.map(function (x) { return fComp3(x.competencia) + ' (' + x.motivo + ')'; }).join(', ')) : null) : null,
+            retroRes.pulados.length ? h('div', { className: 'text-gray-500' }, 'Puladas: ' + retroRes.pulados.map(function (x) { return fComp3(x.competencia) + ' (' + x.motivo + ')'; }).join(', ')) : null) : null,
           h('div', null,
             h('div', { className: 'text-[12px] font-bold text-gray-700 mb-2' }, 'Linha do tempo das faixas (12 meses a partir do início)'),
             h('div', { className: 'grid gap-1', style: { gridTemplateColumns: 'repeat(12, minmax(0,1fr))' } }, d.timeline.map(function (b, i) {
@@ -354,21 +356,21 @@
             })),
             h('div', { className: 'text-[10.5px] text-gray-400 mt-1' }, 'Cada bloco começa na data indicada. Contorno laranja = períodos dentro da competência selecionada. Saída em ' + fData(d.cliente.saida) + '.')),
           h('div', { className: 'overflow-x-auto border border-gray-200 rounded-xl' },
-            h('table', { className: 'w-full text-[12px]' },
+            h('table', { className: 'w-full text-[12px] fin-tbl' },
               h('thead', { className: 'bg-purple-900 text-white' }, h('tr', null, th('Mês'), th('Entregas', 1), th('Fat. bruto', 1), th('Repasse', 1), th('Margem', 1), th('Imposto', 1), th('Lucro', 1), th('Faixa'), th('Comissão vend.', 1))),
               h('tbody', null, d.meses.map(function (m) {
-                return h('tr', { key: m.competencia, className: (m.selecionada ? 'bg-orange-50 ' : '') + 'border-t border-gray-100 ' + (m.previa ? 'text-gray-400 italic' : '') , title: m.previa ? 'Sem lançamento (prévia com dados do BI)' : '' },
-                  td(fComp3(m.competencia), 'font-bold ' + (m.previa ? '' : 'text-gray-800')), td(m.bi_sem_dados ? '—' : m.entregas, 'text-right'), td(fR(m.faturamento_bruto), 'text-right'),
-                  td(h('span', null, fR(m.repasse_entregador), m.saldo_entrada > 0 ? h('span', { className: 'block text-[10px] text-red-600 not-italic' }, '+ ' + fR(m.saldo_entrada) + ' pendente') : null), 'text-right'),
-                  td(fRneg(m.comissao_liquida), 'text-right ' + (m.comissao_liquida < 0 ? 'text-red-600' : '')), td(fR(m.imposto), 'text-right'), td(fRneg(m.lucro), 'text-right ' + (m.lucro < 0 ? 'text-red-600' : '')),
+                return h('tr', { key: m.competencia, className: (m.selecionada ? 'bg-amber-50 ' : '') + 'border-t border-gray-100 ' + (m.previa ? 'text-gray-400 italic' : '') , title: m.previa ? 'Sem lançamento (prévia com dados do BI)' : '' },
+                  td(fComp3(m.competencia), 'font-bold ' + (m.previa ? '' : 'text-gray-900')), td(m.bi_sem_dados ? '—' : m.entregas, 'text-right'), td(fR(m.faturamento_bruto), 'text-right'),
+                  td(h('span', null, fR(m.repasse_entregador), m.saldo_entrada > 0 ? h('span', { className: 'block text-[10px] text-red-800 not-italic' }, '+ ' + fR(m.saldo_entrada) + ' pendente') : null), 'text-right'),
+                  td(fRneg(m.comissao_liquida), 'text-right ' + (m.comissao_liquida < 0 ? 'text-red-800' : '')), td(fR(m.imposto), 'text-right'), td(fRneg(m.lucro), 'text-right ' + (m.lucro < 0 ? 'text-red-800' : '')),
                   td(m.faixa_rotulo), td(m.previa ? (m.encerrado ? 'Fora do período' : 'Aguardando') : fR(m.comissao), 'text-right font-bold ' + (m.previa ? '' : 'text-purple-900')));
               }), h('tr', { className: 'bg-purple-50 border-t-2 border-purple-200 font-extrabold text-gray-900' },
                 td('Total'), td(d.total.entregas, 'text-right'), td(fR(d.total.faturamento_bruto), 'text-right'), td(fR(d.total.repasse_entregador), 'text-right'), td(fR(d.total.comissao_liquida), 'text-right'), td(fR(d.total.imposto), 'text-right'), td(fR(d.total.lucro), 'text-right'), td(''), td(fR(d.total.comissao), 'text-right text-purple-900'))))),
           h('div', { className: 'text-[10.5px] text-gray-400' }, 'Linhas em cinza itálico são prévias (mês sem lançamento, valores do BI). O total soma só os meses lançados.'))
         : h('div', { key: 'hi', className: 'divide-y divide-gray-100 border border-gray-200 rounded-xl' }, d.historico.length === 0 ? h('div', { className: 'p-4 text-xs text-gray-400' }, 'Sem registros.') : d.historico.map(function (l) {
             return h('div', { key: l.id, className: 'px-3 py-2 text-[12px]' },
-              h('div', { className: 'flex items-center gap-2' }, h('span', { className: 'px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-bold uppercase text-gray-600' }, l.acao), h('span', { className: 'font-semibold text-gray-800' }, l.entidade + (l.competencia ? ' · ' + fComp3(l.competencia) : '')), l.campo ? h('span', { className: 'text-gray-500' }, '· ' + l.campo) : null, h('span', { className: 'ml-auto text-gray-400 text-[11px]' }, fDataHora(l.criado_em) + ' · ' + (l.usuario || ''))),
-              (l.valor_anterior != null || l.valor_novo != null) ? h('div', { className: 'text-gray-500 mt-0.5 break-all' }, l.valor_anterior != null ? h('span', { className: 'line-through mr-2' }, String(l.valor_anterior)) : null, l.valor_novo != null ? h('span', { className: 'text-gray-800' }, String(l.valor_novo)) : null) : null);
+              h('div', { className: 'flex items-center gap-2' }, h('span', { className: 'px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-bold uppercase text-gray-700' }, l.acao), h('span', { className: 'font-semibold text-gray-900' }, l.entidade + (l.competencia ? ' · ' + fComp3(l.competencia) : '')), l.campo ? h('span', { className: 'text-gray-500' }, '· ' + l.campo) : null, h('span', { className: 'ml-auto text-gray-400 text-[11px]' }, fDataHora(l.criado_em) + ' · ' + (l.usuario || ''))),
+              (l.valor_anterior != null || l.valor_novo != null) ? h('div', { className: 'text-gray-500 mt-0.5 break-all' }, l.valor_anterior != null ? h('span', { className: 'line-through mr-2' }, String(l.valor_anterior)) : null, l.valor_novo != null ? h('span', { className: 'text-gray-900' }, String(l.valor_novo)) : null) : null);
           }))
       ]
     );
@@ -387,7 +389,7 @@
     function alternar(v) { api('/comissao/vendedores/' + v.id, { method: 'PUT', body: JSON.stringify({ ativo: !v.ativo }) }).then(function () { carregar(); p.mudou(); }).catch(function (e) { setErro(e.message); }); }
     function renomear(v) { var n = window.prompt('Nome do vendedor', v.nome); if (!n || n === v.nome) return; api('/comissao/vendedores/' + v.id, { method: 'PUT', body: JSON.stringify({ nome: n }) }).then(function () { carregar(); p.mudou(); }).catch(function (e) { setErro(e.message); }); }
     return h(Lateral, { titulo: 'Vendedores', sobretitulo: 'Cadastro', fechar: p.fechar, rodape: [h('button', { key: 'c', className: btnP, onClick: p.fechar }, 'Fechar')] },
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
       h('div', { className: 'border border-gray-200 rounded-xl p-3 space-y-2' },
         h('div', { className: 'text-[11px] font-extrabold uppercase tracking-wider text-gray-500' }, 'Novo vendedor'),
         h('input', { className: caixa, placeholder: 'Nome', value: novo.nome, onChange: function (e) { setNovo(Object.assign({}, novo, { nome: e.target.value })); } }),
@@ -396,9 +398,9 @@
       h('div', { className: 'divide-y divide-gray-100 border border-gray-200 rounded-xl' }, lista.map(function (v) {
         return h('div', { key: v.id, className: 'flex items-center gap-3 px-3 py-2' },
           h('div', { className: 'w-8 h-8 rounded-full bg-purple-100 text-purple-800 text-[11px] font-extrabold flex items-center justify-center' }, v.nome.split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2).toUpperCase()),
-          h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'text-sm font-semibold ' + (v.ativo ? 'text-gray-800' : 'text-gray-400 line-through') }, v.nome), h('div', { className: 'text-[11px] text-gray-400' }, (v.clientes || 0) + ' cliente(s) em comissão' + (v.user_cod ? ' · usuário ' + v.user_cod : ''))),
+          h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'text-sm font-semibold ' + (v.ativo ? 'text-gray-900' : 'text-gray-400 line-through') }, v.nome), h('div', { className: 'text-[11px] text-gray-400' }, (v.clientes || 0) + ' cliente(s) em comissão' + (v.user_cod ? ' · usuário ' + v.user_cod : ''))),
           h('button', { className: 'text-[11.5px] text-purple-700 font-semibold', onClick: function () { renomear(v); } }, 'Renomear'),
-          h('button', { className: 'text-[11.5px] font-semibold ' + (v.ativo ? 'text-red-600' : 'text-green-700'), onClick: function () { alternar(v); } }, v.ativo ? 'Desativar' : 'Reativar'));
+          h('button', { className: 'text-[11.5px] font-semibold ' + (v.ativo ? 'text-red-800' : 'text-green-800'), onClick: function () { alternar(v); } }, v.ativo ? 'Desativar' : 'Reativar'));
       }), lista.length === 0 ? h('div', { className: 'p-4 text-xs text-gray-400' }, 'Nenhum vendedor cadastrado.') : null));
   }
 
@@ -410,8 +412,8 @@
       !logs ? h('div', { className: 'p-6 text-gray-400 text-sm' }, 'Carregando...') : logs.length === 0 ? h('div', { className: 'p-6 text-gray-400 text-sm' }, 'Nenhum registro nesta competência.') :
       h('div', { className: 'divide-y divide-gray-100 border border-gray-200 rounded-xl' }, logs.map(function (l) {
         return h('div', { key: l.id, className: 'px-3 py-2 text-[12px]' },
-          h('div', { className: 'flex items-center gap-2 flex-wrap' }, h('span', { className: 'px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-bold uppercase text-gray-600' }, l.acao), h('span', { className: 'font-semibold text-gray-800' }, (l.nome_cliente ? l.nome_cliente + ' · ' : '') + l.entidade), l.campo ? h('span', { className: 'text-gray-500' }, '· ' + l.campo) : null, h('span', { className: 'ml-auto text-gray-400 text-[11px]' }, fDataHora(l.criado_em) + ' · ' + (l.usuario || ''))),
-          (l.valor_anterior != null || l.valor_novo != null) ? h('div', { className: 'text-gray-500 mt-0.5 break-all' }, l.valor_anterior != null ? h('span', { className: 'line-through mr-2' }, String(l.valor_anterior)) : null, l.valor_novo != null ? h('span', { className: 'text-gray-800' }, String(l.valor_novo)) : null) : null);
+          h('div', { className: 'flex items-center gap-2 flex-wrap' }, h('span', { className: 'px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-bold uppercase text-gray-700' }, l.acao), h('span', { className: 'font-semibold text-gray-900' }, (l.nome_cliente ? l.nome_cliente + ' · ' : '') + l.entidade), l.campo ? h('span', { className: 'text-gray-500' }, '· ' + l.campo) : null, h('span', { className: 'ml-auto text-gray-400 text-[11px]' }, fDataHora(l.criado_em) + ' · ' + (l.usuario || ''))),
+          (l.valor_anterior != null || l.valor_novo != null) ? h('div', { className: 'text-gray-500 mt-0.5 break-all' }, l.valor_anterior != null ? h('span', { className: 'line-through mr-2' }, String(l.valor_anterior)) : null, l.valor_novo != null ? h('span', { className: 'text-gray-900' }, String(l.valor_novo)) : null) : null);
       })));
   }
 
@@ -445,7 +447,7 @@
     useEffect(function () { recarregar(); }, [recarregar]);
 
     if (!['admin_financeiro', 'admin_master'].includes(role) || erro === 'sem permissão') {
-      return h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center' }, h('div', { className: 'text-3xl mb-2' }, Ico('lock', 'ico', { width: 28, height: 28 })), h('p', { className: 'font-bold text-gray-800' }, 'Sem permissão'), h('p', { className: 'text-sm text-gray-500' }, 'O Controle de Comissões é exclusivo do perfil Financeiro.'));
+      return h('div', { className: 'bg-white rounded-[14px] border border-gray-200 p-10 text-center' }, h('div', { className: 'text-3xl mb-2' }, Ico('lock', 'ico', { width: 28, height: 28 })), h('p', { className: 'font-bold text-gray-900' }, 'Sem permissão'), h('p', { className: 'text-sm text-gray-500' }, 'O Controle de Comissões é exclusivo do perfil Financeiro.'));
     }
 
     function aviso(msg, tipo) { if (typeof toast === 'function') toast(msg, tipo || 'success'); }
@@ -472,9 +474,9 @@
     var st = dados && dados.status ? dados.status.status : 'aberto';
     var aberto = st === 'aberto';
     var ind = dados ? dados.indicadores : null;
-    var badgeSt = { aberto: 'bg-green-100 text-green-700', fechado: 'bg-gray-200 text-gray-700', pago: 'bg-blue-100 text-blue-700' }[st];
+    var badgeSt = { aberto: 'bg-green-50 text-green-800', fechado: 'bg-gray-200 text-gray-700', pago: 'bg-blue-50 text-blue-800' }[st];
     // COMISSAO_NOMES_V1: cabeçalho com dica (title) e sub-rótulo explicando cada etapa
-    var th = function (t, right, sub, tip, cls) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' px-3 py-2.5 text-[10.5px] font-extrabold uppercase tracking-wide whitespace-nowrap ' + (cls || 'text-gray-500'), title: tip || '' }, t, sub ? h('div', { className: 'text-[9.5px] font-medium normal-case tracking-normal text-gray-400' }, sub) : null); };
+    var th = function (t, right, sub, tip, cls) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' whitespace-nowrap ' + (cls || ''), title: tip || '' }, t, sub ? h('div', { className: 'text-[11px] font-normal text-gray-500' }, sub) : null); };
 
     // COMISSAO_WIDE_V1: o Financeiro embrulha as abas em max-w-7xl (1280px); a
     // apuração tem 12 colunas e não cabe. Sai do container e usa a largura da
@@ -482,30 +484,30 @@
     return h('div', { className: 'space-y-4', style: { marginLeft: 'calc(50% - 50vw + 32px)', marginRight: 'calc(50% - 50vw + 32px)', maxWidth: 'none' } },
       // Cabeçalho
       h('div', { className: 'flex flex-col lg:flex-row lg:items-end gap-3' },
-        h('div', { className: 'flex-1' }, h('h2', { className: 'text-xl font-extrabold text-gray-900' }, 'Controle de comissões'), h('p', { className: 'text-[12.5px] text-gray-500' }, 'Entregas, faturamento e repasse vêm do BI; faixa e comissão são calculadas pela data de início de cada cliente.')),
+        h('div', { className: 'flex-1' }, h('h1', { className: 'fin-page-t' }, 'Controle de comissões'), h('p', { className: 'fin-page-s' }, 'Entregas, faturamento e repasse vêm do BI; faixa e comissão são calculadas pela data de início de cada cliente.')),
         h('div', { className: 'flex items-center gap-2 flex-wrap' },
           h('div', { className: 'flex items-center border border-gray-200 rounded-lg bg-white' },
             h('button', { className: 'px-2.5 py-2 text-gray-500 hover:text-purple-700', onClick: function () { setComp(compAdd(comp, -1)); }, 'aria-label': 'Mês anterior' }, '‹'),
-            h('input', { type: 'month', value: comp, onChange: function (e) { if (e.target.value) setComp(e.target.value); }, className: 'px-1 py-1.5 text-sm font-semibold text-gray-800 focus:outline-none' }),
+            h('input', { type: 'month', value: comp, onChange: function (e) { if (e.target.value) setComp(e.target.value); }, className: 'px-1 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none' }),
             h('button', { className: 'px-2.5 py-2 text-gray-500 hover:text-purple-700', onClick: function () { setComp(compAdd(comp, 1)); }, 'aria-label': 'Próximo mês' }, '›')),
-          h('span', { className: 'px-2.5 py-1 rounded-full text-[11px] font-bold uppercase ' + badgeSt }, st),
+          window.FinUI.pilula({ aberto: 'verde', fechado: 'cinza', pago: 'azul' }[st] || 'cinza', st ? st.charAt(0).toUpperCase() + st.slice(1) : '—'), /* FIN_ABAS_V1 */
           h('button', { className: btnS, disabled: busy || !dados, onClick: exportar }, 'Exportar fechamento'),
           aberto ? h('button', { className: btnS, disabled: busy || !dados || !dados.pode_fechar, title: dados && !dados.pode_fechar ? 'Só é possível fechar sem lançamentos pendentes' : '', onClick: fecharMes }, 'Fechar mês') : null,
           st === 'fechado' ? h('button', { className: btnS, disabled: busy, onClick: marcarPago }, 'Marcar como pago') : null,
-          h('button', { className: btnP + ' bg-orange-500 hover:bg-orange-600', disabled: !aberto, onClick: function () { setPainel({ tipo: 'cliente' }); } }, '+ Novo cliente'))),
+          h('button', { className: btnP, disabled: !aberto, onClick: function () { setPainel({ tipo: 'cliente' }); } }, '+ Novo cliente'))),
       h('div', { className: 'flex items-center gap-3 text-[12px] text-gray-500 flex-wrap' },
         h('button', { className: 'font-semibold text-purple-700 hover:underline', onClick: function () { setPainel({ tipo: 'vendedores' }); } }, 'Vendedores (' + vendedores.length + ')'),
         h('span', null, '·'), h('button', { className: 'font-semibold text-purple-700 hover:underline', onClick: salvarImposto }, 'Imposto: ' + (imposto == null ? '—' : imposto + '%')),
         h('span', null, '·'), h('button', { className: 'font-semibold text-purple-700 hover:underline', onClick: function () { setPainel({ tipo: 'historico' }); } }, 'Histórico da competência'),
         dados && dados.status && dados.status.fechado_em ? h('span', { className: 'ml-auto text-gray-400' }, 'Fechado por ' + dados.status.fechado_por + ' em ' + fDataHora(dados.status.fechado_em) + (dados.status.pago_em ? ' · pago em ' + fDataHora(dados.status.pago_em) : '')) : null),
 
-      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-700' }, erro) : null,
+      erro ? h('div', { className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[12.5px] text-red-800' }, erro) : null,
       carregando && !dados ? h('div', { className: 'p-10 text-center text-gray-400 text-sm' }, 'Carregando...') : null,
 
       // Indicadores (6.1)
-      ind ? h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
+      ind ? h('div', { className: 'fin-kpis' },
         h(Card, { rotulo: 'Comissão total a pagar', valor: fR(ind.comissao_total), destaque: true, auxiliar: ind.clientes_lancados + ' cliente(s) lançado(s) em ' + fComp(comp).toLowerCase() }),
-        h(Card, { rotulo: 'Lançamentos pendentes', valor: String(ind.pendentes), cor: ind.pendentes > 0 ? '#d97706' : '#166534', auxiliar: ind.clientes_lancados + ' de ' + ind.clientes_ativos + ' clientes lançados' }),
+        h(Card, { rotulo: 'Lançamentos pendentes', valor: String(ind.pendentes), cor: ind.pendentes > 0 ? '#92400e' : '#166534', auxiliar: ind.clientes_lancados + ' de ' + ind.clientes_ativos + ' clientes lançados' }),
         h(Card, { rotulo: 'Saldo negativo levado ao próximo mês', valor: fR(ind.saldo_negativo_total), cor: ind.saldo_negativo_total > 0 ? '#991b1b' : '#111827', auxiliar: ind.saldo_negativo_clientes.length ? ind.saldo_negativo_clientes.map(function (c) { return c.nome; }).join(', ') : 'Nenhum cliente com saldo pendente' }),
         h(Card, { rotulo: 'Mudam de faixa no próximo mês', valor: String(ind.mudam_faixa.length), auxiliar: ind.mudam_faixa.length ? ind.mudam_faixa.slice(0, 3).map(function (m) { return m.nome + ': ' + m.de + '% → ' + (m.encerra ? 'encerra' : m.para + '%') + ' em ' + fDiaMes(m.em); }).join(' · ') : 'Nenhuma mudança prevista' })) : null,
 
@@ -514,19 +516,19 @@
         h('div', { className: 'text-[12px] font-bold text-gray-700 mb-2' }, 'Comissão por vendedor · ' + fComp(comp)),
         dados.por_vendedor.length === 0 ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum vendedor cadastrado.') :
         h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3' }, dados.por_vendedor.map(function (v) {
-          return h('div', { key: v.id, className: 'bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3' },
+          return h('div', { key: v.id, className: 'bg-white border border-gray-200 rounded-[14px] p-3 flex items-center gap-3' },
             h('div', { className: 'w-9 h-9 rounded-full bg-purple-100 text-purple-800 text-[11px] font-extrabold flex items-center justify-center' }, v.nome.split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2).toUpperCase()),
-            h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'text-sm font-bold text-gray-800 truncate' }, v.nome), h('div', { className: 'text-[11px] text-gray-400' }, v.clientes + ' cliente(s) em comissão')),
+            h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'text-sm font-bold text-gray-900 truncate' }, v.nome), h('div', { className: 'text-[11px] text-gray-400' }, v.clientes + ' cliente(s) em comissão')),
             h('div', { className: 'text-[15px] font-extrabold text-purple-900 tabular-nums' }, fR(v.total)));
         }))) : null,
 
       // Apuração por cliente (6.3)
-      dados ? h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
+      dados ? h('div', { className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden' },
         h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100' },
-          h('div', { className: 'text-[13px] font-bold text-gray-800' }, 'Apuração por cliente · ' + fComp(comp)),
+          h('div', { className: 'text-[13px] font-bold text-gray-900' }, 'Apuração por cliente · ' + fComp(comp)),
           h('div', { className: 'text-[11px] text-gray-400' }, 'Margem = bruto − repasse ao entregador · Imposto = ' + (imposto == null ? '—' : imposto) + '% da margem · Lucro = margem − imposto · Comissão do vendedor = lucro × faixa')),
         dados.clientes.length === 0 ? h('div', { className: 'p-8 text-center text-sm text-gray-400' }, 'Nenhum cliente em comissão nesta competência. Cadastre um cliente com "+ Novo cliente".') :
-        h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12.5px] min-w-[1240px]' },
+        h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[12.5px] min-w-[1240px] fin-tbl' },
           h('thead', { className: 'bg-gray-50' }, h('tr', null, th('Cliente'), th('Vendedor(es)'), th('Mês da relação'), th('Faixa'), th('Entregas', 1, 'BI'), th('Fat. bruto', 1, 'cliente'), th('Repasse', 1, 'entregador'),
             th('Margem', 1, 'bruto − repasse', 'É a "comissão líquida" da planilha: o que sobra pra Tutts depois de pagar o entregador. Não é a comissão do vendedor.'),
             th('Imposto', 1, '% da margem'), th('Lucro', 1, 'margem − imposto'),
@@ -534,27 +536,27 @@
             th('Lançamento'))),
           h('tbody', null, dados.clientes.map(function (e) {
             var t = e.totais || {}; var c = e.cliente;
-            var negCls = function (v) { return v < 0 ? 'text-red-600' : ''; };
+            var negCls = function (v) { return v < 0 ? 'text-red-800' : ''; };
             var comissaoAux = e.encerrado ? 'Fora do período' : !e.lancado ? 'prévia · aguardando lançamento' : (t.saldo_pendente_saida > 0 ? 'Saldo negativo → próximo mês' : (c.comissao_dividida ? fR(t.comissao_por_vendedor) + ' para cada' : c.vendedores));
             return h('tr', { key: c.id, className: 'border-t border-gray-100 hover:bg-gray-50/60 align-top' },
               h('td', { className: 'px-3 py-2.5 min-w-[230px]' }, h('button', { className: 'font-bold text-purple-800 hover:underline text-left', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, c.nome), h('div', { className: 'text-[10.5px] text-gray-400 whitespace-nowrap' }, 'ID ' + c.cod_cliente + ' · início ' + fData(c.data_inicio)),
                 c.centros_custo && c.centros_custo.length ? h('div', { className: 'flex flex-wrap gap-1 mt-1' }, c.centros_custo.slice(0, 3).map(function (cc) { return h('span', { key: cc, className: 'px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-mono whitespace-nowrap', title: cc }, cc.length > 26 ? cc.slice(0, 25) + '…' : cc); }), c.centros_custo.length > 3 ? h('span', { className: 'text-[10px] text-gray-400', title: c.centros_custo.join(', ') }, '+' + (c.centros_custo.length - 3)) : null) : h('div', { className: 'text-[10px] text-gray-400 mt-0.5' }, 'todos os CC')),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, c.vendedores),
-              h('td', { className: 'px-3 py-2.5 whitespace-nowrap text-gray-600' }, e.mes_relacao),
+              h('td', { className: 'px-3 py-2.5 whitespace-nowrap text-gray-500' }, e.mes_relacao),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, e.periodos.length > 1 ? h('span', { className: 'inline-flex items-center gap-1' }, h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida }), '→', h(TagFaixa, { pct: e.periodos[1].faixa_pct, encerrada: e.periodos[1].encerrada, dividida: c.comissao_dividida })) : h(TagFaixa, { pct: e.periodos[0].faixa_pct, encerrada: e.periodos[0].encerrada, dividida: c.comissao_dividida })),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums' }, e.bi_sem_dados ? h('span', { className: 'text-gray-400 text-[11px]' }, 'Sem dados no BI') : e.entregas_bi),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.faturamento_bruto)),
-              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.repasse_entregador), e.saldo_entrada && e.saldo_entrada.valor > 0 ? h('div', { className: 'text-[10px] text-red-600 whitespace-nowrap' }, 'inclui ' + fR(e.saldo_entrada.valor) + ' pendente') : null),
+              h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + (e.lancado ? '' : 'text-gray-400') }, fR(t.repasse_entregador), e.saldo_entrada && e.saldo_entrada.valor > 0 ? h('div', { className: 'text-[10px] text-red-800 whitespace-nowrap' }, 'inclui ' + fR(e.saldo_entrada.valor) + ' pendente') : null),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.comissao_liquida) }, fRneg(t.comissao_liquida)),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap' }, fR(t.imposto)),
               h('td', { className: 'px-3 py-2.5 text-right tabular-nums whitespace-nowrap ' + negCls(t.lucro) }, fRneg(t.lucro)),
               h('td', { className: 'px-3 py-2.5 text-right whitespace-nowrap ' + (e.lancado && !e.encerrado ? 'bg-purple-50/70' : '') },
                 h('div', { className: 'tabular-nums text-[14px] ' + (e.lancado && !e.encerrado ? 'font-extrabold text-purple-800' : 'font-semibold text-gray-400 italic') }, e.encerrado ? fR(0) : fR(t.comissao)),
-                h('div', { className: 'text-[10.5px] whitespace-nowrap ' + (e.lancado ? 'text-purple-500' : 'text-gray-400') }, comissaoAux)),
+                h('div', { className: 'text-[10.5px] whitespace-nowrap ' + (e.lancado ? 'text-purple-600' : 'text-gray-400') }, comissaoAux)),
               h('td', { className: 'px-3 py-2.5 whitespace-nowrap' }, h('div', { className: 'flex gap-1.5' },
-                h('button', { className: btnL + ' ' + (e.lancado ? 'bg-gray-700' : 'bg-orange-500'), disabled: !aberto && !e.lancado, onClick: function () { setPainel({ tipo: 'lancamento', clienteId: c.id }); } }, aberto ? (e.lancado ? 'Editar' : 'Lançar') : 'Ver'),
-                h('button', { className: btnL + ' bg-purple-700', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'),
-                h('button', { className: 'px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-purple-700 hover:border-purple-300', title: 'Editar cadastro', 'aria-label': 'Editar cadastro', onClick: function () { setPainel({ tipo: 'cliente', cliente: { id: c.id, cod_cliente: c.cod_cliente, nome_cliente: c.nome_cliente || c.nome, nome_exibicao: c.nome_exibicao, centros_custo: c.centros_custo || [], data_inicio: c.data_inicio, vendedor_1_id: c.vendedor_1_id, vendedor_2_id: c.vendedor_2_id, comissao_dividida: c.comissao_dividida, ativo: c.ativo } }); } }, Ico('pencil', 'ico', { width: 14, height: 14 })))));
+                h('button', { className: 'fin-btn fin-btn-sm ' + (e.lancado || !aberto ? 'fin-btn-s' : 'fin-btn-p'), disabled: !aberto && !e.lancado, onClick: function () { setPainel({ tipo: 'lancamento', clienteId: c.id }); } }, aberto ? (e.lancado ? 'Editar' : 'Lançar') : 'Ver'),
+                h('button', { className: 'fin-btn fin-btn-s fin-btn-sm', onClick: function () { setPainel({ tipo: 'extrato', clienteId: c.id }); } }, 'Extrato'),
+                h('button', { className: 'px-2 py-1.5 rounded-[10px] border border-gray-200 text-gray-500 hover:text-purple-700 hover:border-purple-200', title: 'Editar cadastro', 'aria-label': 'Editar cadastro', onClick: function () { setPainel({ tipo: 'cliente', cliente: { id: c.id, cod_cliente: c.cod_cliente, nome_cliente: c.nome_cliente || c.nome, nome_exibicao: c.nome_exibicao, centros_custo: c.centros_custo || [], data_inicio: c.data_inicio, vendedor_1_id: c.vendedor_1_id, vendedor_2_id: c.vendedor_2_id, comissao_dividida: c.comissao_dividida, ativo: c.ativo } }); } }, Ico('pencil', 'ico', { width: 14, height: 14 })))));
           }))))) : null,
 
       // Painéis

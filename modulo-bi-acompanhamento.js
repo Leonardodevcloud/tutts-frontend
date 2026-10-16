@@ -1,5 +1,8 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
+/* BI_ABAS_V1: Acompanhamento periódico no padrão clean — título de seção 15px, segmentados,
+   faixa única de KPIs, tabela com cabeçalho #f9fafb e total em cinza claro, modal branco.
+   Lógica, catálogo de métricas (paleta categórica) e chamadas inalterados. */
 /**
  * BI · Acompanhamento Periódico
  *
@@ -60,6 +63,20 @@
         if (granu === 'semana') return 'sem ' + d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
+
+    // BI_ABAS_V1: helpers visuais
+    function seg(ativo) {
+        return 'px-3 h-[28px] rounded-lg text-xs transition-colors border ' + (ativo ? 'bg-white border-gray-200 font-semibold text-purple-800' : 'border-transparent font-medium text-gray-600 hover:text-gray-900');
+    }
+    function icoA(nome, sz, extra) {
+        return h('svg', { className: 'ico', style: Object.assign({ width: sz || 14, height: sz || 14, flexShrink: 0 }, extra || {}), 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome }));
+    }
+    function pctPill(v, txt) {
+        const t = v >= 80 ? ['#f0fdf4', '#166534', '#16a34a'] : v >= 60 ? ['#fffbeb', '#92400e', '#d97706'] : ['#fef2f2', '#991b1b', '#dc2626'];
+        return h('span', { className: 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold', style: { background: t[0], color: t[1] } },
+            h('span', { style: { width: 6, height: 6, borderRadius: 999, background: t[2] } }), txt);
+    }
+    const thCls = 'text-xs font-semibold text-gray-500 px-3 py-2.5 whitespace-nowrap';
 
     // Catálogo de métricas plotáveis no gráfico.
     // Cada uma tem: chave da serie, label, cor, escala (0-100 ou auto), formatação.
@@ -176,70 +193,54 @@
         // ====== RENDER ======
 
         // Container externo
-        return h('div', { className: 'mb-6' },
+        return h('section', { 'data-bi-acomp': '1', 'aria-labelledby': 'acomp-titulo', className: 'mb-6 flex flex-col gap-3' },
             // HEADER: título + toggles
-            h('div', { className: 'flex items-center justify-between mb-3 gap-3 flex-wrap' },
+            h('div', { className: 'flex items-end justify-between gap-3 flex-wrap' },
                 h('div', null,
-                    h('div', { className: 'text-base font-semibold text-gray-900' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-chart" })), "Acompanhamento Periódico")),
-                    h('div', { className: 'text-xs text-gray-500' },
+                    h('h2', { id: 'acomp-titulo', className: 'text-[15px] font-semibold text-gray-900', style: { margin: 0 } }, 'Acompanhamento periódico'),
+                    h('div', { className: 'text-[13px] text-gray-500 mt-0.5' },
                         loading ? 'Carregando...' :
-                        erro ? erro :
+                        erro ? ('Não foi possível carregar (' + erro + ')') :
                         (dados ? (dados.serie?.length || 0) + ' ' + (granu === 'dia' ? 'dia(s)' : granu === 'semana' ? 'semana(s)' : 'mês(es)') + ' · ' + (dados.porCliente?.length || 0) + ' clientes' : '')
                     )
                 ),
                 h('div', { className: 'flex gap-2 items-center flex-wrap' },
                     // Granularidade
-                    h('div', { className: 'inline-flex bg-white border border-gray-200 rounded-lg p-0.5' },
+                    h('div', { role: 'group', 'aria-label': 'Granularidade', className: 'inline-flex bg-gray-100 rounded-[10px] p-1 gap-0.5' },
                         ['dia', 'semana', 'mes'].map(g => h('button', {
-                            key: g, onClick: () => setGranu(g),
-                            className: 'px-3 py-1 rounded-md text-xs font-medium transition-colors ' + (granu === g ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700')
+                            key: g, type: 'button', onClick: () => setGranu(g), 'aria-pressed': granu === g,
+                            className: seg(granu === g)
                         }, g === 'dia' ? 'Diário' : g === 'semana' ? 'Semanal' : 'Mensal'))
                     ),
                     // Eixo da tabela
-                    h('div', { className: 'inline-flex bg-white border border-gray-200 rounded-lg p-0.5' },
-                        h('button', {
-                            onClick: () => setEixo('cliente'),
-                            className: 'px-3 py-1 rounded-md text-xs font-medium transition-colors ' + (eixo === 'cliente' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700')
-                        }, 'Por Cliente'),
-                        h('button', {
-                            onClick: () => setEixo('periodo'),
-                            className: 'px-3 py-1 rounded-md text-xs font-medium transition-colors ' + (eixo === 'periodo' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700')
-                        }, 'Por Período')
+                    h('div', { role: 'group', 'aria-label': 'Agrupar tabela', className: 'inline-flex bg-gray-100 rounded-[10px] p-1 gap-0.5' },
+                        h('button', { type: 'button', onClick: () => setEixo('cliente'), 'aria-pressed': eixo === 'cliente', className: seg(eixo === 'cliente') }, 'Por cliente'),
+                        h('button', { type: 'button', onClick: () => setEixo('periodo'), 'aria-pressed': eixo === 'periodo', className: seg(eixo === 'periodo') }, 'Por período')
                     )
                 )
             ),
 
-            // KPIS — só 3 (Total Entregas, % No Prazo, Qtd Retornos)
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-3 mb-4' },
-                h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-                    h('div', { className: 'text-[10px] uppercase tracking-wide text-gray-500 mb-1 font-semibold' }, 'Total Entregas'),
-                    h('div', { className: 'text-2xl font-semibold text-gray-900 leading-none' },
-                        loading ? '—' : (dados?.kpis?.total_entregas || 0).toLocaleString('pt-BR'))
-                ),
-                h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-                    h('div', { className: 'text-[10px] uppercase tracking-wide text-gray-500 mb-1 font-semibold' }, '% No Prazo'),
-                    h('div', {
-                        className: 'text-2xl font-semibold leading-none ' + (
-                            !dados ? 'text-gray-400' :
-                            dados.kpis?.pct_no_prazo >= 80 ? 'text-green-700' :
-                            dados.kpis?.pct_no_prazo >= 60 ? 'text-yellow-700' : 'text-red-700'
-                        )
-                    }, loading ? '—' : (dados?.kpis?.pct_no_prazo?.toFixed(1) || '0') + '%')
-                ),
-                h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
-                    h('div', { className: 'text-[10px] uppercase tracking-wide text-gray-500 mb-1 font-semibold' }, 'Qtd Retornos'),
-                    h('div', {
-                        className: 'text-2xl font-semibold leading-none ' + (
-                            (dados?.kpis?.qtd_retornos || 0) > 0 ? 'text-orange-700' : 'text-gray-900'
-                        )
-                    }, loading ? '—' : (dados?.kpis?.qtd_retornos || 0).toLocaleString('pt-BR'))
-                )
+            // KPIS — faixa única (Total Entregas, % No Prazo, Qtd Retornos)
+            h('div', { className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden', style: { display: 'flex', flexWrap: 'wrap' } },
+                [
+                    ['Total de entregas', loading ? '—' : (dados?.kpis?.total_entregas || 0).toLocaleString('pt-BR'), '#111827', 'No período filtrado'],
+                    ['No prazo', loading ? '—' : (dados?.kpis?.pct_no_prazo?.toFixed(1) || '0') + '%',
+                        !dados ? '#9ca3af' : dados.kpis?.pct_no_prazo >= 80 ? '#166534' : dados.kpis?.pct_no_prazo >= 60 ? '#92400e' : '#991b1b', 'Entregas dentro do prazo'],
+                    ['Retornos', loading ? '—' : (dados?.kpis?.qtd_retornos || 0).toLocaleString('pt-BR'), '#111827', 'Quantidade no período']
+                ].map((k, i, arr) => h('div', {
+                    key: k[0],
+                    style: { flex: '1 1 180px', padding: '14px 20px', borderRight: i === arr.length - 1 ? 0 : '1px solid #f3f4f6', borderBottom: '1px solid #f3f4f6', marginBottom: -1, minWidth: 0 }
+                },
+                    h('div', { style: { fontSize: 12, color: '#6b7280' } }, k[0]),
+                    h('div', { style: { fontFamily: 'Sora, Inter, sans-serif', fontSize: 24, fontWeight: 700, color: k[2], fontVariantNumeric: 'tabular-nums', lineHeight: 1.25, margin: '2px 0' } }, k[1]),
+                    h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, k[3])
+                ))
             ),
 
             // GRÁFICO de evolução (SVG inline simples)
-            h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 mb-4' },
-                h('div', { className: 'flex items-center justify-between mb-3' },
-                    h('div', { className: 'text-sm font-medium' }, 'Evolução por ' + (granu === 'dia' ? 'dia' : granu === 'semana' ? 'semana' : 'mês')),
+            h('div', { className: 'bg-white border border-gray-200 rounded-[14px] p-4' },
+                h('div', { className: 'flex items-center justify-between gap-2 flex-wrap mb-3' },
+                    h('div', { className: 'text-[13px] font-semibold text-gray-900' }, 'Evolução por ' + (granu === 'dia' ? 'dia' : granu === 'semana' ? 'semana' : 'mês')),
                     h('div', {
                         ref: dropdownRef,
                         className: 'flex gap-1.5 text-[10px] items-center flex-wrap justify-end',
@@ -249,8 +250,7 @@
                         METRICAS_CATALOGO.filter(m => metricasSelecionadas.includes(m.id)).slice(0, 4).map(m =>
                             h('span', {
                                 key: m.id,
-                                className: 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium border bg-white',
-                                style: { borderColor: m.cor + '40', color: m.cor }
+                                className: 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-medium border border-gray-200 bg-white text-gray-700'
                             },
                                 h('span', {
                                     style: { width: 6, height: 6, borderRadius: 999, background: m.cor, display: 'inline-block' }
@@ -264,10 +264,12 @@
 
                         // Botão pra abrir dropdown
                         h('button', {
+                            type: 'button',
+                            'aria-expanded': dropdownMetricas,
                             onClick: () => setDropdownMetricas(prev => !prev),
-                            className: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors'
+                            className: 'inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors'
                         },
-                            h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), ' Métricas (' + metricasSelecionadas.length + '/' + METRICAS_CATALOGO.length + ')'
+                            icoA('settings', 14), 'Métricas (' + metricasSelecionadas.length + '/' + METRICAS_CATALOGO.length + ')'
                         ),
 
                         // Dropdown com checkboxes
@@ -278,8 +280,8 @@
                                 right: 0,
                                 marginTop: 6,
                                 background: 'white',
-                                border: '0.5px solid #d1d5db',
-                                borderRadius: 8,
+                                border: '1px solid #e5e7eb',
+                                borderRadius: 12,
                                 padding: 8,
                                 width: 240,
                                 maxHeight: 360,
@@ -289,11 +291,12 @@
                             }
                         },
                             h('div', { className: 'flex items-center justify-between px-1 pb-2 mb-1 border-b border-gray-100' },
-                                h('span', { className: 'text-[11px] font-semibold text-gray-700' }, 'Métricas plotáveis'),
+                                h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Métricas no gráfico'),
                                 h('button', {
+                                    type: 'button',
                                     onClick: () => setMetricasSelecionadas(['total_entregas']),
-                                    className: 'text-[10px] text-gray-500 hover:text-purple-700'
-                                }, 'limpar')
+                                    className: 'text-xs font-semibold text-gray-500 hover:text-purple-800'
+                                }, 'Limpar')
                             ),
                             METRICAS_CATALOGO.map(m => {
                                 const ativo = metricasSelecionadas.includes(m.id);
@@ -309,7 +312,7 @@
                                                 ? (prev.length > 1 ? prev.filter(x => x !== m.id) : prev)
                                                 : [...prev, m.id]
                                         ),
-                                        className: 'w-3.5 h-3.5'
+                                        className: 'w-3.5 h-3.5', style: { accentColor: '#770fa8' }
                                     }),
                                     h('span', {
                                         style: { width: 8, height: 8, borderRadius: 999, background: m.cor, display: 'inline-block', flexShrink: 0 }
@@ -320,8 +323,8 @@
                         )
                     )
                 ),
-                loading ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Carregando...') :
-                (!dados?.serie || dados.serie.length === 0) ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Sem dados no período') :
+                loading ? h('div', { className: 'text-center py-8 text-gray-500 text-[13px]' }, 'Carregando...') :
+                (!dados?.serie || dados.serie.length === 0) ? h('div', { className: 'text-center py-8 text-gray-500 text-[13px]' }, 'Sem dados no período. Ajuste os filtros do dashboard.') :
                 h(MiniChart, {
                     serie: dados.serie,
                     granu,
@@ -346,22 +349,25 @@
                     });
                 }
 
-                return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-                    h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-200 gap-2 flex-wrap' },
-                        h('div', { className: 'text-sm font-medium' },
-                            eixo === 'cliente' ? 'Por Cliente · ' + (linhas.length || 0) + ' resultado(s)'
-                                                : 'Por Período · ' + (linhas.length || 0) + ' resultado(s)'
+                return h('div', { className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden' },
+                    h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100 gap-2 flex-wrap' },
+                        h('div', { className: 'text-[13px] font-semibold text-gray-900' },
+                            eixo === 'cliente' ? 'Por cliente · ' + (linhas.length || 0) + ' resultado(s)'
+                                                : 'Por período · ' + (linhas.length || 0) + ' resultado(s)'
                         ),
-                        h('div', { className: 'flex gap-2 items-center' },
-                            h('input', {
-                                type: 'text', value: busca,
-                                placeholder: eixo === 'cliente' ? 'Buscar cliente...' : 'Buscar período...',
-                                onChange: e => setBusca(e.target.value),
-                                className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
-                            }),
+                        h('div', { className: 'flex gap-2 items-center flex-wrap' },
+                            h('div', { className: 'relative' },
+                                icoA('search', 14, { position: 'absolute', left: 10, top: 10, color: '#9ca3af' }),
+                                h('input', {
+                                    type: 'text', value: busca, 'aria-label': eixo === 'cliente' ? 'Buscar cliente' : 'Buscar período',
+                                    placeholder: eixo === 'cliente' ? 'Buscar cliente' : 'Buscar período',
+                                    onChange: e => setBusca(e.target.value),
+                                    className: 'text-[13px] h-[34px] pl-8 pr-3 border border-gray-200 rounded-[10px] w-48 bg-white'
+                                })
+                            ),
                             h('select', {
-                                value: ordem, onChange: e => setOrdem(e.target.value),
-                                className: 'text-xs px-2 py-1 border border-gray-200 rounded-md bg-white'
+                                value: ordem, onChange: e => setOrdem(e.target.value), 'aria-label': 'Ordenar por',
+                                className: 'text-[13px] h-[34px] px-2 border border-gray-200 rounded-[10px] bg-white'
                             },
                                 metricasAtivas.map(m => h('option', {
                                     key: m.id, value: m.id
@@ -369,22 +375,22 @@
                             )
                         )
                     ),
-                    loading ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Carregando...') :
-                    linhas.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
-                    h('div', { className: 'overflow-x-auto' },
+                    loading ? h('div', { className: 'text-center py-10 text-gray-500 text-[13px]' }, 'Carregando...') :
+                    linhas.length === 0 ? h('div', { className: 'text-center py-10 text-gray-500 text-[13px]' }, busca ? 'Nenhum resultado para essa busca.' : 'Nenhum resultado') :
+                    h('div', { className: 'overflow-x-auto relative' },
                         h('table', { className: 'w-full text-sm' },
                             h('thead', { className: 'bg-gray-50' },
                                 h('tr', null,
                                     h('th', {
-                                        className: 'text-left text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 sticky left-0 bg-gray-50 z-10'
+                                        className: 'text-left ' + thCls + ' sticky left-0 bg-gray-50 z-10'
                                     }, eixo === 'cliente' ? 'Cliente' : 'Período'),
                                     metricasAtivas.map(m => h('th', {
                                         key: m.id,
-                                        className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2 whitespace-nowrap'
+                                        className: 'text-right ' + thCls
                                     }, m.label)),
                                     eixo === 'cliente' && h('th', {
-                                        className: 'text-center text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 w-8'
-                                    }, '')
+                                        className: 'w-8 ' + thCls
+                                    }, h('span', { className: 'sr-only' }, 'Detalhar'))
                                 )
                             ),
                             h('tbody', null,
@@ -393,13 +399,13 @@
                                     return h('tr', {
                                         key: eixo === 'cliente' ? l.cod_cliente : l.periodo,
                                         onClick,
-                                        className: 'border-t border-gray-100 ' + (onClick ? 'cursor-pointer hover:bg-purple-50' : '')
+                                        className: 'border-t border-gray-100 ' + (onClick ? 'cursor-pointer hover:bg-gray-50' : '')
                                     },
-                                        h('td', { className: 'px-3 py-2 sticky left-0 bg-white z-10' },
+                                        h('td', { className: 'px-3 py-2.5 sticky left-0 bg-white z-10' },
                                             eixo === 'cliente'
                                                 ? h('div', null,
                                                     h('div', { className: 'font-medium text-gray-900' }, l.nome_cliente),
-                                                    h('div', { className: 'text-[10px] text-gray-400' }, 'cod ' + l.cod_cliente)
+                                                    h('div', { className: 'text-xs text-gray-500' }, 'Cód. ' + l.cod_cliente)
                                                 )
                                                 : h('div', { className: 'font-medium text-gray-900' }, fmtData(l.periodo, granu))
                                         ),
@@ -407,22 +413,19 @@
                                             const v = l[m.id] || 0;
                                             // % prazo recebe pill colorida
                                             if (m.id === 'pct_prazo') {
-                                                const corPct = v >= 80 ? 'bg-green-50 text-green-800' : v >= 60 ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800';
-                                                return h('td', { key: m.id, className: 'px-2 py-2 text-right' },
-                                                    h('span', { className: 'inline-block px-2 py-0.5 rounded-full text-xs font-semibold ' + corPct }, m.fmt(v))
-                                                );
+                                                return h('td', { key: m.id, className: 'px-3 py-2.5 text-right' }, pctPill(v, m.fmt(v)));
                                             }
                                             return h('td', {
                                                 key: m.id,
-                                                className: 'px-2 py-2 text-right whitespace-nowrap font-medium text-gray-800'
+                                                className: 'px-3 py-2.5 text-right whitespace-nowrap tabular-nums text-gray-900'
                                             }, m.fmt(v));
                                         }),
-                                        eixo === 'cliente' && h('td', { className: 'px-3 py-2 text-center text-gray-400' }, '›')
+                                        eixo === 'cliente' && h('td', { className: 'px-3 py-2.5 text-center text-gray-400' }, icoA('arrowright', 14))
                                     );
                                 }),
                                 // Linha total (footer)
-                                h('tr', { className: 'bg-gray-900 text-white' },
-                                    h('td', { className: 'px-3 py-2 font-semibold sticky left-0 bg-gray-900 z-10' },
+                                h('tr', { className: 'bg-gray-50 text-gray-900 border-t border-gray-200' },
+                                    h('td', { className: 'px-3 py-2.5 font-semibold sticky left-0 bg-gray-50 z-10' },
                                         'Total · ' + linhas.length + (eixo === 'cliente' ? ' clientes' : ' períodos')
                                     ),
                                     metricasAtivas.map(m => {
@@ -443,10 +446,10 @@
                                         }
                                         return h('td', {
                                             key: m.id,
-                                            className: 'px-2 py-2 text-right font-semibold whitespace-nowrap'
+                                            className: 'px-3 py-2.5 text-right font-semibold whitespace-nowrap tabular-nums'
                                         }, m.fmt(v));
                                     }),
-                                    eixo === 'cliente' && h('td', { className: 'px-3 py-2' })
+                                    eixo === 'cliente' && h('td', { className: 'px-3 py-2.5' })
                                 )
                             )
                         )
@@ -622,8 +625,8 @@
                     top: 8,
                     transform: hover.x > W * 0.7 ? 'translateX(-100%)' : (hover.x < W * 0.3 ? 'translateX(0)' : 'translateX(-50%)'),
                     background: 'white',
-                    border: '0.5px solid #d1d5db',
-                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 8,
                     padding: '6px 10px',
                     fontSize: 11,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
@@ -631,11 +634,11 @@
                     whiteSpace: 'nowrap',
                 }
             },
-                h('div', { style: { fontWeight: 500, marginBottom: 4 } }, fmtData(hover.periodo, granu)),
+                h('div', { style: { fontWeight: 600, marginBottom: 4, color: '#111827' } }, fmtData(hover.periodo, granu)),
                 metricas.map(m => h('div', {
                     key: 'tt-' + m.id,
-                    style: { color: m.cor, marginTop: 1 }
-                }, '● ' + m.label + ': ' + m.fmt(hover[m.id] || 0)))
+                    style: { color: '#374151', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }
+                }, h('span', { style: { width: 7, height: 7, borderRadius: 999, background: m.cor } }), m.label + ': ', h('strong', { style: { color: '#111827', fontVariantNumeric: 'tabular-nums' } }, m.fmt(hover[m.id] || 0))))
             )
         );
     }
@@ -694,42 +697,45 @@
         const labelPeriodo = (iso, idx) => granu === 'semana' ? 'Sem ' + (idx + 1) : 'Mês ' + (idx + 1);
         const labelTooltip = (iso) => fmtData(iso, granu);
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
-            h('div', { className: 'flex items-center justify-between p-3 border-b border-gray-200 gap-2 flex-wrap' },
-                h('div', { className: 'text-sm font-medium' },
-                    'Por Cliente × ' + (granu === 'semana' ? 'Semana' : 'Mês') +
+        return h('div', { className: 'bg-white border border-gray-200 rounded-[14px] overflow-hidden' },
+            h('div', { className: 'flex items-center justify-between px-4 py-3 border-b border-gray-100 gap-2 flex-wrap' },
+                h('div', { className: 'text-[13px] font-semibold text-gray-900' },
+                    'Por cliente × ' + (granu === 'semana' ? 'semana' : 'mês') +
                     ' · ' + clientesFiltrados.length + ' cliente(s) · métrica: ' + m.label
                 ),
-                h('div', { className: 'flex gap-2 items-center' },
-                    h('input', {
-                        type: 'text', value: busca,
-                        placeholder: 'Buscar cliente...',
-                        onChange: e => setBusca(e.target.value),
-                        className: 'text-xs px-2 py-1 border border-gray-200 rounded-md w-44'
-                    }),
-                    h('span', { className: 'text-[10px] text-gray-500' }, 'Pra trocar a métrica, ative outra no ', h("svg", { className: "ico", style: { width: 13, height: 13 }, "aria-hidden": "true" }, h("use", { href: "#i-settings" })), ' acima')
+                h('div', { className: 'flex gap-2 items-center flex-wrap' },
+                    h('div', { className: 'relative' },
+                        icoA('search', 14, { position: 'absolute', left: 10, top: 10, color: '#9ca3af' }),
+                        h('input', {
+                            type: 'text', value: busca, 'aria-label': 'Buscar cliente',
+                            placeholder: 'Buscar cliente',
+                            onChange: e => setBusca(e.target.value),
+                            className: 'text-[13px] h-[34px] pl-8 pr-3 border border-gray-200 rounded-[10px] w-48 bg-white'
+                        })
+                    ),
+                    h('span', { className: 'text-xs text-gray-500 inline-flex items-center gap-1' }, 'Para trocar a métrica, use', icoA('settings', 13), 'Métricas acima')
                 )
             ),
-            clientesFiltrados.length === 0 ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Nenhum resultado') :
-            h('div', { className: 'overflow-x-auto' },
+            clientesFiltrados.length === 0 ? h('div', { className: 'text-center py-10 text-gray-500 text-[13px]' }, 'Nenhum resultado') :
+            h('div', { className: 'overflow-x-auto relative' },
                 h('table', { className: 'w-full text-sm' },
                     h('thead', { className: 'bg-gray-50' },
                         h('tr', null,
                             h('th', {
-                                className: 'text-left text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-3 py-2 sticky left-0 bg-gray-50 z-10'
+                                className: 'text-left ' + thCls + ' sticky left-0 bg-gray-50 z-10'
                             }, 'Cliente'),
                             periodos.map((p, idx) => h('th', {
                                 key: p,
-                                className: 'text-right text-[10px] uppercase tracking-wide text-gray-500 font-semibold px-2 py-2 whitespace-nowrap',
+                                className: 'text-right ' + thCls,
                                 title: labelTooltip(p)
                             },
                                 h('div', null, labelPeriodo(p, idx)),
-                                h('div', { className: 'text-[9px] text-gray-400 normal-case font-normal' }, labelTooltip(p))
+                                h('div', { className: 'text-[11px] text-gray-500 font-normal' }, labelTooltip(p))
                             )),
                             h('th', {
-                                className: 'text-right text-[10px] uppercase tracking-wide text-gray-700 font-semibold px-2 py-2 bg-gray-100 whitespace-nowrap'
+                                className: 'text-right ' + thCls + ' text-gray-700'
                             }, 'Total'),
-                            h('th', { className: 'w-8' })
+                            h('th', { className: 'w-8' }, h('span', { className: 'sr-only' }, 'Detalhar'))
                         )
                     ),
                     h('tbody', null,
@@ -742,29 +748,29 @@
                                     no_prazo: Object.values(c.porPeriodo).reduce((s, p) => s + (p.no_prazo || 0), 0),
                                     pct_prazo: c.total,
                                 }),
-                                className: 'border-t border-gray-100 cursor-pointer hover:bg-purple-50'
+                                className: 'border-t border-gray-100 cursor-pointer hover:bg-gray-50'
                             },
-                                h('td', { className: 'px-3 py-2 sticky left-0 bg-white z-10' },
+                                h('td', { className: 'px-3 py-2.5 sticky left-0 bg-white z-10' },
                                     h('div', { className: 'font-medium text-gray-900' }, c.nome_cliente),
-                                    h('div', { className: 'text-[10px] text-gray-400' }, 'cod ' + c.cod_cliente)
+                                    h('div', { className: 'text-xs text-gray-500' }, 'Cód. ' + c.cod_cliente)
                                 ),
                                 periodos.map(p => {
                                     const cell = c.porPeriodo[p];
                                     const v = cell ? (cell[m.id] || 0) : 0;
                                     return h('td', {
                                         key: p,
-                                        className: 'px-2 py-2 text-right whitespace-nowrap text-gray-800 ' + (cell ? '' : 'text-gray-300')
+                                        className: 'px-3 py-2.5 text-right whitespace-nowrap tabular-nums ' + (cell ? 'text-gray-900' : 'text-gray-400')
                                     }, cell ? m.fmt(v) : '—');
                                 }),
                                 h('td', {
-                                    className: 'px-2 py-2 text-right font-semibold whitespace-nowrap bg-gray-50'
+                                    className: 'px-3 py-2.5 text-right font-semibold whitespace-nowrap tabular-nums'
                                 }, m.fmt(c.total)),
-                                h('td', { className: 'px-3 py-2 text-center text-gray-400' }, '›')
+                                h('td', { className: 'px-3 py-2.5 text-center text-gray-400' }, icoA('arrowright', 14))
                             )
                         ),
                         // Linha total geral
-                        h('tr', { className: 'bg-gray-900 text-white' },
-                            h('td', { className: 'px-3 py-2 font-semibold sticky left-0 bg-gray-900 z-10' },
+                        h('tr', { className: 'bg-gray-50 text-gray-900 border-t border-gray-200' },
+                            h('td', { className: 'px-3 py-2.5 font-semibold sticky left-0 bg-gray-50 z-10' },
                                 'Total · ' + clientesFiltrados.length + ' clientes'
                             ),
                             periodos.map(p => {
@@ -788,11 +794,11 @@
                                 }
                                 return h('td', {
                                     key: p,
-                                    className: 'px-2 py-2 text-right font-semibold whitespace-nowrap'
+                                    className: 'px-3 py-2.5 text-right font-semibold whitespace-nowrap tabular-nums'
                                 }, m.fmt(v));
                             }),
                             h('td', {
-                                className: 'px-2 py-2 text-right font-semibold whitespace-nowrap bg-gray-700'
+                                className: 'px-3 py-2.5 text-right font-semibold whitespace-nowrap tabular-nums'
                             }, m.fmt(
                                 m.id === 'pct_prazo'
                                     ? (() => {
@@ -813,81 +819,66 @@
         );
     }
 
-    // Modal drilldown de cliente
+    // Modal drilldown de cliente (BI_ABAS_V1: cabeçalho branco, KPIs em faixa, rodapé padrão)
     function DrilldownModal({ cliente, granu, onFechar }) {
+        useEffect(() => {
+            const onKey = (e) => { if (e.key === 'Escape') onFechar(); };
+            document.addEventListener('keydown', onKey);
+            return () => document.removeEventListener('keydown', onKey);
+        }, [onFechar]);
+        const kpi = (lbl, val, cor) => h('div', { style: { padding: '12px 14px', minWidth: 0 } },
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, lbl),
+            h('div', { style: { fontFamily: 'Sora, Inter, sans-serif', fontSize: 18, fontWeight: 700, color: cor || '#111827', fontVariantNumeric: 'tabular-nums', marginTop: 2, whiteSpace: 'nowrap' } }, val));
+        const linha = (lbl, val, ult) => h('tr', { className: ult ? '' : 'border-b border-gray-100' },
+            h('td', { className: 'py-2 text-gray-600' }, lbl),
+            h('td', { className: 'py-2 text-right font-semibold text-gray-900 tabular-nums' }, val));
+        const pct = cliente.pct_prazo || 0;
         return h('div', {
-            className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
+            className: 'fixed inset-0 flex items-center justify-center z-50 p-4',
+            style: { background: 'rgba(17,24,39,0.45)' },
             onClick: (e) => { if (e.target === e.currentTarget) onFechar(); }
         },
-            h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col' },
+            h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'acomp-dd-titulo', className: 'bg-white rounded-[14px] border border-gray-200 w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col' },
                 // Header
-                h('div', {
-                    style: { background: 'linear-gradient(to right, #944ab7, #1845a5)' },
-                    className: 'p-4 text-white flex items-center justify-between flex-shrink-0'
-                },
-                    h('div', null,
-                        h('div', { className: 'text-base font-semibold' }, cliente.nome_cliente),
-                        h('div', { className: 'text-xs opacity-80' }, 'cod ' + cliente.cod_cliente + ' · ' + (cliente.total_entregas || 0).toLocaleString('pt-BR') + ' entregas')
+                h('div', { className: 'px-5 py-4 flex items-start justify-between gap-3 flex-shrink-0 border-b border-gray-100' },
+                    h('div', { className: 'min-w-0' },
+                        h('div', { id: 'acomp-dd-titulo', className: 'text-base font-semibold text-gray-900' }, cliente.nome_cliente),
+                        h('div', { className: 'text-[13px] text-gray-500 mt-0.5' }, 'Cód. ' + cliente.cod_cliente + ' · ' + (cliente.total_entregas || 0).toLocaleString('pt-BR') + ' entregas')
                     ),
                     h('button', {
-                        onClick: onFechar,
-                        className: 'text-white/80 hover:text-white text-2xl leading-none'
-                    }, '×')
+                        type: 'button', onClick: onFechar, 'aria-label': 'Fechar', title: 'Fechar',
+                        className: 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100'
+                    }, icoA('x', 16))
                 ),
 
-                h('div', { className: 'p-4 overflow-auto flex-1' },
-                    // KPIs do cliente
-                    h('div', { className: 'grid grid-cols-4 gap-2 mb-4 pb-3 border-b border-gray-100' },
-                        h('div', null,
-                            h('div', { className: 'text-[9px] uppercase text-gray-500 font-semibold' }, '% Prazo'),
-                            h('div', { className: 'text-lg font-semibold text-green-700' }, (cliente.pct_prazo || 0).toFixed(1) + '%')
-                        ),
-                        h('div', null,
-                            h('div', { className: 'text-[9px] uppercase text-gray-500 font-semibold' }, 'Retornos'),
-                            h('div', { className: 'text-lg font-semibold text-gray-900' }, cliente.retornos || 0)
-                        ),
-                        h('div', null,
-                            h('div', { className: 'text-[9px] uppercase text-gray-500 font-semibold' }, 'Faturamento'),
-                            h('div', { className: 'text-lg font-semibold text-gray-900' }, fmtMoneyShort(cliente.faturamento || 0))
-                        ),
-                        h('div', null,
-                            h('div', { className: 'text-[9px] uppercase text-gray-500 font-semibold' }, 'Ticket Médio'),
-                            h('div', { className: 'text-lg font-semibold text-gray-900' }, 'R$ ' + (cliente.ticket_medio || 0).toFixed(2))
-                        )
+                h('div', { className: 'p-5 overflow-auto flex-1 flex flex-col gap-4' },
+                    // KPIs do cliente (faixa)
+                    h('div', { className: 'grid grid-cols-2 sm:grid-cols-4 border border-gray-200 rounded-[12px] overflow-hidden', style: { gap: 1, background: '#f3f4f6' } },
+                        h('div', { className: 'bg-white' }, kpi('No prazo', pct.toFixed(1) + '%', pct >= 80 ? '#166534' : pct >= 60 ? '#92400e' : '#991b1b')),
+                        h('div', { className: 'bg-white' }, kpi('Retornos', cliente.retornos || 0)),
+                        h('div', { className: 'bg-white' }, kpi('Faturamento', fmtMoneyShort(cliente.faturamento || 0))),
+                        h('div', { className: 'bg-white' }, kpi('Ticket médio', 'R$ ' + (cliente.ticket_medio || 0).toFixed(2)))
                     ),
 
                     // Operacional
-                    h('div', { className: 'mb-3' },
-                        h('div', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-semibold mb-2' }, 'Operacional'),
-                        h('table', { className: 'w-full text-sm' },
+                    h('div', null,
+                        h('div', { className: 'text-[13px] font-semibold text-gray-900 mb-1' }, 'Operacional'),
+                        h('table', { className: 'w-full text-[13px]' },
                             h('tbody', null,
-                                h('tr', { className: 'border-b border-gray-100' },
-                                    h('td', { className: 'py-1.5 text-gray-600' }, 'Tempo médio entrega'),
-                                    h('td', { className: 'py-1.5 text-right font-medium' }, fmtMinTime(cliente.tempo_medio_min || 0))
-                                ),
-                                h('tr', { className: 'border-b border-gray-100' },
-                                    h('td', { className: 'py-1.5 text-gray-600' }, 'Faturamento total'),
-                                    h('td', { className: 'py-1.5 text-right font-medium' }, fmtMoney(cliente.faturamento || 0))
-                                ),
-                                h('tr', { className: 'border-b border-gray-100' },
-                                    h('td', { className: 'py-1.5 text-gray-600' }, 'Total entregas'),
-                                    h('td', { className: 'py-1.5 text-right font-medium' }, (cliente.total_entregas || 0).toLocaleString('pt-BR'))
-                                ),
-                                h('tr', null,
-                                    h('td', { className: 'py-1.5 text-gray-600' }, 'No prazo / Fora prazo'),
-                                    h('td', { className: 'py-1.5 text-right font-medium' },
-                                        (cliente.no_prazo || 0) + ' / ' + ((cliente.total_entregas || 0) - (cliente.no_prazo || 0))
-                                    )
-                                )
+                                linha('Tempo médio de entrega', fmtMinTime(cliente.tempo_medio_min || 0)),
+                                linha('Faturamento total', fmtMoney(cliente.faturamento || 0)),
+                                linha('Total de entregas', (cliente.total_entregas || 0).toLocaleString('pt-BR')),
+                                linha('No prazo / fora do prazo', (cliente.no_prazo || 0) + ' / ' + ((cliente.total_entregas || 0) - (cliente.no_prazo || 0)), true)
                             )
                         )
                     )
                 ),
 
-                h('div', { className: 'p-3 border-t border-gray-100 flex justify-end flex-shrink-0' },
+                h('div', { className: 'px-5 py-3 border-t border-gray-100 flex justify-end flex-shrink-0' },
                     h('button', {
+                        type: 'button',
                         onClick: onFechar,
-                        className: 'px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium'
+                        className: 'inline-flex items-center h-10 px-4 rounded-[10px] text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                     }, 'Fechar')
                 )
             )
@@ -895,5 +886,5 @@
     }
 
     window.AcompanhamentoPeriodico = AcompanhamentoPeriodico;
-    console.log('✅ AcompanhamentoPeriodico registrado em window');
+    console.log('AcompanhamentoPeriodico registrado em window');
 })();
