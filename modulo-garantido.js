@@ -1,8 +1,9 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
 // modulo-garantido.js — Painel ADMIN do Garantido (sub-aba das filas)
 // Auto-contido: config por central + valores especiais + registros do dia.
 // Exposto como window.ModuloGarantidoAdmin. Sem JSX, sem Tabler/Lucide (emojis/SVG inline).
-// Tema roxo #7c3aed, consistente com o restante das filas.
+// Tema roxo #770fa8, consistente com o restante das filas.
 (function () {
   const e = React.createElement;
 
