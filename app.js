@@ -20502,55 +20502,14 @@ const hideLoadingScreen = () => {
         /* HOME_CLEAN_V1: header global (HeaderCompacto com "Início" ativo), saudação limpa,
            busca (abre a paleta Ctrl+K), faixa de pendências e tiles agrupados por seção.
            Gates de permissão e onClick de cada tile são os mesmos de antes. */
+        /* HOME_ORIGINAL_V1: Início restaurado ao original (pedido do dono) */
         if ("home" === Ee && ("admin" === l.role || "admin_master" === l.role || "admin_financeiro" === l.role)) {
             const primeiroNome = (socialProfile?.display_name || l.fullName || "").split(" ")[0];
-            const ehAdminOuMaster = l.role === "admin" || l.role === "admin_master";
-            const tileHome = (key, permitido, onClick, icone, titulo, desc, badge) => permitido ? { key, onClick, icone, titulo, desc, badge } : null;
-            const gruposHome = [
-                { nome: "Operação", tiles: [
-                    tileHome("uber", hasModuleAccess(l, "uber"), () => { he("uber"); x(e => ({...e, logisticaTab: "dashboard"})); }, "truck", "Hub Logístico", "Despacho multi-provedor"),
-                    tileHome("disponibilidade", hasModuleAccess(l, "disponibilidade"), () => { he("disponibilidade"); }, "calendar", "Disponibilidade", "Escalas e horários"),
-                    tileHome("operacional", hasModuleAccess(l, "operacional"), () => he("operacional"), "wrench", "Operacional", "Gestão operacional"),
-                    tileHome("filas", hasModuleAccess(l, "filas"), () => he("filas"), "users", "Filas", "Gestão de filas"),
-                    tileHome("solicitacoes", hasModuleAccess(l, "solicitacoes"), () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); }, "clipboard", "Solicitações", "Gerencie pedidos e ajustes"),
-                    tileHome("coleta", hasModuleAccess(l, "coleta"), () => he("coleta"), "map", "Consultar Endereços", "Base colaborativa")
-                ]},
-                { nome: "Financeiro", tiles: [
-                    tileHome("financeiro", hasModuleAccess(l, "financeiro"), () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); }, "wallet", "Financeiro", "Saques e valores"),
-                    // 2026-05 — Controle de Máquinas (liberação de saque) — só admin
-                    tileHome("controle-maquinas", (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro"), () => he("controle-maquinas"), "lock", "Controle de Máquinas", "Liberar saque de motoboy com máquina")
-                ]},
-                { nome: "Dados", tiles: [
-                    tileHome("bi", hasModuleAccess(l, "bi"), () => he("bi"), "chart", "BI", "Análises e dados"),
-                    tileHome("bi-monitoramento", (l?.role === "admin" || l?.role === "admin_master"), () => he("bi-monitoramento"), "satellite", "BI Monitoramento", "Visão operacional sem dados financeiros"),
-                    tileHome("performance", hasModuleAccess(l, "performance"), () => he("performance"), "trendup", "Performance", "Desempenho diário"),
-                    tileHome("gerencial", hasModuleAccess(l, "gerencial"), () => he("gerencial"), "chart", "Análise Gerencial", "Relatório semanal consolidado"),
-                    // PAINEL_V1 - Meu Painel (metricas de atendimento por operador) - so admin
-                    tileHome("painel", ehAdminOuMaster, () => he("painel"), "trendup", "Meu Painel", l.role === "admin_master" ? "Métricas da equipe de atendimento" : "Suas métricas de atendimento")
-                ]},
-                { nome: "Clientes", tiles: [
-                    tileHome("cs", hasModuleAccess(l, "cs"), () => he("cs"), "handshake", "Sucesso do Cliente", "CS & Raio-X IA"),
-                    tileHome("crm-whatsapp", hasModuleAccess(l, "crm-whatsapp"), () => he("crm-whatsapp"), "message", "CRM WhatsApp", "Leads e conversas"),
-                    // ConfirmaFácil — integração NFs e rastreamento — só admin
-                    tileHome("confirmafacil", ehAdminOuMaster, () => he("confirmafacil"), "link", "ConfirmaFácil", "Integração NFs e rastreamento de entregas"),
-                    tileHome("rastreio-clientes", hasModuleAccess(l, "rastreio-clientes"), () => he("rastreio-clientes"), "satellite", "Rastreio Clientes", "SLA e monitoramento")
-                ]},
-                { nome: "Sistema", tiles: [
-                    tileHome("agente", hasModuleAccess(l, "agente"), () => he("agente"), "bot", "Agente RPA", "Correção de endereços"),
-                    tileHome("antifraude", hasModuleAccess(l, "antifraude"), () => he("antifraude"), "shield", "Anti-Fraude", "Detecção de duplicatas"),
-                    tileHome("config", hasModuleAccess(l, "config"), () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); }, "settings", "Config", "Configurações"),
-                    tileHome("todo", hasModuleAccess(l, "todo"), () => he("todo"), "filetext", "TO-DO", "Suas tarefas", todoMeuDia.length),
-                    tileHome("social", true, () => he("social"), "heart", "Social", "Comunidade", socialUnread),
-                    // 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
-                    tileHome("roadmap", ehAdminOuMaster, () => he("roadmap"), "zap", "Desenvolvimentos", "Roadmap, bugs e sugestões")
-                ]}
-            ];
-
+            
             return React.createElement("div", {
-                className: "min-h-screen",
-                style: { background: "#f9fafb", color: "#111827", fontFamily: "Inter, system-ui, sans-serif", fontSize: 13 }
+                className: "min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50"
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-
+            
             // Modal de notificação de tarefas pendentes
             todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -20581,55 +20540,412 @@ const hideLoadingScreen = () => {
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Ir para Tarefas"))
             ))),
-
-            // HOME_CLEAN_V1: mesmo header global dos módulos, com "Início" ativo
-            React.createElement(HeaderCompacto, {
-                usuario: l,
-                moduloAtivo: "home",
-                abaAtiva: null,
-                socialProfile: socialProfile,
-                isLoading: f,
-                lastUpdate: E,
-                onRefresh: ul,
-                onLogout: () => o(null),
-                onGoHome: () => he("home"),
-                onNavigate: navegarSidebar
-            }),
-
+            
+            // Header
+            React.createElement("nav", {
+                className: "bg-gradient-to-r from-[#3a1556] via-[#5d0b85] to-[#770fa8] shadow-lg"
+            }, React.createElement("div", {
+                className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
+            }, React.createElement("div", {className: "flex items-center gap-3"},
+                socialProfile?.profile_photo ? React.createElement("img", {
+                    src: socialProfile.profile_photo,
+                    className: "w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                }) : React.createElement("div", {
+                    className: "w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-xl border-2 border-white/50"
+                }, primeiroNome?.charAt(0)?.toUpperCase() || "?"),
+                React.createElement("div", null,
+                    React.createElement("h1", {className: "text-xl font-bold text-white"}, "Central Tutts"),
+                    React.createElement("p", {className: "text-purple-200 text-sm"}, socialProfile?.display_name || l.fullName)
+                )
+            ), React.createElement("div", {className: "flex items-center gap-2"},
+                React.createElement("button", {
+                    onClick: () => o(null),
+                    className: "px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                }, "Sair")
+            ))),
+            
             // Conteúdo Principal
-            React.createElement("main", {
-                style: { padding: "32px 16px", maxWidth: 1240, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 },
-                className: "sm:px-6"
-            },
-                // Saudação + busca
-                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 } },
-                    React.createElement("div", { style: { minWidth: 0 } },
-                        React.createElement("h1", {
-                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.2, color: "#111827" }
-                        }, getSaudacao(), ", ", React.createElement("span", { style: { color: "#f67602" } }, primeiroNome)),
-                        React.createElement("p", { style: { margin: "6px 0 0", color: "#6b7280", fontStyle: "italic", fontSize: 13.5 } }, "“", mensagemGentileza, "”")
-                    ),
-                    React.createElement("button", {
-                        type: "button",
-                        onClick: () => window.dispatchEvent(new CustomEvent("tutts:cmdk")),
-                        "aria-label": "Buscar módulo ou aba (Ctrl K)",
-                        className: "hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] transition-colors",
-                        style: { flex: "0 1 360px", minWidth: 220, display: "flex", alignItems: "center", gap: 8, height: 42, padding: "0 14px", border: "1px solid #e5e7eb", borderRadius: 12, background: "#ffffff", color: "#9ca3af", textAlign: "left", font: "inherit" }
-                    },
-                        React.createElement("svg", { className: "ico", style: { fontSize: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })),
-                        React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 13 } }, "Buscar módulo ou aba"),
-                        React.createElement("kbd", { style: { fontSize: 11, color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "1px 6px", fontFamily: "inherit" } }, "Ctrl K")
+            React.createElement("div", {className: "max-w-6xl mx-auto px-4 py-12"},
+                // Saudação
+                React.createElement("div", {className: "text-center mb-12"},
+                    React.createElement("h1", {
+                        className: "text-4xl md:text-5xl font-bold text-gray-800 mb-4"
+                    }, getSaudacao(), ", ", React.createElement("span", {className: "text-purple-600 thome-name"}, primeiroNome), "!"),
+                    React.createElement("p", {className: "text-xl text-gray-600 mb-2"}, "Seja bem-vindo(a) à Central Tutts"),
+                    React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-[#f67602] thome-quote"},
+                        React.createElement("p", {className: "text-lg text-gray-700 italic"}, "\"", mensagemGentileza, "\""),
+                        React.createElement("svg", { className: "ico", style: { width: 24, height: 24 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" }))
                     )
                 ),
+                
+                // Botões de Acesso Rápido
+                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 thome-grid"},
+                    // Solicitações
+                    hasModuleAccess(l, "solicitacoes") &&
+                    React.createElement("div", {
+                        onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Solicitações"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gerencie pedidos e ajustes")
+                        )
+                    ),
+                    // 🆕 2026-05 — Controle de Máquinas (liberação de saque) — só admin
+                    (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro") &&
+                    React.createElement("div", {
+                        onClick: () => he("controle-maquinas"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Controle de Máquinas"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Liberar saque de motoboy com máquina")
+                        )
+                    ),
 
-                // HOME_D_V1: faixa "Precisa de atenção agora" removida a pedido (os cards já mostram contador)
+                    // PAINEL_V1 - Meu Painel (metricas de atendimento por operador) - so admin
+                    (l.role === "admin" || l.role === "admin_master") &&
+                    React.createElement("div", {
+                        onClick: () => he("painel"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Meu Painel"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, l.role === "admin_master" ? "Métricas da equipe de atendimento" : "Suas métricas de atendimento")
+                        )
+                    ),
+                    // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
+                    (l.role === "admin" || l.role === "admin_master") &&
+                    React.createElement("div", {
+                        onClick: () => he("roadmap"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Desenvolvimentos"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Roadmap, bugs e sugestões")
+                        )
+                    ),
 
-                // Tiles agrupados
-                React.createElement(HomeGruposClean, { grupos: gruposHome }) /* HOME_D_V1 */
+
+                    // ConfirmaFácil — integração NFs e rastreamento — só admin
+                    (l.role === "admin" || l.role === "admin_master") &&
+                    React.createElement("div", {
+                        onClick: () => he("confirmafacil"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "ConfirmaFácil"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Integração NFs e rastreamento de entregas")
+                        )
+                    ),
+
+                    // Coleta de Endereços (colaborativa — motoboys cadastram, IA valida)
+                    hasModuleAccess(l, "coleta") &&
+                    React.createElement("div", {
+                        onClick: () => he("coleta"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Consultar Endereços"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Base colaborativa")
+                        )
+                    ),
+                    
+                    // Financeiro
+                    hasModuleAccess(l, "financeiro") &&
+                    React.createElement("div", {
+                        onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Financeiro"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Saques e valores")
+                        )
+                    ),
+                    
+                    // Disponibilidade
+                    hasModuleAccess(l, "disponibilidade") && 
+                    React.createElement("div", {
+                        onClick: () => { he("disponibilidade"); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-blue-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Disponibilidade"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Escalas e horários")
+                        )
+                    ),
+                    
+                    // TO-DO
+                    hasModuleAccess(l, "todo") &&
+                    React.createElement("div", {
+                        onClick: () => he("todo"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-indigo-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })),
+                                todoMeuDia.length > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, todoMeuDia.length > 9 ? "9+" : todoMeuDia.length)
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "TO-DO"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Suas tarefas")
+                        )
+                    ),
+                    
+                    // Filas
+                    hasModuleAccess(l, "filas") &&
+                    React.createElement("div", {
+                        onClick: () => he("filas"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-cyan-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-cyan-500 to-teal-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-cyan-100 text-cyan-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Filas"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gestão de filas")
+                        )
+                    ),
+                    
+                    // BI
+                    hasModuleAccess(l, "bi") && 
+                    React.createElement("div", {
+                        onClick: () => he("bi"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-orange-500 to-amber-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "BI"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Análises e dados")
+                        )
+                    ),
+                    
+                    // Social
+                    React.createElement("div", {
+                        onClick: () => he("social"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-pink-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-pink-500 to-rose-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" })),
+                                socialUnread > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, socialUnread > 9 ? "9+" : socialUnread)
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Social"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Comunidade")
+                        )
+                    ),
+                    
+                    // Operacional
+                    hasModuleAccess(l, "operacional") &&
+                    React.createElement("div", {
+                        onClick: () => he("operacional"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wrench" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Operacional"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gestão operacional")
+                        )
+                    ),
+                    
+                                        // Hub Logistico
+                    hasModuleAccess(l, "uber") &&
+                    React.createElement("div", {
+                        onClick: () => { he("uber"); x(e => ({...e, logisticaTab: "dashboard"})); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Hub Logístico"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Despacho multi-provedor")
+                        )
+                    ),
+                    
+                    // Config (admins com permissão)
+                    hasModuleAccess(l, "config") && 
+                    React.createElement("div", {
+                        onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-400"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-gray-500 to-slate-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Config"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Configurações")
+                        )
+                    ),
+                    
+                    // Sucesso do Cliente
+                    hasModuleAccess(l, "cs") &&
+                    React.createElement("div", {
+                        onClick: () => he("cs"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-handshake" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Sucesso do Cliente"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "CS & Raio-X IA")
+                        )
+                    ),
+                    
+                    // CRM WhatsApp
+                    hasModuleAccess(l, "crm-whatsapp") &&
+                    React.createElement("div", {
+                        onClick: () => he("crm-whatsapp"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "CRM WhatsApp"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Leads e conversas")
+                        )
+                    ),
+                    
+                    // Agente RPA
+                    hasModuleAccess(l, "agente") &&
+                    React.createElement("div", {
+                        onClick: () => he("agente"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-pink-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Agente RPA"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Correção de endereços")
+                        )
+                    ),
+                    
+                    // BI Monitoramento
+                    (l?.role === "admin" || l?.role === "admin_master") &&
+                    React.createElement("div", { onClick: () => he("bi-monitoramento"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300" },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "BI Monitoramento"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Visão operacional sem dados financeiros")
+                        )
+                    ),
+                    
+                    // Rastreio Clientes
+                    hasModuleAccess(l, "rastreio-clientes") &&
+                    React.createElement("div", { onClick: () => he("rastreio-clientes"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300" },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Rastreio Clientes"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "SLA e monitoramento")
+                        )
+                    ),
+                    
+                    // Anti-Fraude
+                    hasModuleAccess(l, "antifraude") &&
+                    React.createElement("div", {
+                        onClick: () => he("antifraude"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-red-500 to-rose-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Anti-Fraude"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Detecção de duplicatas")
+                        )
+                    ),
+                    
+                    // Performance Diária
+                    hasModuleAccess(l, "performance") &&
+                    React.createElement("div", {
+                        onClick: () => he("performance"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Performance"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Desempenho diário")
+                        )
+                    ),
+
+                    // Análise Gerencial Semanal
+                    hasModuleAccess(l, "gerencial") &&
+                    React.createElement("div", {
+                        onClick: () => he("gerencial"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Análise Gerencial"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Relatório semanal consolidado")
+                        )
+                    )
+                )
             ),
-
+            
             // Footer
-            React.createElement("div", { style: { textAlign: "center", padding: "24px 16px 32px", color: "#9ca3af", fontSize: 12 } },
+            React.createElement("div", {className: "text-center py-8 text-gray-400 text-sm"},
                 "Central Tutts © ", new Date().getFullYear()
             )
             )
