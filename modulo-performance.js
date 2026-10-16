@@ -1,5 +1,8 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
+/* PERF_CLEAN_V1: redesign clean aprovado (Dashboard/Detalhe conforme mockups; Busca,
+   Configurações e Importações no padrão de abas). Só visual/estrutura — API, estados,
+   polling e handlers preservados. */
 // ================================================================
 // MÓDULO PERFORMANCE DIÁRIA - Tutts v3.0 (DERIVADO DO BI)
 // Arquivo: modulo-performance.js
@@ -34,10 +37,169 @@
     const m = Math.abs(Math.round(min));
     return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}m`;
   }
+  // Limiares de SLA (inalterados): >= 90 na meta · >= 75 atenção · < 75 crítico
+  const PF_META = 90;
+  const PF_CRIT = 75;
   function corPct(pct) {
-    if (pct >= 90) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#16a34a', ring: 'border-green-400' };
-    if (pct >= 75) return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#d97706', ring: 'border-yellow-400' };
-    return { text: 'text-red-600', bg: 'bg-red-50', bar: '#dc2626', ring: 'border-red-400' };
+    if (pct >= PF_META) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#16a34a', ring: 'border-green-400', tom: 'verde', label: 'Na meta', fg: '#166534' };
+    if (pct >= PF_CRIT) return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#d97706', ring: 'border-yellow-400', tom: 'ambar', label: 'Atenção', fg: '#92400e' };
+    return { text: 'text-red-600', bg: 'bg-red-50', bar: '#dc2626', ring: 'border-red-400', tom: 'vermelho', label: 'Crítico', fg: '#991b1b' };
+  }
+
+  // ── PERF_CLEAN_V1: primitivas visuais ───────────────────
+  const PF_FONT_TIT = 'Sora, Inter, sans-serif';
+  const PF_TOM = {
+    verde:    { bg: '#f0fdf4', fg: '#166534', dot: '#16a34a', bd: '#bbf7d0' },
+    ambar:    { bg: '#fffbeb', fg: '#92400e', dot: '#d97706', bd: '#fde68a' },
+    vermelho: { bg: '#fef2f2', fg: '#991b1b', dot: '#dc2626', bd: '#fecaca' },
+    azul:     { bg: '#eff6ff', fg: '#1e40af', dot: '#2563eb', bd: '#bfdbfe' },
+    roxo:     { bg: '#faf7fd', fg: '#5d0b85', dot: '#770fa8', bd: '#e9d5f9' },
+    cinza:    { bg: '#f3f4f6', fg: '#374151', dot: '#9ca3af', bd: '#e5e7eb' },
+  };
+  const PF_CSS = `
+    .pf-card{transition:border-color .15s ease}
+    .pf-card:hover{border-color:#c084e6 !important}
+    .pf-card:focus-visible,.pf-btn:focus-visible,.pf-chip:focus-visible{outline:2px solid #770fa8;outline-offset:2px}
+    .pf-in{height:38px;padding:0 10px;border:1px solid #e5e7eb;border-radius:10px;background:#ffffff;color:#111827;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box}
+    .pf-in:focus{outline:none;border-color:#770fa8;box-shadow:0 0 0 3px #f3e8fb}
+    .pf-row:hover{background:#f9fafb}
+    .pf-btn-sec:hover{background:#f9fafb}
+    .pf-btn-pri:hover:not(:disabled){background:#5d0b85 !important}
+    @keyframes pfSpin{to{transform:rotate(360deg)}}
+  `;
+  const pfIco = (nome, sz, extra) => h('svg', { className: 'ico', style: Object.assign({ width: sz || 16, height: sz || 16, flexShrink: 0 }, extra || {}), 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome }));
+  const pfSpinner = (cor) => h('span', { 'aria-hidden': 'true', style: { width: 14, height: 14, borderRadius: 99, border: `2px solid ${cor || '#ffffff'}`, borderTopColor: 'transparent', display: 'inline-block', animation: 'pfSpin 1s linear infinite' } });
+  function fmtPct(p) {
+    return `${Number(p || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  }
+  function fmtNum(n) { return Number(n || 0).toLocaleString('pt-BR'); }
+  function addDias(iso, dias) {
+    const d = new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + dias);
+    return d.toISOString().slice(0, 10);
+  }
+  // Situação de um snapshot: "sem dados" quando não há OS analisadas (no + fora = 0)
+  function situacao(snap) {
+    const analisados = (snap.no_prazo || 0) + (snap.fora_prazo || 0);
+    if (analisados <= 0) return { tom: 'cinza', label: 'Sem dados', fg: '#6b7280', semDados: true, pct: null };
+    const pct = parseFloat(snap.pct_no_prazo || 0);
+    const c = corPct(pct);
+    return { tom: c.tom, label: c.label, fg: c.fg, semDados: false, pct };
+  }
+
+  // PERF_CLEAN_V1 (pontos): bi_entregas tem 1 linha por (os, ponto). Dedup defensivo por (os, ponto)
+  // e numeração "Entrega i/n" dentro da mesma OS (ordem de ponto), tudo client-side.
+  function dedupPontos(regs) {
+    const vistos = new Set();
+    return (regs || []).filter(r => {
+      const k = `${r.os}|${r.ponto == null ? '' : r.ponto}`;
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    });
+  }
+  function mapaPontos(regs) {
+    const porOs = new Map();
+    regs.forEach(r => { const k = String(r.os); if (!porOs.has(k)) porOs.set(k, []); porOs.get(k).push(r.ponto); });
+    const out = new Map(); // "os|ponto" -> { i, n }
+    porOs.forEach((pts, os) => {
+      if (pts.length < 2) return;
+      const ord = pts.slice().sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+      ord.forEach((pt, i) => out.set(`${os}|${pt}`, { i: i + 1, n: ord.length }));
+    });
+    return { mapa: out, qtdOs: porOs.size };
+  }
+
+  function PfPilula({ tom, children, semPonto, title }) {
+    const t = PF_TOM[tom] || PF_TOM.cinza;
+    return h('span', { title, className: 'inline-flex items-center rounded-full whitespace-nowrap', style: { gap: 6, padding: '3px 9px', fontSize: 11.5, fontWeight: 600, background: t.bg, color: t.fg, flex: 'none' } },
+      !semPonto && h('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 99, background: t.dot, flexShrink: 0 } }),
+      children);
+  }
+  const PfPilulaRegiao = () => h(PfPilula, { tom: 'roxo', semPonto: true }, 'Região');
+
+  function PfCabecalho({ titulo, sub, acoes, extraTitulo }) {
+    return h('div', { className: 'flex flex-wrap justify-between items-end', style: { gap: 16 } },
+      h('div', { style: { minWidth: 0 } },
+        h('div', { className: 'flex flex-wrap items-center', style: { gap: 10 } },
+          h('h1', { style: { margin: 0, fontFamily: PF_FONT_TIT, fontSize: 24, fontWeight: 700, color: '#111827', lineHeight: 1.25 } }, titulo),
+          extraTitulo),
+        sub && h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13 } }, sub),
+      ),
+      acoes && h('div', { className: 'flex flex-wrap', style: { gap: 8 } }, acoes),
+    );
+  }
+
+  function PfBotao({ onClick, disabled, variante, icone, children, title, ocupado }) {
+    const pri = variante === 'principal';
+    const des = variante === 'destrutivo';
+    const st = {
+      height: 40, padding: pri ? '0 16px' : '0 14px', borderRadius: 10, fontWeight: 600, fontSize: 13,
+      display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+      cursor: disabled ? (ocupado ? 'wait' : 'not-allowed') : 'pointer',
+    };
+    if (pri) Object.assign(st, { border: 0, background: disabled ? '#f3e8fb' : '#770fa8', color: disabled ? '#5d0b85' : '#ffffff' });
+    else if (des) Object.assign(st, { border: '1px solid #fecaca', background: '#ffffff', color: '#991b1b' });
+    else Object.assign(st, { border: '1px solid #e5e7eb', background: '#ffffff', color: '#374151' });
+    return h('button', { type: 'button', onClick, disabled, title, className: `pf-btn ${pri ? 'pf-btn-pri' : 'pf-btn-sec'}`, style: st },
+      ocupado ? pfSpinner(pri ? '#5d0b85' : '#374151') : (icone && pfIco(icone, 15)),
+      children);
+  }
+
+  // Segmentado (fundo cinza, opção ativa branca)
+  function PfSegmentado({ opcoes, valor, onChange, rotulo }) {
+    return h('div', { role: 'group', 'aria-label': rotulo, style: { display: 'inline-flex', background: '#f3f4f6', borderRadius: 10, padding: 3, height: 38, boxSizing: 'border-box', flex: 'none', alignSelf: 'flex-start', maxWidth: '100%' } },
+      opcoes.map(o => {
+        const ativo = valor === o.id;
+        return h('button', {
+          key: o.id, type: 'button', onClick: () => onChange(o.id), 'aria-pressed': ativo, className: 'pf-chip',
+          style: { border: 0, background: ativo ? '#ffffff' : 'transparent', color: ativo ? '#5d0b85' : '#374151', fontWeight: ativo ? 600 : 500, padding: '0 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' },
+        }, o.label);
+      }));
+  }
+
+  function PfCampo({ rotulo, children, flex, minW, htmlFor }) {
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, flex: flex || 'none', minWidth: minW != null ? minW : 0, position: 'relative' } },
+      h('label', { htmlFor, style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, rotulo),
+      children);
+  }
+
+  const pfCard = (extra) => Object.assign({ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14 }, extra || {});
+
+  // Faixa de KPIs: um card só, células divididas por borda #f3f4f6
+  function PfFaixa({ itens, rodape, rotulo }) {
+    return h('section', { 'aria-label': rotulo, style: pfCard({ overflow: 'hidden' }) },
+      h('div', { className: `grid grid-cols-2 ${itens.length >= 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`, style: { gap: 1, background: '#f3f4f6' } },
+        itens.map((k, i) => h('div', { key: i, style: { background: '#ffffff', padding: '14px 18px', minWidth: 0 } },
+          h('div', { style: { fontSize: 12, color: '#6b7280' } }, k.rotulo),
+          h('div', { style: { fontFamily: PF_FONT_TIT, fontSize: 26, fontWeight: 700, color: k.cor || '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+            k.valor, k.complemento && h('span', { style: { fontSize: 14, color: '#6b7280', fontWeight: 500, marginLeft: 4 } }, k.complemento)),
+          k.sub && h('div', { style: { fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, title: typeof k.sub === 'string' ? k.sub : undefined }, k.sub),
+        ))),
+      rodape && h('div', { style: { padding: '0 18px 16px', borderTop: 0 } }, rodape),
+    );
+  }
+
+  // Barra segmentada verde / vermelho / cinza
+  function PfBarra({ no, fora, sem, altura }) {
+    const total = (no || 0) + (fora || 0) + (sem || 0);
+    const w = (x) => `${total > 0 ? (x / total) * 100 : 0}%`;
+    return h('div', { 'aria-hidden': 'true', style: { height: altura || 8, borderRadius: 99, background: '#f3f4f6', overflow: 'hidden', display: 'flex' } },
+      total > 0 && h('div', { style: { width: w(no), background: '#16a34a' } }),
+      total > 0 && h('div', { style: { width: w(fora), background: '#dc2626' } }),
+      total > 0 && h('div', { style: { width: w(sem), background: '#d1d5db' } }),
+    );
+  }
+
+  const pfTh = (txt, dir, extra) => h('th', { style: Object.assign({ padding: '10px 12px', fontWeight: 600, fontSize: 12, color: '#6b7280', textAlign: dir ? 'right' : 'left', whiteSpace: 'nowrap', background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }, extra || {}) }, txt);
+  const pfTd = (conteudo, dir, extra) => h('td', { style: Object.assign({ padding: '11px 12px', textAlign: dir ? 'right' : 'left', whiteSpace: 'nowrap', fontSize: 13, color: '#111827' }, extra || {}) }, conteudo);
+
+  function PfVazio({ titulo, texto, acao }) {
+    return h('div', { style: pfCard({ padding: '40px 20px', textAlign: 'center' }) },
+      h('p', { style: { margin: 0, fontWeight: 600, color: '#374151', fontSize: 14 } }, titulo),
+      texto && h('p', { style: { margin: '6px 0 0', color: '#6b7280', fontSize: 13 } }, texto),
+      acao && h('div', { style: { marginTop: 14, display: 'flex', justifyContent: 'center' } }, acao),
+    );
   }
 
   // ════════════════════════════════════════════════════════════
@@ -45,54 +207,216 @@
   // ════════════════════════════════════════════════════════════
   function ClienteCard({ card, onClick }) {
     const snap = card.snapshot || { total_os: 0, no_prazo: 0, fora_prazo: 0, sem_dados: 0, pct_no_prazo: 0 };
-    const pct = parseFloat(snap.pct_no_prazo || 0);
-    const c = corPct(pct);
+    const sit = situacao(snap);
     const total = snap.total_os || 0;
     const isRegiao = card.tipo === 'regiao';
+    const sub = isRegiao
+      ? `Região · ${card.qtd_itens} cliente${card.qtd_itens === 1 ? '' : 's'}/CC`
+      : (card.centro_custo || 'Todos os centros');
+    const leg = (cor, n, txt, apagado) => h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, color: apagado ? '#6b7280' : '#374151', whiteSpace: 'nowrap' } },
+      h('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: 99, background: cor } }),
+      apagado ? n : h('b', {}, n), ` ${txt}`);
 
-    return h('div', {
-      onClick,
-      className: `bg-white border rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden ${total > 0 ? '' : 'opacity-60'}`,
+    return h('button', {
+      type: 'button', onClick, className: 'pf-card',
+      'aria-label': `${card.nome_display}: ${sit.semDados ? 'sem dados' : fmtPct(sit.pct) + ' no prazo'}. Abrir detalhe`,
+      style: pfCard({ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left', color: '#111827', cursor: 'pointer', width: '100%', minWidth: 0, font: 'inherit' }),
     },
-      h('div', { className: 'h-1.5', style: { background: total > 0 ? c.bar : '#d1d5db' } }),
-      h('div', { className: 'p-4' },
-        // Nome + tipo/escopo
-        h('div', { className: 'mb-3' },
-          h('div', { className: 'flex items-center gap-2' },
-            h('p', { className: 'text-sm font-bold text-gray-900 truncate flex-1' }, card.nome_display),
-            isRegiao
-              ? h('span', { className: 'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 inline-flex items-center gap-1' },
-                  h('svg', { className: 'ico', style: { width: 12, height: 12 }, 'aria-hidden': 'true' }, h('use', { href: '#i-map' })), 'Região')
-              : h('span', { className: 'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500' }, 'Cliente'),
-          ),
-          isRegiao
-            ? h('p', { className: 'text-xs text-purple-600 font-medium' }, `${card.qtd_itens} cliente${card.qtd_itens === 1 ? '' : 's'}/CC`)
-            : (card.centro_custo
-                ? h('p', { className: 'text-xs text-purple-600 font-medium truncate' }, card.centro_custo)
-                : h('p', { className: 'text-xs text-gray-400' }, 'Todos os centros')),
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start', width: '100%' } },
+        h('div', { style: { minWidth: 0 } },
+          h('div', { title: card.nome_display, style: { fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, card.nome_display),
+          h('div', { style: { fontSize: 12, color: '#6b7280', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, sub),
+        ),
+        h(PfPilula, { tom: sit.tom }, sit.label),
+      ),
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', width: '100%' } },
+        h('span', { style: { fontFamily: PF_FONT_TIT, fontSize: 30, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: sit.semDados ? '#9ca3af' : sit.fg, lineHeight: 1.1 } },
+          sit.semDados ? '—' : fmtPct(sit.pct)),
+        h('span', { style: { fontSize: 12, color: '#6b7280', fontVariantNumeric: 'tabular-nums' } }, total > 0 ? `${fmtNum(total)} entrega${total === 1 ? '' : 's'}` : 'Sem entregas no período'),
+      ),
+      h('div', { style: { width: '100%' } }, h(PfBarra, { no: snap.no_prazo, fora: snap.fora_prazo, sem: snap.sem_dados })),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', columnGap: 14, rowGap: 4, fontSize: 12, fontVariantNumeric: 'tabular-nums' } },
+        leg('#16a34a', snap.no_prazo || 0, 'no prazo'),
+        leg('#dc2626', snap.fora_prazo || 0, 'fora'),
+        leg('#d1d5db', snap.sem_dados || 0, 's/ dados', true),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // PERF_CLEAN_V1: visão de detalhe (compartilhada por Dashboard e Busca)
+  // Filtros de SLA, busca textual e filtro por cliente são client-side.
+  // ════════════════════════════════════════════════════════════
+  function PfDetalheView({ titulo, card, periodo, registros: registrosBrutos, porCliente, loading, onVoltar, voltarLabel }) {
+    const registros = dedupPontos(registrosBrutos);
+    const { mapa: pontosOs, qtdOs } = mapaPontos(registros);
+    const [filtro, setFiltro] = useState('todos');
+    const [busca, setBusca] = useState('');
+    const [clienteSel, setClienteSel] = useState(null); // chave "cod|cc" ou "cod|__todos__"
+
+    const snap = card.snapshot || { total_os: 0, no_prazo: 0, fora_prazo: 0, sem_dados: 0, pct_no_prazo: 0 };
+    const sit = situacao(snap);
+    const isRegiao = card.tipo === 'regiao';
+    const periodoTxt = periodo.inicio === periodo.fim ? fmtData(periodo.inicio) : `${fmtData(periodo.inicio)} a ${fmtData(periodo.fim)}`;
+    const sub = isRegiao
+      ? `${card.qtd_itens} cliente${card.qtd_itens === 1 ? '' : 's'}/centros · ${periodoTxt}`
+      : `${card.centro_custo || 'Todos os centros'} · ${periodoTxt}`;
+    const subEntregas = (!loading && registros.length > 0) ? `${fmtNum(registros.length)} entrega${registros.length === 1 ? '' : 's'} em ${fmtNum(qtdOs)} OS` : null;
+
+    // Mesma regra de agrupamento do backend (/performance/detalhe → por_cliente)
+    const chavesComCC = new Set((porCliente || []).filter(c => c.centro_custo).map(c => `${c.cod_cliente}|${c.centro_custo}`));
+    const chaveReg = (r) => (r.centro_custo && chavesComCC.has(`${r.cod_cliente}|${r.centro_custo}`)) ? `${r.cod_cliente}|${r.centro_custo}` : `${r.cod_cliente}|__todos__`;
+    const chaveCli = (c) => c.centro_custo ? `${c.cod_cliente}|${c.centro_custo}` : `${c.cod_cliente}|__todos__`;
+    const mostrarPorCliente = isRegiao && (porCliente || []).length > 1;
+    const cliSel = clienteSel && (porCliente || []).find(c => chaveCli(c) === clienteSel);
+
+    const base = clienteSel ? registros.filter(r => chaveReg(r) === clienteSel) : registros;
+    const cont = {
+      todos: base.length,
+      no_prazo: base.filter(r => r.dentro_prazo === true).length,
+      fora_prazo: base.filter(r => r.dentro_prazo === false).length,
+      sem_dados: base.filter(r => r.dentro_prazo == null).length,
+    };
+    const filtrados = base.filter(r => {
+      if (filtro === 'no_prazo'   && r.dentro_prazo !== true)  return false;
+      if (filtro === 'fora_prazo' && r.dentro_prazo !== false) return false;
+      if (filtro === 'sem_dados'  && r.dentro_prazo != null)   return false;
+      if (busca) {
+        const s = busca.toLowerCase();
+        const alvo = `${r.os || ''} ${r.nome_fantasia || ''} ${r.nome_cliente || ''} ${r.nome_prof || ''}`.toLowerCase();
+        if (!alvo.includes(s)) return false;
+      }
+      return true;
+    });
+
+    const CHIPS = [
+      { id: 'todos', label: 'Todas', tom: 'roxo' },
+      { id: 'no_prazo', label: 'No prazo', tom: 'verde' },
+      { id: 'fora_prazo', label: 'Fora', tom: 'vermelho' },
+      { id: 'sem_dados', label: 'Sem dados', tom: 'cinza' },
+    ];
+
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      // Voltar + cabeçalho
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+        h('button', { type: 'button', onClick: onVoltar, className: 'pf-btn', style: { alignSelf: 'flex-start', border: 0, background: 'transparent', padding: '2px 0', fontSize: 12.5, color: '#6b7280', display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
+          pfIco('arrowleft', 14), voltarLabel || 'Todos os clientes'),
+        h(PfCabecalho, {
+          titulo,
+          sub: subEntregas ? `${sub} · ${subEntregas}` : sub,
+          extraTitulo: [h(PfPilula, { key: 's', tom: sit.tom }, sit.label), isRegiao && h(PfPilulaRegiao, { key: 'r' })],
+        }),
+      ),
+
+      // Faixa de resumo + barra
+      h(PfFaixa, {
+        rotulo: 'Resumo',
+        itens: [
+          { rotulo: 'No prazo', valor: sit.semDados ? '—' : fmtPct(sit.pct), cor: sit.semDados ? '#6b7280' : sit.fg, sub: `meta ${PF_META}%` },
+          { rotulo: 'Entregas', valor: fmtNum(snap.total_os), sub: (!loading && registros.length > 0) ? `em ${fmtNum(qtdOs)} OS` : null },
+          { rotulo: 'Fora do prazo', valor: fmtNum(snap.fora_prazo), cor: '#991b1b' },
+          { rotulo: 'Sem dados', valor: fmtNum(snap.sem_dados), cor: '#6b7280' },
+        ],
+        rodape: h('div', { style: { paddingTop: 2 } }, h(PfBarra, { no: snap.no_prazo, fora: snap.fora_prazo, sem: snap.sem_dados })),
+      }),
+
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' } },
+        // Por cliente (região com vários clientes)
+        mostrarPorCliente && h('section', { style: pfCard({ flex: '1 1 320px', minWidth: 0, overflow: 'hidden' }) },
+          h('h2', { style: { margin: 0, padding: '14px 16px', fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Por cliente'),
+          porCliente.map((cl) => {
+            const k = chaveCli(cl);
+            const sel = clienteSel === k;
+            const s = situacao({ no_prazo: cl.no_prazo, fora_prazo: cl.fora_prazo, pct_no_prazo: cl.pct_no_prazo });
+            return h('button', {
+              key: k, type: 'button', 'aria-pressed': sel, className: 'pf-chip pf-row',
+              title: sel ? 'Remover filtro deste cliente' : 'Filtrar as entregas por este cliente',
+              onClick: () => setClienteSel(sel ? null : k),
+              style: { width: '100%', border: 0, borderTop: '1px solid #f3f4f6', background: sel ? '#faf7fd' : '#ffffff', padding: '11px 16px', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 64px 54px', gap: 10, alignItems: 'center', textAlign: 'left', color: '#111827', cursor: 'pointer', font: 'inherit', fontSize: 13, boxShadow: sel ? 'inset 2px 0 0 #770fa8' : 'none' },
+            },
+              h('span', { style: { minWidth: 0 } },
+                h('span', { title: cl.nome_cliente, style: { display: 'block', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: sel ? '#5d0b85' : '#111827' } }, cl.nome_cliente),
+                h('span', { style: { fontSize: 11.5, color: '#6b7280', fontVariantNumeric: 'tabular-nums' } }, `${cl.cod_cliente} · ${fmtNum(cl.total)} entregas · ${fmtNum(cl.fora_prazo)} fora`),
+              ),
+              h(PfBarra, { no: cl.no_prazo, fora: cl.fora_prazo, sem: cl.sem_dados, altura: 6 }),
+              h('span', { style: { textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: s.semDados ? '#9ca3af' : s.fg } }, s.semDados ? '—' : fmtPct(s.pct)),
+            );
+          }),
         ),
 
-        total > 0
-          ? h('div', {},
-              h('div', { className: 'flex items-end justify-between mb-3' },
-                h('span', { className: `text-3xl font-black ${c.text}` }, `${pct}%`),
-                h('span', { className: 'text-xs text-gray-400' }, `${total} OS`),
-              ),
-              h('div', { className: 'w-full h-2 rounded-full overflow-hidden bg-gray-100 flex mb-3' },
-                h('div', { style: { width: `${(snap.no_prazo / total) * 100}%`, background: '#16a34a' } }),
-                h('div', { style: { width: `${(snap.fora_prazo / total) * 100}%`, background: '#dc2626' } }),
-                h('div', { style: { width: `${(snap.sem_dados / total) * 100}%`, background: '#d1d5db' } }),
-              ),
-              h('div', { className: 'flex justify-between text-xs' },
-                h('span', { className: 'text-green-600 font-semibold' }, `${snap.no_prazo}`),
-                h('span', { className: 'text-red-500 font-semibold' }, `${snap.fora_prazo}`),
-                h('span', { className: 'text-gray-400' }, `${snap.sem_dados}`),
-              ),
-            )
-          : h('div', { className: 'text-center py-4' },
-              h('p', { className: 'text-gray-400 text-sm' }, 'Sem dados no período'),
-              h('p', { className: 'text-xs text-gray-300' }, 'Importe o BI ou ajuste as datas'),
+        // Tabela de entregas (1 linha por OS/ponto)
+        h('section', { style: pfCard({ flex: '999 1 560px', minWidth: 0, overflow: 'hidden' }) },
+          h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
+            h('h2', { style: { margin: '0 8px 0 0', fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Entregas'),
+            CHIPS.map(cp => {
+              const ativo = filtro === cp.id;
+              const t = PF_TOM[cp.tom];
+              return h('button', {
+                key: cp.id, type: 'button', onClick: () => setFiltro(cp.id), 'aria-pressed': ativo, className: 'pf-chip',
+                style: { height: 30, padding: '0 10px', borderRadius: 99, border: `1px solid ${ativo ? t.bd : '#e5e7eb'}`, background: ativo ? t.bg : '#ffffff', color: ativo ? t.fg : '#374151', fontWeight: ativo ? 600 : 500, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' },
+              }, cp.label, h('b', {}, fmtNum(cont[cp.id])));
+            }),
+            h('div', { style: { flex: 1 } }),
+            h('div', { style: { position: 'relative', flex: '1 1 200px', maxWidth: 260, minWidth: 0 } },
+              h('span', { style: { position: 'absolute', left: 10, top: 0, bottom: 0, display: 'flex', alignItems: 'center', color: '#9ca3af', pointerEvents: 'none' } }, pfIco('search', 15)),
+              h('input', {
+                type: 'text', placeholder: 'Buscar OS, cliente, profissional', value: busca, 'aria-label': 'Buscar nas entregas',
+                onChange: e => setBusca(e.target.value),
+                className: 'pf-in', style: { height: 34, paddingLeft: 32 },
+              }),
             ),
+          ),
+          cliSel && h('div', { style: { padding: '8px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12.5, color: '#374151' } },
+            h('span', { style: { color: '#6b7280' } }, 'Filtrando:'),
+            h('span', { style: { fontWeight: 600, color: '#5d0b85' } }, cliSel.nome_cliente),
+            h('button', { type: 'button', onClick: () => setClienteSel(null), className: 'pf-btn', style: { border: 0, background: 'transparent', color: '#770fa8', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0 } },
+              pfIco('x', 13), 'Limpar'),
+          ),
+          loading
+            ? h('div', { style: { textAlign: 'center', padding: '40px 0', color: '#6b7280', fontSize: 13 } }, 'Carregando entregas...')
+            : filtrados.length === 0
+              ? h('div', { style: { textAlign: 'center', padding: '40px 16px', color: '#6b7280', fontSize: 13 } },
+                  registros.length === 0 ? 'Nenhuma entrega finalizada no período.' : 'Nenhuma entrega com esses filtros.')
+              : h('div', { style: { overflowX: 'auto', maxHeight: 560, overflowY: 'auto' } },
+                  h('table', { style: { width: '100%', borderCollapse: 'collapse', fontVariantNumeric: 'tabular-nums' } },
+                    h('thead', {},
+                      h('tr', {},
+                        pfTh('OS', false, { paddingLeft: 16 }),
+                        pfTh('Cliente'),
+                        pfTh('Profissional'),
+                        pfTh('KM', true),
+                        pfTh('Prazo', true),
+                        pfTh('Execução', true),
+                        pfTh('SLA', false, { paddingRight: 16 }),
+                      ),
+                    ),
+                    h('tbody', {},
+                      ...filtrados.slice(0, 500).map((r, i) => {
+                        const semDados = r.dentro_prazo == null;
+                        const tom = semDados ? 'cinza' : r.dentro_prazo ? 'verde' : 'vermelho';
+                        const lbl = semDados ? 'Sem dados' : r.dentro_prazo ? 'No prazo' : 'Fora';
+                        const corExec = semDados ? '#6b7280' : r.dentro_prazo ? '#111827' : '#991b1b';
+                        const cliente = r.nome_fantasia || r.nome_cliente || '';
+                        const pt = pontosOs.get(`${r.os}|${r.ponto}`);
+                        return h('tr', { key: `${r.os}-${r.ponto != null ? r.ponto : i}`, className: 'pf-row', style: { borderTop: '1px solid #f3f4f6' } },
+                          pfTd(h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+                            r.os,
+                            pt && h('span', { title: `Ponto ${r.ponto} desta OS`, style: { padding: '1px 7px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#f3f4f6', color: '#374151', whiteSpace: 'nowrap' } }, `Entrega ${pt.i}/${pt.n}`),
+                          ), false, { paddingLeft: 16, fontWeight: 600 }),
+                          pfTd(cliente, false, { maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', color: '#374151' }),
+                          pfTd(r.nome_prof || '—', false, { color: '#374151' }),
+                          pfTd(r.distancia ? parseFloat(r.distancia).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '—', true),
+                          pfTd(fmtMin(r.prazo_minutos), true, { color: '#6b7280' }),
+                          pfTd(fmtMin(r.tempo_execucao_minutos), true, { fontWeight: 600, color: corExec }),
+                          pfTd(h(PfPilula, { tom }, lbl), false, { paddingRight: 16 }),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+          !loading && filtrados.length > 0 && h('div', { style: { padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280', fontVariantNumeric: 'tabular-nums' } },
+            `${fmtNum(filtrados.length)} entrega${filtrados.length === 1 ? '' : 's'}${filtrados.length > 500 ? ' · exibindo as primeiras 500' : ''}`),
+        ),
       ),
     );
   }
@@ -101,8 +425,6 @@
   // COMPONENTE: Detalhe do escopo (OS individuais, vindas de bi_entregas)
   // ════════════════════════════════════════════════════════════
   function DetalheCliente({ card, periodo, API_URL, fetchAuth, onVoltar }) {
-    const [filtro, setFiltro] = useState('todos');
-    const [busca, setBusca] = useState('');
     const [dados, setDados] = useState({ registros: [], por_cliente: [], titulo: card.nome_display });
     const [loading, setLoading] = useState(true);
 
@@ -120,173 +442,24 @@
           }
           const r = await fetchAuth(`${API_URL}/performance/detalhe?${qs.toString()}`);
           const d = await r.json();
-          if (vivo) setDados({ registros: d.registros || [], por_cliente: d.por_cliente || [], titulo: d.titulo || card.nome_display });
+          if (vivo) setDados({ registros: dedupPontos(d.registros || []), por_cliente: d.por_cliente || [], titulo: d.titulo || card.nome_display });
         } catch (e) { console.error(e); }
         if (vivo) setLoading(false);
       })();
       return () => { vivo = false; };
     }, [card, periodo, API_URL, fetchAuth]);
 
-    const registros = dados.registros;
-    const snap = card.snapshot || { total_os: 0, no_prazo: 0, fora_prazo: 0, sem_dados: 0, pct_no_prazo: 0 };
-    const pct = parseFloat(snap.pct_no_prazo || 0);
-    const c = corPct(pct);
-
-    const filtrados = registros.filter(r => {
-      if (filtro === 'no_prazo'   && r.dentro_prazo !== true)  return false;
-      if (filtro === 'fora_prazo' && r.dentro_prazo !== false) return false;
-      if (filtro === 'sem_dados'  && r.dentro_prazo != null)   return false;
-      if (busca) {
-        const s = busca.toLowerCase();
-        const alvo = `${r.os || ''} ${r.nome_fantasia || ''} ${r.nome_cliente || ''} ${r.nome_prof || ''}`.toLowerCase();
-        if (!alvo.includes(s)) return false;
-      }
-      return true;
+    return h(PfDetalheView, {
+      titulo: dados.titulo, card, periodo,
+      registros: dados.registros, porCliente: dados.por_cliente,
+      loading, onVoltar, voltarLabel: 'Todos os clientes',
     });
-
-    const isRegiao = card.tipo === 'regiao';
-
-    return h('div', { className: 'space-y-4' },
-      // Voltar + Header
-      h('div', { className: 'flex items-center gap-4' },
-        h('button', { onClick: onVoltar, className: 'p-2 hover:bg-gray-100 rounded-lg text-sm font-semibold text-gray-600' }, '← Voltar'),
-        h('div', { className: 'flex-1' },
-          h('h2', { className: 'text-lg font-bold text-gray-900' }, dados.titulo),
-          isRegiao
-            ? h('p', { className: 'text-sm text-purple-600' }, `Região · ${card.qtd_itens} cliente${card.qtd_itens === 1 ? '' : 's'}/CC · ${fmtData(periodo.inicio)} → ${fmtData(periodo.fim)}`)
-            : (card.centro_custo && h('p', { className: 'text-sm text-purple-600' }, card.centro_custo)),
-        ),
-        h('div', { className: 'text-right' },
-          h('span', { className: `text-3xl font-black ${c.text}` }, `${pct}%`),
-          h('p', { className: 'text-xs text-gray-400' }, `${snap.total_os} OS`),
-        ),
-      ),
-
-      // KPIs
-      h('div', { className: 'grid grid-cols-4 gap-3' },
-        h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-center' },
-          h('p', { className: 'text-2xl font-black text-purple-900' }, snap.total_os),
-          h('p', { className: 'text-xs text-purple-600 font-semibold uppercase' }, 'Total OS'),
-        ),
-        h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-3 text-center' },
-          h('p', { className: 'text-2xl font-black text-green-700' }, snap.no_prazo),
-          h('p', { className: 'text-xs text-green-600 font-semibold uppercase' }, 'No Prazo'),
-        ),
-        h('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-3 text-center' },
-          h('p', { className: 'text-2xl font-black text-red-700' }, snap.fora_prazo),
-          h('p', { className: 'text-xs text-red-600 font-semibold uppercase' }, 'Fora'),
-        ),
-        h('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-3 text-center' },
-          h('p', { className: 'text-2xl font-black text-gray-600' }, snap.sem_dados),
-          h('p', { className: 'text-xs text-gray-500 font-semibold uppercase' }, 'Sem Dados'),
-        ),
-      ),
-
-      // Barra SLA
-      h('div', { className: 'bg-white border rounded-xl p-4' },
-        h('div', { className: 'flex items-center justify-between mb-2' },
-          h('span', { className: 'text-sm font-bold text-gray-700' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-chart' })), 'SLA Geral')),
-          h('span', { className: `text-xl font-black ${c.text}` }, `${pct}%`),
-        ),
-        h('div', { className: 'w-full h-4 rounded-full overflow-hidden bg-gray-100 flex' },
-          snap.total_os > 0 && h('div', { style: { width: `${(snap.no_prazo / snap.total_os) * 100}%`, background: '#16a34a' } }),
-          snap.total_os > 0 && h('div', { style: { width: `${(snap.fora_prazo / snap.total_os) * 100}%`, background: '#dc2626' } }),
-          snap.total_os > 0 && h('div', { style: { width: `${(snap.sem_dados / snap.total_os) * 100}%`, background: '#d1d5db' } }),
-        ),
-      ),
-
-      // Breakdown por cliente (só faz sentido quando é região com vários clientes)
-      isRegiao && dados.por_cliente.length > 1 && h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
-        h('div', { className: 'px-4 py-3 border-b' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, 'Por cliente na região'),
-        ),
-        h('div', { className: 'divide-y' },
-          ...dados.por_cliente.map((cl, i) => {
-            const cc = corPct(cl.pct_no_prazo);
-            return h('div', { key: i, className: 'px-4 py-2.5 flex items-center gap-3' },
-              h('span', { className: 'text-xs font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded' }, cl.cod_cliente),
-              h('span', { className: 'flex-1 text-sm text-gray-700 truncate' }, cl.nome_cliente),
-              h('span', { className: 'text-xs text-gray-400' }, `${cl.total} OS`),
-              h('div', { className: 'w-24 h-2 rounded-full overflow-hidden bg-gray-100 flex' },
-                cl.total > 0 && h('div', { style: { width: `${(cl.no_prazo / cl.total) * 100}%`, background: '#16a34a' } }),
-                cl.total > 0 && h('div', { style: { width: `${(cl.fora_prazo / cl.total) * 100}%`, background: '#dc2626' } }),
-                cl.total > 0 && h('div', { style: { width: `${(cl.sem_dados / cl.total) * 100}%`, background: '#d1d5db' } }),
-              ),
-              h('span', { className: `text-sm font-black w-14 text-right ${cc.text}` }, `${cl.pct_no_prazo}%`),
-            );
-          }),
-        ),
-      ),
-
-      // Tabela de OS
-      h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
-        h('div', { className: 'px-4 py-3 border-b flex items-center justify-between flex-wrap gap-2' },
-          h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `Detalhamento por OS (${registros.length})`),
-          h('div', { className: 'flex items-center gap-2' },
-            h('input', {
-              type: 'text', placeholder: 'Buscar OS, cliente, profissional...', value: busca,
-              onChange: e => setBusca(e.target.value),
-              className: 'border rounded-lg px-3 py-1.5 text-xs w-52 focus:ring-2 focus:ring-purple-400 focus:outline-none',
-            }),
-            h('span', { className: 'text-xs text-gray-400' }, `${filtrados.length} registros`),
-          ),
-        ),
-        // Chips filtro
-        h('div', { className: 'px-4 py-2 flex gap-2 border-b' },
-          ['todos', 'no_prazo', 'fora_prazo', 'sem_dados'].map(f => {
-            const labels = { todos: 'Todos', no_prazo: 'No Prazo', fora_prazo: 'Fora', sem_dados: 'Sem Dados' };
-            const ativo = filtro === f;
-            return h('button', {
-              key: f, onClick: () => setFiltro(f),
-              className: `px-3 py-1 rounded-full text-xs font-semibold transition-all ${ativo ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
-            }, labels[f]);
-          }),
-        ),
-        loading
-          ? h('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Carregando OS...')
-          : h('div', { className: 'overflow-x-auto', style: { maxHeight: '500px', overflowY: 'auto' } },
-              h('table', { className: 'w-full text-sm' },
-                h('thead', {},
-                  h('tr', { className: 'bg-gray-50 text-xs uppercase text-gray-500 sticky top-0' },
-                    h('th', { className: 'text-left px-3 py-2' }, 'OS'),
-                    h('th', { className: 'text-left px-3 py-2' }, 'Cliente'),
-                    h('th', { className: 'text-left px-3 py-2' }, 'Profissional'),
-                    h('th', { className: 'text-center px-3 py-2' }, 'KM'),
-                    h('th', { className: 'text-center px-3 py-2' }, 'Prazo'),
-                    h('th', { className: 'text-center px-3 py-2' }, 'Execução'),
-                    h('th', { className: 'text-center px-3 py-2' }, 'SLA'),
-                  ),
-                ),
-                h('tbody', {},
-                  ...filtrados.slice(0, 500).map((r, i) => {
-                    const semDados = r.dentro_prazo == null;
-                    const slaClass = semDados ? 'text-gray-400' : r.dentro_prazo ? 'text-green-600' : 'text-red-600';
-                    const slaLabel = semDados
-                      ? '—'
-                      : r.dentro_prazo
-                        ? h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16, color: '#16a34a' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' })), 'No prazo')
-                        : h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-x' })), 'Fora');
-                    return h('tr', { key: i, className: `border-t hover:bg-gray-50 ${r.dentro_prazo === false ? 'bg-red-50/30' : ''}` },
-                      h('td', { className: 'px-3 py-2 font-mono text-purple-700 text-xs' }, r.os),
-                      h('td', { className: 'px-3 py-2 text-gray-600 text-xs max-w-[200px] truncate' }, r.nome_fantasia || r.nome_cliente || ''),
-                      h('td', { className: 'px-3 py-2 text-gray-500 text-xs' }, r.nome_prof || '—'),
-                      h('td', { className: 'px-3 py-2 text-center text-xs' }, r.distancia ? `${parseFloat(r.distancia).toFixed(1)} km` : '—'),
-                      h('td', { className: 'px-3 py-2 text-center text-xs' }, fmtMin(r.prazo_minutos)),
-                      h('td', { className: 'px-3 py-2 text-center text-xs' }, fmtMin(r.tempo_execucao_minutos)),
-                      h('td', { className: `px-3 py-2 text-center text-xs font-bold ${slaClass}` }, slaLabel),
-                    );
-                  }),
-                ),
-              ),
-            ),
-      ),
-    );
   }
 
   // ════════════════════════════════════════════════════════════
   // ABA: Dashboard (cards por escopo configurado)
   // ════════════════════════════════════════════════════════════
-  function TabDashboard({ API_URL, fetchAuth, showToast }) {
+  function TabDashboard({ API_URL, fetchAuth, showToast, setPerfTab }) {
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [periodo, setPeriodo] = useState({ inicio: hoje(), fim: hoje() });
@@ -294,6 +467,7 @@
     const [importId, setImportId] = useState(null);
     const [importEtapa, setImportEtapa] = useState('');
     const [ultima, setUltima] = useState(null);
+    const [ordem, setOrdem] = useState('pior'); // PERF_CLEAN_V1: 'pior' | 'nome' | 'volume' (client-side)
     const pollingRef = useRef(null);
 
     const carregar = useCallback(async () => {
@@ -372,7 +546,47 @@
 
     const importando = !!importId;
 
-    return h('div', { className: 'space-y-5', style: { position: 'relative' } },
+    // ── PERF_CLEAN_V1: atalhos de período (só preenchem as datas → useEffect recarrega) ──
+    const hj = hoje();
+    const ATALHOS = [
+      { id: 'hoje', label: 'Hoje', inicio: hj, fim: hj },
+      { id: 'ontem', label: 'Ontem', inicio: addDias(hj, -1), fim: addDias(hj, -1) },
+      { id: '7d', label: '7 dias', inicio: addDias(hj, -6), fim: hj },
+    ];
+    const atalhoAtivo = (ATALHOS.find(a => a.inicio === periodo.inicio && a.fim === periodo.fim) || {}).id || null;
+
+    // ── Resumo calculado dos cards (mesma base do pct do backend: no / (no + fora)) ──
+    const snapDe = (c) => c.snapshot || { total_os: 0, no_prazo: 0, fora_prazo: 0, sem_dados: 0, pct_no_prazo: 0 };
+    let somaNo = 0, somaFora = 0, somaSem = 0;
+    cards.forEach(c => { const s = snapDe(c); somaNo += s.no_prazo || 0; somaFora += s.fora_prazo || 0; somaSem += s.sem_dados || 0; });
+    const somaAnalisadas = somaNo + somaFora;
+    const pctGeral = somaAnalisadas > 0 ? (somaNo / somaAnalisadas) * 100 : null;
+    const comDados = cards.filter(c => !situacao(snapDe(c)).semDados);
+    const semDadosCards = cards.filter(c => situacao(snapDe(c)).semDados);
+    const abaixo = comDados.filter(c => parseFloat(snapDe(c).pct_no_prazo || 0) < PF_META);
+    const criticos = comDados.filter(c => parseFloat(snapDe(c).pct_no_prazo || 0) < PF_CRIT);
+
+    // ── Ordenação client-side (sem dados sempre por último) ──
+    const ordenados = cards.map((card, idx) => ({ card, idx })).sort((a, b) => {
+      const sa = snapDe(a.card), sb = snapDe(b.card);
+      const da = situacao(sa).semDados, db = situacao(sb).semDados;
+      if (da !== db) return da ? 1 : -1;
+      if (ordem === 'nome') return String(a.card.nome_display || '').localeCompare(String(b.card.nome_display || ''), 'pt-BR');
+      if (ordem === 'volume') return (sb.total_os || 0) - (sa.total_os || 0) || a.idx - b.idx;
+      if (da && db) return a.idx - b.idx;
+      return parseFloat(sa.pct_no_prazo || 0) - parseFloat(sb.pct_no_prazo || 0) || (sb.fora_prazo || 0) - (sa.fora_prazo || 0) || a.idx - b.idx;
+    });
+
+    const subtitulo = [
+      'Prazo de entrega por cliente',
+      ultima ? `base do BI de ${fmtData(ultima.data_referencia)}, importada ${fmtDT(ultima.finalizado_em)}` : null,
+      'import automático do BI às 12h',
+      importando ? `importando agora${importEtapa ? ': ' + importEtapa : ''}` : null,
+    ].filter(Boolean).join(' · ');
+
+    const ORDENS = [{ id: 'pior', label: 'Pior primeiro' }, { id: 'nome', label: 'Nome' }, { id: 'volume', label: 'Volume' }];
+
+    return h('div', { style: { position: 'relative', display: 'flex', flexDirection: 'column', gap: 18 } },
       h('style', {}, `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -401,50 +615,82 @@
           }
         }),
         h('div', { style: { textAlign: 'center', animation: 'argosSlideUp .6s ease-out both' } },
-          h('div', { style: { fontSize: '12px', color: '#770fa8', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
+          h('div', { style: { fontSize: '12px', color: '#c084e6', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
           h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#f3e8fb' } }, 'Importando base do sistema externo'),
-          h('div', { style: { fontSize: '14px', color: '#6b7280', marginTop: '10px' } },
+          h('div', { style: { fontSize: '14px', color: '#d1d5db', marginTop: '10px' } },
             `Puxando planilha → alimentando o BI${importEtapa ? ' · ' + importEtapa : ''}`),
         ),
       ),
 
-      // Filtro de data + ações
-      h('div', { className: 'bg-white border rounded-xl shadow-sm p-4 flex flex-wrap items-end gap-4' },
-        h('div', { className: 'flex flex-col gap-1' },
-          h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Data Inicial'),
-          h('input', { type: 'date', value: periodo.inicio, onChange: e => setPeriodo(p => ({ ...p, inicio: e.target.value })),
-            className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
-        ),
-        h('div', { className: 'flex flex-col gap-1' },
-          h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Data Final'),
-          h('input', { type: 'date', value: periodo.fim, onChange: e => setPeriodo(p => ({ ...p, fim: e.target.value })),
-            className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
-        ),
-        h('button', { onClick: carregar, className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' },
-          h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' })), 'Recarregar')),
-        h('button', { onClick: forcarImport, disabled: importando,
-          className: `px-4 py-2 rounded-lg text-sm font-semibold ${importando ? 'bg-gray-200 text-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'}` },
-          importando ? 'Importando...' : 'Forçar Atualização'),
-        // Info
-        h('div', { className: 'flex flex-col gap-0.5 ml-2' },
-          h('span', { className: 'text-xs text-gray-400' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Import automático do BI: 12h diário')),
-          ultima && h('span', { className: 'text-xs text-gray-400' },
-            h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-chart' })), 'Última base: '),
-            `${fmtData(ultima.data_referencia)} · importada ${fmtDT(ultima.finalizado_em)}`),
+      // Cabeçalho
+      h(PfCabecalho, {
+        titulo: 'Performance diária',
+        sub: subtitulo,
+        acoes: [
+          h(PfBotao, { key: 'r', onClick: carregar, icone: 'refresh' }, 'Recarregar'),
+          h(PfBotao, { key: 'f', onClick: forcarImport, disabled: importando, ocupado: importando, variante: 'principal', icone: 'download', title: 'Puxa a planilha do sistema externo e alimenta o BI' },
+            importando ? 'Importando...' : 'Forçar atualização'),
+        ],
+      }),
+
+      // Filtros
+      h('section', { 'aria-label': 'Filtros', style: pfCard({ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 12 }) },
+        h(PfCampo, { rotulo: 'De', htmlFor: 'pf-de', flex: '0 1 170px', minW: 0 },
+          h('input', { id: 'pf-de', type: 'date', value: periodo.inicio, onChange: e => setPeriodo(p => ({ ...p, inicio: e.target.value })), className: 'pf-in', style: { maxWidth: 170 } })),
+        h(PfCampo, { rotulo: 'Até', htmlFor: 'pf-ate', flex: '0 1 170px', minW: 0 },
+          h('input', { id: 'pf-ate', type: 'date', value: periodo.fim, onChange: e => setPeriodo(p => ({ ...p, fim: e.target.value })), className: 'pf-in', style: { maxWidth: 170 } })),
+        h(PfSegmentado, {
+          rotulo: 'Atalhos de período', valor: atalhoAtivo, opcoes: ATALHOS,
+          onChange: (id) => { const a = ATALHOS.find(x => x.id === id); if (a) setPeriodo({ inicio: a.inicio, fim: a.fim }); },
+        }),
+        h('div', { style: { flex: '1 1 0px', minWidth: 0 } }),
+        h('div', { role: 'group', 'aria-label': 'Ordenar', style: { display: 'inline-flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', color: '#6b7280', fontSize: 12 } },
+          h('span', {}, 'Ordenar:'),
+          ORDENS.map(o => {
+            const ativo = ordem === o.id;
+            return h('button', {
+              key: o.id, type: 'button', onClick: () => setOrdem(o.id), 'aria-pressed': ativo, className: 'pf-chip',
+              style: { height: 32, padding: '0 10px', borderRadius: 99, border: `1px solid ${ativo ? '#e9d5f9' : '#e5e7eb'}`, background: ativo ? '#faf7fd' : '#ffffff', color: ativo ? '#5d0b85' : '#374151', fontWeight: ativo ? 600 : 500, fontSize: 12.5, cursor: 'pointer', whiteSpace: 'nowrap' },
+            }, o.label);
+          }),
         ),
       ),
 
+      // Faixa de resumo
+      !loading && cards.length > 0 && h(PfFaixa, {
+        rotulo: 'Resumo do período',
+        itens: [
+          {
+            rotulo: 'No prazo (geral)',
+            valor: pctGeral == null ? '—' : fmtPct(pctGeral),
+            cor: pctGeral == null ? '#6b7280' : corPct(pctGeral).fg,
+            sub: `${fmtNum(somaNo)} de ${fmtNum(somaAnalisadas)} entregas analisadas`,
+          },
+          { rotulo: 'Fora do prazo', valor: fmtNum(somaFora), cor: '#991b1b', sub: `${fmtNum(somaSem)} entregas sem dados` },
+          {
+            rotulo: `Abaixo da meta (${PF_META}%)`,
+            valor: fmtNum(abaixo.length), complemento: `de ${fmtNum(comDados.length)}`,
+            sub: criticos.length > 0 ? `${criticos.length} crítico${criticos.length === 1 ? '' : 's'} abaixo de ${PF_CRIT}%` : `nenhum crítico abaixo de ${PF_CRIT}%`,
+          },
+          {
+            rotulo: 'Sem dados no período',
+            valor: fmtNum(semDadosCards.length), cor: '#6b7280',
+            sub: semDadosCards.length === 1 ? semDadosCards[0].nome_display : (semDadosCards.length > 1 ? 'escopos sem entregas analisadas' : 'todos os escopos com dados'),
+          },
+        ],
+      }),
+
       // Cards
       loading
-        ? h('div', { className: 'text-center py-10' }, h('span', { className: 'text-gray-400' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Carregando...')))
+        ? h('div', { style: { textAlign: 'center', padding: '40px 0', color: '#6b7280', fontSize: 13 } }, 'Carregando...')
         : cards.length === 0
-          ? h('div', { className: 'bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center' },
-              h('p', { className: 'text-4xl mb-3' }, h('svg', { className: 'ico', style: { width: 38, height: 38 }, 'aria-hidden': 'true' }, h('use', { href: '#i-settings' }))),
-              h('p', { className: 'text-gray-600 font-semibold' }, 'Nenhum escopo configurado'),
-              h('p', { className: 'text-gray-400 text-sm mt-1' }, 'Vá na aba "Configurações" para adicionar um cliente ou herdar uma região do BI'),
-            )
-          : h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' },
-              ...cards.map((card, i) => h(ClienteCard, { key: i, card, onClick: () => setDetalhe(card) })),
+          ? h(PfVazio, {
+              titulo: 'Nenhum escopo configurado',
+              texto: 'Adicione um cliente ou herde uma região do BI na aba Configurações.',
+              acao: setPerfTab ? h(PfBotao, { onClick: () => setPerfTab('config'), variante: 'principal', icone: 'settings' }, 'Configurar escopos') : null,
+            })
+          : h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 } },
+              ...ordenados.map(({ card, idx }) => h(ClienteCard, { key: (card.config && card.config.id) || idx, card, onClick: () => setDetalhe(card) })),
             ),
     );
   }
@@ -520,7 +766,7 @@
         const r = await fetchAuth(`${API_URL}/performance/detalhe?${qs.toString()}`);
         const d = await r.json();
         // Monta um "card" compatível com DetalheCliente calculando o snapshot a partir dos registros
-        const regs = d.registros || [];
+        const regs = dedupPontos(d.registros || []);
         const total = regs.length;
         const no = regs.filter(x => x.dentro_prazo === true).length;
         const fora = regs.filter(x => x.dentro_prazo === false).length;
@@ -542,130 +788,74 @@
 
     // Reusa a renderização de detalhe (mas com dados já em memória)
     if (resultado) {
-      const snap = resultado.snapshot;
-      const pct = parseFloat(snap.pct_no_prazo || 0);
-      const c = corPct(pct);
-      const filtrados = resultado.registros;
-      return h('div', { className: 'space-y-4' },
-        h('div', { className: 'flex items-center gap-4' },
-          h('button', { onClick: () => setResultado(null), className: 'p-2 hover:bg-gray-100 rounded-lg text-sm font-semibold text-gray-600' }, '← Nova busca'),
-          h('div', { className: 'flex-1' },
-            h('h2', { className: 'text-lg font-bold text-gray-900' }, resultado.titulo),
-            h('p', { className: 'text-sm text-purple-600' }, `${fmtData(filtros.inicio)} → ${fmtData(filtros.fim)}`),
-          ),
-          h('div', { className: 'text-right' },
-            h('span', { className: `text-3xl font-black ${c.text}` }, `${pct}%`),
-            h('p', { className: 'text-xs text-gray-400' }, `${snap.total_os} OS`),
-          ),
-        ),
-        h('div', { className: 'grid grid-cols-4 gap-3' },
-          h('div', { className: 'bg-purple-50 border border-purple-200 rounded-xl p-3 text-center' }, h('p', { className: 'text-2xl font-black text-purple-900' }, snap.total_os), h('p', { className: 'text-xs text-purple-600 font-semibold uppercase' }, 'Total OS')),
-          h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-3 text-center' }, h('p', { className: 'text-2xl font-black text-green-700' }, snap.no_prazo), h('p', { className: 'text-xs text-green-600 font-semibold uppercase' }, 'No Prazo')),
-          h('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-3 text-center' }, h('p', { className: 'text-2xl font-black text-red-700' }, snap.fora_prazo), h('p', { className: 'text-xs text-red-600 font-semibold uppercase' }, 'Fora')),
-          h('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-3 text-center' }, h('p', { className: 'text-2xl font-black text-gray-600' }, snap.sem_dados), h('p', { className: 'text-xs text-gray-500 font-semibold uppercase' }, 'Sem Dados')),
-        ),
-        h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
-          h('div', { className: 'px-4 py-3 border-b' }, h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `Detalhamento por OS (${filtrados.length})`)),
-          h('div', { className: 'overflow-x-auto', style: { maxHeight: '520px', overflowY: 'auto' } },
-            h('table', { className: 'w-full text-sm' },
-              h('thead', {}, h('tr', { className: 'bg-gray-50 text-xs uppercase text-gray-500 sticky top-0' },
-                h('th', { className: 'text-left px-3 py-2' }, 'OS'),
-                h('th', { className: 'text-left px-3 py-2' }, 'Cliente'),
-                h('th', { className: 'text-left px-3 py-2' }, 'Profissional'),
-                h('th', { className: 'text-center px-3 py-2' }, 'KM'),
-                h('th', { className: 'text-center px-3 py-2' }, 'Prazo'),
-                h('th', { className: 'text-center px-3 py-2' }, 'Execução'),
-                h('th', { className: 'text-center px-3 py-2' }, 'SLA'),
-              )),
-              h('tbody', {}, ...filtrados.slice(0, 500).map((r, i) => {
-                const semDados = r.dentro_prazo == null;
-                const slaClass = semDados ? 'text-gray-400' : r.dentro_prazo ? 'text-green-600' : 'text-red-600';
-                const slaLabel = semDados ? '—' : r.dentro_prazo
-                  ? h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16, color: '#16a34a' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' })), 'No prazo')
-                  : h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-x' })), 'Fora');
-                return h('tr', { key: i, className: `border-t hover:bg-gray-50 ${r.dentro_prazo === false ? 'bg-red-50/30' : ''}` },
-                  h('td', { className: 'px-3 py-2 font-mono text-purple-700 text-xs' }, r.os),
-                  h('td', { className: 'px-3 py-2 text-gray-600 text-xs max-w-[200px] truncate' }, r.nome_fantasia || r.nome_cliente || ''),
-                  h('td', { className: 'px-3 py-2 text-gray-500 text-xs' }, r.nome_prof || '—'),
-                  h('td', { className: 'px-3 py-2 text-center text-xs' }, r.distancia ? `${parseFloat(r.distancia).toFixed(1)} km` : '—'),
-                  h('td', { className: 'px-3 py-2 text-center text-xs' }, fmtMin(r.prazo_minutos)),
-                  h('td', { className: 'px-3 py-2 text-center text-xs' }, fmtMin(r.tempo_execucao_minutos)),
-                  h('td', { className: `px-3 py-2 text-center text-xs font-bold ${slaClass}` }, slaLabel),
-                );
-              })),
-            ),
-          ),
-        ),
-      );
+      return h(PfDetalheView, {
+        titulo: resultado.titulo, card: resultado,
+        periodo: { inicio: filtros.inicio, fim: filtros.fim },
+        registros: resultado.registros, porCliente: resultado.por_cliente,
+        loading: false, onVoltar: () => setResultado(null), voltarLabel: 'Nova busca',
+      });
     }
 
-    return h('div', { className: 'space-y-5' },
-      h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
-        h('div', { className: 'flex gap-2 mb-4' },
-          ['cliente', 'regiao'].map(m => h('button', {
-            key: m, onClick: () => setModo(m),
-            className: `px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${modo === m ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
-          }, m === 'cliente' ? 'Por Cliente' : 'Por Região')),
-        ),
-        h('div', { className: 'flex flex-wrap gap-4 items-end' },
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      h(PfCabecalho, {
+        titulo: 'Busca',
+        sub: 'Consulta o prazo de entrega de um cliente ou região em qualquer período, direto da base do BI',
+      }),
+      h('section', { 'aria-label': 'Filtros da busca', style: pfCard({ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }) },
+        h(PfSegmentado, {
+          rotulo: 'Tipo de busca', valor: modo, onChange: setModo,
+          opcoes: [{ id: 'cliente', label: 'Por cliente' }, { id: 'regiao', label: 'Por região' }],
+        }),
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' } },
           modo === 'cliente'
-            ? h('div', { className: 'flex flex-col gap-1 relative', ref: dropRef, style: { minWidth: '300px' } },
-                h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Cliente'),
-                h('div', { className: 'relative' },
-                  h('input', { type: 'text', placeholder: 'Buscar cliente...',
-                    value: dropAberto ? buscaCliente : (clienteSel ? `${clienteSel.cod_cliente} — ${clienteSel.nome_display}` : buscaCliente),
-                    onFocus: () => { setDropAberto(true); setBuscaCliente(''); },
-                    onChange: e => { setBuscaCliente(e.target.value); setDropAberto(true); },
-                    className: 'border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400',
-                  }),
+            ? h('div', { ref: dropRef, style: { flex: '2 1 280px', minWidth: 0, position: 'relative' } },
+                h(PfCampo, { rotulo: 'Cliente', htmlFor: 'pf-b-cli', flex: '1 1 auto' },
+                  h('div', { style: { position: 'relative' } },
+                    h('span', { style: { position: 'absolute', left: 10, top: 0, bottom: 0, display: 'flex', alignItems: 'center', color: '#9ca3af', pointerEvents: 'none' } }, pfIco('search', 15)),
+                    h('input', { id: 'pf-b-cli', type: 'text', placeholder: 'Código ou nome do cliente', autoComplete: 'off',
+                      value: dropAberto ? buscaCliente : (clienteSel ? `${clienteSel.cod_cliente} — ${clienteSel.nome_display}` : buscaCliente),
+                      onFocus: () => { setDropAberto(true); setBuscaCliente(''); },
+                      onChange: e => { setBuscaCliente(e.target.value); setDropAberto(true); },
+                      className: 'pf-in', style: { paddingLeft: 32 },
+                    }),
+                  ),
                 ),
-                dropAberto && h('div', { className: 'absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-50' },
+                dropAberto && h('div', { className: 'shadow-lg', style: { position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 10, maxHeight: 256, overflowY: 'auto', zIndex: 50 } },
+                  clientesFiltrados.length === 0 && h('div', { style: { padding: '10px 14px', fontSize: 13, color: '#6b7280' } }, 'Nenhum cliente encontrado'),
                   clientesFiltrados.slice(0, 50).map(c =>
                     h('div', { key: c.cod_cliente, onClick: () => { setFiltros(f => ({ ...f, codCliente: String(c.cod_cliente), centroCusto: '' })); setBuscaCliente(''); setDropAberto(false); },
-                      className: 'px-4 py-2 cursor-pointer hover:bg-purple-50 flex items-center gap-2 text-sm' },
-                      h('span', { className: 'text-xs font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded' }, c.cod_cliente),
-                      h('span', { className: 'truncate' }, c.nome_display),
+                      className: 'pf-row', style: { padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, borderTop: '1px solid #f3f4f6' } },
+                      h('span', { style: { fontSize: 12, color: '#6b7280', fontVariantNumeric: 'tabular-nums', minWidth: 44 } }, c.cod_cliente),
+                      h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111827' } }, c.nome_display),
                     ),
                   ),
                 ),
               )
-            : h('div', { className: 'flex flex-col gap-1', style: { minWidth: '300px' } },
-                h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Região (do BI)'),
-                h('select', { value: filtros.regiaoId, onChange: e => setFiltros(f => ({ ...f, regiaoId: e.target.value })),
-                  className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+            : h(PfCampo, { rotulo: 'Região (do BI)', htmlFor: 'pf-b-reg', flex: '2 1 280px' },
+                h('select', { id: 'pf-b-reg', value: filtros.regiaoId, onChange: e => setFiltros(f => ({ ...f, regiaoId: e.target.value })), className: 'pf-in' },
                   h('option', { value: '' }, 'Selecione...'),
                   ...regioes.map(r => h('option', { key: r.id, value: r.id }, `${r.nome} (${r.qtd_itens})`)),
                 ),
               ),
 
-          modo === 'cliente' && filtros.codCliente && h('div', { className: 'flex flex-col gap-1', style: { minWidth: '220px' } },
-            h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Centro de Custo'),
-            h('select', { value: filtros.centroCusto, onChange: e => setFiltros(f => ({ ...f, centroCusto: e.target.value })),
-              className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+          modo === 'cliente' && filtros.codCliente && h(PfCampo, { rotulo: 'Centro de custo', htmlFor: 'pf-b-cc', flex: '1 1 200px' },
+            h('select', { id: 'pf-b-cc', value: filtros.centroCusto, onChange: e => setFiltros(f => ({ ...f, centroCusto: e.target.value })), className: 'pf-in' },
               h('option', { value: '' }, 'Todos'),
               ...centrosCusto.map((cc, i) => h('option', { key: i, value: cc.centro_custo }, cc.centro_custo)),
             ),
           ),
 
-          h('div', { className: 'flex flex-col gap-1' },
-            h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Data Inicial'),
-            h('input', { type: 'date', value: filtros.inicio, onChange: e => setFiltros(f => ({ ...f, inicio: e.target.value })),
-              className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
-          ),
-          h('div', { className: 'flex flex-col gap-1' },
-            h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Data Final'),
-            h('input', { type: 'date', value: filtros.fim, onChange: e => setFiltros(f => ({ ...f, fim: e.target.value })),
-              className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' }),
-          ),
-          h('button', { onClick: buscar, disabled: loading,
-            className: `px-5 py-2 rounded-lg text-sm font-semibold ${loading ? 'bg-gray-200 text-gray-400' : 'bg-purple-600 hover:bg-purple-700 text-white'}` },
-            loading ? 'Buscando...' : 'Buscar'),
+          h(PfCampo, { rotulo: 'De', htmlFor: 'pf-b-de', flex: '1 1 140px' },
+            h('input', { id: 'pf-b-de', type: 'date', value: filtros.inicio, onChange: e => setFiltros(f => ({ ...f, inicio: e.target.value })), className: 'pf-in' })),
+          h(PfCampo, { rotulo: 'Até', htmlFor: 'pf-b-ate', flex: '1 1 140px' },
+            h('input', { id: 'pf-b-ate', type: 'date', value: filtros.fim, onChange: e => setFiltros(f => ({ ...f, fim: e.target.value })), className: 'pf-in' })),
+          h(PfBotao, { onClick: buscar, disabled: loading, ocupado: loading, variante: 'principal', icone: 'search' }, loading ? 'Buscando...' : 'Buscar'),
         ),
       ),
-      h('div', { className: 'bg-purple-50 border border-purple-100 rounded-xl p-4 text-sm text-purple-700' },
-        h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-chart' })),
-          'O SLA vem direto da base do BI (bi_entregas) — mesma regra de prazo por faixa configurada no BI.'),
-      ),
+      h(PfVazio, {
+        titulo: 'Escolha o que consultar',
+        texto: 'Selecione um cliente ou uma região e o período, depois clique em Buscar. O SLA vem direto da base do BI (bi_entregas), com a mesma regra de prazo por faixa configurada no BI.',
+      }),
     );
   }
 
@@ -760,89 +950,106 @@
       } catch (e) { showToast('Erro', 'error'); }
     };
 
-    return h('div', { className: 'space-y-5' },
+    const nRegioes = configs.filter(c => c.tipo === 'regiao').length;
+
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      h(PfCabecalho, {
+        titulo: 'Configurações',
+        sub: loading ? 'Escopos que aparecem no Dashboard' : `${configs.length} escopo${configs.length === 1 ? '' : 's'} monitorado${configs.length === 1 ? '' : 's'} · ${configs.length - nRegioes} cliente${configs.length - nRegioes === 1 ? '' : 's'} · ${nRegioes} região${nRegioes === 1 ? '' : 'ões'}`,
+      }),
+
       // Adicionar
-      h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase mb-4' },
-          h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar escopo ao monitoramento')),
-        h('div', { className: 'flex gap-2 mb-4' },
-          ['cliente', 'regiao'].map(m => h('button', {
-            key: m, onClick: () => { setModo(m); setForm({ codCliente: '', centroCusto: '', regiaoId: '' }); },
-            className: `px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${modo === m ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`,
-          }, m === 'cliente' ? 'Cliente avulso' : 'Herdar região do BI')),
+      h('section', { style: pfCard({ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }) },
+        h('div', {},
+          h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Adicionar escopo ao monitoramento'),
+          h('p', { style: { margin: '4px 0 0', fontSize: 12.5, color: '#6b7280' } },
+            modo === 'regiao'
+              ? 'A região é herdada do BI. Se você editar os clientes/CC dela lá, o Performance acompanha automaticamente.'
+              : 'Monitore um cliente inteiro ou só um centro de custo.'),
         ),
-        h('div', { className: 'flex flex-wrap gap-4 items-end' },
+        h(PfSegmentado, {
+          rotulo: 'Tipo de escopo', valor: modo,
+          onChange: (m) => { setModo(m); setForm({ codCliente: '', centroCusto: '', regiaoId: '' }); },
+          opcoes: [{ id: 'cliente', label: 'Cliente avulso' }, { id: 'regiao', label: 'Herdar região do BI' }],
+        }),
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' } },
           modo === 'cliente'
             ? [
-                h('div', { key: 'cli', className: 'flex flex-col gap-1 relative', ref: dropRef, style: { minWidth: '300px' } },
-                  h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Cliente'),
-                  h('div', { className: 'relative' },
-                    h('input', { type: 'text', placeholder: 'Buscar cliente...',
-                      value: dropAberto ? buscaCliente : (clienteSel ? `${clienteSel.cod_cliente} — ${clienteSel.nome_display}` : buscaCliente),
-                      onFocus: () => { setDropAberto(true); setBuscaCliente(''); },
-                      onChange: e => { setBuscaCliente(e.target.value); setDropAberto(true); },
-                      className: 'border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-400 pr-8',
-                    }),
-                    form.codCliente && h('button', { onClick: () => { setForm(f => ({ ...f, codCliente: '', centroCusto: '' })); setBuscaCliente(''); },
-                      className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm' },
-                      h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-x' }))),
+                h('div', { key: 'cli', ref: dropRef, style: { flex: '2 1 280px', minWidth: 0, position: 'relative' } },
+                  h(PfCampo, { rotulo: 'Cliente', htmlFor: 'pf-c-cli', flex: '1 1 auto' },
+                    h('div', { style: { position: 'relative' } },
+                      h('span', { style: { position: 'absolute', left: 10, top: 0, bottom: 0, display: 'flex', alignItems: 'center', color: '#9ca3af', pointerEvents: 'none' } }, pfIco('search', 15)),
+                      h('input', { id: 'pf-c-cli', type: 'text', placeholder: 'Código ou nome do cliente', autoComplete: 'off',
+                        value: dropAberto ? buscaCliente : (clienteSel ? `${clienteSel.cod_cliente} — ${clienteSel.nome_display}` : buscaCliente),
+                        onFocus: () => { setDropAberto(true); setBuscaCliente(''); },
+                        onChange: e => { setBuscaCliente(e.target.value); setDropAberto(true); },
+                        className: 'pf-in', style: { paddingLeft: 32, paddingRight: 32 },
+                      }),
+                      form.codCliente && h('button', { type: 'button', 'aria-label': 'Limpar cliente', title: 'Limpar cliente', onClick: () => { setForm(f => ({ ...f, codCliente: '', centroCusto: '' })); setBuscaCliente(''); },
+                        className: 'pf-btn', style: { position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'transparent', color: '#6b7280', cursor: 'pointer', padding: 4, display: 'flex' } },
+                        pfIco('x', 15)),
+                    ),
                   ),
-                  dropAberto && h('div', { className: 'absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-50' },
+                  dropAberto && h('div', { className: 'shadow-lg', style: { position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 10, maxHeight: 256, overflowY: 'auto', zIndex: 50 } },
+                    clientesFiltrados.length === 0 && h('div', { style: { padding: '10px 14px', fontSize: 13, color: '#6b7280' } }, 'Nenhum cliente encontrado'),
                     clientesFiltrados.slice(0, 50).map(c =>
                       h('div', { key: c.cod_cliente, onClick: () => { setForm(f => ({ ...f, codCliente: String(c.cod_cliente), centroCusto: '' })); setBuscaCliente(''); setDropAberto(false); },
-                        className: 'px-4 py-2 cursor-pointer hover:bg-purple-50 flex items-center gap-2 text-sm' },
-                        h('span', { className: 'text-xs font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded' }, c.cod_cliente),
-                        h('span', { className: 'truncate' }, c.nome_display),
+                        className: 'pf-row', style: { padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, borderTop: '1px solid #f3f4f6' } },
+                        h('span', { style: { fontSize: 12, color: '#6b7280', fontVariantNumeric: 'tabular-nums', minWidth: 44 } }, c.cod_cliente),
+                        h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111827' } }, c.nome_display),
                       ),
                     ),
                   ),
                 ),
-                form.codCliente && h('div', { key: 'cc', className: 'flex flex-col gap-1', style: { minWidth: '220px' } },
-                  h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Centro de Custo'),
-                  h('select', { value: form.centroCusto, onChange: e => setForm(f => ({ ...f, centroCusto: e.target.value })),
-                    className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+                form.codCliente && h(PfCampo, { key: 'cc', rotulo: 'Centro de custo', htmlFor: 'pf-c-cc', flex: '1 1 200px' },
+                  h('select', { id: 'pf-c-cc', value: form.centroCusto, onChange: e => setForm(f => ({ ...f, centroCusto: e.target.value })), className: 'pf-in' },
                     h('option', { value: '' }, 'Todos'),
                     ...centrosCusto.map((cc, i) => h('option', { key: i, value: cc.centro_custo }, cc.centro_custo)),
                   ),
                 ),
               ]
-            : h('div', { className: 'flex flex-col gap-1', style: { minWidth: '340px' } },
-                h('label', { className: 'text-xs font-semibold text-gray-600 uppercase' }, 'Região (do BI)'),
-                h('select', { value: form.regiaoId, onChange: e => setForm(f => ({ ...f, regiaoId: e.target.value })),
-                  className: 'border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400' },
+            : h(PfCampo, { rotulo: 'Região (do BI)', htmlFor: 'pf-c-reg', flex: '2 1 300px' },
+                h('select', { id: 'pf-c-reg', value: form.regiaoId, onChange: e => setForm(f => ({ ...f, regiaoId: e.target.value })), className: 'pf-in' },
                   h('option', { value: '' }, 'Selecione uma região...'),
                   ...regioes.map(r => h('option', { key: r.id, value: r.id }, `${r.nome} — ${r.qtd_itens} cliente(s)/CC`)),
                 ),
               ),
 
-          h('button', { onClick: adicionar, className: 'px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, 'Adicionar'),
+          h(PfBotao, { onClick: adicionar, variante: 'principal', icone: 'plus' }, 'Adicionar escopo'),
         ),
-        modo === 'regiao' && h('p', { className: 'text-xs text-gray-400 mt-3' },
-          'A região é herdada do BI. Se você editar os clientes/CC dela lá, o Performance acompanha automaticamente.'),
       ),
 
       // Lista
-      h('div', { className: 'bg-white border rounded-xl shadow-sm overflow-hidden' },
-        h('div', { className: 'px-4 py-3 border-b' }, h('h3', { className: 'text-sm font-bold text-gray-700 uppercase' }, `Escopos monitorados (${configs.length})`)),
+      h('section', { style: pfCard({ overflow: 'hidden' }) },
+        h('div', { style: { padding: '14px 16px', display: 'flex', alignItems: 'baseline', gap: 8 } },
+          h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Escopos monitorados'),
+          !loading && h('span', { style: { fontSize: 12.5, color: '#6b7280', fontVariantNumeric: 'tabular-nums' } }, configs.length),
+        ),
         loading
-          ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Carregando...')
+          ? h('div', { style: { textAlign: 'center', padding: '32px 0', color: '#6b7280', fontSize: 13, borderTop: '1px solid #f3f4f6' } }, 'Carregando...')
           : configs.length === 0
-            ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Nenhum escopo cadastrado ainda')
-            : h('div', { className: 'divide-y' },
-                ...configs.map(cfg => h('div', { key: cfg.id, className: 'px-4 py-3 flex items-center gap-3' },
-                  cfg.tipo === 'regiao'
-                    ? h('span', { className: 'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-700' }, 'Região')
-                    : h('span', { className: 'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500' }, 'Cliente'),
-                  h('div', { className: 'flex-1' },
-                    h('p', { className: 'text-sm font-semibold text-gray-800' }, cfg.nome_display),
-                    h('p', { className: 'text-xs text-gray-400' },
-                      cfg.tipo === 'regiao'
-                        ? `${cfg.qtd_itens} cliente(s)/CC`
-                        : (cfg.centro_custo ? cfg.centro_custo : 'Todos os centros')),
+            ? h('div', { style: { textAlign: 'center', padding: '32px 16px', color: '#6b7280', fontSize: 13, borderTop: '1px solid #f3f4f6' } }, 'Nenhum escopo cadastrado ainda. Adicione um cliente ou região acima.')
+            : h('div', { style: { overflowX: 'auto' } },
+                h('table', { style: { width: '100%', borderCollapse: 'collapse' } },
+                  h('thead', {}, h('tr', {},
+                    pfTh('Tipo', false, { paddingLeft: 16, position: 'static' }),
+                    pfTh('Nome', false, { position: 'static' }),
+                    pfTh('Abrangência', false, { position: 'static' }),
+                    pfTh(h('span', { className: 'sr-only' }, 'Ações'), true, { paddingRight: 16, position: 'relative' }),
+                  )),
+                  h('tbody', {},
+                    ...configs.map(cfg => h('tr', { key: cfg.id, className: 'pf-row', style: { borderTop: '1px solid #f3f4f6' } },
+                      pfTd(cfg.tipo === 'regiao' ? h(PfPilulaRegiao) : h(PfPilula, { tom: 'cinza', semPonto: true }, 'Cliente'), false, { paddingLeft: 16, width: 1 }),
+                      pfTd(cfg.nome_display, false, { fontWeight: 600, whiteSpace: 'normal', minWidth: 160 }),
+                      pfTd(cfg.tipo === 'regiao' ? `${cfg.qtd_itens} cliente(s)/CC` : (cfg.centro_custo ? cfg.centro_custo : 'Todos os centros'), false, { color: '#6b7280' }),
+                      pfTd(h('button', {
+                        type: 'button', onClick: () => remover(cfg.id), className: 'pf-btn pf-btn-sec',
+                        'aria-label': `Remover ${cfg.nome_display}`, title: 'Remover do monitoramento',
+                        style: { width: 32, height: 32, borderRadius: 8, border: '1px solid #fecaca', background: '#ffffff', color: '#991b1b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+                      }, pfIco('trash', 15)), true, { paddingRight: 16, width: 1 }),
+                    )),
                   ),
-                  h('button', { onClick: () => remover(cfg.id), className: 'text-gray-400 hover:text-red-500 p-1.5' },
-                    h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))),
-                )),
+                ),
               ),
       ),
     );
@@ -903,34 +1110,51 @@
     };
 
     const importando = !!importId;
+    const prog = status && status.progresso != null ? Math.max(0, Math.min(100, Number(status.progresso) || 0)) : null;
 
-    return h('div', { className: 'space-y-5' },
-      h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
-        h('h3', { className: 'text-sm font-bold text-gray-700 uppercase mb-4' }, 'Importação da base (BI)'),
-        h('p', { className: 'text-sm text-gray-500 mb-4' },
-          'O Performance Diária reflete a base do BI (bi_entregas). A base é importada automaticamente às 12h. Use o botão abaixo para forçar uma importação agora (puxa a planilha do sistema externo → alimenta o BI).'),
-        h('button', { onClick: forcar, disabled: importando,
-          className: `px-5 py-2.5 rounded-lg text-sm font-semibold ${importando ? 'bg-gray-200 text-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'}` },
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      h(PfCabecalho, {
+        titulo: 'Importações',
+        sub: 'Base do BI (bi_entregas) · importação automática diária às 12h',
+        acoes: h(PfBotao, { onClick: forcar, disabled: importando, ocupado: importando, variante: 'principal', icone: 'download', title: 'Puxa a planilha do sistema externo e alimenta o BI' },
           importando ? 'Importando...' : 'Forçar importação agora'),
-        importando && status && h('div', { className: 'mt-4 flex items-center gap-3 text-sm text-purple-600' },
-          h('div', { className: 'inline-block w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full', style: { animation: 'spin 1s linear infinite' } }),
-          h('span', {}, `${status.etapa_atual || status.status || 'processando'}${status.progresso ? ` · ${status.progresso}%` : ''}`),
+      }),
+
+      // Status do import em andamento
+      importando && status && h('section', { 'aria-live': 'polite', style: pfCard({ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }) },
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 } },
+          h(PfPilula, { tom: 'azul' }, 'Importando'),
+          h('span', { style: { fontSize: 13, color: '#374151' } }, `${status.etapa_atual || status.status || 'processando'}${status.progresso ? ` · ${status.progresso}%` : ''}`),
+          status.data_referencia && h('span', { style: { fontSize: 12, color: '#6b7280' } }, `· referência ${fmtData(String(status.data_referencia))}`),
         ),
-        h('style', {}, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`),
+        prog != null && h('div', { 'aria-hidden': 'true', style: { height: 6, borderRadius: 99, background: '#f3f4f6', overflow: 'hidden' } },
+          h('div', { style: { width: `${prog}%`, height: '100%', background: '#770fa8' } })),
       ),
 
+      // Última importação
       loading
-        ? h('div', { className: 'text-center py-8 text-gray-400 text-sm' }, 'Carregando...')
-        : h('div', { className: 'bg-white border rounded-xl shadow-sm p-5' },
-            h('h3', { className: 'text-sm font-bold text-gray-700 uppercase mb-3' }, 'Última importação concluída'),
-            ultima
-              ? h('div', { className: 'grid grid-cols-3 gap-4' },
-                  h('div', {}, h('p', { className: 'text-xs text-gray-400 uppercase' }, 'Data referência'), h('p', { className: 'text-lg font-bold text-gray-800' }, fmtData(ultima.data_referencia))),
-                  h('div', {}, h('p', { className: 'text-xs text-gray-400 uppercase' }, 'Importada em'), h('p', { className: 'text-lg font-bold text-gray-800' }, fmtDT(ultima.finalizado_em))),
-                  h('div', {}, h('p', { className: 'text-xs text-gray-400 uppercase' }, 'Linhas inseridas'), h('p', { className: 'text-lg font-bold text-gray-800' }, ultima.linhas_inseridas ?? '—')),
-                )
-              : h('p', { className: 'text-sm text-gray-400' }, 'Nenhuma importação concluída ainda'),
-          ),
+        ? h('div', { style: { textAlign: 'center', padding: '32px 0', color: '#6b7280', fontSize: 13 } }, 'Carregando...')
+        : ultima
+          ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+              h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Última importação concluída'),
+              h(PfFaixa, {
+                rotulo: 'Última importação concluída',
+                itens: [
+                  { rotulo: 'Data de referência', valor: fmtData(ultima.data_referencia ? String(ultima.data_referencia) : null) },
+                  { rotulo: 'Importada em', valor: fmtDT(ultima.finalizado_em) },
+                  { rotulo: 'Linhas inseridas', valor: ultima.linhas_inseridas != null ? fmtNum(ultima.linhas_inseridas) : '—' },
+                ],
+              }),
+            )
+          : h(PfVazio, { titulo: 'Nenhuma importação concluída ainda', texto: 'Use "Forçar importação agora" para puxar a base do dia.' }),
+
+      // Como funciona
+      h('section', { style: pfCard({ padding: '14px 16px' }) },
+        h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' } }, 'Como funciona'),
+        h('p', { style: { margin: '6px 0 0', fontSize: 13, color: '#6b7280', lineHeight: 1.55 } },
+          'O Performance Diária reflete a base do BI (bi_entregas). A base é importada automaticamente às 12h. Use "Forçar importação agora" para importar imediatamente (puxa a planilha do sistema externo e alimenta o BI).'),
+      ),
+      h('style', {}, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`),
     );
   }
 
@@ -938,11 +1162,13 @@
   // COMPONENTE PRINCIPAL
   // ════════════════════════════════════════════════════════════
   function ModuloPerformanceDiaria({ initialProps }) {
-    const { API_URL, fetchAuth, showToast, perfTab } = initialProps;
+    const { API_URL, fetchAuth, showToast, perfTab, setPerfTab } = initialProps;
     const aba = perfTab || 'dashboard';
 
-    return h('div', { className: 'space-y-5' },
-      aba === 'dashboard' && h(TabDashboard, { API_URL, fetchAuth, showToast }),
+    // PERF_CLEAN_V1: sem padding extra — o wrapper do app.js (max-w-7xl p-4 md:p-6) já posiciona o conteúdo
+    return h('div', { style: { color: '#111827', fontSize: 13 } },
+      h('style', {}, PF_CSS),
+      aba === 'dashboard' && h(TabDashboard, { API_URL, fetchAuth, showToast, setPerfTab }),
       aba === 'busca' && h(TabBusca, { API_URL, fetchAuth, showToast }),
       aba === 'config' && h(TabConfig, { API_URL, fetchAuth, showToast }),
       aba === 'jobs' && h(TabJobs, { API_URL, fetchAuth, showToast }),
