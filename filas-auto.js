@@ -1,4 +1,5 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
+/* FILAS_CLEAN_V1: redesign clean das Filas auto-gerenciáveis (admin). */
 // ============================================================
 // MÓDULO FILAS AUTO-GERENCIÁVEIS — visão ADMIN
 // ============================================================
@@ -18,6 +19,46 @@
 
 (function () {
   const e = React.createElement; /* FILAS_ICONS_V3 */
+
+  // ════════════════════════════════════════════════════════════
+  // FILAS_CLEAN_V1 — helpers visuais (paleta Roxo Tutts, cards brancos,
+  // status em pílula suave, faixa de KPIs, modais brancos). Só visual.
+  // ════════════════════════════════════════════════════════════
+  const SORA = 'Sora, Inter, sans-serif';
+  const TOM = {
+    verde: ['#f0fdf4', '#166534', '#16a34a'], ambar: ['#fffbeb', '#92400e', '#d97706'],
+    vermelho: ['#fef2f2', '#991b1b', '#dc2626'], azul: ['#eff6ff', '#1e40af', '#2563eb'],
+    cinza: ['#f3f4f6', '#374151', '#6b7280'], roxo: ['#faf7fd', '#5d0b85', '#770fa8'],
+  };
+  const ico = (nome, sz, cor) => e('svg', { className: 'ico', style: { width: sz || 16, height: sz || 16, color: cor, flex: 'none' }, 'aria-hidden': 'true' }, e('use', { href: '#i-' + nome }));
+  const dot = (cor) => e('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 99, background: cor, display: 'inline-block', flex: 'none' } });
+  const pill = (tom, txt, title) => { const t = TOM[tom] || TOM.cinza; return e('span', { title: title, style: { display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 99, padding: '2px 9px', fontWeight: 600, fontSize: 11.5, lineHeight: '18px', background: t[0], color: t[1], whiteSpace: 'nowrap' } }, dot(t[2]), txt); };
+  const CARD = 'bg-white border border-gray-200 rounded-[14px]';
+  const BTN_PRI = 'inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[10px] bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const BTN_SEC = 'inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const BTN_DEST = 'inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[10px] bg-white border border-red-200 hover:bg-red-50 text-red-800 text-sm font-semibold transition-colors';
+  const BTN_SEC_SM = 'inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[8px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors whitespace-nowrap';
+  const BTN_DEST_SM = 'inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[8px] bg-white border border-red-200 hover:bg-red-50 text-red-800 text-xs font-semibold transition-colors whitespace-nowrap';
+  const BTN_ICO_DEST = 'inline-flex items-center justify-center w-8 h-8 rounded-[8px] bg-white border border-red-200 text-red-800 hover:bg-red-50 transition-colors flex-shrink-0';
+  const INPUT = 'w-full h-[38px] px-3 rounded-[10px] border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100';
+  const SELECT = 'h-[34px] px-2.5 rounded-[10px] border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100 flex-shrink-0';
+  const LABEL = 'block text-xs font-semibold text-gray-700 mb-1';
+  const tituloPagina = (txt) => e('h1', { style: { fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#111827', lineHeight: 1.25, letterSpacing: '-0.01em' } }, txt);
+  const tituloCard = (txt, extra) => e('div', { className: 'flex items-center gap-2 min-w-0' }, e('h2', { className: 'text-[15px] font-semibold text-gray-900 truncate' }, txt), extra);
+  const contador = (n) => e('span', { className: 'text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 tabular-nums whitespace-nowrap' }, n);
+  const vazio = (txt, acao) => e('div', { className: 'text-center py-10 px-4' }, e('p', { className: 'text-sm text-gray-500' }, txt), acao ? e('div', { className: 'mt-3' }, acao) : null);
+  const kpiCell = (rotulo, valor, opts) => { opts = opts || {}; return e('div', { key: rotulo, style: { flex: '1 1 150px', padding: '14px 20px', boxShadow: '-1px 0 0 #f3f4f6, 0 -1px 0 #f3f4f6', minWidth: 0 }, title: opts.title },
+    e('div', { className: 'flex items-center gap-1.5', style: { fontSize: 12, color: '#6b7280' } }, opts.dot ? dot(opts.dot) : null, rotulo),
+    e('div', { style: { fontFamily: SORA, fontSize: 26, fontWeight: 700, color: opts.cor || '#111827', fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 } }, valor),
+    opts.sub ? e('div', { style: { fontSize: 11.5, color: '#6b7280' } }, opts.sub) : null); };
+  const kpiFaixa = (cells) => e('div', { className: CARD + ' flex flex-wrap overflow-hidden' }, cells.filter(Boolean));
+  const modalBox = (o) => e('div', { className: 'fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4', onClick: o.onOverlay ? (ev) => { if (ev.target === ev.currentTarget) o.onOverlay(); } : undefined },
+    e('div', { className: 'bg-white border border-gray-200 rounded-[14px] w-full ' + (o.largura || 'max-w-md') + ' max-h-[90vh] flex flex-col overflow-hidden', role: 'dialog', 'aria-modal': 'true' },
+      e('div', { className: 'flex items-start justify-between gap-3 px-5 pt-5 pb-3 flex-shrink-0' },
+        e('div', { className: 'min-w-0' }, e('h2', { className: 'text-base font-semibold text-gray-900' }, o.titulo), o.sub ? e('p', { className: 'text-sm text-gray-500 mt-0.5' }, o.sub) : null),
+        o.onFechar ? e('button', { type: 'button', onClick: o.onFechar, className: 'w-8 h-8 -mr-1 inline-flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex-shrink-0', 'aria-label': 'Fechar' }, ico('x', 16)) : null),
+      e('div', { className: 'px-5 pb-4 overflow-y-auto flex-1 min-h-0' }, o.corpo),
+      o.rodape ? e('div', { className: 'px-5 py-3 border-t border-gray-100 flex justify-end gap-2 flex-wrap flex-shrink-0' }, o.rodape) : null));
 
   function ModuloFilasAuto(props) {
     const { usuario, apiUrl, fetchAuth, showToast } = props;
@@ -560,172 +601,136 @@
 
     // ── Bloqueio: motoboys não têm acesso a essa tela ───────
     if (!isAdmin) {
-      return e('div', { className: 'p-8 text-center text-gray-500' },
+      return e('div', { className: CARD + ' p-8 text-center text-sm text-gray-500' },
         'Esta tela é apenas para admin.'
       );
     }
 
     // ════════════════════════════════════════════════════════
     // RENDER — lista de centrais (quando nenhuma está selecionada)
+    // FILAS_CLEAN_V1: cabeçalho Sora + faixa de KPIs + lista em linhas
     // ════════════════════════════════════════════════════════
-    if (!centralSelecionada) {
-      return e(React.Fragment, null,
-        // 🆕 2026-05-24: CSS pra animações (stagger + zoom-fade + hover)
-        e('style', null, `
-          @keyframes filaCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes filaCardZoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.03); } }
-          @keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-          .fila-card { opacity: 0; animation: filaCardIn 280ms ease forwards; transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
-          .fila-card:hover { border-color: rgba(0,0,0,0.18); transform: translateY(-1px); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-          .fila-card:active { transform: scale(0.985); }
-          .fila-card.is-clicked { animation: filaCardZoomOut 280ms ease forwards; pointer-events: none; }
-        `),
-        e('div', { className: 'space-y-4 p-2' },
-        // Header
-        e('div', { className: 'flex items-center justify-between gap-3' },
-          e('div', null,
-            e('h2', { className: 'text-lg font-semibold text-gray-800 flex items-center gap-2' },
-              e('span', null, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))), 'Filas auto-gerenciáveis'
-            ),
-            e('p', { className: 'text-sm text-gray-500 mt-0.5' },
-              'Motoboys se organizam · agente Playwright valida no sistema externo'
-            )
-          ),
-          e('button', {
-            onClick: () => setModalCentral({
-              tipo: 'auto',
-              raio_metros: 900,
-              validacao_agente_ativa: true,
-              varredura_intervalo_seg: 30,
-              remover_ao_pegar_corrida: true,
-              mostrar_nomes_publicos: true,
-              penalidade_min: 10,
-              ativa: true,
-            }),
-            className: 'px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium flex items-center gap-1'
-          }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-plus" })), "Nova central auto"))
-        ),
+    const modalCentralEl = () => modalCentral && renderModalCentral({
+      dados: modalCentral,
+      onChange: setModalCentral,
+      onSalvar: salvarCentral,
+      onCancelar: () => setModalCentral(null),
+      buscarEnderecoDebounced,
+      buscandoEndereco,
+      enderecoValidado,
+      coordenadasEncontradas,
+      modoManual,
+      setModoManual,
+      geocodeDown,
+    });
 
+    if (!centralSelecionada) {
+      const ativas = centrais.filter(c => c.ativa);
+      const somaFila = centrais.reduce((a, c) => a + (parseInt(c.na_fila) || 0), 0);
+      const somaRota = centrais.reduce((a, c) => a + (parseInt(c.em_rota) || 0), 0);
+      const somaVinc = centrais.reduce((a, c) => a + (parseInt(c.total_vinculados) || 0), 0);
+      const novaCentral = () => setModalCentral({
+        tipo: 'auto',
+        raio_metros: 900,
+        validacao_agente_ativa: true,
+        varredura_intervalo_seg: 30,
+        remover_ao_pegar_corrida: true,
+        mostrar_nomes_publicos: true,
+        penalidade_min: 10,
+        ativa: true,
+      });
+      return e('div', { className: 'space-y-5 -mx-2 sm:mx-0' /* FILAS_CLEAN_V1 */ },
+        // Header
+        e('div', { className: 'flex flex-wrap items-end justify-between gap-3' },
+          e('div', null,
+            tituloPagina('Filas auto-gerenciáveis'),
+            e('p', { className: 'text-sm text-gray-500 mt-1' }, 'Motoboys se organizam · agente Playwright valida no sistema externo')
+          ),
+          e('button', { onClick: novaCentral, className: BTN_PRI }, ico('plus', 16), 'Nova central auto')
+        ),
+        !loading && centrais.length > 0 && kpiFaixa([
+          kpiCell('Centrais ativas', ativas.length, { sub: `de ${centrais.length} cadastradas` }),
+          kpiCell('Na fila agora', somaFila, { dot: '#d97706' }),
+          kpiCell('Em rota', somaRota, { dot: '#2563eb' }),
+          kpiCell('Motoboys vinculados', somaVinc),
+        ]),
         // Lista
-        loading
-          ? e('div', { className: 'text-center py-12 text-gray-400' }, 'Carregando...')
-          : centrais.length === 0
-            ? e('div', {
-                className: 'border border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50'
-              },
-                e('div', { className: 'text-4xl mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))),
-                e('p', { className: 'text-gray-700 font-medium' }, 'Nenhuma central auto-gerenciável ainda'),
-                e('p', { className: 'text-gray-500 text-sm mt-1' }, 'Clique em "Nova central auto" pra começar'),
-              )
-            : e('div', {
-                className: 'fila-card-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
-              },
-                centrais.map((c, idx) => {
-                  const corBarra = !c.ativa ? '#9ca3af' : '#770fa8'; // roxa pra auto, cinza pra inativa
-                  return e('div', {
+        e('div', { className: CARD + ' overflow-hidden' },
+          loading
+            ? vazio('Carregando...')
+            : centrais.length === 0
+              ? vazio('Nenhuma central auto-gerenciável ainda. Clique em "Nova central auto" pra começar.', e('button', { onClick: novaCentral, className: BTN_PRI }, ico('plus', 16), 'Nova central auto'))
+              : e(React.Fragment, null,
+                  e('div', { className: 'grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,1fr)_130px_100px_100px_80px_80px_28px] gap-x-4 px-4 py-2.5 bg-gray-50 text-xs font-semibold text-gray-500' },
+                    e('span', null, 'Central'), e('span', { className: 'hidden md:block' }, 'Agente'), e('span', null, 'Status'), e('span', { className: 'hidden md:block text-right' }, 'Vinculados'), e('span', { className: 'hidden md:block text-right' }, 'Na fila'), e('span', { className: 'hidden md:block text-right' }, 'Em rota'), e('span', { className: 'hidden md:block' })),
+                  centrais.map((c) => e('button', {
                     key: c.id,
+                    type: 'button',
                     id: `fila-card-${c.id}`,
-                    className: `fila-card bg-white border ${c.ativa ? 'border-gray-200' : 'border-gray-200 opacity-55'}`,
-                    style: {
-                      borderRadius: '12px',
-                      padding: '14px 16px 14px 12px',
-                      display: 'flex',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      animationDelay: `${Math.min(idx * 35, 350)}ms`
-                    },
-                    onClick: (ev) => {
-                      const card = ev.currentTarget;
-                      card.classList.add('is-clicked');
+                    onClick: () => {
                       window.__tuttsFilaShared = { nome: c.nome, ehAuto: true, ativa: c.ativa };
-                      setTimeout(() => setCentralSelecionada(c), 280);
-                    }
+                      setCentralSelecionada(c);
+                    },
+                    className: 'w-full text-left grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,1fr)_130px_100px_100px_80px_80px_28px] gap-x-4 gap-y-1 items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50 transition-colors'
                   },
-                    // Barra lateral roxa (auto)
-                    e('div', { style: { width: '3px', background: corBarra, borderRadius: '999px', flexShrink: 0 } }),
-                    // Conteúdo
-                    e('div', { style: { flex: 1, minWidth: 0 } },
-                      // Header (nome + endereço + badge)
-                      e('div', {
-                        style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }
-                      },
-                        e('div', { style: { minWidth: 0 } },
-                          e('p', { style: { fontSize: '14px', fontWeight: 500, margin: '0 0 2px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, c.nome),
-                          e('p', { style: { fontSize: '11px', color: '#6B7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-                            `${c.endereco || 'Sem endereço'} · ${c.total_vinculados || 0} vinculado${(c.total_vinculados || 0) === 1 ? '' : 's'}`
-                          )
-                        ),
-                        !c.ativa
-                          ? e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#fef2f2', color: '#991b1b', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
-                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#faf7fd', color: '#770fa8', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Auto"))
-                      ),
-                      // Stats
-                      e('div', { style: { display: 'flex', gap: '18px' } },
-                        e('div', null,
-                          e('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Na fila'),
-                          e('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.na_fila || 0)
-                        ),
-                        e('div', { style: { width: '0.5px', background: 'rgba(0,0,0,0.08)' } }),
-                        e('div', null,
-                          e('p', { style: { fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', margin: 0, letterSpacing: '0.04em' } }, 'Em rota'),
-                          e('p', { style: { fontSize: '24px', fontWeight: 500, margin: '2px 0 0', lineHeight: 1, color: '#111827' } }, c.em_rota || 0)
-                        )
-                      )
-                    )
-                  );
-                })
-              )
+                    e('div', { className: 'min-w-0' },
+                      e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, c.nome),
+                      e('p', { className: 'text-xs text-gray-500 truncate' }, c.endereco || 'Sem endereço')
+                    ),
+                    e('div', { className: 'hidden md:block' }, c.validacao_agente_ativa ? pill('verde', 'Agente ativo') : pill('cinza', 'Agente desligado')),
+                    e('div', null, c.ativa ? pill('verde', 'Ativa') : pill('cinza', 'Inativa')),
+                    e('p', { className: 'hidden md:block text-sm text-gray-700 text-right tabular-nums' }, c.total_vinculados || 0),
+                    e('p', { className: 'hidden md:block text-sm font-semibold text-gray-900 text-right tabular-nums' }, c.na_fila || 0),
+                    e('p', { className: 'hidden md:block text-sm font-semibold text-gray-900 text-right tabular-nums' }, c.em_rota || 0),
+                    e('span', { className: 'hidden md:inline-flex justify-end text-gray-400' }, ico('arrowright', 16)),
+                    e('p', { className: 'md:hidden col-span-2 text-xs text-gray-500 tabular-nums' }, `${c.na_fila || 0} na fila · ${c.em_rota || 0} em rota · ${c.total_vinculados || 0} vinculado${(c.total_vinculados || 0) === 1 ? '' : 's'}`)
+                  ))
+                )
         ),
         // 🆕 FIX: modal precisa estar disponível TAMBÉM no early-return da lista,
         // senão clicar "Nova central auto" muda o state mas nada renderiza.
-        modalCentral && renderModalCentral({
-          dados: modalCentral,
-          onChange: setModalCentral,
-          onSalvar: salvarCentral,
-          onCancelar: () => setModalCentral(null),
-          buscarEnderecoDebounced,
-          buscandoEndereco,
-          enderecoValidado,
-          coordenadasEncontradas,
-          modoManual,
-          setModoManual,
-          geocodeDown,
-        })
+        modalCentralEl()
       );
     }
 
     // ════════════════════════════════════════════════════════
     // RENDER — central selecionada (tabs)
     // ════════════════════════════════════════════════════════
-    return e('div', { className: 'space-y-3', style: { animation: 'filaTelaZoomIn 280ms ease' } },
-      // CSS pra animação de entrada (caso o usuário entre direto na tela)
-      e('style', null, `@keyframes filaTelaZoomIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }`),
-      // Header com voltar
-      e('div', { className: 'flex items-center gap-2' },
-        e('button', {
-          onClick: () => setCentralSelecionada(null),
-          className: 'text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1'
-        }, '← Voltar'),
-        e('span', { className: 'text-gray-300' }, '·'),
-        e('h2', { className: 'text-lg font-semibold text-gray-800 flex items-center gap-2' },
-          e('span', null, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" }))), centralSelecionada.nome
-        ),
-        e('span', {
-          className: `text-[10px] px-2 py-0.5 rounded font-medium ml-auto ${centralSelecionada.validacao_agente_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`
-        }, centralSelecionada.validacao_agente_ativa ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "agente ativo") : 'agente desligado')
+    // FILAS_DIARIA_VAGAS_FRONT_V1_ABAS: +2 abas. A Diária fica ao lado do
+    // Garantido (são irmãs, e são mutuamente exclusivas — ver juntas ajuda a
+    // entender que só uma vale). A Vagas fica no fim porque é trava de fila,
+    // não de remuneração.
+    const ABAS = [['monitor', 'Monitor', 'chart'], ['config', 'Configuração', 'settings'], ['vinculos', 'Vínculos', 'link'], ['penalidades', 'Punidos', 'ban'], ['garantido', 'Garantido', 'shield'], ['diaria', 'Diária', 'calendar'], ['vagas', 'Vagas', 'lock'], ['logs', 'Logs do agente', 'list']];
+    return e('div', { className: 'space-y-5 -mx-2 sm:mx-0' /* FILAS_CLEAN_V1 */ },
+      // Cabeçalho: voltar (breadcrumb) + título + status do agente + ação
+      e('div', null,
+        e('button', { onClick: () => setCentralSelecionada(null), className: 'inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-800 mb-1.5' }, ico('arrowleft', 14), 'Voltar · Filas auto-gerenciáveis'),
+        e('div', { className: 'flex flex-wrap items-end justify-between gap-3' },
+          e('div', { className: 'min-w-0' },
+            e('div', { className: 'flex items-center gap-2.5 flex-wrap' },
+              tituloPagina(centralSelecionada.nome),
+              centralSelecionada.validacao_agente_ativa ? pill('verde', 'Agente ativo') : pill('cinza', 'Agente desligado'),
+              centralSelecionada.ativa === false && pill('cinza', 'Inativa')
+            ),
+            e('p', { className: 'text-sm text-gray-500 mt-1 truncate' }, (centralSelecionada.endereco || '—') + ' · ' + vinculos.length + ' vinculados')
+          ),
+          abaAtiva === 'monitor' && e('button', { onClick: () => setModalColocarFila(true), className: BTN_PRI }, ico('plus', 16), 'Colocar na fila')
+        )
       ),
 
-      // Tabs
-      e('div', { className: 'bg-white border border-gray-200 rounded-xl p-1 flex gap-1' },
-        // FILAS_DIARIA_VAGAS_FRONT_V1_ABAS: +2 abas. A Diária fica ao lado do
-        // Garantido (são irmãs, e são mutuamente exclusivas — ver juntas ajuda a
-        // entender que só uma vale). A Vagas fica no fim porque é trava de fila,
-        // não de remuneração.
-        ['monitor', 'config', 'vinculos', 'penalidades', 'garantido', 'diaria', 'vagas', 'logs'].map(aba => e('button', {
-          key: aba,
-          onClick: () => setAbaAtiva(aba),
-          className: `flex-1 px-3 py-1.5 rounded-lg text-sm font-medium ${abaAtiva === aba ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`
-        }, aba === 'monitor' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-chart" })), 'Monitor') : aba === 'config' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-settings" })), 'Configuração') : aba === 'vinculos' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-link" })), 'Vínculos') : aba === 'penalidades' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })), `Punidos${penalidades.length > 0 ? ' (' + penalidades.length + ')' : ''}`) : aba === 'garantido' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-shield" })), "Garantido") : aba === 'diaria' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-calendar" })), "Diária") : aba === 'vagas' ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })), "Vagas") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-list" })), 'Logs do agente')))
+      // Tabs (sublinhadas)
+      e('div', { className: 'border-b border-gray-200 overflow-x-auto', role: 'tablist' },
+        e('div', { className: 'flex gap-6 min-w-max' },
+          ABAS.map(([aba, label, icone]) => {
+            const at = abaAtiva === aba;
+            return e('button', {
+              key: aba, role: 'tab', 'aria-selected': at,
+              onClick: () => setAbaAtiva(aba),
+              className: 'inline-flex items-center gap-1.5 -mb-px py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors hover:text-gray-900',
+              style: { color: at ? '#5d0b85' : '#6b7280', fontWeight: at ? 600 : 500, borderBottomColor: at ? '#770fa8' : 'transparent' }
+            }, ico(icone, 15), label, aba === 'penalidades' && penalidades.length > 0 ? e('span', { className: 'ml-0.5 text-[11px] font-semibold text-red-800 bg-red-50 rounded-full px-1.5 tabular-nums' }, penalidades.length) : null);
+          })
+        )
       ),
 
       // === ABA MONITOR ===
@@ -753,30 +758,20 @@
         vincularProfissional, desvincularProfissional,
       }),
 
-      // === ABA LOGS ===
-      abaAtiva === 'penalidades' && e('div', { className: 'space-y-3' },
-        // Header
-        e('div', { className: 'flex items-center justify-between' },
-          e('h3', { className: 'font-semibold text-gray-800' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" })), "Motoboys punidos")),
-          e('button', {
-            onClick: () => carregarPenalidades(centralSelecionada.id),
-            className: 'text-xs px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600'
-          }, loadingPenal ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Carregando...") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Atualizar"))
+      // === ABA PUNIDOS ===
+      abaAtiva === 'penalidades' && e('div', { className: CARD + ' overflow-hidden' },
+        e('div', { className: 'flex flex-wrap items-center justify-between gap-3 px-4 py-3' },
+          e('div', null,
+            tituloCard('Motoboys punidos', contador(penalidades.length)),
+            e('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Punições são aplicadas automaticamente quando o motoboy sai da fila voluntariamente. Só remova se houver motivo legítimo (ex: emergência).')
+          ),
+          e('button', { onClick: () => carregarPenalidades(centralSelecionada.id), className: BTN_SEC }, loadingPenal ? e(React.Fragment, null, ico('clock', 16), 'Carregando...') : e(React.Fragment, null, ico('refresh', 16), 'Atualizar'))
         ),
-        // Info
-        e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800' },
-          'Punições são aplicadas automaticamente quando o motoboy sai da fila voluntariamente. ',
-          'Só remova se houver motivo legítimo (ex: emergência).'
-        ),
-        // Lista
         loadingPenal
-          ? e('div', { className: 'text-center py-8 text-gray-400' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Carregando..."))
+          ? e('div', { className: 'border-t border-gray-100' }, vazio('Carregando...'))
           : penalidades.length === 0
-            ? e('div', { className: 'text-center py-10 text-gray-400' },
-                e('span', { className: 'text-4xl block mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" }))),
-                e('p', { className: 'text-sm' }, 'Nenhum motoboy punido no momento')
-              )
-            : e('div', { className: 'space-y-2' }, penalidades.map(p => {
+            ? e('div', { className: 'border-t border-gray-100' }, vazio('Nenhum motoboy punido no momento.'))
+            : e('div', null, penalidades.map(p => {
                 const dt = new Date(p.bloqueado_ate);
                 const agora = new Date();
                 const totalMs = dt - new Date(p.created_at);
@@ -788,40 +783,34 @@
                   : `${restMin} min`;
                 const ehManual = p.tipo === 'manual';
                 const ehBarreira = p.tipo === 'barreira_horario';
-                const badgeClass = ehManual ? 'bg-purple-100 text-purple-700'
-                  : ehBarreira ? 'bg-orange-100 text-orange-700'
-                  : 'bg-red-100 text-red-700';
-                const badgeLabel = ehManual ? 'manual' : ehBarreira ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "horário") : 'automática';
+                const badge = ehManual ? pill('roxo', 'manual') : ehBarreira ? pill('ambar', 'horário') : pill('vermelho', 'automática');
                 const subLabel = ehManual
                   ? `Aplicada por ${p.aplicado_por_nome || 'admin'}`
                   : ehBarreira
                     ? (p.motivo_admin || 'Acesso após horário de corte')
                     : `${p.saidas_hoje || 0} saída(s) hoje`;
-                return e('div', { key: p.id, className: 'bg-white border border-red-200 rounded-xl p-4' },
-                  e('div', { className: 'flex items-start justify-between gap-3 mb-3' },
-                    e('div', { className: 'flex-1 min-w-0' },
-                      e('div', { className: 'flex items-center gap-2 mb-0.5' },
-                        e('p', { className: 'font-bold text-gray-800 truncate' }, p.nome_profissional || `#${p.cod_profissional}`),
-                        e('span', { className: `text-[10px] font-semibold px-1.5 py-0.5 rounded ${badgeClass}` }, badgeLabel)
-                      ),
-                      e('p', { className: 'text-xs text-gray-500' }, subLabel)
+                return e('div', { key: p.id, className: 'px-4 py-3 border-t border-gray-100 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px_auto] items-center' },
+                  e('div', { className: 'min-w-0' },
+                    e('div', { className: 'flex items-center gap-2 flex-wrap' },
+                      e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, p.nome_profissional || `#${p.cod_profissional}`),
+                      badge
                     ),
-                    e('button', {
-                      onClick: () => anularPenalidade(p),
-                      className: 'flex-shrink-0 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700'
-                    }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Remover punição"))
+                    e('p', { className: 'text-xs text-gray-500 mt-0.5' }, subLabel),
+                    p.motivo_admin && !ehBarreira && e('p', { className: 'text-xs text-gray-500 mt-0.5' }, `Motivo: ${p.motivo_admin}`)
                   ),
                   // Barra de progresso do tempo restante
-                  e('div', { className: 'mb-1.5' },
-                    e('div', { className: 'flex justify-between text-[11px] text-gray-500 mb-1' },
-                      e('span', null, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Tempo restante")),
-                      e('span', { className: 'font-medium text-red-600' }, restLabel)
+                  e('div', null,
+                    e('div', { className: 'flex justify-between text-xs mb-1' },
+                      e('span', { className: 'text-gray-500' }, 'Tempo restante'),
+                      e('span', { className: 'font-semibold text-red-800 tabular-nums' }, restLabel)
                     ),
-                    e('div', { className: 'h-1.5 bg-red-100 rounded-full overflow-hidden' },
-                      e('div', { className: 'h-full bg-red-400 rounded-full transition-all', style: { width: pct + '%' } })
+                    e('div', { className: 'h-1.5 bg-gray-100 rounded-full overflow-hidden' },
+                      e('div', { className: 'h-full rounded-full transition-all', style: { width: pct + '%', background: '#dc2626' } })
                     )
                   ),
-                  p.motivo_admin && e('p', { className: 'text-xs text-gray-500 mt-1.5 italic' }, `Motivo: ${p.motivo_admin}`)
+                  e('div', { className: 'sm:text-right' },
+                    e('button', { onClick: () => anularPenalidade(p), className: BTN_SEC_SM }, ico('check', 14, '#16a34a'), 'Remover punição')
+                  )
                 );
               }))
       ),
@@ -829,7 +818,7 @@
 
       abaAtiva === 'garantido' && centralSelecionada && (typeof window.ModuloGarantidoAdmin !== 'undefined'
         ? e(window.ModuloGarantidoAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
-        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar o Garantido.')),
+        : e('div', { className: CARD }, vazio('Recarregue a pagina (Ctrl+F5) para carregar o Garantido.'))),
 
       // FILAS_DIARIA_VAGAS_FRONT_V1_RENDER
       // O `typeof !== 'undefined'` é o mesmo do Garantido: os módulos são
@@ -838,26 +827,14 @@
       // quebrar em tela branca.
       abaAtiva === 'diaria' && centralSelecionada && (typeof window.ModuloDiariaAdmin !== 'undefined'
         ? e(window.ModuloDiariaAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
-        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar a Diária.')),
+        : e('div', { className: CARD }, vazio('Recarregue a pagina (Ctrl+F5) para carregar a Diária.'))),
 
       abaAtiva === 'vagas' && centralSelecionada && (typeof window.ModuloVagasAdmin !== 'undefined'
         ? e(window.ModuloVagasAdmin, { apiUrl, fetchAuth, showToast, central: centralSelecionada })
-        : e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Recarregue a pagina (Ctrl+F5) para carregar as Vagas.')),
+        : e('div', { className: CARD }, vazio('Recarregue a pagina (Ctrl+F5) para carregar as Vagas.'))),
 
       // Modal de nova/editar central
-      modalCentral && renderModalCentral({
-        dados: modalCentral,
-        onChange: setModalCentral,
-        onSalvar: salvarCentral,
-        onCancelar: () => setModalCentral(null),
-        buscarEnderecoDebounced,
-        buscandoEndereco,
-        enderecoValidado,
-        coordenadasEncontradas,
-        modoManual,
-        setModoManual,
-        geocodeDown,
-      }),
+      modalCentralEl(),
 
       // 🆕 2026-05-24: Modal "Colocar na fila"
       modalColocarFila && centralSelecionada && renderModalColocarFila({
@@ -884,13 +861,13 @@
     if (foto) {
       return e('img', {
         src: foto, alt: nome || '',
-        style: { width: size + 'px', height: size + 'px', objectFit: 'cover', border: '0.5px solid #E5E7EB' },
+        style: { width: size + 'px', height: size + 'px', objectFit: 'cover', border: '1px solid #e5e7eb' },
         className: 'rounded-full flex-shrink-0'
       });
     }
     return e('div', {
       style: { width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.36) + 'px' },
-      className: 'rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-semibold flex-shrink-0'
+      className: 'rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-semibold flex-shrink-0'
     }, iniciais);
   }
 
@@ -929,8 +906,11 @@
     const kpis = filaCompleta.kpis || {};
     const totalSemDisp = filaCompleta.total_sem_disponibilidade || 0;  // 🆕 2026-05-24
 
-    // Card de motoboy aguardando — com drag-and-drop (igual fila clássica)
+    const agentePill = (st) => st === 'validado' ? pill('verde', 'validado') : st === 'reprovado' ? pill('vermelho', 'reprovado') : pill('ambar', 'verificando');
+
+    // Linha de motoboy aguardando — com drag-and-drop (igual fila clássica)
     const renderCardAguardando = (p, i) => {
+      const arrastando = dragData === p.cod_profissional;
       return e('div', {
         key: p.cod_profissional,
         draggable: true,
@@ -947,201 +927,114 @@
           if (cod && cod !== p.cod_profissional) reordenarMotoboy(cod, p.posicao);
           setDragData && setDragData(null);
         },
-        className: `border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all ${dragData === p.cod_profissional ? 'opacity-50 scale-95' : ''} border-gray-200 bg-white`
+        className: 'px-4 py-3 border-t border-gray-100 cursor-grab active:cursor-grabbing transition-opacity ' + (arrastando ? 'opacity-50 bg-gray-50' : 'bg-white hover:bg-gray-50')
       },
-        // Linha 1: handle + posição + avatar + nome
-        e('div', { className: 'flex items-center gap-2.5 mb-2' },
-          e('span', { className: 'text-gray-300', style: { fontSize: '14px' } }, '⠿'),
-          e('div', {
-            className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${i === 0 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`
-          }, p.posicao),
-          avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 28),
+        e('div', { className: 'flex items-center gap-3' },
+          e('span', { className: 'text-gray-300 select-none hidden sm:inline', style: { fontSize: '14px' }, 'aria-hidden': 'true' }, '⠿'),
+          e('span', { style: { width: 22, textAlign: 'right', fontFamily: SORA, fontWeight: 700, fontSize: 15, color: '#111827', fontVariantNumeric: 'tabular-nums', flex: 'none' } }, p.posicao),
+          avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 32),
           e('div', { className: 'flex-1 min-w-0' },
-            e('p', { className: 'font-medium text-sm text-gray-900 truncate' }, p.nome_profissional || '—'),
-            e('div', { className: 'flex items-center gap-2 text-xs text-gray-500' },
-              e('span', null, '#', p.cod_profissional),
-              e('span', null, '·'),
-              e('span', null, formatarMinAtras(p.entrada_fila_at), ' na fila')
-            )
+            e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, p.nome_profissional || '—'),
+            e('p', { className: 'text-xs text-gray-500 tabular-nums truncate' }, '#' + p.cod_profissional + ' · ' + formatarMinAtras(p.entrada_fila_at) + ' na fila')
           ),
           // Badge do agente (mantém info auto)
-          p.agente_status === 'validado'
-            ? e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "validado"))
-            : p.agente_status === 'reprovado'
-              ? e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700' }, '× reprovado')
-              : e('span', { className: 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800' }, 'verificando')
-        ),
-        // 🆕 2026-05-24 (v4): aviso "Sem Disponibilidade" — motoboy na fila mas sem linha em disponibilidade_linhas
-        // Força admin a alocar (caso contrário ele não vai aparecer nos relatórios/dashboards do dia)
-        // 🔧 v4: comparação === false explícita pra não disparar quando backend está desatualizado (undefined)
-        p.disponibilidade_alocado === false && e('div', {
-          className: 'flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2',
-          title: 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.'
-        },
-          e('span', { className: 'text-base' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
-          e('span', { className: 'text-xs font-semibold text-red-700' }, 'Sem Disponibilidade'),
-          e('span', { className: 'text-[10px] text-red-600 ml-auto' }, 'Aloque na escala'),
-        ),
-        // Linha 2: ação remover (mantida)
-        e('div', { className: 'flex justify-end' },
+          e('span', { className: 'hidden sm:inline-flex' }, agentePill(p.agente_status)),
           e('button', {
             onClick: () => removerMotoboy(p.cod_profissional, p.nome_profissional),
-            className: 'text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded',
-            title: 'Remover da fila'
-          }, '× Remover')
+            className: BTN_ICO_DEST,
+            title: 'Remover da fila', 'aria-label': 'Remover da fila'
+          }, ico('x', 15))
+        ),
+        // Status (mobile) + aviso "Sem Disponibilidade" (=== false explícito: backend desatualizado = undefined)
+        e('div', { className: 'flex flex-wrap items-center gap-1.5 mt-2 sm:pl-[100px] ' + (p.disponibilidade_alocado === false ? '' : 'sm:hidden') },
+          e('span', { className: 'contents sm:hidden' }, agentePill(p.agente_status)),
+          p.disponibilidade_alocado === false && pill('vermelho', 'Sem disponibilidade · aloque na escala', 'Este motoboy entrou na fila mas não está alocado em nenhuma disponibilidade. Aloque-o para que apareça nos relatórios do dia.')
         )
       );
     };
 
     return e('div', { className: 'space-y-4' },
-      // Header com botão "Colocar na fila" (padrão clássica)
-      e('div', { className: 'flex items-center justify-end' },
-        e('button', {
-          onClick: abrirModalColocarFila,
-          className: 'px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-1',
-        }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-plus" })), e('span', { className: 'hidden sm:inline' }, 'Colocar na fila'))
-      ),
-
-      // === KPIs (3 cards padrão clássica: Aguardando, Em Rota, Alertas +90min + 4º Sem Disp. quando houver) ===
-      e('div', { className: `grid gap-2 ${totalSemDisp > 0 ? 'grid-cols-4' : 'grid-cols-3'}` },
-        e('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-          e('div', { className: 'text-xs text-gray-500 mb-1' }, 'Aguardando'),
-          e('div', { className: 'text-2xl font-semibold text-blue-700' }, kpis.total_aguardando || 0)
-        ),
-        e('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-          e('div', { className: 'text-xs text-gray-500 mb-1' }, 'Em Rota'),
-          e('div', { className: 'text-2xl font-semibold text-green-700' }, kpis.total_em_rota || 0)
-        ),
-        e('div', { className: `bg-white border rounded-xl p-3 ${alertas.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}` },
-          e('div', { className: 'text-xs text-gray-500 mb-1' }, 'Alertas +90min'),
-          e('div', { className: `text-2xl font-semibold ${alertas.length > 0 ? 'text-red-700' : 'text-gray-400'}` }, alertas.length)
-        ),
+      // === KPIs: faixa única ===
+      kpiFaixa([
+        kpiCell('Aguardando', kpis.total_aguardando || 0, { dot: '#d97706' }),
+        kpiCell('Em rota', kpis.total_em_rota || 0, { dot: '#2563eb' }),
+        kpiCell('Alertas +90min', alertas.length, { cor: alertas.length > 0 ? '#991b1b' : '#9ca3af', dot: alertas.length > 0 ? '#dc2626' : null }),
         // 🆕 2026-05-24: KPI de motoboys na fila SEM alocação na disponibilidade
-        totalSemDisp > 0 && e('div', {
-          className: 'bg-red-50 border border-red-300 rounded-xl p-3',
-          title: 'Motoboys aguardando na fila mas sem linha em disponibilidade. Aloque-os na escala para que apareçam nos relatórios.'
-        },
-          e('div', { className: 'text-xs text-red-700 mb-1 font-medium' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Sem Disp.")),
-          e('div', { className: 'text-2xl font-semibold text-red-700' }, totalSemDisp)
-        )
-      ),
-
-      // Linha contexto vinculados
-      e('div', { className: 'text-xs text-gray-400 text-right -mt-2' },
-        e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })), totalVinculados || 0, ' motoboys vinculados a esta central'
-      ),
+        totalSemDisp > 0 && kpiCell('Sem disponibilidade', totalSemDisp, { cor: '#991b1b', dot: '#dc2626', title: 'Motoboys aguardando na fila mas sem linha em disponibilidade. Aloque-os na escala para que apareçam nos relatórios.' }),
+        kpiCell('Vinculados', totalVinculados || 0, { sub: 'motoboys nesta central' }),
+      ]),
 
       // Alertas (se houver)
-      alertas.length > 0 && e('div', { className: 'bg-red-50 border-2 border-red-400 rounded-xl p-4 animate-pulse' },
-        e('div', { className: 'flex items-center gap-3 mb-3' },
-          e('span', { className: 'text-3xl' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
-          e('div', null,
-            e('p', { className: 'text-red-800 font-bold text-lg' }, `ATENÇÃO: ${alertas.length} profissional(is) não retornou!`),
-            e('p', { className: 'text-red-600 text-sm' }, 'Tempo em rota > 1h30min')
-          )
+      alertas.length > 0 && e('div', { className: 'bg-white border border-red-200 rounded-[14px] overflow-hidden' },
+        e('div', { className: 'flex flex-wrap items-center gap-2 px-4 py-3 bg-red-50' },
+          ico('alert', 16, '#dc2626'),
+          e('p', { className: 'text-sm font-semibold text-red-800' }, `Atenção: ${alertas.length} profissional(is) não retornou`),
+          e('span', { className: 'text-xs text-red-800' }, '· tempo em rota > 1h30min')
         ),
-        e('div', { className: 'grid md:grid-cols-2 gap-2' },
-          alertas.map(p => e('div', {
-            key: p.cod_profissional,
-            className: 'bg-white border border-red-300 rounded-lg p-3 flex justify-between items-center',
-          },
-            e('div', null,
-              e('p', { className: 'font-bold' }, p.nome_profissional || '—'),
-              e('p', { className: 'text-sm text-red-600' }, `${formatarTempo(p.minutos_em_rota || 0)} em rota`)
-            ),
-            e('button', {
-              onClick: () => removerMotoboy(p.cod_profissional, p.nome_profissional),
-              className: 'px-3 py-1 bg-red-600 text-white rounded-lg text-sm',
-            }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })))
-          ))
-        )
+        alertas.map(p => e('div', { key: p.cod_profissional, className: 'flex items-center gap-3 px-4 py-2.5 border-t border-red-100' },
+          e('p', { className: 'flex-1 min-w-0 text-sm font-semibold text-gray-900 truncate' }, p.nome_profissional || '—'),
+          e('span', { className: 'text-sm font-semibold text-red-800 tabular-nums' }, `${formatarTempo(p.minutos_em_rota || 0)} em rota`),
+          e('button', { onClick: () => removerMotoboy(p.cod_profissional, p.nome_profissional), className: BTN_ICO_DEST, title: 'Remover', 'aria-label': 'Remover' }, ico('x', 15))
+        ))
       ),
 
-      // === LAYOUT 2 COLUNAS: Fila de Espera | Em Rota ===
-      e('div', { className: 'grid md:grid-cols-2 gap-4' },
-        // ── Coluna 1: FILA DE ESPERA ──
-        e('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-          e('div', { className: 'flex items-center justify-between mb-3 px-1' },
-            e('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' },
-              'Fila de Espera · ',
-              e('span', { className: 'text-gray-700' }, fila.length),
-              ' motoboys'
-            ),
-            e('div', { className: 'flex items-center gap-2' },
-              e('button', {
-                onClick: dispararVarreduraAgora,
-                className: 'text-[10px] px-2 py-0.5 bg-white border border-gray-200 hover:bg-gray-50 rounded text-gray-600',
-                title: 'Disparar varredura do agente agora',
-              }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Varrer")),
-              e('span', { className: 'text-[10px] text-gray-400' }, 'arraste pra reordenar')
+      // === 2 COLUNAS: Fila de Espera | Em Rota ===
+      e('div', { className: 'grid lg:grid-cols-2 gap-4 items-start' },
+        // ── FILA DE ESPERA ──
+        e('div', { className: CARD + ' overflow-hidden' },
+          e('div', { className: 'flex items-center justify-between gap-2 px-4 py-3' },
+            tituloCard('Fila de espera', contador(fila.length)),
+            e('div', { className: 'flex items-center gap-3' },
+              e('span', { className: 'text-xs text-gray-400 hidden sm:inline' }, 'arraste para reordenar'),
+              e('button', { onClick: dispararVarreduraAgora, className: BTN_SEC_SM, title: 'Disparar varredura do agente agora' }, ico('refresh', 14), 'Varrer')
             )
           ),
           fila.length === 0
-            ? e('div', { className: 'text-center py-8 text-gray-400 text-sm' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-mail" })), "Nenhum motoboy aguardando"))
-            : e('div', { className: 'space-y-2' }, fila.map((p, i) => renderCardAguardando(p, i)))
+            ? e('div', { className: 'border-t border-gray-100' }, vazio('Nenhum motoboy aguardando.'))
+            : e('div', null, fila.map((p, i) => renderCardAguardando(p, i)))
         ),
 
-        // ── Coluna 2: EM ROTA ──
-        e('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-          e('div', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1' },
-            'Em Rota · ',
-            e('span', { className: 'text-gray-700' }, emRota.length),
-            ' motoboys'
-          ),
+        // ── EM ROTA ──
+        e('div', { className: CARD + ' overflow-hidden' },
+          e('div', { className: 'flex items-center justify-between gap-2 px-4 py-3' }, tituloCard('Em rota', contador(emRota.length))),
           emRota.length === 0
-            ? e('div', { className: 'text-center py-8 text-gray-400 text-sm' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-home" })), "Nenhum despachado"))
-            : e('div', { className: 'space-y-2' }, emRota.map(p => e('div', {
-                key: p.cod_profissional,
-                className: `border rounded-lg p-3 ${(p.minutos_em_rota || 0) > 90 ? 'border-red-300 bg-red-50' : 'border-gray-200'} flex flex-col gap-2`,
-              },
-                e('div', { className: 'flex items-center justify-between' },
-                  e('div', { className: 'flex items-center gap-3' },
-                    avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 32),
-                    e('div', null,
-                      e('p', { className: 'font-medium text-sm' }, p.nome_profissional || '—'),
-                      e('p', {
-                        className: `text-xs ${(p.minutos_em_rota || 0) > 90 ? 'text-red-600 font-bold' : 'text-gray-500'}`,
-                      }, `${formatarTempo(p.minutos_em_rota || 0)} em rota`)
-                    )
+            ? e('div', { className: 'border-t border-gray-100' }, vazio('Nenhum motoboy despachado.'))
+            : e('div', null, emRota.map(p => {
+                const atrasado = (p.minutos_em_rota || 0) > 90;
+                return e('div', { key: p.cod_profissional, className: 'flex items-center gap-3 px-4 py-3 border-t border-gray-100' },
+                  avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 32),
+                  e('div', { className: 'flex-1 min-w-0' },
+                    e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, p.nome_profissional || '—'),
+                    e('p', { className: 'text-xs tabular-nums ' + (atrasado ? 'text-red-800 font-semibold' : 'text-gray-500') }, `${formatarTempo(p.minutos_em_rota || 0)} em rota`)
                   ),
+                  atrasado ? pill('vermelho', '+1h30') : pill('azul', 'Em rota'),
                   e('button', {
                     onClick: () => removerMotoboy(p.cod_profissional, p.nome_profissional),
-                    className: 'text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded',
-                    title: 'Tirar de em-rota',
-                  }, '×')
-                )
-              )))
+                    className: BTN_ICO_DEST,
+                    title: 'Tirar de em-rota', 'aria-label': 'Tirar de em-rota'
+                  }, ico('x', 15))
+                );
+              }))
         )
       ),
 
-      // === Bloqueados (mantém o card original — info útil só pra fila auto) ===
-      bloqueados.length > 0 && e('div', { className: 'space-y-2' },
-        e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium' },
-          `Bloqueados pelo agente · ${bloqueados.length}`
-        ),
-        e('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-2.5 space-y-1.5' },
-          bloqueados.map(b => e('div', {
-            key: b.cod_profissional,
-            className: 'flex items-center gap-2 text-xs',
-          },
-            avatar(b.cod_profissional, b.nome_profissional, fotos[b.cod_profissional], 24),
-            e('span', { className: 'flex-1 text-red-900' },
-              b.nome_profissional || '—', ' · ', b.cod_profissional
-            ),
-            e('span', { className: 'text-[10px] text-red-700 bg-white px-2 py-0.5 rounded' },
-              b.motivo || 'corrida ativa'
-            )
-          ))
-        )
+      // === Bloqueados pelo agente (info útil só pra fila auto) ===
+      bloqueados.length > 0 && e('div', { className: CARD + ' overflow-hidden' },
+        e('div', { className: 'px-4 py-3' }, tituloCard('Bloqueados pelo agente', contador(bloqueados.length))),
+        bloqueados.map(b => e('div', { key: b.cod_profissional, className: 'flex items-center gap-3 px-4 py-2.5 border-t border-gray-100' },
+          avatar(b.cod_profissional, b.nome_profissional, fotos[b.cod_profissional], 28),
+          e('div', { className: 'flex-1 min-w-0' },
+            e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, b.nome_profissional || '—'),
+            e('p', { className: 'text-xs text-gray-500 tabular-nums' }, '#' + b.cod_profissional)
+          ),
+          pill('vermelho', b.motivo || 'corrida ativa')
+        ))
       ),
 
       // === Log resumido (últimos 5) ===
-      logs && logs.length > 0 && e('div', { className: 'space-y-2' },
-        e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium' }, 'Log do agente · últimas ações'),
-        e('div', {
-          className: 'bg-gray-50 rounded-lg p-2.5 space-y-0.5',
-          style: { fontFamily: 'ui-monospace, monospace', fontSize: '11px', lineHeight: 1.7 },
-        }, logs.slice(0, 5).map(l => renderLogLine(l)))
+      logs && logs.length > 0 && e('div', { className: CARD + ' overflow-hidden' },
+        e('div', { className: 'px-4 py-3' }, tituloCard('Log do agente', e('span', { className: 'text-xs text-gray-500' }, 'últimas ações'))),
+        e('div', null, logs.slice(0, 5).map(l => renderLogLine(l)))
       )
     );
   }
@@ -1158,55 +1051,42 @@
     ]);
     const disponiveis = (vinculos || []).filter(v => !codsOcupados.has(v.cod_profissional));
 
-    return e('div', {
-      className: 'fixed inset-0 z-50 flex items-center justify-center p-4',
-      style: { background: 'rgba(0,0,0,0.45)' },
-      onClick: onFechar,
-    },
-      e('div', {
-        className: 'bg-white rounded-2xl p-5 max-w-md w-full max-h-[80vh] flex flex-col',
-        onClick: (ev) => ev.stopPropagation(),
-      },
-        e('div', { className: 'flex items-center justify-between mb-4' },
-          e('h3', { className: 'text-lg font-bold text-gray-800' }, 'Colocar na fila'),
-          e('button', { onClick: onFechar, className: 'text-gray-400 hover:text-gray-600 text-xl' }, '×')
-        ),
-        disponiveis.length === 0
-          ? e('div', { className: 'text-center py-8 text-gray-400 text-sm' },
-              'Todos os motoboys vinculados já estão na fila ou em rota'
-            )
-          : e('div', { className: 'flex-1 overflow-y-auto space-y-2' },
-              disponiveis.map(v => {
-                const cod = v.cod_profissional;
-                const nome = v.nome_profissional || '—';
-                return e('button', {
-                  key: cod,
-                  onClick: () => onColocar(cod, nome),
-                  className: 'w-full flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-blue-300 transition-colors text-left',
-                },
-                  avatar(cod, nome, fotos[cod], 32),
-                  e('div', { className: 'flex-1 min-w-0' },
-                    e('p', { className: 'font-medium text-sm truncate' }, nome),
-                    e('p', { className: 'text-xs text-gray-500' }, '#', cod)
-                  ),
-                  e('span', { className: 'text-blue-600 text-sm font-medium flex-shrink-0' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-plus" })), "Adicionar"))
-                );
-              })
-            )
-      )
-    );
+    return modalBox({
+      titulo: 'Colocar na fila',
+      sub: 'Motoboys vinculados fora da fila',
+      onOverlay: onFechar,
+      onFechar,
+      corpo: disponiveis.length === 0
+        ? vazio('Todos os motoboys vinculados já estão na fila ou em rota.')
+        : e('div', { className: 'border border-gray-200 rounded-[10px] overflow-hidden' },
+            disponiveis.map(v => {
+              const cod = v.cod_profissional;
+              const nome = v.nome_profissional || '—';
+              return e('button', {
+                key: cod,
+                onClick: () => onColocar(cod, nome),
+                className: 'w-full flex items-center gap-3 px-3 py-2.5 border-t border-gray-100 first:border-t-0 hover:bg-gray-50 transition-colors text-left',
+              },
+                avatar(cod, nome, fotos[cod], 28),
+                e('div', { className: 'flex-1 min-w-0' },
+                  e('p', { className: 'text-sm font-medium text-gray-900 truncate' }, nome),
+                  e('p', { className: 'text-xs text-gray-500 tabular-nums' }, '#', cod)
+                ),
+                e('span', { className: 'inline-flex items-center gap-1 text-xs font-semibold text-purple-700 flex-shrink-0' }, ico('plus', 14), 'Adicionar')
+              );
+            })
+          ),
+      rodape: e('button', { onClick: onFechar, className: BTN_SEC }, 'Fechar')
+    });
   }
 
   function kpi(label, value, cor) {
-    return e('div', { className: 'bg-gray-50 rounded-lg p-2.5' },
-      e('p', { className: 'text-[10px] uppercase text-gray-500 tracking-wide font-medium' }, label),
-      e('p', { className: 'text-xl font-semibold mt-0.5', style: cor ? { color: cor } : null }, value)
+    return e('div', { className: 'p-3' },
+      e('p', { className: 'text-xs text-gray-500' }, label),
+      e('p', { className: 'text-xl font-semibold mt-0.5 tabular-nums', style: { color: cor || '#111827', fontFamily: SORA } }, value)
     );
   }
 
-  // ──────────────────────────────────────────────────────────
-  // Configuração da central
-  // ──────────────────────────────────────────────────────────
   // ──────────────────────────────────────────────────────────
   // ConfigPanel — componente React (não função imperativa!)
   // 🔄 2026-05-23: era function renderConfig com useState dentro, o que
@@ -1220,119 +1100,100 @@
     React.useEffect(() => { setDados({ ...central }); }, [central?.id]);
 
     const setCampo = (k, v) => setDados(d => ({ ...d, [k]: v }));
+    const secao = (titulo, sub, ...filhos) => e('div', { className: CARD + ' p-4 space-y-3' },
+      e('div', null, e('h2', { className: 'text-[15px] font-semibold text-gray-900' }, titulo), sub && e('p', { className: 'text-xs text-gray-500 mt-0.5' }, sub)),
+      ...filhos);
+    const linhaSelect = (titulo, sub, el) => e('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' },
+      e('div', { className: 'min-w-0' }, e('p', { className: 'text-sm font-medium text-gray-900' }, titulo), sub && e('p', { className: 'text-xs text-gray-500' }, sub)),
+      el);
 
-    return e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 space-y-4' },
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium' }, 'Identificação'),
-      e('div', { className: 'space-y-2' },
-        labelInput('Nome', dados.nome || '', v => setCampo('nome', v)),
-        labelInput('Endereço', dados.endereco || '', v => setCampo('endereco', v)),
-      ),
-
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-2' }, 'Localização e raio'),
-      e('div', { className: 'grid grid-cols-3 gap-2' },
-        labelInput('Latitude', dados.latitude || '', v => setCampo('latitude', v)),
-        labelInput('Longitude', dados.longitude || '', v => setCampo('longitude', v)),
-        labelInput('Raio (m)', dados.raio_metros || 900, v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
-      ),
-
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-2' }, 'Validação automática (agente Playwright)'),
-      e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2' },
-        toggle('Bloquear se motoboy tem corrida ativa',
-          'Agente busca no sistema externo · valida após entrada',
-          dados.validacao_agente_ativa !== false,
-          v => setCampo('validacao_agente_ativa', v)),
-        toggle('Remover automaticamente ao pegar corrida',
-          'Agente fica monitorando · tira da fila quando detecta nova corrida',
-          dados.remover_ao_pegar_corrida !== false,
-          v => setCampo('remover_ao_pegar_corrida', v)),
-        e('div', { className: 'flex items-center justify-between py-1 border-t border-gray-200 pt-2' },
-          e('div', null,
-            e('p', { className: 'text-xs font-medium text-gray-800' }, 'Frequência de varredura'),
-            e('p', { className: 'text-[11px] text-gray-500' }, 'Intervalo entre checagens do agente'),
-          ),
-          e('select', {
-            value: dados.varredura_intervalo_seg || 30,
-            onChange: ev => setCampo('varredura_intervalo_seg', parseInt(ev.target.value)),
-            className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white'
-          },
-            e('option', { value: 15 }, '15 segundos'),
-            e('option', { value: 30 }, '30 segundos'),
-            e('option', { value: 60 }, '1 minuto'),
-            e('option', { value: 120 }, '2 minutos'),
-          )
-        )
-      ),
-
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-2' }, 'Regras dos motoboys'),
-      e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2' },
-        toggle('Mostrar nomes de todos na fila',
-          'Motoboys veem quem está à frente e atrás (transparência)',
-          dados.mostrar_nomes_publicos !== false,
-          v => setCampo('mostrar_nomes_publicos', v)),
-        e('div', { className: 'flex items-center justify-between py-1 border-t border-gray-200 pt-2' },
-          e('div', null,
-            e('p', { className: 'text-xs font-medium text-gray-800' }, 'Penalidade por sair voluntariamente'),
-            e('p', { className: 'text-[11px] text-gray-500' }, 'Tempo de bloqueio antes de poder reentrar'),
-          ),
-          e('select', {
-            value: dados.penalidade_min || 0,
-            onChange: ev => setCampo('penalidade_min', parseInt(ev.target.value)),
-            className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white'
-          },
-            e('option', { value: 0 }, 'Sem penalidade'),
-            e('option', { value: 5 }, '5 minutos'),
-            e('option', { value: 10 }, '10 minutos'),
-            e('option', { value: 30 }, '30 minutos'),
-          )
-        )
-      ),
-
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-2' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })), "Barreira de horário de ingresso")),
-      e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3' },
-        toggle('Ativar barreira de horário',
-          'Bloqueia motoboys que tentam entrar na fila pela 1ª vez no dia após o horário configurado',
-          dados.barreira_horario_ativa || false,
-          v => setCampo('barreira_horario_ativa', v)),
-        dados.barreira_horario_ativa && e('div', { className: 'flex items-center justify-between py-1 border-t border-gray-200 pt-2' },
-          e('div', null,
-            e('p', { className: 'text-xs font-medium text-gray-800' }, 'Horário de corte'),
-            e('p', { className: 'text-[11px] text-gray-500' }, 'Após este horário, 1º ingresso do dia é bloqueado')
-          ),
-          e('input', {
-            type: 'time',
-            value: dados.barreira_horario_corte ? dados.barreira_horario_corte.slice(0,5) : '08:00',
-            onChange: ev => setCampo('barreira_horario_corte', ev.target.value + ':00'),
-            className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white font-mono'
-          })
+    return e('div', { className: 'space-y-4' },
+      e('div', { className: 'grid lg:grid-cols-2 gap-4 items-start' },
+        secao('Identificação', null,
+          labelInput('Nome', dados.nome || '', v => setCampo('nome', v)),
+          labelInput('Endereço', dados.endereco || '', v => setCampo('endereco', v)),
         ),
-        dados.barreira_horario_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg px-3 py-2' },
-          e('p', { className: 'text-[11px] text-amber-700 leading-relaxed' },
-            e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Motoboys bloqueados pela barreira aparecem na aba Punidos. Você pode liberar manualmente um a um se necessário.")
+        secao('Localização e raio', null,
+          e('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3' },
+            labelInput('Latitude', dados.latitude || '', v => setCampo('latitude', v)),
+            labelInput('Longitude', dados.longitude || '', v => setCampo('longitude', v)),
+            labelInput('Raio (m)', dados.raio_metros || 900, v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
+          )
+        ),
+        secao('Validação automática', 'Agente Playwright',
+          toggle('Bloquear se motoboy tem corrida ativa',
+            'Agente busca no sistema externo · valida após entrada',
+            dados.validacao_agente_ativa !== false,
+            v => setCampo('validacao_agente_ativa', v)),
+          toggle('Remover automaticamente ao pegar corrida',
+            'Agente fica monitorando · tira da fila quando detecta nova corrida',
+            dados.remover_ao_pegar_corrida !== false,
+            v => setCampo('remover_ao_pegar_corrida', v)),
+          linhaSelect('Frequência de varredura', 'Intervalo entre checagens do agente',
+            e('select', {
+              value: dados.varredura_intervalo_seg || 30,
+              onChange: ev => setCampo('varredura_intervalo_seg', parseInt(ev.target.value)),
+              className: SELECT
+            },
+              e('option', { value: 15 }, '15 segundos'),
+              e('option', { value: 30 }, '30 segundos'),
+              e('option', { value: 60 }, '1 minuto'),
+              e('option', { value: 120 }, '2 minutos'),
+            ))
+        ),
+        secao('Regras dos motoboys', null,
+          toggle('Mostrar nomes de todos na fila',
+            'Motoboys veem quem está à frente e atrás (transparência)',
+            dados.mostrar_nomes_publicos !== false,
+            v => setCampo('mostrar_nomes_publicos', v)),
+          linhaSelect('Penalidade por sair voluntariamente', 'Tempo de bloqueio antes de poder reentrar',
+            e('select', {
+              value: dados.penalidade_min || 0,
+              onChange: ev => setCampo('penalidade_min', parseInt(ev.target.value)),
+              className: SELECT
+            },
+              e('option', { value: 0 }, 'Sem penalidade'),
+              e('option', { value: 5 }, '5 minutos'),
+              e('option', { value: 10 }, '10 minutos'),
+              e('option', { value: 30 }, '30 minutos'),
+            ))
+        ),
+        secao('Barreira de horário de ingresso', null,
+          toggle('Ativar barreira de horário',
+            'Bloqueia motoboys que tentam entrar na fila pela 1ª vez no dia após o horário configurado',
+            dados.barreira_horario_ativa || false,
+            v => setCampo('barreira_horario_ativa', v)),
+          dados.barreira_horario_ativa && linhaSelect('Horário de corte', 'Após este horário, 1º ingresso do dia é bloqueado',
+            e('input', {
+              type: 'time',
+              value: dados.barreira_horario_corte ? dados.barreira_horario_corte.slice(0,5) : '08:00',
+              onChange: ev => setCampo('barreira_horario_corte', ev.target.value + ':00'),
+              className: SELECT + ' tabular-nums'
+            })),
+          dados.barreira_horario_ativa && e('div', { className: 'flex items-start gap-2 rounded-[10px] bg-amber-50 px-3 py-2' },
+            ico('alert', 15, '#d97706'),
+            e('p', { className: 'text-xs text-amber-800 leading-relaxed' }, 'Motoboys bloqueados pela barreira aparecem na aba Punidos. Você pode liberar manualmente um a um se necessário.')
           )
         )
       ),
 
-      e('div', { className: 'flex justify-between items-center pt-3 border-t border-gray-200' },
-        e('button', {
-          onClick: () => excluirCentral(dados),
-          className: 'text-xs text-red-600 hover:bg-red-50 px-3 py-1.5 rounded'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-trash" })), "Excluir central")),
-        e('button', {
-          onClick: () => salvarCentral(dados),
-          className: 'text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-save" })), "Salvar"))
+      e('div', { className: 'flex flex-wrap justify-between items-center gap-3' },
+        e('button', { onClick: () => excluirCentral(dados), className: BTN_DEST }, ico('trash', 16), 'Excluir central'),
+        e('button', { onClick: () => salvarCentral(dados), className: BTN_PRI }, ico('save', 16), 'Salvar')
       )
     );
   }
 
   function toggle(titulo, sub, checked, onChange) {
-    return e('div', { className: 'flex items-center justify-between py-1' },
-      e('div', { className: 'flex-1' },
-        e('p', { className: 'text-xs font-medium text-gray-800' }, titulo),
-        sub && e('p', { className: 'text-[11px] text-gray-500' }, sub),
+    return e('div', { className: 'flex items-center justify-between gap-3 py-0.5' },
+      e('div', { className: 'flex-1 min-w-0' },
+        e('p', { className: 'text-sm font-medium text-gray-900' }, titulo),
+        sub && e('p', { className: 'text-xs text-gray-500' }, sub),
       ),
       e('label', {
-        className: `relative inline-block w-9 h-5 rounded-full cursor-pointer transition-colors ${checked ? 'bg-purple-600' : 'bg-gray-300'}`,
+        className: 'relative inline-block w-9 h-5 rounded-full cursor-pointer transition-colors flex-shrink-0',
+        style: { background: checked ? '#770fa8' : '#d1d5db' },
+        role: 'switch', 'aria-checked': !!checked, 'aria-label': titulo,
         onClick: () => onChange(!checked)
       },
         e('span', {
@@ -1345,12 +1206,12 @@
 
   function labelInput(label, value, onChange, type) {
     return e('div', null,
-      e('label', { className: 'text-[11px] text-gray-500 block mb-1' }, label),
+      e('label', { className: LABEL }, label),
       e('input', {
         type: type || 'text',
         value: value,
         onChange: ev => onChange(ev.target.value),
-        className: 'w-full h-9 px-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-100'
+        className: INPUT
       })
     );
   }
@@ -1371,80 +1232,63 @@
       })
       .slice(0, 50);
 
-    return e('div', { className: 'space-y-3' },
-      e('div', { className: 'flex justify-between items-center' },
-        e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium' },
-          `Vinculados · ${vinculos.length}`
-        ),
-        e('button', {
-          onClick: () => setModalVincular(true),
-          className: 'text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg'
-        }, '+ Vincular motoboy')
+    return e('div', { className: CARD + ' overflow-hidden' },
+      e('div', { className: 'flex flex-wrap justify-between items-center gap-3 px-4 py-3' },
+        tituloCard('Motoboys vinculados', contador(vinculos.length)),
+        e('button', { onClick: () => setModalVincular(true), className: BTN_PRI }, ico('plus', 16), 'Vincular motoboy')
       ),
 
-      e('div', { className: 'bg-white border border-gray-200 rounded-lg divide-y divide-gray-100' },
-        vinculos.length === 0
-          ? e('p', { className: 'text-center text-gray-400 py-6 text-sm' }, 'Nenhum motoboy vinculado ainda')
-          : vinculos.map(v => e('div', {
-              key: v.cod_profissional,
-              className: 'flex items-center gap-3 p-2.5'
-            },
-              avatar(v.cod_profissional, v.nome_profissional, fotos[v.cod_profissional], 32),
-              e('div', { className: 'flex-1 min-w-0' },
-                e('p', { className: 'text-sm text-gray-800 truncate' }, v.nome_profissional || '—'),
-                e('p', { className: 'text-[11px] text-gray-400' }, 'cod ', v.cod_profissional),
-              ),
-              e('button', {
-                onClick: () => desvincularProfissional(v.cod_profissional),
-                title: 'Desvincular',
-                className: 'text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded'
-              }, '× desvincular')
-            ))
-      ),
+      vinculos.length === 0
+        ? e('div', { className: 'border-t border-gray-100' }, vazio('Nenhum motoboy vinculado ainda.'))
+        : e('div', null, vinculos.map(v => e('div', {
+            key: v.cod_profissional,
+            className: 'flex items-center gap-3 px-4 py-2.5 border-t border-gray-100 hover:bg-gray-50'
+          },
+            avatar(v.cod_profissional, v.nome_profissional, fotos[v.cod_profissional], 32),
+            e('div', { className: 'flex-1 min-w-0' },
+              e('p', { className: 'text-sm font-semibold text-gray-900 truncate' }, v.nome_profissional || '—'),
+              e('p', { className: 'text-xs text-gray-500 tabular-nums' }, 'cod ', v.cod_profissional),
+            ),
+            e('button', {
+              onClick: () => desvincularProfissional(v.cod_profissional),
+              title: 'Desvincular',
+              className: BTN_DEST_SM
+            }, ico('x', 14), e('span', { className: 'hidden sm:inline' }, 'Desvincular'))
+          ))),
 
       // Modal vincular
-      modalVincular && e('div', {
-        className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
-        onClick: () => setModalVincular(false)
-      },
-        e('div', {
-          className: 'bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col',
-          onClick: ev => ev.stopPropagation()
-        },
-          e('div', { className: 'p-4 border-b border-gray-200' },
-            e('p', { className: 'font-medium text-gray-800' }, 'Vincular motoboy à central'),
+      modalVincular && modalBox({
+        titulo: 'Vincular motoboy à central',
+        onOverlay: () => setModalVincular(false),
+        onFechar: () => { setModalVincular(false); setBusca(''); },
+        corpo: e('div', { className: 'space-y-3 pt-1' },
+          e('div', { className: 'relative' },
+            e('span', { className: 'absolute left-3 top-1/2 -translate-y-1/2 inline-flex text-gray-400' }, ico('search', 15)),
             e('input', {
               autoFocus: true,
               placeholder: 'Buscar por nome ou código...',
               value: busca,
               onChange: ev => setBusca(ev.target.value),
-              className: 'w-full mt-2 h-9 px-3 text-sm border border-gray-300 rounded-md'
+              className: INPUT + ' pl-9'
             })
           ),
-          e('div', { className: 'flex-1 overflow-y-auto p-2' },
-            disponiveis.length === 0
-              ? e('p', { className: 'text-center text-gray-400 py-6 text-sm' },
-                  busca ? 'Nenhum motoboy encontrado' : 'Digite pra buscar...')
-              : disponiveis.map(p => e('button', {
-                  key: p.cod_profissional,
-                  onClick: () => { vincularProfissional(p.cod_profissional, p.nome_profissional); setModalVincular(false); setBusca(''); },
-                  className: 'w-full flex items-center gap-3 p-2.5 hover:bg-purple-50 rounded-lg text-left'
-                },
-                  avatar(p.cod_profissional, p.nome_profissional, null, 28),
-                  e('div', { className: 'flex-1 min-w-0' },
-                    e('p', { className: 'text-sm text-gray-800 truncate' }, p.nome_profissional),
-                    e('p', { className: 'text-[10px] text-gray-400' }, 'cod ', p.cod_profissional)
-                  )
-                ))
-          ),
-          e('div', { className: 'p-3 border-t border-gray-200 flex justify-end' },
-            e('button', {
-              onClick: () => { setModalVincular(false); setBusca(''); },
-              className: 'text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded'
-            }, 'Fechar')
-          )
-        )
-      )
+          disponiveis.length === 0
+            ? vazio(busca ? 'Nenhum motoboy encontrado' : 'Digite pra buscar...')
+            : e('div', { className: 'border border-gray-200 rounded-[10px] overflow-hidden' }, disponiveis.map(p => e('button', {
+                key: p.cod_profissional,
+                onClick: () => { vincularProfissional(p.cod_profissional, p.nome_profissional); setModalVincular(false); setBusca(''); },
+                className: 'w-full flex items-center gap-3 px-3 py-2.5 border-t border-gray-100 first:border-t-0 hover:bg-gray-50 text-left'
+              },
+                avatar(p.cod_profissional, p.nome_profissional, null, 28),
+                e('div', { className: 'flex-1 min-w-0' },
+                  e('p', { className: 'text-sm font-medium text-gray-900 truncate' }, p.nome_profissional),
+                  e('p', { className: 'text-xs text-gray-500 tabular-nums' }, 'cod ', p.cod_profissional)
+                ),
+                e('span', { className: 'inline-flex items-center gap-1 text-xs font-semibold text-purple-700 flex-shrink-0' }, ico('plus', 14), 'Vincular')
+              )))
+        ),
+        rodape: e('button', { onClick: () => { setModalVincular(false); setBusca(''); }, className: BTN_SEC }, 'Fechar')
+      })
     );
   }
 
@@ -1453,35 +1297,30 @@
   // ──────────────────────────────────────────────────────────
   function renderLogs(opts) {
     const { logs } = opts;
-    return e('div', { className: 'bg-white border border-gray-200 rounded-lg p-3' },
-      e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium mb-2' }, `Histórico do agente · ${logs.length} eventos`),
+    return e('div', { className: CARD + ' overflow-hidden' },
+      e('div', { className: 'px-4 py-3' }, tituloCard('Histórico do agente', contador(`${logs.length} eventos`))),
       logs.length === 0
-        ? e('p', { className: 'text-center text-gray-400 py-6 text-sm' }, 'Nenhum evento ainda')
-        : e('div', {
-            className: 'space-y-0.5',
-            style: { fontFamily: 'ui-monospace, monospace', fontSize: '11px', lineHeight: 1.7 }
-          }, logs.map(l => renderLogLine(l)))
+        ? e('div', { className: 'border-t border-gray-100' }, vazio('Nenhum evento ainda.'))
+        : e('div', null, logs.map(l => renderLogLine(l)))
     );
   }
 
   function renderLogLine(l) {
-    const cor = l.acao === 'removeu' || l.acao === 'admin_removeu' ? '#991b1b'
-      : l.acao === 'validou' ? '#166534'
-      : l.acao === 'bloqueou_entrada' ? '#92400e'
-      : '#6B7280';
-    const sym = l.acao === 'removeu' || l.acao === 'admin_removeu' ? '×'
-      : l.acao === 'validou' ? e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" }))
-      : l.acao === 'bloqueou_entrada' ? '!'
-      : '·';
-    return e('p', {
-      key: l.id, className: 'text-gray-600 truncate',
+    const tom = l.acao === 'removeu' || l.acao === 'admin_removeu' ? 'vermelho'
+      : l.acao === 'validou' ? 'verde'
+      : l.acao === 'bloqueou_entrada' ? 'ambar'
+      : 'cinza';
+    return e('div', {
+      key: l.id, className: 'flex items-center gap-3 px-4 py-2 border-t border-gray-100 text-sm',
       title: l.detalhes ? JSON.stringify(l.detalhes) : ''
     },
-      e('span', { className: 'text-gray-400' }, formatarMinAtras(l.created_at), ' · '),
-      e('span', { style: { color: cor } }, sym, ' '),
-      l.nome_profissional ? l.nome_profissional + ' · ' : '',
-      l.acao.replace(/_/g, ' '),
-      l.motivo ? ' · ' + l.motivo : ''
+      e('span', { className: 'w-16 sm:w-24 flex-shrink-0 text-xs text-gray-500 tabular-nums' }, formatarMinAtras(l.created_at)),
+      e('span', { className: 'flex-shrink-0' }, pill(tom, l.acao.replace(/_/g, ' '))),
+      e('span', { className: 'flex-1 min-w-0 truncate text-gray-700' },
+        l.nome_profissional ? e('span', { className: 'font-medium text-gray-900' }, l.nome_profissional) : null,
+        l.nome_profissional && l.motivo ? ' · ' : '',
+        l.motivo ? e('span', { className: 'text-gray-500' }, l.motivo) : ''
+      )
     );
   }
 
@@ -1500,147 +1339,110 @@
         : (dados.endereco && enderecoValidado && coordenadasEncontradas)
     );
 
-    return e('div', {
-      className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
-      onClick: onCancelar
-    },
-      e('div', {
-        className: 'bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto',
-        onClick: ev => ev.stopPropagation()
-      },
-        e('div', { className: 'p-5 space-y-3' },
-          e('div', null,
-            e('p', { className: 'text-lg font-semibold flex items-center gap-2' },
-              e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), dados.id ? 'Editar central auto' : 'Nova central auto-gerenciável'
-            ),
-            e('p', { className: 'text-xs text-gray-500 mt-1' },
-              'Motoboys se organizam · agente Playwright fiscaliza'
-            )
+    return modalBox({
+      largura: 'max-w-lg',
+      titulo: dados.id ? 'Editar central auto' : 'Nova central auto-gerenciável',
+      sub: 'Motoboys se organizam · agente Playwright fiscaliza',
+      onOverlay: onCancelar,
+      onFechar: onCancelar,
+      corpo: e('div', { className: 'space-y-4 pt-1' },
+        // Nome
+        labelInput('Nome *', dados.nome || '', v => setCampo('nome', v)),
+
+        // Aviso quando API caiu
+        geocodeDown && !modoManual && e('div', { className: 'rounded-[10px] bg-amber-50 p-3 space-y-2' },
+          e('p', { className: 'inline-flex items-center gap-1.5 text-sm font-semibold text-amber-800' }, ico('alert', 15, '#d97706'), 'Busca automática indisponível'),
+          e('p', { className: 'text-xs text-amber-800' }, 'A API do Google de busca de endereço está fora. Use o modo manual:'),
+          e('button', { onClick: () => setModoManual(true), className: BTN_SEC_SM }, ico('pin', 14), 'Inserir coordenadas manualmente')
+        ),
+
+        // ── MODO MANUAL (coordenadas) ──
+        modoManual ? e(React.Fragment, null,
+          labelInput('Endereço (opcional)', dados.endereco || '', v => setCampo('endereco', v)),
+          e('div', { className: 'grid grid-cols-2 gap-3' },
+            labelInput('Latitude *', dados.latitude || '', v => setCampo('latitude', v)),
+            labelInput('Longitude *', dados.longitude || '', v => setCampo('longitude', v)),
           ),
-
-          // Nome
-          labelInput('Nome *', dados.nome || '', v => setCampo('nome', v)),
-
-          // Aviso quando API caiu
-          geocodeDown && !modoManual && e('div', {
-            className: 'bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs space-y-2'
-          },
-            e('p', { className: 'font-medium text-amber-900' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Busca automática indisponível")),
-            e('p', { className: 'text-amber-700' },
-              'A API do Google de busca de endereço está fora. Use o modo manual:'),
-            e('button', {
-              onClick: () => setModoManual(true),
-              className: 'px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium'
-            }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })), "Inserir coordenadas manualmente"))
-          ),
-
-          // ── MODO MANUAL (coordenadas) ──
-          modoManual ? e(React.Fragment, null,
-            labelInput('Endereço (opcional)', dados.endereco || '', v => setCampo('endereco', v)),
-            e('div', { className: 'grid grid-cols-2 gap-2' },
-              labelInput('Latitude *', dados.latitude || '',
-                v => setCampo('latitude', v)),
-              labelInput('Longitude *', dados.longitude || '',
-                v => setCampo('longitude', v)),
-            ),
-            e('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-3 text-[11px] text-purple-900 space-y-1' },
-              e('p', { className: 'font-medium' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Como pegar latitude/longitude")),
-              e('p', { className: 'text-purple-700' },
-                'Abra o Google Maps no local da loja → botão direito no ponto exato → o primeiro número é latitude, o segundo é longitude.'),
-              e('button', {
-                onClick: () => setModoManual(false),
-                className: 'text-purple-700 underline text-[11px] mt-1'
-              }, '← Voltar a buscar por endereço')
-            )
-          ) : e(React.Fragment, null,
-            // ── MODO BUSCA POR ENDEREÇO ──
-            e('div', null,
-              e('label', { className: 'text-[11px] text-gray-500 block mb-1' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })), "Endereço *")),
-              e('div', { className: 'relative' },
-                e('input', {
-                  type: 'text',
-                  value: dados.endereco || '',
-                  placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
-                  onChange: ev => {
-                    const v = ev.target.value;
-                    setCampo('endereco', v);
-                    buscarEnderecoDebounced(v);
-                  },
-                  className: `w-full h-9 px-2 pr-9 text-xs border rounded-md focus:outline-none focus:ring-1 ${enderecoValidado ? 'border-green-500 bg-green-50 focus:ring-green-100' : 'border-gray-300 focus:border-purple-500 focus:ring-purple-100'}`
-                }),
-                e('span', {
-                  className: 'absolute right-2 top-1/2 -translate-y-1/2 text-base'
-                }, buscandoEndereco ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" })) : enderecoValidado ? e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })) : e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-search" })))
-              ),
-              enderecoValidado && coordenadasEncontradas && e('p', {
-                className: 'text-[10px] text-green-700 mt-1'
-              }, `${coordenadasEncontradas.latitude.toFixed(6)}, ${coordenadasEncontradas.longitude.toFixed(6)}`),
-              // Link discreto pra entrar no modo manual mesmo sem erro
-              !geocodeDown && e('button', {
-                onClick: () => setModoManual(true),
-                className: 'text-[10px] text-gray-400 hover:text-purple-600 underline mt-1'
-              }, 'ou inserir coordenadas manualmente')
-            )
-          ),
-
-          // Raio
-          labelInput('Raio (metros)', dados.raio_metros || 900,
-            v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
-
-          e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-1' }, 'Validação do agente'),
-          e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2' },
-            toggle('Bloquear se motoboy tem corrida ativa', 'Agente checa no sistema externo',
-              dados.validacao_agente_ativa !== false, v => setCampo('validacao_agente_ativa', v)),
-            toggle('Remover automaticamente ao pegar corrida', 'Tira da fila quando detecta nova corrida',
-              dados.remover_ao_pegar_corrida !== false, v => setCampo('remover_ao_pegar_corrida', v)),
-            e('div', { className: 'flex items-center justify-between pt-2 border-t border-gray-200' },
-              e('p', { className: 'text-xs text-gray-700' }, 'Frequência de varredura'),
-              e('select', {
-                value: dados.varredura_intervalo_seg || 30,
-                onChange: ev => setCampo('varredura_intervalo_seg', parseInt(ev.target.value)),
-                className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white'
+          e('div', { className: 'rounded-[10px] bg-gray-50 p-3 text-xs text-gray-600 space-y-1' },
+            e('p', { className: 'inline-flex items-center gap-1.5 font-semibold text-gray-900' }, ico('bulb', 14, '#6b7280'), 'Como pegar latitude/longitude'),
+            e('p', null, 'Abra o Google Maps no local da loja → botão direito no ponto exato → o primeiro número é latitude, o segundo é longitude.'),
+            e('button', { onClick: () => setModoManual(false), className: 'inline-flex items-center gap-1 text-purple-700 font-semibold hover:text-purple-800 mt-1' }, ico('arrowleft', 12), 'Voltar a buscar por endereço')
+          )
+        ) : e('div', null,
+          // ── MODO BUSCA POR ENDEREÇO ──
+          e('label', { className: LABEL }, 'Endereço *'),
+          e('div', { className: 'relative' },
+            e('input', {
+              type: 'text',
+              value: dados.endereco || '',
+              placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
+              onChange: ev => {
+                const v = ev.target.value;
+                setCampo('endereco', v);
+                buscarEnderecoDebounced(v);
               },
-                e('option', { value: 15 }, '15s'),
-                e('option', { value: 30 }, '30s'),
-                e('option', { value: 60 }, '1min'),
-                e('option', { value: 120 }, '2min'),
-              )
-            )
+              className: INPUT + ' pr-10' + (enderecoValidado ? ' border-green-600' : '')
+            }),
+            e('span', { className: 'absolute right-3 top-1/2 -translate-y-1/2 inline-flex' }, buscandoEndereco ? ico('clock', 16, '#6b7280') : enderecoValidado ? ico('check', 16, '#16a34a') : ico('search', 16, '#9ca3af'))
           ),
+          enderecoValidado && coordenadasEncontradas && e('p', { className: 'inline-flex items-center gap-1.5 text-xs text-green-800 mt-1.5 tabular-nums' }, dot('#16a34a'), `${coordenadasEncontradas.latitude.toFixed(6)}, ${coordenadasEncontradas.longitude.toFixed(6)}`),
+          // Link discreto pra entrar no modo manual mesmo sem erro
+          !geocodeDown && e('button', { onClick: () => setModoManual(true), className: 'block text-xs text-gray-500 hover:text-purple-700 underline mt-1.5' }, 'ou inserir coordenadas manualmente')
+        ),
 
-          e('p', { className: 'text-[11px] uppercase text-gray-500 tracking-wide font-medium pt-1' }, 'Regras dos motoboys'),
-          e('div', { className: 'bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2' },
-            toggle('Mostrar nomes na fila', 'Motoboys veem quem está à frente',
-              dados.mostrar_nomes_publicos !== false, v => setCampo('mostrar_nomes_publicos', v)),
-            e('div', { className: 'flex items-center justify-between pt-2 border-t border-gray-200' },
-              e('p', { className: 'text-xs text-gray-700' }, 'Penalidade ao sair voluntariamente'),
-              e('select', {
-                value: dados.penalidade_min || 0,
-                onChange: ev => setCampo('penalidade_min', parseInt(ev.target.value)),
-                className: 'text-xs px-2 py-1 border border-gray-300 rounded bg-white'
-              },
-                e('option', { value: 0 }, 'Sem penalidade'),
-                e('option', { value: 5 }, '5 min'),
-                e('option', { value: 10 }, '10 min'),
-                e('option', { value: 30 }, '30 min'),
-              )
+        // Raio
+        labelInput('Raio (metros)', dados.raio_metros || 900, v => setCampo('raio_metros', parseInt(v) || 900), 'number'),
+
+        e('div', { className: 'border border-gray-200 rounded-[10px] p-3 space-y-3' },
+          e('p', { className: 'text-xs font-semibold text-gray-700' }, 'Validação do agente'),
+          toggle('Bloquear se motoboy tem corrida ativa', 'Agente checa no sistema externo',
+            dados.validacao_agente_ativa !== false, v => setCampo('validacao_agente_ativa', v)),
+          toggle('Remover automaticamente ao pegar corrida', 'Tira da fila quando detecta nova corrida',
+            dados.remover_ao_pegar_corrida !== false, v => setCampo('remover_ao_pegar_corrida', v)),
+          e('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' },
+            e('p', { className: 'text-sm font-medium text-gray-900' }, 'Frequência de varredura'),
+            e('select', {
+              value: dados.varredura_intervalo_seg || 30,
+              onChange: ev => setCampo('varredura_intervalo_seg', parseInt(ev.target.value)),
+              className: SELECT
+            },
+              e('option', { value: 15 }, '15s'),
+              e('option', { value: 30 }, '30s'),
+              e('option', { value: 60 }, '1min'),
+              e('option', { value: 120 }, '2min'),
             )
-          ),
+          )
+        ),
 
-          e('div', { className: 'flex justify-end gap-2 pt-3' },
-            e('button', {
-              onClick: onCancelar,
-              className: 'text-xs px-3 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50'
-            }, 'Cancelar'),
-            e('button', {
-              onClick: () => onSalvar(dados),
-              disabled: !podeSalvar,
-              className: 'text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed'
-            }, dados.id ? e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-save" })), "Salvar") : e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Criar central auto"))
+        e('div', { className: 'border border-gray-200 rounded-[10px] p-3 space-y-3' },
+          e('p', { className: 'text-xs font-semibold text-gray-700' }, 'Regras dos motoboys'),
+          toggle('Mostrar nomes na fila', 'Motoboys veem quem está à frente',
+            dados.mostrar_nomes_publicos !== false, v => setCampo('mostrar_nomes_publicos', v)),
+          e('div', { className: 'flex items-center justify-between gap-3 pt-3 border-t border-gray-100' },
+            e('p', { className: 'text-sm font-medium text-gray-900' }, 'Penalidade ao sair voluntariamente'),
+            e('select', {
+              value: dados.penalidade_min || 0,
+              onChange: ev => setCampo('penalidade_min', parseInt(ev.target.value)),
+              className: SELECT
+            },
+              e('option', { value: 0 }, 'Sem penalidade'),
+              e('option', { value: 5 }, '5 min'),
+              e('option', { value: 10 }, '10 min'),
+              e('option', { value: 30 }, '30 min'),
+            )
           )
         )
-      )
-    );
+      ),
+      rodape: [
+        e('button', { key: 'c', onClick: onCancelar, className: BTN_SEC }, 'Cancelar'),
+        e('button', {
+          key: 's',
+          onClick: () => onSalvar(dados),
+          disabled: !podeSalvar,
+          className: BTN_PRI
+        }, dados.id ? e(React.Fragment, null, ico('save', 16), 'Salvar') : e(React.Fragment, null, ico('bot', 16), 'Criar central auto'))
+      ]
+    });
   }
 
   // Exporta

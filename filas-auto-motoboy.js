@@ -1,4 +1,5 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
+/* FILAS_CLEAN_V1: redesign clean da visão do motoboy (fila auto), mobile-first. */
 // ============================================================
 // FILAS AUTO-GERENCIÁVEIS — visão MOTOBOY (app)
 // ============================================================
@@ -18,6 +19,19 @@
 
 (function () {
   const e = React.createElement; /* FILAS_ICONS_V3 */
+  // FILAS_CLEAN_V1 — helpers visuais (cartões brancos, pílulas suaves, botões 48px mobile-first). Só visual.
+  const SORA = 'Sora, Inter, sans-serif';
+  const TOM = {
+    verde: ['#f0fdf4', '#166534', '#16a34a'], ambar: ['#fffbeb', '#92400e', '#d97706'],
+    vermelho: ['#fef2f2', '#991b1b', '#dc2626'], azul: ['#eff6ff', '#1e40af', '#2563eb'],
+    cinza: ['#f3f4f6', '#374151', '#6b7280'], roxo: ['#faf7fd', '#5d0b85', '#770fa8'],
+  };
+  const ico = (nome, sz, cor) => e('svg', { className: 'ico', style: { width: sz || 16, height: sz || 16, color: cor, flex: 'none' }, 'aria-hidden': 'true' }, e('use', { href: '#i-' + nome }));
+  const dot = (cor) => e('span', { 'aria-hidden': 'true', style: { width: 6, height: 6, borderRadius: 99, background: cor, display: 'inline-block', flex: 'none' } });
+  const pill = (tom, txt) => { const t = TOM[tom] || TOM.cinza; return e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 99, padding: '2px 9px', fontWeight: 600, fontSize: 11.5, lineHeight: '18px', background: t[0], color: t[1], whiteSpace: 'nowrap' } }, dot(t[2]), txt); };
+  const CARD = 'bg-white border border-gray-200 rounded-[14px]';
+  const BTN_GRANDE = 'w-full h-12 rounded-[12px] text-base font-semibold inline-flex items-center justify-center gap-2 transition-colors';
+  const BTN_SEC_SM = 'inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[8px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors whitespace-nowrap';
 
   function ModuloFilasAutoMotoboy(props) {
     const {
@@ -236,13 +250,13 @@
       if (foto) {
         return e('img', {
           src: foto, alt: nome || '',
-          style: { width: size + 'px', height: size + 'px', objectFit: 'cover', border: '0.5px solid #E5E7EB' },
+          style: { width: size + 'px', height: size + 'px', objectFit: 'cover', border: '1px solid #e5e7eb' },
           className: 'rounded-full flex-shrink-0'
         });
       }
       return e('div', {
         style: { width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.4) + 'px' },
-        className: 'rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-semibold flex-shrink-0'
+        className: 'rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-semibold flex-shrink-0'
       }, iniciais);
     }
 
@@ -263,10 +277,10 @@
     // ── Sem central vinculada ──
     if (!minhaCentral) {
       return e('div', { className: 'min-h-[400px] flex items-center justify-center' },
-        e('div', { className: 'text-center bg-white rounded-2xl shadow-lg p-8 max-w-md mx-4' },
-          e('span', { className: 'text-6xl block mb-4' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" }))),
-          e('h2', { className: 'text-xl font-bold text-gray-800 mb-2' }, 'Sem acesso à fila'),
-          e('p', { className: 'text-gray-600' }, 'Você não está vinculado a nenhuma central auto-gerenciável.')
+        e('div', { className: CARD + ' text-center p-8 max-w-md mx-4' },
+          e('div', { className: 'mb-3 inline-flex' }, pill('cinza', 'Sem vínculo')),
+          e('h2', { className: 'text-lg font-semibold text-gray-900 mb-1' }, 'Sem acesso à fila'),
+          e('p', { className: 'text-sm text-gray-500' }, 'Você não está vinculado a nenhuma central auto-gerenciável.')
         )
       );
     }
@@ -275,81 +289,72 @@
     const penalizado = !!penalidade;
     const podeChekin = gpsStatus === 'permitido' && (distanciaCentral === null || distanciaCentral <= minhaCentral.raio_metros);
 
-    // ── Container principal (mobile-first, simula tela do app) ──
-    return e('div', { className: 'max-w-md mx-auto p-3 space-y-3' },
+    // ── Container principal (mobile-first, simula tela do app) — FILAS_CLEAN_V1 ──
+    return e('div', { className: 'max-w-md mx-auto space-y-3 -mx-1 sm:mx-auto' },
 
-      // ═══ HEADER ═══
-      e('div', { className: 'bg-purple-600 text-white rounded-2xl p-4 shadow-md' },
-        e('div', { className: 'flex items-center gap-3 mb-2' },
-          e('span', { className: 'text-2xl' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))),
+      // ═══ HEADER (cartão branco: central + GPS) ═══
+      e('div', { className: CARD + ' p-4' },
+        e('div', { className: 'flex items-start justify-between gap-3' },
           e('div', { className: 'flex-1 min-w-0' },
-            e('h1', { className: 'text-base font-bold truncate' }, minhaCentral.central_nome),
-            e('p', { className: 'text-purple-200 text-xs flex items-center gap-1' },
-              e('span', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#bbf7d0' } }),
-              'Fila auto-gerenciável'
-            )
-          )
+            e('h1', { className: 'text-lg font-semibold text-gray-900 truncate', style: { fontFamily: SORA } }, minhaCentral.central_nome),
+            e('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Fila auto-gerenciável')
+          ),
+          pill('roxo', 'Auto')
         ),
         // Status GPS
-        e('div', { className: 'flex items-center gap-2 bg-white/10 rounded-lg p-2 text-xs' },
-          e('span', null, gpsStatus === 'permitido' ? e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" })) : e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" }))),
-          e('div', { className: 'flex-1 min-w-0' },
-            e('p', { className: 'font-medium' },
-              gpsStatus === 'permitido' ? 'GPS ativo' :
-              gpsStatus === 'negado' ? 'GPS bloqueado' : 'Verificando GPS...'
-            ),
-            distanciaCentral !== null && gpsStatus === 'permitido' && e('p', {
-              className: distanciaCentral <= minhaCentral.raio_metros ? 'text-green-200' : 'text-red-200'
-            }, `Você está a ${distanciaCentral}m da central (máx ${minhaCentral.raio_metros}m)`)
+        e('div', { className: 'flex items-center gap-2 mt-3 pt-3 border-t border-gray-100' },
+          gpsStatus === 'permitido' ? pill('verde', 'GPS ativo') : gpsStatus === 'negado' ? pill('vermelho', 'GPS bloqueado') : pill('ambar', 'Verificando GPS...'),
+          e('p', { className: 'flex-1 min-w-0 text-xs tabular-nums ' + (distanciaCentral !== null && distanciaCentral > minhaCentral.raio_metros ? 'text-red-800' : 'text-gray-500') },
+            distanciaCentral !== null && gpsStatus === 'permitido' ? `Você está a ${distanciaCentral}m da central (máx ${minhaCentral.raio_metros}m)` : ''
           ),
           gpsStatus === 'negado' && e('button', {
             onClick: solicitarGPS,
-            className: 'px-2 py-1 bg-white/20 rounded text-xs'
+            className: BTN_SEC_SM
           }, 'Permitir')
         )
       ),
 
       // ═══ ESTADO PENALIZADO ═══
-      penalizado && e('div', { className: 'bg-red-50 border-2 border-red-300 rounded-2xl p-5 text-center' },
-        e('span', { className: 'text-4xl block mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" }))),
-        e('h2', { className: 'text-lg font-bold text-red-800' }, 'Você está bloqueado'),
-        e('p', { className: 'text-red-600 text-sm mt-1' },
+      penalizado && e('div', { className: CARD + ' p-6 text-center' },
+        e('div', { className: 'mb-3 inline-flex' }, pill('vermelho', 'Bloqueado')),
+        e('h2', { className: 'text-lg font-semibold text-gray-900' }, 'Você está bloqueado'),
+        e('p', { className: 'text-sm text-gray-500 mt-1' },
           'Pode voltar à fila em alguns minutos.'
         )
       ),
 
       // ═══ ESTADO BLOQUEIO POR CORRIDA ATIVA ═══
       // (futuro: o backend pode retornar isso ao tentar entrar)
-      !penalizado && bloqueioCorrida && e('div', { className: 'bg-red-50 border border-red-300 rounded-2xl p-4' },
+      !penalizado && bloqueioCorrida && e('div', { className: CARD + ' p-4' },
         e('div', { className: 'text-center mb-3' },
-          e('span', { className: 'text-4xl block mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" }))),
-          e('h2', { className: 'text-base font-bold text-red-800' }, 'Você tem corridas ativas'),
-          e('p', { className: 'text-xs text-red-700 mt-1' },
+          e('div', { className: 'mb-2 inline-flex' }, pill('vermelho', 'Corridas ativas')),
+          e('h2', { className: 'text-base font-semibold text-gray-900' }, 'Você tem corridas ativas'),
+          e('p', { className: 'text-xs text-gray-500 mt-1' },
             'Finalize suas entregas antes de voltar pra fila'
           )
         ),
-        e('div', { className: 'bg-white rounded-xl p-3 space-y-2' },
-          e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium' },
+        e('div', { className: 'border border-gray-200 rounded-[12px] overflow-hidden' },
+          e('p', { className: 'text-xs font-semibold text-gray-500 px-3 py-2 bg-gray-50' },
             `Corridas em aberto (${bloqueioCorrida.corridas?.length || 0})`
           ),
           (bloqueioCorrida.corridas || []).map((c, i) => e('div', {
-            key: i, className: 'flex items-center gap-2 py-1 border-b border-gray-100 last:border-0'
+            key: i, className: 'flex items-center gap-2 px-3 py-2 border-t border-gray-100'
           },
-            e('span', null, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-package" }))),
+            ico('package', 15, '#6b7280'),
             e('div', { className: 'flex-1 text-xs' },
-              e('p', { className: 'font-medium text-gray-800' }, `OS ${c.os_numero || '?'}`),
-              e('p', { className: 'text-gray-500 text-[10px]' }, c.status || '—')
+              e('p', { className: 'font-semibold text-gray-900 tabular-nums' }, `OS ${c.os_numero || '?'}`),
+              e('p', { className: 'text-gray-500 text-[11px]' }, c.status || '—')
             )
           ))
         ),
         e('button', {
           onClick: () => { setBloqueioCorrida(null); entrarNaFila(); },
-          className: 'w-full mt-3 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Verificar novamente"))
+          className: BTN_GRANDE + ' mt-3 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+        }, ico('refresh', 18), 'Verificar novamente')
       ),
 
       // ═══ ESTADO: EM ROTA (despachado pelo agente) ═══
-      // 🆕 2026-05-24: tela igual fila clássica — card verde 🏍️ + msg de cooldown
+      // 🆕 2026-05-24: tela igual fila clássica + msg de cooldown
       // ou botão de retorno quando o cooldown 30min expirou.
       !penalizado && !bloqueioCorrida && naFila && minhaPosicao.status === 'em_rota' && renderTelaEmRota({
         minhaPosicao, entrarNaFila, podeChekin,
@@ -379,13 +384,13 @@
       }),
 
       // FILAS_DIARIA_VAGAS_FRONT_V1_MODAL
-      modalFilaCheia && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setModalFilaCheia(null) },
-        e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
+      modalFilaCheia && e('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4', onClick: () => setModalFilaCheia(null) },
+        e('div', { className: 'bg-white border border-gray-200 rounded-[16px] p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
           e('div', { className: 'text-center mb-4' },
-            e('div', { className: 'w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" })))),
-            e('h2', { className: 'text-lg font-bold text-amber-800 mb-1' }, 'Fila cheia hoje')
+            e('div', { className: 'mb-3 inline-flex' }, pill('ambar', 'Sem vagas')),
+            e('h2', { className: 'text-lg font-semibold text-gray-900 mb-1' }, 'Fila cheia hoje')
           ),
-          e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4' },
+          e('div', { className: 'bg-amber-50 rounded-[12px] p-4 mb-4' },
             e('p', { className: 'text-sm text-amber-800 leading-relaxed text-center' },
               // A mensagem vem pronta do backend, com o numero da central dentro.
               // Se um dia faltar, o fallback ainda diz QUANDO zera — que e a
@@ -398,7 +403,7 @@
           ),
           e('button', {
             onClick: () => setModalFilaCheia(null),
-            className: 'w-full py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50'
+            className: BTN_GRANDE + ' bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
           }, 'Entendi')
         )
       ),
@@ -407,6 +412,7 @@
       // AVISO_BONUS_NEUTRO_V3_MODAL
       //
       // ESTE TEXTO PASSOU POR REVISÃO JURÍDICA. NÃO ALTERE SEM NOVA REVISÃO.
+      // (FILAS_CLEAN_V1: só o visual mudou — título, frase, valor e botão são os mesmos.)
       //
       // Regras que o texto desta tela precisa respeitar:
       //
@@ -431,20 +437,20 @@
       // é menor. Ver o comentário do gatilho (setGarantidoAviso) pra entender
       // por que isso importa mais que qualquer palavra daqui.
       // ══════════════════════════════════════════════════════════════════════
-      garantidoAviso && e('div', { className: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
-        e('div', { className: 'bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
+      garantidoAviso && e('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4', onClick: () => setGarantidoAviso(null) },
+        e('div', { className: 'bg-white border border-gray-200 rounded-[16px] p-6 max-w-sm w-full', onClick: (ev) => ev.stopPropagation() },
           e('div', { className: 'text-center mb-4' },
-            e('div', { className: 'w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-3' }, e('span', { className: 'text-4xl' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-heart" })))),
-            e('h2', { className: 'text-lg font-bold text-gray-800 mb-1' }, 'Bônus de hoje')
+            e('div', { className: 'mb-3 inline-flex text-purple-700' }, ico('heart', 22)),
+            e('h2', { className: 'text-lg font-semibold text-gray-900 mb-1' }, 'Bônus de hoje')
           ),
-          e('div', { className: 'bg-violet-50 border border-violet-200 rounded-xl p-4 mb-4' },
+          e('div', { className: 'bg-gray-50 rounded-[12px] p-4 mb-4' },
             e('p', { className: 'text-sm text-gray-700 leading-relaxed text-center' },
               'O valor do bônus varia conforme o horário de ingresso na fila.')
           ),
-          e('div', { className: 'bg-white border-2 border-violet-300 rounded-xl p-4 mb-4 text-center' },
-            e('p', { className: 'text-3xl font-bold text-violet-800' }, `R$ ${Number(garantidoAviso.valor || 0).toFixed(2).replace('.', ',')}`)
+          e('div', { className: 'border border-gray-200 rounded-[12px] p-4 mb-4 text-center' },
+            e('p', { style: { fontFamily: SORA, fontSize: 30, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums' } }, `R$ ${Number(garantidoAviso.valor || 0).toFixed(2).replace('.', ',')}`)
           ),
-          e('button', { onClick: () => setGarantidoAviso(null), className: 'w-full py-3 bg-violet-600 text-white rounded-xl font-bold text-lg hover:bg-violet-700' }, 'Ok')
+          e('button', { onClick: () => setGarantidoAviso(null), className: BTN_GRANDE + ' bg-purple-700 hover:bg-purple-800 text-white' }, 'Ok')
         )
       )
     );
@@ -460,135 +466,113 @@
             barreiraHorario, setBarreiraHorario } = opts;
     const minutosDecorridos = Math.floor((Date.now() - new Date(minhaPosicao.entrada_fila_at).getTime()) / 60000);
     const agenteStatus = minhaPosicao.agente_status || 'pendente';
+    const confirmaOk = textoConfirmSaida.trim().toUpperCase() === 'SAIR';
 
     return e('div', { className: 'space-y-3' },
-      // Cartão grande com a posição
-      e('div', { className: 'bg-purple-50 border border-purple-200 rounded-2xl p-5 text-center' },
-        e('p', { className: 'text-[10px] uppercase tracking-wider text-purple-700 font-semibold' }, 'Sua posição'),
-        e('p', { className: 'text-5xl font-bold text-purple-900 my-2 leading-none' },
-          minhaPosicao.posicao, e('span', { className: 'text-2xl' }, 'º')
+      // Cartão com a posição
+      e('div', { className: CARD + ' p-5' },
+        e('div', { className: 'flex items-center justify-between' },
+          e('p', { className: 'text-sm text-gray-500' }, 'Sua posição'),
+          pill('ambar', 'Aguardando')
         ),
-        e('p', { className: 'text-xs text-purple-700' },
-          `aguardando há ${minutosDecorridos}min · de ${minhaPosicao.total_fila} na fila`
+        e('div', { className: 'text-center py-3' },
+          e('div', { style: { fontFamily: SORA, fontSize: 56, fontWeight: 700, color: '#111827', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } },
+            minhaPosicao.posicao, e('span', { style: { fontSize: 28 } }, 'º')
+          ),
+          e('p', { className: 'text-sm text-gray-500 mt-2 tabular-nums' },
+            `aguardando há ${minutosDecorridos}min · de ${minhaPosicao.total_fila} na fila`
+          )
         ),
         // Status do agente
-        agenteStatus === 'pendente' && e('p', {
-          className: 'mt-2 text-[10px] text-amber-700 bg-amber-100 inline-block px-2 py-1 rounded'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "agente verificando...")),
-        agenteStatus === 'validado' && e('p', {
-          className: 'mt-2 text-[10px] text-green-700 bg-green-100 inline-block px-2 py-1 rounded'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "validado pelo agente")),
-        agenteStatus === 'reprovado' && e('p', {
-          className: 'mt-2 text-[10px] text-red-700 bg-red-100 inline-block px-2 py-1 rounded'
-        }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "agente detectou corrida ativa"))
-      ),
-
-      // Lista pública da fila
-      e('div', null,
-        e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium mb-2 px-1' },
-          `Fila completa · ${filaPublica.total} motoboy${filaPublica.total === 1 ? '' : 's'}`
-        ),
-        e('div', { className: 'bg-gray-50 rounded-xl p-1.5 space-y-1' },
-          (filaPublica.fila || []).map(p => {
-            const ehVoce = String(p.cod_profissional) === String(usuarioCod);
-            return e('div', {
-              key: p.cod_profissional,
-              className: ehVoce
-                ? 'flex items-center gap-2 p-2 bg-purple-100 border border-purple-300 rounded-lg'
-                : 'flex items-center gap-2 p-2 bg-white rounded-lg'
-            },
-              // Pos
-              e('span', {
-                className: ehVoce
-                  ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[11px] font-bold flex-shrink-0'
-                  : 'w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[11px] font-medium flex-shrink-0'
-              }, p.posicao),
-              // Avatar
-              avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 24),
-              // Nome
-              e('span', {
-                className: ehVoce
-                  ? 'flex-1 text-xs font-semibold text-purple-900 truncate'
-                  : 'flex-1 text-xs text-gray-800 truncate'
-              },
-                ehVoce ? 'Você' : (p.nome_profissional || '—')
-              ),
-              // Tempo
-              e('span', {
-                className: 'text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded'
-              }, tempoDecorrido(p.entrada_fila_at))
-            );
-          })
+        e('div', { className: 'flex justify-center pt-3 border-t border-gray-100' },
+          agenteStatus === 'pendente' && pill('ambar', 'agente verificando...'),
+          agenteStatus === 'validado' && pill('verde', 'validado pelo agente'),
+          agenteStatus === 'reprovado' && pill('vermelho', 'agente detectou corrida ativa')
         )
       ),
 
+      // Lista pública da fila
+      e('div', { className: CARD + ' overflow-hidden' },
+        e('div', { className: 'flex items-center justify-between px-4 py-3' },
+          e('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'Fila completa'),
+          e('span', { className: 'text-xs text-gray-500 tabular-nums' }, `${filaPublica.total} motoboy${filaPublica.total === 1 ? '' : 's'}`)
+        ),
+        (filaPublica.fila || []).map(p => {
+          const ehVoce = String(p.cod_profissional) === String(usuarioCod);
+          return e('div', {
+            key: p.cod_profissional,
+            className: 'flex items-center gap-3 px-4 py-2.5 border-t border-gray-100 ' + (ehVoce ? 'bg-purple-50' : '')
+          },
+            // Pos
+            e('span', { style: { width: 20, textAlign: 'right', fontFamily: SORA, fontWeight: 700, fontSize: 14, color: ehVoce ? '#5d0b85' : '#6b7280', fontVariantNumeric: 'tabular-nums', flex: 'none' } }, p.posicao),
+            // Avatar
+            avatar(p.cod_profissional, p.nome_profissional, fotos[p.cod_profissional], 28),
+            // Nome
+            e('span', { className: 'flex-1 min-w-0 text-sm truncate ' + (ehVoce ? 'font-semibold text-purple-800' : 'text-gray-900') },
+              ehVoce ? 'Você' : (p.nome_profissional || '—')
+            ),
+            // Tempo
+            e('span', { className: 'text-xs text-gray-500 tabular-nums' }, tempoDecorrido(p.entrada_fila_at))
+          );
+        })
+      ),
+
       // Info do agente
-      e('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2' },
-        e('span', { className: 'text-base' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" }))),
-        e('div', null,
-          e('p', { className: 'text-xs font-medium text-amber-900' }, 'Agente monitorando'),
-          e('p', { className: 'text-[11px] text-amber-700 mt-0.5 leading-snug' },
-            'Se você pegar uma corrida no sistema, o agente vai te tirar da fila automaticamente.'
-          )
+      e('div', { className: 'flex items-start gap-2 px-1' },
+        ico('bot', 16, '#6b7280'),
+        e('p', { className: 'text-xs text-gray-500 leading-snug' },
+          e('span', { className: 'font-semibold text-gray-700' }, 'Agente monitorando. '),
+          'Se você pegar uma corrida no sistema, o agente vai te tirar da fila automaticamente.'
         )
       ),
 
       // ── Tela fullscreen: barreira de horário ──────────────────
       barreiraHorario && e('div', {
         className: 'fixed inset-0 z-50 flex flex-col items-center justify-center p-6',
-        style: { background: 'linear-gradient(135deg, #3c1b4b 0%, #672e81 50%, #6f1d95 100%)' }
+        style: { background: '#f9fafb' }
       },
-        e('div', { className: 'max-w-sm w-full text-center space-y-6' },
-          // Ícone
-          e('div', { className: 'flex justify-center' },
-            e('div', { className: 'w-24 h-24 rounded-full bg-white/10 flex items-center justify-center' },
-              e('span', { className: 'text-5xl' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })))
-            )
-          ),
+        e('div', { className: 'max-w-sm w-full text-center space-y-5' },
+          e('div', { className: 'inline-flex' }, pill('ambar', 'Acesso encerrado')),
           // Saudação
-          e('div', null,
-            e('h1', { className: 'text-2xl font-bold text-white mb-1' },
-              `Bom dia${barreiraHorario.nome ? ', ' + barreiraHorario.nome.split(' ')[0] : ''}!`
-            ),
-            e('div', { className: 'h-px bg-white/20 my-4' })
+          e('h1', { style: { fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#111827' } },
+            `Bom dia${barreiraHorario.nome ? ', ' + barreiraHorario.nome.split(' ')[0] : ''}!`
           ),
           // Mensagem principal
-          e('div', { className: 'bg-white/10 rounded-2xl p-5 backdrop-blur-sm border border-white/20' },
-            e('p', { className: 'text-white text-base leading-relaxed' },
+          e('div', { className: CARD + ' p-5 text-left' },
+            e('p', { className: 'text-gray-900 text-base leading-relaxed' },
               'Você está acessando a fila muito tempo após o início da operação acordada. ',
               'Neste momento, todas as vagas estão preenchidas e ',
               e('strong', null, 'não será possível acessar.')
             ),
-            e('p', { className: 'text-purple-200 text-sm mt-3 leading-relaxed' },
+            e('p', { className: 'text-gray-500 text-sm mt-3 leading-relaxed' },
               'Entre em contato com o suporte para regularizar sua situação.'
             )
           ),
           // Horário de corte
-          barreiraHorario.horario_corte && e('div', { className: 'text-purple-300 text-sm' },
+          barreiraHorario.horario_corte && e('div', { className: 'text-gray-500 text-sm tabular-nums' },
             `Horário de ingresso encerrado após ${barreiraHorario.horario_corte}`
           ),
           // Botão fechar
           e('button', {
             onClick: () => setBarreiraHorario(null),
-            className: 'w-full py-3 bg-white/15 hover:bg-white/25 text-white rounded-xl font-medium transition-colors border border-white/20 text-sm'
+            className: BTN_GRANDE + ' bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
           }, 'Fechar')
         )
       ),
 
       // Modal confirmação de saída
-      modalSaida && e('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4' },
-        e('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden' },
-          // Header vermelho
-          e('div', { className: 'bg-red-600 px-5 py-4 text-white text-center' },
-            e('span', { className: 'text-4xl block mb-1' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, e("use", { href: "#i-ban" }))),
-            e('h2', { className: 'text-lg font-bold' }, 'Sair da fila?'),
-            e('p', { className: 'text-red-200 text-xs mt-1' }, 'Esta ação não pode ser desfeita')
+      modalSaida && e('div', { className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' },
+        e('div', { className: 'bg-white border border-gray-200 rounded-[16px] w-full max-w-sm overflow-hidden' },
+          e('div', { className: 'px-5 pt-5 pb-1 text-center' },
+            e('div', { className: 'mb-2 inline-flex' }, pill('vermelho', 'Ação definitiva')),
+            e('h2', { className: 'text-lg font-semibold text-gray-900' }, 'Sair da fila?'),
+            e('p', { className: 'text-gray-500 text-xs mt-1' }, 'Esta ação não pode ser desfeita')
           ),
           e('div', { className: 'p-5 space-y-4' },
             // Aviso de punição
-            e('div', { className: 'bg-red-50 border border-red-200 rounded-xl p-4' },
-              e('p', { className: 'text-sm font-bold text-red-800 mb-2 text-center' }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, e("use", { href: "#i-alert" })), "Você será bloqueado")),
-              e('p', { className: 'text-sm text-red-700 text-center leading-relaxed' },
+            e('div', { className: 'bg-red-50 rounded-[12px] p-4' },
+              e('p', { className: 'text-sm font-semibold text-red-800 mb-1 text-center' }, 'Você será bloqueado'),
+              e('p', { className: 'text-sm text-red-800 text-center leading-relaxed' },
                 'Ao sair voluntariamente, você ',
                 e('strong', null, 'não poderá reentrar na fila'),
                 ' pelo período de punição configurado.'
@@ -598,7 +582,7 @@
             e('div', null,
               e('p', { className: 'text-sm text-gray-600 text-center mb-2' },
                 'Para confirmar, digite ',
-                e('strong', { className: 'text-red-700 font-mono tracking-widest' }, 'SAIR'),
+                e('strong', { className: 'text-red-800 font-mono tracking-widest' }, 'SAIR'),
                 ' abaixo:'
               ),
               e('input', {
@@ -608,25 +592,25 @@
                 onKeyDown: ev => { if (ev.key === 'Enter') confirmarSaida(); },
                 placeholder: 'Digite SAIR',
                 autoFocus: true,
-                className: 'w-full text-center text-xl font-bold tracking-widest border-2 rounded-xl py-3 px-4 focus:outline-none ' +
-                  (textoConfirmSaida.trim().toUpperCase() === 'SAIR'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-300 text-gray-700')
+                className: 'w-full h-12 text-center text-lg font-semibold tracking-widest border rounded-[12px] px-4 focus:outline-none focus:ring-2 ' +
+                  (confirmaOk
+                    ? 'border-red-600 bg-red-50 text-red-800 focus:ring-red-100'
+                    : 'border-gray-200 text-gray-700 focus:border-purple-700 focus:ring-purple-100')
               })
             ),
             // Botões
             e('div', { className: 'flex gap-3' },
               e('button', {
                 onClick: () => { setModalSaida(false); setTextoConfirmSaida(''); },
-                className: 'flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-300'
+                className: BTN_GRANDE + ' flex-1 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm'
               }, 'Cancelar'),
               e('button', {
                 onClick: confirmarSaida,
-                disabled: textoConfirmSaida.trim().toUpperCase() !== 'SAIR',
-                className: 'flex-1 py-3 rounded-xl font-bold text-sm ' +
-                  (textoConfirmSaida.trim().toUpperCase() === 'SAIR'
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-300 text-gray-400 cursor-not-allowed')
+                disabled: !confirmaOk,
+                className: BTN_GRANDE + ' flex-1 text-sm ' +
+                  (confirmaOk
+                    ? 'bg-white border border-red-200 text-red-800 hover:bg-red-50'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed')
               }, 'Confirmar saída')
             )
           )
@@ -636,7 +620,7 @@
       // Botão sair
       e('button', {
         onClick: sairDaFila,
-        className: 'w-full py-3 bg-white border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50'
+        className: BTN_GRANDE + ' bg-white border border-red-200 text-red-800 hover:bg-red-50 text-sm'
       }, 'Sair da fila')
     );
   }
@@ -648,47 +632,40 @@
     const { minhaCentral, distanciaCentral, gpsStatus, podeChekin, entrarNaFila, filaPublica } = opts;
 
     return e('div', { className: 'space-y-3' },
-      // KPI compacto: quantos na fila agora
-      e('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 text-center' },
-        e('p', { className: 'text-[10px] uppercase tracking-wide text-gray-500 font-medium' }, 'Fila no momento'),
-        e('p', { className: 'text-3xl font-bold text-gray-800 mt-1' }, filaPublica.total || 0,
-          e('span', { className: 'text-sm text-gray-400 font-normal' }, ' motoboy', filaPublica.total === 1 ? '' : 's')
-        )
-      ),
-
-      // Status pronto/não pronto
-      podeChekin
-        ? e('div', { className: 'bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-2' },
-            e('span', { className: 'text-xl' }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" }))),
-            e('div', { className: 'flex-1' },
-              e('p', { className: 'text-sm font-medium text-green-900' }, 'GPS confirmado'),
-              e('p', { className: 'text-[11px] text-green-700' }, 'Pronto pra entrar na fila')
-            )
+      // KPI compacto: quantos na fila agora + status pronto/não pronto
+      e('div', { className: CARD + ' overflow-hidden' },
+        e('div', { className: 'p-4' },
+          e('p', { className: 'text-xs text-gray-500' }, 'Fila no momento'),
+          e('p', { className: 'mt-0.5' },
+            e('span', { style: { fontFamily: SORA, fontSize: 28, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums' } }, filaPublica.total || 0),
+            e('span', { className: 'text-sm text-gray-500' }, ' motoboy', filaPublica.total === 1 ? '' : 's')
           )
-        : e('div', { className: 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center gap-2' },
-            e('span', { className: 'text-xl' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-pin" }))),
-            e('div', { className: 'flex-1' },
-              e('p', { className: 'text-sm font-medium text-amber-900' },
-                gpsStatus !== 'permitido' ? 'Aguardando GPS' : 'Você está muito longe'
-              ),
-              e('p', { className: 'text-[11px] text-amber-700' },
+        ),
+        podeChekin
+          ? e('div', { className: 'flex items-center gap-2 px-4 py-3 border-t border-gray-100' },
+              pill('verde', 'GPS confirmado'),
+              e('p', { className: 'text-xs text-gray-500' }, 'Pronto pra entrar na fila')
+            )
+          : e('div', { className: 'flex items-center gap-2 px-4 py-3 border-t border-gray-100' },
+              pill('ambar', gpsStatus !== 'permitido' ? 'Aguardando GPS' : 'Você está muito longe'),
+              e('p', { className: 'text-xs text-gray-500 tabular-nums' },
                 gpsStatus !== 'permitido'
                   ? 'Permita acesso à localização'
                   : `${distanciaCentral}m da central (máx ${minhaCentral.raio_metros}m)`
               )
             )
-          ),
+      ),
 
       // Botão grande de entrar
       e('button', {
         onClick: entrarNaFila,
         disabled: !podeChekin,
-        className: podeChekin
-          ? 'w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-base font-semibold transition-colors'
-          : 'w-full py-4 bg-gray-200 text-gray-400 rounded-xl text-base font-semibold cursor-not-allowed'
-      }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Entrar na fila")),
+        className: BTN_GRANDE + ' ' + (podeChekin
+          ? 'bg-purple-700 hover:bg-purple-800 text-white'
+          : 'bg-gray-100 text-gray-400 cursor-not-allowed')
+      }, ico('rocket', 18), 'Entrar na fila'),
 
-      e('p', { className: 'text-center text-[10px] text-gray-400 leading-relaxed px-4' },
+      e('p', { className: 'text-center text-xs text-gray-500 leading-relaxed px-4' },
         'Ao entrar, o agente vai verificar no sistema se você não tem corridas ativas. Se tiver, te tira da fila automaticamente.'
       )
     );
@@ -697,47 +674,44 @@
   // ──────────────────────────────────────────────────────────
   // Tela: motoboy EM ROTA (despachado pelo agente)
   // 🆕 2026-05-24: mesmo padrão visual da fila clássica
-  // - Card verde com 🏍️
-  // - Durante cooldown: mensagem laranja
-  // - Após cooldown: mensagem verde + botão de retorno
+  // - Durante cooldown: aviso âmbar
+  // - Após cooldown: mensagem + botão de retorno
   // ──────────────────────────────────────────────────────────
   function renderTelaEmRota(opts) {
     const { minhaPosicao, entrarNaFila, podeChekin } = opts;
     const cooldownAtivo = (minhaPosicao.cooldown_restante || 0) > 0;
     const minutosRestantes = minhaPosicao.cooldown_restante || 0;
 
-    return e('div', { className: 'border-2 rounded-2xl p-6 bg-green-50 border-green-300' },
-      // Cabeçalho 🏍️ + título
-      e('div', { className: 'flex items-center gap-4 mb-4' },
-        e('span', { className: 'text-5xl' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bike" }))),
-        e('div', null,
-          e('h2', { className: 'text-xl font-bold text-green-800' }, 'Você está em rota!'),
-          e('p', { className: 'text-green-600 text-sm' },
-            cooldownAtivo ? 'Aguarde para voltar à fila' : 'Pronto para voltar'
-          )
-        )
+    return e('div', { className: CARD + ' p-5' },
+      // Cabeçalho
+      e('div', { className: 'flex items-center justify-between gap-3 mb-1' },
+        e('h2', { className: 'text-lg font-semibold text-gray-900' }, 'Você está em rota!'),
+        pill('azul', 'Em rota')
+      ),
+      e('p', { className: 'text-sm text-gray-500 mb-4' },
+        cooldownAtivo ? 'Aguarde para voltar à fila' : 'Pronto para voltar'
       ),
 
-      // Bloco da mensagem (laranja durante cooldown, verde quando pode voltar)
+      // Bloco da mensagem (âmbar durante cooldown, neutro quando pode voltar)
       cooldownAtivo
-        ? e('div', { className: 'bg-orange-50 border border-orange-300 rounded-xl p-4' },
-            e('p', { className: 'text-sm text-orange-800 leading-relaxed' },
-              e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "O agente detectou corridas ativas no seu nome. Você saiu da fila automaticamente. Finalize as entregas e poderá voltar em "),
-              e('strong', null, `${minutosRestantes} ${minutosRestantes === 1 ? 'minuto' : 'minutos'}`),
+        ? e('div', { className: 'bg-amber-50 rounded-[12px] p-4' },
+            e('p', { className: 'text-sm text-amber-800 leading-relaxed' },
+              'O agente detectou corridas ativas no seu nome. Você saiu da fila automaticamente. Finalize as entregas e poderá voltar em ',
+              e('strong', { className: 'tabular-nums' }, `${minutosRestantes} ${minutosRestantes === 1 ? 'minuto' : 'minutos'}`),
               '.'
             )
           )
         : e(React.Fragment, null,
-            e('div', { className: 'bg-green-100 border border-green-300 rounded-xl p-4 mb-4' },
-              e('p', { className: 'text-sm text-green-800 leading-relaxed' },
-                e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Se finalizou suas entregas, retorne para a fila quando estiver próximo da central.")
+            e('div', { className: 'bg-gray-50 rounded-[12px] p-4 mb-4' },
+              e('p', { className: 'text-sm text-gray-700 leading-relaxed' },
+                'Se finalizou suas entregas, retorne para a fila quando estiver próximo da central.'
               )
             ),
             e('button', {
               onClick: entrarNaFila,
               disabled: !podeChekin,
-              className: `w-full py-4 rounded-xl font-bold text-lg ${!podeChekin ? 'bg-gray-300 text-gray-500' : 'bg-green-600 text-white hover:bg-green-700'}`,
-            }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-refresh" })), "Retornar para a fila"))
+              className: BTN_GRANDE + ' ' + (!podeChekin ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-purple-700 text-white hover:bg-purple-800'),
+            }, ico('refresh', 18), 'Retornar para a fila')
           )
     );
   }
@@ -749,33 +723,32 @@
   function renderModalCooldown(opts) {
     const { minutos_restantes, onFechar } = opts;
     return e('div', {
-      className: 'fixed inset-0 z-50 flex items-center justify-center p-4',
-      style: { background: 'rgba(0,0,0,0.45)' },
+      className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50',
       onClick: onFechar,
     },
       e('div', {
-        className: 'bg-white rounded-2xl p-5 max-w-sm w-full',
+        className: 'bg-white border border-gray-200 rounded-[16px] p-5 max-w-sm w-full',
         onClick: (ev) => ev.stopPropagation(),
       },
         e('div', { className: 'text-center mb-4' },
-          e('span', { className: 'text-5xl block mb-2' }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clock" }))),
-          e('h3', { className: 'text-lg font-bold text-gray-800 mb-2' }, 'Calma aí!'),
+          e('div', { className: 'mb-3 inline-flex' }, pill('ambar', 'Aguarde')),
+          e('h3', { className: 'text-lg font-semibold text-gray-900 mb-2' }, 'Calma aí!'),
           e('p', { className: 'text-sm text-gray-600 leading-relaxed' },
             'Você foi despachado há pouco. Finalize sua corrida e conseguirá entrar na fila novamente em ',
-            e('strong', { className: 'text-orange-700' },
+            e('strong', { className: 'text-gray-900 tabular-nums' },
               `${minutos_restantes} ${minutos_restantes === 1 ? 'minuto' : 'minutos'}`
             ),
             '.'
           )
         ),
-        e('div', { className: 'bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4' },
-          e('p', { className: 'text-xs text-orange-800 leading-relaxed' },
-            e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Esse tempo serve pra você ter chance de finalizar a corrida e não furar a fila dos outros motoboys.")
+        e('div', { className: 'bg-gray-50 rounded-[12px] p-3 mb-4' },
+          e('p', { className: 'text-xs text-gray-600 leading-relaxed' },
+            'Esse tempo serve pra você ter chance de finalizar a corrida e não furar a fila dos outros motoboys.'
           )
         ),
         e('button', {
           onClick: onFechar,
-          className: 'w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold',
+          className: BTN_GRANDE + ' bg-purple-700 hover:bg-purple-800 text-white',
         }, 'Entendi')
       )
     );

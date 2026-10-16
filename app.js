@@ -10143,10 +10143,10 @@ const hideLoadingScreen = () => {
                     i && React.createElement(Toast, i),
                     n && React.createElement(LoadingOverlay, null),
                     // Header simples
-                    React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4" },
+                    React.createElement("div", { className: "bg-white border-b border-gray-200 text-gray-900 px-4 py-3 flex items-center gap-3" /* FILAS_CLEAN_V1 */ + "" },
                         React.createElement("button", { 
                             onClick: () => he("home"), 
-                            className: "p-2 bg-white/20 rounded-lg hover:bg-white/30" 
+                            className: "h-9 px-3 bg-white border border-gray-200 rounded-[10px] text-gray-700 font-medium hover:bg-gray-50" 
                         }, "← Voltar"),
                         React.createElement("h1", { className: "text-xl font-bold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })), "Fila de Entregas"))
                     ),
@@ -10205,10 +10205,10 @@ const hideLoadingScreen = () => {
                     i && React.createElement(Toast, i),
                     n && React.createElement(LoadingOverlay, null),
                     // Header simples com voltar (mesmo padrão do Filas)
-                    React.createElement("div", { className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center gap-4 sticky top-0 z-40 shadow-md" },
+                    React.createElement("div", { className: "bg-white border-b border-gray-200 text-gray-900 px-4 py-3 flex items-center gap-3" /* FILAS_CLEAN_V1 */ + " sticky top-0 z-40" },
                         React.createElement("button", {
                             onClick: () => he("home"),
-                            className: "p-2 bg-white/20 rounded-lg hover:bg-white/30"
+                            className: "h-9 px-3 bg-white border border-gray-200 rounded-[10px] text-gray-700 font-medium hover:bg-gray-50"
                         }, "← Voltar"),
                         React.createElement("h1", { className: "text-xl font-bold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Consultar Endereços"))
                     ),
