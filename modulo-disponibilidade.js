@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DISP_ICONS_V1 */
 // ==================== MÓDULO DISPONIBILIDADE ====================
 // Arquivo: modulo-disponibilidade.js
@@ -279,7 +280,7 @@
                     x(e => ({
                         ...e,
                         novaRegiao: ""
-                    })), ja(`✅ Região "${e}" adicionada!`, "success"), r()
+                    })), ja(`Região "${e}" adicionada!`, "success"), r()
                 } catch (e) {
                     ja(e.message, "error")
                 } else ja("Digite o nome da região", "error")
@@ -394,7 +395,7 @@
                                     dados = await resp.json();
                                 if (dados.restrito) {
                                     const lojaDesc = dados.todas_lojas ? "TODAS AS LOJAS" : `loja ${dados.loja_codigo} - ${dados.loja_nome}`;
-                                    alert(`🚫 MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${lojaDesc}\n\nMotivo: ${dados.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`);
+                                    alert(`MOTOBOY RESTRITO!\n\nCódigo: ${l}\nRestrito em: ${lojaDesc}\n\nMotivo: ${dados.motivo}\n\nEste motoboy não pode ser inserido nesta loja.`);
                                     // Limpar o código do motoboy restrito
                                     x(prev => {
                                         const linhas = [...(prev.dispData?.linhas || [])];
@@ -485,7 +486,7 @@
                             linhas: [...(prev.dispData?.linhas || []), ...linhasNovas]
                         }
                     }));
-                    ja(`✅ ${t} ${a ? "excedente(s)" : "titular(es)"} adicionado(s)!`, "success");
+                    ja(`${t} ${a ? "excedente(s)" : "titular(es)"} adicionado(s)!`, "success");
                 } catch (e) {
                     ja("Erro ao adicionar linhas", "error");
                 }
@@ -524,7 +525,7 @@
                     // da loja (reconfigurando, não ficando inconsistente).
                     const resp = await _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}?force=true`, { method: "DELETE" });
                     if (!resp.ok) throw new Error("DELETE falhou");
-                    toast(`🗑️ ${rotuloTipo} removido!`, "success");
+                    toast(`${rotuloTipo} removido!`, "success");
                 } catch (e) {
                     // Rollback: recoloca a linha no estado e avisa.
                     x(prev => ({
@@ -843,7 +844,7 @@
                 className: "px-1.5 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))), React.createElement("button", {
                 onClick: () => {
-                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("✅ Link copiado!", "success")
+                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("Link copiado!", "success")
                 },
                 className: "px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px]",
                 title: "Copiar link público (somente leitura)"
@@ -880,17 +881,17 @@
                             React.createElement("p", {
                                 style: {
                                     margin: "2px 0 0", fontSize: "22px", fontWeight: "500",
-                                    color: percGeral >= 80 ? "#0F6E56" : (percGeral >= 50 ? "#854F0B" : "#A32D2D")
+                                    color: percGeral >= 80 ? "#166534" : (percGeral >= 50 ? "#92400e" : "#991b1b")
                                 }
                             }, percGeral + "%")
                         ),
-                        React.createElement("div", { style: { background: semContato > 0 ? "#FAEEDA" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: semContato > 0 ? "#854F0B" : "#6b7280", fontWeight: "500" } }, "SEM CONTATO"),
-                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: semContato > 0 ? "#633806" : "#1f2937" } }, semContato)
+                        React.createElement("div", { style: { background: semContato > 0 ? "#fffbeb" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: semContato > 0 ? "#92400e" : "#6b7280", fontWeight: "500" } }, "SEM CONTATO"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: semContato > 0 ? "#92400e" : "#111827" } }, semContato)
                         ),
-                        React.createElement("div", { style: { background: lojasCriticas.length > 0 ? "#FCEBEB" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojasCriticas.length > 0 ? "#791F1F" : "#6b7280", fontWeight: "500" } }, "LOJAS CRÍTICAS"),
-                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: lojasCriticas.length > 0 ? "#501313" : "#1f2937" } }, lojasCriticas.length)
+                        React.createElement("div", { style: { background: lojasCriticas.length > 0 ? "#fef2f2" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
+                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojasCriticas.length > 0 ? "#991b1b" : "#6b7280", fontWeight: "500" } }, "LOJAS CRÍTICAS"),
+                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: lojasCriticas.length > 0 ? "#991b1b" : "#111827" } }, lojasCriticas.length)
                         )
                     ),
                     lojasCriticas.length > 0 && React.createElement("div", { style: { marginBottom: "12px" } },
@@ -920,23 +921,23 @@
                                     style: {
                                         display: "flex", alignItems: "center", gap: "10px",
                                         padding: "10px 12px",
-                                        background: lojaPerc < 33 ? "#FCEBEB" : "#FAEEDA",
+                                        background: lojaPerc < 33 ? "#fef2f2" : "#fffbeb",
                                         borderRadius: "8px",
-                                        borderLeft: "3px solid " + (lojaPerc < 33 ? "#A32D2D" : "#BA7517"),
+                                        borderLeft: "3px solid " + (lojaPerc < 33 ? "#991b1b" : "#d97706"),
                                         cursor: "pointer"
                                     },
                                     title: "Clique para ir ao painel desta loja"
                                 },
-                                    React.createElement("span", { style: { fontFamily: "monospace", fontSize: "11px", color: lojaPerc < 33 ? "#791F1F" : "#854F0B", fontWeight: "500", width: "50px" } }, loja.codigo),
+                                    React.createElement("span", { style: { fontFamily: "monospace", fontSize: "11px", color: lojaPerc < 33 ? "#991b1b" : "#92400e", fontWeight: "500", width: "50px" } }, loja.codigo),
                                     React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                                        React.createElement("p", { style: { margin: 0, fontSize: "13px", color: lojaPerc < 33 ? "#501313" : "#633806", fontWeight: "500" } }, loja.nome),
-                                        React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojaPerc < 33 ? "#791F1F" : "#854F0B" } }, regiaoLoja ? regiaoLoja.nome : "")
+                                        React.createElement("p", { style: { margin: 0, fontSize: "13px", color: lojaPerc < 33 ? "#991b1b" : "#92400e", fontWeight: "500" } }, loja.nome),
+                                        React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojaPerc < 33 ? "#991b1b" : "#92400e" } }, regiaoLoja ? regiaoLoja.nome : "")
                                     ),
                                     React.createElement("div", { style: { display: "flex", gap: "4px", fontSize: "11px" } },
-                                        React.createElement("span", { style: { padding: "2px 7px", background: lojaPerc < 33 ? "#F09595" : "#FAC775", color: lojaPerc < 33 ? "#501313" : "#633806", borderRadius: "4px" } }, lojaEmLoja + " em loja"),
-                                        React.createElement("span", { style: { padding: "2px 7px", background: "white", color: lojaPerc < 33 ? "#501313" : "#854F0B", borderRadius: "4px", border: "0.5px solid " + (lojaPerc < 33 ? "#F09595" : "#FAC775") } }, lojaTit.length + " ideal")
+                                        React.createElement("span", { style: { padding: "2px 7px", background: lojaPerc < 33 ? "#fecaca" : "#fde68a", color: lojaPerc < 33 ? "#991b1b" : "#92400e", borderRadius: "4px" } }, lojaEmLoja + " em loja"),
+                                        React.createElement("span", { style: { padding: "2px 7px", background: "white", color: lojaPerc < 33 ? "#991b1b" : "#92400e", borderRadius: "4px", border: "0.5px solid " + (lojaPerc < 33 ? "#fecaca" : "#fde68a") } }, lojaTit.length + " ideal")
                                     ),
-                                    React.createElement("span", { style: { fontSize: "18px", fontWeight: "500", color: lojaPerc < 33 ? "#501313" : "#633806" } }, lojaPerc + "%")
+                                    React.createElement("span", { style: { fontSize: "18px", fontWeight: "500", color: lojaPerc < 33 ? "#991b1b" : "#92400e" } }, lojaPerc + "%")
                                 );
                             })
                         )
@@ -954,68 +955,68 @@
                 }
             }, React.createElement("thead", null, React.createElement("tr", {
                 style: {
-                    backgroundColor: "#f8fafc",
-                    borderBottom: "2px solid #e2e8f0"
+                    backgroundColor: "#f9fafb",
+                    borderBottom: "2px solid #e5e7eb"
                 }
             }, React.createElement("th", {
                 style: {
                     padding: "4px 6px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     textAlign: "left",
                     fontWeight: "600",
-                    color: "#475569"
+                    color: "#374151"
                 }
             }, "LOJAS"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569",
+                    color: "#374151",
                     whiteSpace: "nowrap"
                 }
             }, "A CAMINHO"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569"
+                    color: "#374151"
                 }
             }, "CONFIR."), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569",
+                    color: "#374151",
                     whiteSpace: "nowrap"
                 }
             }, "EM LOJA"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569"
+                    color: "#374151"
                 }
             }, "IDEAL"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569"
+                    color: "#374151"
                 }
             }, "FALTA"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569",
+                    color: "#374151",
                     whiteSpace: "nowrap"
                 }
             }, "S/ CONTATO"), React.createElement("th", {
                 style: {
                     padding: "4px 4px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e5e7eb",
                     fontWeight: "600",
-                    color: "#475569"
+                    color: "#374151"
                 }
             }, "%"))), React.createElement("tbody", null, (() => {
                 const t = p.panoramaOrdem || "regiao",
@@ -1067,10 +1068,10 @@
                         colSpan: "8",
                         style: {
                             padding: "4px 6px",
-                            border: "1px solid #cbd5e1",
-                            backgroundColor: "#e2e8f0",
+                            border: "1px solid #d1d5db",
+                            backgroundColor: "#e5e7eb",
                             fontWeight: "700",
-                            color: "#1e293b",
+                            color: "#111827",
                             fontSize: "9px",
                             textAlign: "center"
                         }
@@ -1082,99 +1083,99 @@
                     }, React.createElement("td", {
                         style: {
                             padding: "2px 6px",
-                            border: "1px solid #e2e8f0",
-                            backgroundColor: e.perc < 50 ? "#fef2f2" : "#fafafa",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: e.perc < 50 ? "#fef2f2" : "#f9fafb",
                             fontWeight: "500",
                             whiteSpace: "nowrap"
                         }
                     }, e.perc < 50 && React.createElement("span", {
                         style: {
-                            color: "#ef4444",
+                            color: "#dc2626",
                             marginRight: "2px"
                         }
                     }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" }))), e.nome), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "500",
-                            color: e.aCaminho > 0 ? "#ea580c" : "#cbd5e1"
+                            color: e.aCaminho > 0 ? "#f67602" : "#d1d5db"
                         }
                     }, e.aCaminho), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "500",
-                            color: e.confirmado > 0 ? "#16a34a" : "#cbd5e1"
+                            color: e.confirmado > 0 ? "#16a34a" : "#d1d5db"
                         }
                     }, e.confirmado), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "700",
-                            color: e.emLoja > 0 ? "#2563eb" : "#cbd5e1"
+                            color: e.emLoja > 0 ? "#2563eb" : "#d1d5db"
                         }
                     }, e.emLoja), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "500",
-                            color: "#64748b"
+                            color: "#6b7280"
                         }
                     }, e.titulares), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "600",
-                            color: e.falta > 0 ? "#dc2626" : "#cbd5e1"
+                            color: e.falta > 0 ? "#dc2626" : "#d1d5db"
                         }
                     }, e.falta > 0 ? -e.falta : 0), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "500",
-                            color: e.semContato > 0 ? "#d97706" : "#cbd5e1"
+                            color: e.semContato > 0 ? "#d97706" : "#d1d5db"
                         }
                     }, e.semContato), React.createElement("td", {
                         style: {
                             padding: "2px 4px",
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid #e5e7eb",
                             textAlign: "center",
                             fontWeight: "700",
-                            backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f1f5f9",
-                            color: e.perc < 50 ? "#b91c1c" : e.perc < 80 ? "#a16207" : e.perc >= 100 ? "#15803d" : "#475569"
+                            backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f3f4f6",
+                            color: e.perc < 50 ? "#991b1b" : e.perc < 80 ? "#92400e" : e.perc >= 100 ? "#166534" : "#374151"
                         }
                     }, e.perc.toFixed(0), "%"))))
                 }), React.createElement("tr", {
                     style: {
-                        backgroundColor: "#f8fafc",
-                        borderTop: "2px solid #cbd5e1"
+                        backgroundColor: "#f9fafb",
+                        borderTop: "2px solid #d1d5db"
                     }
                 }, React.createElement("td", {
                     style: {
                         padding: "4px 6px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         fontWeight: "700",
                         fontSize: "9px",
-                        color: "#1e293b"
+                        color: "#111827"
                     }
                 }, "TOTAL GERAL"), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: "#ea580c"
+                        color: "#f67602"
                     }
                 }, c.aCaminho), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
                         color: "#16a34a"
@@ -1182,7 +1183,7 @@
                 }, c.confirmado), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
                         color: "#2563eb"
@@ -1190,35 +1191,35 @@
                 }, c.emLoja), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: "#64748b"
+                        color: "#6b7280"
                     }
                 }, c.titulares), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "700",
-                        color: c.falta > 0 ? "#dc2626" : "#cbd5e1"
+                        color: c.falta > 0 ? "#dc2626" : "#d1d5db"
                     }
                 }, c.falta > 0 ? -c.falta : 0), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: c.semContato > 0 ? "#d97706" : "#cbd5e1"
+                        color: c.semContato > 0 ? "#d97706" : "#d1d5db"
                     }
                 }, c.semContato), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "800",
-                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f1f5f9",
-                        color: s < 50 ? "#b91c1c" : s < 80 ? "#a16207" : s >= 100 ? "#15803d" : "#475569"
+                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f3f4f6",
+                        color: s < 50 ? "#991b1b" : s < 80 ? "#92400e" : s >= 100 ? "#166534" : "#374151"
                     }
                 }, s.toFixed(0), "%"))) : React.createElement(React.Fragment, null, o.map((e, t) => React.createElement("tr", {
                     key: e.id,
@@ -1228,110 +1229,110 @@
                 }, React.createElement("td", {
                     style: {
                         padding: "2px 6px",
-                        border: "1px solid #e2e8f0",
-                        backgroundColor: e.perc < 50 ? "#fef2f2" : "#fafafa",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: e.perc < 50 ? "#fef2f2" : "#f9fafb",
                         fontWeight: "500",
                         whiteSpace: "nowrap"
                     }
                 }, React.createElement("span", {
                     style: {
-                        color: "#94a3b8",
+                        color: "#9ca3af",
                         fontSize: "8px",
                         marginRight: "3px"
                     }
                 }, t + 1, "."), e.perc < 50 && React.createElement("span", {
                     style: {
-                        color: "#ef4444",
+                        color: "#dc2626",
                         marginRight: "2px"
                     }
                 }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" }))), e.nome, React.createElement("span", {
                     style: {
-                        color: "#94a3b8",
+                        color: "#9ca3af",
                         fontSize: "7px",
                         marginLeft: "3px"
                     }
                 }, "(", e.regiao?.nome || "", ")")), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "500",
-                        color: e.aCaminho > 0 ? "#ea580c" : "#cbd5e1"
+                        color: e.aCaminho > 0 ? "#f67602" : "#d1d5db"
                     }
                 }, e.aCaminho), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "500",
-                        color: e.confirmado > 0 ? "#16a34a" : "#cbd5e1"
+                        color: e.confirmado > 0 ? "#16a34a" : "#d1d5db"
                     }
                 }, e.confirmado), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "700",
-                        color: e.emLoja > 0 ? "#2563eb" : "#cbd5e1"
+                        color: e.emLoja > 0 ? "#2563eb" : "#d1d5db"
                     }
                 }, e.emLoja), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "500",
-                        color: "#64748b"
+                        color: "#6b7280"
                     }
                 }, e.titulares), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: e.falta > 0 ? "#dc2626" : "#cbd5e1"
+                        color: e.falta > 0 ? "#dc2626" : "#d1d5db"
                     }
                 }, e.falta > 0 ? -e.falta : 0), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "500",
-                        color: e.semContato > 0 ? "#d97706" : "#cbd5e1"
+                        color: e.semContato > 0 ? "#d97706" : "#d1d5db"
                     }
                 }, e.semContato), React.createElement("td", {
                     style: {
                         padding: "2px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "700",
-                        backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f1f5f9",
-                        color: e.perc < 50 ? "#b91c1c" : e.perc < 80 ? "#a16207" : e.perc >= 100 ? "#15803d" : "#475569"
+                        backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f3f4f6",
+                        color: e.perc < 50 ? "#991b1b" : e.perc < 80 ? "#92400e" : e.perc >= 100 ? "#166534" : "#374151"
                     }
                 }, e.perc.toFixed(0), "%"))), React.createElement("tr", {
                     style: {
-                        backgroundColor: "#f8fafc",
-                        borderTop: "2px solid #cbd5e1"
+                        backgroundColor: "#f9fafb",
+                        borderTop: "2px solid #d1d5db"
                     }
                 }, React.createElement("td", {
                     style: {
                         padding: "4px 6px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         fontWeight: "700",
                         fontSize: "9px",
-                        color: "#1e293b"
+                        color: "#111827"
                     }
                 }, "TOTAL GERAL"), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: "#ea580c"
+                        color: "#f67602"
                     }
                 }, c.aCaminho), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
                         color: "#16a34a"
@@ -1339,7 +1340,7 @@
                 }, c.confirmado), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
                         color: "#2563eb"
@@ -1347,35 +1348,35 @@
                 }, c.emLoja), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: "#64748b"
+                        color: "#6b7280"
                     }
                 }, c.titulares), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "700",
-                        color: c.falta > 0 ? "#dc2626" : "#cbd5e1"
+                        color: c.falta > 0 ? "#dc2626" : "#d1d5db"
                     }
                 }, c.falta > 0 ? -c.falta : 0), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "600",
-                        color: c.semContato > 0 ? "#d97706" : "#cbd5e1"
+                        color: c.semContato > 0 ? "#d97706" : "#d1d5db"
                     }
                 }, c.semContato), React.createElement("td", {
                     style: {
                         padding: "3px 4px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e5e7eb",
                         textAlign: "center",
                         fontWeight: "800",
-                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f1f5f9",
-                        color: s < 50 ? "#b91c1c" : s < 80 ? "#a16207" : s >= 100 ? "#15803d" : "#475569"
+                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f3f4f6",
+                        color: s < 50 ? "#991b1b" : s < 80 ? "#92400e" : s >= 100 ? "#166534" : "#374151"
                     }
                 }, s.toFixed(0), "%")))
             })())))), "relatorios" === t && React.createElement("div", {
@@ -1875,7 +1876,7 @@
                                 const t = await e.json();
                                 throw new Error(t.error || "Erro ao cadastrar")
                             }
-                            ja("✅ Restrição cadastrada com sucesso!", "success"), x(e => ({
+                            ja("Restrição cadastrada com sucesso!", "success"), x(e => ({
                                 ...e,
                                 restricaoCod: "",
                                 restricaoNome: "",
@@ -1954,7 +1955,7 @@
                     if (confirm(`Remover restrição de ${e.cod_profissional} - ${e.nome_profissional||"N/A"}?`)) try {
                         await _fetch(`${API_URL}/disponibilidade/restricoes/${e.id}`, {
                             method: "DELETE"
-                        }), ja("✅ Restrição removida!", "success");
+                        }), ja("Restrição removida!", "success");
                         const t = await _fetch(`${API_URL}/disponibilidade/restricoes`),
                             a = await t.json();
                         x(e => ({
@@ -1983,7 +1984,7 @@
                 className: "flex-1 px-3 py-2 bg-gray-100 border rounded-lg text-sm font-mono"
             }), React.createElement("button", {
                 onClick: () => {
-                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("✅ Link copiado!", "success")
+                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("Link copiado!", "success")
                 },
                 className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Copiar Link")), React.createElement("button", {
@@ -2053,7 +2054,7 @@
                     if (window.confirm(`Remover região "${t}" e todas suas lojas?`)) try {
                         await _fetch(`${API_URL}/disponibilidade/regioes/${e}`, {
                             method: "DELETE"
-                        }), ja(`🗑️ Região "${t}" removida!`, "success"), r()
+                        }), ja(`Região "${t}" removida!`, "success"), r()
                     } catch (e) {
                         ja("Erro ao remover região", "error")
                     }
@@ -2149,7 +2150,7 @@
                                 novaQtdTitulares: "",
                                 novaQtdExcedentes: "",
                                 novaLojaRegiaoId: ""
-                            })), ja(`✅ Loja "${t}" adicionada com ${l} titular(es) e ${o} excedente(s)!`, "success"), r()
+                            })), ja(`Loja "${t}" adicionada com ${l} titular(es) e ${o} excedente(s)!`, "success"), r()
                         } catch (e) {
                             ja("Erro ao criar loja", "error")
                         } else ja("Adicione pelo menos 1 linha", "error");
@@ -2278,7 +2279,7 @@
                                     body: JSON.stringify({ codigo: novoCodigo, nome: novoNome })
                                 });
                                 if (!resp.ok) throw new Error("PUT falhou");
-                                ja("✅ Loja atualizada!", "success");
+                                ja("Loja atualizada!", "success");
                             } catch (e) {
                                 // Rollback: restaura código/nome anteriores.
                                 if (lojaOriginal) {
@@ -2342,7 +2343,7 @@
                             try {
                                 const resp = await _fetch(`${API_URL}/disponibilidade/lojas/${lojaId}`, { method: "DELETE" });
                                 if (!resp.ok) throw new Error("DELETE falhou");
-                                ja("🗑️ Loja removida!", "success");
+                                ja("Loja removida!", "success");
                             } catch (e) {
                                 // Rollback: recoloca loja e linhas.
                                 if (lojaRemovida) {
@@ -2375,7 +2376,7 @@
                     if (window.confirm("Limpar TODAS as linhas? (mantém a estrutura de regiões e lojas)")) try {
                         await _fetch(`${API_URL}/disponibilidade/limpar-linhas`, {
                             method: "DELETE"
-                        }), ja("✅ Todas as linhas foram resetadas!", "success"), r()
+                        }), ja("Todas as linhas foram resetadas!", "success"), r()
                     } catch (e) {
                         ja("Erro ao limpar linhas", "error")
                     }
@@ -2402,7 +2403,7 @@
                         React.createElement("div", {
                             style: {
                                 width: "36px", height: "36px", borderRadius: "8px",
-                                background: "#EEEDFE", display: "flex",
+                                background: "#f5f3ff", display: "flex",
                                 alignItems: "center", justifyContent: "center"
                             }
                         }, React.createElement("span", { style: { fontSize: "20px" } }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })))),
@@ -2412,7 +2413,7 @@
                                 React.createElement("span", {
                                     style: {
                                         display: "inline-block", width: "6px", height: "6px",
-                                        background: "#1D9E75", borderRadius: "50%",
+                                        background: "#16a34a", borderRadius: "50%",
                                         marginRight: "4px", verticalAlign: "middle"
                                     }
                                 }),
@@ -2423,7 +2424,7 @@
                     React.createElement("div", {
                         style: {
                             display: "flex", alignItems: "center", gap: "6px",
-                            background: "#F1EFE8", padding: "4px 10px", borderRadius: "8px"
+                            background: "#e5e7eb", padding: "4px 10px", borderRadius: "8px"
                         }
                     },
                         React.createElement("input", {
@@ -2477,12 +2478,12 @@
                                         }),
                                         l = await a.json();
                                     if (l.success) {
-                                        let msg = "✅ Status resetado! Espelho salvo em " + dataFmt;
+                                        let msg = "Status resetado! Espelho salvo em " + dataFmt;
                                         if (l.em_loja_registrados > 0) msg += " | " + l.em_loja_registrados + " em loja";
                                         if (l.sem_contato_registrados > 0) msg += " | " + l.sem_contato_registrados + " sem contato";
                                         ja(msg, "success");
                                         if (l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0) {
-                                            setTimeout(() => alert("🚫 Removidos por 3 dias SEM CONTATO:\n\n" + l.removidos_por_sem_contato.map(rm => rm.cod + " - " + rm.nome).join("\n")), 500);
+                                            setTimeout(() => alert("Removidos por 3 dias SEM CONTATO:\n\n" + l.removidos_por_sem_contato.map(rm => rm.cod + " - " + rm.nome).join("\n")), 500);
                                         }
                                     } else ja("Erro ao resetar", "error");
                                     r();
@@ -2494,7 +2495,7 @@
                             },
                             style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
                         },
-                            React.createElement("span", { style: { fontSize: "13px", color: "#BA7517" } }, "↺"),
+                            React.createElement("span", { style: { fontSize: "13px", color: "#d97706" } }, "↺"),
                             React.createElement("span", null, "Resetar")
                         )
                     )
@@ -2615,7 +2616,7 @@
                                 ...e,
                                 linhas: c
                             }
-                        })), ja("⚠️ Falta registrada e linha de reposição criada!", "success")
+                        })), ja("Falta registrada e linha de reposição criada!", "success")
                     } catch (e) {
                         console.error("Erro ao registrar falta:", e), ja("Erro ao registrar falta", "error")
                     }
@@ -2643,19 +2644,19 @@
                 const pct = o > 0 ? (r / o) * 100 : 0;
                 let semaforoColor, semaforoBg, semaforoText, badgeBg, badgeText;
                 if (pct >= 100) {
-                    semaforoColor = "#97C459"; semaforoBg = "white"; semaforoText = "#173404";
-                    badgeBg = "#EAF3DE"; badgeText = "#27500A";
+                    semaforoColor = "#16a34a"; semaforoBg = "white"; semaforoText = "#166534";
+                    badgeBg = "#f0fdf4"; badgeText = "#166534";
                 } else if (pct >= 50) {
-                    semaforoColor = "#EF9F27"; semaforoBg = "white"; semaforoText = "#633806";
-                    badgeBg = "#FAEEDA"; badgeText = "#633806";
+                    semaforoColor = "#f67602"; semaforoBg = "white"; semaforoText = "#92400e";
+                    badgeBg = "#fffbeb"; badgeText = "#92400e";
                 } else {
-                    semaforoColor = "#F09595"; semaforoBg = "white"; semaforoText = "#501313";
-                    badgeBg = "#FCEBEB"; badgeText = "#501313";
+                    semaforoColor = "#fecaca"; semaforoBg = "white"; semaforoText = "#991b1b";
+                    badgeBg = "#fef2f2"; badgeText = "#991b1b";
                 }
                 // Se está ativa, fica roxo
                 if (isAtiva) {
-                    semaforoColor = "#534AB7"; semaforoBg = "#EEEDFE"; semaforoText = "#26215C";
-                    badgeBg = "white"; badgeText = "#3C3489";
+                    semaforoColor = "#7c3aed"; semaforoBg = "#f5f3ff"; semaforoText = "#4c1d95";
+                    badgeBg = "white"; badgeText = "#4c1d95";
                 }
                 return React.createElement("button", {
                     key: t.id,
@@ -2750,14 +2751,14 @@
                         [...a].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0).map((linha, idx, arr) => {
                             const isFirstExcedente = linha.is_excedente && (idx === 0 || !arr[idx - 1].is_excedente);
                             const ehDestaque = linha.is_reposicao || linha.is_excedente;
-                            const rowBgTint = ehDestaque ? "rgba(250, 238, 218, 0.3)" : (linha.status === "FALTANDO" ? "rgba(252, 235, 235, 0.5)" : "white");
+                            const rowBgTint = ehDestaque ? "rgba(255,251,235, 0.3)" : (linha.status === "FALTANDO" ? "rgba(254,242,242, 0.5)" : "white");
 
                             const stepperConfig = [
-                                { key: "A CONFIRMAR", label: "A confirmar", color: "#888780" },
-                                { key: "A CAMINHO", label: "A caminho", color: "#BA7517" },
-                                { key: "EM LOJA", label: "Em loja", color: "#1D9E75" },
-                                { key: "FALTANDO", label: "Faltando", color: "#A32D2D" },
-                                { key: "SEM CONTATO", label: "Sem contato", color: "#5F5E5A" }
+                                { key: "A CONFIRMAR", label: "A confirmar", color: "#6b7280" },
+                                { key: "A CAMINHO", label: "A caminho", color: "#d97706" },
+                                { key: "EM LOJA", label: "Em loja", color: "#16a34a" },
+                                { key: "FALTANDO", label: "Faltando", color: "#991b1b" },
+                                { key: "SEM CONTATO", label: "Sem contato", color: "#374151" }
                             ];
 
                             const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "?";
@@ -2806,14 +2807,14 @@
                                                 className: "rounded-full flex items-center justify-center flex-shrink-0",
                                                 style: {
                                                     width: "28px", height: "28px",
-                                                    background: linha.nome_profissional ? "#EEEDFE" : "#F1EFE8",
-                                                    color: linha.nome_profissional ? "#534AB7" : "#888780",
+                                                    background: linha.nome_profissional ? "#f5f3ff" : "#e5e7eb",
+                                                    color: linha.nome_profissional ? "#7c3aed" : "#6b7280",
                                                     fontSize: "10px", fontWeight: "500"
                                                 }
                                             }, initials),
                                         React.createElement("span", {
                                             className: "text-[12px] truncate",
-                                            style: { color: linha.nome_profissional ? "#1f2937" : "#9ca3af", fontStyle: linha.nome_profissional ? "normal" : "italic" }
+                                            style: { color: linha.nome_profissional ? "#111827" : "#9ca3af", fontStyle: linha.nome_profissional ? "normal" : "italic" }
                                         }, linha.nome_profissional || (linha.is_reposicao || linha.is_excedente ? "—" : "Vazio"))
                                     ),
                                     React.createElement("div", {
@@ -2855,8 +2856,8 @@
                                             key: ci,
                                             className: "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
                                             style: {
-                                                background: chip.tone === "warn" ? "#FAEEDA" : (chip.tone === "info" ? "#E6F1FB" : (chip.tone === "danger" ? "#FCEBEB" : "#F1EFE8")),
-                                                color: chip.tone === "warn" ? "#854F0B" : (chip.tone === "info" ? "#185FA5" : (chip.tone === "danger" ? "#791F1F" : "#444441"))
+                                                background: chip.tone === "warn" ? "#fffbeb" : (chip.tone === "info" ? "#eff6ff" : (chip.tone === "danger" ? "#fef2f2" : "#e5e7eb")),
+                                                color: chip.tone === "warn" ? "#92400e" : (chip.tone === "info" ? "#1e40af" : (chip.tone === "danger" ? "#991b1b" : "#374151"))
                                             }
                                         }, React.createElement("span", { style: { fontSize: "11px" } }, chip.icon), chip.text)),
                                         React.createElement("input", {
@@ -2923,7 +2924,7 @@
                 }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" }))),
                 React.createElement("div", { style: { textAlign: "center" } },
                     React.createElement("p", {
-                        style: { margin: 0, fontSize: "14px", fontWeight: "500", color: "#1F2937" }
+                        style: { margin: 0, fontSize: "14px", fontWeight: "500", color: "#111827" }
                     }, "Selecione uma região acima"),
                     React.createElement("p", {
                         style: { margin: "2px 0 0", fontSize: "12px", color: "#6B7280" }
@@ -2933,10 +2934,10 @@
                 style: { padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", fontSize: "10px" }
             },
                 React.createElement("span", { style: { color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.3px", marginRight: "4px" } }, "Legenda:"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#FEF3C7", color: "#92400E", borderRadius: "3px", fontWeight: "500" } }, "A confirmar"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#D1FAE5", color: "#065F46", borderRadius: "3px", fontWeight: "500" } }, "Confirmado"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#DBEAFE", color: "#1E40AF", borderRadius: "3px", fontWeight: "500" } }, "Em loja"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#FEE2E2", color: "#991B1B", borderRadius: "3px", fontWeight: "500" } }, "Faltando"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#fffbeb", color: "#92400E", borderRadius: "3px", fontWeight: "500" } }, "A confirmar"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#bbf7d0", color: "#166534", borderRadius: "3px", fontWeight: "500" } }, "Confirmado"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#eff6ff", color: "#1E40AF", borderRadius: "3px", fontWeight: "500" } }, "Em loja"),
+                React.createElement("span", { style: { padding: "1px 6px", background: "#fef2f2", color: "#991B1B", borderRadius: "3px", fontWeight: "500" } }, "Faltando"),
                 React.createElement("span", { style: { padding: "1px 6px", background: "#F3F4F6", color: "#374151", borderRadius: "3px", fontWeight: "500" } }, "Sem contato"),
                 React.createElement("span", { style: { color: "#D1D5DB", margin: "0 4px" } }, "|"),
                 React.createElement("span", { style: { color: "#9CA3AF" } }, "Fundo amarelo = excedente · Fundo azul = reposição")
@@ -3074,7 +3075,7 @@
                         }), x(t => ({
                             ...t,
                             faltososLista: t.faltososLista.filter(t => t.id !== e.id)
-                        })), ja("✅ Falta excluída", "success")
+                        })), ja("Falta excluída", "success")
                     } catch (e) {
                         ja("Erro ao excluir", "error")
                     }
@@ -3150,7 +3151,7 @@
                     const e = (p.espelhoDatas || []).find(e => (e.data_registro?.split("T")[0] || e.data_registro) === p.espelhoDataSelecionada);
                     if (!e) return;
                     const t = p.espelhoDataSelecionada.split("-").reverse().join("/");
-                    if (window.confirm(`⚠️ Excluir espelho de ${t}?\n\nEssa ação não pode ser desfeita.`)) try {
+                    if (window.confirm(`Excluir espelho de ${t}?\n\nEssa ação não pode ser desfeita.`)) try {
                         await _fetch(`${API_URL}/disponibilidade/espelho/${e.id}`, {
                             method: "DELETE"
                         });
@@ -3161,7 +3162,7 @@
                             espelhoDatas: l,
                             espelhoDataSelecionada: "",
                             espelhoDados: null
-                        })), ja(`✅ Espelho de ${t} excluído`, "success")
+                        })), ja(`Espelho de ${t} excluído`, "success")
                     } catch (e) {
                         ja("Erro ao excluir espelho", "error")
                     }

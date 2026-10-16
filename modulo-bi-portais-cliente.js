@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * modulo-bi-portais-cliente.js
  * Aba do BI (admin): cria/gerencia acessos do Portal do Cliente (/relatorios).
@@ -137,7 +138,7 @@
       var termo = (l.filtro || "").toLowerCase();
       var visiveis = termo ? l.centros.filter(function (c) { return String(c.centro_custo).toLowerCase().indexOf(termo) !== -1; }) : l.centros;
       return h("div", { key: l.cod, className: "border border-gray-200 rounded-xl overflow-hidden mt-3" },
-        h("div", { className: "flex items-center justify-between px-3 py-2.5", style: { background: "#faf7ff", borderBottom: "1px solid #eee" } },
+        h("div", { className: "flex items-center justify-between px-3 py-2.5", style: { background: "#f9fafb", borderBottom: "1px solid #e5e7eb" } },
           h("div", { className: "font-bold text-sm flex items-center gap-2" },
             h("span", { className: "text-white rounded-md px-1.5 py-0.5 text-[11px]", style: { background: ROXO } }, l.cod), l.nome),
           h("div", { className: "flex items-center gap-2" },
@@ -192,7 +193,7 @@
         ),
         lojas.length === 0 ? h("div", { className: "text-sm text-gray-400 py-3" }, "Adicione uma ou mais lojas a este acesso.") : lojas.map(cardLoja)
       ),
-      h("div", { className: "grid sm:grid-cols-2 gap-4 mt-5 pt-5", style: { borderTop: "1px solid #eee" } },
+      h("div", { className: "grid sm:grid-cols-2 gap-4 mt-5 pt-5", style: { borderTop: "1px solid #e5e7eb" } },
         h("div", null, label("Login (email ou usuario)"),
           h("input", { className: inputCls, value: login, onChange: function (e) { setLogin(e.target.value); }, placeholder: "comollati" })),
         h("div", null, label(editId ? "Nova senha (deixe vazio p/ manter)" : "Senha"),
@@ -207,7 +208,7 @@
       )
     );
 
-    function pill(txt) { return h("span", { className: "inline-block text-[11px] font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#eef2ff", color: "#4338ca" } }, txt); }
+    function pill(txt) { return h("span", { className: "inline-block text-[11px] font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#eff6ff", color: "#7c3aed" } }, txt); }
     var listaCard = h("div", { className: "bg-white rounded-xl shadow p-6" },
       h("div", { className: "flex items-center justify-between mb-3" },
         h("h3", { className: "font-bold text-[15px]" }, "Acessos ativos"),

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#54168a" />
+  <meta name="theme-color" content="#4c1d95" />
   <!-- TRACKING_ICONS_V1 --><title>Rastreamento Tutts</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2354168a'/><text y='.92em' x='8' font-size='62' font-style='italic' font-family='Trebuchet MS' fill='white'>t</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,48 +12,48 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    :root{--roxo:#5b1a9e;--roxo2:#7c3aed;--laranja:#f5921e;--tinta:#16121f;--muted:#6b6577;--linha:#ece8f3;--ok:#1d9e75;--err:#e24b4a}
+    :root{--roxo:#4c1d95;--roxo2:#7c3aed;--laranja:#f67602;--tinta:#111827;--muted:#6b7280;--linha:#e5e7eb;--ok:#16a34a;--err:#dc2626}
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
     body{font-family:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--tinta);-webkit-font-smoothing:antialiased;overflow:hidden}
 
-    #map{position:fixed;inset:0;width:100%;height:100%;background:#dde2e8;z-index:0}
+    #map{position:fixed;inset:0;width:100%;height:100%;background:#e5e7eb;z-index:0}
 
     .painel{position:fixed;z-index:5;top:20px;left:20px;width:384px;max-height:calc(100vh - 40px);
       background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
-      border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(28,9,52,.22);
+      border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(76,29,149,.22);
       overflow:hidden;display:flex;flex-direction:column}
 
     .topo{background:linear-gradient(135deg,var(--roxo) 0%,var(--roxo2) 100%);color:#fff;padding:18px 20px;flex-shrink:0;position:relative}
     .logo svg{height:38px;width:auto;display:block}
     .badge{margin-top:13px;display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:30px;font-size:14px;font-weight:600}
-    .dot{width:9px;height:9px;border-radius:50%;background:var(--laranja);flex-shrink:0;box-shadow:0 0 0 0 rgba(245,146,30,.55);animation:pulse 1.7s infinite}
-    @keyframes pulse{to{box-shadow:0 0 0 9px rgba(245,146,30,0)}}
+    .dot{width:9px;height:9px;border-radius:50%;background:var(--laranja);flex-shrink:0;box-shadow:0 0 0 0 rgba(246,118,2,.55);animation:pulse 1.7s infinite}
+    @keyframes pulse{to{box-shadow:0 0 0 9px rgba(246,118,2,0)}}
     .eta{margin-top:13px;display:flex;align-items:baseline;gap:8px;min-height:18px}
     .eta b{font-size:30px;font-weight:700;line-height:1}
     .eta span{font-size:13px;opacity:.85}
 
     .corpo{padding:18px 20px;overflow-y:auto}
-    .upd{font-size:11px;color:#8b929c;text-align:center;padding:0 0 12px}
+    .upd{font-size:11px;color:#9ca3af;text-align:center;padding:0 0 12px}
 
     .tl{position:relative}
     .tl-item{display:flex;gap:13px;position:relative;padding-bottom:18px}
     .tl-item:last-child{padding-bottom:0}
     .tl-rail{position:absolute;left:13px;top:26px;bottom:4px;width:2px;background:var(--linha)}
     .tl-item.done .tl-rail{background:var(--roxo2)}
-    .tl-ic{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--linha);color:#a9a2b8;z-index:1}
+    .tl-ic{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--linha);color:#9ca3af;z-index:1}
     .tl-item.done .tl-ic{background:var(--roxo2);color:#fff}
     .tl-item.cur .tl-ic{background:#fff;color:var(--roxo2);border:2px solid var(--roxo2);box-shadow:0 0 0 4px rgba(124,58,237,.14)}
     .tl-item.fin .tl-ic{background:var(--ok);color:#fff}
     .tl-tx{padding-top:4px}
-    .tl-tx .t{font-size:14px;font-weight:500;color:#a9a2b8}
+    .tl-tx .t{font-size:14px;font-weight:500;color:#9ca3af}
     .tl-item.done .tl-tx .t,.tl-item.cur .tl-tx .t{color:var(--tinta)}
     .tl-tx .s{font-size:12px;color:var(--muted);margin-top:1px}
 
     .sep{height:1px;background:var(--linha);margin:16px 0}
 
     .moto{display:flex;align-items:center;gap:12px}
-    .av{width:48px;height:48px;border-radius:50%;background:#efeafb;color:var(--roxo2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;overflow:hidden}
+    .av{width:48px;height:48px;border-radius:50%;background:#f5f3ff;color:var(--roxo2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;overflow:hidden}
     .moto .nome{font-size:15px;font-weight:600}
     .moto .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
     .moto .fone{font-size:12.5px;color:var(--roxo);font-weight:600;margin-top:1px}
@@ -61,13 +61,13 @@
 
     .end{display:flex;gap:12px;margin-top:14px}
     .end:first-child{margin-top:0}
-    .end .eico{width:30px;height:30px;border-radius:9px;background:#f4f1fa;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .end .eico{width:30px;height:30px;border-radius:9px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
     .end .lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-    .end .val{font-size:13px;color:#3a3447;margin-top:2px;line-height:1.45}
+    .end .val{font-size:13px;color:#374151;margin-top:2px;line-height:1.45}
 
     .tl-hora{font-size:10.5px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;opacity:.85}
     .tl-item.cur .tl-hora{color:var(--roxo2);opacity:1;font-weight:600}
-    .rod{padding:13px 20px;text-align:center;font-size:11.5px;color:#9b8fc4;border-top:1px solid var(--linha);flex-shrink:0}
+    .rod{padding:13px 20px;text-align:center;font-size:11.5px;color:#7c3aed;border-top:1px solid var(--linha);flex-shrink:0}
     .rod b.r{color:var(--roxo)} .rod b.l{color:var(--laranja)}
     .msg{padding:30px 20px;text-align:center;color:#6b7280;font-size:14px;line-height:1.6}
 
@@ -104,7 +104,7 @@
         <div class="av" id="cav">--</div>
         <div style="flex:1;min-width:0">
           <div class="nome" id="cname">aguardando entregador</div>
-          <div id="cfreq" style="display:none;align-items:center;gap:4px;background:#fef3c7;color:#b45309;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;margin-top:2px;width:fit-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg> Parceiro frequente</div>
+          <div id="cfreq" style="display:none;align-items:center;gap:4px;background:#fffbeb;color:#92400e;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;margin-top:2px;width:fit-content"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg> Parceiro frequente</div>
           <div class="sub" id="cveic">será definido ao aceitar</div>
           <div class="fone" id="cphone"></div>
         </div>
@@ -171,7 +171,7 @@
     document.getElementById('notfound').style.display='none';
     document.getElementById('statusText').textContent=d.status_label||'Em andamento';
     var fin=d.finalizado;
-    document.getElementById('dot').style.background=(d.status==='DELIVERED')?'#1d9e75':(d.status==='CANCELED'||d.status==='RETURNED')?'#e24b4a':'#f5921e';
+    document.getElementById('dot').style.background=(d.status==='DELIVERED')?'#16a34a':(d.status==='CANCELED'||d.status==='RETURNED')?'#dc2626':'#f67602';
     var etaEl=document.getElementById('eta');
     if(fin){etaEl.innerHTML='';}
     else if(d.eta_minutos){etaEl.innerHTML='<b>~'+d.eta_minutos+'</b><span>min para chegar</span>';}
@@ -187,7 +187,7 @@
       document.getElementById('cname').textContent=d.entregador.nome;
       var cfreq=document.getElementById('cfreq');
       if(cfreq){cfreq.style.display=d.entregador.frequente?'inline-flex':'none';}
-      if(d.entregador.frequente&&cav){cav.style.boxShadow='0 0 0 2px #fbbf24';}else if(cav){cav.style.boxShadow='none';}
+      if(d.entregador.frequente&&cav){cav.style.boxShadow='0 0 0 2px #d97706';}else if(cav){cav.style.boxShadow='none';}
       var v=[];if(d.entregador.veiculo)v.push(d.entregador.veiculo);if(d.entregador.placa)v.push('placa '+d.entregador.placa);
       document.getElementById('cveic').textContent=v.length?v.join(' · '):'moto';
       var cc=document.getElementById('ccall');
@@ -226,7 +226,7 @@
     fetch(API+'/api/logistics/rastreio/'+encodeURIComponent(token))
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(render)
-      .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponível';document.getElementById('dot').style.background='#e24b4a';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
+      .catch(function(){document.getElementById('content').style.display='none';document.getElementById('notfound').style.display='block';document.getElementById('statusText').textContent='Rastreamento indisponível';document.getElementById('dot').style.background='#dc2626';if(pollTimer){clearInterval(pollTimer);pollTimer=null;}});
   }
 
   // bottom sheet (mobile): arrastar pra baixo ou tocar no topo minimiza e revela o mapa
@@ -248,3 +248,4 @@
 </script>
 </body>
 </html>
+<!-- UI_UNIFICADO_V1 -->

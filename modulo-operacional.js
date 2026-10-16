@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO OPERACIONAL ====================
 // Arquivo: modulo-operacional.js
@@ -528,7 +529,7 @@
                                                     });
                                                     carregarOperacoes();
                                                     if (notificarOperacaoSalva) notificarOperacaoSalva();
-                                                    ja(novoStatus === 'ativo' ? '✅ Operação ativada!' : '⏸️ Operação pausada!', 'success');
+                                                    ja(novoStatus === 'ativo' ? 'Operação ativada!' : 'Operação pausada!', 'success');
                                                 },
                                                 title: op.status === 'ativo' ? 'Pausar' : 'Ativar',
                                                 className: "w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
@@ -539,7 +540,7 @@
                                                         await fetchAuth(`${API_URL}/operacoes/${op.id}`, { method: 'DELETE' });
                                                         carregarOperacoes();
                                                         if (notificarOperacaoSalva) notificarOperacaoSalva();
-                                                        ja('🗑️ Operação excluída!', 'success');
+                                                        ja('Operação excluída!', 'success');
                                                     }
                                                 },
                                                 title: "Excluir",
@@ -590,11 +591,11 @@
                                             op.status !== 'concluido' && React.createElement("button", {
                                                 onClick: async () => {
                                                     if (!todasMotosEncontradas) {
-                                                        if (!confirm(`⚠️ Apenas ${motosEncontradas} de ${op.quantidade_motos} veículos foram confirmados.\n\nDeseja concluir mesmo assim?`)) {
+                                                        if (!confirm(`Apenas ${motosEncontradas} de ${op.quantidade_motos} veículos foram confirmados.\n\nDeseja concluir mesmo assim?`)) {
                                                             return;
                                                         }
                                                     }
-                                                    if (confirm(`✅ Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
+                                                    if (confirm(`Confirmar conclusão da demanda "${op.nome_cliente}"?`)) {
                                                         await fetchAuth(`${API_URL}/operacoes/${op.id}`, {
                                                             method: 'PUT',
                                                             headers: {'Content-Type': 'application/json'},
@@ -602,7 +603,7 @@
                                                         });
                                                         carregarOperacoes();
                                                         if (notificarOperacaoSalva) notificarOperacaoSalva();
-                                                        ja('🎉 Demanda concluída com sucesso!', 'success');
+                                                        ja('Demanda concluída com sucesso!', 'success');
                                                     }
                                                 },
                                                 className: "px-4 py-2 rounded-lg text-sm font-bold border border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
@@ -881,19 +882,19 @@
                                 ? React.createElement("button", { disabled: !podeAvancar, onClick: () => setOperacaoForm(f => ({ ...f, _step: 2 })), className: "px-6 py-3 rounded-xl font-semibold text-white " + (podeAvancar ? "bg-violet-600 hover:bg-violet-700" : "bg-violet-300 cursor-not-allowed") }, "Continuar →")
                                 : React.createElement("button", {
                                     onClick: async () => {
-                                        if (!operacaoForm.regiao || !operacaoForm.nome_cliente || !operacaoForm.endereco || !operacaoForm.data_inicio) { ja('❌ Preencha todos os campos obrigatórios!', 'error'); return; }
-                                        if (isClt && !operacaoForm.salario) { ja('❌ Informe o salário base da operação CLT!', 'error'); return; }
+                                        if (!operacaoForm.regiao || !operacaoForm.nome_cliente || !operacaoForm.endereco || !operacaoForm.data_inicio) { ja('Preencha todos os campos obrigatórios!', 'error'); return; }
+                                        if (isClt && !operacaoForm.salario) { ja('Informe o salário base da operação CLT!', 'error'); return; }
                                         s(true);
                                         try {
                                             const url = operacaoEdit ? `${API_URL}/operacoes/${operacaoEdit.id}` : `${API_URL}/operacoes`;
                                             const response = await fetchAuth(url, { method: operacaoEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...operacaoForm, criado_por: l.fullName }) });
                                             if (response.ok) {
-                                                ja(operacaoEdit ? '✅ Operação atualizada!' : '✅ Operação criada!', 'success');
+                                                ja(operacaoEdit ? 'Operação atualizada!' : 'Operação criada!', 'success');
                                                 setOperacaoModal(false);
                                                 carregarOperacoes();
                                                 if (notificarOperacaoSalva) notificarOperacaoSalva();
                                             } else { throw new Error('Erro ao salvar'); }
-                                        } catch (error) { ja('❌ Erro ao salvar operação', 'error'); }
+                                        } catch (error) { ja('Erro ao salvar operação', 'error'); }
                                         s(false);
                                     },
                                     className: "px-6 py-3 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-700"
@@ -1894,7 +1895,7 @@
                                     valor_incentivo: '',
                                     clientes_vinculados: [],
                                     centros_vinculados: {},
-                                    cor: '#0d9488'
+                                    cor: '#16a34a'
                                 }); 
                                 setIncentivoModal(true); 
                             },
@@ -2086,14 +2087,14 @@
                                                                 valor_incentivo: item.valor_incentivo || '',
                                                                 clientes_vinculados: item.clientes_vinculados || [],
                                                                 centros_vinculados: item.centros_vinculados || {},
-                                                                cor: item.cor || '#0d9488'
+                                                                cor: item.cor || '#16a34a'
                                                             });
                                                             (item.clientes_vinculados || []).forEach(function(cod) { fetchCentrosCusto(cod); });
                                                             setIncentivoModal(true);
                                                         },
                                                         className: "text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
                                                         style: { 
-                                                            backgroundColor: item.cor || '#0d9488', 
+                                                            backgroundColor: item.cor || '#16a34a', 
                                                             color: 'white',
                                                             opacity: item.status === 'pausado' ? 0.5 : 1
                                                         },
@@ -2226,7 +2227,7 @@
                                                 // Indicador de cor
                                                 React.createElement("div", {
                                                     className: "w-3 rounded-full flex-shrink-0 " + (item.tipo === 'incentivo' ? 'h-auto self-stretch min-h-12' : 'h-12'),
-                                                    style: { backgroundColor: item.cor || '#0d9488' }
+                                                    style: { backgroundColor: item.cor || '#16a34a' }
                                                 }),
                                                 React.createElement("div", {className: "flex-1"},
                                                     React.createElement("div", {className: "flex items-center gap-2 flex-wrap"},
@@ -2310,7 +2311,7 @@
                                                             valor_incentivo: item.valor_incentivo || '',
                                                             clientes_vinculados: item.clientes_vinculados || [],
                                                             centros_vinculados: item.centros_vinculados || {},
-                                                            cor: item.cor || '#0d9488'
+                                                            cor: item.cor || '#16a34a'
                                                         });
                                                         (item.clientes_vinculados || []).forEach(function(cod) { fetchCentrosCusto(cod); });
                                                         setIncentivoModal(true);

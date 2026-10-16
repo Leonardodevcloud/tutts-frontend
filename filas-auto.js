@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 // ============================================================
 // MÓDULO FILAS AUTO-GERENCIÁVEIS — visão ADMIN
 // ============================================================
@@ -94,7 +95,7 @@
           });
           setEnderecoValidado(true);
           setGeocodeDown(false);
-          toast('📍 Endereço encontrado!', 'success');
+          toast('Endereço encontrado!', 'success');
         } else {
           setEnderecoValidado(false);
           setCoordenadasEncontradas(null);
@@ -620,7 +621,7 @@
                 className: 'fila-card-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
               },
                 centrais.map((c, idx) => {
-                  const corBarra = !c.ativa ? '#B4B2A9' : '#534AB7'; // roxa pra auto, cinza pra inativa
+                  const corBarra = !c.ativa ? '#9ca3af' : '#7c3aed'; // roxa pra auto, cinza pra inativa
                   return e('div', {
                     key: c.id,
                     id: `fila-card-${c.id}`,
@@ -655,8 +656,8 @@
                           )
                         ),
                         !c.ativa
-                          ? e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#FCEBEB', color: '#791F1F', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
-                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#EEEDFE', color: '#3C3489', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Auto"))
+                          ? e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#fef2f2', color: '#991b1b', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
+                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#f5f3ff', color: '#4c1d95', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Auto"))
                       ),
                       // Stats
                       e('div', { style: { display: 'flex', gap: '18px' } },
@@ -1464,9 +1465,9 @@
   }
 
   function renderLogLine(l) {
-    const cor = l.acao === 'removeu' || l.acao === 'admin_removeu' ? '#A32D2D'
-      : l.acao === 'validou' ? '#27500A'
-      : l.acao === 'bloqueou_entrada' ? '#854F0B'
+    const cor = l.acao === 'removeu' || l.acao === 'admin_removeu' ? '#991b1b'
+      : l.acao === 'validou' ? '#166534'
+      : l.acao === 'bloqueou_entrada' ? '#92400e'
       : '#6B7280';
     const sym = l.acao === 'removeu' || l.acao === 'admin_removeu' ? '×'
       : l.acao === 'validou' ? e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" }))

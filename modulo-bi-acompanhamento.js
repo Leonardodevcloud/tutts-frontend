@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
 /**
  * BI · Acompanhamento Periódico
@@ -63,21 +64,21 @@
     // Catálogo de métricas plotáveis no gráfico.
     // Cada uma tem: chave da serie, label, cor, escala (0-100 ou auto), formatação.
     const METRICAS_CATALOGO = [
-        { id: 'total_os',         label: 'OS',                cor: '#534AB7', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'total_entregas',   label: 'Entregas',          cor: '#378ADD', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'no_prazo',         label: 'No Prazo',          cor: '#1D9E75', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'fora_prazo',       label: 'Fora Prazo',        cor: '#D85A30', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'pct_prazo',        label: '% No Prazo',        cor: '#639922', escala: 'pct',  fmt: v => v.toFixed(1) + '%' },
-        { id: 'retornos',         label: 'Retornos',          cor: '#E24B4A', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'valor_total',      label: 'Valor Total',       cor: '#7F77DD', escala: 'auto', fmt: v => fmtMoneyShort(v) },
-        { id: 'valor_prof',       label: 'Valor Prof.',       cor: '#AFA9EC', escala: 'auto', fmt: v => fmtMoneyShort(v) },
-        { id: 'fat_total',        label: 'Fat. Total',        cor: '#0F6E56', escala: 'auto', fmt: v => fmtMoneyShort(v) },
-        { id: 'ticket_medio',     label: 'Ticket Médio',      cor: '#EF9F27', escala: 'auto', fmt: v => 'R$ ' + (v || 0).toFixed(2) },
-        { id: 'tempo_medio_min',  label: 'Tempo Médio Entrega',   cor: '#888780', escala: 'auto', fmt: v => fmtMinTime(v) },
-        { id: 'tempo_alocacao_min', label: 'Tempo Médio Alocação', cor: '#5F5E5A', escala: 'auto', fmt: v => fmtMinTime(v) },
-        { id: 'tempo_coleta_min', label: 'Tempo Médio Coleta',    cor: '#444441', escala: 'auto', fmt: v => fmtMinTime(v) },
-        { id: 'total_entregadores', label: 'Total Entregadores',  cor: '#185FA5', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'media_ent_prof',   label: 'Média Ent./Profissional', cor: '#0C447C', escala: 'auto', fmt: v => v.toFixed(1) },
+        { id: 'total_os',         label: 'OS',                cor: '#7c3aed', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'total_entregas',   label: 'Entregas',          cor: '#2563eb', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'no_prazo',         label: 'No Prazo',          cor: '#16a34a', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'fora_prazo',       label: 'Fora Prazo',        cor: '#d97706', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'pct_prazo',        label: '% No Prazo',        cor: '#16a34a', escala: 'pct',  fmt: v => v.toFixed(1) + '%' },
+        { id: 'retornos',         label: 'Retornos',          cor: '#dc2626', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'valor_total',      label: 'Valor Total',       cor: '#7c3aed', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'valor_prof',       label: 'Valor Prof.',       cor: '#ddd6fe', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'fat_total',        label: 'Fat. Total',        cor: '#166534', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'ticket_medio',     label: 'Ticket Médio',      cor: '#f67602', escala: 'auto', fmt: v => 'R$ ' + (v || 0).toFixed(2) },
+        { id: 'tempo_medio_min',  label: 'Tempo Médio Entrega',   cor: '#6b7280', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'tempo_alocacao_min', label: 'Tempo Médio Alocação', cor: '#374151', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'tempo_coleta_min', label: 'Tempo Médio Coleta',    cor: '#374151', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'total_entregadores', label: 'Total Entregadores',  cor: '#1e40af', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'media_ent_prof',   label: 'Média Ent./Profissional', cor: '#1e40af', escala: 'auto', fmt: v => v.toFixed(1) },
     ];
 
     function AcompanhamentoPeriodico({ apiUrl, fetchAuth, filtros }) {
@@ -277,7 +278,7 @@
                                 right: 0,
                                 marginTop: 6,
                                 background: 'white',
-                                border: '0.5px solid #D3D1C7',
+                                border: '0.5px solid #d1d5db',
                                 borderRadius: 8,
                                 padding: 8,
                                 width: 240,
@@ -515,7 +516,7 @@
                     x: xAt(i) - (xStep || innerW) / 2,
                     y: PAD_T,
                     width: xStep || innerW, height: innerH,
-                    fill: '#FCEBEB', opacity: 0.5
+                    fill: '#fef2f2', opacity: 0.5
                 }) : null),
 
                 // gridlines
@@ -524,21 +525,21 @@
                     x1: PAD_L, x2: W - PAD_R,
                     y1: PAD_T + p * innerH,
                     y2: PAD_T + p * innerH,
-                    stroke: '#F1EFE8', strokeWidth: 1
+                    stroke: '#e5e7eb', strokeWidth: 1
                 })),
 
                 // y-labels esquerdo (auto)
                 metricasAuto.length > 0 && [0, 0.5, 1].map((p, i) => h('text', {
                     key: 'yl' + i,
                     x: PAD_L - 4, y: PAD_T + (1 - p) * innerH + 3,
-                    fontSize: 9, fill: '#888780', textAnchor: 'end'
+                    fontSize: 9, fill: '#6b7280', textAnchor: 'end'
                 }, Math.round(maxAuto * p).toLocaleString('pt-BR'))),
 
                 // y-labels direito (pct)
                 metricasPct.length > 0 && [0, 50, 100].map((v, i) => h('text', {
                     key: 'yr' + i,
                     x: W - PAD_R + 4, y: PAD_T + (1 - v / 100) * innerH + 3,
-                    fontSize: 9, fill: '#3B6D11', textAnchor: 'start'
+                    fontSize: 9, fill: '#166534', textAnchor: 'start'
                 }, v + '%')),
 
                 // hover area
@@ -554,7 +555,7 @@
                 // hover line vertical
                 hover && h('line', {
                     x1: hover.x, x2: hover.x, y1: PAD_T, y2: H - PAD_B,
-                    stroke: '#888780', strokeWidth: 0.5, strokeDasharray: '2,2'
+                    stroke: '#6b7280', strokeWidth: 0.5, strokeDasharray: '2,2'
                 }),
 
                 // polylines (apenas se serie tem 2+ pontos)
@@ -595,7 +596,7 @@
                         x: lx,
                         y: ly,
                         fontSize: 10,
-                        fill: fds ? '#A32D2D' : '#5F5E5A',
+                        fill: fds ? '#991b1b' : '#374151',
                         fontWeight: fds ? 600 : 400,
                         textAnchor: 'end',
                         transform: 'rotate(-45 ' + lx + ' ' + ly + ')'
@@ -608,7 +609,7 @@
                     key: 'tick' + i,
                     x1: xAt(i), x2: xAt(i),
                     y1: H - PAD_B, y2: H - PAD_B + 4,
-                    stroke: isFimDeSemana(s.periodo) ? '#A32D2D' : '#B4B2A9',
+                    stroke: isFimDeSemana(s.periodo) ? '#991b1b' : '#9ca3af',
                     strokeWidth: 1
                 }))
             )
@@ -621,7 +622,7 @@
                     top: 8,
                     transform: hover.x > W * 0.7 ? 'translateX(-100%)' : (hover.x < W * 0.3 ? 'translateX(0)' : 'translateX(-50%)'),
                     background: 'white',
-                    border: '0.5px solid #D3D1C7',
+                    border: '0.5px solid #d1d5db',
                     borderRadius: 6,
                     padding: '6px 10px',
                     fontSize: 11,
@@ -821,7 +822,7 @@
             h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col' },
                 // Header
                 h('div', {
-                    style: { background: 'linear-gradient(to right, #534AB7, #185FA5)' },
+                    style: { background: 'linear-gradient(to right, #724ab7, #1845a5)' },
                     className: 'p-4 text-white flex items-center justify-between flex-shrink-0'
                 },
                     h('div', null,

@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * modulo-comissao.js — COMISSAO_V1
  * ─────────────────────────────────────────────────────────────────────────
@@ -60,17 +61,17 @@
 
   // ── UI helpers ──────────────────────────────────────────────────
   function Ico(nome, cls, style) { return h('svg', { className: cls || 'ico', style: style || { width: 14, height: 14 }, 'aria-hidden': 'true' }, h('use', { href: '#i-' + nome })); }
-  var CORES_FAIXA = { 20: { bg: '#4D0669', fg: '#fff' }, 10: { bg: '#e9d5ff', fg: '#6b21a8' }, 5: { bg: '#ffedd5', fg: '#c2410c' }, 2.5: { bg: '#ffedd5', fg: '#c2410c' }, 0: { bg: '#e5e7eb', fg: '#4b5563' } };
+  var CORES_FAIXA = { 20: { bg: '#4c1d95', fg: '#fff' }, 10: { bg: '#ddd6fe', fg: '#5b21b6' }, 5: { bg: '#fffbeb', fg: '#d97706' }, 2.5: { bg: '#fffbeb', fg: '#d97706' }, 0: { bg: '#e5e7eb', fg: '#374151' } };
   function TagFaixa(p) {
     var txt = p.encerrada ? 'Encerrada' : (p.pct + '%' + (p.dividida ? ' ÷2' : ''));
     var c = CORES_FAIXA[p.encerrada ? 0 : p.pct] || CORES_FAIXA[0];
     return h('span', { className: 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap', style: { background: c.bg, color: c.fg }, title: p.title || '' }, txt);
   }
   function Card(p) {
-    return h('div', { className: p.destaque ? 'rounded-xl p-4 text-white flex flex-col gap-1' : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1', style: p.destaque ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : null },
-      h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider', style: { color: p.destaque ? '#e9d5ff' : '#94a3b8' } }, p.rotulo),
-      h('div', { className: 'text-[22px] font-extrabold tabular-nums leading-tight', style: { color: p.destaque ? '#fff' : (p.cor || '#0f172a') } }, p.valor),
-      p.auxiliar ? h('div', { className: 'text-[11px]', style: { color: p.destaque ? '#ddd6fe' : '#94a3b8' } }, p.auxiliar) : null
+    return h('div', { className: p.destaque ? 'rounded-xl p-4 text-white flex flex-col gap-1' : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1', style: p.destaque ? { background: 'linear-gradient(135deg,#7c3aed,#7633ea)' } : null },
+      h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider', style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' } }, p.rotulo),
+      h('div', { className: 'text-[22px] font-extrabold tabular-nums leading-tight', style: { color: p.destaque ? '#fff' : (p.cor || '#111827') } }, p.valor),
+      p.auxiliar ? h('div', { className: 'text-[11px]', style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' } }, p.auxiliar) : null
     );
   }
   var caixa = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-300';
@@ -504,8 +505,8 @@
       // Indicadores (6.1)
       ind ? h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
         h(Card, { rotulo: 'Comissão total a pagar', valor: fR(ind.comissao_total), destaque: true, auxiliar: ind.clientes_lancados + ' cliente(s) lançado(s) em ' + fComp(comp).toLowerCase() }),
-        h(Card, { rotulo: 'Lançamentos pendentes', valor: String(ind.pendentes), cor: ind.pendentes > 0 ? '#c2410c' : '#15803d', auxiliar: ind.clientes_lancados + ' de ' + ind.clientes_ativos + ' clientes lançados' }),
-        h(Card, { rotulo: 'Saldo negativo levado ao próximo mês', valor: fR(ind.saldo_negativo_total), cor: ind.saldo_negativo_total > 0 ? '#b91c1c' : '#0f172a', auxiliar: ind.saldo_negativo_clientes.length ? ind.saldo_negativo_clientes.map(function (c) { return c.nome; }).join(', ') : 'Nenhum cliente com saldo pendente' }),
+        h(Card, { rotulo: 'Lançamentos pendentes', valor: String(ind.pendentes), cor: ind.pendentes > 0 ? '#d97706' : '#166534', auxiliar: ind.clientes_lancados + ' de ' + ind.clientes_ativos + ' clientes lançados' }),
+        h(Card, { rotulo: 'Saldo negativo levado ao próximo mês', valor: fR(ind.saldo_negativo_total), cor: ind.saldo_negativo_total > 0 ? '#991b1b' : '#111827', auxiliar: ind.saldo_negativo_clientes.length ? ind.saldo_negativo_clientes.map(function (c) { return c.nome; }).join(', ') : 'Nenhum cliente com saldo pendente' }),
         h(Card, { rotulo: 'Mudam de faixa no próximo mês', valor: String(ind.mudam_faixa.length), auxiliar: ind.mudam_faixa.length ? ind.mudam_faixa.slice(0, 3).map(function (m) { return m.nome + ': ' + m.de + '% → ' + (m.encerra ? 'encerra' : m.para + '%') + ' em ' + fDiaMes(m.em); }).join(' · ') : 'Nenhuma mudança prevista' })) : null,
 
       // Por vendedor (6.2)

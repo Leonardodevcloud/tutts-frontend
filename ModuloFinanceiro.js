@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* FIN_DEEMOJI_FULL_V2 */
 /* FIN_HOME_REDESIGN_V1 */
 // MÓDULO FINANCEIRO - TUTTS v2.0
@@ -134,12 +135,12 @@
                     }
                     throw new Error(d.error || 'HTTP ' + r.status);
                 }
-                jaRef.current && jaRef.current('✅ Configuração atualizada', 'success');
+                jaRef.current && jaRef.current('Configuração atualizada', 'success');
                 await carregar();
                 return true;
             } catch (err) {
                 console.error('Erro ao salvar config:', err);
-                jaRef.current && jaRef.current('❌ ' + (err.message || 'erro ao salvar'), 'error');
+                jaRef.current && jaRef.current('' + (err.message || 'erro ao salvar'), 'error');
                 return false;
             } finally {
                 setSalvando(null);
@@ -757,16 +758,16 @@
                 </style>
                 </head>
                 <body>
-                <h1>📊 Relatório Financeiro</h1>
+                <h1>Relatório Financeiro</h1>
                 <p><strong>Período:</strong> ${formatarDataBR(dataIni)} até ${formatarDataBR(dataFim)}</p>
                 <p><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
                 <div class="cards">
                     <div class="card"><div class="card-value">R$ ${kpis.totalSolicitado.toFixed(2)}</div><div class="card-label">Total Solicitado</div></div>
                     <div class="card"><div class="card-value">R$ ${kpis.totalPago.toFixed(2)}</div><div class="card-label">Total Pago</div></div>
-                    <div class="card"><div class="card-value" style="color:#059669">R$ ${kpis.lucro.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>
+                    <div class="card"><div class="card-value" style="color:#16a34a">R$ ${kpis.lucro.toFixed(2)}</div><div class="card-label">Lucro (Taxas)</div></div>
                     <div class="card"><div class="card-value" style="color:#dc2626">R$ ${kpis.deixouArrecadar.toFixed(2)}</div><div class="card-label">Deixou Arrecadar</div></div>
                 </div>
-                <h2>📋 Detalhamento (primeiros 100)</h2>
+                <h2>Detalhamento (primeiros 100)</h2>
                 <table>
                     <thead><tr><th>Data</th><th>Profissional</th><th>Código</th><th>Solicitado</th><th>Pago</th><th>Status</th></tr></thead>
                     <tbody>
@@ -938,21 +939,21 @@
                         React.createElement('div', { className: 'space-y-1.5' },
                             React.createElement('div', { className: 'flex items-center justify-between gap-3' },
                                 React.createElement('span', { className: 'flex items-center gap-1.5' },
-                                    React.createElement('span', { style: { width: 10, height: 10, background: '#185FA5', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#1e40af', borderRadius: 2, display: 'inline-block' } }),
                                     React.createElement('span', { className: 'text-gray-600' }, 'Solicitado')
                                 ),
                                 React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Solicitado))
                             ),
                             React.createElement('div', { className: 'flex items-center justify-between gap-3' },
                                 React.createElement('span', { className: 'flex items-center gap-1.5' },
-                                    React.createElement('span', { style: { width: 10, height: 10, background: '#1D9E75', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#16a34a', borderRadius: 2, display: 'inline-block' } }),
                                     React.createElement('span', { className: 'text-gray-600' }, 'Pago')
                                 ),
                                 React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Pago))
                             ),
                             React.createElement('div', { className: 'flex items-center justify-between gap-3' },
                                 React.createElement('span', { className: 'flex items-center gap-1.5' },
-                                    React.createElement('span', { style: { width: 10, height: 10, background: '#7F77DD', borderRadius: 2, display: 'inline-block' } }),
+                                    React.createElement('span', { style: { width: 10, height: 10, background: '#7c3aed', borderRadius: 2, display: 'inline-block' } }),
                                     React.createElement('span', { className: 'text-gray-600' }, 'Lucro (taxas)')
                                 ),
                                 React.createElement('span', { className: 'font-bold text-gray-900' }, er(dado.Lucro))
@@ -1026,18 +1027,18 @@
                                         React.createElement(R.Line, {
                                             type: 'monotone',
                                             dataKey: 'Solicitado',
-                                            stroke: '#185FA5',
+                                            stroke: '#1e40af',
                                             strokeWidth: 2.5,
-                                            dot: { r: 3, fill: '#185FA5', strokeWidth: 0 },
+                                            dot: { r: 3, fill: '#1e40af', strokeWidth: 0 },
                                             activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
                                             animationDuration: 800,
                                         }),
                                         React.createElement(R.Line, {
                                             type: 'monotone',
                                             dataKey: 'Pago',
-                                            stroke: '#1D9E75',
+                                            stroke: '#16a34a',
                                             strokeWidth: 2.5,
-                                            dot: { r: 3, fill: '#1D9E75', strokeWidth: 0 },
+                                            dot: { r: 3, fill: '#16a34a', strokeWidth: 0 },
                                             activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
                                             animationDuration: 800,
                                             animationBegin: 100,
@@ -1045,10 +1046,10 @@
                                         React.createElement(R.Line, {
                                             type: 'monotone',
                                             dataKey: 'Lucro',
-                                            stroke: '#7F77DD',
+                                            stroke: '#7c3aed',
                                             strokeWidth: 2.5,
                                             strokeDasharray: '5 3',
-                                            dot: { r: 3, fill: '#7F77DD', strokeWidth: 0 },
+                                            dot: { r: 3, fill: '#7c3aed', strokeWidth: 0 },
                                             activeDot: { r: 6, strokeWidth: 2, stroke: '#fff' },
                                             animationDuration: 800,
                                             animationBegin: 200,
@@ -1562,14 +1563,14 @@
                         console.log('[DELETE] response status=' + resp.status + ', body=', respBody);
                         if (!resp.ok) {
                             const msg = respBody.motivo || respBody.error || `Erro ao excluir (HTTP ${resp.status})`;
-                            ja("❌ " + msg, "error");
+                            ja("" + msg, "error");
                             x({ ...p, deleteConfirm: null });
                             return;
                         }
                         // Sucesso confirmado pelo backend (status 200, body { success: true })
                         if (!respBody.success) {
                             console.warn('[DELETE] backend retornou 200 mas success=false:', respBody);
-                            ja("⚠️ Resposta inesperada do servidor — recarregando", "error");
+                            ja("Resposta inesperada do servidor — recarregando", "error");
                             x({ ...p, deleteConfirm: null });
                             Ua();
                             return;
@@ -1577,11 +1578,11 @@
                         const idRemover = e;
                         U(prev => prev.filter(w => w.id !== idRemover));
                         x({ ...p, deleteConfirm: null });
-                        ja(respBody.forcado ? "🗑️ Excluída (forçada)!" : "🗑️ Solicitação excluída!", "success");
+                        ja(respBody.forcado ? "Excluída (forçada)!" : "Solicitação excluída!", "success");
                         console.log('[DELETE] sucesso saque #' + e + (respBody.forcado ? ' (FORÇADO)' : ''));
                     } catch (err) {
                         console.error('[DELETE] exception:', err);
-                        ja("❌ Erro ao excluir: " + (err.message || "rede indisponível"), "error");
+                        ja("Erro ao excluir: " + (err.message || "rede indisponível"), "error");
                         x({ ...p, deleteConfirm: null });
                         Ua(); // recarrega lista pra estado consistente
                     }
@@ -1962,7 +1963,7 @@
                 abrirQRPix: J, // setter do state V — abre o PixQRCodeModal renderizado pelo parent
                 withdrawalCounts: wc, // 🔧 contadores agregados pros badges (Todas/Aprovadas/etc)
             }) : React.createElement("div", {
-                style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
+                style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#fef2f2", border: "1px solid #FECACA", borderRadius: 8 }
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Componente SolicitacoesV2 não foi carregado. Verifique se ModuloFinanceiroSolicitacoesV2.js está no index.html antes do ModuloFinanceiro.js.")))
             , "limites" === p.finTab && window.LimitesComponent && React.createElement(window.LimitesComponent, {
                 fetchAuth: fetchAuth, API_URL: API_URL, ja: ja, er: er, v: v, y: y
@@ -2170,7 +2171,7 @@
                         ),
                         // VENC_MAP_V2: Filtro por Data de Vencimento (competencia enviada a MAP)
                         React.createElement("div", null,
-                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#b45309" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Vencimento")),
+                            React.createElement("label", {className: "block text-xs font-semibold text-gray-600 mb-1"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#92400e" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Data Vencimento")),
                             React.createElement("input", {
                                 type: "date",
                                 value: p.concDataVencimento || "",
@@ -2515,8 +2516,8 @@
                     kpi("Aprovadas", nCat("aprovado"), "text-green-600", "inclui pagas via Stark"),
                     kpi("Aprov. Gratuidade", nCat("aprovado_gratuidade"), "text-blue-600", "sem taxa"),
                     kpi("Rejeitadas", nCat("rejeitado"), "text-red-600"),
-                    React.createElement("div", { className: "rounded-xl shadow p-4 text-white", style: { background: "linear-gradient(135deg,#7c3aed,#9333ea)" }, title: "Soma de (valor solicitado − valor repassado) nos saques pagos sem gratuidade" },
-                        React.createElement("p", { className: "text-sm", style: { color: "#e9d5ff" } }, "Lucro (taxas cobradas)"),
+                    React.createElement("div", { className: "rounded-xl shadow p-4 text-white", style: { background: "linear-gradient(135deg,#7c3aed,#7633ea)" }, title: "Soma de (valor solicitado − valor repassado) nos saques pagos sem gratuidade" },
+                        React.createElement("p", { className: "text-sm", style: { color: "#ddd6fe" } }, "Lucro (taxas cobradas)"),
                         React.createElement("p", { className: "text-2xl font-bold" }, fR(lucro)),
                         React.createElement("p", { className: "text-[11px] mt-0.5", style: { color: "#ddd6fe" } }, cobrados.length + " saque(s) cobrado(s) · repassado " + fR(totalRepassado)))
                 ), React.createElement("div", {
@@ -2788,7 +2789,7 @@
                             body: JSON.stringify({
                                 removedReason: "Suspensa pelo admin"
                             })
-                        }), ja("✅ Restrição removida!", "success"), Ba()
+                        }), ja("Restrição removida!", "success"), Ba()
                     } catch (e) {
                         ja("Erro", "error")
                     }
@@ -2849,7 +2850,7 @@
                             const updated = await resp.json();
                             // Optimistic update: atualizar a indicação no array local
                             le(prev => prev.map(i => i.id === e ? { ...i, ...updated, status: 'rejeitada' } : i));
-                            ja("❌ Indicação rejeitada", "success"), x({
+                            ja("Indicação rejeitada", "success"), x({
                                 ...p,
                                 modalRejeitar: null,
                                 motivoRejeicao: ""
@@ -3158,7 +3159,7 @@
                             if (!resp.ok) throw new Error("Erro ao aprovar");
                             const updated = await resp.json();
                             le(prev => prev.map(i => i.id === e ? { ...i, ...updated, status: 'aprovada' } : i));
-                            ja("✅ Indicação aprovada!", "success");
+                            ja("Indicação aprovada!", "success");
                             setTimeout(() => wl(), 500);
                         } catch (e) { ja(e.message, "error") }
                         s(!1)
@@ -3177,7 +3178,7 @@
                             const resp = await fetchAuth(`${API_URL}/indicacoes/${id}`, { method: "DELETE" });
                             if (!resp.ok) throw new Error("Erro ao excluir");
                             le(prev => prev.filter(i => i.id !== id));
-                            ja("🗑️ Excluída!", "success");
+                            ja("Excluída!", "success");
                         } catch (err) { ja(err.message, "error"); }
                         s(!1);
                     })(e.id),
@@ -3248,13 +3249,13 @@
                                             body: JSON.stringify(novoFe)
                                         });
                                         if (!resp.ok) throw new Error("falha");
-                                        ja(novoFe.ativo ? "✅ Quiz ativado!" : "⏸️ Quiz desativado!", "success");
+                                        ja(novoFe.ativo ? "Quiz ativado!" : "Quiz desativado!", "success");
                                     } catch (err) {
                                         Ne(fe);
-                                        ja("❌ Erro ao alterar status do quiz", "error");
+                                        ja("Erro ao alterar status do quiz", "error");
                                     }
                                 },
-                                style: { background: fe.ativo ? "#1D9E75" : "#D3D1C7" },
+                                style: { background: fe.ativo ? "#16a34a" : "#d1d5db" },
                                 className: "relative w-9 h-5 rounded-full transition"
                             },
                                 React.createElement("span", {
@@ -3264,7 +3265,7 @@
                             ),
                             React.createElement("span", {
                                 className: "text-xs font-semibold",
-                                style: { color: fe.ativo ? "#0F6E56" : "#888780" }
+                                style: { color: fe.ativo ? "#166534" : "#6b7280" }
                             }, fe.ativo ? "Ativo" : "Inativo"),
                             React.createElement("span", {
                                 className: "text-gray-400 ml-2 text-sm transition-transform",
@@ -3399,8 +3400,8 @@
                                                 Ne({ ...fe, perguntas: a });
                                             },
                                             style: !0 === fe.perguntas[idx]?.resposta
-                                                ? { background: "#EAF3DE", color: "#27500A", border: "1px solid #97C459" }
-                                                : { background: "white", color: "#888780", border: "1px solid #D3D1C7" },
+                                                ? { background: "#f0fdf4", color: "#166534", border: "1px solid #16a34a" }
+                                                : { background: "white", color: "#6b7280", border: "1px solid #d1d5db" },
                                             className: "px-2.5 py-1 rounded-md text-[11px] font-semibold"
                                         }, "Certo"),
                                         React.createElement("button", {
@@ -3410,8 +3411,8 @@
                                                 Ne({ ...fe, perguntas: a });
                                             },
                                             style: !1 === fe.perguntas[idx]?.resposta
-                                                ? { background: "#FCEBEB", color: "#501313", border: "1px solid #F09595" }
-                                                : { background: "white", color: "#888780", border: "1px solid #D3D1C7" },
+                                                ? { background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" }
+                                                : { background: "white", color: "#6b7280", border: "1px solid #d1d5db" },
                                             className: "px-2.5 py-1 rounded-md text-[11px] font-semibold"
                                         }, "Errado")
                                     )
@@ -3430,9 +3431,9 @@
                                 /* Campo de dica embutido */
                                 React.createElement("div", {
                                     className: "flex gap-2 items-start px-2 py-2 rounded-md",
-                                    style: { background: "#E6F1FB", borderLeft: "3px solid #185FA5" }
+                                    style: { background: "#eff6ff", borderLeft: "3px solid #1e40af" }
                                 },
-                                    React.createElement("span", { style: { color: "#185FA5" }, className: "mt-0.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" }))),
+                                    React.createElement("span", { style: { color: "#1e40af" }, className: "mt-0.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" }))),
                                     React.createElement("input", {
                                         type: "text",
                                         value: (fe.dicas && fe.dicas[idx]) || "",
@@ -3443,7 +3444,7 @@
                                             Ne({ ...fe, dicas: a });
                                         },
                                         className: "flex-1 bg-transparent text-xs border-none focus:outline-none p-0",
-                                        style: { color: "#0C447C" },
+                                        style: { color: "#1e40af" },
                                         placeholder: "Dica explicativa (opcional)"
                                     })
                                 )
@@ -3457,7 +3458,7 @@
                         React.createElement("button", {
                             onClick: Fl,
                             disabled: c,
-                            style: { background: c ? "#D3D1C7" : "#534AB7" },
+                            style: { background: c ? "#d1d5db" : "#7c3aed" },
                             className: "text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:cursor-not-allowed"
                         }, c ? "Salvando..." : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar"))
                     )
@@ -3762,7 +3763,7 @@
                                 const e = await t.json();
                                 throw new Error(e.error || "Erro ao excluir")
                             }
-                            ja("🗑️ Promoção excluída!", "success"), await Cl()
+                            ja("Promoção excluída!", "success"), await Cl()
                         } catch (e) {
                             ja(e.message, "error")
                         } finally {
@@ -3982,7 +3983,7 @@
                                             lancado_por: l.fullName
                                         })
                                     })).ok) throw new Error("Erro ao creditar");
-                                ja("✅ Crédito lançado!", "success"), await Sl()
+                                ja("Crédito lançado!", "success"), await Sl()
                             } catch (err) {
                                 ja("Erro ao creditar", "error")
                             } finally {
@@ -4008,7 +4009,7 @@
                                 method: "DELETE"
                             });
                             if (!resp.ok) throw new Error("Erro ao excluir");
-                            ja("🗑️ Inscrição excluída!", "success");
+                            ja("Inscrição excluída!", "success");
                             await Sl();
                         } catch (err) {
                             ja("Erro ao excluir inscrição", "error");
@@ -4169,7 +4170,7 @@
                     onClick: async () => {
                         confirm("Excluir este item do estoque?") && (await fetchAuth(`${API_URL}/loja/estoque/${e.id}`, {
                             method: "DELETE"
-                        }), Ja(), ja("🗑️ Item excluído!", "success"))
+                        }), Ja(), ja("Item excluído!", "success"))
                     },
                     className: "px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200"
                 }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))
@@ -4331,7 +4332,7 @@
                                         lojaEstoqueImagem: dataUrl,
                                         uploadingEstoqueImage: !1
                                     });
-                                    ja("✅ Imagem carregada!", "success");
+                                    ja("Imagem carregada!", "success");
                                 }).catch(e => {
                                     console.error("Erro upload:", e); ja("Erro ao carregar imagem", "error"); x({
                                         ...p,
@@ -4570,7 +4571,7 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify(c)
-                    }), ja("✅ Item atualizado!", "success");
+                    }), ja("Item atualizado!", "success");
                     else {
                         const e = await fetchAuth(`${API_URL}/loja/estoque`, {
                                 method: "POST",
@@ -4591,7 +4592,7 @@
                                 motivo: "Estoque inicial",
                                 created_by: l.fullName
                             })
-                        }), ja("✅ Item adicionado!", "success")
+                        }), ja("Item adicionado!", "success")
                     }
                     x({
                         ...p,
@@ -4684,7 +4685,7 @@
                             motivo: p.lojaMovMotivo || ("entrada" === p.lojaMovTipo ? "Entrada manual" : "Saída manual"),
                             created_by: l.fullName
                         })
-                    }), ja("entrada" === p.lojaMovTipo ? "📥 Entrada registrada!" : "📤 Saída registrada!", "success"), x({
+                    }), ja("entrada" === p.lojaMovTipo ? "Entrada registrada!" : "Saída registrada!", "success"), x({
                         ...p,
                         lojaMovModal: !1,
                         lojaMovItem: null,
@@ -4753,7 +4754,7 @@
                 onClick: async () => {
                     confirm("Excluir este produto?") && (await fetchAuth(`${API_URL}/loja/produtos/${e.id}`, {
                         method: "DELETE"
-                    }), Ha(), ja("🗑️ Produto excluído!", "success"))
+                    }), Ha(), ja("Produto excluído!", "success"))
                 },
                 className: "px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))), p.lojaProdutoModal && React.createElement("div", {
@@ -4884,7 +4885,7 @@
                                         lojaProdutoImagem: dataUrl,
                                         uploadingImage: !1
                                     });
-                                    ja("✅ Imagem carregada!", "success");
+                                    ja("Imagem carregada!", "success");
                                 }).catch(e => {
                                     console.error("Erro upload:", e); ja("Erro ao carregar imagem", "error"); x({
                                         ...p,
@@ -4935,7 +4936,7 @@
                 className: "space-y-2"
             }, 0 === ((p.lojaProdutoParcelas ?? p.lojaProdutoEdit?.parcelas_config) || []).length ? React.createElement("p", {
                 className: "text-sm text-gray-500 text-center py-3 bg-white rounded-lg"
-            }, "Nenhuma opção de parcelamento.", React.createElement("br", null), 'Clique em "➕ Adicionar" acima.') : ((p.lojaProdutoParcelas ?? p.lojaProdutoEdit?.parcelas_config) || []).map((e, t) => React.createElement("div", {
+            }, "Nenhuma opção de parcelamento.", React.createElement("br", null), 'Clique em "Adicionar" acima.') : ((p.lojaProdutoParcelas ?? p.lojaProdutoEdit?.parcelas_config) || []).map((e, t) => React.createElement("div", {
                 key: t,
                 className: "flex gap-2 items-center bg-white p-3 rounded-lg border"
             }, React.createElement("div", {
@@ -5035,13 +5036,13 @@
                             ...r,
                             status: p.lojaProdutoEdit.status
                         })
-                    }), ja("✅ Produto atualizado!", "success")) : (await fetchAuth(`${API_URL}/loja/produtos`, {
+                    }), ja("Produto atualizado!", "success")) : (await fetchAuth(`${API_URL}/loja/produtos`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify(r)
-                    }), ja("✅ Produto adicionado!", "success")), x({
+                    }), ja("Produto adicionado!", "success")), x({
                         ...p,
                         lojaProdutoModal: !1,
                         lojaProdutoEdit: null,
@@ -5126,7 +5127,7 @@
                             debito_lancado_em: t.target.checked ? (new Date).toISOString() : null,
                             debito_lancado_por: t.target.checked ? l.fullName : null
                         })
-                    }), Wa(), ja(t.target.checked ? "✅ Débito marcado!" : "Débito desmarcado", "success")
+                    }), Wa(), ja(t.target.checked ? "Débito marcado!" : "Débito desmarcado", "success")
                 },
                 className: "w-5 h-5 accent-green-600"
             }), e.debito_lancado && e.debito_lancado_em && React.createElement("p", {
@@ -5152,7 +5153,7 @@
                             admin_id: l.codProfissional,
                             admin_name: l.fullName
                         })
-                    }), Wa(), ja("✅ Pedido aprovado!", "success")
+                    }), Wa(), ja("Pedido aprovado!", "success")
                 },
                 className: "px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700",
                 title: "Aprovar"
@@ -5170,7 +5171,7 @@
                             admin_name: l.fullName,
                             observacao: t
                         })
-                    }), Wa(), ja("❌ Pedido rejeitado", "success"))
+                    }), Wa(), ja("Pedido rejeitado", "success"))
                 },
                 className: "px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700",
                 title: "Rejeitar"
@@ -5216,7 +5217,7 @@
                     }), x({
                         ...p,
                         lojaPedidoDeleteConfirm: null
-                    }), Wa(), ja("🗑️ Pedido excluído!", "success")
+                    }), Wa(), ja("Pedido excluído!", "success")
                 },
                 className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir")))))), "sugestoes" === nt && React.createElement(React.Fragment, null, React.createElement("div", {
@@ -5283,7 +5284,7 @@
                 onClick: async () => {
                     confirm("Excluir esta sugestão?") && (await fetchAuth(`${API_URL}/loja/sugestoes/${e.id}`, {
                         method: "DELETE"
-                    }), Ya(), ja("🗑️ Sugestão excluída!", "success"))
+                    }), Ya(), ja("Sugestão excluída!", "success"))
                 },
                 className: "px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-300"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })))))))), p.lojaSugestaoResponder && React.createElement("div", {
@@ -5331,7 +5332,7 @@
                             resposta: p.lojaSugestaoResposta || "Obrigado pela sugestão!",
                             respondido_por: l.fullName
                         })
-                    }), ja("✅ Sugestão respondida!", "success"), x({
+                    }), ja("Sugestão respondida!", "success"), x({
                         ...p,
                         lojaSugestaoResponder: null,
                         lojaSugestaoResposta: ""
@@ -5383,7 +5384,7 @@
                             resposta: p.lojaSugestaoResposta || "Não foi possível atender esta sugestão.",
                             respondido_por: l.fullName
                         })
-                    }), ja("❌ Sugestão recusada", "success"), x({
+                    }), ja("Sugestão recusada", "success"), x({
                         ...p,
                         lojaSugestaoRecusar: null,
                         lojaSugestaoResposta: ""
@@ -5541,7 +5542,7 @@
                         if (confirm("Remover este horário especial?")) try {
                             await fetchAuth(`${API_URL}/horarios/especiais/${e}`, {
                                 method: "DELETE"
-                            }), ja("✅ Removido!", "success");
+                            }), ja("Removido!", "success");
                             const t = await fetchAuth(`${API_URL}/horarios/especiais`),
                                 a = await t.json();
                             Oe(e => ({
@@ -5704,7 +5705,7 @@
                             }),
                             r = URL.createObjectURL(l),
                             o = document.createElement("a");
-                        o.href = r, o.download = t, o.click(), URL.revokeObjectURL(r), ja(`✅ ${t} exportado com sucesso!`, "success")
+                        o.href = r, o.download = t, o.click(), URL.revokeObjectURL(r), ja(`${t} exportado com sucesso!`, "success")
                     },
                     t = (e, t, a) => {
                         const l = [t.map(e => e.label).join(";"), ...e.map(e => t.map(t => {
@@ -5716,7 +5717,7 @@
                             }),
                             o = URL.createObjectURL(r),
                             c = document.createElement("a");
-                        c.href = o, c.download = a, c.click(), URL.revokeObjectURL(o), ja(`✅ ${a} exportado com sucesso!`, "success")
+                        c.href = o, c.download = a, c.click(), URL.revokeObjectURL(o), ja(`${a} exportado com sucesso!`, "success")
                     },
                     a = (new Date).toISOString().split("T")[0],
                     l = [{
@@ -6228,7 +6229,7 @@
                         carregarLimites();
                         if (msg.event === 'NEW_LIMIT_REQUEST') {
                             v(function(prev) { return Object.assign({}, prev, { limites_pendentes: (prev.limites_pendentes || 0) + 1 }); });
-                            ja('🔓 Nova solicitação de limite: ' + msg.data.user_name, 'info');
+                            ja('Nova solicitação de limite: ' + msg.data.user_name, 'info');
                         }
                         if (msg.event === 'LIMIT_REQUEST_UPDATE' && msg.data.status !== 'pendente') {
                             v(function(prev) { return Object.assign({}, prev, { limites_pendentes: Math.max(0, (prev.limites_pendentes || 0) - 1) }); });
@@ -6249,9 +6250,9 @@
                     method: 'PATCH', headers: { 'Content-Type': 'application/json' }
                 });
                 var data = await resp.json();
-                if (resp.ok) { ja('✅ Limite liberado com sucesso!', 'success'); carregarLimites(); }
-                else { ja('❌ ' + (data.error || 'Erro ao liberar'), 'error'); }
-            } catch (err) { ja('❌ Erro de conexão', 'error'); }
+                if (resp.ok) { ja('Limite liberado com sucesso!', 'success'); carregarLimites(); }
+                else { ja('' + (data.error || 'Erro ao liberar'), 'error'); }
+            } catch (err) { ja('Erro de conexão', 'error'); }
             setLiberandoId(null);
         };
 
@@ -6264,7 +6265,7 @@
                     body: JSON.stringify({ motivo: 'Rejeitado pelo financeiro' })
                 });
                 if (resp.ok) { ja('Solicitação rejeitada', 'info'); carregarLimites(); }
-            } catch (err) { ja('❌ Erro', 'error'); }
+            } catch (err) { ja('Erro', 'error'); }
             setLiberandoId(null);
         };
 
@@ -6498,16 +6499,16 @@
         // Sincronizar status das transfers pendentes consultando a Stark Bank
         var sincronizarStatus = async function() {
             try {
-                showToast('🔄 Sincronizando...', 'info');
+                showToast('Sincronizando...', 'info');
                 var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
                 if (!r.ok) {
                     var err = await r.json().catch(function() { return {}; });
-                    showToast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
+                    showToast('' + (err.error || 'Erro ' + r.status), 'error');
                     return;
                 }
                 var d = await r.json();
                 if (d.atualizados > 0) {
-                    showToast('✅ ' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
+                    showToast('' + d.atualizados + ' pagamento(s) sincronizado(s)!', 'success');
                     carregarPendentes(st.pendentesPage);
                     carregarHistorico();
                     carregarSaldo();
@@ -6516,7 +6517,7 @@
                 }
             } catch(e) {
                 console.error('Erro sync:', e);
-                showToast('❌ Erro ao sincronizar: ' + e.message, 'error');
+                showToast('Erro ao sincronizar: ' + e.message, 'error');
             }
         };
         
@@ -6532,10 +6533,10 @@
         // Validar lote antes de pagar (consulta DICT para cada saque)
         var validarLote = async function() {
             var ids = idsSelecionados.length > 0 ? idsSelecionados : st.pendentes.map(function(s) { return s.id; });
-            if (ids.length === 0) { showToast('⚠️ Nenhum saque para validar', 'warning'); return; }
+            if (ids.length === 0) { showToast('Nenhum saque para validar', 'warning'); return; }
             
             setValidando(true);
-            showToast('🔍 Validando ' + ids.length + ' chaves Pix...', 'info');
+            showToast('Validando ' + ids.length + ' chaves Pix...', 'info');
             
             try {
                 var r = await fetchAuth(API_URL + '/stark/lote/validar', {
@@ -6551,13 +6552,13 @@
                 setValidacoes(map);
                 
                 if (d.com_alerta > 0) {
-                    showToast('⚠️ ' + d.com_alerta + ' saque(s) com alertas! Verifique a coluna Validação.', 'warning');
+                    showToast('' + d.com_alerta + ' saque(s) com alertas! Verifique a coluna Validação.', 'warning');
                 } else {
-                    showToast('✅ Todas as ' + d.total + ' chaves Pix validadas com sucesso!', 'success');
+                    showToast('Todas as ' + d.total + ' chaves Pix validadas com sucesso!', 'success');
                 }
             } catch(e) {
                 console.error('Erro validação:', e);
-                showToast('❌ Erro ao validar: ' + e.message, 'error');
+                showToast('Erro ao validar: ' + e.message, 'error');
             }
             setValidando(false);
         };
@@ -6676,7 +6677,7 @@
                 var de = await re.json();
                 // [SAQUE_DIVERG_V1] saques retidos por titular divergente aguardando confirmacao
                 if (de.divergentes && de.divergentes.length > 0) {
-                    showToast('🔸 ' + de.divergentes.length + ' saque(s) com titular diferente ficaram retidos. Clique em "Validar", marque "Confirmo pagar" na linha e pague novamente.', 'warning');
+                    showToast('' + de.divergentes.length + ' saque(s) com titular diferente ficaram retidos. Clique em "Validar", marque "Confirmo pagar" na linha e pague novamente.', 'warning');
                 }
 
                 if (de.success) {
@@ -6695,7 +6696,7 @@
                     carregarSaldo(); carregarPendentes(1); carregarHistorico(); setSel({});
                 } else {
                     setModal2fa(function(p) { return Object.assign({}, p, { erro: de.error || 'Erro ao executar', validando: false, etapa: 'digitar' }); });
-                    if (de.saldo_disponivel !== undefined) showToast('💰 Saldo insuficiente: ' + formatarMoeda(de.saldo_disponivel), 'warning');
+                    if (de.saldo_disponivel !== undefined) showToast('Saldo insuficiente: ' + formatarMoeda(de.saldo_disponivel), 'warning');
                 }
             } catch (e) { setModal2fa(function(p) { return Object.assign({}, p, { erro: 'Erro: ' + e.message, validando: false, etapa: 'digitar' }); }); }
         };
@@ -6887,7 +6888,7 @@
                                                     /* [SAQUE_DIVERG_V1] titular divergente: badge vermelho + "Confirmo pagar" (igual ao acerto) */
                                                     (v && v.dict_status === 'ok' && v.cpf_divergente)
                                                         ? React.createElement("div", { className: "flex flex-col items-center gap-1" },
-                                                            React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700", title: v.dict_nome ? ("Chave Pix em nome de: " + v.dict_nome) : "Titular diferente do cadastro" }, "⚠️ Titular diferente"),
+                                                            React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700", title: v.dict_nome ? ("Chave Pix em nome de: " + v.dict_nome) : "Titular diferente do cadastro" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("alert"), "Titular diferente")),
                                                             v.dict_nome ? React.createElement("span", { className: "text-[10px] text-gray-500 max-w-[150px] truncate" }, v.dict_nome) : null,
                                                             React.createElement("label", { className: "flex items-center gap-1 text-xs font-medium cursor-pointer " + (divConfirmSaque[s.id] ? "text-emerald-700" : "text-red-600") },
                                                                 React.createElement("input", { type: "checkbox", checked: !!divConfirmSaque[s.id], onChange: function() { setDivConfirmSaque(function(p) { var n = Object.assign({}, p); if (n[s.id]) { delete n[s.id]; } else { n[s.id] = true; } return n; }); }, className: "w-3.5 h-3.5 accent-emerald-600" }),
@@ -6895,7 +6896,7 @@
                                                             )
                                                           )
                                                         : (v && v.dict_status === 'ok')
-                                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700", title: v.dict_nome || "" }, "✓ Conferido")
+                                                            ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700", title: v.dict_nome || "" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("check"), "Conferido"))
                                                             : (v && v.dict_status === 'erro')
                                                                 ? React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700", title: (v.alertas || []).join(' | ') }, "Rever Pix")
                                                                 : (s.stark_status ? badge(s.stark_status) : React.createElement("span", { className: "px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" }, "Aguardando"))
@@ -7256,7 +7257,7 @@
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     var old = el.style.boxShadow;
-                    el.style.boxShadow = 'inset 0 0 0 2px #f59e0b';
+                    el.style.boxShadow = 'inset 0 0 0 2px #d97706';
                     setTimeout(function() { el.style.boxShadow = old || ''; }, 1600);
                 }
             } catch (e) {}
@@ -7337,15 +7338,15 @@
                         setDictResults(dictInicial);
                         // Carregar saldo
                         carregarSaldo();
-                        if (d.sem_pix > 0) Toast('⚠️ ' + d.sem_pix + ' profissionais sem chave Pix cadastrada', 'warning');
+                        if (d.sem_pix > 0) Toast('' + d.sem_pix + ' profissionais sem chave Pix cadastrada', 'warning');
                         /* ACERTO_RESTR_V1: avisa restritos (não podem ser pagos) */
-                        if (d.restritos > 0) Toast('🚫 ' + d.restritos + ' profissional(is) com RESTRIÇÃO — não serão pagos neste acerto', 'error');
+                        if (d.restritos > 0) Toast('' + d.restritos + ' profissional(is) com RESTRIÇÃO — não serão pagos neste acerto', 'error');
                     } else {
-                        Toast('❌ ' + (d.error || 'Erro ao processar'), 'error');
+                        Toast('' + (d.error || 'Erro ao processar'), 'error');
                         setSt(function(p) { return Object.assign({}, p, { uploading: false }); });
                     }
                 } catch (err) {
-                    Toast('❌ Erro: ' + err.message, 'error');
+                    Toast('Erro: ' + err.message, 'error');
                     setSt(function(p) { return Object.assign({}, p, { uploading: false }); });
                 }
             };
@@ -7355,7 +7356,7 @@
         // ===== Criar lote de acerto (apenas marca, não paga) =====
         var criarLote = async function() {
             if (qtdSelecionados === 0) {
-                Toast('⚠️ Selecione ao menos um profissional', 'warning');
+                Toast('Selecione ao menos um profissional', 'warning');
                 return;
             }
 
@@ -7371,19 +7372,19 @@
                     if (d.bloqueados && d.bloqueados.length > 0) {
                         var _dups = d.bloqueados.filter(function(b) { return b.motivo && b.motivo.indexOf('JÁ PAGO') >= 0; });
                         var _outros = d.bloqueados.filter(function(b) { return !(b.motivo && b.motivo.indexOf('JÁ PAGO') >= 0); });
-                        if (_dups.length > 0) Toast('🛡️ ' + _dups.length + ' já pago(s) e bloqueado(s) contra duplicidade: ' + _dups.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
-                        if (_outros.length > 0) Toast('🚫 ' + _outros.length + ' removido(s) do lote por restrição: ' + _outros.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
+                        if (_dups.length > 0) Toast('' + _dups.length + ' já pago(s) e bloqueado(s) contra duplicidade: ' + _dups.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
+                        if (_outros.length > 0) Toast('' + _outros.length + ' removido(s) do lote por restrição: ' + _outros.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
                     }
-                    Toast('✅ Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
+                    Toast('Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
                     // Limpar dados e ir para aprovação
                     setSt(function(p) { return Object.assign({}, p, { dados: null, subTab: 'aprovacao' }); });
                     setSel({});
                     carregarLotesAprovacao();
                 } else {
-                    Toast('❌ ' + (d.error || 'Erro'), 'error');
+                    Toast('' + (d.error || 'Erro'), 'error');
                 }
             } catch (err) {
-                Toast('❌ ' + err.message, 'error');
+                Toast('' + err.message, 'error');
             }
         };
 
@@ -7432,17 +7433,17 @@
         var sincronizarAcerto = async function() {
             setSincronizando(true);
             try {
-                Toast('🔄 Sincronizando status com Stark Bank...', 'info');
+                Toast('Sincronizando status com Stark Bank...', 'info');
                 var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
                 if (!r.ok) {
                     var err = await r.json().catch(function() { return {}; });
-                    Toast('❌ ' + (err.error || 'Erro ' + r.status), 'error');
+                    Toast('' + (err.error || 'Erro ' + r.status), 'error');
                     setSincronizando(false);
                     return;
                 }
                 var d = await r.json();
                 if (d.atualizados > 0) {
-                    Toast('✅ ' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
+                    Toast('' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
                 } else {
                     Toast('ℹ️ Nenhuma atualização pendente', 'info');
                 }
@@ -7453,7 +7454,7 @@
                 carregarHistorico();
                 carregarLotesAprovacao();
             } catch (e) {
-                Toast('❌ Erro: ' + e.message, 'error');
+                Toast('Erro: ' + e.message, 'error');
             } finally {
                 setSincronizando(false);
             }
@@ -7461,7 +7462,7 @@
 
         // ===== Validar Pix via DICT (Stark Bank) =====
         var validarPixDict = async function(prof) {
-            if (!prof.pix_key) { Toast('❌ Profissional sem chave Pix', 'error'); return; }
+            if (!prof.pix_key) { Toast('Profissional sem chave Pix', 'error'); return; }
             setDictResults(function(prev) {
                 var n = Object.assign({}, prev);
                 n[prof.cod_prof] = { loading: true, success: null, dict: null, erro: null };
@@ -7480,11 +7481,11 @@
                     return n;
                 });
                 if (d.success && d.divergente) {
-                    Toast('⚠️ #' + prof.cod_prof + ': chave em nome de OUTRO titular — ' + ((d.dict && d.dict.nome) || '') + '. Confirme antes de pagar.', 'warning');
+                    Toast('#' + prof.cod_prof + ': chave em nome de OUTRO titular — ' + ((d.dict && d.dict.nome) || '') + '. Confirme antes de pagar.', 'warning');
                 } else if (d.success) {
-                    Toast('✅ #' + prof.cod_prof + ': Pix conferido — ' + ((d.dict && d.dict.nome) || 'OK'), 'success');
+                    Toast('#' + prof.cod_prof + ': Pix conferido — ' + ((d.dict && d.dict.nome) || 'OK'), 'success');
                 } else {
-                    Toast('❌ #' + prof.cod_prof + ': ' + (d.erro || 'Chave não encontrada no DICT'), 'error');
+                    Toast('#' + prof.cod_prof + ': ' + (d.erro || 'Chave não encontrada no DICT'), 'error');
                 }
             } catch (e) {
                 setDictResults(function(prev) {
@@ -7492,7 +7493,7 @@
                     n[prof.cod_prof] = { loading: false, success: false, dict: null, erro: e.message };
                     return n;
                 });
-                Toast('❌ Erro: ' + e.message, 'error');
+                Toast('Erro: ' + e.message, 'error');
             }
         };
 
@@ -7855,7 +7856,7 @@
                                     },
                                         React.createElement("td", { className: "px-3 py-2.5 text-center" },
                                             ehJaPago
-                                                ? React.createElement("span", { title: "Já pago — bloqueado contra duplicidade", className: "inline-flex" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: "#64748b" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })))
+                                                ? React.createElement("span", { title: "Já pago — bloqueado contra duplicidade", className: "inline-flex" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: "#6b7280" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" })))
                                                 : React.createElement("input", {
                                                 type: "checkbox",
                                                 checked: !bloqueado && !!sel[prof.cod_prof],
@@ -8392,7 +8393,7 @@
                     });
                 });
             } catch (e) {
-                Toast('❌ Erro: ' + e.message, 'error');
+                Toast('Erro: ' + e.message, 'error');
                 setSt(function(p) { return Object.assign({}, p, { loading: false }); });
             }
         };
@@ -8438,7 +8439,7 @@
 
         // Exportar CSV
         var exportarCSV = function() {
-            if (itensFiltrados.length === 0) { Toast('⚠️ Nenhum dado para exportar', 'warning'); return; }
+            if (itensFiltrados.length === 0) { Toast('Nenhum dado para exportar', 'warning'); return; }
             var linhas = ['Lote;Código;Nome;Chave Pix;CPF;Valor;Status;Data'];
             itensFiltrados.forEach(function(item) {
                 linhas.push([
@@ -8459,7 +8460,7 @@
             a.download = 'conciliacao-acerto-' + new Date().toISOString().split('T')[0] + '.csv';
             a.click();
             URL.revokeObjectURL(url);
-            Toast('✅ CSV exportado!', 'success');
+            Toast('CSV exportado!', 'success');
         };
 
         // Sincronizar status acerto
@@ -8469,17 +8470,17 @@
         var sincronizarConciliacao = async function() {
             setSincConciliacao(true);
             try {
-                Toast('🔄 Sincronizando status com Stark Bank...', 'info');
+                Toast('Sincronizando status com Stark Bank...', 'info');
                 var r = await fetchAuth(API_URL + '/stark/sync', { method: 'POST' });
                 var d = await r.json();
                 if (d.atualizados > 0) {
-                    Toast('✅ ' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
+                    Toast('' + d.atualizados + ' pagamento(s) atualizado(s)!', 'success');
                     carregarDados();
                 } else {
                     Toast('ℹ️ Nenhuma atualização pendente', 'info');
                 }
             } catch (e) {
-                Toast('❌ Erro: ' + e.message, 'error');
+                Toast('Erro: ' + e.message, 'error');
             } finally {
                 setSincConciliacao(false);
             }

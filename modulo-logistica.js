@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO UBER DIRECT ====================
 // Arquivo: modulo-uber.js
@@ -185,12 +186,12 @@
   // Provedores (99 × Uber) + ETA prometido × real, motivos de cancelamento,
   // parceiros frequentes × novos, tendência diária e mapa de calor hora × dia.
   // Dados: GET /logistics/dashboard/analitico (agregado por corrida/OS).
-  // Cores: 99 = roxo #7c3aed, Uber = âmbar #f5921e (fixas por provedor, nunca por posição).
+  // Cores: 99 = roxo #7c3aed, Uber = âmbar #f67602 (fixas por provedor, nunca por posição).
   // ════════════════════════════════════════════════════════
   // HUB_DASH_ANALITICO_V11: provider_code real da 99 e 'noventanove'
-  const PROV_COR = { '99': '#7c3aed', noventanove: '#7c3aed', uber: '#f5921e', moto_propria: '#15a05a' };
+  const PROV_COR = { '99': '#7c3aed', noventanove: '#7c3aed', uber: '#f67602', moto_propria: '#16a34a' };
   const PROV_NOME = { '99': '99Entrega', noventanove: '99Entrega', uber: 'Uber Direct', moto_propria: 'Moto própria' };
-  const provCor = (p) => PROV_COR[String(p || '').toLowerCase()] || '#64748b';
+  const provCor = (p) => PROV_COR[String(p || '').toLowerCase()] || '#6b7280';
   const provNome = (p) => PROV_NOME[String(p || '').toLowerCase()] || String(p || '—');
   const DOW = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -278,7 +279,7 @@
               h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: provCor(p.provider) } }),
               h('span', { className: 'font-bold text-sm text-gray-800' }, provNome(p.provider)),
               h('span', { className: 'ml-auto text-[10px] text-gray-400' }, `${p.eta_avaliadas} entregas com ETA`)),
-            [['ETA prometido', p.eta_medio, '#cbd5e1'], ['Tempo real', p.real_tentativa_min, provCor(p.provider)]].map(([l, v, cor]) => h('div', { key: l, className: 'flex items-center gap-2 text-[11px]' },
+            [['ETA prometido', p.eta_medio, '#d1d5db'], ['Tempo real', p.real_tentativa_min, provCor(p.provider)]].map(([l, v, cor]) => h('div', { key: l, className: 'flex items-center gap-2 text-[11px]' },
               h('span', { className: 'w-24 text-gray-500' }, l),
               h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded', style: { width: `${((parseFloat(v) || 0) / maxV) * 100}%`, background: cor, minWidth: 2 } })),
               h('span', { className: 'w-14 text-right font-semibold text-gray-800' }, fmtMin(v)))),
@@ -312,13 +313,13 @@
 
     // ── 4) PARCEIROS: frequentes × novos × ocasionais, por provedor ──
     const parc = an.parceiros || [];
-    const TIPO = { frequente: { rot: 'Parceiros frequentes', cor: '#7c3aed', d: '> 3 entregas nos 30 dias antes do fim do período' }, ocasional: { rot: 'Ocasionais', cor: '#94a3b8', d: 'já entregaram antes, mas não são frequentes' }, novo: { rot: 'Motos novas', cor: '#15a05a', d: '1ª entrega com a gente caiu no período' }, sem_id: { rot: 'Sem identificação', cor: '#e2e8f0', d: 'provedor não mandou telefone do entregador' } };
+    const TIPO = { frequente: { rot: 'Parceiros frequentes', cor: '#7c3aed', d: '> 3 entregas nos 30 dias antes do fim do período' }, ocasional: { rot: 'Ocasionais', cor: '#9ca3af', d: 'já entregaram antes, mas não são frequentes' }, novo: { rot: 'Motos novas', cor: '#16a34a', d: '1ª entrega com a gente caiu no período' }, sem_id: { rot: 'Sem identificação', cor: '#e5e7eb', d: 'provedor não mandou telefone do entregador' } };
     const ORDEM = ['frequente', 'ocasional', 'novo', 'sem_id'];
     const agrupa = (lista) => { const o = {}; ORDEM.forEach(t => { o[t] = { entregas: 0, motoboys: 0 }; }); lista.forEach(p => { if (o[p.tipo]) { o[p.tipo].entregas += p.entregas; o[p.tipo].motoboys += p.motoboys; } }); return o; };
     const barraParc = (titulo, lista, cor) => { const g = agrupa(lista); const tot = ORDEM.reduce((s, t) => s + g[t].entregas, 0); if (!tot) return null;
       return h('div', { key: titulo, className: 'space-y-1.5' },
         h('div', { className: 'flex items-center gap-2 text-xs' }, cor && h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: cor } }), h('span', { className: 'font-bold text-gray-800' }, titulo), h('span', { className: 'text-gray-400' }, `· ${tot} entregas`)),
-        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' }, ORDEM.filter(t => g[t].entregas).map(t => h('div', { key: t, className: 'flex items-center justify-center text-[10px] font-bold', style: { width: `${pct(g[t].entregas, tot)}%`, background: TIPO[t].cor, color: t === 'sem_id' || t === 'ocasional' ? '#334155' : '#fff', minWidth: 28 }, onMouseMove: onMove([TIPO[t].rot, `${g[t].entregas} entregas (${fmtPct(pct(g[t].entregas, tot))}) · ${g[t].motoboys} motoboys`, TIPO[t].d]), onMouseLeave: offHover }, fmtPct(pct(g[t].entregas, tot))))));
+        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' }, ORDEM.filter(t => g[t].entregas).map(t => h('div', { key: t, className: 'flex items-center justify-center text-[10px] font-bold', style: { width: `${pct(g[t].entregas, tot)}%`, background: TIPO[t].cor, color: t === 'sem_id' || t === 'ocasional' ? '#374151' : '#fff', minWidth: 28 }, onMouseMove: onMove([TIPO[t].rot, `${g[t].entregas} entregas (${fmtPct(pct(g[t].entregas, tot))}) · ${g[t].motoboys} motoboys`, TIPO[t].d]), onMouseLeave: offHover }, fmtPct(pct(g[t].entregas, tot))))));
     };
     const provsParc = [...new Set(parc.map(p => p.provider))];
     const secParceiros = card('Parceiros frequentes × motos novas', 'users', 'Quem está entregando: proporção das entregas feitas por parceiros frequentes, motos novas e ocasionais. Mesma régua da aba Frequentes.',
@@ -343,17 +344,17 @@
         h('div', { className: 'space-y-2' },
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, 'Corridas por dia'),
           h('svg', { viewBox: `0 0 ${W} ${HB + 18}`, className: 'w-full', style: { height: 150 } },
-            [0.5, 1].map(f => h('g', { key: f }, h('line', { x1: padL, x2: W - padR, y1: HB - f * (HB - 10), y2: HB - f * (HB - 10), stroke: '#f1f5f9' }), h('text', { x: padL - 4, y: HB - f * (HB - 10) + 3, fontSize: 9, fill: '#94a3b8', textAnchor: 'end' }, Math.round(maxC * f)))),
-            h('line', { x1: padL, x2: W - padR, y1: HB, y2: HB, stroke: '#e2e8f0' }),
+            [0.5, 1].map(f => h('g', { key: f }, h('line', { x1: padL, x2: W - padR, y1: HB - f * (HB - 10), y2: HB - f * (HB - 10), stroke: '#f3f4f6' }), h('text', { x: padL - 4, y: HB - f * (HB - 10) + 3, fontSize: 9, fill: '#9ca3af', textAnchor: 'end' }, Math.round(maxC * f)))),
+            h('line', { x1: padL, x2: W - padR, y1: HB, y2: HB, stroke: '#e5e7eb' }),
             dias.map((d, i) => { const hT = (d.corridas / maxC) * (HB - 10), hE = (d.entregues / maxC) * (HB - 10); return h('g', { key: d.dia, onMouseMove: onMove([fmtDia(d.dia), `${d.corridas} corridas · ${d.entregues} entregues · ${d.canceladas} canceladas`, `no prazo ${fmtPct(d.pct_no_prazo)} · tempo médio ${fmtMin(d.t_total_min)}`, `margem ${fmtMoney(d.margem)}`]), onMouseLeave: offHover },
-              h('rect', { x: x(i) + bw * 0.15, y: HB - hT, width: Math.max(bw * 0.7, 2), height: hT, fill: '#e2e8f0', rx: 3 }),
+              h('rect', { x: x(i) + bw * 0.15, y: HB - hT, width: Math.max(bw * 0.7, 2), height: hT, fill: '#e5e7eb', rx: 3 }),
               h('rect', { x: x(i) + bw * 0.15, y: HB - hE, width: Math.max(bw * 0.7, 2), height: hE, fill: '#7c3aed', rx: 3 }),
-              (i % passo === 0) && h('text', { x: x(i) + bw / 2, y: HB + 13, fontSize: 9, fill: '#64748b', textAnchor: 'middle' }, fmtDia(d.dia))); })),
+              (i % passo === 0) && h('text', { x: x(i) + bw / 2, y: HB + 13, fontSize: 9, fill: '#6b7280', textAnchor: 'middle' }, fmtDia(d.dia))); })),
           h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400 pt-1' }, '% no prazo por dia'),
           h('svg', { viewBox: `0 0 ${W} ${HL}`, className: 'w-full', style: { height: 80 } },
-            [0, 50, 100].map(v => h('g', { key: v }, h('line', { x1: padL, x2: W - padR, y1: HL - 6 - (v / 100) * (HL - 14), y2: HL - 6 - (v / 100) * (HL - 14), stroke: v === 100 ? '#e2e8f0' : '#f1f5f9', strokeDasharray: v === 50 ? '3 3' : null }), h('text', { x: padL - 4, y: HL - 6 - (v / 100) * (HL - 14) + 3, fontSize: 9, fill: '#94a3b8', textAnchor: 'end' }, v + '%'))),
-            path && h('path', { d: path, fill: 'none', stroke: '#15a05a', strokeWidth: 2, strokeLinejoin: 'round' }),
-            pts.map((p, i) => p && h('circle', { key: i, cx: p[0], cy: p[1], r: 4, fill: '#fff', stroke: '#15a05a', strokeWidth: 2, onMouseMove: onMove([fmtDia(dias[i].dia), `${fmtPct(dias[i].pct_no_prazo)} no prazo · ${dias[i].avaliadas} avaliadas`]), onMouseLeave: offHover })))));
+            [0, 50, 100].map(v => h('g', { key: v }, h('line', { x1: padL, x2: W - padR, y1: HL - 6 - (v / 100) * (HL - 14), y2: HL - 6 - (v / 100) * (HL - 14), stroke: v === 100 ? '#e5e7eb' : '#f3f4f6', strokeDasharray: v === 50 ? '3 3' : null }), h('text', { x: padL - 4, y: HL - 6 - (v / 100) * (HL - 14) + 3, fontSize: 9, fill: '#9ca3af', textAnchor: 'end' }, v + '%'))),
+            path && h('path', { d: path, fill: 'none', stroke: '#16a34a', strokeWidth: 2, strokeLinejoin: 'round' }),
+            pts.map((p, i) => p && h('circle', { key: i, cx: p[0], cy: p[1], r: 4, fill: '#fff', stroke: '#16a34a', strokeWidth: 2, onMouseMove: onMove([fmtDia(dias[i].dia), `${fmtPct(dias[i].pct_no_prazo)} no prazo · ${dias[i].avaliadas} avaliadas`]), onMouseLeave: offHover })))));
     })();
 
     // ── 6) MAPA DE CALOR hora × dia ──
@@ -366,7 +367,7 @@
       const val = (c) => !c ? null : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? c.pct_no_prazo : c.t_total_min;
       const vals = heat.map(val).filter(v => v != null); const vMax = Math.max(...vals, 1), vMin = Math.min(...vals, 0);
       // sequencial: um tom (roxo) claro → escuro; pra % no prazo, inverte (baixo = escuro = ruim)
-      const cor = (v) => { if (v == null) return '#f8fafc'; let t = vMax === vMin ? 1 : (v - vMin) / (vMax - vMin); if (heatMetrica === 'pct_no_prazo') t = 1 - t; const L = 96 - t * 58; return `hsl(262 70% ${L}%)`; };
+      const cor = (v) => { if (v == null) return '#f9fafb'; let t = vMax === vMin ? 1 : (v - vMin) / (vMax - vMin); if (heatMetrica === 'pct_no_prazo') t = 1 - t; const L = 96 - t * 58; return `hsl(262 70% ${L}%)`; };
       const fmtV = (c) => !c ? '' : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? fmtPct(c.pct_no_prazo) : fmtMin(c.t_total_min);
       const seletor = h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-0.5 text-[11px] font-semibold' }, [['corridas', 'Volume'], ['pct_no_prazo', '% no prazo'], ['t_total_min', 'Tempo médio']].map(([k, r]) => h('button', { key: k, onClick: () => setHeatMetrica(k), className: `px-2.5 py-1 rounded-md ${heatMetrica === k ? 'bg-white shadow text-purple-700' : 'text-gray-500'}` }, r)));
       return card('Quando estoura: hora × dia da semana', 'calendar', 'Corridas pela hora da 1ª solicitação (horário de Brasília). Mais escuro = mais volume / mais tempo; em "% no prazo", mais escuro = pior.',
@@ -375,7 +376,7 @@
             h('thead', null, h('tr', null, h('th', { className: 'text-left text-gray-400 font-semibold pr-1' }, ''), hs.map(hh => h('th', { key: hh, className: 'text-gray-400 font-semibold w-8 text-center' }, String(hh).padStart(2, '0'))))),
             h('tbody', null, [1, 2, 3, 4, 5, 6, 0].map(dw => h('tr', { key: dw },
               h('td', { className: 'text-gray-500 font-semibold pr-1 whitespace-nowrap' }, DOW[dw]),
-              hs.map(hh => { const c = idx[dw + '-' + hh]; return h('td', { key: hh, className: 'w-8 h-7 rounded text-center font-semibold', style: { background: cor(val(c)), color: c && ((heatMetrica === 'pct_no_prazo' ? 1 - ((val(c) - vMin) / Math.max(vMax - vMin, 1)) : (val(c) - vMin) / Math.max(vMax - vMin, 1)) > 0.55) ? '#fff' : '#475569' },
+              hs.map(hh => { const c = idx[dw + '-' + hh]; return h('td', { key: hh, className: 'w-8 h-7 rounded text-center font-semibold', style: { background: cor(val(c)), color: c && ((heatMetrica === 'pct_no_prazo' ? 1 - ((val(c) - vMin) / Math.max(vMax - vMin, 1)) : (val(c) - vMin) / Math.max(vMax - vMin, 1)) > 0.55) ? '#fff' : '#374151' },
                 onMouseMove: c ? onMove([`${DOW[dw]} ${String(hh).padStart(2, '0')}h`, `${c.corridas} corridas · ${c.entregues} entregues · ${c.canceladas} canceladas`, `no prazo ${fmtPct(c.pct_no_prazo)} (${c.avaliadas} avaliadas) · tempo médio ${fmtMin(c.t_total_min)}`]) : null, onMouseLeave: offHover }, fmtV(c)); })))))),
         seletor);
     })();
@@ -582,22 +583,22 @@
           ),
           h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, só corridas entregues. Conta desde a 1ª solicitação — redespacho não zera o relógio. Mediana entre parênteses.'),
           h('div', { className: 'flex h-9 rounded-xl overflow-hidden mb-4' },
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tLoc) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#a78bfa,#8b5cf6)', minWidth: '44px' } }, fmtMin(tLoc)),
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tCol) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#f6a94a,#f5921e)', minWidth: '44px' } }, fmtMin(tCol)),
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tRota) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#34c77b,#15a05a)', minWidth: '44px' } }, fmtMin(tRota)),
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tLoc) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#b48bfa,#945cf6)', minWidth: '44px' } }, fmtMin(tLoc)),
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tCol) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#f6b74a,#f5921e)', minWidth: '44px' } }, fmtMin(tCol)),
+            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tRota) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#34c76a,#15a048)', minWidth: '44px' } }, fmtMin(tRota)),
           ),
           h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
             [
-              { c: '#8b5cf6', l: 'Localização', v: fmtMin(tLoc), md: data.t_localizacao_mediana_min, d: '1ª solicitação → entregador' },
-              { c: '#f5921e', l: 'Coleta', v: fmtMin(tCol), md: data.t_coleta_mediana_min, d: 'atribuição → coleta' },
-              { c: '#15a05a', l: 'Entrega', v: fmtMin(tRota), md: data.t_rota_mediana_min, d: 'coleta → entrega' },
+              { c: '#7c3aed', l: 'Localização', v: fmtMin(tLoc), md: data.t_localizacao_mediana_min, d: '1ª solicitação → entregador' },
+              { c: '#f67602', l: 'Coleta', v: fmtMin(tCol), md: data.t_coleta_mediana_min, d: 'atribuição → coleta' },
+              { c: '#16a34a', l: 'Entrega', v: fmtMin(tRota), md: data.t_rota_mediana_min, d: 'coleta → entrega' },
             ].map(t => h('div', { key: t.l, className: 'border border-gray-200 rounded-xl p-3' },
               h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' },
                 h('span', { className: 'inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle', style: { background: t.c } }), t.l),
               h('div', { className: 'text-lg font-extrabold text-gray-800 mt-0.5' }, t.v, t.md != null && h('span', { className: 'text-[11px] font-semibold text-gray-400 ml-1' }, `(${fmtMin(t.md)})`)),
               h('div', { className: 'text-[10px] text-gray-400' }, t.d),
             )).concat([
-              h('div', { key: 'total', className: 'border rounded-xl p-3', style: { background: '#faf7ff', borderColor: '#e9defd' } },
+              h('div', { key: 'total', className: 'border rounded-xl p-3', style: { background: '#f9fafb', borderColor: '#ddd6fe' } },
                 h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-purple-600' }, 'Tempo total'),
                 h('div', { className: 'text-lg font-extrabold text-purple-700 mt-0.5' }, fmtMin(tTot), data.t_total_mediana_min != null && h('span', { className: 'text-[11px] font-semibold text-purple-400 ml-1' }, `(${fmtMin(data.t_total_mediana_min)})`)),
                 h('div', { className: 'text-[10px] text-purple-400' }, '1ª solicitação → entrega'),
@@ -615,8 +616,8 @@
             h('div', { className: 'flex flex-col items-center' },
               h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
                 h('svg', { width: 140, height: 140, viewBox: '0 0 140 140' },
-                  h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#fdecec', strokeWidth: 14 }),
-                  pctNP != null && h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#15a05a', strokeWidth: 14, strokeLinecap: 'round', strokeDasharray: CIRC, strokeDashoffset: off, transform: 'rotate(-90 70 70)' }),
+                  h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#fef2f2', strokeWidth: 14 }),
+                  pctNP != null && h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#16a34a', strokeWidth: 14, strokeLinecap: 'round', strokeDasharray: CIRC, strokeDashoffset: off, transform: 'rotate(-90 70 70)' }),
                 ),
                 h('div', { className: 'absolute inset-0 flex flex-col items-center justify-center' },
                   h('div', { className: 'text-2xl font-extrabold text-green-600' }, pctNP != null ? `${pctNP.toFixed(0)}%` : '—'),
@@ -1021,7 +1022,7 @@
   const PROVIDER_SVGS = {
     proprio:
       '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
-      '<circle cx="30" cy="30" r="30" fill="#770fa8"/>' +
+      '<circle cx="30" cy="30" r="30" fill="#4c1d95"/>' +
       '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
       '<circle cx="20" cy="38" r="6"/><circle cx="40" cy="38" r="6"/>' +
       '<path d="M20 38l6-12h6l4 6h4"/><path d="M26 26h8"/></g>' +
@@ -1036,9 +1037,9 @@
       '</svg>',
     noventanove:
       '<svg viewBox="0 0 209 209" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M0 46.4444C0 20.7939 20.7939 0 46.4444 0H162.556C188.206 0 209 20.7939 209 46.4444V162.556C209 188.206 188.206 209 162.556 209H46.4444C20.7939 209 0 188.206 0 162.556V46.4444Z" fill="#212121"/>' +
-      '<path fill-rule="evenodd" clip-rule="evenodd" d="M68.3442 55.1528C79.373 55.1528 89.1552 60.5957 95.2622 68.9939C99.1792 74.3808 101.576 80.9841 101.855 88.1472V89.3804C101.855 96.36 99.8283 102.865 96.3157 108.275L67.5618 153.086C67.2567 153.561 66.7381 153.847 66.1817 153.847H43.3702C42.2719 153.847 41.613 152.602 42.2148 151.663L60.7855 122.723C45.9202 119.221 34.8334 105.627 34.8334 89.3804L34.8643 88.1472C35.1118 81.0028 37.498 74.4152 41.3972 69.0364C47.502 60.6143 57.2972 55.1528 68.3442 55.1528ZM68.3442 100.691C72.3576 100.691 75.909 98.7126 78.1455 95.6683L79.081 94.2104C80.0497 92.4185 80.6038 90.3607 80.6029 88.1472C80.5912 81.2422 75.1079 75.6479 68.3442 75.6479C61.5805 75.6479 56.0977 81.2422 56.0846 88.1692C56.0846 95.0851 61.5735 100.691 68.3442 100.691Z" fill="#F1F1F1"/>' +
-      '<path fill-rule="evenodd" clip-rule="evenodd" d="M167.573 68.9939C161.467 60.5957 151.685 55.1528 140.656 55.1528C129.609 55.1528 119.813 60.6143 113.709 69.0364C109.81 74.4152 107.423 81.0028 107.175 88.1472L107.145 89.3804C107.145 105.627 118.232 119.221 133.097 122.723L114.526 151.663C113.924 152.602 114.583 153.847 115.681 153.847H138.493C139.049 153.847 139.568 153.561 139.873 153.086L168.627 108.275C172.14 102.865 174.167 96.36 174.167 89.3804V88.1472C173.887 80.9841 171.49 74.3808 167.573 68.9939ZM140.656 100.691C144.669 100.691 148.221 98.7126 150.457 95.6683L151.392 94.2104C152.361 92.4185 152.915 90.3607 152.914 88.1472C152.903 81.2422 147.419 75.6479 140.656 75.6479C133.892 75.6479 128.409 81.2422 128.396 88.1692C128.396 95.0852 133.885 100.691 140.656 100.691Z" fill="#F1F1F1"/>' +
+      '<path d="M0 46.4444C0 20.7939 20.7939 0 46.4444 0H162.556C188.206 0 209 20.7939 209 46.4444V162.556C209 188.206 188.206 209 162.556 209H46.4444C20.7939 209 0 188.206 0 162.556V46.4444Z" fill="#111827"/>' +
+      '<path fill-rule="evenodd" clip-rule="evenodd" d="M68.3442 55.1528C79.373 55.1528 89.1552 60.5957 95.2622 68.9939C99.1792 74.3808 101.576 80.9841 101.855 88.1472V89.3804C101.855 96.36 99.8283 102.865 96.3157 108.275L67.5618 153.086C67.2567 153.561 66.7381 153.847 66.1817 153.847H43.3702C42.2719 153.847 41.613 152.602 42.2148 151.663L60.7855 122.723C45.9202 119.221 34.8334 105.627 34.8334 89.3804L34.8643 88.1472C35.1118 81.0028 37.498 74.4152 41.3972 69.0364C47.502 60.6143 57.2972 55.1528 68.3442 55.1528ZM68.3442 100.691C72.3576 100.691 75.909 98.7126 78.1455 95.6683L79.081 94.2104C80.0497 92.4185 80.6038 90.3607 80.6029 88.1472C80.5912 81.2422 75.1079 75.6479 68.3442 75.6479C61.5805 75.6479 56.0977 81.2422 56.0846 88.1692C56.0846 95.0851 61.5735 100.691 68.3442 100.691Z" fill="#f3f4f6"/>' +
+      '<path fill-rule="evenodd" clip-rule="evenodd" d="M167.573 68.9939C161.467 60.5957 151.685 55.1528 140.656 55.1528C129.609 55.1528 119.813 60.6143 113.709 69.0364C109.81 74.4152 107.423 81.0028 107.175 88.1472L107.145 89.3804C107.145 105.627 118.232 119.221 133.097 122.723L114.526 151.663C113.924 152.602 114.583 153.847 115.681 153.847H138.493C139.049 153.847 139.568 153.561 139.873 153.086L168.627 108.275C172.14 102.865 174.167 96.36 174.167 89.3804V88.1472C173.887 80.9841 171.49 74.3808 167.573 68.9939ZM140.656 100.691C144.669 100.691 148.221 98.7126 150.457 95.6683L151.392 94.2104C152.361 92.4185 152.915 90.3607 152.914 88.1472C152.903 81.2422 147.419 75.6479 140.656 75.6479C133.892 75.6479 128.409 81.2422 128.396 88.1692C128.396 95.0852 133.885 100.691 140.656 100.691Z" fill="#f3f4f6"/>' +
       '</svg>',
   };
 
@@ -1066,7 +1067,7 @@
       style: {
         ...base,
         background: '#e5e7eb',
-        color: '#4b5563',
+        color: '#374151',
         fontSize: size * 0.5,
         fontWeight: 700,
         textAlign: 'center',
@@ -1086,7 +1087,7 @@
       estilo = { background: '#111827', color: '#ffffff' };
     } else if (c === 'noventanove') {
       texto = '99'; title = '99Entrega';
-      estilo = { background: '#FAC775', color: '#412402' };
+      estilo = { background: '#fde68a', color: '#92400e' };
     } else {
       texto = 'sem provedor'; title = 'Sem provedor identificado';
       estilo = { background: '#f3f4f6', color: '#6b7280', border: '0.5px solid #d1d5db' };
@@ -1750,9 +1751,9 @@
     // Todos com o mesmo peso (2px): quem diferencia frequente/extraviado e a
     // cor + a faixa no topo, nao a espessura.
     // BORDA_LILAS_V2: card comum com borda lilas VISIVEL.
-    // purple-300 (#d8b4fe) e o equivalente do amber-300 na escala do Tailwind
+    // purple-300 (#ddd6fe) e o equivalente do amber-300 na escala do Tailwind
     // — mesmo nivel de definicao da borda do parceiro frequente, so que roxo.
-    // (o v1 usava purple-200 = #e9d5ff, que e cor de FUNDO: some como borda)
+    // (o v1 usava purple-200 = #ddd6fe, que e cor de FUNDO: some como borda)
     // Todos com o mesmo peso (2px): quem diferencia e a cor + a faixa no topo.
     // BUSCA_SIMULTANEA_LOGO_V1: em corrida simultanea (grupo sem vencedor),
     // mostra os DOIS provedores pulsando no lugar do logo unico.
@@ -1885,7 +1886,7 @@
           onClick: () => onChat(e),
           title: 'Abrir chat com o motoboy (99)',
           className: 'relative flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100',
-        }, '\ud83d\udcac Chat',
+        }, Icon('message'), ' Chat',
           (unread > 0) && h('span', { className: 'absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center', style: { background: '#f67602' } }, unread > 9 ? '9+' : String(unread))
         ),
         h('button', {
@@ -3965,7 +3966,7 @@
                 const raw = String(e.erro_ultimo || '').toLowerCase();
                 const traducao = Object.entries(ERROS_MAP).find(([k]) => raw.includes(k.toLowerCase()));
                 return h('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3 space-y-1' },
-                  h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold' }, '\u26a0 Ultimo erro'),
+                  h('div', { className: 'text-xs uppercase tracking-wider text-red-700 font-semibold' }, h('span', { className: 'inline-flex items-center gap-1' }, Icon('alert'), '\u00daltimo erro')),
                   traducao && h('div', { className: 'text-sm text-red-900 font-medium' }, traducao[1]),
                   h('div', { className: 'text-xs text-red-700 font-mono break-words opacity-70 pt-1 border-t border-red-100' }, e.erro_ultimo),
                 );
@@ -4323,7 +4324,7 @@
       h('div', { className: 'flex items-center justify-between gap-4' },
         h('div', null,
           h('div', { className: 'flex items-center gap-2' },
-            h('span', { className: 'text-lg' }, ligado ? '\uD83D\uDFE2' : '\u26AA'),
+            h('span', { className: 'text-lg' }, h('span', { style: { display: 'inline-block', width: 10, height: 10, borderRadius: 99, background: ligado ? '#16a34a' : '#d1d5db' } })),
             h('span', { className: 'font-bold text-gray-800' }, 'Despacho automatico'),
             h('span', { className: `text-[10px] font-semibold px-2 py-0.5 rounded-full ${ligado ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}` }, ligado ? 'LIGADO' : 'DESLIGADO')
           ),
@@ -4341,7 +4342,7 @@
       ),
       ligado
         ? h('p', { className: 'text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3' },
-            '\u26A0\uFE0F Ligado: cada OS que casar com uma regra e despachada de verdade na 99/Uber (gera custo).')
+            'Ligado: cada OS que casar com uma regra e despachada de verdade na 99/Uber (gera custo).')
         : null
     );
   }
@@ -4942,7 +4943,7 @@
                       h('span', { className: 'text-[11px] text-purple-500', style: { marginLeft: 'auto' } }, 'R$'),
                       h('input', { type: 'number', step: '0.1', min: '0', value: f.valor_km == null ? '' : f.valor_km, onChange: function (e) { upFaixa(i, 'valor_km', e.target.value); }, className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
                       h('span', { className: 'text-[11px] text-purple-600' }, '/km'),
-                      h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'p-1 rounded hover:bg-purple-100', title: 'remover' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#b91c1c' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
+                      h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'p-1 rounded hover:bg-purple-100', title: 'remover' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#991b1b' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
                   }),
                   h('button', { type: 'button', onClick: addFaixa, className: 'mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50' }, h('svg', { className: 'ico', style: { width: 13, height: 13, display: 'inline', verticalAlign: '-2px', marginRight: 3 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar faixa'),
                   h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima.'));
@@ -5782,11 +5783,11 @@
       h('path', { d: 'M42 50 l-6 -2 l0 6 z', fill: '#f67602' }),
     );
     const iconeCanal = (canal) => /* MP_ICONE_CANAL_V1 */ (canal === 'Moto própria' || canal === 'proprio')
-      ? h('span', { title: 'Moto própria', style: { width: '20px', height: '20px', background: '#f3e8ff', border: '1px solid #d8b4fe', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#7c3aed' } }, h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 13, height: 13 } }, h('use', { href: '#i-bike' })))
+      ? h('span', { title: 'Moto própria', style: { width: '20px', height: '20px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#7c3aed' } }, h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 13, height: 13 } }, h('use', { href: '#i-bike' })))
       : canal === 'tutts'
       ? h('span', { title: 'Tutts', style: { width: '20px', height: '20px', background: '#7c3aed', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } },
           h('img', { src: ICONE_TUTTS_JPG, style: { width: '100%', height: '100%', objectFit: 'contain', padding: '2px' } }))
-      : h('span', { title: 'Hub', style: { width: '20px', height: '20px', background: '#fff', border: '1px solid #f0e0d0', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } }, hubSvg());
+      : h('span', { title: 'Hub', style: { width: '20px', height: '20px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } }, hubSvg());
     const statusBadge = (s) => {
       const cor = {
         'Entregue': 'bg-green-100 text-green-700',
@@ -6143,7 +6144,7 @@
     const abas = {
       dashboard: TabDashboard,
       tracking:  TabTracking,
-      chat:      window.Chat99Panel || (() => h('div', { className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg' }, '\u26a0\ufe0f chat99-panel.js nao carregou. Verifique o index.html.')),
+      chat:      window.Chat99Panel || (() => h('div', { className: 'max-w-3xl mx-auto p-6 text-center text-red-700 bg-red-50 border border-red-200 rounded-lg' }, 'chat99-panel.js nao carregou. Verifique o index.html.')),
       entregas:  TabEntregas,
       regras:    TabRegras,
       // HUB_REL_V2: relatorio v2 em modulo-logistica-relatorio.js (fallback: TabRelatorio antigo)

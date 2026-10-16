@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO SUCESSO DO CLIENTE ====================
 // Arquivo: modulo-cs.js
@@ -150,7 +151,7 @@
       if (!pBox) return;
       var interval = setInterval(function() {
         var p = document.createElement('div');
-        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#a78bfa' : '#7c3aed') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
+        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#ddd6fe' : '#7c3aed') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
         pBox.appendChild(p);
         setTimeout(function() { p.remove(); }, 2500);
       }, 300);
@@ -171,12 +172,12 @@
           // Anel 1
           h('div', { style: { position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7c3aed', borderRightColor: '#7c3aed', animation: 'rxSpin 2s linear infinite' } }),
           // Anel 2
-          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#a78bfa', borderLeftColor: '#a78bfa', animation: 'rxSpinR 2.8s linear infinite' } }),
+          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#ddd6fe', borderLeftColor: '#ddd6fe', animation: 'rxSpinR 2.8s linear infinite' } }),
           // Anel 3
-          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#c4b5fd', borderRightColor: '#c4b5fd', animation: 'rxSpin 3.6s linear infinite' } }),
+          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#ddd6fe', borderRightColor: '#ddd6fe', animation: 'rxSpin 3.6s linear infinite' } }),
           // Core
           h('div', { style: { position: 'absolute', inset: '34px', borderRadius: '50%', background: 'rgba(124,58,237,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
-            h('span', { style: { fontSize: '28px', animation: 'rxFloat 2s ease-in-out infinite' } }, msg.icon)
+            h('span', { style: { fontSize: '28px', animation: 'rxFloat 2s ease-in-out infinite' } }, (window.navIconEl ? window.navIconEl(msg.icon) : msg.icon))
           ),
           // Scan line
           h('div', { style: { position: 'absolute', left: '34px', right: '34px', height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, #7c3aed, transparent)', animation: 'rxScan 2s ease-in-out infinite', borderRadius: '1px' } }),
@@ -204,7 +205,7 @@
 
         // Sub texto
         h('div', {
-          style: { fontSize: '12px', color: '#8b8b9e', textAlign: 'center', transition: 'opacity 0.3s ease', opacity: fadeOut ? 0 : 1 }
+          style: { fontSize: '12px', color: '#9ca3af', textAlign: 'center', transition: 'opacity 0.3s ease', opacity: fadeOut ? 0 : 1 }
         }, msg.sub)
       )
     );
@@ -277,7 +278,7 @@
             return h('div', { key: i, className: 'flex items-center gap-3 p-3 bg-red-50/50 rounded-lg' },
               h(HealthRing, { score: cli.health_score, size: 44 }),
               h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900 truncate' }, cli.nome_fantasia || 'Cliente ' + cli.cod_cliente), h('p', { className: 'text-xs text-gray-500' }, (cli.total_entregas_30d || 0) + ' ent · ' + (cli.taxa_prazo_30d || 0) + '% prazo')),
-              h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#F59E0B' : '#EF4444' })
+              h(Badge, { text: cli.status, cor: cli.status === 'em_risco' ? '#d97706' : '#dc2626' })
             );
           })) : h('p', { className: 'text-gray-400 text-sm text-center py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-party" })), "Nenhum cliente em risco!"))
         )
@@ -379,7 +380,7 @@
 
     var syncBi = async function() {
       setSyncing(true);
-      try { var res = await fetchApi('/cs/clientes/sync-bi', { method: 'POST' }); if (res.success) { alert('✅ ' + res.importados + ' clientes sincronizados!'); carregar(); } } catch (e) { alert('Erro'); }
+      try { var res = await fetchApi('/cs/clientes/sync-bi', { method: 'POST' }); if (res.success) { alert('' + res.importados + ' clientes sincronizados!'); carregar(); } } catch (e) { alert('Erro'); }
       setSyncing(false);
     };
 
@@ -424,7 +425,7 @@
                 var temCC = filtrosData.cliente_centros[cod] && filtrosData.cliente_centros[cod].length > 0;
                 var sel = cod === String(filtroCliente);
                 return h('div', { key: cod, className: 'px-3 py-2.5 cursor-pointer hover:bg-purple-50 flex items-center gap-2 ' + (sel ? 'bg-purple-50' : ''), onClick: function() { selCliente(cod); } },
-                  cs && h('div', { className: 'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold flex-shrink-0', style: { borderColor: (cs.health_score || 0) >= 70 ? '#10B981' : (cs.health_score || 0) >= 40 ? '#F59E0B' : '#EF4444', color: (cs.health_score || 0) >= 70 ? '#10B981' : (cs.health_score || 0) >= 40 ? '#F59E0B' : '#EF4444' } }, cs.health_score || 0),
+                  cs && h('div', { className: 'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold flex-shrink-0', style: { borderColor: (cs.health_score || 0) >= 70 ? '#16a34a' : (cs.health_score || 0) >= 40 ? '#d97706' : '#dc2626', color: (cs.health_score || 0) >= 70 ? '#16a34a' : (cs.health_score || 0) >= 40 ? '#d97706' : '#dc2626' } }, cs.health_score || 0),
                   h('div', { className: 'flex-1 min-w-0' },
                     h('p', { className: 'text-sm truncate ' + (sel ? 'font-semibold text-purple-700' : 'text-gray-800') }, cod + ' - ' + nome),
                     h('p', { className: 'text-[10px] text-gray-400' }, (c.total_entregas || 0) + ' entregas' + (temCC ? ' · ' + filtrosData.cliente_centros[cod].length + ' CC' : ''))
@@ -493,7 +494,7 @@
                 )
               ),
               h('div', { className: 'flex flex-col items-end gap-1 flex-shrink-0' },
-                h(Badge, { text: cli.status || 'ativo', cor: cli.status === 'ativo' ? '#10B981' : cli.status === 'em_risco' ? '#F59E0B' : cli.status === 'inativo' ? '#EF4444' : '#6B7280' }),
+                h(Badge, { text: cli.status || 'ativo', cor: cli.status === 'ativo' ? '#16a34a' : cli.status === 'em_risco' ? '#d97706' : cli.status === 'inativo' ? '#dc2626' : '#6B7280' }),
                 cli.ultima_entrega && h('span', { className: 'text-[10px] text-gray-400' }, diasAtras(cli.ultima_entrega))
               )
             )
@@ -619,7 +620,7 @@
         if (res.success) {
           setRaioXResult(Object.assign({}, raioXResult, { analise: novoTexto }));
           setRaioXEditando(false);
-          alert('✅ Relatório salvo com sucesso!');
+          alert('Relatório salvo com sucesso!');
         } else {
           alert('Erro: ' + (res.error || 'Falha ao salvar'));
         }
@@ -630,7 +631,7 @@
     // Gera a Versão Cliente a partir do raio-x interno atual
     var gerarRaioXCliente = async function() {
       if (!raioXResult || !raioXResult.id) {
-        alert('⚠️ Gere e salve o Raio-X interno antes de criar a versão cliente');
+        alert('Gere e salve o Raio-X interno antes de criar a versão cliente');
         return;
       }
       setRaioXClienteGerando(true);
@@ -643,11 +644,11 @@
           setRaioXClienteResult(res.raio_x_cliente);
           setRaioXTab('cliente');
         } else {
-          alert('❌ Erro ao gerar versão cliente:\n\n' + (res.error || 'Falha desconhecida'));
+          alert('Erro ao gerar versão cliente:\n\n' + (res.error || 'Falha desconhecida'));
         }
       } catch (e) {
         console.error(e);
-        alert('❌ Erro ao gerar versão cliente:\n\n' + (e.message || 'Falha de rede'));
+        alert('Erro ao gerar versão cliente:\n\n' + (e.message || 'Falha de rede'));
       }
       setRaioXClienteGerando(false);
     };
@@ -655,7 +656,7 @@
     // Abre o modal de envio de email (só a partir da versão cliente)
     var abrirModalEmail = function() {
       if (!raioXClienteResult || !raioXClienteResult.id) {
-        alert('⚠️ Gere a versão cliente do relatório antes de enviar por email');
+        alert('Gere a versão cliente do relatório antes de enviar por email');
         return;
       }
       var emailSugerido = (data.ficha && (data.ficha.email_contato || data.ficha.email)) || '';
@@ -902,7 +903,7 @@
           ? h('div', {
               className: 'max-w-none border border-gray-200 rounded-lg overflow-hidden bg-white',
               style: { minHeight: '400px' },
-              dangerouslySetInnerHTML: { __html: raioXClienteResult.html || '<div style="padding:40px;text-align:center;color:#94a3b8">Relatório cliente sem conteúdo</div>' }
+              dangerouslySetInnerHTML: { __html: raioXClienteResult.html || '<div style="padding:40px;text-align:center;color:#9ca3af">Relatório cliente sem conteúdo</div>' }
             })
           : raioXEditando
             ? h('div', {
@@ -933,7 +934,7 @@
           ocorrencias.length > 0 ? h('div', { className: 'space-y-3' }, ...ocorrencias.map(function(oc, i) {
             return h('div', { key: i, className: 'flex gap-3 p-3 rounded-lg ' + (oc.severidade === 'critica' ? 'bg-red-50' : oc.severidade === 'alta' ? 'bg-orange-50' : 'bg-amber-50') },
               h('span', { className: 'text-lg mt-0.5' }, oc.severidade === 'critica' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'alta' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))),
-              h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo), h('div', { className: 'flex items-center gap-2 mt-1' }, h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: '#3B82F6' })), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura)))
+              h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-sm font-medium text-gray-900' }, oc.titulo), h('div', { className: 'flex items-center gap-2 mt-1' }, h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#dc2626' : '#f67602' }), h(Badge, { text: oc.status, cor: '#2563eb' })), h('p', { className: 'text-xs text-gray-400 mt-1' }, formatDateTime(oc.data_abertura)))
             );
           })) : h('p', { className: 'text-sm text-gray-400 text-center py-4' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Nenhuma ocorrência!"))
         )
@@ -1079,7 +1080,7 @@
         return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
           h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })) : int.tipo === 'reuniao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })) : int.tipo === 'ligacao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })) : int.tipo === 'whatsapp' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })) : int.tipo === 'pos_venda' ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
           h('div', { className: 'flex-1 min-w-0' },
-            h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#6366F1' })),
+            h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#7c3aed' })),
             h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || 'Cliente ' + int.cod_cliente),
             int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
             int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, '' + int.resultado),
@@ -1112,7 +1113,7 @@
           h('div', { className: 'flex items-start gap-3' },
             h('span', { className: 'text-2xl' }, oc.severidade === 'critica' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'alta' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : oc.severidade === 'media' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-circle" }))),
             h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' }, h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo), h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#EF4444' : '#F97316' }), h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#3B82F6' : oc.status === 'resolvida' ? '#10B981' : '#F59E0B' })),
+              h('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' }, h('h4', { className: 'font-semibold text-gray-900' }, oc.titulo), h(Badge, { text: oc.tipo, cor: '#6B7280' }), h(Badge, { text: oc.severidade, cor: oc.severidade === 'critica' ? '#dc2626' : '#f67602' }), h(Badge, { text: oc.status, cor: oc.status === 'aberta' ? '#2563eb' : oc.status === 'resolvida' ? '#16a34a' : '#d97706' })),
               h('p', { className: 'text-sm text-gray-600' }, oc.nome_fantasia || 'Cliente ' + oc.cod_cliente),
               oc.descricao && h('p', { className: 'text-sm text-gray-500 mt-1' }, oc.descricao),
               h('div', { className: 'flex items-center gap-2 mt-2' },
@@ -1141,7 +1142,7 @@
         return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4' },
           h('div', { className: 'text-center min-w-[60px]' }, h('p', { className: 'text-2xl font-bold text-blue-600' }, new Date(a.data_proxima_acao).getDate()), h('p', { className: 'text-xs text-gray-500' }, new Date(a.data_proxima_acao).toLocaleDateString('pt-BR', { month: 'short' }))),
           h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'font-medium text-gray-900' }, a.proxima_acao), h('p', { className: 'text-sm text-gray-500' }, (a.nome_fantasia || 'Cliente') + ' · Ref: ' + a.titulo), h('p', { className: 'text-xs text-gray-400' }, 'Original: ' + formatDateTime(a.data_interacao))),
-          h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#EF4444' : '#3B82F6' })
+          h(Badge, { text: diasAtras(a.data_proxima_acao) || formatDate(a.data_proxima_acao), cor: new Date(a.data_proxima_acao) < new Date() ? '#dc2626' : '#2563eb' })
         );
       }))
     );
@@ -1158,7 +1159,7 @@
       return text;
     }
     var htmlBlocks = [];
-    var processed = text.replace(/<div style="margin:16px 0;background:#f8fafc[^"]*"[^>]*>[\s\S]*?<\/div>\n\n/g, function(match) {
+    var processed = text.replace(/<div style="margin:16px 0;background:#f9fafb[^"]*"[^>]*>[\s\S]*?<\/div>\n\n/g, function(match) {
       var idx = htmlBlocks.length; htmlBlocks.push(match); return '\n%%GRAFICO_' + idx + '%%\n';
     });
     processed = processed
@@ -1173,7 +1174,7 @@
       .replace(/(https?:\/\/[^\s<]+)/g, function(url) {
         var decoded = url.replace(/&amp;/g, '&');
         if (decoded.indexOf('mapa-calor') !== -1) {
-          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">Abrir Mapa de Calor Interativo</a>';
+          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6928d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">Abrir Mapa de Calor Interativo</a>';
         }
         return '<a href="' + decoded + '" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">' + decoded.substring(0, 60) + '...</a>';
       })
@@ -1190,28 +1191,28 @@
 
   var STATUS_BADGE = {
     sent:           { label: 'Enviado',   bg: '#E5E7EB', fg: '#374151' },
-    scheduled:      { label: 'Agendado',  bg: '#EDE9FE', fg: '#5B21B6' },
-    delivered:      { label: 'Entregue',  bg: '#DBEAFE', fg: '#1E3A8A' },
-    delivery_delayed:{ label: 'Atrasado', bg: '#FEF3C7', fg: '#78350F' },
-    opened:         { label: 'Aberto',    bg: '#DCFCE7', fg: '#14532D' },
-    clicked:        { label: 'Clicado',   bg: '#EEEDFE', fg: '#26215C' },
-    bounced:        { label: 'Bounce',    bg: '#FEE2E2', fg: '#7F1D1D' },
-    failed:         { label: 'Falhou',    bg: '#FEE2E2', fg: '#7F1D1D' },
-    complained:     { label: 'Spam',      bg: '#FEE2E2', fg: '#7F1D1D' },
-    suppressed:     { label: 'Suprimido', bg: '#FEE2E2', fg: '#7F1D1D' },
+    scheduled:      { label: 'Agendado',  bg: '#f5f3ff', fg: '#5B21B6' },
+    delivered:      { label: 'Entregue',  bg: '#eff6ff', fg: '#1e40af' },
+    delivery_delayed:{ label: 'Atrasado', bg: '#fffbeb', fg: '#92400e' },
+    opened:         { label: 'Aberto',    bg: '#f0fdf4', fg: '#166534' },
+    clicked:        { label: 'Clicado',   bg: '#f5f3ff', fg: '#4c1d95' },
+    bounced:        { label: 'Bounce',    bg: '#fef2f2', fg: '#991b1b' },
+    failed:         { label: 'Falhou',    bg: '#fef2f2', fg: '#991b1b' },
+    complained:     { label: 'Spam',      bg: '#fef2f2', fg: '#991b1b' },
+    suppressed:     { label: 'Suprimido', bg: '#fef2f2', fg: '#991b1b' },
   };
 
   var EVENTO_COR = {
-    'email.sent':              '#10B981',
-    'email.delivered':         '#10B981',
-    'email.delivery_delayed':  '#F59E0B',
-    'email.opened':            '#3B82F6',
+    'email.sent':              '#16a34a',
+    'email.delivered':         '#16a34a',
+    'email.delivery_delayed':  '#d97706',
+    'email.opened':            '#2563eb',
     'email.clicked':           '#7c3aed',
-    'email.bounced':           '#EF4444',
-    'email.failed':            '#EF4444',
-    'email.complained':        '#EF4444',
-    'email.suppressed':        '#EF4444',
-    'email.scheduled':         '#8B5CF6',
+    'email.bounced':           '#dc2626',
+    'email.failed':            '#dc2626',
+    'email.complained':        '#dc2626',
+    'email.suppressed':        '#dc2626',
+    'email.scheduled':         '#7c3aed',
   };
 
   var EVENTO_LABEL = {
@@ -1481,7 +1482,7 @@
                     key: i,
                     className: 'text-[10px] px-2 py-1 bg-purple-50 text-purple-900 rounded font-mono'
                   },
-                    h('span', { style: { color: '#7F77DD' } }, t.name + ':'),
+                    h('span', { style: { color: '#7c3aed' } }, t.name + ':'),
                     t.value
                   );
                 })
@@ -1554,7 +1555,7 @@
             : h('iframe', {
                 srcDoc: htmlContent,
                 className: 'flex-1 w-full',
-                style: { minHeight: '600px', border: 'none', background: '#f1f5f9' },
+                style: { minHeight: '600px', border: 'none', background: '#f3f4f6' },
                 sandbox: 'allow-same-origin'
               })
         )

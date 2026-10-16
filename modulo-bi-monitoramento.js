@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
 /* ============================================================================
  * modulo-bi-monitoramento.js
@@ -99,13 +100,13 @@
     const offset = c * (1 - t / 100);
     return h('div', { className: 'flex flex-col items-center justify-center' },
       h('svg', { viewBox: '0 0 200 200', width: 180, height: 180 },
-        h('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: '#fee2e2', strokeWidth: 22 }),
+        h('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: '#fef2f2', strokeWidth: 22 }),
         h('circle', {
-          cx: 100, cy: 100, r, fill: 'none', stroke: '#10b981', strokeWidth: 22,
+          cx: 100, cy: 100, r, fill: 'none', stroke: '#16a34a', strokeWidth: 22,
           strokeDasharray: c, strokeDashoffset: offset,
           transform: 'rotate(-90 100 100)', strokeLinecap: 'butt'
         }),
-        h('text', { x: 100, y: 98, textAnchor: 'middle', fontSize: 32, fontWeight: 500, fill: '#10b981' },
+        h('text', { x: 100, y: 98, textAnchor: 'middle', fontSize: 32, fontWeight: 500, fill: '#16a34a' },
           t.toFixed(1) + '%'),
         h('text', { x: 100, y: 118, textAnchor: 'middle', fontSize: 10, letterSpacing: 2, fill: '#6b7280' },
           'NO PRAZO')
@@ -235,7 +236,7 @@
       },
         h('div', {
           className: 'flex items-center justify-between px-5 py-3',
-          style: { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }
+          style: { background: 'linear-gradient(135deg, #7c3aed, #6928d9)' }
         },
           h('div', { className: 'flex items-center gap-2 text-white font-medium' },
             h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-search" }))), 'Filtros Inteligentes'),
@@ -384,7 +385,7 @@
           }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Limpar Filtros")),
           h('button', {
             className: 'text-xs text-white px-5 py-2 rounded-md font-medium',
-            style: { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' },
+            style: { background: 'linear-gradient(135deg, #7c3aed, #6928d9)' },
             onClick: aplicar
           }, '● Aplicar Filtros')
         )
@@ -463,20 +464,20 @@
           sub: 'Total de OS no período'
         }),
         h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#3b82f6" }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), iconeBg: '#eff6ff', accent: '#3b82f6',
-          label: 'Entregas', labelCor: '#3b82f6', labelBg: '#eff6ff',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#2563eb" }, "aria-hidden": "true" }, h("use", { href: "#i-package" })), iconeBg: '#eff6ff', accent: '#2563eb',
+          label: 'Entregas', labelCor: '#2563eb', labelBg: '#eff6ff',
           valor: loading ? '—' : fmtNum(m.total_entregas),
           sub: loading ? '' : `Realizadas — ${fmtNum(m.retornos)} retornos`
         }),
         h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#0ea5e9" }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), iconeBg: '#f0f9ff', accent: '#0ea5e9',
-          label: 'Tempo Médio', labelCor: '#0ea5e9', labelBg: '#f0f9ff',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#2563eb" }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), iconeBg: '#f9fafb', accent: '#2563eb',
+          label: 'Tempo Médio', labelCor: '#2563eb', labelBg: '#f9fafb',
           valor: loading ? '—' : fmtMin(m.tempo_medio),
           sub: 'Da coleta até a entrega'
         }),
         h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#f59e0b" }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), iconeBg: '#fffbeb', accent: '#f59e0b',
-          label: 'Média Ent./Prof.', labelCor: '#f59e0b', labelBg: '#fffbeb',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-bike" })), iconeBg: '#fffbeb', accent: '#d97706',
+          label: 'Média Ent./Prof.', labelCor: '#d97706', labelBg: '#fffbeb',
           valor: loading ? '—' : (m.media_entregas_entregador != null ? Number(m.media_entregas_entregador).toFixed(1) : '—'),
           sub: loading ? '' : `${fmtNum(m.total_entregadores)} profissionais ativos`
         })
@@ -488,7 +489,7 @@
           h('div', { className: 'text-sm font-medium text-gray-900' }, 'Prazo de Entrega'),
           h('span', {
             className: 'text-[10px] font-semibold px-2.5 py-1 rounded-full',
-            style: { color: '#15803d', background: '#f0fdf4' }
+            style: { color: '#166534', background: '#f0fdf4' }
           }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-trophy" })), "Performance"))
         ),
         loading ? h('div', { className: 'h-44 flex items-center justify-center text-gray-400' }, 'Carregando...')
@@ -972,7 +973,7 @@
               return h('g', { key: 'b' + i },
                 h('rect', {
                   x, y, width: 22, height: Math.max(altura, 2),
-                  fill: noPico ? '#7c3aed' : '#cbd5e1', rx: 2
+                  fill: noPico ? '#7c3aed' : '#d1d5db', rx: 2
                 }),
                 hh.total_os > 0 ? h('text', {
                   x: x + 11, y: y - 4, textAnchor: 'middle',
@@ -988,7 +989,7 @@
             h('g', null,
               h('rect', { x: 50, y: 262, width: 10, height: 10, fill: '#7c3aed', rx: 2 }),
               h('text', { x: 65, y: 271, fontSize: 10, fill: '#6b7280' }, 'Pico (8h–18h)'),
-              h('rect', { x: 160, y: 262, width: 10, height: 10, fill: '#cbd5e1', rx: 2 }),
+              h('rect', { x: 160, y: 262, width: 10, height: 10, fill: '#d1d5db', rx: 2 }),
               h('text', { x: 175, y: 271, fontSize: 10, fill: '#6b7280' }, 'Fora do pico')
             )
           )

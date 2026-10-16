@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
 /**
  * modulo-bi-historico-unificado.js (v2 - sem loop)
@@ -98,7 +99,7 @@
         });
         const j = await r.json();
         if (j.success) {
-          showToast && showToast('✅ Excluído!', 'success');
+          showToast && showToast('Excluído!', 'success');
           handleAtualizar();
         } else {
           showToast && showToast('Erro ao excluir', 'error');

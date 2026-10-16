@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ============================================================
 // MÓDULO ROADMAP - FRONTEND v1
@@ -16,29 +17,29 @@
 
   const STATUS_CONFIG = {
     roadmap: [
-      { id: 'em_avaliacao',       label: 'Em avaliação',      cor: '#888780', bg: '#F1EFE8', txt: '#444441' },
-      { id: 'planejado',          label: 'Planejado',         cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'em_desenvolvimento', label: 'Em desenvolvimento',cor: '#185FA5', bg: '#E6F1FB', txt: '#0C447C' },
-      { id: 'concluido',          label: 'Concluído',         cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'cancelado',          label: 'Cancelado',         cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'em_avaliacao',       label: 'Em avaliação',      cor: '#6b7280', bg: '#e5e7eb', txt: '#374151' },
+      { id: 'planejado',          label: 'Planejado',         cor: '#d97706', bg: '#fffbeb', txt: '#92400e' },
+      { id: 'em_desenvolvimento', label: 'Em desenvolvimento',cor: '#1e40af', bg: '#eff6ff', txt: '#1e40af' },
+      { id: 'concluido',          label: 'Concluído',         cor: '#16a34a', bg: '#f0fdf4', txt: '#166534' },
+      { id: 'cancelado',          label: 'Cancelado',         cor: '#9ca3af', bg: '#e5e7eb', txt: '#374151' },
     ],
     bug: [
-      { id: 'aberto',           label: 'Aberto',           cor: '#A32D2D', bg: '#FCEBEB', txt: '#791F1F' },
-      { id: 'em_correcao',      label: 'Em correção',      cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'resolvido',        label: 'Resolvido',        cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'nao_reproduzivel', label: 'Não reproduzível', cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'aberto',           label: 'Aberto',           cor: '#991b1b', bg: '#fef2f2', txt: '#991b1b' },
+      { id: 'em_correcao',      label: 'Em correção',      cor: '#d97706', bg: '#fffbeb', txt: '#92400e' },
+      { id: 'resolvido',        label: 'Resolvido',        cor: '#16a34a', bg: '#f0fdf4', txt: '#166534' },
+      { id: 'nao_reproduzivel', label: 'Não reproduzível', cor: '#9ca3af', bg: '#e5e7eb', txt: '#374151' },
     ],
     sugestao: [
-      { id: 'pendente', label: 'Pendente', cor: '#BA7517', bg: '#FAEEDA', txt: '#854F0B' },
-      { id: 'aceita',   label: 'Aceita',    cor: '#1D9E75', bg: '#E1F5EE', txt: '#085041' },
-      { id: 'recusada', label: 'Recusada',  cor: '#B4B2A9', bg: '#F1EFE8', txt: '#5F5E5A' },
+      { id: 'pendente', label: 'Pendente', cor: '#d97706', bg: '#fffbeb', txt: '#92400e' },
+      { id: 'aceita',   label: 'Aceita',    cor: '#16a34a', bg: '#f0fdf4', txt: '#166534' },
+      { id: 'recusada', label: 'Recusada',  cor: '#9ca3af', bg: '#e5e7eb', txt: '#374151' },
     ],
   };
 
   const GRAVIDADE_CONFIG = {
-    baixo:   { label: 'Baixo',   cor: '#1D9E75' },
-    medio:   { label: 'Médio',   cor: '#BA7517' },
-    critico: { label: 'Crítico', cor: '#A32D2D' },
+    baixo:   { label: 'Baixo',   cor: '#16a34a' },
+    medio:   { label: 'Médio',   cor: '#d97706' },
+    critico: { label: 'Crítico', cor: '#991b1b' },
   };
 
   const PRIORIDADE_CONFIG = {
@@ -57,7 +58,7 @@
   const MIMES_ANEXO_PERMITIDOS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf', 'text/plain'];
 
   function statusInfo(tipo, statusId) {
-    return (STATUS_CONFIG[tipo] || []).find(s => s.id === statusId) || { label: statusId, cor: '#888780', bg: '#F1EFE8', txt: '#444441' };
+    return (STATUS_CONFIG[tipo] || []).find(s => s.id === statusId) || { label: statusId, cor: '#6b7280', bg: '#e5e7eb', txt: '#374151' };
   }
 
   function formatarData(iso) {
@@ -257,7 +258,7 @@
           }
         }
 
-        if (showToast) showToast(modalForm.item ? '✅ Atualizado' : '✅ Criado', 'success');
+        if (showToast) showToast(modalForm.item ? 'Atualizado' : 'Criado', 'success');
         setModalForm(null);
         carregar();
       } catch (err) {
@@ -320,7 +321,7 @@
         });
         const d = await res.json();
         if (res.ok && d.success) {
-          if (showToast) showToast(`✅ Sugestão aceita — Roadmap #${d.roadmap_id} criado`, 'success');
+          if (showToast) showToast(`Sugestão aceita — Roadmap #${d.roadmap_id} criado`, 'success');
           carregar();
         } else {
           if (showToast) showToast(d.error || 'Erro', 'error');
@@ -362,17 +363,17 @@
 
       // TABS
       e('div', { className: 'flex gap-1 border-b border-gray-200 mb-5' },
-        renderTab(e, tab, 'roadmap',  e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Roadmap"),   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#534AB7'),
-        renderTab(e, tab, 'bug',      e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Bugs"),      sumarStatus(contadores.bug),      () => setTab('bug'),      '#A32D2D'),
-        renderTab(e, tab, 'sugestao', e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Sugestões"), sumarStatus(contadores.sugestao), () => setTab('sugestao'), '#BA7517'),
+        renderTab(e, tab, 'roadmap',  e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Roadmap"),   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#7c3aed'),
+        renderTab(e, tab, 'bug',      e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Bugs"),      sumarStatus(contadores.bug),      () => setTab('bug'),      '#991b1b'),
+        renderTab(e, tab, 'sugestao', e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Sugestões"), sumarStatus(contadores.sugestao), () => setTab('sugestao'), '#d97706'),
       ),
 
       // KPIs (só no roadmap)
       tab === 'roadmap' && e('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3 mb-5' },
-        renderKPI(e, 'Em desenvolvimento', contadores.roadmap?.em_desenvolvimento || 0, '#185FA5'),
-        renderKPI(e, 'Planejados',         contadores.roadmap?.planejado || 0,         '#BA7517'),
-        renderKPI(e, 'Em avaliação',       contadores.roadmap?.em_avaliacao || 0,      '#444441'),
-        renderKPI(e, 'Concluídos',         contadores.roadmap?.concluido || 0,         '#1D9E75'),
+        renderKPI(e, 'Em desenvolvimento', contadores.roadmap?.em_desenvolvimento || 0, '#1e40af'),
+        renderKPI(e, 'Planejados',         contadores.roadmap?.planejado || 0,         '#d97706'),
+        renderKPI(e, 'Em avaliação',       contadores.roadmap?.em_avaliacao || 0,      '#374151'),
+        renderKPI(e, 'Concluídos',         contadores.roadmap?.concluido || 0,         '#16a34a'),
       ),
 
       // FILTROS + AÇÃO
@@ -450,7 +451,7 @@
   // ────────────────────────────────────────────────────────────────────────────
 
   function corDoTab(tab) {
-    return tab === 'roadmap' ? '#534AB7' : tab === 'bug' ? '#A32D2D' : '#BA7517';
+    return tab === 'roadmap' ? '#7c3aed' : tab === 'bug' ? '#991b1b' : '#d97706';
   }
 
   function sumarStatus(obj) {
@@ -564,10 +565,10 @@
       style: {
         borderLeftWidth: '3px',
         borderLeftColor: st.cor,
-        borderColor: expandido ? '#D1CFFA' : '#E5E7EB',
+        borderColor: expandido ? '#ddd6fe' : '#E5E7EB',
         opacity: opacidade,
         minHeight: expandido ? 'auto' : 168,
-        boxShadow: expandido ? '0 4px 16px rgba(83,74,183,0.10)' : 'none'
+        boxShadow: expandido ? '0 4px 16px rgba(124,58,237,0.10)' : 'none'
       }
     },
       // ── CORPO CLICÁVEL (expande/recolhe) ──
@@ -592,7 +593,7 @@
           }, 'Alta'),
           item.origem_sugestao_id && e('span', {
             className: 'text-[10px] px-1.5 py-0.5 rounded',
-            style: { background: '#EEEDFE', color: '#3C3489' }
+            style: { background: '#f5f3ff', color: '#4c1d95' }
           }, '↳ sugestão')
         ),
 
@@ -629,9 +630,9 @@
           ),
 
           // Motivo de recusa completo (sugestões recusadas)
-          item.motivo_recusa && e('div', { className: 'rounded-lg p-2.5 mb-2', style: { background: '#FCEBEB' } },
-            e('p', { className: 'text-[10px] font-semibold mb-0.5', style: { color: '#791F1F' } }, 'Motivo da recusa'),
-            e('p', { className: 'text-xs whitespace-pre-wrap', style: { color: '#791F1F' } }, item.motivo_recusa)
+          item.motivo_recusa && e('div', { className: 'rounded-lg p-2.5 mb-2', style: { background: '#fef2f2' } },
+            e('p', { className: 'text-[10px] font-semibold mb-0.5', style: { color: '#991b1b' } }, 'Motivo da recusa'),
+            e('p', { className: 'text-xs whitespace-pre-wrap', style: { color: '#991b1b' } }, item.motivo_recusa)
           ),
 
           // Anexos
@@ -667,7 +668,7 @@
         ),
 
         // Dica de expandir/recolher
-        e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#534AB7' } },
+        e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#7c3aed' } },
           e('span', { style: { display: 'inline-block', transform: expandido ? 'rotate(180deg)' : 'none' } }, ''),
           e('span', null, expandido ? 'Recolher' : 'Ver detalhes')
         )
@@ -822,23 +823,23 @@
 
   function obterAcaoPrincipal(item, actions) {
     if (item.tipo === 'roadmap') {
-      if (item.status === 'em_avaliacao')       return { label: 'Planejar', cor: '#BA7517', onClick: () => actions.onTransicao('planejado') };
-      if (item.status === 'planejado')          return { label: 'Iniciar', cor: '#185FA5', onClick: () => actions.onTransicao('em_desenvolvimento') };
-      if (item.status === 'em_desenvolvimento') return { label: 'Concluir', cor: '#1D9E75', onClick: () => actions.onTransicao('concluido') };
+      if (item.status === 'em_avaliacao')       return { label: 'Planejar', cor: '#d97706', onClick: () => actions.onTransicao('planejado') };
+      if (item.status === 'planejado')          return { label: 'Iniciar', cor: '#1e40af', onClick: () => actions.onTransicao('em_desenvolvimento') };
+      if (item.status === 'em_desenvolvimento') return { label: 'Concluir', cor: '#16a34a', onClick: () => actions.onTransicao('concluido') };
       // concluido / cancelado: principal = reabrir
       if (item.status === 'concluido' || item.status === 'cancelado') {
         return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('em_avaliacao') };
       }
     }
     if (item.tipo === 'bug') {
-      if (item.status === 'aberto')         return { label: '→ Em correção', cor: '#BA7517', onClick: () => actions.onTransicao('em_correcao') };
-      if (item.status === 'em_correcao')    return { label: 'Resolvido', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') };
+      if (item.status === 'aberto')         return { label: '→ Em correção', cor: '#d97706', onClick: () => actions.onTransicao('em_correcao') };
+      if (item.status === 'em_correcao')    return { label: 'Resolvido', cor: '#16a34a', onClick: () => actions.onTransicao('resolvido') };
       if (item.status === 'resolvido' || item.status === 'nao_reproduzivel') {
         return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') };
       }
     }
     if (item.tipo === 'sugestao') {
-      if (item.status === 'pendente') return { label: 'Aceitar', cor: '#1D9E75', onClick: actions.onAceitar };
+      if (item.status === 'pendente') return { label: 'Aceitar', cor: '#16a34a', onClick: actions.onAceitar };
       if (item.status === 'recusada') return { label: '↺ Reabrir', cor: '#6B7280', onClick: () => actions.onTransicao('pendente') };
       // 'aceita' não tem principal
     }
@@ -862,22 +863,22 @@
     }
     if (item.tipo === 'bug') {
       if (item.status === 'aberto') {
-        sec.push({ label: 'Resolvido (sem correção)', cor: '#1D9E75', onClick: () => actions.onTransicao('resolvido') });
+        sec.push({ label: 'Resolvido (sem correção)', cor: '#16a34a', onClick: () => actions.onTransicao('resolvido') });
         sec.push({ label: 'Não reproduzível', cor: '#6B7280', onClick: () => actions.onTransicao('nao_reproduzivel') });
       } else if (item.status === 'em_correcao') {
         sec.push({ label: '↺ Voltar p/ aberto', cor: '#6B7280', onClick: () => actions.onTransicao('aberto') });
       }
     }
     if (item.tipo === 'sugestao' && item.status === 'pendente') {
-      sec.push({ label: 'Recusar', cor: '#A32D2D', onClick: () => actions.onTransicao('recusada') });
+      sec.push({ label: 'Recusar', cor: '#991b1b', onClick: () => actions.onTransicao('recusada') });
     }
 
     // Universais (em todos os cards)
     if ((item.anexos_count || 0) > 0) {
-      sec.push({ label: 'Ver anexos', cor: '#185FA5', onClick: actions.onDetalhe });
+      sec.push({ label: 'Ver anexos', cor: '#1e40af', onClick: actions.onDetalhe });
     }
     sec.push({ label: 'Editar', onClick: actions.onEdit });
-    sec.push({ label: 'Excluir', cor: '#A32D2D', onClick: actions.onDelete });
+    sec.push({ label: 'Excluir', cor: '#991b1b', onClick: actions.onDelete });
 
     return sec;
   }
@@ -936,9 +937,9 @@
                 disabled: formEnviando,
                 className: 'flex-1 px-2 py-2 rounded-lg text-xs font-medium border',
                 style: formGravidade === g
-                  ? (g === 'critico' ? { background: '#FCEBEB', borderColor: '#A32D2D', color: '#791F1F' } :
-                     g === 'medio'   ? { background: '#FAEEDA', borderColor: '#BA7517', color: '#854F0B' } :
-                                       { background: '#E1F5EE', borderColor: '#1D9E75', color: '#085041' })
+                  ? (g === 'critico' ? { background: '#fef2f2', borderColor: '#991b1b', color: '#991b1b' } :
+                     g === 'medio'   ? { background: '#fffbeb', borderColor: '#d97706', color: '#92400e' } :
+                                       { background: '#f0fdf4', borderColor: '#16a34a', color: '#166534' })
                   : { background: 'white', borderColor: '#D1D5DB', color: '#6B7280' }
               }, GRAVIDADE_CONFIG[g].label))
             )

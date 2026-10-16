@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* APP_DEEMOJI_V2 */
 /* APP_DEEMOJI_FULL_V1 */
 const {
@@ -568,7 +569,7 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 // ==== Icones do menu (sprite Lucide). Converte no render; NAO altera o config nem a home. ====
-var NAV_EMOJI_ICON = {"🤖":"bot","📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"shield"};
+var NAV_EMOJI_ICON = {"🤖":"bot","📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"shield","🎉":"party","🎊":"party","💵":"wallet","🛍":"package","🪪":"idcard","📱":"smartphone","📧":"mail","🔑":"key","⚪":"circle","💎":"gem","🥇":"medal","🥈":"medal","🥉":"medal","🏆":"trophy","⏰":"clock","🛵":"bike","🏍":"bike","🧠":"bulb","✨":"sparkles","📍":"pin","🚩":"flag","🔔":"bell","⭐":"star","🎯":"target","🔥":"zap","💡":"bulb","📁":"folder","🚀":"rocket","🛠":"wrench","📦":"package","🏁":"flag","📷":"camera","📸":"camera","🔒":"lock","⏳":"clock","❓":"help","⚠":"alert","❌":"x","🗑":"trash","✏":"pencil","📞":"phone","🔎":"search","💲":"wallet","🏪":"building","🧾":"filetext","📃":"filetext","📄":"filetext","☀":"sun","🎙":"mic","🎵":"music","🎬":"video"};
 function navIconEl(raw, cls) {
   if (!raw) return null;
   var key = String(raw).replace(/\uFE0F/g, "");
@@ -612,6 +613,8 @@ function tabLabelEl(label) {
   }
   return label;
 }
+/* EMOJI_ZERO_V1: navIconEl tambem converte icones vindos de dados (tour, niveis, milestones). */
+window.navIconEl = navIconEl;
 /* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V2 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
@@ -798,7 +801,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
-        React.createElement("header", { className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg" },
+        React.createElement("header", { className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg" },
             React.createElement("div", { className: "max-w-full mx-auto px-4 py-2" },
                 // Linha 1: Logo + Módulos + Usuário
                 React.createElement("div", { className: "flex items-center justify-between gap-4" },
@@ -1004,7 +1007,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
         React.createElement("header", {
-            className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg"
+            className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg"
         },
             React.createElement("div", { className: "max-w-full mx-auto px-3 py-2" },
                 React.createElement("div", { className: "flex items-center justify-between gap-2" },
@@ -1332,14 +1335,14 @@ const hideLoadingScreen = () => {
             React.createElement("button", {
                 onClick: async () => {
                     try {
-                        await navigator.clipboard.writeText(o), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
+                        await navigator.clipboard.writeText(o), n(!0), a("Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
                     } catch (err) {
                         const textarea = document.createElement("textarea");
                         textarea.value = o, textarea.style.position = "fixed", textarea.style.left = "-9999px", document.body.appendChild(textarea), textarea.select();
                         try {
-                            document.execCommand("copy"), n(!0), a("✅ Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
+                            document.execCommand("copy"), n(!0), a("Código PIX copiado!", "success"), setTimeout(() => n(!1), 3e3)
                         } catch (err2) {
-                            a("❌ Erro ao copiar", "error")
+                            a("Erro ao copiar", "error")
                         }
                         document.body.removeChild(textarea)
                     }
@@ -1350,12 +1353,12 @@ const hideLoadingScreen = () => {
     },
     // 🎨 PALETA SEMÂNTICA BI — usar essas cores em vez de inventar a cada gráfico
     CORES_BI = {
-        sucesso: '#10b981',  // verde — no prazo, crescimento, lucro
-        erro: '#ef4444',     // vermelho — fora prazo, queda, retorno
-        info: '#3b82f6',     // azul — volume, neutro informativo
+        sucesso: '#16a34a',  // verde — no prazo, crescimento, lucro
+        erro: '#dc2626',     // vermelho — fora prazo, queda, retorno
+        info: '#2563eb',     // azul — volume, neutro informativo
         destaque: '#7c3aed', // roxo Tutts — totais e destaques
-        aviso: '#f59e0b',    // amarelo — atenção, intermediário
-        neutro: '#64748b',   // cinza slate — secundário
+        aviso: '#d97706',    // amarelo — atenção, intermediário
+        neutro: '#6b7280',   // cinza slate — secundário
         gradiente: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
     },
 
@@ -1458,15 +1461,15 @@ const hideLoadingScreen = () => {
             l = [{
                 label: "Pendentes",
                 value: t.pendente,
-                color: "#eab308"
+                color: "#d97706"
             }, {
                 label: "Aprovados",
                 value: t.aprovado,
-                color: "#22c55e"
+                color: "#16a34a"
             }, {
                 label: "Rejeitados",
                 value: t.rejeitado,
-                color: "#ef4444"
+                color: "#dc2626"
             }].filter(e => e.value > 0);
         let r = 0;
         return React.createElement("div", {
@@ -1506,7 +1509,7 @@ const hideLoadingScreen = () => {
             y: "95",
             textAnchor: "middle",
             className: "text-2xl font-bold",
-            fill: "#1f2937"
+            fill: "#111827"
         }, a), React.createElement("text", {
             x: "100",
             y: "110",
@@ -1589,7 +1592,7 @@ const hideLoadingScreen = () => {
             y: "95",
             textAnchor: "middle",
             className: "text-2xl font-bold",
-            fill: "#1f2937"
+            fill: "#111827"
         }, l), React.createElement("text", {
             x: "100",
             y: "110",
@@ -1745,13 +1748,13 @@ const hideLoadingScreen = () => {
                                 React.createElement("stop", { offset: "100%", stopColor: c, stopOpacity: 0 })
                             )
                         ),
-                        React.createElement(R.CartesianGrid, { strokeDasharray: "3 3", stroke: "#f1f5f9", vertical: false }),
-                        React.createElement(R.XAxis, { dataKey: "label", tick: { fontSize: 11, fill: '#64748b' }, axisLine: false, tickLine: false }),
-                        React.createElement(R.YAxis, { tick: { fontSize: 11, fill: '#64748b' }, axisLine: false, tickLine: false, tickFormatter: fmt }),
+                        React.createElement(R.CartesianGrid, { strokeDasharray: "3 3", stroke: "#f3f4f6", vertical: false }),
+                        React.createElement(R.XAxis, { dataKey: "label", tick: { fontSize: 11, fill: '#6b7280' }, axisLine: false, tickLine: false }),
+                        React.createElement(R.YAxis, { tick: { fontSize: 11, fill: '#6b7280' }, axisLine: false, tickLine: false, tickFormatter: fmt }),
                         React.createElement(R.Tooltip, {
                             formatter: (v) => [fmt(v), ''],
                             contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px' },
-                            labelStyle: { color: '#475569', fontWeight: 600 }
+                            labelStyle: { color: '#374151', fontWeight: 600 }
                         }),
                         React.createElement(R.Area, {
                             type: "monotone",
@@ -2067,7 +2070,7 @@ const hideLoadingScreen = () => {
             
             var pontosValidos = enderecosSelecionados.filter(function(e) { return e.latitude && e.longitude; });
             pontosValidos.forEach(function(p, i) {
-                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
                 L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
             
@@ -2241,7 +2244,7 @@ const hideLoadingScreen = () => {
             markersLayer.clearLayers();
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
             pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, i) {
-                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#10b981' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '🚩' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
                 L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
             if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
@@ -2280,7 +2283,7 @@ const hideLoadingScreen = () => {
             if (routeLayer && mapaRoteirizador) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
         };
 
-        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#1e1b4b' } },
+        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#4c1d95' } },
             React.createElement('div', { className: 'bg-purple-900 text-white px-4 py-2 flex items-center justify-between' },
                 React.createElement('div', { className: 'flex items-center gap-3' },
                     React.createElement('button', { onClick: onClose, className: 'px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm' }, '← Voltar'),
@@ -2304,14 +2307,14 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement('div', { className: 'flex items-center justify-between mt-1' },
                             React.createElement('p', { className: 'text-xs text-purple-600' }, carregandoBI ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Carregando...") : '' + enderecosBI.length + ' endereços únicos'),
-                            pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, '🚩 Partida salva')
+                            pontoPartidaPadrao && React.createElement('span', { className: 'text-xs text-green-600' }, React.createElement('span', { className: 'inline-flex items-center gap-1' }, Icon('flag'), 'Partida salva'))
                         ),
                         sugestoes.length > 0 && React.createElement('div', { className: 'mt-2 bg-white border border-purple-200 rounded-lg shadow-lg max-h-[250px] overflow-y-auto' },
                             sugestoes.map(function(sug, idx) {
                                 var temCoord = sug.latitude && sug.longitude;
                                 return React.createElement('div', { key: idx, onClick: function() { adicionar(sug); }, className: 'px-3 py-2 hover:bg-purple-50 cursor-pointer border-b last:border-b-0' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
-                                        React.createElement('span', { className: 'text-sm' }, sug.fonte === 'bi' ? (temCoord ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })) : '📦❓') : '📮'),
+                                        React.createElement('span', { className: 'text-sm' }, sug.fonte === 'bi' ? (temCoord ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })) : Icon('help')) : Icon('mail')),
                                         React.createElement('div', { className: 'flex-1 min-w-0' },
                                             React.createElement('div', { className: 'font-medium text-gray-800 truncate text-xs' }, sug.endereco),
                                             React.createElement('div', { className: 'text-xs text-gray-500 truncate' }, [sug.bairro, sug.cidade, sug.estado].filter(Boolean).join(' - '))
@@ -2333,7 +2336,7 @@ const hideLoadingScreen = () => {
                                 enderecosSelecionados.map(function(end, idx) {
                                     return React.createElement('div', { key: end.id, className: 'p-2 rounded border text-xs ' + (idx === 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200') },
                                         React.createElement('div', { className: 'flex items-center gap-2' },
-                                            React.createElement('span', { className: 'w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-xs ' + (idx === 0 ? 'bg-green-500' : 'bg-purple-600') }, idx === 0 ? '🚩' : idx),
+                                            React.createElement('span', { className: 'w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-xs ' + (idx === 0 ? 'bg-green-500' : 'bg-purple-600') }, idx === 0 ? Icon('flag') : idx),
                                             React.createElement('div', { className: 'flex-1 min-w-0' },
                                                 React.createElement('div', { className: 'font-medium text-gray-800 truncate' }, end.endereco),
                                                 React.createElement('div', { className: 'text-gray-500 truncate' }, [end.bairro, end.cidade].filter(Boolean).join(' - '))
@@ -2368,7 +2371,7 @@ const hideLoadingScreen = () => {
                         React.createElement('div', { className: 'flex flex-wrap gap-1' },
                             resultado.ordemOtimizada.map(function(p, idx) {
                                 return React.createElement('span', { key: idx, className: 'px-2 py-1 rounded text-xs font-medium ' + (idx === 0 || p.isRetorno ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700') },
-                                    (idx === 0 ? '🚩' : p.isRetorno ? '↩️' : idx) + ' ' + (p.endereco || '').substring(0, 20)
+                                    (idx === 0 ? 'Partida' : p.isRetorno ? 'Retorno' : idx) + ' ' + (p.endereco || '').substring(0, 20)
                                 );
                             })
                         )
@@ -2699,7 +2702,7 @@ const hideLoadingScreen = () => {
             valor_incentivo: '',
             clientes_vinculados: [],
             centros_vinculados: {},
-            cor: '#0d9488'
+            cor: '#16a34a'
         }),
         [incentivosCalendarioMes, setIncentivosCalendarioMes] = useState(new Date()),
         [incentivoClientesBi, setIncentivoClientesBi] = useState([]),
@@ -3052,7 +3055,7 @@ const hideLoadingScreen = () => {
                         style: {
                             position: 'fixed', inset: 0, zIndex: 99999,
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.95) 0%, rgba(30,10,60,0.97) 100%)',
+                            background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.95) 0%, rgba(28,10,60,0.97) 100%)',
                             animation: 'fadeInBackdrop 0.4s ease-out'
                         },
                         onClick: function() {
@@ -3077,17 +3080,17 @@ const hideLoadingScreen = () => {
                                 // Corpo do envelope
                                 React.createElement('rect', {
                                     x: 5, y: 25, width: 150, height: 90, rx: 8,
-                                    fill: '#fbbf24', stroke: '#f59e0b', strokeWidth: 2
+                                    fill: '#d97706', stroke: '#d97706', strokeWidth: 2
                                 }),
                                 // Aba traseira
                                 React.createElement('polygon', {
                                     points: '5,25 80,70 155,25',
-                                    fill: '#f59e0b', stroke: '#e99200', strokeWidth: 1.5
+                                    fill: '#d97706', stroke: '#d97706', strokeWidth: 1.5
                                 }),
                                 // Aba frontal
                                 React.createElement('polygon', {
                                     points: '5,115 80,65 155,115',
-                                    fill: '#fcd34d', stroke: '#f59e0b', strokeWidth: 1
+                                    fill: '#fde68a', stroke: '#d97706', strokeWidth: 1
                                 }),
                                 // Coração no centro
                                 React.createElement('text', {
@@ -3104,11 +3107,11 @@ const hideLoadingScreen = () => {
                             liderancaModal?.fila?.length > 1 && React.createElement('div', {
                                 style: {
                                     position: 'absolute', top: -8, right: -8,
-                                    background: '#ef4444', color: 'white',
+                                    background: '#dc2626', color: 'white',
                                     width: 32, height: 32, borderRadius: '50%',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontWeight: 'bold', fontSize: 14,
-                                    boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+                                    boxShadow: '0 2px 8px rgba(220,38,38,0.5)',
                                     border: '2px solid white'
                                 }
                             }, liderancaModal.fila.length)
@@ -3122,7 +3125,7 @@ const hideLoadingScreen = () => {
                                 textShadow: '0 2px 8px rgba(0,0,0,0.3)',
                                 lineHeight: 1.4
                             }
-                        }, 'Hey, tenho uma mensagem pra você! 💌'),
+                        }, 'Hey, tenho uma mensagem pra você!'),
                         // Subtexto
                         React.createElement('p', {
                             style: {
@@ -3148,7 +3151,7 @@ const hideLoadingScreen = () => {
                                 React.createElement('div', {
                                     style: {
                                         width: 36, height: 36, borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+                                        background: 'linear-gradient(135deg, #f59f0b, #ec4848)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         color: 'white', fontWeight: 'bold', fontSize: 16
                                     }
@@ -3187,7 +3190,7 @@ const hideLoadingScreen = () => {
                             // Header compacto (fixo)
                             React.createElement('div', {
                                 style: {
-                                    background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                    background: 'linear-gradient(135deg, #f97316, #f59f0b)',
                                     padding: '16px 20px', color: 'white',
                                     display: 'flex', alignItems: 'center', gap: 12,
                                     flexShrink: 0
@@ -3221,20 +3224,20 @@ const hideLoadingScreen = () => {
                                             src: liderancaModal.dados.criado_por_foto,
                                             style: {
                                                 width: 44, height: 44, borderRadius: '50%',
-                                                objectFit: 'cover', border: '2px solid #fdba74'
+                                                objectFit: 'cover', border: '2px solid #fde68a'
                                             }
                                         }) :
                                         React.createElement('div', {
                                             style: {
                                                 width: 44, height: 44, borderRadius: '50%',
-                                                background: 'linear-gradient(135deg, #fb923c, #fbbf24)',
+                                                background: 'linear-gradient(135deg, #fbb53c, #fbac24)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 color: 'white', fontWeight: 700, fontSize: 18, flexShrink: 0
                                             }
                                         }, liderancaModal?.dados?.criado_por_nome?.charAt(0)?.toUpperCase() || '?'),
                                     React.createElement('div', {style: {minWidth: 0}},
                                         React.createElement('p', {
-                                            style: {fontWeight: 700, fontSize: 15, color: '#1f2937', margin: 0}
+                                            style: {fontWeight: 700, fontSize: 15, color: '#111827', margin: 0}
                                         }, liderancaModal?.dados?.criado_por_nome),
                                         React.createElement('p', {
                                             style: {fontSize: 12, color: '#6b7280', margin: 0}
@@ -3243,7 +3246,7 @@ const hideLoadingScreen = () => {
                                 ),
                                 // Título
                                 React.createElement('h3', {
-                                    style: {fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 10, marginTop: 0}
+                                    style: {fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 10, marginTop: 0}
                                 }, liderancaModal?.dados?.titulo),
                                 // Conteúdo
                                 React.createElement('div', {
@@ -3272,8 +3275,8 @@ const hideLoadingScreen = () => {
                                         className: 'lideranca-img-hint',
                                         style: {justifyContent: 'center', paddingBottom: 8}
                                     },
-                                        React.createElement('span', {style: {fontSize: 18}}, '👇'),
-                                        React.createElement('span', {style: {fontSize: 12, color: '#f97316', fontWeight: 600}}, 'Clique na imagem para expandir')
+                                        React.createElement('span', {style: {fontSize: 18}}, Icon('arrowdown')),
+                                        React.createElement('span', {style: {fontSize: 12, color: '#f67602', fontWeight: 600}}, 'Clique na imagem para expandir')
                                     ),
                                     React.createElement('img', {
                                         src: liderancaModal.dados.midia_url,
@@ -3313,7 +3316,7 @@ const hideLoadingScreen = () => {
                                                 cursor: 'pointer', padding: 6, borderRadius: '50%',
                                                 transition: 'transform 0.2s, background 0.2s'
                                             },
-                                            onMouseOver: function(e) { e.target.style.transform = 'scale(1.2)'; e.target.style.background = '#fff7ed'; },
+                                            onMouseOver: function(e) { e.target.style.transform = 'scale(1.2)'; e.target.style.background = '#fffbeb'; },
                                             onMouseOut: function(e) { e.target.style.transform = 'scale(1)'; e.target.style.background = 'none'; }
                                         }, emoji);
                                     })
@@ -3334,7 +3337,7 @@ const hideLoadingScreen = () => {
                                     },
                                     style: {
                                         width: '100%', padding: '14px', border: 'none',
-                                        background: 'linear-gradient(135deg, #f97316, #f59e0b)',
+                                        background: 'linear-gradient(135deg, #f97316, #f59f0b)',
                                         color: 'white', borderRadius: 12, fontWeight: 700,
                                         fontSize: 16, cursor: 'pointer',
                                         transition: 'opacity 0.2s'
@@ -3436,13 +3439,13 @@ const hideLoadingScreen = () => {
             },
             {
                 titulo: "Botões do Menu",
-                descricao: "Use o botão 🏠 para voltar ao menu principal, o 🔄 para atualizar as informações e o ❓ para ver este tutorial novamente quando quiser!",
+                descricao: "Use o botão Início para voltar ao menu principal, o botão de atualizar para recarregar as informações e o botão de ajuda para ver este tutorial novamente quando quiser!",
                 icone: "⚙️",
                 destaque: "botoes"
             },
             {
                 titulo: "Tudo Pronto!",
-                descricao: "Agora você já conhece o sistema! Se tiver dúvidas, clique no ❓ no menu para rever este tutorial. Bom trabalho e boas corridas! 🏍️",
+                descricao: "Agora você já conhece o sistema! Se tiver dúvidas, clique no botão de ajuda no menu para rever este tutorial. Bom trabalho e boas corridas!",
                 icone: "🎊",
                 destaque: null
             }
@@ -3768,7 +3771,7 @@ const hideLoadingScreen = () => {
                                     className: "text-white/70 hover:text-white text-sm hover:bg-white/10 px-2 py-1 rounded transition-all cursor-pointer"
                                 }, "Pular ✕")
                             ),
-                            React.createElement("div", {className: "text-5xl mb-3"}, passo.icone),
+                            React.createElement("div", {className: "text-5xl mb-3"}, navIconEl(passo.icone)),
                             React.createElement("h2", {className: "text-2xl font-bold"}, passo.titulo)
                         )
                     ),
@@ -3807,7 +3810,7 @@ const hideLoadingScreen = () => {
                             type: "button",
                             onClick: handleProximo,
                             className: "flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl cursor-pointer"
-                        }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar! 🚀" : "Próximo →")
+                        }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar" : "Próximo →")
                     )
                 )
             );
@@ -3843,7 +3846,7 @@ const hideLoadingScreen = () => {
                     const profile = await res.json();
                     console.log("📸 Perfil salvo:", profile);
                     setSocialProfile(profile);
-                    ja("✅ Perfil atualizado!", "success");
+                    ja("Perfil atualizado!", "success");
                 } else {
                     const err = await res.text();
                     console.error("📸 Erro ao salvar:", err);
@@ -3915,7 +3918,7 @@ const hideLoadingScreen = () => {
                     })
                 });
                 if (res.ok) {
-                    ja("✅ Enviado!", "success");
+                    ja("Enviado!", "success");
                     setSocialModalUser(null);
                 }
             } catch (err) {
@@ -4057,7 +4060,7 @@ const hideLoadingScreen = () => {
                     })
                 });
                 if (res.ok) {
-                    ja("✅ Mensagem criada com sucesso!", "success");
+                    ja("Mensagem criada com sucesso!", "success");
                     setLiderancaModal(null);
                     setLiderancaImagemPreview(null);
                     setLiderancaAudioPreview(null);
@@ -4111,7 +4114,7 @@ const hideLoadingScreen = () => {
             try {
                 const res = await fetchAuth(`${API_URL}/lideranca/mensagens/${id}`, { method: "DELETE" });
                 if (res.ok) {
-                    ja("✅ Mensagem excluída!", "success");
+                    ja("Mensagem excluída!", "success");
                     await loadLiderancaMensagens();
                 }
             } catch (err) {
@@ -4180,10 +4183,10 @@ const hideLoadingScreen = () => {
                 setLiderancaAudioChunks(chunks);
                 mediaRecorder.start();
                 setLiderancaGravando(true);
-                ja("🎙️ Gravando...", "success");
+                ja("Gravando...", "success");
             } catch (err) {
                 console.error("Erro ao acessar microfone:", err);
-                ja("❌ Não foi possível acessar o microfone", "error");
+                ja("Não foi possível acessar o microfone", "error");
             }
         };
         
@@ -4192,7 +4195,7 @@ const hideLoadingScreen = () => {
             if (liderancaMediaRecorder && liderancaGravando) {
                 liderancaMediaRecorder.stop();
                 setLiderancaGravando(false);
-                ja("✅ Áudio gravado!", "success");
+                ja("Áudio gravado!", "success");
             }
         };
         
@@ -4326,7 +4329,7 @@ const hideLoadingScreen = () => {
                 // Atualizar preview
                 x({...p, socialPhotoPreview: base64});
                 setPhotoEditorOpen(false);
-                ja("✅ Foto ajustada! Clique em Salvar Perfil", "success");
+                ja("Foto ajustada! Clique em Salvar Perfil", "success");
             };
             img.src = photoEditorSrc;
         };
@@ -4427,7 +4430,7 @@ const hideLoadingScreen = () => {
                 // Logout automático causava bugs de F5 quando havia race com
                 // restauração de token. Se o user realmente quer sair, usa o botão.
                 if (Date.now() - b > 9e5) {
-                    ja("⏰ Sessão inativa — continue usando normalmente", "warning");
+                    ja("Sessão inativa — continue usando normalmente", "warning");
                     R(Date.now()); // reseta o timer pra não spammar toasts
                 }
             }, 3e4);
@@ -4572,7 +4575,7 @@ const hideLoadingScreen = () => {
                                 O(prev => prev.map(w => w.id === data.data.id ? { ...w, status: data.data.status, reject_reason: data.data.reject_reason } : w));
                                 if (data.data.status === 'aprovado' || data.data.status === 'aprovado_gratuidade') {
                                     Ca();
-                                    ja('✅ Seu saque foi aprovado! Você já pode solicitar um novo.', 'success');
+                                    ja('Seu saque foi aprovado! Você já pode solicitar um novo.', 'success');
                                     // Recarregar dados completos para atualizar timer, saldo e histórico
                                     setTimeout(() => {
                                         fetchAuth(`${API_URL}/withdrawals/user/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) O(d); }).catch(() => {});
@@ -4588,7 +4591,7 @@ const hideLoadingScreen = () => {
                                     }, 500);
                                 }
                             } else if (data.event === 'LIMIT_APPROVED') {
-                                ja('✅ Seu ciclo de limite foi renovado pelo financeiro! Você pode sacar novamente.', 'success');
+                                ja('Seu ciclo de limite foi renovado pelo financeiro! Você pode sacar novamente.', 'success');
                                 fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`).then(r => r.ok && r.json()).then(d => { if (d) setLimitesSaque(d); }).catch(() => {});
                             } else if (data.event === 'AUTH_SUCCESS') { console.log('✅ [WS] Autenticado:', data.role); }
                             else if (data.event === 'STARK_PAYMENT_UPDATE') {
@@ -4778,10 +4781,10 @@ const hideLoadingScreen = () => {
                     // Detectar novos apenas se WebSocket offline
                     if (!wsConnected) {
                         const countAtual = pendentes.length;
-                        if (countAtual > Aa.current && Aa.current > 0) { Ca(); ja("🔔 Novo saque solicitado!", "info"); }
+                        if (countAtual > Aa.current && Aa.current > 0) { Ca(); ja("Novo saque solicitado!", "info"); }
                         Aa.current = countAtual;
                         const countPedidos = pedidos.filter(e => "pendente" === e.status).length;
-                        if (countPedidos > Sa.current && Sa.current > 0) { Ca(); ja("🛒 Novo pedido na loja!", "info"); }
+                        if (countPedidos > Sa.current && Sa.current > 0) { Ca(); ja("Novo pedido na loja!", "info"); }
                         Sa.current = countPedidos;
                     }
                     
@@ -5081,7 +5084,7 @@ const hideLoadingScreen = () => {
                 });
                 
                 if (res.ok) {
-                    ja(incentivoEdit ? '✅ Incentivo atualizado!' : '✅ Incentivo criado!', 'success');
+                    ja(incentivoEdit ? 'Incentivo atualizado!' : 'Incentivo criado!', 'success');
                     setIncentivoModal(false);
                     setIncentivoEdit(null);
                     setIncentivoForm({
@@ -5095,7 +5098,7 @@ const hideLoadingScreen = () => {
                         valor_incentivo: '',
                         clientes_vinculados: [],
                         centros_vinculados: {},
-                        cor: '#0d9488'
+                        cor: '#16a34a'
                     });
                     carregarIncentivos();
                 } else {
@@ -5115,7 +5118,7 @@ const hideLoadingScreen = () => {
                 const res = await fetchAuth(`${API_URL}/incentivos-op/${id}`, { method: 'DELETE' });
                 
                 if (res.ok) {
-                    ja('✅ Incentivo excluído!', 'success');
+                    ja('Incentivo excluído!', 'success');
                     carregarIncentivos();
                 } else {
                     ja('Erro ao excluir incentivo', 'error');
@@ -5331,7 +5334,7 @@ const hideLoadingScreen = () => {
                     throw new Error(err.error);
                 }
                 
-                ja(recrutamentoEdit ? '✅ Necessidade atualizada!' : '✅ Necessidade criada!', 'success');
+                ja(recrutamentoEdit ? 'Necessidade atualizada!' : 'Necessidade criada!', 'success');
                 setRecrutamentoModal(false);
                 setRecrutamentoEdit(null);
                 setRecrutamentoForm({
@@ -5343,7 +5346,7 @@ const hideLoadingScreen = () => {
                 });
                 carregarRecrutamento();
             } catch (err) {
-                ja('❌ Erro: ' + err.message, 'error');
+                ja('Erro: ' + err.message, 'error');
             }
         };
         
@@ -5379,7 +5382,7 @@ const hideLoadingScreen = () => {
             const key = `${necessidadeId}_${tipo}`;
             const info = recrutamentoCodBusca[key];
             if (!info || !info.codigo) {
-                ja('❌ Digite o código do profissional', 'error');
+                ja('Digite o código do profissional', 'error');
                 return;
             }
             
@@ -5399,14 +5402,14 @@ const hideLoadingScreen = () => {
                     throw new Error(err.error);
                 }
                 
-                ja('✅ Profissional atribuído!', 'success');
+                ja('Profissional atribuído!', 'success');
                 setRecrutamentoCodBusca(prev => ({
                     ...prev,
                     [key]: { codigo: '', nome: '', loading: false }
                 }));
                 carregarRecrutamento();
             } catch (err) {
-                ja('❌ Erro: ' + err.message, 'error');
+                ja('Erro: ' + err.message, 'error');
             }
         };
         
@@ -5424,10 +5427,10 @@ const hideLoadingScreen = () => {
                     throw new Error(err.error);
                 }
                 
-                ja('✅ Atribuição removida!', 'success');
+                ja('Atribuição removida!', 'success');
                 carregarRecrutamento();
             } catch (err) {
-                ja('❌ Erro: ' + err.message, 'error');
+                ja('Erro: ' + err.message, 'error');
             }
         };
         
@@ -5445,10 +5448,10 @@ const hideLoadingScreen = () => {
                     throw new Error(err.error);
                 }
                 
-                ja('✅ Necessidade excluída!', 'success');
+                ja('Necessidade excluída!', 'success');
                 carregarRecrutamento();
             } catch (err) {
-                ja('❌ Erro: ' + err.message, 'error');
+                ja('Erro: ' + err.message, 'error');
             }
         };
         
@@ -5635,7 +5638,7 @@ const hideLoadingScreen = () => {
                     // Header
                     React.createElement("div", {
                         style: {
-                            background: 'linear-gradient(to right, #0d9488, #0f766e)',
+                            background: 'linear-gradient(to right, #0d943f, #0f7635)',
                             color: 'white',
                             padding: '16px',
                             display: 'flex',
@@ -5646,7 +5649,7 @@ const hideLoadingScreen = () => {
                         React.createElement("span", {style: {fontSize: '30px'}}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" }))),
                         React.createElement("div", null,
                             React.createElement("h3", {style: {fontSize: '18px', fontWeight: 'bold', margin: 0}}, "Novo Relatório Diário"),
-                            React.createElement("p", {style: {fontSize: '14px', color: '#99f6e4', margin: 0}}, 
+                            React.createElement("p", {style: {fontSize: '14px', color: '#bbf7d0', margin: 0}}, 
                                 relatoriosNaoLidos.length > 1 
                                     ? relatoriosNaoLidos.length + " relatórios pendentes"
                                     : "1 relatório pendente"
@@ -5667,24 +5670,24 @@ const hideLoadingScreen = () => {
                         relatorioNaoLido.usuario_foto 
                             ? React.createElement("img", {
                                 src: relatorioNaoLido.usuario_foto,
-                                style: {width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #99f6e4'}
+                                style: {width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #bbf7d0'}
                             })
                             : React.createElement("div", {
                                 style: {
                                     width: '48px',
                                     height: '48px',
                                     borderRadius: '50%',
-                                    backgroundColor: '#ccfbf1',
+                                    backgroundColor: '#bbf7d0',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    color: '#0d9488',
+                                    color: '#16a34a',
                                     fontWeight: 'bold',
                                     fontSize: '18px'
                                 }
                             }, (relatorioNaoLido.usuario_nome || "?").charAt(0).toUpperCase()),
                         React.createElement("div", null,
-                            React.createElement("p", {style: {fontWeight: 'bold', color: '#1f2937', margin: 0}}, relatorioNaoLido.titulo),
+                            React.createElement("p", {style: {fontWeight: 'bold', color: '#111827', margin: 0}}, relatorioNaoLido.titulo),
                             React.createElement("p", {style: {fontSize: '14px', color: '#6b7280', margin: 0}}, 
                                 relatorioNaoLido.usuario_nome + " • " + 
                                 new Date(relatorioNaoLido.created_at).toLocaleDateString('pt-BR', {
@@ -5726,7 +5729,7 @@ const hideLoadingScreen = () => {
                             style: {
                                 width: '100%',
                                 padding: '16px 24px',
-                                backgroundColor: '#0d9488',
+                                backgroundColor: '#16a34a',
                                 color: 'white',
                                 borderRadius: '12px',
                                 fontWeight: 'bold',
@@ -5827,14 +5830,14 @@ const hideLoadingScreen = () => {
                 
                 if (!response.ok) throw new Error('Erro ao salvar');
                 
-                ja(relatorioEdit ? '✅ Relatório atualizado!' : '✅ Relatório criado!', 'success');
+                ja(relatorioEdit ? 'Relatório atualizado!' : 'Relatório criado!', 'success');
                 setShowRelatorioModal(false);
                 setRelatorioEdit(null);
                 setRelatorioForm({ titulo: '', conteudo: '', imagem: null, para_todos: true });
                 await carregarRelatoriosDiarios();
             } catch (err) {
                 console.error('Erro ao salvar relatório:', err);
-                ja('❌ Erro ao salvar relatório', 'error');
+                ja('Erro ao salvar relatório', 'error');
             }
             s(false);
             return false;
@@ -5846,10 +5849,10 @@ const hideLoadingScreen = () => {
             try {
                 const res = await fetchAuth(`${API_URL}/relatorios-diarios/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Erro ao excluir');
-                ja('✅ Relatório excluído!', 'success');
+                ja('Relatório excluído!', 'success');
                 carregarRelatoriosDiarios();
             } catch (err) {
-                ja('❌ Erro ao excluir relatório', 'error');
+                ja('Erro ao excluir relatório', 'error');
             }
             s(false);
         };
@@ -5897,7 +5900,7 @@ const hideLoadingScreen = () => {
             if (diffDays < 0) {
                 return { texto: `Iniciou há ${Math.abs(diffDays)} dia(s)`, status: 'iniciado', dias: diffDays };
             } else if (diffDays === 0) {
-                return { texto: 'INICIA HOJE! 🎉', status: 'hoje', dias: 0 };
+                return { texto: 'INICIA HOJE!', status: 'hoje', dias: 0 };
             } else if (diffDays === 1) {
                 return { texto: 'Inicia AMANHÃ!', status: 'amanha', dias: 1 };
             } else if (diffDays <= 7) {
@@ -5923,8 +5926,8 @@ const hideLoadingScreen = () => {
             const doc = new jsPDF();
             
             // Cores oficiais da Tutts
-            const roxoTutts = [85, 7, 118]; // #550776
-            const laranjaTutts = [243, 118, 1]; // #f37601
+            const roxoTutts = [85, 7, 118]; // #4c1d95
+            const laranjaTutts = [243, 118, 1]; // #f67602
             const branco = [255, 255, 255];
             const cinzaEscuro = [51, 51, 51];
             const cinzaMedio = [102, 102, 102];
@@ -6146,7 +6149,7 @@ const hideLoadingScreen = () => {
             
             // Download do PDF
             doc.save('Tutts_Operacao_' + op.nome_cliente.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
-            ja('📄 Relatório PDF baixado!', 'success');
+            ja('Relatório PDF baixado!', 'success');
         };
         
         const salvarAviso = async () => {
@@ -6163,13 +6166,13 @@ const hideLoadingScreen = () => {
                     })
                 });
                 
-                ja(avisoEdit ? '✅ Aviso atualizado!' : '✅ Aviso criado!', 'success');
+                ja(avisoEdit ? 'Aviso atualizado!' : 'Aviso criado!', 'success');
                 setAvisoModal(false);
                 setAvisoEdit(null);
                 setAvisoForm({ titulo: '', regioes: [], todas_regioes: false, data_inicio: '', data_fim: '', recorrencia_tipo: 'uma_vez', recorrencia_intervalo: 24, imagem_url: '' });
                 carregarAvisos();
             } catch (err) {
-                ja('❌ Erro ao salvar aviso', 'error');
+                ja('Erro ao salvar aviso', 'error');
             }
         };
         
@@ -6177,10 +6180,10 @@ const hideLoadingScreen = () => {
             if (!confirm('Tem certeza que deseja excluir este aviso?')) return;
             try {
                 await fetchAuth(`${API_URL}/avisos-op/${id}`, { method: 'DELETE' });
-                ja('✅ Aviso excluído!', 'success');
+                ja('Aviso excluído!', 'success');
                 carregarAvisos();
             } catch (err) {
-                ja('❌ Erro ao excluir', 'error');
+                ja('Erro ao excluir', 'error');
             }
         };
         
@@ -6436,7 +6439,7 @@ const hideLoadingScreen = () => {
                 });
                 setTodoTimerTarefa(tarefaId);
                 setTodoTimerSegundos(0);
-                ja("⏱️ Timer iniciado!", "success");
+                ja("Timer iniciado!", "success");
                 // Atualizar lista
                 if (todoViewMode === "meudia") await loadTodoMeuDia();
                 else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
@@ -6459,7 +6462,7 @@ const hideLoadingScreen = () => {
                 });
                 setTodoTimerTarefa(null);
                 setTodoTimerSegundos(0);
-                ja("⏹️ Timer parado e tempo registrado!", "success");
+                ja("Timer parado e tempo registrado!", "success");
                 // Atualizar lista
                 if (todoViewMode === "meudia") await loadTodoMeuDia();
                 else if (todoGrupoAtivo) await loadTodoTarefas(todoGrupoAtivo.id);
@@ -8379,7 +8382,7 @@ const hideLoadingScreen = () => {
         }, ul = async () => {
             m(!0);
             try {
-                await La(), "admin" !== l.role && "admin_master" !== l.role || await Ia(), "user" === l.role && (await Oa(), await qa(), await vl(), await _l(), await Ga(), await Za()), "admin_financeiro" !== l.role && "admin_master" !== l.role || (await Ua(), await za(), await Ba(), await Va(), await gl(), await wl(), await Ia(), await Ja(), await Ha(), await Wa()), "admin" === l.role && hasModuleAccess(l, "financeiro") && (await wl(), await gl()), ja("🔄 Atualizado!", "success")
+                await La(), "admin" !== l.role && "admin_master" !== l.role || await Ia(), "user" === l.role && (await Oa(), await qa(), await vl(), await _l(), await Ga(), await Za()), "admin_financeiro" !== l.role && "admin_master" !== l.role || (await Ua(), await za(), await Ba(), await Va(), await gl(), await wl(), await Ia(), await Ja(), await Ha(), await Wa()), "admin" === l.role && hasModuleAccess(l, "financeiro") && (await wl(), await gl()), ja("Atualizado!", "success")
             } catch (e) {
                 ja("Erro", "error")
             }
@@ -8399,7 +8402,7 @@ const hideLoadingScreen = () => {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify(t)
-                }), ja("✅ Horário atualizado!", "success");
+                }), ja("Horário atualizado!", "success");
                 const a = await fetchAuth(`${API_URL}/horarios`),
                     l = await a.json();
                 Oe(e => ({
@@ -8428,7 +8431,7 @@ const hideLoadingScreen = () => {
                         hora_fim: r,
                         fechado: a
                     })
-                }), ja("✅ Horário especial criado!", "success"), x(e => ({
+                }), ja("Horário especial criado!", "success"), x(e => ({
                     ...e,
                     novoEspData: "",
                     novoEspDesc: "",
@@ -8462,7 +8465,7 @@ const hideLoadingScreen = () => {
                         tipo: a,
                         exibir_fora_horario: l
                     })
-                }), ja("✅ Aviso criado!", "success"), x(e => ({
+                }), ja("Aviso criado!", "success"), x(e => ({
                     ...e,
                     novoAvisoTitulo: "",
                     novoAvisoMensagem: "",
@@ -8501,7 +8504,7 @@ const hideLoadingScreen = () => {
             if (confirm("Remover este aviso permanentemente?")) try {
                 await fetchAuth(`${API_URL}/avisos/${e}`, {
                     method: "DELETE"
-                }), ja("✅ Removido!", "success");
+                }), ja("Removido!", "success");
                 const t = await fetchAuth(`${API_URL}/avisos`);
                 Ue({
                     avisos: await t.json(),
@@ -8627,7 +8630,7 @@ const hideLoadingScreen = () => {
                     })
                 });
                 if (!response.ok) throw new Error("Erro ao rejeitar");
-                ja("❌ Inscrição rejeitada!", "success");
+                ja("Inscrição rejeitada!", "success");
                 x({
                     ...p,
                     modalRejeitarNovatos: null,
@@ -8709,7 +8712,7 @@ const hideLoadingScreen = () => {
                                 created_by: l.fullName
                             })
                         })).ok) throw new Error("Erro ao criar promoção");
-                    ja("✅ Promoção Novatos criada!", "success"), x({
+                    ja("Promoção Novatos criada!", "success"), x({
                         ...p,
                         novatosRegiao: "",
                         novatosApelido: "",
@@ -8745,7 +8748,7 @@ const hideLoadingScreen = () => {
                             detalhes: p.novatosDetalhes || null
                         })
                     })).ok) throw new Error("Erro ao editar promoção");
-                ja("✅ Promoção atualizada!", "success"), x({
+                ja("Promoção atualizada!", "success"), x({
                     ...p,
                     novatosRegiao: "",
                     novatosApelido: "",
@@ -8792,7 +8795,7 @@ const hideLoadingScreen = () => {
                         },
                         body: JSON.stringify(fe)
                     })).ok) throw new Error("Erro ao salvar");
-                ja("✅ Configuração do Quiz salva!", "success")
+                ja("Configuração do Quiz salva!", "success")
             } catch (e) {
                 ja(e.message, "error")
             } finally {
@@ -8846,7 +8849,7 @@ const hideLoadingScreen = () => {
                                 created_by: l.fullName
                             })
                         })).ok) throw new Error("Erro ao criar promoção");
-                    ja("✅ Promoção criada!", "success"), x({
+                    ja("Promoção criada!", "success"), x({
                         ...p,
                         promoRegiao: "",
                         promoValor: "",
@@ -8872,7 +8875,7 @@ const hideLoadingScreen = () => {
                                 detalhes: p.promoDetalhes || null
                             })
                         })).ok) throw new Error("Erro ao editar promoção");
-                    ja("✅ Promoção atualizada!", "success"), x({
+                    ja("Promoção atualizada!", "success"), x({
                         ...p,
                         editPromo: null,
                         promoRegiao: "",
@@ -9040,19 +9043,19 @@ const hideLoadingScreen = () => {
                     body: JSON.stringify({
                         userCod: l.codProfissional
                     })
-                }), P(!0), ja("✅ Termos aceitos!", "success")
+                }), P(!0), ja("Termos aceitos!", "success")
             } catch (e) {
                 ja("Erro", "error")
             }
             s(!1)
         }, Bl = async () => {
             if (!p.finName || !p.finCpf || !p.finPix) return void ja("Preencha todos os campos", "error");
-            if (!p.pixTipo) return void ja("❌ Selecione o tipo da chave PIX", "error");
+            if (!p.pixTipo) return void ja("Selecione o tipo da chave PIX", "error");
             // 🆕 2026-04-30: bloquear salvamento de valor mascarado (vindo do GET /financial/data)
             // Se motoboy clicou Salvar sem editar, p.finCpf/p.finPix podem estar com asteriscos
             // (ex: "***583**18") — backend rejeitaria, mas erro visual é confuso. Bloqueia aqui.
-            if (temMascara(p.finCpf)) return void ja("❌ Clique no campo CPF e digite seu CPF completo", "error");
-            if (temMascara(p.finPix)) return void ja("❌ Clique no campo Chave PIX e digite sua chave completa", "error");
+            if (temMascara(p.finCpf)) return void ja("Clique no campo CPF e digite seu CPF completo", "error");
+            if (temMascara(p.finPix)) return void ja("Clique no campo Chave PIX e digite sua chave completa", "error");
             // Validar CPF antes de enviar
             const validacaoCpf = validarCPFCompleto(p.finCpf);
             if (!validacaoCpf.valido) return void ja(`${validacaoCpf.mensagem}`, "error");
@@ -9101,13 +9104,13 @@ const hideLoadingScreen = () => {
             // O banner já avisa, mas se o motoboy ignorar e tentar mesmo assim,
             // não deixa passar. Defense in depth com o bloqueio no backend.
             if (maquinaEmMaos) {
-                return void ja("🔒 Devolva a máquina da loja antes de solicitar saque.", "error");
+                return void ja("Devolva a máquina da loja antes de solicitar saque.", "error");
             }
             const e = parseFloat(p.withdrawAmount);
             if (!e || e <= 0) return void ja("Valor inválido", "error");
-            if (e < 15) return void ja("⚠️ Valor mínimo é R$ 15,00", "error");
+            if (e < 15) return void ja("Valor mínimo é R$ 15,00", "error");
             // Validar limite por solicitação
-            if (e > 1000) return void ja("⚠️ Valor máximo por solicitação é R$ 1.000,00", "error");
+            if (e > 1000) return void ja("Valor máximo por solicitação é R$ 1.000,00", "error");
             // Validar limites diário e semanal (se já carregados)
             if (limitesSaque) {
                 if (limitesSaque.diario && e > limitesSaque.diario.disponivel) {
@@ -9120,10 +9123,10 @@ const hideLoadingScreen = () => {
             // Verificar saldo Plific (considerando saques pendentes)
             const saldoDisp = calcularSaldoDisponivel();
             if (saldoDisp !== null && e > saldoDisp) {
-                return void ja("⚠️ Saldo insuficiente! Seu saldo disponível é R$ " + saldoDisp.toFixed(2).replace(".", ","), "error");
+                return void ja("Saldo insuficiente! Seu saldo disponível é R$ " + saldoDisp.toFixed(2).replace(".", ","), "error");
             }
             if (saldoDisp !== null && saldoDisp <= 0) {
-                return void ja("⚠️ Você não possui saldo disponível para saque!", "error");
+                return void ja("Você não possui saldo disponível para saque!", "error");
             }
             const t = new Date,
                 a = new Date(t.getTime() - 36e5),
@@ -9165,11 +9168,11 @@ const hideLoadingScreen = () => {
                         s(!1);
                         return;
                     }
-                    ja("❌ " + (err.error || "Erro ao solicitar saque"), "error");
+                    ja("" + (err.error || "Erro ao solicitar saque"), "error");
                     s(!1);
                     return;
                 }
-                ja("✅ Saque solicitado!", "success"),
+                ja("Saque solicitado!", "success"),
                 // 🆕 2026-04-30: dispara animação de sucesso (modal auto-destrutível em 2,8s)
                 setSaqueSucessoModal(true),
                 setTimeout(() => setSaqueSucessoModal(false), 2800),
@@ -9193,7 +9196,7 @@ const hideLoadingScreen = () => {
             // Verificar se já está processando este withdrawal
             if (processandoWithdrawals.has(withdrawalKey)) {
                 console.log(`Withdrawal ${e} já está sendo processado para status ${t}`);
-                ja("⏳ Aguarde, esta solicitação já está sendo processada...", "warning");
+                ja("Aguarde, esta solicitação já está sendo processada...", "warning");
                 return;
             }
             
@@ -9245,13 +9248,13 @@ const hideLoadingScreen = () => {
                     }
                     // =============== TRATAMENTO DE ERROS ESPECÍFICOS ===============
                     if (response.status === 400 && data.error?.includes('já foi aprovado')) {
-                        ja("⚠️ Este saque já foi aprovado anteriormente!", "warning");
+                        ja("Este saque já foi aprovado anteriormente!", "warning");
                     } else if (response.status === 400 && data.error?.includes('Débito já foi realizado')) {
-                        ja("⚠️ O débito já foi realizado para este saque!", "warning");
+                        ja("O débito já foi realizado para este saque!", "warning");
                     } else if (response.status === 409) {
-                        ja("⏳ Este saque está sendo processado. Aguarde...", "warning");
+                        ja("Este saque está sendo processado. Aguarde...", "warning");
                     } else {
-                        ja("❌ " + (data.error || "Erro ao atualizar"), "error");
+                        ja("" + (data.error || "Erro ao atualizar"), "error");
                     }
                     // Limpar estado de processamento em caso de erro
                     setProcessandoWithdrawals(prev => {
@@ -9270,7 +9273,7 @@ const hideLoadingScreen = () => {
                 if (data._idempotent) {
                     ja("ℹ️ Esta operação já foi processada anteriormente", "info");
                 } else {
-                    ja("✅ Status atualizado!", "success");
+                    ja("Status atualizado!", "success");
                 }
                 
                 // Atualizar item na lista com dados reais do servidor (resposta do PATCH)
@@ -9332,7 +9335,7 @@ const hideLoadingScreen = () => {
                     body: JSON.stringify({
                         saldoStatus: t
                     })
-                }), Ua(), ja("validado" === t ? "✅ Saldo validado!" : "insuficiente" === t ? "❌ Saldo insuficiente!" : "↩ Status de saldo removido", "success")
+                }), Ua(), ja("validado" === t ? "Saldo validado!" : "insuficiente" === t ? "Saldo insuficiente!" : "↩ Status de saldo removido", "success")
             } catch (e) {
                 ja("Erro ao atualizar saldo", "error")
             }
@@ -9353,7 +9356,7 @@ const hideLoadingScreen = () => {
                             reason: p.gratReason || "",
                             createdBy: l.fullName
                         })
-                    }), ja("✅ Gratuidade cadastrada!", "success"), x({
+                    }), ja("Gratuidade cadastrada!", "success"), x({
                         ...p,
                         gratUserCod: "",
                         gratUserName: "",
@@ -9381,7 +9384,7 @@ const hideLoadingScreen = () => {
                             reason: p.restReason,
                             createdBy: l.fullName
                         })
-                    }), ja("✅ Restrição cadastrada!", "success"), x({
+                    }), ja("Restrição cadastrada!", "success"), x({
                         ...p,
                         restUserCod: "",
                         restUserName: "",
@@ -9466,7 +9469,7 @@ const hideLoadingScreen = () => {
                     s(!1);
                     return;
                 }
-                ja("✅ OS enviada!", "success"), x({}), La()
+                ja("OS enviada!", "success"), x({}), La()
             } catch (e) {
                 ja("Erro", "error")
             }
@@ -9488,7 +9491,7 @@ const hideLoadingScreen = () => {
                         validatedBy: l.id,
                         validatedByName: l.fullName || "Admin"
                     })
-                }), ja(t ? "✅ Aprovado!" : "❌ Rejeitado!", t ? "success" : "error");
+                }), ja(t ? "Aprovado!" : "Rejeitado!", t ? "success" : "error");
                 const {
                     pendingFilter: a,
                     adminTab: r
@@ -9982,7 +9985,7 @@ const hideLoadingScreen = () => {
                 className: "bg-white rounded-3xl shadow-2xl w-full max-w-md p-6",
                 onClick: (e) => e.stopPropagation()
             },
-                React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4 text-center"}, "✂️ Ajustar Foto de Perfil"),
+                React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4 text-center"}, "Ajustar Foto de Perfil"),
                 React.createElement("p", {className: "text-sm text-gray-500 mb-4 text-center"}, "Arraste para posicionar e use o zoom para ajustar"),
                 
                 // Área de preview circular
@@ -10090,7 +10093,7 @@ const hideLoadingScreen = () => {
                                 className: "text-white/70 hover:text-white text-sm hover:bg-white/10 px-3 py-1 rounded transition-all"
                             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Pular"))
                         ),
-                        React.createElement("div", {className: "text-5xl mb-3"}, TUTORIAL_PASSOS[tutorialPasso]?.icone),
+                        React.createElement("div", {className: "text-5xl mb-3"}, navIconEl(TUTORIAL_PASSOS[tutorialPasso]?.icone)),
                         React.createElement("h2", {className: "text-2xl font-bold"}, TUTORIAL_PASSOS[tutorialPasso]?.titulo)
                     )
                 ),
@@ -10130,7 +10133,7 @@ const hideLoadingScreen = () => {
                             }
                         },
                         className: "flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 shadow-lg"
-                    }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar! 🚀" : "Próximo →")
+                    }, tutorialPasso === TUTORIAL_PASSOS.length - 1 ? "Começar" : "Próximo →")
                 )
             )
         ),
@@ -10227,23 +10230,23 @@ const hideLoadingScreen = () => {
         React.createElement("button", {
             onClick: () => setSobreTuttsAberto(true),
             className: "w-full mb-4 sm:mb-6 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
-            style: { background: "linear-gradient(135deg, #550976 0%, #6b1190 50%, #550976 100%)" }
+            style: { background: "linear-gradient(135deg, #310976 0%, #401190 50%, #310976 100%)" }
         },
             React.createElement("div", {
                 className: "w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform",
-                style: { backgroundColor: "#f37601" }
+                style: { backgroundColor: "#f67602" }
             }, React.createElement("svg", { className: "ico", style: { width: 30, height: 30 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" }))),
             React.createElement("div", {className: "text-left flex-1"},
                 React.createElement("h3", {className: "text-lg font-bold text-white"}, "Conheça como funciona a Tutts"),
                 React.createElement("p", {className: "text-sm", style: { color: "rgba(255,255,255,0.7)" }}, "Tudo sobre modalidades, taxas, incentivos e mais")
             ),
-            React.createElement("span", {className: "text-2xl group-hover:translate-x-1 transition-transform", style: { color: "#f37601" }}, "›")
+            React.createElement("span", {className: "text-2xl group-hover:translate-x-1 transition-transform", style: { color: "#f67602" }}, "›")
         ),
         
         // ========== MODAL LANDING PAGE COM ANIMAÇÕES ==========
         sobreTuttsAberto && React.createElement("div", {
             className: "fixed inset-0 z-[100] overflow-y-auto",
-            style: { background: "linear-gradient(180deg, #550976 0%, #3d0656 50%, #2a0340 100%)" }
+            style: { background: "linear-gradient(180deg, #310976 0%, #230656 50%, #190340 100%)" }
         },
             // CSS para animações
             React.createElement("style", null, `
@@ -10287,7 +10290,7 @@ const hideLoadingScreen = () => {
             // Header fixo
             React.createElement("div", {
                 className: "sticky top-0 z-10 backdrop-blur-lg border-b border-white/10",
-                style: { backgroundColor: "rgba(85, 9, 118, 0.95)" }
+                style: { backgroundColor: "rgba(76,29,149, 0.95)" }
             },
                 React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-4 flex items-center justify-between"},
                     React.createElement("div", {className: "flex items-center gap-3"},
@@ -10297,7 +10300,7 @@ const hideLoadingScreen = () => {
                     React.createElement("button", {
                         onClick: () => setSobreTuttsAberto(false),
                         className: "w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 hover:rotate-90",
-                        style: { backgroundColor: "#f37601" }
+                        style: { backgroundColor: "#f67602" }
                     }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                 )
             ),
@@ -10309,11 +10312,11 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "text-center mb-12 animate-fadeInUp"},
                     React.createElement("div", {
                         className: "w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse-slow",
-                        style: { backgroundColor: "#f37601" }
+                        style: { backgroundColor: "#f67602" }
                     }, React.createElement("svg", { className: "ico", style: { width: 48, height: 48 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" }))),
                     React.createElement("h1", {className: "text-3xl md:text-4xl font-bold text-white mb-4"}, 
                         "Bem-vindo à ", 
-                        React.createElement("span", {style: { color: "#f37601" }}, "Tutts")
+                        React.createElement("span", {style: { color: "#f67602" }}, "Tutts")
                     ),
                     React.createElement("p", {className: "text-lg max-w-2xl mx-auto leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                         "Atue de forma autônoma, com flexibilidade e oportunidades reais de ganho, em um modelo pensado especialmente para o segmento de peças automotivas."
@@ -10325,7 +10328,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
-                            style: { backgroundColor: "#f37601" }
+                            style: { backgroundColor: "#f67602" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
                         ),
@@ -10336,12 +10339,12 @@ const hideLoadingScreen = () => {
                         // Card Nuvem
                         React.createElement("div", {
                             className: "rounded-2xl p-6 border transition-all hover:scale-105 hover:shadow-2xl animate-fadeInLeft",
-                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)", animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(246,118,2,0.3)", animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
                                 React.createElement("div", {
                                     className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-float",
-                                    style: { background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }
+                                    style: { background: "linear-gradient(135deg, #3b76f6, #0647d4)" }
                                 },
                                     React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-cloud" }))
                                 ),
@@ -10349,19 +10352,19 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("p", {className: "leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                                 "Você permanece online no aplicativo e recebe pedidos eventuais, que aparecem diretamente na sua tela. ",
-                                React.createElement("span", {className: "font-semibold", style: { color: "#f37601" }}, "Ideal para quem busca flexibilidade"),
+                                React.createElement("span", {className: "font-semibold", style: { color: "#f67602" }}, "Ideal para quem busca flexibilidade"),
                                 " e quer rodar conforme a disponibilidade."
                             )
                         ),
                         // Card Dedicada
                         React.createElement("div", {
                             className: "rounded-2xl p-6 border transition-all hover:scale-105 hover:shadow-2xl animate-fadeInRight",
-                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(243,118,1,0.3)", animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }
+                            style: { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(246,118,2,0.3)", animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }
                         },
                             React.createElement("div", {className: "flex items-center gap-3 mb-4"},
                                 React.createElement("div", {
                                     className: "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg animate-float",
-                                    style: { backgroundColor: "#f37601", animationDelay: "0.5s" }
+                                    style: { backgroundColor: "#f67602", animationDelay: "0.5s" }
                                 },
                                     React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" }))
                                 ),
@@ -10369,7 +10372,7 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("p", {className: "leading-relaxed", style: { color: "rgba(255,255,255,0.8)" }},
                                 "A demanda é direcionada para você durante o horário de atendimento da loja parceira. ",
-                                React.createElement("span", {className: "font-semibold", style: { color: "#f37601" }}, "Operação mais previsível"),
+                                React.createElement("span", {className: "font-semibold", style: { color: "#f67602" }}, "Operação mais previsível"),
                                 ", com fluxo constante de entregas."
                             )
                         )
@@ -10381,7 +10384,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center",
-                            style: { backgroundColor: "#f37601" }
+                            style: { backgroundColor: "#f67602" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" }))
                         ),
@@ -10389,7 +10392,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {
                         className: "rounded-2xl p-6 border",
-                        style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
+                        style: { backgroundColor: "rgba(246,118,2,0.15)", borderColor: "rgba(246,118,2,0.4)" }
                     },
                         // Imagem da moto com baú - LAZY LOADING
                         React.createElement("div", {className: "flex justify-center mb-6 animate-scaleIn", style: { animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }},
@@ -10403,9 +10406,9 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "Como o foco é o transporte de peças automotivas, ",
-                            React.createElement("span", {className: "font-bold", style: { color: "#ff6b6b" }}, "não é permitido o uso de bags"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#fecaca" }}, "não é permitido o uso de bags"),
                             ". É ",
-                            React.createElement("span", {className: "font-bold", style: { color: "#51cf66" }}, "obrigatório o uso de baú ou caixote"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#16a34a" }}, "obrigatório o uso de baú ou caixote"),
                             "."
                         ),
                         React.createElement("p", {className: "mb-4", style: { color: "rgba(255,255,255,0.7)" }}, "Essa exigência garante:"),
@@ -10419,7 +10422,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {
                                     key: idx,
                                     className: "rounded-xl p-4 text-center transition-all hover:scale-110 animate-fadeInUp",
-                                    style: { backgroundColor: "rgba(85,9,118,0.5)", animationDelay: (0.4 + idx * 0.1) + "s", opacity: 0, animationFillMode: "forwards" }
+                                    style: { backgroundColor: "rgba(76,29,149,0.5)", animationDelay: (0.4 + idx * 0.1) + "s", opacity: 0, animationFillMode: "forwards" }
                                 },
                                     React.createElement("svg", { className: "ico block mb-2 animate-float", style: { width: 34, height: 34, animationDelay: idx * 0.2 + "s" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + item.icon })),
                                     React.createElement("span", {className: "text-white text-sm font-medium"}, item.text)
@@ -10434,7 +10437,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
-                            style: { backgroundColor: "#22c55e" }
+                            style: { backgroundColor: "#16a34a" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
                         ),
@@ -10442,11 +10445,11 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {
                         className: "rounded-2xl p-6 border",
-                        style: { backgroundColor: "rgba(34,197,94,0.15)", borderColor: "rgba(34,197,94,0.4)" }
+                        style: { backgroundColor: "rgba(22,163,74,0.15)", borderColor: "rgba(22,163,74,0.4)" }
                     },
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "Com a Tutts, seu dinheiro fica na palma da mão. Solicite o saque em ",
-                            React.createElement("span", {className: "font-bold text-2xl", style: { color: "#f37601" }}, "até 1 hora"),
+                            React.createElement("span", {className: "font-bold text-2xl", style: { color: "#f67602" }}, "até 1 hora"),
                             "!"
                         ),
                         React.createElement("div", {className: "grid md:grid-cols-2 gap-4 mb-6"},
@@ -10468,18 +10471,18 @@ const hideLoadingScreen = () => {
                                     React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })),
                                     React.createElement("span", {className: "text-white font-bold"}, "Taxa Administrativa")
                                 ),
-                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Apenas ", React.createElement("span", {className: "font-bold text-xl", style: { color: "#f37601" }}, "4,5%"), " sobre o valor", React.createElement("br", null), React.createElement("span", { style: { fontSize: "12px", color: "rgba(255,255,255,0.7)" } }, "+ R$ 0,40 fixo para saques de R$ 15 a R$ 100"))
+                                React.createElement("p", {style: { color: "rgba(255,255,255,0.8)" }}, "Apenas ", React.createElement("span", {className: "font-bold text-xl", style: { color: "#f67602" }}, "4,5%"), " sobre o valor", React.createElement("br", null), React.createElement("span", { style: { fontSize: "12px", color: "rgba(255,255,255,0.7)" } }, "+ R$ 0,40 fixo para saques de R$ 15 a R$ 100"))
                             )
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-5 border",
-                            style: { backgroundColor: "rgba(85,9,118,0.4)", borderColor: "rgba(243,118,1,0.3)" }
+                            style: { backgroundColor: "rgba(76,29,149,0.4)", borderColor: "rgba(246,118,2,0.3)" }
                         },
                             React.createElement("p", {className: "text-white flex items-start gap-3"},
                                 React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-party" })),
                                 React.createElement("span", null,
                                     "A Tutts frequentemente disponibiliza ",
-                                    React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "promoções com isenção dessa taxa"),
+                                    React.createElement("span", {className: "font-bold", style: { color: "#f67602" }}, "promoções com isenção dessa taxa"),
                                     ", aumentando ainda mais sua rentabilidade!"
                                 )
                             )
@@ -10492,7 +10495,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
-                            style: { backgroundColor: "#550976" }
+                            style: { backgroundColor: "#4c1d95" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" }))
                         ),
@@ -10500,11 +10503,11 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {
                         className: "rounded-2xl p-6 border",
-                        style: { backgroundColor: "rgba(85,9,118,0.3)", borderColor: "rgba(243,118,1,0.3)" }
+                        style: { backgroundColor: "rgba(76,29,149,0.3)", borderColor: "rgba(246,118,2,0.3)" }
                     },
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "É ",
-                            React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "obrigatório o preenchimento do canhoto"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#f67602" }}, "obrigatório o preenchimento do canhoto"),
                             " da nota fiscal pelo cliente."
                         ),
                         React.createElement("div", {className: "space-y-3 mb-6"},
@@ -10525,9 +10528,9 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-4 border",
-                            style: { backgroundColor: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }
+                            style: { backgroundColor: "rgba(220,38,38,0.2)", borderColor: "rgba(220,38,38,0.4)" }
                         },
-                            React.createElement("p", {className: "font-semibold flex items-center gap-2", style: { color: "#fca5a5" }},
+                            React.createElement("p", {className: "font-semibold flex items-center gap-2", style: { color: "#fecaca" }},
                                 React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })),
                                 "Somente com essas etapas a entrega será validada!"
                             )
@@ -10540,7 +10543,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
-                            style: { backgroundColor: "#f37601" }
+                            style: { backgroundColor: "#f67602" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" }))
                         ),
@@ -10548,18 +10551,18 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {
                         className: "rounded-2xl p-6 border",
-                        style: { backgroundColor: "rgba(243,118,1,0.15)", borderColor: "rgba(243,118,1,0.4)" }
+                        style: { backgroundColor: "rgba(246,118,2,0.15)", borderColor: "rgba(246,118,2,0.4)" }
                     },
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "A Tutts conta com um sistema de ",
-                            React.createElement("span", {className: "font-bold", style: { color: "#f37601" }}, "incentivos progressivos"),
+                            React.createElement("span", {className: "font-bold", style: { color: "#f67602" }}, "incentivos progressivos"),
                             ", liberado conforme você avança e se mantém ativo."
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-5 border mb-6",
-                            style: { backgroundColor: "rgba(85,9,118,0.4)", borderColor: "rgba(243,118,1,0.3)" }
+                            style: { backgroundColor: "rgba(76,29,149,0.4)", borderColor: "rgba(246,118,2,0.3)" }
                         },
-                            React.createElement("p", {className: "font-semibold mb-4 flex items-center gap-2", style: { color: "#f37601" }},
+                            React.createElement("p", {className: "font-semibold mb-4 flex items-center gap-2", style: { color: "#f67602" }},
                                 React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })),
                                 "Fique atento:"
                             ),
@@ -10575,7 +10578,7 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-6 text-center",
-                            style: { background: "linear-gradient(135deg, #f37601 0%, #ff9f43 100%)" }
+                            style: { background: "linear-gradient(135deg, #f37601 0%, #ffba43 100%)" }
                         },
                             React.createElement("p", {className: "text-white text-xl font-bold mb-2 flex items-center justify-center gap-2"},
                                 React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-rocket" })), "Promoções e incentivos para impulsionar seus ganhos!"
@@ -10592,7 +10595,7 @@ const hideLoadingScreen = () => {
                     React.createElement("button", {
                         onClick: () => setSobreTuttsAberto(false),
                         className: "px-8 py-4 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105",
-                        style: { background: "linear-gradient(135deg, #f37601 0%, #ff6b35 100%)" }
+                        style: { background: "linear-gradient(135deg, #f37601 0%, #ffb535 100%)" }
                     }, React.createElement("span", { className: "inline-flex items-center gap-2" }, React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Entendi, vamos começar!"))
                 )
             )
@@ -10714,7 +10717,7 @@ const hideLoadingScreen = () => {
                     const min = fila.minutos_esperando;
                     return React.createElement("div", {
                         className: "w-full rounded-2xl p-4 mb-4 text-white",
-                        style: { backgroundColor: "#1d9e75" }
+                        style: { backgroundColor: "#16a34a" }
                     },
                         React.createElement("div", { className: "flex justify-between items-start mb-2" },
                             React.createElement("div", null,
@@ -10735,7 +10738,7 @@ const hideLoadingScreen = () => {
                             React.createElement("button", {
                                 onClick: abrirFila,
                                 className: "flex-1 bg-white text-sm font-semibold py-2 rounded-lg",
-                                style: { color: "#0F6E56" }
+                                style: { color: "#166534" }
                             }, "Ver fila"),
                             React.createElement("button", {
                                 onClick: abrirFila, // sair também leva pra fila (lá tem o botão "Sair")
@@ -10754,7 +10757,7 @@ const hideLoadingScreen = () => {
                     if (ehFilaAuto) {
                         return React.createElement("div", {
                             className: "w-full rounded-2xl p-4 mb-4 text-white",
-                            style: { backgroundColor: "#185FA5" }
+                            style: { backgroundColor: "#1e40af" }
                         },
                             React.createElement("div", { className: "flex justify-between items-start" },
                                 React.createElement("div", null,
@@ -10769,7 +10772,7 @@ const hideLoadingScreen = () => {
                             React.createElement("button", {
                                 onClick: abrirFila,
                                 className: "w-full bg-white text-sm font-semibold py-2 rounded-lg mt-3",
-                                style: { color: "#0C447C" }
+                                style: { color: "#1e40af" }
                             }, "Ver fila completa")
                         );
                     }
@@ -10790,7 +10793,7 @@ const hideLoadingScreen = () => {
 
                     return React.createElement("div", {
                         className: "w-full rounded-2xl p-4 mb-4 text-white",
-                        style: { backgroundColor: "#185FA5" }
+                        style: { backgroundColor: "#1e40af" }
                     },
                         React.createElement("div", { className: "flex justify-between items-start" },
                             React.createElement("div", null,
@@ -10839,7 +10842,7 @@ const hideLoadingScreen = () => {
                         React.createElement("button", {
                             onClick: abrirFila,
                             className: "w-full bg-white text-sm font-semibold py-2 rounded-lg mt-3",
-                            style: { color: "#0C447C" }
+                            style: { color: "#1e40af" }
                         }, "Ver fila completa")
                     );
                 }
@@ -11207,7 +11210,7 @@ const hideLoadingScreen = () => {
             className: "text-sm font-bold text-purple-800 mb-2"
         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), ""), p.subcategoria === "Cliente fechado / ausente" ? "Tire foto da FACHADA FECHADA" : p.subcategoria === "Produto incorreto / avariado" ? "Tire foto da RESSALVA no verso da NF" : p.subcategoria === "Endereço não encontrado" ? "Tire foto da PLACA DA RUA / local" : p.motivo === "Ajuste de Pedágio" ? "Tire foto do COMPROVANTE DE PEDÁGIO" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Foto do comprovante (opcional)" : "Tire foto do COMPROVANTE"), React.createElement("p", {
             className: "text-xs text-purple-600 mb-2"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #7C3AED", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(124,58,237,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #7C3AED, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, "\uD83D\uDCF7")), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#7C3AED", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #7C3AED", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(124,58,237,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #7C3AED, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, Icon("camera"))), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#7C3AED", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
             React.createElement("input", {
             type: "file",
             accept: "image/*",
@@ -11225,7 +11228,7 @@ const hideLoadingScreen = () => {
                         const fotosAtuais = p.imagens || [];
                         const tentAtual = (p.tentativas_foto || 0) + 1;
                         if (fotosAtuais.length === 0 && tentAtual <= 3) {
-                            ja("🤖 Validando foto com IA...", "info");
+                            ja("Validando foto com IA...", "info");
                             x({ ...p, validandoIA: true, tentativas_foto: tentAtual, _fotoTemp: b64 });
                             try {
                                 const resp = await fetchAuth(`${API_URL}/submissions/validar-foto`, {
@@ -11235,18 +11238,18 @@ const hideLoadingScreen = () => {
                                 const resultado = await resp.json();
                                 if (resultado.foto_valida) {
                                     x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: resultado, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
-                                    ja("✅ Foto validada pela IA!", "success");
+                                    ja("Foto validada pela IA!", "success");
                                 } else {
                                     x(prev => ({ ...prev, tentativas_foto: tentAtual, feedback_ia: resultado.feedback_motoboy || "Foto não aceita. Tire outra.", validacao_ia: null, validandoIA: false, _fotoTemp: null }));
-                                    ja(resultado.feedback_motoboy || "❌ Foto rejeitada pela IA. Tire uma nova.", "error");
+                                    ja(resultado.feedback_motoboy || "Foto rejeitada pela IA. Tire uma nova.", "error");
                                 }
                             } catch (iaErr) {
                                 x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: { sem_ia: true, resumo_admin: "IA indisponível — foto aceita" }, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
-                                ja("📷 Foto aceita (IA indisponível)", "success");
+                                ja("Foto aceita (IA indisponível)", "success");
                             }
                         } else {
                             x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, feedback_ia: null, validandoIA: false }));
-                            ja("📷 Foto adicionada!", "success");
+                            ja("Foto adicionada!", "success");
                         }
                     } catch { ja("Erro ao processar imagem", "error"); }
                     s(!1);
@@ -11271,7 +11274,7 @@ const hideLoadingScreen = () => {
                         const fotosAtuais = p.imagens || [];
                         const tentAtual = (p.tentativas_foto || 0) + 1;
                         if (fotosAtuais.length === 0 && tentAtual <= 3) {
-                            ja("🤖 Validando foto com IA...", "info");
+                            ja("Validando foto com IA...", "info");
                             x({ ...p, validandoIA: true, tentativas_foto: tentAtual, _fotoTemp: b64 });
                             try {
                                 const resp = await fetchAuth(`${API_URL}/submissions/validar-foto`, {
@@ -11281,18 +11284,18 @@ const hideLoadingScreen = () => {
                                 const resultado = await resp.json();
                                 if (resultado.foto_valida) {
                                     x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: resultado, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
-                                    ja("✅ Foto validada pela IA!", "success");
+                                    ja("Foto validada pela IA!", "success");
                                 } else {
                                     x(prev => ({ ...prev, tentativas_foto: tentAtual, feedback_ia: resultado.feedback_motoboy || "Foto não aceita. Tire outra.", validacao_ia: null, validandoIA: false, _fotoTemp: null }));
-                                    ja(resultado.feedback_motoboy || "❌ Foto rejeitada pela IA. Tire uma nova.", "error");
+                                    ja(resultado.feedback_motoboy || "Foto rejeitada pela IA. Tire uma nova.", "error");
                                 }
                             } catch (iaErr) {
                                 x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, validacao_ia: { sem_ia: true, resumo_admin: "IA indisponível — foto aceita" }, feedback_ia: null, validandoIA: false, _fotoTemp: null }));
-                                ja("📷 Foto aceita (IA indisponível)", "success");
+                                ja("Foto aceita (IA indisponível)", "success");
                             }
                         } else {
                             x(prev => ({ ...prev, imagens: [...(prev.imagens || []), b64], tentativas_foto: tentAtual, feedback_ia: null, validandoIA: false }));
-                            ja("📷 Foto adicionada!", "success");
+                            ja("Foto adicionada!", "success");
                         }
                     } catch { ja("Erro ao processar imagem", "error"); }
                     s(!1);
@@ -11346,7 +11349,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("div", null, React.createElement("button", {
             className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
             title: "Clique para copiar o número da OS",
-            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
         }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
             className: "text-sm text-gray-600"
         }, e.motivo)), React.createElement("span", {
@@ -11422,7 +11425,7 @@ const hideLoadingScreen = () => {
                     s(!0); try {
                         const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: p.contestMsg, imagens: p.contestImgs || [] }) });
                         const d = await r.json();
-                        if (d.success || r.ok) { ja("✅ Contestação enviada!", "success"); x({ ...p, contestandoId: null, contestMsg: '', contestImgs: [] }); try { const rr = await fetchAuth(`${API_URL}/submissions`); const dd = await rr.json(); if (Array.isArray(dd)) C(dd.map(function(s){ return { ...s, ordemServico: s.ordem_servico, codProfissional: s.user_cod, fullName: s.user_name, temImagem: s.tem_imagem, imagemComprovante: null, timestamp: new Date(s.created_at).toLocaleString("pt-BR") }; })); } catch {} }
+                        if (d.success || r.ok) { ja("Contestação enviada!", "success"); x({ ...p, contestandoId: null, contestMsg: '', contestImgs: [] }); try { const rr = await fetchAuth(`${API_URL}/submissions`); const dd = await rr.json(); if (Array.isArray(dd)) C(dd.map(function(s){ return { ...s, ordemServico: s.ordem_servico, codProfissional: s.user_cod, fullName: s.user_name, temImagem: s.tem_imagem, imagemComprovante: null, timestamp: new Date(s.created_at).toLocaleString("pt-BR") }; })); } catch {} }
                         else if (d.error === 'janela_contestacao_expirada') {
                             const dataFmt = d.rejeitado_em ? new Date(d.rejeitado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '?';
                             const horasFmt = d.horas_atras ? Math.round(d.horas_atras) : '?';
@@ -11492,7 +11495,7 @@ const hideLoadingScreen = () => {
                                             const data = await r.json();
                                             setSaquesStatus(data);
                                             if (data.habilitados) {
-                                                ja && ja('✅ Saques disponíveis novamente!', 'success');
+                                                ja && ja('Saques disponíveis novamente!', 'success');
                                             } else {
                                                 ja && ja('Saques ainda indisponíveis. Tente mais tarde.', 'info');
                                             }
@@ -11761,12 +11764,12 @@ const hideLoadingScreen = () => {
             React.createElement("div", {
                 style: {
                     position: "relative",
-                    background: "linear-gradient(135deg, #3C3489 0%, #534AB7 50%, #BA7517 100%)",
+                    background: "linear-gradient(135deg, #533489 0%, #724ab7 50%, #ba7e17 100%)",
                     borderRadius: "12px",
                     padding: "16px 18px",
                     color: "white",
                     overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(60, 52, 137, 0.25)"
+                    boxShadow: "0 4px 12px rgba(76,29,149, 0.25)"
                 }
             },
                 // Círculos decorativos sutis
@@ -11889,7 +11892,7 @@ const hideLoadingScreen = () => {
                     limitesSaque && React.createElement("button", {
                         onClick: () => setModalLimitesAberto(true),
                         style: {
-                            fontSize: "12px", color: "#1D4ED8",
+                            fontSize: "12px", color: "#2563eb",
                             background: "none", border: "none",
                             cursor: "pointer", padding: 0,
                             fontWeight: 500
@@ -12091,47 +12094,47 @@ const hideLoadingScreen = () => {
                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Seus limites de saque")),
                     React.createElement("button", {
                         onClick: () => setModalLimitesAberto(false),
-                        style: { background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#666", padding: "4px 8px" }
+                        style: { background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#6b7280", padding: "4px 8px" }
                     }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
                 ),
-                React.createElement("div", { style: { paddingBottom: "12px", borderBottom: "1px solid #eee" } },
+                React.createElement("div", { style: { paddingBottom: "12px", borderBottom: "1px solid #e5e7eb" } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px" } },
-                        React.createElement("span", { style: { color: "#666" } }, "Por solicitação"),
+                        React.createElement("span", { style: { color: "#6b7280" } }, "Por solicitação"),
                         React.createElement("span", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.por_saque.limite.toFixed(2).replace(".", ","))
                     )
                 ),
-                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #eee" } },
+                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #e5e7eb" } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "6px" } },
-                        React.createElement("span", { style: { color: "#666" } }, "Hoje"),
+                        React.createElement("span", { style: { color: "#6b7280" } }, "Hoje"),
                         React.createElement("span", null,
                             React.createElement("strong", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.diario.utilizado.toFixed(2).replace(".", ",")),
                             " de R$ " + limitesSaque.diario.limite.toFixed(2).replace(".", ",")
                         )
                     ),
-                    React.createElement("div", { style: { height: "5px", background: "#f0f0f0", borderRadius: "3px", overflow: "hidden" } },
+                    React.createElement("div", { style: { height: "5px", background: "#f3f4f6", borderRadius: "3px", overflow: "hidden" } },
                         React.createElement("div", {
                             style: {
                                 height: "100%",
-                                background: limitesSaque.diario.disponivel <= 0 ? "#dc2626" : "#534AB7",
+                                background: limitesSaque.diario.disponivel <= 0 ? "#dc2626" : "#7c3aed",
                                 width: Math.min(100, (limitesSaque.diario.utilizado / limitesSaque.diario.limite) * 100) + "%",
                                 transition: "width 0.3s"
                             }
                         })
                     )
                 ),
-                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #eee" } },
+                React.createElement("div", { style: { padding: "12px 0", borderBottom: "1px solid #e5e7eb" } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "6px" } },
-                        React.createElement("span", { style: { color: "#666" } }, "Esta semana"),
+                        React.createElement("span", { style: { color: "#6b7280" } }, "Esta semana"),
                         React.createElement("span", null,
                             React.createElement("strong", { style: { fontWeight: 600 } }, "R$ " + limitesSaque.semanal.utilizado.toFixed(2).replace(".", ",")),
                             " de R$ " + (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite).toFixed(2).replace(".", ",")
                         )
                     ),
-                    React.createElement("div", { style: { height: "5px", background: "#f0f0f0", borderRadius: "3px", overflow: "hidden" } },
+                    React.createElement("div", { style: { height: "5px", background: "#f3f4f6", borderRadius: "3px", overflow: "hidden" } },
                         React.createElement("div", {
                             style: {
                                 height: "100%",
-                                background: limitesSaque.semanal.disponivel <= 0 ? "#dc2626" : "#534AB7",
+                                background: limitesSaque.semanal.disponivel <= 0 ? "#dc2626" : "#7c3aed",
                                 width: Math.min(100, (limitesSaque.semanal.utilizado / (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite)) * 100) + "%",
                                 transition: "width 0.3s"
                             }
@@ -12139,7 +12142,7 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 limitesSaque.ciclo && React.createElement("p", {
-                    style: { fontSize: "11px", color: "#999", marginTop: "12px", marginBottom: 0 }
+                    style: { fontSize: "11px", color: "#9ca3af", marginTop: "12px", marginBottom: 0 }
                 }, "Ciclo: " + new Date(limitesSaque.ciclo.inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(limitesSaque.ciclo.fim + "T12:00:00").toLocaleDateString("pt-BR") + " · reseta toda terça"),
                 // Botão de solicitar mais limite — aparece quando o disponivel fica
                 // ABAIXO do saque minimo (R$ 15), nao so quando zera. Uma sobra tipo
@@ -12159,15 +12162,15 @@ const hideLoadingScreen = () => {
                             });
                             const data = await resp.json();
                             if (resp.ok) {
-                                ja('✅ Solicitação enviada! O financeiro será notificado.', 'success');
+                                ja('Solicitação enviada! O financeiro será notificado.', 'success');
                                 const lr = await fetchAuth(`${API_URL}/withdrawals/limites/${l.cod_profissional || l.codProfissional}`);
                                 if (lr.ok) setLimitesSaque(await lr.json());
                                 setModalLimitesAberto(false);
                             } else {
-                                ja('❌ ' + (data.error || 'Erro ao solicitar'), 'error');
+                                ja('' + (data.error || 'Erro ao solicitar'), 'error');
                             }
                         } catch (err) {
-                            ja('❌ Erro de conexão', 'error');
+                            ja('Erro de conexão', 'error');
                         }
                         setSolicitandoLimite(false);
                     },
@@ -12180,7 +12183,7 @@ const hideLoadingScreen = () => {
                         cursor: solicitandoLimite ? "wait" : "pointer",
                         opacity: solicitandoLimite ? 0.6 : 1
                     }
-                }, solicitandoLimite ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Enviando...") : "📩 Solicitar mais limite"),
+                }, solicitandoLimite ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Enviando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("mail"), "Solicitar mais limite")),
                 limitesSaque.solicitacao_pendente && React.createElement("p", {
                     style: { fontSize: "12px", color: "#7C3AED", marginTop: "12px", fontWeight: 600, textAlign: "center" }
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Você já tem uma solicitação pendente de limite extra."))
@@ -12236,7 +12239,7 @@ const hideLoadingScreen = () => {
                     style: {
                         width: "72px", height: "72px",
                         borderRadius: "50%",
-                        background: "#E1F5EE",
+                        background: "#f0fdf4",
                         margin: "0 auto 16px",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         position: "relative"
@@ -12246,7 +12249,7 @@ const hideLoadingScreen = () => {
                         style: {
                             position: "absolute", inset: "-8px",
                             borderRadius: "50%",
-                            border: "3px solid #5DCAA5",
+                            border: "3px solid #16a34a",
                             opacity: 0,
                             animation: "tuttsRing 0.75s ease-out forwards"
                         }
@@ -12261,23 +12264,23 @@ const hideLoadingScreen = () => {
                     },
                         React.createElement("path", {
                             d: "M5 12 l5 5 l9 -10",
-                            stroke: "#0F6E56", strokeWidth: 2.8,
+                            stroke: "#166534", strokeWidth: 2.8,
                             strokeLinecap: "round", strokeLinejoin: "round"
                         })
                     )
                 ),
                 React.createElement("p", {
-                    style: { fontSize: "18px", fontWeight: 600, color: "#0F6E56", margin: "0 0 8px" }
+                    style: { fontSize: "18px", fontWeight: 600, color: "#166534", margin: "0 0 8px" }
                 }, "Solicitação recebida!"),
                 React.createElement("p", {
-                    style: { fontSize: "13px", color: "#666", lineHeight: 1.5, margin: "0 0 16px" }
+                    style: { fontSize: "13px", color: "#6b7280", lineHeight: 1.5, margin: "0 0 16px" }
                 }, "Em alguns segundos o valor estará disponível na sua conta."),
                 React.createElement("div", {
                     style: { height: "3px", background: "#f3f4f6", borderRadius: "2px", overflow: "hidden" }
                 },
                     React.createElement("div", {
                         style: {
-                            height: "100%", background: "#1D9E75",
+                            height: "100%", background: "#16a34a",
                             transformOrigin: "left",
                             animation: "tuttsDrain 2.8s linear forwards"
                         }
@@ -12292,7 +12295,7 @@ const hideLoadingScreen = () => {
                 position: "fixed",
                 top: 0, left: 0,
                 width: "100vw", height: "100vh",
-                background: "rgba(18,15,28,0.55)",
+                background: "rgba(17,24,39,0.55)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 zIndex: 99999,
                 padding: "16px",
@@ -12321,8 +12324,8 @@ const hideLoadingScreen = () => {
             },
                 React.createElement("div", {
                     style: {
-                        background: "#FCEBEB",
-                        borderBottom: "1px solid #F7C1C1",
+                        background: "#fef2f2",
+                        borderBottom: "1px solid #fecaca",
                         padding: "18px 20px 14px",
                         textAlign: "center"
                     }
@@ -12330,17 +12333,17 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {
                         style: {
                             width: "48px", height: "48px", borderRadius: "50%",
-                            background: "#F7C1C1", color: "#791F1F",
+                            background: "#fecaca", color: "#991b1b",
                             margin: "0 auto 8px",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: "24px"
                         }
                     }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))),
                     React.createElement("p", {
-                        style: { fontSize: "17px", fontWeight: 500, color: "#501313", margin: "0 0 2px" }
+                        style: { fontSize: "17px", fontWeight: 500, color: "#991b1b", margin: "0 0 2px" }
                     }, "Saque bloqueado"),
                     React.createElement("p", {
-                        style: { fontSize: "12px", color: "#791F1F", margin: 0 }
+                        style: { fontSize: "12px", color: "#991b1b", margin: 0 }
                     }, "Devolva a máquina para liberar")
                 ),
                 React.createElement("div", { style: { padding: "16px 20px" } },
@@ -12348,10 +12351,10 @@ const hideLoadingScreen = () => {
                         style: { fontSize: "13px", margin: "0 0 10px" }
                     }, "Prezado ", React.createElement("strong", { style: { fontWeight: 500 } }, (maquinaPendenteModal.motoboyNome || "").split(' ')[0] || "motoboy"), ","),
                     React.createElement("p", {
-                        style: { fontSize: "13px", color: "#111", lineHeight: 1.55, margin: "0 0 14px" }
+                        style: { fontSize: "13px", color: "#111827", lineHeight: 1.55, margin: "0 0 14px" }
                     }, maquinaPendenteModal.mensagem || "Você está com uma máquina da loja em uso. Faça a devolução para acessar seus valores."),
                     React.createElement("div", {
-                        style: { background: "#f5f5f4", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }
+                        style: { background: "#f3f4f6", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }
                     },
                         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontSize: "12px" } },
                             React.createElement("span", { style: { color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.3px", fontSize: "11px" } }, "Máquina"),
@@ -12372,7 +12375,7 @@ const hideLoadingScreen = () => {
                         maquinaPendenteModal.maquina?.telefone_loja && React.createElement("a", {
                             href: `tel:${maquinaPendenteModal.maquina.telefone_loja}`,
                             style: {
-                                background: "transparent", color: "#111",
+                                background: "transparent", color: "#111827",
                                 border: "1px solid #d1d5db",
                                 padding: "0 14px", height: "34px",
                                 borderRadius: "8px", fontSize: "13px",
@@ -12541,7 +12544,7 @@ const hideLoadingScreen = () => {
             className: "p-2 rounded-lg border-2 text-center transition-all " + (p.pixTipo === e.id ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 hover:border-gray-300")
         }, React.createElement("span", {
             className: "text-xl"
-        }, e.icon), React.createElement("p", {
+        }, navIconEl(e.icon)), React.createElement("p", {
             className: "text-xs font-semibold mt-1"
         }, e.label))))), React.createElement("div", null, React.createElement("label", {
             className: "block text-sm font-semibold mb-1"
@@ -12572,7 +12575,7 @@ const hideLoadingScreen = () => {
             className: "mt-1 text-sm " + (tr(p.finPix, p.pixTipo).valido ? "text-green-600" : "text-red-600")
         }, tr(p.finPix, p.pixTipo).mensagem), !p.pixTipo && React.createElement("p", {
             className: "mt-1 text-sm text-gray-500"
-        }, "👆 Selecione o tipo da chave acima")), React.createElement("div", {
+        }, "Selecione o tipo da chave acima")), React.createElement("div", {
             className: "flex gap-2"
         }, F && React.createElement("button", {
             onClick: () => {
@@ -12695,7 +12698,7 @@ const hideLoadingScreen = () => {
             className: "p-2 rounded-lg border-2 text-center transition-all " + (p.pixTipo === e.id ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 hover:border-gray-300")
         }, React.createElement("span", {
             className: "text-xl"
-        }, e.icon), React.createElement("p", {
+        }, navIconEl(e.icon)), React.createElement("p", {
             className: "text-xs font-semibold mt-1"
         }, e.label))))), React.createElement("div", null, React.createElement("label", {
             className: "block text-sm font-semibold mb-1"
@@ -12714,7 +12717,7 @@ const hideLoadingScreen = () => {
             className: "mt-1 text-sm " + (tr(p.finPix, p.pixTipo).valido ? "text-green-600" : "text-red-600")
         }, tr(p.finPix, p.pixTipo).mensagem), !p.pixTipo && React.createElement("p", {
             className: "mt-1 text-sm text-gray-500"
-        }, "👆 Selecione o tipo da chave acima")), React.createElement("button", {
+        }, "Selecione o tipo da chave acima")), React.createElement("button", {
             onClick: Bl,
             disabled: c || !p.pixTipo || !p.finName || !p.finCpf || !p.finPix,
             className: "w-full bg-purple-600 text-white py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
@@ -12769,7 +12772,7 @@ const hideLoadingScreen = () => {
                 const t = e.touches[0],
                     a = e.currentTarget.getBoundingClientRect(),
                     l = Math.max(0, Math.min(100, (t.clientX - a.left) / a.width * 100));
-                Je(l), l >= 95 && !Ge && (We(!0), ja("✅ Você pode prosseguir com a solicitação!", "success"))
+                Je(l), l >= 95 && !Ge && (We(!0), ja("Você pode prosseguir com a solicitação!", "success"))
             },
             onMouseDown: e => {
                 const t = e.currentTarget.getBoundingClientRect(),
@@ -12777,7 +12780,7 @@ const hideLoadingScreen = () => {
                 Je(a);
                 const l = e => {
                         const a = Math.max(0, Math.min(100, (e.clientX - t.left) / t.width * 100));
-                        Je(a), a >= 95 && !Ge && (We(!0), ja("✅ Você pode prosseguir com a solicitação!", "success"))
+                        Je(a), a >= 95 && !Ge && (We(!0), ja("Você pode prosseguir com a solicitação!", "success"))
                     },
                     r = () => {
                         document.removeEventListener("mousemove", l), document.removeEventListener("mouseup", r)
@@ -12797,7 +12800,7 @@ const hideLoadingScreen = () => {
                 transition: "none",
                 transform: Ve >= 95 ? "scale(1.1)" : "scale(1)"
             }
-        }, Ve < 95 ? "👉" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("div", {
+        }, Ve < 95 ? Icon("arrowright") : React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("div", {
             className: "absolute inset-0 flex items-center justify-end pr-4 pointer-events-none"
         }, React.createElement("span", {
             className: "font-bold text-sm " + (Ve < 95 ? "text-purple-700" : "text-green-700")
@@ -12879,7 +12882,7 @@ const hideLoadingScreen = () => {
             className: "flex-1 px-3 py-2 bg-white border border-purple-300 rounded-lg text-gray-800 font-mono text-xs"
         }), React.createElement("button", {
             onClick: () => {
-                navigator.clipboard.writeText(`${window.location.origin}/#/indicar/${p.meuLinkIndicacao.token}`), ja("✅ Link copiado!", "success")
+                navigator.clipboard.writeText(`${window.location.origin}/#/indicar/${p.meuLinkIndicacao.token}`), ja("Link copiado!", "success")
             },
             className: "px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-sm"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))))), React.createElement("button", {
@@ -12907,17 +12910,17 @@ const hideLoadingScreen = () => {
                     });
                     if (!t.ok) {
                         const e = await t.json().catch(() => ({}));
-                        return ja("❌ Erro: " + (e.error || t.status), "error"), void s(!1)
+                        return ja("Erro: " + (e.error || t.status), "error"), void s(!1)
                     }
                     const a = await t.json();
-                    if (!a || !a.token) return ja("❌ Erro: token não gerado", "error"), void s(!1);
+                    if (!a || !a.token) return ja("Erro: token não gerado", "error"), void s(!1);
                     x({
                         ...p,
                         meuLinkIndicacao: a,
                         linkPromoSelecionada: e.id
-                    }), ja("✅ Link gerado!", "success")
+                    }), ja("Link gerado!", "success")
                 } catch (e) {
-                    ja("❌ Erro: " + e.message, "error")
+                    ja("Erro: " + e.message, "error")
                 }
                 s(!1)
             },
@@ -13109,7 +13112,7 @@ const hideLoadingScreen = () => {
             className: `rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 text-center ${Le.passou?"bg-green-500":"bg-red-500"} text-white`
         }, React.createElement("div", {
             className: "text-5xl sm:text-6xl mb-3 sm:mb-4"
-        }, Le.passou ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-party" })) : "😢"), React.createElement("h2", {
+        }, Le.passou ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-party" })) : Icon("frown")), React.createElement("h2", {
             className: "text-xl sm:text-2xl font-bold mb-2"
         }, Le.passou ? "Parabéns! Você passou!" : "Que pena! Não foi dessa vez..."), React.createElement("p", {
             className: "text-base sm:text-lg mb-3 sm:mb-4"
@@ -13140,7 +13143,7 @@ const hideLoadingScreen = () => {
             className: "text-center py-4 sm:py-8"
         }, React.createElement("p", {
             className: "text-4xl sm:text-6xl mb-3"
-        }, "😕"), React.createElement("p", {
+        }, Icon("frown")), React.createElement("p", {
             className: "text-gray-500 font-semibold text-xs sm:text-base"
         }, "Nenhuma promoção disponível no momento"), React.createElement("p", {
             className: "text-gray-400 text-xs"
@@ -13192,7 +13195,7 @@ const hideLoadingScreen = () => {
                             const e = await t.json();
                             throw new Error(e.error || "Erro ao se inscrever")
                         }
-                        ja("✅ Inscrição realizada! Válida por 15 dias.", "success"), await kl(), await carregarProgressoNovatos(), await verificarElegibilidadeNovatos()
+                        ja("Inscrição realizada! Válida por 15 dias.", "success"), await kl(), await carregarProgressoNovatos(), await verificarElegibilidadeNovatos()
                     } catch (e) {
                         ja(e.message, "error")
                     } finally {
@@ -13232,7 +13235,7 @@ const hideLoadingScreen = () => {
             className: "mt-2 bg-red-100 border border-red-300 rounded p-2"
         }, React.createElement("p", {
             className: "text-red-800 text-[10px] sm:text-sm"
-        }, "😢 Necessário acertar 5/5 para ganhar."))), 0 !== ie.length || je ? React.createElement("div", {
+        }, "Necessário acertar 5/5 para ganhar."))), 0 !== ie.length || je ? React.createElement("div", {
             className: "space-y-2 sm:space-y-3"
         }, ie.map(e => {
             const t = e.expires_at ? new Date(e.expires_at) : null,
@@ -13378,7 +13381,7 @@ const hideLoadingScreen = () => {
             className: "bg-green-500 text-white font-bold text-center py-2 text-sm"
         }, "COBERTURAS E VALORES"), React.createElement("div", {
             className: "p-4 space-y-2 text-sm text-gray-700"
-        }, React.createElement("p", null, "☠️ ", React.createElement("strong", null, "Morte Acidental:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), React.createElement("strong", null, "Invalidez Perm.:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), React.createElement("strong", null, "Desp. Médicas/Hosp.:"), " Até R$ 5.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), React.createElement("strong", null, "Diária Incapacidade:"), " R$ 80/dia (30 dias)"), React.createElement("p", null, "⚰️ ", React.createElement("strong", null, "Funeral:"), " R$ 5.000"))), React.createElement("div", {
+        }, React.createElement("p", null, Icon("shield"), " ", React.createElement("strong", null, "Morte Acidental:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), React.createElement("strong", null, "Invalidez Perm.:"), " R$ 20.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), React.createElement("strong", null, "Desp. Médicas/Hosp.:"), " Até R$ 5.000"), React.createElement("p", null, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), React.createElement("strong", null, "Diária Incapacidade:"), " R$ 80/dia (30 dias)"), React.createElement("p", null, Icon("heart"), " ", React.createElement("strong", null, "Funeral:"), " R$ 5.000"))), React.createElement("div", {
             className: "bg-white rounded-xl shadow border-l-4 border-red-500 overflow-hidden"
         }, React.createElement("div", {
             className: "bg-red-500 text-white font-bold text-center py-2 text-sm"
@@ -13463,7 +13466,7 @@ const hideLoadingScreen = () => {
             className: "bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-center"
         }, React.createElement("div", {
             className: "text-6xl mb-2"
-        }, "🛒✨"), React.createElement("h2", {
+        }, Icon("cart")), React.createElement("h2", {
             className: "text-2xl font-bold text-white"
         }, "Lojinha Virtual da Tutts")), React.createElement("div", {
             className: "p-6"
@@ -13471,13 +13474,13 @@ const hideLoadingScreen = () => {
             className: "text-lg mb-4"
         }, React.createElement("span", {
             className: "text-2xl"
-        }, "👋"), " ", React.createElement("strong", null, "Olá, entregador!")), React.createElement("p", {
+        }, Icon("handshake")), " ", React.createElement("strong", null, "Olá, entregador!")), React.createElement("p", {
             className: "text-gray-700 mb-4"
         }, "Criamos este espaço para trazer mais ", React.createElement("strong", null, "praticidade"), " e ", React.createElement("strong", null, "acessibilidade"), " na compra de itens essenciais para o seu dia a dia."), React.createElement("p", {
             className: "text-gray-700 mb-4"
-        }, "As ofertas disponíveis aqui são ", React.createElement("strong", null, "exclusivas"), " para você, entregador autônomo que opera ativamente no aplicativo Tutts há pelo menos 3 meses e possui um bom score ⭐📊"), React.createElement("p", {
+        }, "As ofertas disponíveis aqui são ", React.createElement("strong", null, "exclusivas"), " para você, entregador autônomo que opera ativamente no aplicativo Tutts há pelo menos 3 meses e possui um bom score."), React.createElement("p", {
             className: "text-gray-700 mb-2"
-        }, "Aproveite os benefícios, equipe sua rotina com qualidade e economize! 💜"), React.createElement("div", {
+        }, "Aproveite os benefícios, equipe sua rotina com qualidade e economize!"), React.createElement("div", {
             className: "bg-purple-50 rounded-xl p-4 mb-6"
         }, React.createElement("p", {
             className: "text-purple-800 font-semibold text-center"
@@ -13585,7 +13588,7 @@ const hideLoadingScreen = () => {
                         user_name: l.fullName,
                         sugestao: p.lojaSugestaoTexto.trim()
                     })
-                }), ja("💡 Sugestão enviada!", "success"), x({
+                }), ja("Sugestão enviada!", "success"), x({
                     ...p,
                     lojaSugestaoModal: !1,
                     lojaSugestaoTexto: ""
@@ -13836,7 +13839,7 @@ const hideLoadingScreen = () => {
                                 "Content-Type": "application/json"
                             },
                             body: JSON.stringify(e)
-                        }), ja("✅ Pedido enviado com sucesso!", "success"), x({
+                        }), ja("Pedido enviado com sucesso!", "success"), x({
                             ...p,
                             lojaCompraModal: !1,
                             lojaProdutoSelecionado: null,
@@ -13849,7 +13852,7 @@ const hideLoadingScreen = () => {
                     else ja("Selecione um tamanho", "error")
             },
             className: "flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:opacity-90"
-        }, "✅ Confirmar Pedido"))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : /* MATA_INLINE_V1: mesmo fallback do liberar-ponto, logo abaixo */ React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("check"), "Confirmar Pedido")))))))), "correcao-endereco" === p.userTab && (typeof window.ModuloAgenteComponent !== 'undefined' ? React.createElement(window.ModuloAgenteComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, HeaderCompacto: null, showToast: ja, he: he, Ee: Ee }) : /* MATA_INLINE_V1: mesmo fallback do liberar-ponto, logo abaixo */ React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")), "liberar-ponto" === p.userTab && (typeof window.ModuloLiberacaoComponent !== 'undefined' ? React.createElement(window.ModuloLiberacaoComponent, { usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja }) : React.createElement("div", { className: "p-6 text-center text-gray-500" }, "Carregando módulo...")));
         }
         // Verificar permissão para Financeiro (admin comum)
         const canAccessFinanceiro = hasModuleAccess(l, "financeiro");
@@ -14019,7 +14022,7 @@ const hideLoadingScreen = () => {
                         },
                         className: "w-full text-left px-3 py-3 rounded-xl mb-2 flex items-center gap-3 transition-all " + 
                             (todoViewMode === "meudia" ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md" : "hover:bg-gray-100")
-                    }, React.createElement("span", {className: "text-xl"}, "☀️"), 
+                    }, React.createElement("span", {className: "text-xl"}, Icon("sun")), 
                         React.createElement("span", {className: "flex-1 font-semibold"}, "Meu Dia"),
                         React.createElement("span", {className: "text-sm px-2 py-0.5 rounded-full " + (todoViewMode === "meudia" ? "bg-white/20" : "bg-purple-100 text-purple-700")}, todoMeuDia.length)
                     ),
@@ -14041,7 +14044,7 @@ const hideLoadingScreen = () => {
                         },
                         className: "w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 transition-all " + 
                             (todoViewMode === "grupo" && todoGrupoAtivo?.id === g.id ? "bg-purple-100 text-purple-700 font-semibold" : "hover:bg-gray-100 text-gray-700")
-                    }, React.createElement("span", null, g.icone || "📋"), 
+                    }, React.createElement("span", null, navIconEl(g.icone || "📋")), 
                         React.createElement("span", {className: "flex-1 truncate"}, g.nome),
                         g.tipo === "pessoal" && React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))
                     )),
@@ -14201,7 +14204,7 @@ const hideLoadingScreen = () => {
                                     body: JSON.stringify({status: 'concluida', user_cod: l.codProfissional, user_name: l.fullName})
                                 });
                                 setTodoTarefaDetalhe(null);
-                                ja("✅ Tarefa concluída!", "success");
+                                ja("Tarefa concluída!", "success");
                                 if (todoViewMode === "meudia") await loadTodoMeuDia();
                                 else if (todoGrupoAtivo) {
                                     const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
@@ -14225,7 +14228,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-6"},
                         React.createElement("div", null,
                             React.createElement("h2", {className: "text-xl font-bold text-gray-800"}, 
-                                todoViewMode === "meudia" ? "☀️ Meu Dia" : (todoGrupoAtivo?.icone + " " + todoGrupoAtivo?.nome || "Selecione uma lista")
+                                todoViewMode === "meudia" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("sun"), "Meu Dia") : (todoGrupoAtivo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, navIconEl(todoGrupoAtivo.icone || "📋"), todoGrupoAtivo.nome) : "Selecione uma lista")
                             ),
                             React.createElement("p", {className: "text-sm text-gray-500"}, 
                                 tarefasFiltradas.length, " tarefa(s)"
@@ -14512,7 +14515,7 @@ const hideLoadingScreen = () => {
                                                         const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
                                                         setTodoTarefas(tarefas);
                                                     }
-                                                    ja("🗑️ Tarefa excluída", "success");
+                                                    ja("Tarefa excluída", "success");
                                                 }
                                             },
                                             className: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
@@ -14619,7 +14622,7 @@ const hideLoadingScreen = () => {
                                                     const tarefas = await loadTodoTarefas(todoGrupoAtivo.id);
                                                     setTodoTarefas(tarefas);
                                                 }
-                                                ja("✅ Tarefa concluída!", "success");
+                                                ja("Tarefa concluída!", "success");
                                             },
                                             className: "w-full py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600"
                                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Concluir"))
@@ -14681,7 +14684,7 @@ const hideLoadingScreen = () => {
                         onChange: e => setTodoModal({...todoModal, icone: e.target.value}),
                         className: "w-full px-3 py-2 border rounded-lg bg-white"
                     }, ["📋", "📁", "🎯", "💼", "🚀", "⭐", "🔥", "💡", "📊", "🛠️"].map(ic => 
-                        React.createElement("option", {key: ic, value: ic}, ic)
+                        React.createElement("option", {key: ic, value: ic}, ({"📋":"Lista","📁":"Pasta","🎯":"Meta","💼":"Trabalho","🚀":"Projeto","⭐":"Destaque","🔥":"Urgente","💡":"Ideia","📊":"Relatório","🛠️":"Manutenção"})[ic] || ic)
                     ))
                 ),
                 React.createElement("div", null,
@@ -14717,7 +14720,7 @@ const hideLoadingScreen = () => {
                             const grupos = await loadTodoGrupos();
                             setTodoGrupos(grupos);
                             setTodoModal(null);
-                            ja("✅ Grupo criado!", "success");
+                            ja("Grupo criado!", "success");
                         },
                         className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                     }, "Criar Grupo")
@@ -14906,7 +14909,7 @@ const hideLoadingScreen = () => {
                                 // Filtra apenas grupos que o usuário criou ou que são compartilhados
                                 todoGrupos
                                     .filter(g => g.criado_por === l.codProfissional || g.tipo === 'compartilhado' || l.role === 'admin_master')
-                                    .map(g => React.createElement("option", {key: g.id, value: g.id}, g.icone + " " + g.nome))
+                                    .map(g => React.createElement("option", {key: g.id, value: g.id}, g.nome))
                             )
                         )
                     ),
@@ -15028,7 +15031,7 @@ const hideLoadingScreen = () => {
                                 }
                             }
                             
-                            ja("✅ Tarefa criada!", "success");
+                            ja("Tarefa criada!", "success");
                         } else {
                             await fetchAuth(`${API_URL}/todo/tarefas/${todoModal.tarefa.id}`, {
                                 method: "PUT",
@@ -15046,7 +15049,7 @@ const hideLoadingScreen = () => {
                                     intervalo_recorrencia: todoModal.recorrente ? (todoModal.intervaloRecorrencia || 1) : 1
                                 })
                             });
-                            ja("✅ Tarefa atualizada!", "success");
+                            ja("Tarefa atualizada!", "success");
                         }
                         
                         if (todoViewMode === "meudia") await loadTodoMeuDia();
@@ -15357,7 +15360,7 @@ const hideLoadingScreen = () => {
             React.createElement("div", {className: "max-w-4xl mx-auto p-4"},
                 // Aba Perfil
                 socialTab === "perfil" && React.createElement("div", {className: "bg-white rounded-2xl shadow-lg p-6"},
-                    React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-6 text-center"}, "✨ Editar Meu Perfil"),
+                    React.createElement("h2", {className: "text-xl font-bold text-gray-800 mb-6 text-center"}, "Editar Meu Perfil"),
                     React.createElement("div", {className: "flex flex-col items-center mb-6"},
                         React.createElement("div", {className: "relative"},
                             p.socialPhotoPreview || socialProfile?.profile_photo ? 
@@ -15694,7 +15697,7 @@ const hideLoadingScreen = () => {
                                     React.createElement("button", {
                                         onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'video', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'video' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
-                                    }, "🎬 Vídeo"),
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("video"), "Vídeo")),
                                     React.createElement("button", {
                                         onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'imagem', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'imagem' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
@@ -15702,7 +15705,7 @@ const hideLoadingScreen = () => {
                                     React.createElement("button", {
                                         onClick: () => { limparLiderancaMidia(); setLiderancaModal({...liderancaModal, dados: {...liderancaModal.dados, midia_tipo: 'audio', midia_url: ''}}); },
                                         className: "px-3 py-2 rounded-lg text-sm " + (liderancaModal?.dados?.midia_tipo === 'audio' ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700")
-                                    }, "🎵 Áudio"),
+                                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("music"), "Áudio")),
                                     liderancaModal?.dados?.midia_tipo && React.createElement("button", {
                                         onClick: limparLiderancaMidia,
                                         className: "px-3 py-2 rounded-lg text-sm bg-red-100 text-red-600 hover:bg-red-200"
@@ -15766,11 +15769,11 @@ const hideLoadingScreen = () => {
                                             React.createElement("button", {
                                                 onClick: iniciarGravacaoAudio,
                                                 className: "flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 flex items-center justify-center gap-2"
-                                            }, "🎙️ Iniciar Gravação") :
+                                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("mic"), "Iniciar Gravação")) :
                                             React.createElement("button", {
                                                 onClick: pararGravacaoAudio,
                                                 className: "flex-1 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-900 flex items-center justify-center gap-2 animate-pulse"
-                                            }, "⏹️ Parar Gravação")
+                                            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("square"), "Parar Gravação"))
                                     ),
                                     liderancaGravando && React.createElement("div", {className: "flex items-center justify-center gap-2 text-red-600"},
                                         React.createElement("span", {className: "w-3 h-3 bg-red-600 rounded-full animate-pulse"}),
@@ -15790,7 +15793,7 @@ const hideLoadingScreen = () => {
                                     }),
                                     // Preview do áudio
                                     (liderancaAudioPreview || liderancaModal?.dados?.midia_url) && React.createElement("div", {className: "mt-3"},
-                                        React.createElement("p", {className: "text-xs text-gray-500 mb-2"}, "🎵 Preview:"),
+                                        React.createElement("p", {className: "text-xs text-gray-500 mb-2"}, "Preview:"),
                                         React.createElement("audio", {
                                             src: liderancaAudioPreview || liderancaModal?.dados?.midia_url,
                                             controls: true,
@@ -15868,7 +15871,7 @@ const hideLoadingScreen = () => {
                                                     body: JSON.stringify(liderancaModal.dados)
                                                 });
                                                 if (res.ok) {
-                                                    ja("✅ Mensagem atualizada!", "success");
+                                                    ja("Mensagem atualizada!", "success");
                                                     setLiderancaModal(null);
                                                     await loadLiderancaMensagens();
                                                 }
@@ -15955,7 +15958,7 @@ const hideLoadingScreen = () => {
                         className: "bg-white rounded-3xl shadow-2xl w-full max-w-md p-6",
                         onClick: (e) => e.stopPropagation()
                     },
-                        React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4 text-center"}, "✂️ Ajustar Foto de Perfil"),
+                        React.createElement("h3", {className: "text-xl font-bold text-gray-800 mb-4 text-center"}, "Ajustar Foto de Perfil"),
                         React.createElement("p", {className: "text-sm text-gray-500 mb-4 text-center"}, "Arraste para posicionar e use o zoom para ajustar"),
                         
                         // Área de preview circular
@@ -17563,7 +17566,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("button", {
                 onClick: () => ml(`dash-cli-${t}`),
                 className: "text-purple-600 hover:text-purple-800 font-bold"
-            }, Kt[`dash-cli-${t}`] ? "➖" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))), React.createElement("td", {
+            }, Kt[`dash-cli-${t}`] ? Icon("minus") : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))), React.createElement("td", {
                 className: "px-2 py-2 font-medium max-w-[150px] truncate",
                 title: e.cod_cliente + " - " + (e.nome_display || e.nome_cliente)
             }, e.cod_cliente, " - ", e.nome_display || e.nome_cliente), React.createElement("td", {
@@ -17685,24 +17688,24 @@ const hideLoadingScreen = () => {
 
                 var METS = [
                     {g:"Volume", items:[
-                        {id:"os",l:"OS",f:"total_os",t:"bar",c:"#534AB7",ax:"vol"},
-                        {id:"ent",l:"Entregas",f:"total_entregas",t:"bar",c:"#378ADD",ax:"vol"},
-                        {id:"np",l:"No prazo",f:"dentro_prazo",t:"bar",c:"#1D9E75",ax:"vol"},
-                        {id:"fp",l:"Fora prazo",f:"fora_prazo",t:"bar",c:"#E24B4A",ax:"vol"},
-                        {id:"ret",l:"Retornos",f:"total_retornos",t:"bar",c:"#D85A30",ax:"vol"},
-                        {id:"profs",l:"Entregadores",f:"total_profissionais",t:"bar",c:"#0F6E56",ax:"vol"},
-                        {id:"epf",l:"Ent/prof",f:"media_entregas_por_prof",t:"line",c:"#BA7517",ax:"pct"}
+                        {id:"os",l:"OS",f:"total_os",t:"bar",c:"#7c3aed",ax:"vol"},
+                        {id:"ent",l:"Entregas",f:"total_entregas",t:"bar",c:"#2563eb",ax:"vol"},
+                        {id:"np",l:"No prazo",f:"dentro_prazo",t:"bar",c:"#16a34a",ax:"vol"},
+                        {id:"fp",l:"Fora prazo",f:"fora_prazo",t:"bar",c:"#dc2626",ax:"vol"},
+                        {id:"ret",l:"Retornos",f:"total_retornos",t:"bar",c:"#d97706",ax:"vol"},
+                        {id:"profs",l:"Entregadores",f:"total_profissionais",t:"bar",c:"#166534",ax:"vol"},
+                        {id:"epf",l:"Ent/prof",f:"media_entregas_por_prof",t:"line",c:"#d97706",ax:"pct"}
                     ]},
                     {g:"Performance", items:[
-                        {id:"txp",l:"Taxa prazo %",fn:function(c){var _n=parseInt(c.dentro_prazo)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo)||0),1)*100;},t:"line",c:"#1D9E75",ax:"pct",s:"%"},
-                        {id:"txpp",l:"Taxa prof %",fn:function(c){var _n=parseInt(c.dentro_prazo_prof||0)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo_prof||0)||0),1)*100;},t:"line",c:"#5DCAA5",ax:"pct",s:"%"},
-                        {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#7F77DD",ax:"vol",isTempo:true}
+                        {id:"txp",l:"Taxa prazo %",fn:function(c){var _n=parseInt(c.dentro_prazo)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo)||0),1)*100;},t:"line",c:"#16a34a",ax:"pct",s:"%"},
+                        {id:"txpp",l:"Taxa prof %",fn:function(c){var _n=parseInt(c.dentro_prazo_prof||0)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo_prof||0)||0),1)*100;},t:"line",c:"#16a34a",ax:"pct",s:"%"},
+                        {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#7c3aed",ax:"vol",isTempo:true}
                     ]},
                     {g:"Financeiro", items:[
-                        {id:"vc",l:"Val. cliente",f:"valor_total",t:"bar",c:"#534AB7",ax:"money"},
-                        {id:"vp",l:"Val. prof.",f:"valor_prof",t:"bar",c:"#BA7517",ax:"money"},
-                        {id:"fat",l:"Faturamento",f:"faturamento",t:"line",c:"#D85A30",ax:"money",dash:true},
-                        {id:"tk",l:"Ticket médio",f:"ticket_medio",t:"line",c:"#D4537E",ax:"money"}
+                        {id:"vc",l:"Val. cliente",f:"valor_total",t:"bar",c:"#7c3aed",ax:"money"},
+                        {id:"vp",l:"Val. prof.",f:"valor_prof",t:"bar",c:"#d97706",ax:"money"},
+                        {id:"fat",l:"Faturamento",f:"faturamento",t:"line",c:"#d97706",ax:"money",dash:true},
+                        {id:"tk",l:"Ticket médio",f:"ticket_medio",t:"line",c:"#dc2626",ax:"money"}
                     ]}
                 ];
                 var allI = METS.flatMap(function(g){return g.items;});
@@ -17711,7 +17714,7 @@ const hideLoadingScreen = () => {
                 // Header
                 var hdr = document.createElement("div");
                 hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;";
-                hdr.innerHTML = '<span style="font-size:15px;font-weight:500;color:#1f2937;">Acompanhamento por cliente</span><span style="font-size:12px;color:#9ca3af;background:#f3f4f6;padding:3px 10px;border-radius:20px;">' + clientes.length + ' clientes</span>';
+                hdr.innerHTML = '<span style="font-size:15px;font-weight:500;color:#111827;">Acompanhamento por cliente</span><span style="font-size:12px;color:#9ca3af;background:#f3f4f6;padding:3px 10px;border-radius:20px;">' + clientes.length + ' clientes</span>';
                 container.appendChild(hdr);
 
                 // Pills
@@ -17805,12 +17808,12 @@ const hideLoadingScreen = () => {
                         options:{
                             responsive:true,maintainAspectRatio:false,
                             interaction:{mode:"index",intersect:false},
-                            plugins:{legend:{display:true,position:"bottom",labels:{padding:20,usePointStyle:true,font:{size:13}}},tooltip:{backgroundColor:"#1e293b",padding:12,cornerRadius:8,titleFont:{size:14},bodyFont:{size:13},callbacks:{label:function(ctx){var m=allI.find(function(x){return x.l===ctx.dataset.label;});var v=ctx.parsed.y;if(m&&m.s)return" "+v.toFixed(1)+m.s;if(m&&m.isTempo)return" "+Math.floor(v/60)+":"+String(Math.round(v%60)).padStart(2,"0");if(m&&m.ax==="money")return" R$ "+Math.round(v).toLocaleString("pt-BR");return" "+Math.round(v).toLocaleString("pt-BR");}}}},
+                            plugins:{legend:{display:true,position:"bottom",labels:{padding:20,usePointStyle:true,font:{size:13}}},tooltip:{backgroundColor:"#111827",padding:12,cornerRadius:8,titleFont:{size:14},bodyFont:{size:13},callbacks:{label:function(ctx){var m=allI.find(function(x){return x.l===ctx.dataset.label;});var v=ctx.parsed.y;if(m&&m.s)return" "+v.toFixed(1)+m.s;if(m&&m.isTempo)return" "+Math.floor(v/60)+":"+String(Math.round(v%60)).padStart(2,"0");if(m&&m.ax==="money")return" R$ "+Math.round(v).toLocaleString("pt-BR");return" "+Math.round(v).toLocaleString("pt-BR");}}}},
                             scales:{
                                 x:{grid:{display:false},border:{display:false},ticks:{color:"#374151",font:{size:12,weight:"500"},maxRotation:45}},
                                 y:{display:temVol,position:"left",grid:{color:"rgba(0,0,0,0.06)"},border:{display:false},ticks:{color:"#374151",font:{size:13},callback:function(v){return v>=1000?(v/1000).toFixed(0)+"k":v;}},beginAtZero:true},
-                                y1:{display:temPct,position:"right",grid:{display:false},border:{display:false},ticks:{color:"#1D9E75",font:{size:13},callback:function(v){return v+"%";}},min:0,max:100},
-                                y2:{display:temMoney,position:temPct?"left":"right",grid:{display:false},border:{display:false},ticks:{color:"#D85A30",font:{size:13},callback:function(v){return"R$"+(v>=1000?(v/1000).toFixed(0)+"k":v);}},beginAtZero:true}
+                                y1:{display:temPct,position:"right",grid:{display:false},border:{display:false},ticks:{color:"#16a34a",font:{size:13},callback:function(v){return v+"%";}},min:0,max:100},
+                                y2:{display:temMoney,position:temPct?"left":"right",grid:{display:false},border:{display:false},ticks:{color:"#d97706",font:{size:13},callback:function(v){return"R$"+(v>=1000?(v/1000).toFixed(0)+"k":v);}},beginAtZero:true}
                             },
                             layout:{padding:{top:8}}
                         }
@@ -17875,11 +17878,11 @@ const hideLoadingScreen = () => {
                                 data: { labels: labels, datasets: [{ data: values, backgroundColor: cores.slice(0, dados.length), borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }] },
                                 options: {
                                     responsive: true, maintainAspectRatio: false,
-                                    plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
+                                    plugins: { legend: { display: false }, tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
                                     scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 } } }, y: { grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } },
                                     layout: { padding: { top: 32 } }
                                 },
-                                plugins: [{ id: "labels", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#1f2937"; ctx2.font = "600 13px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 6); ctx2.font = "500 12px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 22); }); } }]
+                                plugins: [{ id: "labels", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#111827"; ctx2.font = "600 13px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 6); ctx2.font = "500 12px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 22); }); } }]
                             });
                         }}),
                         // Legend
@@ -17956,21 +17959,21 @@ const hideLoadingScreen = () => {
                                 var pcts = dadosVisiveis.map(function(d) { return ((d.total || 0) / total * 100).toFixed(1) + "%"; });
                                 var bgColors = dadosVisiveis.map(function(d, i) {
                                     var idx = todosKm.indexOf(d);
-                                    if (idx === 0) return "#1D9E75";
-                                    if (idx <= 3) return "#5DCAA5";
-                                    if (idx <= 7) return "#378ADD";
-                                    return "#534AB7";
+                                    if (idx === 0) return "#16a34a";
+                                    if (idx <= 3) return "#16a34a";
+                                    if (idx <= 7) return "#2563eb";
+                                    return "#7c3aed";
                                 });
                                 new Chart(cvs, {
                                     type: "bar",
                                     data: { labels: labels, datasets: [{ data: values, backgroundColor: bgColors, borderRadius: 4, borderSkipped: false, barPercentage: 0.75 }] },
                                     options: {
                                         responsive: true, maintainAspectRatio: false,
-                                        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
+                                        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas (" + pcts[ctx.dataIndex] + ")"; } } } },
                                         scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 45, autoSkip: false } }, y: { grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } },
                                         layout: { padding: { top: 32 } }
                                     },
-                                    plugins: [{ id: "labels2", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#1f2937"; ctx2.font = "600 13px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 6); ctx2.font = "500 12px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 22); }); } }]
+                                    plugins: [{ id: "labels2", afterDatasetsDraw: function(chart) { var ctx2 = chart.ctx; chart.data.datasets[0].data.forEach(function(val, j) { if (!val) return; var bar = chart.getDatasetMeta(0).data[j]; ctx2.fillStyle = "#111827"; ctx2.font = "600 13px system-ui"; ctx2.textAlign = "center"; ctx2.textBaseline = "bottom"; ctx2.fillText(val.toLocaleString("pt-BR"), bar.x, bar.y - 6); ctx2.font = "500 12px system-ui"; ctx2.fillText(pcts[j], bar.x, bar.y - 22); }); } }]
                                 });
                             }}),
                             // Filter sidebar
@@ -17998,7 +18001,7 @@ const hideLoadingScreen = () => {
                         ),
                         // Legend
                         React.createElement("div", {className: "flex flex-wrap gap-3 mt-3"},
-                            [["Até 10 km","#1D9E75"],["11–25 km","#5DCAA5"],["26–50 km","#378ADD"],["51+ km","#534AB7"]].map(function(item, i) {
+                            [["Até 10 km","#16a34a"],["11–25 km","#16a34a"],["26–50 km","#2563eb"],["51+ km","#7c3aed"]].map(function(item, i) {
                                 return React.createElement("span", {key: i, className: "flex items-center gap-1.5 text-xs text-gray-500"},
                                     React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: item[1], display: "inline-block"}}),
                                     item[0]
@@ -18043,7 +18046,7 @@ const hideLoadingScreen = () => {
                                 var rows = (j && j.rows) || [];
                                 var tot = (j && j.total) || 0;
                                 var tp = Math.max(1, Math.ceil(tot / st.per));
-                                var chip = function(val, label, cnt) { var on = st.status === val; return '<button data-st="' + val + '" class="pico-chip" style="font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;cursor:pointer;border:1px solid ' + (on ? "transparent" : "#e5e7eb") + ';background:' + (on ? "#6d28d9" : "#f3f4f6") + ';color:' + (on ? "#fff" : "#4b5563") + '">' + label + (cnt != null ? (" \u00b7 " + cnt.toLocaleString("pt-BR")) : "") + '</button>'; };
+                                var chip = function(val, label, cnt) { var on = st.status === val; return '<button data-st="' + val + '" class="pico-chip" style="font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;cursor:pointer;border:1px solid ' + (on ? "transparent" : "#e5e7eb") + ';background:' + (on ? "#7c3aed" : "#f3f4f6") + ';color:' + (on ? "#fff" : "#374151") + '">' + label + (cnt != null ? (" \u00b7 " + cnt.toLocaleString("pt-BR")) : "") + '</button>'; };
                                 var thead = '<tr style="color:#9ca3af;font-size:11px;text-align:left"><th style="padding:6px 10px;font-weight:600">OS</th><th style="padding:6px 10px;font-weight:600">Motoboy</th><th style="padding:6px 10px;font-weight:600;text-align:right">Km</th><th style="padding:6px 10px;font-weight:600;text-align:right">Tempo</th><th style="padding:6px 10px;font-weight:600;text-align:right">Meta</th><th style="padding:6px 10px;font-weight:600;text-align:right">Excedeu / sobrou</th><th style="padding:6px 10px;font-weight:600">Prazo</th></tr>';
                                 var tbody;
                                 if (loading) tbody = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:28px">Carregando\u2026</td></tr>';
@@ -18052,11 +18055,11 @@ const hideLoadingScreen = () => {
                                 else tbody = rows.map(function(r) {
                                     var late = r.status === "fora", sem = r.status === "sem";
                                     var deltaTxt = sem ? "\u2014" : ((r.delta < 0 ? "\u2212" : "+") + fmtDur(r.delta));
-                                    var deltaCor = sem ? "#9ca3af" : (late ? "#dc2626" : "#1D9E75");
-                                    var bBg = sem ? "#f3f4f6" : (late ? "#fef2f2" : "#ecfdf5"), bCor = sem ? "#6b7280" : (late ? "#dc2626" : "#0f7a56"), bTxt = sem ? "Sem meta" : (late ? "Fora" : "No prazo");
-                                    return '<tr style="border-top:1px solid #f3f4f6"><td style="padding:8px 10px;font-weight:600;color:#374151">' + esc(r.os) + (r.num_pedido ? ('<div style="font-size:11px;color:#9ca3af;font-weight:400">' + esc(r.num_pedido) + '</div>') : "") + '</td><td style="padding:8px 10px;color:#4b5563">' + esc(r.nome_prof || "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#4b5563">' + (r.km != null ? (("" + r.km).replace(".", ",")) : "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#4b5563">' + fmtDur(r.tempo) + '</td><td style="padding:8px 10px;text-align:right;color:#9ca3af">' + fmtDur(r.meta) + '</td><td style="padding:8px 10px;text-align:right;font-weight:600;color:' + deltaCor + '">' + deltaTxt + '</td><td style="padding:8px 10px"><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:' + bBg + ';color:' + bCor + '">' + bTxt + '</span></td></tr>';
+                                    var deltaCor = sem ? "#9ca3af" : (late ? "#dc2626" : "#16a34a");
+                                    var bBg = sem ? "#f3f4f6" : (late ? "#fef2f2" : "#f0fdf4"), bCor = sem ? "#6b7280" : (late ? "#dc2626" : "#166534"), bTxt = sem ? "Sem meta" : (late ? "Fora" : "No prazo");
+                                    return '<tr style="border-top:1px solid #f3f4f6"><td style="padding:8px 10px;font-weight:600;color:#374151">' + esc(r.os) + (r.num_pedido ? ('<div style="font-size:11px;color:#9ca3af;font-weight:400">' + esc(r.num_pedido) + '</div>') : "") + '</td><td style="padding:8px 10px;color:#374151">' + esc(r.nome_prof || "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#374151">' + (r.km != null ? (("" + r.km).replace(".", ",")) : "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#374151">' + fmtDur(r.tempo) + '</td><td style="padding:8px 10px;text-align:right;color:#9ca3af">' + fmtDur(r.meta) + '</td><td style="padding:8px 10px;text-align:right;font-weight:600;color:' + deltaCor + '">' + deltaTxt + '</td><td style="padding:8px 10px"><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:' + bBg + ';color:' + bCor + '">' + bTxt + '</span></td></tr>';
                                 }).join("");
-                                root.innerHTML = '<div class="pico-ov" style="position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto"><div style="width:100%;max-width:720px;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,system-ui,sans-serif"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f0f0f2"><div><div style="font-weight:600;font-size:15px;color:#374151">' + titulo + '</div><div style="font-size:12px;color:#9ca3af;margin-top:1px">' + rs.total.toLocaleString("pt-BR") + ' OS \u00b7 <span style="color:#1D9E75">' + rs.dentro.toLocaleString("pt-BR") + ' no prazo</span> \u00b7 <span style="color:#dc2626">' + rs.fora.toLocaleString("pt-BR") + ' fora</span>' + (rs.sem ? (' \u00b7 <span style="color:#9ca3af">' + rs.sem + ' sem meta</span>') : "") + '</div></div><button class="pico-x" style="font-size:22px;color:#9ca3af;background:none;border:none;cursor:pointer;line-height:1">&times;</button></div><div style="display:flex;gap:7px;padding:12px 20px 4px;flex-wrap:wrap">' + chip("", "Todas", rs.total) + chip("dentro", "No prazo", rs.dentro) + chip("fora", "Fora", rs.fora) + (rs.sem ? chip("sem", "Sem meta", rs.sem) : "") + '</div><div style="padding:8px 8px 4px;max-height:52vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f0f0f2;font-size:12px;color:#9ca3af"><span>' + (tot ? ("Mostrando " + ((st.page - 1) * st.per + 1) + "\u2013" + Math.min(st.page * st.per, tot) + " de " + tot.toLocaleString("pt-BR")) : "\u2014") + '</span><span style="display:flex;align-items:center;gap:8px"><button class="pico-prev" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#4b5563">Anterior</button><span style="color:#6b7280">' + st.page + "/" + tp + '</span><button class="pico-next" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#4b5563">Pr\u00f3xima</button><button class="pico-csv" style="cursor:pointer;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 10px;color:#6d28d9;font-weight:600">Exportar CSV</button></span></div></div></div>';
+                                root.innerHTML = '<div class="pico-ov" style="position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto"><div style="width:100%;max-width:720px;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,system-ui,sans-serif"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6"><div><div style="font-weight:600;font-size:15px;color:#374151">' + titulo + '</div><div style="font-size:12px;color:#9ca3af;margin-top:1px">' + rs.total.toLocaleString("pt-BR") + ' OS \u00b7 <span style="color:#16a34a">' + rs.dentro.toLocaleString("pt-BR") + ' no prazo</span> \u00b7 <span style="color:#dc2626">' + rs.fora.toLocaleString("pt-BR") + ' fora</span>' + (rs.sem ? (' \u00b7 <span style="color:#9ca3af">' + rs.sem + ' sem meta</span>') : "") + '</div></div><button class="pico-x" style="font-size:22px;color:#9ca3af;background:none;border:none;cursor:pointer;line-height:1">&times;</button></div><div style="display:flex;gap:7px;padding:12px 20px 4px;flex-wrap:wrap">' + chip("", "Todas", rs.total) + chip("dentro", "No prazo", rs.dentro) + chip("fora", "Fora", rs.fora) + (rs.sem ? chip("sem", "Sem meta", rs.sem) : "") + '</div><div style="padding:8px 8px 4px;max-height:52vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af"><span>' + (tot ? ("Mostrando " + ((st.page - 1) * st.per + 1) + "\u2013" + Math.min(st.page * st.per, tot) + " de " + tot.toLocaleString("pt-BR")) : "\u2014") + '</span><span style="display:flex;align-items:center;gap:8px"><button class="pico-prev" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Anterior</button><span style="color:#6b7280">' + st.page + "/" + tp + '</span><button class="pico-next" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Pr\u00f3xima</button><button class="pico-csv" style="cursor:pointer;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 10px;color:#7c3aed;font-weight:600">Exportar CSV</button></span></div></div></div>';
                                 root.querySelector(".pico-x").onclick = fechar;
                                 root.querySelector(".pico-ov").onclick = function(e) { if (e.target === this) fechar(); };
                                 [].forEach.call(root.querySelectorAll(".pico-chip"), function(b) { b.onclick = function() { st.status = b.getAttribute("data-st"); st.page = 1; carregar(); }; });
@@ -18111,16 +18114,16 @@ const hideLoadingScreen = () => {
                             var cvs = document.createElement("canvas"); ct.appendChild(cvs);
                             var lbs = dados.map(function(d) { return String(d.hora).padStart(2, "0") + "h"; });
                             var _ds = [
-                                { label: "No prazo", data: dDentro, backgroundColor: "#1D9E75", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" },
-                                { label: "Fora do prazo", data: dFora, backgroundColor: "#e05561", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" }
+                                { label: "No prazo", data: dDentro, backgroundColor: "#16a34a", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" },
+                                { label: "Fora do prazo", data: dFora, backgroundColor: "#dc2626", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" }
                             ];
-                            if (dSem.some(function(v) { return v > 0; })) _ds.push({ label: "Sem avaliação", data: dSem, backgroundColor: "#D3D1C7", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" });
-                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: _ds }, options: { responsive: true, maintainAspectRatio: false, onHover: function(e, el) { if (e.native && e.native.target) e.native.target.style.cursor = (el && el.length) ? "pointer" : "default"; }, onClick: function(evt, els) { if (els && els.length) { var h = dados[els[0].index] && dados[els[0].index].hora; if (h != null) window.abrirDetalhePicoHora({ apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: h }); } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + ctx.parsed.y.toLocaleString("pt-BR"); }, footer: function(items) { var d = dados[items[0].dataIndex] || {}; var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); return "Total: " + t.toLocaleString("pt-BR") + " OS"; } } } }, scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { stacked: true, grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "bandExp", beforeDraw: function(chart) { var xs = chart.scales.x, ca = chart.chartArea; if (!xs || !ca) return; var i8 = -1, i17 = -1; dados.forEach(function(d, idx) { if (d.hora === 8) i8 = idx; if (d.hora === 17) i17 = idx; }); if (i8 < 0 || i17 < 0) return; var x8 = xs.getPixelForValue(lbs[i8]), x17 = xs.getPixelForValue(lbs[i17]); var per = (i17 > i8) ? (x17 - x8) / (i17 - i8) : 24; var cx = chart.ctx; cx.save(); cx.fillStyle = "rgba(124,58,237,0.05)"; cx.fillRect(x8 - per / 2, ca.top, (x17 - x8) + per, ca.bottom - ca.top); cx.restore(); } }, { id: "hTotals", afterDatasetsDraw: function(chart) { var cx = chart.ctx; dados.forEach(function(d, j) { var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); if (t < 1) return; var topY = null, x = null; chart.data.datasets.forEach(function(ds, di) { if (!ds.data[j]) return; var b = chart.getDatasetMeta(di).data[j]; if (b) { if (topY === null || b.y < topY) topY = b.y; x = b.x; } }); if (topY === null) return; cx.fillStyle = "#1f2937"; cx.font = "600 12px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(t.toLocaleString("pt-BR"), x, topY - 6); }); } }] });
+                            if (dSem.some(function(v) { return v > 0; })) _ds.push({ label: "Sem avaliação", data: dSem, backgroundColor: "#d1d5db", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" });
+                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: _ds }, options: { responsive: true, maintainAspectRatio: false, onHover: function(e, el) { if (e.native && e.native.target) e.native.target.style.cursor = (el && el.length) ? "pointer" : "default"; }, onClick: function(evt, els) { if (els && els.length) { var h = dados[els[0].index] && dados[els[0].index].hora; if (h != null) window.abrirDetalhePicoHora({ apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: h }); } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + ctx.parsed.y.toLocaleString("pt-BR"); }, footer: function(items) { var d = dados[items[0].dataIndex] || {}; var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); return "Total: " + t.toLocaleString("pt-BR") + " OS"; } } } }, scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { stacked: true, grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "bandExp", beforeDraw: function(chart) { var xs = chart.scales.x, ca = chart.chartArea; if (!xs || !ca) return; var i8 = -1, i17 = -1; dados.forEach(function(d, idx) { if (d.hora === 8) i8 = idx; if (d.hora === 17) i17 = idx; }); if (i8 < 0 || i17 < 0) return; var x8 = xs.getPixelForValue(lbs[i8]), x17 = xs.getPixelForValue(lbs[i17]); var per = (i17 > i8) ? (x17 - x8) / (i17 - i8) : 24; var cx = chart.ctx; cx.save(); cx.fillStyle = "rgba(124,58,237,0.05)"; cx.fillRect(x8 - per / 2, ca.top, (x17 - x8) + per, ca.bottom - ca.top); cx.restore(); } }, { id: "hTotals", afterDatasetsDraw: function(chart) { var cx = chart.ctx; dados.forEach(function(d, j) { var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); if (t < 1) return; var topY = null, x = null; chart.data.datasets.forEach(function(ds, di) { if (!ds.data[j]) return; var b = chart.getDatasetMeta(di).data[j]; if (b) { if (topY === null || b.y < topY) topY = b.y; x = b.x; } }); if (topY === null) return; cx.fillStyle = "#111827"; cx.font = "600 12px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(t.toLocaleString("pt-BR"), x, topY - 6); }); } }] });
                         }}),
                         React.createElement("div", {className: "flex items-center gap-4 mt-3 flex-wrap"},
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#1D9E75", display: "inline-block"}}), "No prazo"),
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#e05561", display: "inline-block"}}), "Fora do prazo"),
-                            temSem && React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#D3D1C7", display: "inline-block"}}), "Sem avaliação"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#16a34a", display: "inline-block"}}), "No prazo"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#dc2626", display: "inline-block"}}), "Fora do prazo"),
+                            temSem && React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#d1d5db", display: "inline-block"}}), "Sem avaliação"),
                             React.createElement("span", {className: "text-xs text-gray-400"}, "\u00b7 clique numa hora pra ver o detalhe")
                         )
                     );
@@ -18329,14 +18332,14 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Total entregas"),
                                 React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, Number(cliente767Dados.metricas.total_entregas || 0).toLocaleString("pt-BR"))
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "No prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#1D9E75"}}, Number(cliente767Dados.metricas.dentro_prazo || 0).toLocaleString("pt-BR")),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#16a34a"}}, Number(cliente767Dados.metricas.dentro_prazo || 0).toLocaleString("pt-BR")),
                                 React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.dentro_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #E24B4A"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #dc2626"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Fora do prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#E24B4A"}}, Number(cliente767Dados.metricas.fora_prazo || 0).toLocaleString("pt-BR")),
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#dc2626"}}, Number(cliente767Dados.metricas.fora_prazo || 0).toLocaleString("pt-BR")),
                                 React.createElement("div", {className: "text-xs text-gray-400"}, ((cliente767Dados.metricas.fora_prazo || 0) / Math.max(cliente767Dados.metricas.total_entregas || 1, 1) * 100).toFixed(1) + "%")
                             )
                         )
@@ -18346,20 +18349,20 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "bg-white rounded-xl shadow p-5 border border-gray-100"},
                         React.createElement("p", {className: "text-sm font-medium text-gray-500 mb-3"}, "Performance"),
                         React.createElement("div", {className: "grid grid-cols-4 gap-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa no prazo"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#1D9E75"}}, cliente767Dados.metricas.taxa_prazo + "%"),
-                                React.createElement("div", {className: "w-full h-1.5 bg-gray-200 rounded-full mt-2"}, React.createElement("div", {style: {width: Math.min(parseFloat(cliente767Dados.metricas.taxa_prazo) || 0, 100) + "%", background: "#1D9E75", height: "100%", borderRadius: "9999px"}}))
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: "#16a34a"}}, cliente767Dados.metricas.taxa_prazo + "%"),
+                                React.createElement("div", {className: "w-full h-1.5 bg-gray-200 rounded-full mt-2"}, React.createElement("div", {style: {width: Math.min(parseFloat(cliente767Dados.metricas.taxa_prazo) || 0, 100) + "%", background: "#16a34a", height: "100%", borderRadius: "9999px"}}))
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #534AB7"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #7c3aed"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. entrega"),
                                 React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio || "00:00")
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #378ADD"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #2563eb"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. coleta"),
                                 React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_coleta || "00:00")
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #378ADD"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #2563eb"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. alocacao"),
                                 React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio_alocacao || "00:00")
                             )
@@ -18378,9 +18381,9 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Valor profissional"),
                                 React.createElement("div", {className: "text-lg font-medium text-gray-800"}, "R$ ", parseFloat(cliente767Dados.metricas.valor_prof_total||0).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #1D9E75"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #16a34a"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Faturamento"),
-                                React.createElement("div", {className: "text-lg font-medium", style: {color: "#1D9E75"}}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
+                                React.createElement("div", {className: "text-lg font-medium", style: {color: "#16a34a"}}, "R$ ", (parseFloat(cliente767Dados.metricas.valor_total||0) - parseFloat(cliente767Dados.metricas.valor_prof_total||0)).toLocaleString("pt-BR", {minimumFractionDigits: 0}))
                             ),
                             React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Entregadores"),
@@ -18399,9 +18402,9 @@ const hideLoadingScreen = () => {
                             React.createElement("span", {className: "text-xs text-gray-400"}, cliente767Dados.indicadorMeta.mes_referencia)
                         ),
                         React.createElement("div", {className: "grid grid-cols-4 gap-3 mb-3"},
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#1D9E75" : "#E24B4A")}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid " + (parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#16a34a" : "#dc2626")}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Taxa atual"),
-                                React.createElement("div", {className: "text-2xl font-medium", style: {color: parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#1D9E75" : "#E24B4A"}}, cliente767Dados.indicadorMeta.taxa_atual + "%")
+                                React.createElement("div", {className: "text-2xl font-medium", style: {color: parseFloat(cliente767Dados.indicadorMeta.taxa_atual) >= 95 ? "#16a34a" : "#dc2626"}}, cliente767Dados.indicadorMeta.taxa_atual + "%")
                             ),
                             React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3"},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Dias restantes"),
@@ -18478,20 +18481,20 @@ const hideLoadingScreen = () => {
                                 data: {
                                     labels: labels,
                                     datasets: [
-                                        { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#1D9E75", backgroundColor: "rgba(29,158,117,0.08)", borderWidth: 2.5, tension: 0.3, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: "#1D9E75", pointBorderColor: "#fff", pointBorderWidth: 2, fill: true, yAxisID: "y1", order: 0 },
-                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#CECBF6", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
+                                        { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", borderWidth: 2.5, tension: 0.3, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: "#16a34a", pointBorderColor: "#fff", pointBorderWidth: 2, fill: true, yAxisID: "y1", order: 0 },
+                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#ddd6fe", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
                                     ]
                                 },
                                 options: {
                                     responsive: true, maintainAspectRatio: false,
                                     plugins: {
                                         legend: { display: true, position: "bottom", labels: { padding: 20, usePointStyle: true, pointStyle: "circle", font: { size: 12 } } },
-                                        tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return ctx.dataset.label === "Taxa prazo (%)" ? " " + ctx.parsed.y.toFixed(1) + "%" : " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas"; } } }
+                                        tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return ctx.dataset.label === "Taxa prazo (%)" ? " " + ctx.parsed.y.toFixed(1) + "%" : " " + ctx.parsed.y.toLocaleString("pt-BR") + " entregas"; } } }
                                     },
                                     scales: {
                                         x: { grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
-                                        y: { position: "left", grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true, title: { display: true, text: "Entregas", color: "#94a3b8", font: { size: 11 } } },
-                                        y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#1D9E75", font: { size: 12 }, callback: function(v) { return v + "%"; } }, min: 80, max: 100, title: { display: true, text: "Taxa prazo", color: "#1D9E75", font: { size: 11 } } }
+                                        y: { position: "left", grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true, title: { display: true, text: "Entregas", color: "#9ca3af", font: { size: 11 } } },
+                                        y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { color: "#16a34a", font: { size: 12 }, callback: function(v) { return v + "%"; } }, min: 80, max: 100, title: { display: true, text: "Taxa prazo", color: "#16a34a", font: { size: 11 } } }
                                     },
                                     layout: { padding: { top: 8 } }
                                 }
@@ -18609,7 +18612,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("button", {
                                     onClick: function() { toggleProfissionalExpand(e.cod_prof, indexReal); },
                                     className: "text-purple-600 hover:text-purple-800 font-bold"
-                                }, expandido ? "➖" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))
+                                }, expandido ? Icon("minus") : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })))
                             ), 
                             React.createElement("td", {className: "px-3 py-2 font-medium"}, e.cod_prof, " - ", e.nome_prof), 
                             React.createElement("td", {className: "px-3 py-2 text-right font-bold text-blue-600"}, nl(e.total_entregas).toLocaleString("pt-BR")), 
@@ -18948,7 +18951,7 @@ const hideLoadingScreen = () => {
                     ))
                 ) : React.createElement("p", {className: "text-gray-500 text-center py-8"}, "Sem dados para exibir"),
             }) : React.createElement("div", {
-                style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 8 }
+                style: { padding: 32, textAlign: "center", color: "#991B1B", background: "#fef2f2", border: "1px solid #FECACA", borderRadius: 8 }
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Componente BIGarantidoV2 não foi carregado. Verifique se BIGarantidoV2.js está no index.html antes do app.js."))),
             
             "os" === Et && (function() {
@@ -19448,7 +19451,7 @@ const hideLoadingScreen = () => {
                         el();
                         ll();
                     } else {
-                        ja("❌ Nenhum arquivo foi processado", "error");
+                        ja("Nenhum arquivo foi processado", "error");
                     }
                 }
                     })
@@ -19648,7 +19651,7 @@ const hideLoadingScreen = () => {
                             className: "p-4 rounded-xl border-2 text-left transition-all relative " + (relatorioIATipos.includes("personalizado") ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200" : "border-gray-200 hover:border-violet-300")
                         },
                             relatorioIATipos.includes("personalizado") && React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })),
-                            React.createElement("div", {className: "text-3xl mb-2"}, "✨"),
+                            React.createElement("div", {className: "text-3xl mb-2"}, Icon("sparkles")),
                             React.createElement("div", {className: "font-semibold text-gray-800"}, "Personalizado"),
                             React.createElement("div", {className: "text-xs text-gray-500"}, "Sua própria pergunta")
                         )
@@ -19668,7 +19671,7 @@ const hideLoadingScreen = () => {
                     
                     // Campo de prompt personalizado
                     relatorioIATipos.includes("personalizado") && React.createElement("div", {className: "mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200"},
-                        React.createElement("label", {className: "block text-sm font-medium text-purple-800 mb-2"}, "✨ Sua pergunta personalizada:"),
+                        React.createElement("label", {className: "block text-sm font-medium text-purple-800 mb-2"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("sparkles"), "Sua pergunta personalizada:")),
                         React.createElement("textarea", {
                             value: relatorioIAPromptCustom,
                             onChange: (e) => setRelatorioIAPromptCustom(e.target.value),
@@ -19778,7 +19781,7 @@ const hideLoadingScreen = () => {
                 React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6"},
                     React.createElement("div", {className: "flex items-center justify-between mb-4"},
                         React.createElement("h3", {className: "text-lg font-bold text-gray-800 flex items-center gap-2"},
-                            React.createElement("span", null, "📜"),
+                            React.createElement("span", null, Icon("filetext")),
                             "Histórico de Relatórios"
                         ),
                         React.createElement("span", {className: "text-sm text-gray-500"}, 
@@ -20021,7 +20024,7 @@ const hideLoadingScreen = () => {
                                                     });
                                                     return [...semDesseCliente, { cod_cliente: codNum, nome_cliente: nomeCliente, centro_custo: null }];
                                                 });
-                                                ja("✅ " + codCliente + " - Todos CC selecionado", "success");
+                                                ja("" + codCliente + " - Todos CC selecionado", "success");
                                             } else {
                                                 // Ao desmarcar "Todos": remove o consolidado desse cliente.
                                                 // Usuário fica sem itens desse cliente — pode marcar específicos depois,
@@ -20062,7 +20065,7 @@ const hideLoadingScreen = () => {
                                                         });
                                                         return [...semConsolidado, { cod_cliente: codNum, nome_cliente: nomeCliente, centro_custo: cc.centro_custo }];
                                                     });
-                                                    ja("✅ " + cc.centro_custo + " adicionado", "success");
+                                                    ja("" + cc.centro_custo + " adicionado", "success");
                                                 } else {
                                                     // Ao desmarcar um específico:
                                                     // 1. Remove esse específico
@@ -20149,7 +20152,7 @@ const hideLoadingScreen = () => {
                         });
                         var data = await resp.json();
                         if (data.success) {
-                            ja(regiaoEditando ? "✅ Região atualizada!" : "✅ Região criada!", "success");
+                            ja(regiaoEditando ? "Região atualizada!" : "Região criada!", "success");
                             setRegiaoNome("");
                             setRegiaoClienteSelecionado([]);
                             setRegiaoCentrosCusto({});
@@ -20157,7 +20160,7 @@ const hideLoadingScreen = () => {
                             setRegiaoEditando(null);
                             await pl(); // Recarregar regiões (awaited para garantir atualização)
                         } else {
-                            ja("❌ Erro: " + data.error, "error");
+                            ja("Erro: " + data.error, "error");
                         }
                     } catch(err) {
                         ja("Erro ao salvar região", "error");
@@ -20219,7 +20222,7 @@ const hideLoadingScreen = () => {
                                 }
                             }
                             setRegiaoCentrosCusto(novosCC);
-                            ja("📝 Editando região: " + e.nome, "success");
+                            ja("Editando região: " + e.nome, "success");
                         },
                         className: "text-blue-500 hover:text-blue-700 p-1",
                         title: "Editar região"
@@ -20231,7 +20234,7 @@ const hideLoadingScreen = () => {
                                 try {
                                     var resp = await fetchAuth(API_URL + "/bi/regioes/" + e.id, {method: "DELETE"});
                                     if (resp.ok) {
-                                        ja("✅ Região excluída!", "success");
+                                        ja("Região excluída!", "success");
                                         await pl();
                                     }
                                 } catch (err) {
@@ -20306,7 +20309,7 @@ const hideLoadingScreen = () => {
                                     })
                                 }),
                                 l = await a.json();
-                            l.success ? (ja("✅ Máscara salva!", "success"), dl()) : ja("❌ Erro: " + l.error, "error")
+                            l.success ? (ja("Máscara salva!", "success"), dl()) : ja("Erro: " + l.error, "error")
                         } catch (e) {
                             ja("Erro ao salvar máscara", "error")
                         }
@@ -20331,7 +20334,7 @@ const hideLoadingScreen = () => {
                     if (confirm("Excluir esta máscara?")) try {
                         (await fetchAuth(`${API_URL}/bi/mascaras/${e}`, {
                             method: "DELETE"
-                        })).ok && (ja("✅ Máscara excluída!", "success"), dl())
+                        })).ok && (ja("Máscara excluída!", "success"), dl())
                     } catch (e) {
                         ja("Erro ao excluir", "error")
                     }
@@ -20428,7 +20431,7 @@ const hideLoadingScreen = () => {
                                 })
                             }),
                             a = await t.json();
-                        a.success ? (ja("✅ Prazo padrão salvo! Clique em Recalcular para aplicar nas entregas.", "success"), al()) : ja("❌ Erro: " + a.error, "error")
+                        a.success ? (ja("Prazo padrão salvo! Clique em Recalcular para aplicar nas entregas.", "success"), al()) : ja("Erro: " + a.error, "error")
                     } catch (e) {
                         ja("Erro ao salvar", "error")
                     }
@@ -20535,7 +20538,7 @@ const hideLoadingScreen = () => {
                                     })
                                 }),
                                 o = await r.json();
-                            o.success ? (ja("✅ Prazo salvo! Clique em Recalcular para aplicar nas entregas.", "success"), tl()) : ja("❌ Erro: " + o.error, "error")
+                            o.success ? (ja("Prazo salvo! Clique em Recalcular para aplicar nas entregas.", "success"), tl()) : ja("Erro: " + o.error, "error")
                         } catch (e) {
                             ja("Erro ao salvar", "error")
                         }
@@ -20568,7 +20571,7 @@ const hideLoadingScreen = () => {
                     if (confirm("Remover esta configuração de prazo?")) try {
                         await fetchAuth(`${API_URL}/bi/prazos/${e}`, {
                             method: "DELETE"
-                        }), ja("✅ Removido!", "success"), tl()
+                        }), ja("Removido!", "success"), tl()
                     } catch (e) {
                         ja("Erro ao remover", "error")
                     }
@@ -20588,7 +20591,7 @@ const hideLoadingScreen = () => {
                     className: "w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-orange-50 to-white hover:from-orange-100 transition-all"
                 },
                     React.createElement("div", {className: "flex items-center gap-3"},
-                        React.createElement("span", {className: "text-2xl"}, "👨‍🔧"),
+                        React.createElement("span", {className: "text-2xl"}, Icon("wrench")),
                         React.createElement("div", {className: "text-left"},
                             React.createElement("h2", {className: "text-lg font-bold text-orange-900"}, "Prazo Profissional"),
                             React.createElement("p", {className: "text-sm text-gray-500"}, prazosProfissionais.length + " prazo(s) específico(s)")
@@ -20675,9 +20678,9 @@ const hideLoadingScreen = () => {
                                     });
                                     const data = await resp.json();
                                     if (data.success) {
-                                        ja("✅ Prazo profissional padrão salvo!", "success");
+                                        ja("Prazo profissional padrão salvo!", "success");
                                     } else {
-                                        ja("❌ Erro: " + data.error, "error");
+                                        ja("Erro: " + data.error, "error");
                                     }
                                 } catch (err) {
                                     ja("Erro ao salvar", "error");
@@ -20791,13 +20794,13 @@ const hideLoadingScreen = () => {
                                         });
                                         const data = await resp.json();
                                         if (data.success) {
-                                            ja("✅ Prazo profissional salvo!", "success");
+                                            ja("Prazo profissional salvo!", "success");
                                             // Recarregar lista de prazos profissionais
                                             const reloadResp = await fetchAuth(`${API_URL}/bi/prazos-prof`);
                                             const reloadData = await reloadResp.json();
                                             if (reloadData.success) setPrazosProfissionais(reloadData.prazos || []);
                                         } else {
-                                            ja("❌ Erro: " + data.error, "error");
+                                            ja("Erro: " + data.error, "error");
                                         }
                                     } catch (err) {
                                         ja("Erro ao salvar", "error");
@@ -20832,7 +20835,7 @@ const hideLoadingScreen = () => {
                                                 if (confirm("Remover esta configuração de prazo profissional?")) {
                                                     try {
                                                         await fetchAuth(`${API_URL}/bi/prazos-prof/${e.id}`, {method: "DELETE"});
-                                                        ja("✅ Removido!", "success");
+                                                        ja("Removido!", "success");
                                                         // Recarregar lista
                                                         const resp = await fetchAuth(`${API_URL}/bi/prazos-prof`);
                                                         const data = await resp.json();
@@ -20871,14 +20874,14 @@ const hideLoadingScreen = () => {
                                     });
                                     const data = await resp.json();
                                     if (data.success) {
-                                        ja(`Recalculado! ${data.atualizados} entregas (✅ ${data.dentroPrazo} no prazo | ❌ ${data.foraPrazo} fora | ⚠️ ${data.semDados} sem dados)`, "success");
+                                        ja(`Recalculado! ${data.atualizados} entregas (${data.dentroPrazo} no prazo | ${data.foraPrazo} fora | ${data.semDados} sem dados)`, "success");
                                         // Recarregar dados do dashboard
                                         xl();
                                     } else {
-                                        ja("❌ Erro: " + data.error, "error");
+                                        ja("Erro: " + data.error, "error");
                                     }
                                 } catch (err) {
-                                    ja("❌ Erro ao recalcular: " + err.message, "error");
+                                    ja("Erro ao recalcular: " + err.message, "error");
                                 }
                                 s(false);
                             },
@@ -20946,7 +20949,7 @@ const hideLoadingScreen = () => {
             
             // Header
             React.createElement("nav", {
-                className: "bg-gradient-to-r from-[#3a1556] via-[#5d0b85] to-[#770fa8] shadow-lg"
+                className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg"
             }, React.createElement("div", {
                 className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
             }, React.createElement("div", {className: "flex items-center gap-3"},
@@ -21477,7 +21480,7 @@ const hideLoadingScreen = () => {
                 cx: "56",
                 cy: "56",
                 r: "48",
-                stroke: m >= 80 ? "#10b981" : m >= 50 ? "#f59e0b" : "#ef4444",
+                stroke: m >= 80 ? "#16a34a" : m >= 50 ? "#d97706" : "#dc2626",
                 strokeWidth: "10",
                 fill: "none",
                 strokeDasharray: 3.02 * m + " 302",
@@ -21532,19 +21535,19 @@ const hideLoadingScreen = () => {
             data: [{
                 label: "Aprovados",
                 value: dashStats ? dashStats.aprovados : j.filter(e => "aprovado" === e.status).length,
-                color: "#22c55e"
+                color: "#16a34a"
             }, {
                 label: "Rejeitados",
                 value: dashStats ? dashStats.rejeitados : j.filter(e => "rejeitado" === e.status).length,
-                color: "#ef4444"
+                color: "#dc2626"
             }, {
                 label: "Pendentes",
                 value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length,
-                color: "#fbbf24"
+                color: "#d97706"
             }, {
                 label: "Outros",
                 value: dashStats ? Math.max(0, dashStats.total - dashStats.aprovados - dashStats.rejeitados - dashStats.pendentes) : j.filter(e => !["aprovado","rejeitado","pendente"].includes(e.status)).length,
-                color: "#94a3b8"
+                color: "#9ca3af"
             }].filter(e => e.value > 0),
             title: "Status das Solicitações"
         })), React.createElement("div", {
@@ -21582,7 +21585,7 @@ const hideLoadingScreen = () => {
                     const url = p._rpEditId ? `${API_URL}/submissions/respostas-prontas/${p._rpEditId}` : `${API_URL}/submissions/respostas-prontas`;
                     const method = p._rpEditId ? "PUT" : "POST";
                     const resp = await fetchAuth(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: p._rpTitulo.trim(), mensagem: p._rpMensagem.trim(), motivo: p._rpMotivo || null }) });
-                    if (resp.ok) { ja(p._rpEditId ? "✅ Atualizada!" : "✅ Criada!", "success"); x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }); const r2 = await fetchAuth(`${API_URL}/submissions/respostas-prontas`); if (r2.ok) { const rp = await r2.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } }
+                    if (resp.ok) { ja(p._rpEditId ? "Atualizada!" : "Criada!", "success"); x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }); const r2 = await fetchAuth(`${API_URL}/submissions/respostas-prontas`); if (r2.ok) { const rp = await r2.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } }
                     else { const d = await resp.json(); ja(d.error || "Erro", "error"); }
                 } catch { ja("Erro de conexão", "error"); }
             },
@@ -21601,7 +21604,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
             onClick: async () => {
                 if (!confirm("Excluir \"" + r.titulo + "\"?")) return;
-                try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("🗑️ Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
+                try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
             },
             className: "text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-semibold shrink-0"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))), (p.pendingFilter || "all") === "expiradas" && React.createElement("div", { className: "space-y-3 py-2" },
@@ -21622,8 +21625,8 @@ const hideLoadingScreen = () => {
                   ),
                   ex.motivo && React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500 mb-3" }, "Motivo: ", React.createElement("span", { className: "text-gray-800" }, ex.motivo)),
                   !ex.liberado_por_admin && !ex.ja_tem_submission && React.createElement("div", { className: "flex gap-2 border-t pt-3" },
-                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "nova_solicitacao" }) }); if (_r.ok) { ja("✅ Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-100 text-purple-700 border border-purple-200" }, "🔄 Liberar para nova solicitação"),
-                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "contestacao" }) }); if (_r.ok) { ja("✅ Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200" }, "🛡️ Liberar para contestação")
+                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "nova_solicitacao" }) }); if (_r.ok) { ja("Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-100 text-purple-700 border border-purple-200" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("refresh"), "Liberar para nova solicitação")),
+                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "contestacao" }) }); if (_r.ok) { ja("Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("shield"), "Liberar para contestação"))
                   )
                 ))
             ), React.createElement("div", {
@@ -21675,7 +21678,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("button", {
                 className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
                 title: "Clique para copiar o número da OS",
-                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
             }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("span", {
                 className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
             }, r ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : o ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("div", {
@@ -21738,7 +21741,7 @@ const hideLoadingScreen = () => {
                 className: "text-xs text-gray-500"
             }, "▲ Ocultar")) : React.createElement("button", {
                 onClick: () => {
-                    ja("🔄 Carregando...", "success"), Fa(e.id)
+                    ja("Carregando...", "success"), Fa(e.id)
                 },
                 className: "px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.validacao_ia && React.createElement("div", {
@@ -21806,14 +21809,14 @@ const hideLoadingScreen = () => {
                         React.createElement("button", {
                             onClick: async () => {
                                 if (!confirm("APROVAR a contestação? A solicitação será aprovada.")) return;
-                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("✅ Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
                             },
                             className: "py-1 px-2 bg-green-600 text-white rounded text-xs font-bold"
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovar")),
                         React.createElement("button", {
                             onClick: async () => {
                                 if (!confirm("REJEITAR DEFINITIVAMENTE? O motoboy não poderá mais contestar.")) return;
-                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("❌ Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
                             },
                             className: "py-1 px-2 bg-red-700 text-white rounded text-xs font-bold"
                         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar Def."))
@@ -21898,7 +21901,7 @@ const hideLoadingScreen = () => {
         }, React.createElement("div", null, React.createElement("button", {
             className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
             title: "Clique para copiar o número da OS",
-            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("📋 OS " + e.ordemServico + " copiada!", "success"); }
+            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
         }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
             className: "text-xs text-gray-700"
         }, e.fullName)), React.createElement("div", {
@@ -21909,7 +21912,7 @@ const hideLoadingScreen = () => {
             onClick: async () => {
                 confirm(`Excluir OS ${e.ordemServico}?`) && (await fetchAuth(`${API_URL}/submissions/${e.id}`, {
                     method: "DELETE"
-                }), ja("🗑️ Excluída!", "success"), La())
+                }), ja("Excluída!", "success"), La())
             },
             className: "px-1.5 py-0.5 bg-red-600 text-white rounded text-xs"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))), React.createElement("p", {
@@ -21920,7 +21923,7 @@ const hideLoadingScreen = () => {
             className: "text-xs font-mono text-green-900"
         }, e.coordenadas), React.createElement("button", {
             onClick: () => {
-                navigator.clipboard.writeText(e.coordenadas), ja("📋 Copiado!", "success")
+                navigator.clipboard.writeText(e.coordenadas), ja("Copiado!", "success")
             },
             className: "px-1.5 py-0.5 bg-green-600 text-white text-xs rounded"
         }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })))), e.temImagem && React.createElement("div", {
@@ -21940,7 +21943,7 @@ const hideLoadingScreen = () => {
             className: "text-xs text-gray-500"
         }, "▲ Ocultar")) : React.createElement("button", {
             onClick: () => {
-                ja("🔄 Carregando...", "success"), Fa(e.id)
+                ja("Carregando...", "success"), Fa(e.id)
             },
             className: "px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.observacao && React.createElement("div", {
@@ -21974,17 +21977,17 @@ const hideLoadingScreen = () => {
             const totalGeral = resumo.total_geral || 0;
             // Estilos compartilhados pros 4 cards
             const cardCats = [
-                { key: 'retorno',  emoji: 'refresh', label: 'Retorno',         tema: { fg: '#993C1D', bg: '#FAECE7', borda: '#D85A30' } },
-                { key: 'pedagio',  emoji: 'map', label: 'Pedágio',         tema: { fg: '#854F0B', bg: '#FAEEDA', borda: '#EF9F27' } },
-                { key: 'simoes',   emoji: 'building', label: 'Simões/Camaçari', tema: { fg: '#0F6E56', bg: '#E1F5EE', borda: '#5DCAA5' } },
-                { key: 'ponto1',   emoji: 'pin', label: 'Ponto 1',         tema: { fg: '#0C447C', bg: '#E6F1FB', borda: '#85B7EB' } }
+                { key: 'retorno',  emoji: 'refresh', label: 'Retorno',         tema: { fg: '#92400e', bg: '#fffbeb', borda: '#d97706' } },
+                { key: 'pedagio',  emoji: 'map', label: 'Pedágio',         tema: { fg: '#92400e', bg: '#fffbeb', borda: '#f67602' } },
+                { key: 'simoes',   emoji: 'building', label: 'Simões/Camaçari', tema: { fg: '#166534', bg: '#f0fdf4', borda: '#16a34a' } },
+                { key: 'ponto1',   emoji: 'pin', label: 'Ponto 1',         tema: { fg: '#1e40af', bg: '#eff6ff', borda: '#bfdbfe' } }
             ];
             const labelCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].label) || categoriaAtiva;
             const totalCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].total) || 0;
             const btnPeriodo = (id, label) => React.createElement("button", {
                 key: id,
                 onClick: () => aplicarFiltros({ rankingPeriod: id, rankingDataInicio: '', rankingDataFim: '' }),
-                style: periodoAtivo === id ? { background: '#ede9fe', borderColor: '#7c3aed', color: '#6d28d9', fontWeight: 500 } : {},
+                style: periodoAtivo === id ? { background: '#f5f3ff', borderColor: '#7c3aed', color: '#7c3aed', fontWeight: 500 } : {},
                 className: "text-xs px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition"
             }, label);
 
@@ -22141,7 +22144,7 @@ const hideLoadingScreen = () => {
             }, React.createElement("div", null, React.createElement("button", {
                 className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
                 title: "Clique para copiar o número da OS",
-                onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("📋 OS " + s.ordemServico + " copiada!", "success"); }
+                onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("OS " + s.ordemServico + " copiada!", "success"); }
             }, "OS: ", s.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
                 className: "text-xs text-gray-500"
             }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
@@ -22155,7 +22158,7 @@ const hideLoadingScreen = () => {
                     if (s.imagemComprovante) {
                         g(s.imagemComprovante.split("|||")[0])
                     } else {
-                        ja("🔄 Carregando...", "success");
+                        ja("Carregando...", "success");
                         Fa(s.id)
                     }
                 },
@@ -22249,7 +22252,7 @@ const hideLoadingScreen = () => {
                 }, e)))
             )), React.createElement("button", {
                 onClick: () => {
-                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #581c87; border-bottom: 2px solid #581c87; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #ca8a04; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#dcfce7":"#fee2e2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>📊 Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>📋 Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>📊 Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"📈":"📉"} ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>📁 Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>👷 Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>📅 Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
+                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #4c1d95; border-bottom: 2px solid #4c1d95; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #d97706; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #d1d5db; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#f0fdf4":"#fef2f2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
                     p.document.write(m), p.document.close(), p.print()
                 },
@@ -22520,7 +22523,7 @@ const hideLoadingScreen = () => {
                                 password: p.newPass,
                                 role: p.newRole || "user"
                             })
-                        }), ja("✅ Criado!", "success"), x({
+                        }), ja("Criado!", "success"), x({
                             ...p,
                             newName: "",
                             newCod: "",
@@ -22585,7 +22588,7 @@ const hideLoadingScreen = () => {
                         codProfissional: e.codProfissional,
                         newPassword: t
                     })
-                }), ja("✅ Senha alterada!", "success"), x({
+                }), ja("Senha alterada!", "success"), x({
                     ...p,
                     [`newpass_${e.codProfissional}`]: ""
                 }))
@@ -22606,7 +22609,7 @@ const hideLoadingScreen = () => {
                             ja(`Excluído! (${e.submissions} solicitações, ${e.withdrawals} saques, ${e.gratuities} gratuidades, ${e.indicacoes} indicações)`, "success")
                         }
                     } catch (e) {
-                        ja("❌ Erro ao excluir: " + e.message, "error")
+                        ja("Erro ao excluir: " + e.message, "error")
                     }
                     Ia()
                 }
@@ -22778,7 +22781,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
     // Próximo Milestone
     proximo_milestone && React.createElement('div', { className: 'bg-white rounded-xl p-4 shadow-lg border-l-4 border-purple-500' },
       React.createElement('div', { className: 'flex items-center gap-3 mb-3' },
-        React.createElement('span', { className: 'text-3xl' }, proximo_milestone.milestone?.icone || '🏆'),
+        React.createElement('span', { className: 'text-3xl' }, navIconEl(proximo_milestone.milestone?.icone || '🏆')),
         React.createElement('div', { className: 'flex-1' },
           React.createElement('h3', { className: 'font-bold text-gray-800' }, `Próximo: ${proximo_milestone.milestone?.nome || 'Meta'}`),
           React.createElement('p', { className: 'text-sm text-gray-500' }, `Faltam ${(proximo_milestone.pontos_faltam || 0).toFixed(1)} pontos`)
@@ -22935,7 +22938,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
         
         return React.createElement('div', { key: idx, className: `rounded-xl p-4 border-2 transition-all ${milestone.conquistado ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-70'}` },
           React.createElement('div', { className: 'flex items-center gap-4' },
-            React.createElement('span', { className: `text-4xl ${milestone.conquistado ? '' : 'grayscale opacity-50'}` }, milestone.icone),
+            React.createElement('span', { className: `text-4xl ${milestone.conquistado ? '' : 'grayscale opacity-50'}` }, navIconEl(milestone.icone)),
             React.createElement('div', { className: 'flex-1' },
               React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' },
                 React.createElement('h4', { className: `font-bold ${milestone.conquistado ? 'text-purple-800' : 'text-gray-500'}` }, milestone.nome),
@@ -23159,7 +23162,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
               },
                 React.createElement('td', { className: 'px-4 py-3' },
                   React.createElement('span', { className: `inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${prof.posicao === 1 ? 'bg-yellow-100 text-yellow-700' : prof.posicao === 2 ? 'bg-gray-200 text-gray-700' : prof.posicao === 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}` }, 
-                    prof.posicao <= 3 ? [React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#f59e0b" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#9ca3af" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#b45309" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" }))][prof.posicao - 1] : prof.posicao)
+                    prof.posicao <= 3 ? [React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#9ca3af" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#92400e" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" }))][prof.posicao - 1] : prof.posicao)
                 ),
                 React.createElement('td', { className: 'px-4 py-3' },
                   React.createElement('div', { className: 'font-medium text-gray-800' }, prof.nome),
@@ -23171,7 +23174,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
                   React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${prof.taxa_prazo >= 90 ? 'bg-green-100 text-green-700' : prof.taxa_prazo >= 70 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}` }, `${prof.taxa_prazo}%`)
                 ),
                 React.createElement('td', { className: 'px-4 py-3 text-center' },
-                  React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${nivel.cor}` }, `${nivel.icone} ${nivel.nome}`)
+                  React.createElement('span', { className: `px-2 py-1 rounded-full text-xs font-medium ${nivel.cor}` }, navIconEl(nivel.icone), ' ', nivel.nome)
                 )
               );
             })
@@ -23203,7 +23206,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
                     prof.premios.map((premio, pIdx) =>
                       React.createElement('div', { key: pIdx, className: `flex items-center justify-between p-3 rounded-lg ${premio.status === 'entregue' ? 'bg-green-50 border border-green-200' : 'bg-white border border-gray-200'}` },
                         React.createElement('div', { className: 'flex items-center gap-3' },
-                          React.createElement('span', { className: 'text-2xl' }, premio.icone),
+                          React.createElement('span', { className: 'text-2xl' }, navIconEl(premio.icone)),
                           React.createElement('div', null,
                             React.createElement('div', { className: 'font-medium' }, premio.milestone_nome),
                             React.createElement('div', { className: 'text-sm text-gray-500' }, premio.beneficio)
@@ -23249,7 +23252,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
             return React.createElement('div', { key: idx, className: 'border rounded-lg p-4' },
               React.createElement('div', { className: 'flex justify-between items-center mb-2' },
                 React.createElement('div', { className: 'flex items-center gap-2' },
-                  React.createElement('span', { className: 'text-2xl' }, m.icone),
+                  React.createElement('span', { className: 'text-2xl' }, navIconEl(m.icone)),
                   React.createElement('div', null,
                     React.createElement('div', { className: 'font-medium' }, m.nome),
                     React.createElement('div', { className: 'text-sm text-gray-500' }, `${m.pontos_necessarios} pts - ${m.beneficio}`)
@@ -23274,7 +23277,7 @@ function ScoreAdmin({ apiUrl, showToast }) {
         React.createElement('div', { className: 'space-y-3' },
           estatisticas.top_10?.map((prof, idx) => 
             React.createElement('div', { key: idx, className: 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg' },
-              React.createElement('span', { className: 'text-2xl' }, idx < 3 ? [React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#f59e0b" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#9ca3af" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#b45309" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" }))][idx] : `${idx + 1}º`),
+              React.createElement('span', { className: 'text-2xl' }, idx < 3 ? [React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#9ca3af" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })), React.createElement("svg", { className: "ico", style: { width: 24, height: 24, color: "#92400e" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" }))][idx] : `${idx + 1}º`),
               React.createElement('div', { className: 'flex-1' },
                 React.createElement('div', { className: 'font-medium' }, prof.nome),
                 React.createElement('div', { className: 'text-sm text-gray-500' }, `${prof.total_os} entregas`)

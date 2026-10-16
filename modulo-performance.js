@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ================================================================
 // MÓDULO PERFORMANCE DIÁRIA - Tutts v3.0 (DERIVADO DO BI)
@@ -34,9 +35,9 @@
     return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}m`;
   }
   function corPct(pct) {
-    if (pct >= 90) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#22c55e', ring: 'border-green-400' };
-    if (pct >= 75) return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#eab308', ring: 'border-yellow-400' };
-    return { text: 'text-red-600', bg: 'bg-red-50', bar: '#ef4444', ring: 'border-red-400' };
+    if (pct >= 90) return { text: 'text-green-600', bg: 'bg-green-50', bar: '#16a34a', ring: 'border-green-400' };
+    if (pct >= 75) return { text: 'text-yellow-600', bg: 'bg-yellow-50', bar: '#d97706', ring: 'border-yellow-400' };
+    return { text: 'text-red-600', bg: 'bg-red-50', bar: '#dc2626', ring: 'border-red-400' };
   }
 
   // ════════════════════════════════════════════════════════════
@@ -78,8 +79,8 @@
                 h('span', { className: 'text-xs text-gray-400' }, `${total} OS`),
               ),
               h('div', { className: 'w-full h-2 rounded-full overflow-hidden bg-gray-100 flex mb-3' },
-                h('div', { style: { width: `${(snap.no_prazo / total) * 100}%`, background: '#22c55e' } }),
-                h('div', { style: { width: `${(snap.fora_prazo / total) * 100}%`, background: '#ef4444' } }),
+                h('div', { style: { width: `${(snap.no_prazo / total) * 100}%`, background: '#16a34a' } }),
+                h('div', { style: { width: `${(snap.fora_prazo / total) * 100}%`, background: '#dc2626' } }),
                 h('div', { style: { width: `${(snap.sem_dados / total) * 100}%`, background: '#d1d5db' } }),
               ),
               h('div', { className: 'flex justify-between text-xs' },
@@ -188,8 +189,8 @@
           h('span', { className: `text-xl font-black ${c.text}` }, `${pct}%`),
         ),
         h('div', { className: 'w-full h-4 rounded-full overflow-hidden bg-gray-100 flex' },
-          snap.total_os > 0 && h('div', { style: { width: `${(snap.no_prazo / snap.total_os) * 100}%`, background: '#22c55e' } }),
-          snap.total_os > 0 && h('div', { style: { width: `${(snap.fora_prazo / snap.total_os) * 100}%`, background: '#ef4444' } }),
+          snap.total_os > 0 && h('div', { style: { width: `${(snap.no_prazo / snap.total_os) * 100}%`, background: '#16a34a' } }),
+          snap.total_os > 0 && h('div', { style: { width: `${(snap.fora_prazo / snap.total_os) * 100}%`, background: '#dc2626' } }),
           snap.total_os > 0 && h('div', { style: { width: `${(snap.sem_dados / snap.total_os) * 100}%`, background: '#d1d5db' } }),
         ),
       ),
@@ -207,8 +208,8 @@
               h('span', { className: 'flex-1 text-sm text-gray-700 truncate' }, cl.nome_cliente),
               h('span', { className: 'text-xs text-gray-400' }, `${cl.total} OS`),
               h('div', { className: 'w-24 h-2 rounded-full overflow-hidden bg-gray-100 flex' },
-                cl.total > 0 && h('div', { style: { width: `${(cl.no_prazo / cl.total) * 100}%`, background: '#22c55e' } }),
-                cl.total > 0 && h('div', { style: { width: `${(cl.fora_prazo / cl.total) * 100}%`, background: '#ef4444' } }),
+                cl.total > 0 && h('div', { style: { width: `${(cl.no_prazo / cl.total) * 100}%`, background: '#16a34a' } }),
+                cl.total > 0 && h('div', { style: { width: `${(cl.fora_prazo / cl.total) * 100}%`, background: '#dc2626' } }),
                 cl.total > 0 && h('div', { style: { width: `${(cl.sem_dados / cl.total) * 100}%`, background: '#d1d5db' } }),
               ),
               h('span', { className: `text-sm font-black w-14 text-right ${cc.text}` }, `${cl.pct_no_prazo}%`),
@@ -334,11 +335,11 @@
             setImportId(null);
             setImportEtapa('');
             if (imp.status === 'sucesso') {
-              showToast(`✅ Importação concluída — ${imp.linhas_inseridas || 0} OS atualizadas`, 'success');
+              showToast(`Importação concluída — ${imp.linhas_inseridas || 0} OS atualizadas`, 'success');
               carregar();
               carregarUltima();
             } else {
-              showToast(`❌ Importação falhou: ${(imp.erro || 'erro desconhecido').slice(0, 120)}`, 'error');
+              showToast(`Importação falhou: ${(imp.erro || 'erro desconhecido').slice(0, 120)}`, 'error');
             }
           }
         } catch (e) { /* ignora erro de polling */ }
@@ -351,7 +352,7 @@
     // Botão "Forçar Atualização" → dispara import do BI
     const forcarImport = async () => {
       try {
-        showToast('🚀 Puxando planilha e alimentando o BI...', 'info');
+        showToast('Puxando planilha e alimentando o BI...', 'info');
         const r = await fetchAuth(`${API_URL}/performance/forcar-import`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),  // default D-1
@@ -383,7 +384,7 @@
       importando && h('div', {
         style: {
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999,
-          background: 'rgba(15, 14, 26, 0.88)',
+          background: 'rgba(17,24,39, 0.88)',
           backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '36px',
         }
@@ -401,8 +402,8 @@
         }),
         h('div', { style: { textAlign: 'center', animation: 'argosSlideUp .6s ease-out both' } },
           h('div', { style: { fontSize: '12px', color: '#7C3AED', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
-          h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#e2e0f0' } }, 'Importando base do sistema externo'),
-          h('div', { style: { fontSize: '14px', color: '#6b6890', marginTop: '10px' } },
+          h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#ddd6fe' } }, 'Importando base do sistema externo'),
+          h('div', { style: { fontSize: '14px', color: '#6b7280', marginTop: '10px' } },
             `Puxando planilha → alimentando o BI${importEtapa ? ' · ' + importEtapa : ''}`),
         ),
       ),
@@ -746,7 +747,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         });
         const d = await r.json();
-        if (d.success) { showToast('✅ Adicionado!', 'success'); setForm({ codCliente: '', centroCusto: '', regiaoId: '' }); setBuscaCliente(''); carregar(); }
+        if (d.success) { showToast('Adicionado!', 'success'); setForm({ codCliente: '', centroCusto: '', regiaoId: '' }); setBuscaCliente(''); carregar(); }
         else showToast(d.error || 'Erro', 'error');
       } catch (e) { showToast('Erro de conexão', 'error'); }
     };
@@ -880,8 +881,8 @@
             if (d.import.status === 'sucesso' || d.import.status === 'falhou') {
               clearInterval(pollingRef.current); pollingRef.current = null;
               setImportId(null);
-              if (d.import.status === 'sucesso') { showToast('✅ Importação concluída', 'success'); carregar(); }
-              else showToast(`❌ Falhou: ${(d.import.erro || '').slice(0, 120)}`, 'error');
+              if (d.import.status === 'sucesso') { showToast('Importação concluída', 'success'); carregar(); }
+              else showToast(`Falhou: ${(d.import.erro || '').slice(0, 120)}`, 'error');
             }
           }
         } catch (e) {}
@@ -893,7 +894,7 @@
 
     const forcar = async () => {
       try {
-        showToast('🚀 Enfileirando importação...', 'info');
+        showToast('Enfileirando importação...', 'info');
         const r = await fetchAuth(`${API_URL}/performance/forcar-import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
         const d = await r.json();
         if (d.import_id) { setImportId(d.import_id); setStatus({ status: d.status, data_referencia: d.data_referencia }); }

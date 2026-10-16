@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 // ============================================================
 // FOTOS DE MOTOBOY - helper compartilhado v1 (2026-05)
 // Carrega thumbnails de motoboys sob demanda e cacheia em memória.
@@ -115,7 +116,7 @@
     return e('div', {
       className: props.className || '',
       style: Object.assign({}, estiloBase, {
-        background: '#EDE9FE', color: '#6D28D9', fontWeight: 700,
+        background: '#f5f3ff', color: '#7c3aed', fontWeight: 700,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         fontSize: Math.round(size * 0.4),
       }),

@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * modulo-sinistros.js — SINISTROS_V1
  * ─────────────────────────────────────────────────────────────────────────
@@ -54,12 +55,12 @@
   // Cores das etiquetas (item 7.3). Tons escolhidos para passar em contraste
   // sobre o fundo claro de cada pilula.
   var CORES = {
-    em_analise:              { bg: '#f1f5f9', fg: '#475569', ponto: '#94a3b8' },
-    aprovado_cliente:        { bg: '#dbeafe', fg: '#1d4ed8', ponto: '#3b82f6' },
-    alinhando_ressarcimento: { bg: '#ffedd5', fg: '#9a3412', ponto: '#f97316' },
-    aprovado_entregador:     { bg: '#dcfce7', fg: '#15803d', ponto: '#22c55e' },
-    devolvido:               { bg: '#dcfce7', fg: '#15803d', ponto: '#22c55e' },
-    reprovado:               { bg: '#fee2e2', fg: '#b91c1c', ponto: '#ef4444' }
+    em_analise:              { bg: '#f3f4f6', fg: '#374151', ponto: '#9ca3af' },
+    aprovado_cliente:        { bg: '#eff6ff', fg: '#2563eb', ponto: '#2563eb' },
+    alinhando_ressarcimento: { bg: '#fffbeb', fg: '#92400e', ponto: '#f67602' },
+    aprovado_entregador:     { bg: '#f0fdf4', fg: '#166534', ponto: '#16a34a' },
+    devolvido:               { bg: '#f0fdf4', fg: '#166534', ponto: '#16a34a' },
+    reprovado:               { bg: '#fef2f2', fg: '#991b1b', ponto: '#dc2626' }
   };
   function corCliente(st) {
     if (st === 'aprovado') return CORES.aprovado_cliente;
@@ -104,19 +105,19 @@
       className: p.destaque
         ? 'rounded-xl p-4 text-white flex flex-col gap-1'
         : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1',
-      style: p.destaque ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : null
+      style: p.destaque ? { background: 'linear-gradient(135deg,#7c3aed,#7633ea)' } : null
     },
       h('div', {
         className: 'text-[10.5px] font-extrabold uppercase tracking-wider',
-        style: { color: p.destaque ? '#e9d5ff' : '#94a3b8' }
+        style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' }
       }, p.rotulo),
       h('div', {
         className: 'text-[22px] font-extrabold tabular-nums leading-tight',
-        style: { color: p.destaque ? '#ffffff' : (p.cor || '#0f172a') }
+        style: { color: p.destaque ? '#ffffff' : (p.cor || '#111827') }
       }, p.valor),
       p.auxiliar ? h('div', {
         className: 'text-[11px]',
-        style: { color: p.destaque ? '#ddd6fe' : '#94a3b8' }
+        style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' }
       }, p.auxiliar) : null
     );
   }
@@ -621,9 +622,9 @@
           auxiliar: 'Entregador ou plataforma' }),
         h(Card, { rotulo: 'Valor em aberto', valor: fR(cards.valor_aberto),
           auxiliar: 'Sinistros em andamento' }),
-        h(Card, { rotulo: 'Total devolvido a clientes', valor: fR(cards.total_devolvido), cor: '#b91c1c',
+        h(Card, { rotulo: 'Total devolvido a clientes', valor: fR(cards.total_devolvido), cor: '#991b1b',
           auxiliar: cards.devolvido_fatura_qtd + ' em fatura · ' + cards.devolvido_pix_qtd + ' via PIX' }),
-        h(Card, { rotulo: 'Total ressarcido pelo entregador', valor: fR(cards.ressarcido_entregador), cor: '#15803d',
+        h(Card, { rotulo: 'Total ressarcido pelo entregador', valor: fR(cards.ressarcido_entregador), cor: '#166534',
           auxiliar: '+ ' + fR(cards.ressarcido_plataforma) + ' ressarcido por plataformas' })
       ) : null,
 

@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // modulo-diaria.js — Painel ADMIN da Diária (sub-aba das filas) · DIARIA_FECHAMENTO_V1: + fechamento do dia
 // Auto-contido: config por central (o PADRÃO) + escala (as EXCEÇÕES) + registros do dia.
@@ -45,15 +46,15 @@
   // decisão (sugestão já marcada). Fechar grava um recibo (snapshot).
   // ════════════════════════════════════════════════════════════════════
   const SIT = {
-    fim:    { bg: '#dcfce7', fg: '#166534' },
-    atraso: { bg: '#fef3c7', fg: '#92400e' },
-    meio:   { bg: '#ede9fe', fg: '#5b21b6' },
-    cedo:   { bg: '#ffedd5', fg: '#9a3412' },
-    aberta: { bg: '#dbeafe', fg: '#1e40af' },
-    sem:    { bg: '#fee2e2', fg: '#991b1b' },
-    longe:  { bg: '#ccfbf1', fg: '#115e59' }, // DIARIA_ENCERROU_LONGE_V1
-    ausente:{ bg: '#fce7f3', fg: '#9d174d' }, // DIARIA_DISPONIBILIDADE_V1
-    fila:   { bg: '#e0e7ff', fg: '#3730a3' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
+    fim:    { bg: '#f0fdf4', fg: '#166534' },
+    atraso: { bg: '#fffbeb', fg: '#92400e' },
+    meio:   { bg: '#f5f3ff', fg: '#5b21b6' },
+    cedo:   { bg: '#fffbeb', fg: '#92400e' },
+    aberta: { bg: '#eff6ff', fg: '#1e40af' },
+    sem:    { bg: '#fef2f2', fg: '#991b1b' },
+    longe:  { bg: '#bbf7d0', fg: '#166534' }, // DIARIA_ENCERROU_LONGE_V1
+    ausente:{ bg: '#ddd6fe', fg: '#991b1b' }, // DIARIA_DISPONIBILIDADE_V1
+    fila:   { bg: '#eff6ff', fg: '#5b21b6' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -67,14 +68,14 @@
   }
   function rotuloRegra(it) {
     const r = it.regra_final;
-    if (r === 'integral') return { txt: 'Integral (decisão)', bg: '#dcfce7', fg: '#166534' };
-    if (r === 'proporcional') return { txt: 'Proporcional · ' + (it.nota || ''), bg: '#ffedd5', fg: '#9a3412' };
-    if (r === 'nao') return { txt: 'Não pago', bg: '#fee2e2', fg: '#991b1b' };
-    if (it.minutos_atraso > 0) return { txt: it.nota, bg: '#fef3c7', fg: '#92400e' };
-    if (it.situacao === 'aberta') return { txt: 'Integral · corrida em execução', bg: '#dbeafe', fg: '#1e40af' };
-    if (it.situacao === 'fila') return { txt: 'Integral · na fila aguardando (' + it.nota + ')', bg: '#e0e7ff', fg: '#3730a3' };
-    if (it.situacao === 'longe') return { txt: 'Integral · encerrou longe (' + it.nota + ')', bg: '#ccfbf1', fg: '#115e59' };
-    return { txt: 'Integral', bg: '#dcfce7', fg: '#166534' };
+    if (r === 'integral') return { txt: 'Integral (decisão)', bg: '#f0fdf4', fg: '#166534' };
+    if (r === 'proporcional') return { txt: 'Proporcional · ' + (it.nota || ''), bg: '#fffbeb', fg: '#92400e' };
+    if (r === 'nao') return { txt: 'Não pago', bg: '#fef2f2', fg: '#991b1b' };
+    if (it.minutos_atraso > 0) return { txt: it.nota, bg: '#fffbeb', fg: '#92400e' };
+    if (it.situacao === 'aberta') return { txt: 'Integral · corrida em execução', bg: '#eff6ff', fg: '#1e40af' };
+    if (it.situacao === 'fila') return { txt: 'Integral · na fila aguardando (' + it.nota + ')', bg: '#eff6ff', fg: '#5b21b6' };
+    if (it.situacao === 'longe') return { txt: 'Integral · encerrou longe (' + it.nota + ')', bg: '#bbf7d0', fg: '#166534' };
+    return { txt: 'Integral', bg: '#f0fdf4', fg: '#166534' };
   }
   function Ico({ d, size }) {
     return e('svg', { width: size || 16, height: size || 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
@@ -85,7 +86,7 @@
       e('span', { className: 'text-xs font-semibold flex items-center gap-1.5', style: escuro ? { opacity: .9 } : { color: cor } },
         !escuro && e('span', { style: { width: 8, height: 8, borderRadius: '50%', background: cor, display: 'inline-block' } }), titulo),
       e('span', { className: 'text-2xl font-extrabold' }, valor),
-      e('span', { className: 'text-xs', style: escuro ? { opacity: .9 } : { color: '#4b5563' } }, sub));
+      e('span', { className: 'text-xs', style: escuro ? { opacity: .9 } : { color: '#374151' } }, sub));
   }
 
   function FechamentoDiaria({ apiUrl, fetchAuth, showToast, centralId, dataInicial }) {
@@ -191,8 +192,8 @@
           dados && e('span', {
             className: 'text-[10px] font-bold px-2 py-0.5 rounded-full',
             style: dados.fechado
-              ? (dados.fechamento.status === 'pago' ? { background: '#dcfce7', color: '#166534' } : { background: '#ede9fe', color: '#5b21b6' })
-              : { background: '#fef3c7', color: '#92400e' }
+              ? (dados.fechamento.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#f5f3ff', color: '#5b21b6' })
+              : { background: '#fffbeb', color: '#92400e' }
           }, dados.fechado ? (dados.fechamento.status === 'pago' ? 'PAGO' : 'ENVIADO AO FINANCEIRO') : 'ABERTO')),
         e('div', { className: 'text-xs text-gray-600 mt-1 leading-relaxed' },
           dados && dados.fechado
@@ -207,7 +208,7 @@
         job
           ? e('div', { className: 'flex flex-col items-end gap-1', role: 'status' },
               e('span', { className: 'text-xs font-semibold text-purple-700' }, 'Atualizando dados do BI… ' + (Number(job.progresso) || 0) + '%'),
-              e('div', { style: { width: 220, height: 6, borderRadius: 999, background: '#ede9fe', overflow: 'hidden' } },
+              e('div', { style: { width: 220, height: 6, borderRadius: 999, background: '#f5f3ff', overflow: 'hidden' } },
                 e('div', { style: { width: (Number(job.progresso) || 3) + '%', height: '100%', background: '#7c3aed', transition: 'width .4s' } })))
           : e('button', { onClick: atualizar, className: 'h-10 px-4 rounded-lg border border-purple-600 text-purple-700 text-sm font-semibold hover:bg-purple-50 inline-flex items-center gap-2' },
               e(Ico, { d: ['M21 12a9 9 0 1 1-2.6-6.4', 'M21 3v6h-6'] }), 'Atualizar dados agora'),
@@ -254,7 +255,7 @@
         e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
           e(Card, { escuro: true, titulo: f.status === 'pago' ? 'Total pago' : 'Total a pagar', valor: brl(f.total), sub: pagos.length + (pagos.length === 1 ? ' motoboy' : ' motoboys') }),
           e(Card, { titulo: 'Integral', cor: '#166534', valor: integrais.length, sub: brl(soma(integrais)) }),
-          e(Card, { titulo: 'Proporcional', cor: '#9a3412', valor: parciais.length, sub: brl(soma(parciais)) }),
+          e(Card, { titulo: 'Proporcional', cor: '#92400e', valor: parciais.length, sub: brl(soma(parciais)) }),
           e(Card, { titulo: 'Não pagos', cor: '#991b1b', valor: fora.length, sub: fora.length ? 'veja abaixo' : 'ninguém' })),
         e('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
           e('div', { className: 'px-4 py-3 border-b border-gray-100 font-bold text-gray-800 text-sm' }, 'Quem recebe e quanto'),
@@ -326,7 +327,7 @@
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
         e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
-        e(Card, { titulo: 'Precisam de decisão', cor: '#ea580c', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' sem corrida' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
+        e(Card, { titulo: 'Precisam de decisão', cor: '#f67602', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' sem corrida' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
         e(Card, { titulo: 'Com corrida em aberto', cor: '#2563eb', valor: abertos.length, sub: abertos.length ? 'ainda rodando — entram pagos' : 'nenhuma' }),
         e(Card, { escuro: true, titulo: 'Total a pagar', valor: brl(total), sub: itens.length + (itens.length === 1 ? ' motoboy na fila' : ' motoboys na fila') })),
       e('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
@@ -359,7 +360,7 @@
                 e('tbody', null, lista.map((it) => {
                   const cv = valorEscolhido(it, decisoes[it.cod_profissional]);
                   const sit = SIT[it.situacao] || SIT.fim;
-                  return e('tr', { key: it.cod_profissional, className: 'border-t border-gray-100 align-top', style: it.decisao === 'decidir' ? { background: '#fffbf5' } : null },
+                  return e('tr', { key: it.cod_profissional, className: 'border-t border-gray-100 align-top', style: it.decisao === 'decidir' ? { background: '#f9fafb' } : null },
                     e('td', { className: 'px-4 py-3' },
                       e('div', { className: 'font-semibold text-gray-800' }, nomeDe(it)),
                       e('div', { className: 'text-xs text-gray-500' }, 'cód. ' + it.cod_profissional + (it.da_escala ? ' · escala ' + it.escala : ''))),
@@ -371,8 +372,8 @@
                       e('div', { className: 'text-xs text-gray-500' }, it.abertas ? it.abertas + ' em execução' : (it.corridas ? 'finalizadas' : 'nenhuma corrida'))),
                     e('td', { className: 'px-4 py-3 tabular-nums' },
                       e('div', { className: 'font-semibold' }, it.ultima_finalizacao || '—'),
-                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' ? '#9a3412' : '#6b7280' } }, it.ultima_nota || ''),
-                      it.km_volta !== null && it.km_volta !== undefined && it.situacao !== 'aberta' && e('div', { className: 'text-xs', style: { color: it.situacao === 'longe' ? '#115e59' : '#6b7280' } },
+                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' ? '#92400e' : '#6b7280' } }, it.ultima_nota || ''),
+                      it.km_volta !== null && it.km_volta !== undefined && it.situacao !== 'aberta' && e('div', { className: 'text-xs', style: { color: it.situacao === 'longe' ? '#166534' : '#6b7280' } },
                         '~' + Math.round(it.km_volta) + ' km da base' + (it.retorno_estimado ? ' · voltaria ~' + it.retorno_estimado : ''))),
                     e('td', { className: 'px-4 py-3' },
                       it.os_aberta
@@ -382,7 +383,7 @@
                     e('td', { className: 'px-4 py-3' },
                       e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', style: { background: sit.bg, color: sit.fg } }, it.rotulo),
                       // DIARIA_DISPONIBILIDADE_V1: quando ele ficou fora (sem fila e sem corrida)
-                      Array.isArray(it.buracos) && it.buracos.length > 0 && e('div', { className: 'text-xs mt-1', style: { color: it.situacao === 'ausente' ? '#9d174d' : '#6b7280' } },
+                      Array.isArray(it.buracos) && it.buracos.length > 0 && e('div', { className: 'text-xs mt-1', style: { color: it.situacao === 'ausente' ? '#991b1b' : '#6b7280' } },
                         'fora ' + it.buracos.map((b) => b.de + '–' + b.ate).join(', '))),
                     e('td', { className: 'px-4 py-3 text-right tabular-nums' },
                       e('div', { className: 'font-bold' }, brl(cv.valor)),
@@ -394,7 +395,7 @@
                         : e('div', { role: 'radiogroup', 'aria-label': 'Decisão da diária de ' + nomeDe(it), className: 'inline-flex border border-gray-300 rounded-lg overflow-hidden' },
                             escolhaBtn(it, 'integral', 'Integral', '#16a34a'),
                             (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#7c3aed'),
-                            escolhaBtn(it, 'nao', 'Não pagar', '#b91c1c'))));
+                            escolhaBtn(it, 'nao', 'Não pagar', '#991b1b'))));
                 }))))),
       itens.length > 0 && e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-3' },
         e('div', { className: 'flex-1 min-w-[280px]' },
@@ -431,7 +432,7 @@
             className: 'w-full text-left px-4 py-3 border-t border-gray-100 first:border-t-0 hover:bg-gray-50 flex flex-wrap items-center gap-3'
           },
             e('span', { className: 'font-semibold text-gray-800 tabular-nums', style: { minWidth: 96 } }, dataBR(x.data_ref)),
-            e('span', { className: 'text-[10px] font-bold px-2 py-0.5 rounded-full', style: x.status === 'pago' ? { background: '#dcfce7', color: '#166534' } : { background: '#ede9fe', color: '#5b21b6' } }, x.status === 'pago' ? 'PAGO' : 'A PAGAR'),
+            e('span', { className: 'text-[10px] font-bold px-2 py-0.5 rounded-full', style: x.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#f5f3ff', color: '#5b21b6' } }, x.status === 'pago' ? 'PAGO' : 'A PAGAR'),
             e('span', { className: 'text-xs text-gray-600 flex-1' }, x.qtd_pagos + ' motoboys · fechado por ' + (x.fechado_por || '-') + ' em ' + (x.fechado_em || '-') + (x.pago_em ? ' · pago em ' + x.pago_em : '')),
             e('span', { className: 'font-bold text-gray-800 tabular-nums' }, brl(x.total))))
     );

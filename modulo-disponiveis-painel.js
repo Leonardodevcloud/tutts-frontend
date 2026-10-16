@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * modulo-disponiveis-painel.js — DISPONIVEIS_V1
  * ─────────────────────────────────────────────────────────────────────────
@@ -124,34 +125,34 @@
     if (!aberto) {
       return h('button', { type: 'button', onClick: function () { setAberto(true); }, 'aria-label': 'Abrir motoboys disponíveis',
         className: 'fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center justify-center gap-2 text-white shadow-2xl',
-        style: { width: 44, height: 136, borderRadius: '12px 0 0 12px', background: 'linear-gradient(180deg,#4D0669,#770FA8)', boxShadow: pulso ? '0 0 0 6px rgba(246,118,2,.35), 0 10px 30px rgba(61,21,86,.3)' : '0 10px 30px rgba(61,21,86,.3)', transition: 'box-shadow .3s' } },
+        style: { width: 44, height: 136, borderRadius: '12px 0 0 12px', background: 'linear-gradient(180deg,#2a0669,#470fa8)', boxShadow: pulso ? '0 0 0 6px rgba(246,118,2,.35), 0 10px 30px rgba(76,29,149,.3)' : '0 10px 30px rgba(76,29,149,.3)', transition: 'box-shadow .3s' } },
         Ico('bike', 18),
         h('span', { className: 'text-[11px] font-extrabold px-2 py-0.5 rounded-full', style: { background: '#F67602' } }, lista.length),
         h('span', { className: 'text-[9px] font-bold tracking-wider', style: { writingMode: 'vertical-rl', transform: 'rotate(180deg)' } }, 'DISPONÍVEIS'));
     }
 
     var btnIco = 'w-[34px] h-[34px] rounded-lg border flex items-center justify-center disabled:opacity-50';
-    return h('aside', { 'aria-label': 'Motoboys disponíveis', className: 'fixed z-40 flex flex-col overflow-hidden bg-white', style: { top: 108, right: 16, bottom: 16, width: 372, border: '1px solid #e9d5ff', borderRadius: 16, boxShadow: '0 20px 50px rgba(61,21,86,.18)' } },
+    return h('aside', { 'aria-label': 'Motoboys disponíveis', className: 'fixed z-40 flex flex-col overflow-hidden bg-white', style: { top: 108, right: 16, bottom: 16, width: 372, border: '1px solid #ddd6fe', borderRadius: 16, boxShadow: '0 20px 50px rgba(76,29,149,.18)' } },
       // header
-      h('div', { className: 'flex items-center gap-2.5 text-white px-4 py-3', style: { background: 'linear-gradient(135deg,#4D0669,#770FA8)' } },
+      h('div', { className: 'flex items-center gap-2.5 text-white px-4 py-3', style: { background: 'linear-gradient(135deg,#2a0669,#470fa8)' } },
         Ico('bike', 20),
-        h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'font-extrabold text-[15px] leading-tight' }, 'Motoboys disponíveis'), h('div', { className: 'text-[11px]', style: { color: '#e9d5ff' } }, 'cadastrados pela ativação · sem vaga ainda')),
-        h('span', { className: 'flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-full', style: { background: 'rgba(255,255,255,.14)' } }, h('span', { className: 'w-[7px] h-[7px] rounded-full', style: { background: '#4ade80' } }), 'ao vivo'),
+        h('div', { className: 'flex-1 min-w-0' }, h('div', { className: 'font-extrabold text-[15px] leading-tight' }, 'Motoboys disponíveis'), h('div', { className: 'text-[11px]', style: { color: '#ddd6fe' } }, 'cadastrados pela ativação · sem vaga ainda')),
+        h('span', { className: 'flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-full', style: { background: 'rgba(255,255,255,.14)' } }, h('span', { className: 'w-[7px] h-[7px] rounded-full', style: { background: '#16a34a' } }), 'ao vivo'),
         h('button', { type: 'button', onClick: function () { setAberto(false); }, 'aria-label': 'Recolher painel', className: 'w-[30px] h-[30px] rounded-lg flex items-center justify-center', style: { background: 'rgba(255,255,255,.14)' } }, Ico('arrowright', 16))),
       // filtros
       h('div', { className: 'flex flex-wrap items-center gap-1.5 px-3 py-2.5 border-b border-gray-100' },
-        h('button', { type: 'button', onClick: function () { setFiltroRegiao(''); }, className: 'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (!filtroRegiao ? 'text-white' : 'bg-gray-100 text-gray-700'), style: !filtroRegiao ? { background: '#6d28d9' } : null }, 'Todas · ' + lista.length),
-        regioes.slice(0, 4).map(function (r) { return h('button', { key: r.nome, type: 'button', onClick: function () { setFiltroRegiao(filtroRegiao === r.nome ? '' : r.nome); }, className: 'text-[11px] font-semibold px-2.5 py-1 rounded-full ' + (filtroRegiao === r.nome ? 'text-white' : 'bg-gray-100 text-gray-700'), style: filtroRegiao === r.nome ? { background: '#6d28d9' } : null }, r.nome + ' · ' + r.n); }),
+        h('button', { type: 'button', onClick: function () { setFiltroRegiao(''); }, className: 'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (!filtroRegiao ? 'text-white' : 'bg-gray-100 text-gray-700'), style: !filtroRegiao ? { background: '#7c3aed' } : null }, 'Todas · ' + lista.length),
+        regioes.slice(0, 4).map(function (r) { return h('button', { key: r.nome, type: 'button', onClick: function () { setFiltroRegiao(filtroRegiao === r.nome ? '' : r.nome); }, className: 'text-[11px] font-semibold px-2.5 py-1 rounded-full ' + (filtroRegiao === r.nome ? 'text-white' : 'bg-gray-100 text-gray-700'), style: filtroRegiao === r.nome ? { background: '#7c3aed' } : null }, r.nome + ' · ' + r.n); }),
         regioes.length > 4 ? h('span', { className: 'text-[11px] text-gray-400 px-1' }, '+' + (regioes.length - 4)) : null,
-        h('button', { type: 'button', onClick: abrirNovo, className: 'ml-auto h-[30px] px-2.5 rounded-lg text-[12px] font-bold', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#6d28d9' } }, '+ Inserir')),
+        h('button', { type: 'button', onClick: abrirNovo, className: 'ml-auto h-[30px] px-2.5 rounded-lg text-[12px] font-bold', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#7c3aed' } }, '+ Inserir')),
 
       // lista
       h('div', { className: 'flex-1 overflow-y-auto px-3 py-2.5 flex flex-col gap-2' },
-        novo ? h('div', { className: 'rounded-xl p-3 flex flex-col gap-2', style: { border: '1px solid #c4b5fd', background: '#faf5ff' } },
+        novo ? h('div', { className: 'rounded-xl p-3 flex flex-col gap-2', style: { border: '1px solid #ddd6fe', background: '#f9fafb' } },
           h('div', { className: 'text-[12px] font-extrabold text-purple-900' }, 'Inserir motoboy disponível'),
           h('input', { autoFocus: true, value: novo.cod, placeholder: 'Código do profissional', inputMode: 'numeric', onChange: function (e) { lookupCod(e.target.value); }, className: 'h-[40px] px-3 rounded-lg text-[15px] font-bold border-2 focus:outline-none', style: { borderColor: novo.lookup && !novo.lookup.encontrado ? '#dc2626' : '#7c3aed' } }),
           novo.lookup ? (novo.lookup.encontrado
-            ? h('div', { className: 'text-[12px] rounded-lg px-2.5 py-2', style: { background: '#fff', border: '1px solid #e9d5ff' } },
+            ? h('div', { className: 'text-[12px] rounded-lg px-2.5 py-2', style: { background: '#fff', border: '1px solid #ddd6fe' } },
                 h('div', { className: 'font-bold text-gray-800' }, novo.lookup.nome), h('div', { className: 'text-gray-500' }, [novo.lookup.regiao, novo.lookup.cidade, novo.lookup.telefone].filter(Boolean).join(' · ')),
                 novo.lookup.ja_na_lista ? h('div', { className: 'text-amber-700 font-semibold mt-1' }, 'Já está na lista (por ' + (novo.lookup.ja_na_lista.por || '—') + ')') : null,
                 novo.lookup.escalado ? h('div', { className: 'text-purple-700 font-semibold mt-1' }, 'Já está na escala: ' + novo.lookup.escalado.loja + ' (' + novo.lookup.escalado.status + ')') : null)
@@ -167,12 +168,12 @@
         visiveis.map(function (item) {
           var novoRecente = Date.now() - new Date(item.criado_em).getTime() < 15 * 60 * 1000;
           var emEdicao = editando && editando.id === item.id;
-          return h('article', { key: item.id, className: 'rounded-xl p-3 flex flex-col gap-1.5', style: { border: '1px solid ' + (emEdicao ? '#c4b5fd' : '#e5e7eb'), background: emEdicao ? '#faf5ff' : '#fff' } },
+          return h('article', { key: item.id, className: 'rounded-xl p-3 flex flex-col gap-1.5', style: { border: '1px solid ' + (emEdicao ? '#ddd6fe' : '#e5e7eb'), background: emEdicao ? '#f9fafb' : '#fff' } },
             h('div', { className: 'flex items-center gap-2' },
-              item.foto ? h('img', { src: item.foto, alt: '', className: 'w-7 h-7 rounded-full object-cover' }) : h('span', { className: 'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold', style: { background: '#ede9fe', color: '#6d28d9' } }, iniciais(item.nome)),
-              h('span', { className: 'text-[12px] font-extrabold px-1.5 py-0.5 rounded font-mono', style: { background: '#ede9fe', color: '#6d28d9' } }, item.cod_profissional),
+              item.foto ? h('img', { src: item.foto, alt: '', className: 'w-7 h-7 rounded-full object-cover' }) : h('span', { className: 'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold', style: { background: '#f5f3ff', color: '#7c3aed' } }, iniciais(item.nome)),
+              h('span', { className: 'text-[12px] font-extrabold px-1.5 py-0.5 rounded font-mono', style: { background: '#f5f3ff', color: '#7c3aed' } }, item.cod_profissional),
               h('div', { className: 'font-bold text-[13px] flex-1 min-w-0 truncate', title: item.nome }, item.nome || '—'),
-              novoRecente ? h('span', { className: 'text-[10px] font-bold px-1.5 py-0.5 rounded-full', style: { background: '#d1fae5', color: '#047857' } }, 'novo') : null),
+              novoRecente ? h('span', { className: 'text-[10px] font-bold px-1.5 py-0.5 rounded-full', style: { background: '#bbf7d0', color: '#166534' } }, 'novo') : null),
             h('div', { className: 'flex items-center gap-1.5 text-[12px] text-gray-700 flex-wrap' },
               h('span', { className: 'font-bold text-gray-900' }, item.regiao || 'SEM REGIÃO'), item.telefone ? h('span', null, '· ' + item.telefone) : null, item.disponibilidade ? h('span', { className: 'text-gray-500' }, '· ' + item.disponibilidade) : null),
             emEdicao
@@ -186,7 +187,7 @@
               : (item.observacao ? h('div', { className: 'text-[12px] text-gray-600 leading-snug' }, item.observacao) : h('div', { className: 'text-[12px] text-gray-400 italic' }, 'Sem observação — clique no lápis pra adicionar.')),
             h('div', { className: 'text-[10.5px] text-gray-400' }, 'Cadastrado ' + fHora(item.criado_em) + ' por ' + (item.criado_por || '—') + (item.origem === 'crm' ? ' (CRM)' : '')),
             !emEdicao ? h('div', { className: 'flex gap-1.5 mt-0.5' },
-              h('button', { type: 'button', disabled: busy, onClick: function () { abrirAlocar(item); }, className: 'flex-1 h-[34px] rounded-lg text-[12px] font-bold', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#6d28d9' } }, 'Colocar na Disponibilidade'),
+              h('button', { type: 'button', disabled: busy, onClick: function () { abrirAlocar(item); }, className: 'flex-1 h-[34px] rounded-lg text-[12px] font-bold', style: { border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#7c3aed' } }, 'Colocar na Disponibilidade'),
               h('button', { type: 'button', disabled: busy, 'aria-label': 'Editar observação', onClick: function () { setEditando({ id: item.id, observacao: item.observacao || '', disponibilidade: item.disponibilidade || '' }); }, className: btnIco + ' border-gray-200 bg-white text-gray-600' }, Ico('pencil', 15)),
               h('button', { type: 'button', disabled: busy, 'aria-label': 'Excluir da lista', onClick: function () { excluir(item); }, className: btnIco, style: { borderColor: '#fecaca', background: '#fef2f2', color: '#dc2626' } }, Ico('trash', 15))) : null);
         }),

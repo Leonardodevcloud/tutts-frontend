@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* GRAT_ICONS_V1 */
 /**
  * ModuloGratuidadesV2.js
@@ -56,14 +57,14 @@
   // Tema (alinhado com paleta do Tutts — roxo #7c3aed)
   const cores = {
     primary: '#7c3aed',
-    primarySoft: '#ede9fe',
+    primarySoft: '#f5f3ff',
     primaryDark: '#5b21b6',
-    success: '#10b981',
-    successSoft: '#d1fae5',
-    warning: '#f59e0b',
-    warningSoft: '#fef3c7',
-    danger: '#ef4444',
-    dangerSoft: '#fee2e2',
+    success: '#16a34a',
+    successSoft: '#bbf7d0',
+    warning: '#d97706',
+    warningSoft: '#fffbeb',
+    danger: '#dc2626',
+    dangerSoft: '#fef2f2',
     gray: '#6b7280',
     graySoft: '#f3f4f6',
     border: '#e5e7eb',
@@ -213,17 +214,17 @@
             style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: cores.textMuted },
           }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" }))),
           lookupStatus === 'encontrado' && React.createElement('span', {
-            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#065f46' },
+            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#166534' },
             title: 'Motoboy encontrado',
           }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))),
           lookupStatus === 'nao_encontrado' && React.createElement('span', {
-            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#A32D2D' },
+            style: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#991b1b' },
             title: 'Código não encontrado',
           }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
         ),
         lookupStatus === 'nao_encontrado' && (codigo || '').trim().length >= 2 &&
         React.createElement('p', {
-          style: { fontSize: 11, color: '#A32D2D', margin: '4px 0 0' },
+          style: { fontSize: 11, color: '#991b1b', margin: '4px 0 0' },
         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Código não encontrado. Preencha o nome manualmente."))
       ),
       React.createElement('div', null,
@@ -271,9 +272,9 @@
     //   EXPIRADA   → passou prazo de 10 dias sem uso
     //   REMOVIDA   → soft-delete
     const map = {
-      ativa: { txt: 'ativa', bg: cores.successSoft, fg: '#065f46' },
+      ativa: { txt: 'ativa', bg: cores.successSoft, fg: '#166534' },
       utilizada: { txt: 'utilizada', bg: cores.graySoft, fg: cores.gray },
-      expirada: { txt: 'expirada', bg: '#FAECE7', fg: '#993C1D' },
+      expirada: { txt: 'expirada', bg: '#fffbeb', fg: '#92400e' },
       removida: { txt: 'removida', bg: cores.dangerSoft, fg: '#991b1b' },
     };
     const m = map[status] || map.utilizada;
@@ -296,13 +297,13 @@
     let txt, bg, fg;
     if (dias < 0) {
       txt = `Expirou há ${Math.abs(dias)}d`;
-      bg = '#FAECE7'; fg = '#993C1D';
+      bg = '#fffbeb'; fg = '#92400e';
     } else if (dias <= 2) {
       txt = `Expira em ${dias}d`;
       bg = cores.warningSoft; fg = '#92400e';
     } else if (dias <= 5) {
       txt = `Expira em ${dias}d`;
-      bg = '#FAEEDA'; fg = '#854F0B';
+      bg = '#fffbeb'; fg = '#92400e';
     } else {
       txt = `${dias}d restantes`;
       bg = cores.graySoft; fg = cores.textMuted;
@@ -503,7 +504,7 @@
                   ? React.createElement('button', {
                     onClick: () => salvarEdicao(m.id),
                     title: 'Salvar',
-                    style: btnIcon(cores.successSoft, '#065f46'),
+                    style: btnIcon(cores.successSoft, '#166534'),
                   }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })))
                   : React.createElement('button', {
                     onClick: () => { setEditandoId(m.id); setTextoEdit(m.motivo); },
@@ -614,7 +615,7 @@
             createdBy: null, // backend pega do req.user
           }),
         });
-        _toast('Gratuidade cadastrada ✓');
+        _toast('Gratuidade cadastrada');
         if (onCriado) onCriado();
         onClose();
       } catch (e) {
@@ -870,7 +871,7 @@
       if (!ok) return;
       try {
         await api(`/gratuities/${g.id}`, { method: 'DELETE' });
-        toastLocal('Removida ✓', 'success');
+        toastLocal('Removida', 'success');
         carregarLista();
         carregarKpis();
       } catch (e) {
@@ -889,9 +890,9 @@
       React.createElement('div', {
         style: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 },
       },
-        React.createElement(KpiCard, { label: 'Ativas', valor: kpis.ativas, sub: 'a vencer este mês', cor: '#065f46' }),
+        React.createElement(KpiCard, { label: 'Ativas', valor: kpis.ativas, sub: 'a vencer este mês', cor: '#166534' }),
         React.createElement(KpiCard, { label: 'Utilizadas (mês)', valor: kpis.utilizadas_mes || 0, sub: 'já consumidas' }),
-        React.createElement(KpiCard, { label: 'Expiradas (mês)', valor: kpis.expiradas_mes || 0, sub: 'venceu sem uso', cor: '#993C1D' }),
+        React.createElement(KpiCard, { label: 'Expiradas (mês)', valor: kpis.expiradas_mes || 0, sub: 'venceu sem uso', cor: '#92400e' }),
         React.createElement(KpiCard, { label: 'Valor ativo', valor: fmt.moeda(kpis.valor_ativo), sub: 'soma das restantes' }),
         React.createElement(KpiCard, { label: 'Total cadastrado', valor: fmt.moeda(kpis.total_mes), sub: 'acumulado no mês' })
       ),
@@ -1032,7 +1033,7 @@
                     React.createElement('tr', {
                       key: g.id,
                       style: {
-                        background: idx % 2 === 0 ? '#fff' : '#fafafa',
+                        background: idx % 2 === 0 ? '#fff' : '#f9fafb',
                       },
                     },
                       td(g.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
@@ -1274,7 +1275,7 @@
       if (!ok) return;
       try {
         await api(`/exemptions/${e.id}/desativar`, { method: 'PATCH' });
-        _toast('Isenção desativada ✓', 'success');
+        _toast('Isenção desativada', 'success');
         carregarLista();
         carregarKpis();
       } catch (err) {
@@ -1288,7 +1289,7 @@
       React.createElement('div', {
         style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 },
       },
-        React.createElement(KpiCard, { label: 'Isenções ativas', valor: kpis.ativas || 0, sub: 'permanentes', cor: '#065f46' }),
+        React.createElement(KpiCard, { label: 'Isenções ativas', valor: kpis.ativas || 0, sub: 'permanentes', cor: '#166534' }),
         React.createElement(KpiCard, { label: 'Criadas no mês', valor: kpis.criadas_mes || 0 }),
         React.createElement(KpiCard, { label: 'Desativadas no mês', valor: kpis.desativadas_mes || 0 })
       ),
@@ -1399,7 +1400,7 @@
                   : dados.map((e, idx) =>
                     React.createElement('tr', {
                       key: e.id,
-                      style: { background: idx % 2 === 0 ? '#fff' : '#fafafa', opacity: e.ativa ? 1 : 0.6 },
+                      style: { background: idx % 2 === 0 ? '#fff' : '#f9fafb', opacity: e.ativa ? 1 : 0.6 },
                     },
                       td(e.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
                       td(e.user_name || '—', { fontWeight: 500 }),
@@ -1416,7 +1417,7 @@
                           style: {
                             display: 'inline-block', padding: '3px 10px',
                             background: e.ativa ? cores.successSoft : cores.graySoft,
-                            color: e.ativa ? '#065f46' : cores.gray,
+                            color: e.ativa ? '#166534' : cores.gray,
                             borderRadius: 10, fontSize: 11, fontWeight: 600,
                           },
                         }, e.ativa ? 'ativa' : 'desativada')
@@ -1509,7 +1510,7 @@
             observacao: observacao.trim() || null,
           }),
         });
-        _toast('Isenção cadastrada ✓', 'success');
+        _toast('Isenção cadastrada', 'success');
         if (onCriado) onCriado();
         onClose();
       } catch (e) {

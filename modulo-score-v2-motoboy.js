@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */ /* SCORE_BENEFICIO_REAL_V1 */ /* SCORE_A_LIBERAR_V1 */
 // ==================== MÓDULO SCORE V2 (MOTOBOY) ====================
 // Arquivo: modulo-score-v2-motoboy.js
@@ -56,18 +57,18 @@
         const segs = [];
         for (let i = 0; i < total; i++) segs.push(h('div', { key: i, style: { height: 6, borderRadius: 3, background: i < feitos ? '#d97706' : '#fde68a' } }));
         const qtd = Number(a.quantidade) || 1;
-        return h('div', { style: { border: '1.5px solid #f59e0b', background: '#fffbeb', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 } },
+        return h('div', { style: { border: '1.5px solid #d97706', background: '#fffbeb', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 } },
             h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
                 h('div', null,
-                    h('div', { style: { fontSize: 11, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Garantido · a liberar'),
-                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#78350f', marginTop: 2 } }, 'Saque ' + nomeNivelMb(a.nivel) + (a.tipo === 'saque_semanal' ? ' desta semana' : ' do mês')),
+                    h('div', { style: { fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Garantido · a liberar'),
+                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#92400e', marginTop: 2 } }, 'Saque ' + nomeNivelMb(a.nivel) + (a.tipo === 'saque_semanal' ? ' desta semana' : ' do mês')),
                     h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, (qtd === 1 ? '1 saque sem taxa' : qtd + ' saques sem taxa') + ', até ' + fmtBRL(a.teto) + (qtd === 1 ? '' : ' cada'))
                 ),
                 h('div', { style: { textAlign: 'center', background: '#fff', border: '1px solid #fde68a', borderRadius: 12, padding: '6px 10px', minWidth: 64 } },
                     a.dias_ate_liberar === 0
-                        ? h('div', { style: { fontSize: 15, fontWeight: 800, color: '#b45309' } }, 'hoje')
+                        ? h('div', { style: { fontSize: 15, fontWeight: 800, color: '#92400e' } }, 'hoje')
                         : h(React.Fragment, null,
-                            h('div', { style: { fontSize: 26, fontWeight: 800, color: '#b45309', lineHeight: 1 } }, a.dias_ate_liberar),
+                            h('div', { style: { fontSize: 26, fontWeight: 800, color: '#92400e', lineHeight: 1 } }, a.dias_ate_liberar),
                             h('div', { style: { fontSize: 10, color: '#92400e', fontWeight: 600 } }, a.dias_ate_liberar === 1 ? 'dia' : 'dias')))
             ),
             h('div', null,
@@ -106,17 +107,17 @@
                 h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Meus saques grátis')
             ),
             aLiberar && h(BlocoALiberar, { a: aLiberar }),
-            bonus && bonus.lancado && h('div', { style: { border: '1.5px solid #3b82f6', background: '#eff6ff', borderRadius: 14, padding: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
+            bonus && bonus.lancado && h('div', { style: { border: '1.5px solid #2563eb', background: '#eff6ff', borderRadius: 14, padding: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
                 h('div', null,
-                    h('div', { style: { fontSize: 11, fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Disponível agora'),
-                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#1e3a8a', marginTop: 2 } },
+                    h('div', { style: { fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Disponível agora'),
+                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#1e40af', marginTop: 2 } },
                         bonus.tipo === 'saque_semanal' ? 'Saque Ouro desta semana' : bonus.tipo === 'sorteio' ? 'Prêmio do sorteio' : 'Saque Prata do mês'),
                     h('div', { style: { fontSize: 12, color: '#1e40af', marginTop: 2 } },
                         'até ' + fmtBRL(bonus.valor) + (bonus.expira_em ? ' · vale até ' + String(bonus.expira_em).slice(0, 5) : '')),
                     h('div', { style: { fontSize: 11, color: '#1e40af', marginTop: 6 } }, 'É aplicado automaticamente nos seus próximos saques — sem taxa.')
                 ),
                 h('div', { style: { textAlign: 'center', background: '#fff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '6px 10px', minWidth: 64 } },
-                    h('div', { style: { fontSize: 26, fontWeight: 800, color: '#1d4ed8', lineHeight: 1 } }, Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1))),
+                    h('div', { style: { fontSize: 26, fontWeight: 800, color: '#2563eb', lineHeight: 1 } }, Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1))),
                     h('div', { style: { fontSize: 10, color: '#1e40af', fontWeight: 600 } }, 'restantes'))
             ),
             emCarencia && !bonus && !aLiberar && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 text-xs text-amber-900' },
@@ -235,9 +236,9 @@
     // hero (medalha viva) e card de requisitos. Substitui CardNivelAtual +
     // BarrasProgresso + BarraReq (este ultimo tinha bug de [object Object]).
     const TIER_COR = {
-        1: { grad: 'linear-gradient(135deg,#c88a4a 0%,#a56a34 55%,#824e24 100%)', medal: 'linear-gradient(135deg,#b87333,#8c5a2b)', sombra: '#8b5a2b', accent: '#c88a4a' },
-        2: { grad: 'linear-gradient(135deg,#c2c9d2 0%,#9aa2ae 55%,#79828f 100%)', medal: 'linear-gradient(135deg,#c9ced6,#9aa2ae)', sombra: '#7c8592', accent: '#8b93a1' },
-        3: { grad: 'linear-gradient(135deg,#f0c94e 0%,#d9a520 55%,#b98600 100%)', medal: 'linear-gradient(135deg,#f5d14e,#c99700)', sombra: '#c08a00', accent: '#d9a520' },
+        1: { grad: 'linear-gradient(135deg,#c89a4a 0%,#a57c34 55%,#826024 100%)', medal: 'linear-gradient(135deg,#b88733,#8c682b)', sombra: '#92400e', accent: '#d97706' },
+        2: { grad: 'linear-gradient(135deg,#c2c9d2 0%,#9aa2ae 55%,#79828f 100%)', medal: 'linear-gradient(135deg,#c9ced6,#9aa2ae)', sombra: '#6b7280', accent: '#9ca3af' },
+        3: { grad: 'linear-gradient(135deg,#f0b54e 0%,#d99520 55%,#b97500 100%)', medal: 'linear-gradient(135deg,#f5b84e,#c97f00)', sombra: '#d97706', accent: '#d97706' },
     };
 
     function EstiloNivel() {
@@ -324,12 +325,12 @@
             ),
             (proxNome && cont.todos)
                 // SCORE_AVISO_AVALIACAO_V1: bateu tudo → avisa QUANDO sobe (o nível muda só no sábado)
-                ? h('div', { className: 'flex items-start gap-3', role: 'status', style: { position: 'relative', zIndex: 1, marginTop: 16, background: '#fff', color: '#1f2937', borderRadius: 14, padding: '12px 14px' } },
-                    h('span', { style: { width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#dcfce7' } },
-                        h('svg', { className: 'ico', style: { width: 18, height: 18, color: '#15803d' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' }))
+                ? h('div', { className: 'flex items-start gap-3', role: 'status', style: { position: 'relative', zIndex: 1, marginTop: 16, background: '#fff', color: '#111827', borderRadius: 14, padding: '12px 14px' } },
+                    h('span', { style: { width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f0fdf4' } },
+                        h('svg', { className: 'ico', style: { width: 18, height: 18, color: '#166534' }, 'aria-hidden': 'true' }, h('use', { href: '#i-check' }))
                     ),
                     h('div', null,
-                        h('div', { className: 'text-sm font-extrabold', style: { color: '#15803d' } }, 'Requisitos batidos!'),
+                        h('div', { className: 'text-sm font-extrabold', style: { color: '#166534' } }, 'Requisitos batidos!'),
                         h('div', { className: 'text-xs mt-0.5', style: { color: '#374151', lineHeight: 1.45 } },
                             'Você sobe para ', h('b', null, proxNome), ' na avaliação de ', h('b', null, aval.rotulo), '. Mantenha os números até lá.')
                     )
@@ -365,7 +366,7 @@
                     return h('div', { key: i },
                         h('div', { className: 'flex items-center justify-between mb-1.5' },
                             h('span', { className: 'flex items-center gap-2 text-xs font-semibold text-gray-700' },
-                                h('span', { className: 'sx-pop', style: { width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: ok ? '#dcfce7' : '#fef3c7', animationDelay: (0.2 + i * 0.1) + 's' } },
+                                h('span', { className: 'sx-pop', style: { width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: ok ? '#f0fdf4' : '#fffbeb', animationDelay: (0.2 + i * 0.1) + 's' } },
                                     h('svg', { className: 'ico', style: { width: 13, height: 13, color: ok ? '#16a34a' : '#d97706' }, 'aria-hidden': 'true' }, h('use', { href: ok ? '#i-check' : '#i-target' }))
                                 ),
                                 r.label
@@ -376,10 +377,10 @@
                                 h('span', { className: 'text-gray-500' }, fmtReq(r.meta, suf))
                             )
                         ),
-                        h('div', { style: { height: 7, borderRadius: 999, background: '#eef0f3', overflow: 'hidden' } },
-                            h('div', { className: 'sx-grow', style: { height: '100%', borderRadius: 999, width: pct + '%', background: ok ? '#22c55e' : cor.accent } })
+                        h('div', { style: { height: 7, borderRadius: 999, background: '#f3f4f6', overflow: 'hidden' } },
+                            h('div', { className: 'sx-grow', style: { height: '100%', borderRadius: 999, width: pct + '%', background: ok ? '#16a34a' : cor.accent } })
                         ),
-                        falta && h('p', { className: 'text-[10px] mt-1 font-semibold', style: { color: '#b45309' } }, falta)
+                        falta && h('p', { className: 'text-[10px] mt-1 font-semibold', style: { color: '#92400e' } }, falta)
                     );
                 })
             ),
@@ -484,7 +485,7 @@
                 nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b)),
                 _extras.length > 0 && h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus extras:'),
                 _extras.map((bx, i) => h('div', { key: 'ex' + i, className: 'flex items-start gap-2 ml-2 mt-1' },
-                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#059669' : bx.tipo === 'item' ? '#2563eb' : bx.tipo === 'sorteio' ? '#ea580c' : '#7c3aed' } }, _icoExtra(bx.tipo)),
+                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#16a34a' : bx.tipo === 'item' ? '#2563eb' : bx.tipo === 'sorteio' ? '#f67602' : '#7c3aed' } }, _icoExtra(bx.tipo)),
                     h('div', null,
                         h('div', { className: 'text-gray-800 font-semibold text-[11px]' },
                             (bx.titulo || '') + (((bx.tipo === 'valor' || bx.tipo === 'sorteio') && bx.valor != null) ? (' — R$ ' + (parseFloat(bx.valor) || 0).toFixed(2).replace('.', ',')) : '')),
@@ -823,7 +824,7 @@
 
             // Barra prazo consumido
             tem && h('div', {
-                style: { height: 5, borderRadius: 999, background: '#f1f2f4', overflow: 'hidden' },
+                style: { height: 5, borderRadius: 999, background: '#f3f4f6', overflow: 'hidden' },
                 role: 'presentation'
             },
                 h('div', { style: { height: '100%', borderRadius: 999, width: pct + '%', background: cor } })
@@ -1004,7 +1005,7 @@
                 ),
                 aLib && h('div', { className: 'mb-3' },
                     h('p', { className: 'text-sm text-gray-600 text-center mb-3' }, 'Seu saque grátis já está garantido. Ele libera ',
-                        h('b', { style: { color: '#b45309' } }, aLib.dias_ate_liberar === 0 ? 'hoje' : 'em ' + textoFaltam(aLib.dias_ate_liberar)), '.'),
+                        h('b', { style: { color: '#92400e' } }, aLib.dias_ate_liberar === 0 ? 'hoje' : 'em ' + textoFaltam(aLib.dias_ate_liberar)), '.'),
                     h('div', { style: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 } },
                         [
                             ['Você vai receber', (Number(aLib.quantidade) === 1 ? '1 saque sem taxa' : aLib.quantidade + ' saques sem taxa')],
@@ -1012,7 +1013,7 @@
                             ['Libera em', aLib.libera_em.replace(' · ', ' às ')],
                             ['Vale até', aLib.vale_ate],
                         ].map((l, i) => h('div', { key: i, style: { display: 'flex', justifyContent: 'space-between', fontSize: 13, gap: 8 } },
-                            h('span', { style: { color: '#92400e' } }, l[0]), h('b', { style: { color: '#78350f', textAlign: 'right' } }, l[1])))
+                            h('span', { style: { color: '#92400e' } }, l[0]), h('b', { style: { color: '#92400e', textAlign: 'right' } }, l[1])))
                     ),
                     h('p', { className: 'text-xs text-gray-500 text-center mt-3' }, 'Todo nível novo tem 7 dias de carência. Continue no ' + nomeNivelMb(aLib.nivel) + ' e o desconto entra sozinho no seu próximo saque.')
                 ),
@@ -1034,7 +1035,7 @@
                             h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, fmtReq(r.atual, r.sufixo || '') + ' / ' + fmtReq(r.meta, r.sufixo || ''))
                         ),
                         h('div', { className: 'w-full bg-gray-200 rounded-full h-1.5' },
-                            h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, parseFloat(r.pct) || 0) + '%', background: r.ok ? '#22c55e' : '#a855f7' } })
+                            h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, parseFloat(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#7c3aed' } })
                         )
                     )))
                 ),

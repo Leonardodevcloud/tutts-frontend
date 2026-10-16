@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // modulo-rastreio-clientes.js — v1.0
 // 2 abas: Histórico + Configuração. Tema #7c3aed. Padrão Tutts.
@@ -16,10 +17,10 @@
   }; }
 
   const STATUS_COR = {
-    enviado:    { bg:'#d1fae5', fg:'#065f46', label:'Enviado' },
-    pendente:   { bg:'#fef3c7', fg:'#92400e', label:'Pendente' },
-    processando:{ bg:'#fef3c7', fg:'#92400e', label:'Processando' },
-    falhou:     { bg:'#fee2e2', fg:'#991b1b', label:'Falhou' },
+    enviado:    { bg:'#bbf7d0', fg:'#166534', label:'Enviado' },
+    pendente:   { bg:'#fffbeb', fg:'#92400e', label:'Pendente' },
+    processando:{ bg:'#fffbeb', fg:'#92400e', label:'Processando' },
+    falhou:     { bg:'#fef2f2', fg:'#991b1b', label:'Falhou' },
     ignorado:   { bg:'#e5e7eb', fg:'#374151', label:'Ignorado' },
   };
 
@@ -112,7 +113,7 @@
       }),
       h('div',{style:{padding:24}},
       h('div',{style:{marginBottom:24}},
-        h('h1',{style:{fontSize:28,fontWeight:700,color:'#1f2937',margin:0}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" })), "Rastreio Clientes")),
+        h('h1',{style:{fontSize:28,fontWeight:700,color:'#111827',margin:0}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-satellite" })), "Rastreio Clientes")),
         h('p',{style:{color:'#6b7280',marginTop:4}},'Gestão do detector automático de OS para envio de rastreio')
       ),
       h('div',{style:{borderBottom:'2px solid #e5e7eb',marginBottom:16}},
@@ -184,13 +185,13 @@
                   : c.termos_filtro.slice(0,3).join(', ') + (c.termos_filtro.length > 3 ? ` +${c.termos_filtro.length-3}` : '')
               ),
               h('td',{style:{padding:10}},
-                h('span',{style:{background:c.ativo?'#d1fae5':'#e5e7eb',color:c.ativo?'#065f46':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo'),
+                h('span',{style:{background:c.ativo?'#bbf7d0':'#e5e7eb',color:c.ativo?'#166534':'#374151',padding:'3px 10px',borderRadius:12,fontSize:12,fontWeight:600}},c.ativo?'Ativo':'Inativo'),
                 // ENVIAR_GRUPO_FRONT_BADGE: so aparece quando desligado, pra nao poluir
-                c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fef3c7',color:'#b45309',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "sem grupo"))
+                c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fffbeb',color:'#92400e',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "sem grupo"))
               ),
               h('td',{style:{padding:10}},
                 h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
-                h('button',{onClick:()=>removerCliente(c.id),style:{background:'#ef4444',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Remover')
+                h('button',{onClick:()=>removerCliente(c.id),style:{background:'#dc2626',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Remover')
               )
             )))
           )
@@ -224,7 +225,7 @@
             // desliga o DETECTOR inteiro (e ai o card do Hub perde NF e cliente
             // final). Este aqui desliga so o WhatsApp.
             h('div',{style:{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:12,marginBottom:12}},
-              h('p',{style:{fontWeight:700,fontSize:13,color:'#b45309',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Mensagem no grupo")),
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#92400e',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })), "Mensagem no grupo")),
               h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}},
                 h('input',{type:'checkbox',checked:editing.enviar_grupo!==false,
                   onChange:e=>setEditing({...editing,enviar_grupo:e.target.checked})}),
@@ -239,7 +240,7 @@
 
             // ── Rastreio direto ao cliente ──
             h('div',{style:{background:'#f5f3ff',border:'1px solid #ddd6fe',borderRadius:8,padding:12,marginBottom:12}},
-              h('p',{style:{fontWeight:700,fontSize:13,color:'#6d28d9',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Rastreio direto ao cliente")),
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#7c3aed',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Rastreio direto ao cliente")),
               h('p',{style:{fontSize:12,color:'#6b7280',margin:'0 0 10px 0'}},
                 'Quando ativo, o sistema extrai o telefone da nota fiscal e envia o link de rastreio diretamente ao cliente.'
               ),

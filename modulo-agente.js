@@ -1,8 +1,9 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO AGENTE RPA — CORREÇÃO DE ENDEREÇOS ====================
 // Arquivo: modulo-agente.js
 // Admin: só histórico  |  User/Motoboy: formulário com GPS nativo + foto fachada
-// Cores: roxo #550776, laranja #f37601, dark mode responsivo
+// Cores: roxo #4c1d95, laranja #f67602, dark mode responsivo
 // ==================================================================================
 
 (function () {
@@ -170,9 +171,9 @@
           const MAPP = preview.mapp; const GOOGLE = preview.google;
           const centro = GOOGLE; // MAP_ZOOM_GEOCODE_V1: foca no ponto identificado pelo geocode
           const map = new g.maps.Map(mapRef.current, { center: centro, zoom: 18, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
-          if (MAPP) new g.maps.Marker({ position: MAPP, map, title: 'Mapp (atual)', icon: { path: g.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
-          new g.maps.Circle({ map, center: GOOGLE, radius: LIMITE_M, strokeColor: '#10b981', strokeOpacity: 0.6, strokeWeight: 1, fillColor: '#10b981', fillOpacity: 0.08 });
-          const mk = new g.maps.Marker({ position: GOOGLE, map, draggable: true, title: 'Google (arraste ate 100m)', icon: { path: g.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: '#10b981', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+          if (MAPP) new g.maps.Marker({ position: MAPP, map, title: 'Mapp (atual)', icon: { path: g.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#dc2626', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+          new g.maps.Circle({ map, center: GOOGLE, radius: LIMITE_M, strokeColor: '#16a34a', strokeOpacity: 0.6, strokeWeight: 1, fillColor: '#16a34a', fillOpacity: 0.08 });
+          const mk = new g.maps.Marker({ position: GOOGLE, map, draggable: true, title: 'Google (arraste ate 100m)', icon: { path: g.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: '#16a34a', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
           const geo = g.maps.geometry.spherical;
           const origem = new g.maps.LatLng(GOOGLE.lat, GOOGLE.lng);
           const capar = () => {
@@ -238,13 +239,13 @@
             h('p', { className: 'text-[10px] font-bold mb-1' }, 'ANTES'), _cardVal(sucesso.antes, 'text-orange-700')),
           sucesso.depois && h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-3 text-green-600' },
             h('p', { className: 'text-[10px] font-bold mb-1' }, 'DEPOIS'), _cardVal(sucesso.depois, 'text-green-700'))),
-        h('button', { type: 'button', onClick: () => { setSucesso(null); setAberto(false); }, className: 'w-full py-3 rounded-xl font-bold text-white', style: { background: 'linear-gradient(135deg,#550776,#7c3aed)' } }, 'Concluir')));
+        h('button', { type: 'button', onClick: () => { setSucesso(null); setAberto(false); }, className: 'w-full py-3 rounded-xl font-bold text-white', style: { background: 'linear-gradient(135deg,#300776,#7c3aed)' } }, 'Concluir')));
 
     return h(React.Fragment, null,
       h('button', {
         type: 'button', onClick: abrir, disabled: carregando,
         className: 'w-full mt-2 py-3 rounded-xl font-bold text-white text-sm transition flex items-center justify-center gap-2 ' + (carregando ? 'opacity-60' : 'hover:opacity-90 active:scale-[0.98]'),
-        style: { background: 'linear-gradient(135deg,#0b8f5a,#10b981)' },
+        style: { background: 'linear-gradient(135deg,#0b8f3b,#10b94e)' },
       },
         h('span', null, h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' }))),
         carregando ? 'Buscando no Google...' : 'Corrigir pelo Google'
@@ -265,13 +266,13 @@
             h('div', { className: 'text-xs text-gray-700 mb-3' }, (preview && preview.endereco) || '-'),
             (preview && preview.preciso)
               ? h(React.Fragment, null,
-                  h('div', { ref: mapRef, style: { height: '260px', borderRadius: '12px', border: '1px solid #eee', background: '#eef2f7' } }),
+                  h('div', { ref: mapRef, style: { height: '260px', borderRadius: '12px', border: '1px solid #e5e7eb', background: '#f3f4f6' } }),
                   h('div', { className: 'flex gap-3 mt-2 text-[11px] text-gray-600' },
                     h('span', null, 'Vermelho = Mapp atual'), h('span', null, 'Verde = Google (arraste ate 200 m)')),
                   statusMsg && h('div', { className: 'mt-2 text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' }, statusMsg),
                   h('div', { className: 'flex gap-2 mt-3' },
                     h('button', { type: 'button', onClick: () => setAberto(false), disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold' }, 'Cancelar'),
-                    h('button', { type: 'button', onClick: aplicar, disabled: aplicando || !posFinal, className: 'flex-1 py-2.5 rounded-xl text-white text-sm font-bold ' + (aplicando ? 'opacity-60' : ''), style: { background: '#10b981' } }, aplicando ? 'Aplicando...' : 'Corrigir para este ponto'))
+                    h('button', { type: 'button', onClick: aplicar, disabled: aplicando || !posFinal, className: 'flex-1 py-2.5 rounded-xl text-white text-sm font-bold ' + (aplicando ? 'opacity-60' : ''), style: { background: '#16a34a' } }, aplicando ? 'Aplicando...' : 'Corrigir para este ponto'))
                 )
               : (preview && preview.crossOk)
                 ? h(React.Fragment, null,
@@ -280,7 +281,7 @@
                     statusMsg && h('div', { className: 'mb-2 text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2' }, statusMsg),
                     h('div', { className: 'flex gap-2' },
                       h('button', { type: 'button', onClick: () => setAberto(false), disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold' }, 'Cancelar'),
-                      h('button', { type: 'button', onClick: aplicar, disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl text-white text-sm font-bold ' + (aplicando ? 'opacity-60' : ''), style: { background: '#10b981' } }, aplicando ? 'Aplicando...' : 'Corrigir com minha localizacao'))
+                      h('button', { type: 'button', onClick: aplicar, disabled: aplicando, className: 'flex-1 py-2.5 rounded-xl text-white text-sm font-bold ' + (aplicando ? 'opacity-60' : ''), style: { background: '#16a34a' } }, aplicando ? 'Aplicando...' : 'Corrigir com minha localizacao'))
                   )
                 : h('div', { className: 'text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-3' },
                     (preview && preview.semGps) ? 'Ative a localizacao (GPS) pra validar contra o endereco da OS.'
@@ -931,7 +932,7 @@
         h('div', { style: { position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #7C3AED, transparent)', opacity: 0.6, animation: 'agentScan 2s linear infinite' } }),
         h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })))
       ),
-      h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#e2e0f0', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
+      h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#ddd6fe', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
         // GPS_UNICO_V1: o texto falava da "foto enviada" — que nao existe desde o
         // AGENTE_BCE_V1. Ficou dois deploys em producao descrevendo um fluxo morto.
         'Estamos conferindo o CNPJ na Receita Federal e comparando com a sua localização.'
@@ -955,7 +956,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
       }, '↩ Voltar')
     );
 
@@ -976,7 +977,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
       }, '↩ Voltar')
     );
 
@@ -1092,7 +1093,7 @@
         h('button', {
           onClick: function() { setFase('idle'); setBarradoInfo(null); },
           className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white mb-3',
-          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
         }, v.botao),
 
         h('a', {
@@ -1158,7 +1159,7 @@
           iniciarPolling(solicitacaoId);
         },
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
       }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Entendi, prosseguir"))
     );
 
@@ -1247,7 +1248,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
       }, '+ Nova Correção')
       ) // fecha wrapper successSlide
     );
@@ -1274,7 +1275,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
       }, '+ Nova Correção')
     );
 
@@ -1296,7 +1297,7 @@
 
       return h('div', {
         className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6 overflow-hidden',
-        style: { background: 'linear-gradient(135deg, #550776 0%, #7c3aed 50%, #550776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
+        style: { background: 'linear-gradient(135deg, #300776 0%, #7c3aed 50%, #300776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
       },
         h('style', null, `
           @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
@@ -1325,12 +1326,12 @@
             h('rect', { x: '20',  y: '140', width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
             h('rect', { x: '140', y: '140', width: '40', height: '30', rx: '3', fill: '#fff', opacity: '0.08' }),
             // Ondas de pulso (sai de baixo do pin)
-            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#fbbf24', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s infinite' } }),
-            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#fbbf24', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s 1.1s infinite' } }),
+            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#d97706', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s infinite' } }),
+            h('circle', { cx: '100', cy: '110', r: '16', fill: 'none', stroke: '#d97706', strokeWidth: '2.5', opacity: '0', style: { transformOrigin: '100px 110px', animation: 'pinRing 2.2s 1.1s infinite' } }),
             // Pin caindo e quicando
             h('g', { style: { animation: 'pinDrop 3s ease-out infinite', transformOrigin: '100px 110px' } },
-              h('path', { d: 'M 100 75 C 84 75 84 96 100 120 C 116 96 116 75 100 75 Z', fill: '#fbbf24' }),
-              h('circle', { cx: '100', cy: '92', r: '6', fill: '#550776' })
+              h('path', { d: 'M 100 75 C 84 75 84 96 100 120 C 116 96 116 75 100 75 Z', fill: '#d97706' }),
+              h('circle', { cx: '100', cy: '92', r: '6', fill: '#4c1d95' })
             )
           )
         ),
@@ -1357,7 +1358,7 @@
                 height: '100%',
                 width: `${pctRound}%`,
                 borderRadius: '9999px',
-                background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                background: 'linear-gradient(90deg, #fbac24, #f59f0b)',
                 // Transição suaviza o salto entre polls (a cada 5s o progresso pode pular).
                 transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }
@@ -1394,8 +1395,8 @@
       // Cabeçalho
       h('div', { className: 'text-center mb-8' },
         h('div', { className: 'relative w-20 h-20 mx-auto mb-4' }, /* HERO_ICON_V2 */
-          h('div', { className: 'absolute inset-0 rounded-[1.75rem] blur-xl opacity-30', style: { background: 'linear-gradient(135deg, #7c3aed, #a855f7)' } }),
-          h('div', { className: 'relative w-20 h-20 rounded-[1.75rem] flex items-center justify-center shadow-xl ring-1 ring-white/40', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } },
+          h('div', { className: 'absolute inset-0 rounded-[1.75rem] blur-xl opacity-30', style: { background: 'linear-gradient(135deg, #7c3aed, #9055f7)' } }),
+          h('div', { className: 'relative w-20 h-20 rounded-[1.75rem] flex items-center justify-center shadow-xl ring-1 ring-white/40', style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' } },
             h('svg', { className: 'ico', style: { width: 38, height: 38, color: '#ffffff' }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })))
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
@@ -1581,27 +1582,27 @@
 
               // EMITENTE — o errado
               h('rect', { x: 14, y: 14, width: 272, height: 46, rx: 4, fill: '#fef2f2', stroke: '#fecaca' }),
-              h('text', { x: 24, y: 30, fontSize: 8, fill: '#b91c1c', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'EMITENTE — quem despachou'),
-              h('rect', { x: 24, y: 36, width: 120, height: 6, rx: 2, fill: '#fca5a5' }),
+              h('text', { x: 24, y: 30, fontSize: 8, fill: '#991b1b', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'EMITENTE — quem despachou'),
+              h('rect', { x: 24, y: 36, width: 120, height: 6, rx: 2, fill: '#fecaca' }),
               h('text', { x: 24, y: 54, fontSize: 9, fill: '#dc2626', fontFamily: 'monospace', fontWeight: 'bold' }, 'CNPJ 00.000.000/0000-00'),
               h('g', { transform: 'translate(258, 30)' },
-                h('circle', { r: 11, fill: '#fee2e2', stroke: '#dc2626', strokeWidth: 1.5 }),
+                h('circle', { r: 11, fill: '#fef2f2', stroke: '#dc2626', strokeWidth: 1.5 }),
                 h('path', { d: 'M -4 -4 L 4 4 M 4 -4 L -4 4', stroke: '#dc2626', strokeWidth: 2, strokeLinecap: 'round' }),
               ),
 
               // itens (só forma, pra nota parecer nota)
-              h('rect', { x: 14, y: 66, width: 272, height: 30, rx: 4, fill: '#fafafa', stroke: '#f3f4f6' }),
+              h('rect', { x: 14, y: 66, width: 272, height: 30, rx: 4, fill: '#f9fafb', stroke: '#f3f4f6' }),
               h('rect', { x: 24, y: 74, width: 180, height: 4, rx: 2, fill: '#e5e7eb' }),
               h('rect', { x: 24, y: 84, width: 140, height: 4, rx: 2, fill: '#e5e7eb' }),
 
               // DESTINATÁRIO — o certo
-              h('rect', { x: 14, y: 102, width: 272, height: 70, rx: 4, fill: '#f0fdf4', stroke: '#22c55e', strokeWidth: 2 }),
-              h('text', { x: 24, y: 118, fontSize: 8, fill: '#15803d', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'DESTINATÁRIO — quem recebe'),
-              h('rect', { x: 24, y: 124, width: 110, height: 6, rx: 2, fill: '#86efac' }),
-              h('text', { x: 24, y: 144, fontSize: 10, fill: '#15803d', fontFamily: 'monospace', fontWeight: 'bold' }, 'CNPJ 00.000.000/0000-00'),
-              h('text', { x: 24, y: 160, fontSize: 7.5, fill: '#4b5563', fontFamily: 'sans-serif' }, 'RUA DA LOJA, 123 — CIDADE/UF'),
+              h('rect', { x: 14, y: 102, width: 272, height: 70, rx: 4, fill: '#f0fdf4', stroke: '#16a34a', strokeWidth: 2 }),
+              h('text', { x: 24, y: 118, fontSize: 8, fill: '#166534', fontWeight: 'bold', fontFamily: 'sans-serif' }, 'DESTINATÁRIO — quem recebe'),
+              h('rect', { x: 24, y: 124, width: 110, height: 6, rx: 2, fill: '#bbf7d0' }),
+              h('text', { x: 24, y: 144, fontSize: 10, fill: '#166534', fontFamily: 'monospace', fontWeight: 'bold' }, 'CNPJ 00.000.000/0000-00'),
+              h('text', { x: 24, y: 160, fontSize: 7.5, fill: '#374151', fontFamily: 'sans-serif' }, 'RUA DA LOJA, 123 — CIDADE/UF'),
               h('g', { transform: 'translate(258, 130)' },
-                h('circle', { r: 12, fill: '#dcfce7', stroke: '#16a34a', strokeWidth: 2 }),
+                h('circle', { r: 12, fill: '#f0fdf4', stroke: '#16a34a', strokeWidth: 2 }),
                 h('path', { d: 'M -5 0 L -1.5 4 L 5 -4', stroke: '#16a34a', strokeWidth: 2.5, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }),
               ),
             ),
@@ -1641,7 +1642,7 @@
           disabled: !podeEnviar,
           className: `w-full py-4 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-3
             ${!podeEnviar ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-[0.98]'}`,
-          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
         },
           loading
             ? h(React.Fragment, null,
@@ -1795,7 +1796,7 @@
           }
         } else {
           if (temAntigo && temCorrigido) {
-            L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#9333ea', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
+            L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#7c3aed', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
             const dist = map.distance([antigoLat, antigoLng], [corrLat, corrLng]);
             const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
             L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
@@ -1816,7 +1817,7 @@
     if (mapError) {
       return h('div', { className: 'flex items-center justify-center h-full text-red-500 text-sm p-8' },
         h('div', { className: 'text-center' },
-          h('p', { className: 'text-4xl mb-3' }, '\ud83d\uddfa\ufe0f'),
+          h('p', { className: 'text-4xl mb-3' }, Icon('map')),
           h('p', { className: 'font-semibold' }, 'Nao foi possivel carregar o mapa'),
           h('p', { className: 'text-gray-400 mt-1' }, mapError)
         )
@@ -2002,7 +2003,7 @@
         h('button', {
           onClick: aplicarFiltros,
           className: 'col-span-2 md:col-span-1 rounded-xl text-sm font-semibold text-white py-2 transition hover:opacity-90',
-          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
         }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtrar"))
       ),
 
@@ -3006,20 +3007,20 @@
     const passo = Math.max(1, Math.ceil(pontos.length / 12));
 
     const KPIS = [
-      { k: 'corrigidas', label: 'Corrigidas',     cor: '#10b981', nota: `${anlPct(t.corrigidas, total)}% das tentativas` },
-      { k: 'barradas',   label: 'Barradas',       cor: '#f43f5e', nota: 'a regra recusou' },
-      { k: 'falhas',     label: 'Falhas do robô', cor: '#f59e0b', nota: 'passou e quebrou no RPA' },
-      { k: 'na_fila',    label: 'Na fila',        cor: '#cbd5e1', nota: 'rodando agora' },
+      { k: 'corrigidas', label: 'Corrigidas',     cor: '#16a34a', nota: `${anlPct(t.corrigidas, total)}% das tentativas` },
+      { k: 'barradas',   label: 'Barradas',       cor: '#dc2626', nota: 'a regra recusou' },
+      { k: 'falhas',     label: 'Falhas do robô', cor: '#d97706', nota: 'passou e quebrou no RPA' },
+      { k: 'na_fila',    label: 'Na fila',        cor: '#d1d5db', nota: 'rodando agora' },
     ];
 
     // A composicao inclui bloqueadas: sem elas a barra nao fecharia 100%, que e a
     // unica razao dela existir.
     const comp = [
-      { k: 'corrigidas', cor: '#10b981' },
-      { k: 'barradas',   cor: '#f43f5e' },
-      { k: 'falhas',     cor: '#f59e0b' },
-      { k: 'bloqueadas', cor: '#a78bfa' },
-      { k: 'na_fila',    cor: '#cbd5e1' },
+      { k: 'corrigidas', cor: '#16a34a' },
+      { k: 'barradas',   cor: '#dc2626' },
+      { k: 'falhas',     cor: '#d97706' },
+      { k: 'bloqueadas', cor: '#ddd6fe' },
+      { k: 'na_fila',    cor: '#d1d5db' },
     ];
     const somaComp = comp.reduce((s, c) => s + (t[c.k] || 0), 0);
 
@@ -3072,7 +3073,7 @@
         h('button', {
           onClick: aplicarRange,
           className: 'px-4 py-2 rounded-lg text-sm font-semibold text-white',
-          style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
         }, 'Aplicar'),
         h('p', { className: 'text-xs text-slate-400 ml-auto' }, 'O período vale pra tudo nesta tela.')
       ),
@@ -3122,7 +3123,7 @@
             }))
           ),
           t.bloqueadas > 0 && h('p', { className: 'text-[11px] text-slate-400 mt-2' },
-            h('span', { className: 'inline-block w-2 h-2 rounded-sm mr-1.5 align-middle', style: { background: '#a78bfa' } }),
+            h('span', { className: 'inline-block w-2 h-2 rounded-sm mr-1.5 align-middle', style: { background: '#ddd6fe' } }),
             `${anlNum(t.bloqueadas)} de cliente bloqueado (não passam pela validação)`)
         ),
 
@@ -3135,7 +3136,7 @@
               h('p', { className: 'text-[11px] text-slate-400 mt-0.5' }, 'empilhado por desfecho')
             ),
             h('div', { className: 'flex gap-3 text-[11px] text-slate-500' },
-              [['#10b981', 'Corrigidas'], ['#f43f5e', 'Barradas'], ['#f59e0b', 'Falhas']].map(([c, l]) =>
+              [['#16a34a', 'Corrigidas'], ['#dc2626', 'Barradas'], ['#d97706', 'Falhas']].map(([c, l]) =>
                 h('span', { key: l, className: 'flex items-center gap-1.5' },
                   h('span', { className: 'w-2 h-2 rounded-sm', style: { background: c } }), l)
               )
@@ -3145,8 +3146,8 @@
             ? h('p', { className: 'text-sm text-slate-400 text-center py-10' }, 'Sem tentativas no período.')
             : h('svg', { viewBox: `0 0 ${W} ${H + 24}`, className: 'w-full', style: { overflow: 'visible' } },
                 [0, 0.25, 0.5, 0.75, 1].map(f => h(React.Fragment, { key: f },
-                  h('line', { x1: 0, y1: H - f * H, x2: W, y2: H - f * H, stroke: '#f1f5f9' }),
-                  h('text', { x: W, y: H - f * H - 3, fontSize: 9, fill: '#cbd5e1', textAnchor: 'end' }, Math.round(maxY * f))
+                  h('line', { x1: 0, y1: H - f * H, x2: W, y2: H - f * H, stroke: '#f3f4f6' }),
+                  h('text', { x: W, y: H - f * H - 3, fontSize: 9, fill: '#d1d5db', textAnchor: 'end' }, Math.round(maxY * f))
                 )),
                 pontos.map((p, i) => {
                   const x = i * (bw + GAP);
@@ -3154,14 +3155,14 @@
                   const hBa = (p.barradas / maxY) * H;
                   const hFa = (p.falhas / maxY) * H;
                   return h(React.Fragment, { key: p.dia },
-                    h('rect', { x, y: H - hOk, width: bw, height: hOk, fill: '#10b981' },
+                    h('rect', { x, y: H - hOk, width: bw, height: hOk, fill: '#16a34a' },
                       h('title', null, `${anlDM(p.dia)} — ${p.corrigidas} corrigidas`)),
-                    h('rect', { x, y: H - hOk - hBa, width: bw, height: hBa, fill: '#f43f5e' },
+                    h('rect', { x, y: H - hOk - hBa, width: bw, height: hBa, fill: '#dc2626' },
                       h('title', null, `${anlDM(p.dia)} — ${p.barradas} barradas`)),
-                    h('rect', { x, y: H - hOk - hBa - hFa, width: bw, height: hFa, fill: '#f59e0b' },
+                    h('rect', { x, y: H - hOk - hBa - hFa, width: bw, height: hFa, fill: '#d97706' },
                       h('title', null, `${anlDM(p.dia)} — ${p.falhas} falhas`)),
                     (i % passo === 0) && h('text', {
-                      x: x + bw / 2, y: H + 16, fontSize: 10, fill: '#94a3b8', textAnchor: 'middle',
+                      x: x + bw / 2, y: H + 16, fontSize: 10, fill: '#9ca3af', textAnchor: 'middle',
                     }, anlDM(p.dia))
                   );
                 })
@@ -3241,7 +3242,7 @@
                         h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
                           h('div', {
                             className: 'h-full rounded-full transition-all duration-300',
-                            style: { width: `${anlPct(n, gpsTot)}%`, background: ruim ? '#f43f5e' : '#0f172a', opacity: ruim ? 1 : 0.75 },
+                            style: { width: `${anlPct(n, gpsTot)}%`, background: ruim ? '#dc2626' : '#111827', opacity: ruim ? 1 : 0.75 },
                           })
                         )
                       );
@@ -3306,7 +3307,7 @@
                         h('td', { className: 'px-3 py-2.5' },
                           h('div', { className: 'flex items-center gap-2 justify-end' },
                             h('div', { className: 'w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden' },
-                              h('div', { className: 'h-full rounded-full', style: { width: `${apr * 100}%`, background: flag ? '#f43f5e' : '#0f172a' } })
+                              h('div', { className: 'h-full rounded-full', style: { width: `${apr * 100}%`, background: flag ? '#dc2626' : '#111827' } })
                             ),
                             h('span', { className: 'text-[12px] font-semibold w-9 text-right', style: { fontVariantNumeric: 'tabular-nums' } },
                               `${Math.round(apr * 100)}%`)
@@ -3508,7 +3509,7 @@
         h('div', { className: 'grid gap-3' },
           h('input', { value: nomeLoja, onChange: (e) => setNomeLoja(e.target.value), placeholder: 'Nome da loja/cliente (ex: Abobrinha)', className: 'border rounded-lg px-3 py-2 text-sm' }),
           h('input', { value: endereco, onChange: (e) => setEndereco(e.target.value), placeholder: 'Endereço do Ponto 1', className: 'border rounded-lg px-3 py-2 text-sm' }),
-          h('button', { onClick: adicionar, disabled: salvando, className: 'px-4 py-2 rounded-lg text-white text-sm font-semibold', style: { background: 'linear-gradient(135deg, #550776, #7c3aed)' } }, salvando ? 'Salvando...' : '+ Adicionar cliente')
+          h('button', { onClick: adicionar, disabled: salvando, className: 'px-4 py-2 rounded-lg text-white text-sm font-semibold', style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' } }, salvando ? 'Salvando...' : '+ Adicionar cliente')
         )
       ),
       loading

@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 /**
  * saude-sistema.js — Tutts Frontend
@@ -94,7 +95,7 @@
     function corDoStatus(status) {
         const mapa = {
             'ok': '#16a34a',           // verde
-            'parado': '#f59e0b',       // amarelo
+            'parado': '#d97706',       // amarelo
             'erro': '#dc2626',         // vermelho
             'inativo': '#9ca3af',      // cinza claro
             'cron-aguardando': '#9ca3af', // cinza
@@ -243,7 +244,7 @@
                         disabled: !podeConfirmar || processando,
                         className: 'px-4 py-2 text-sm text-white rounded-md',
                         style: {
-                            background: (podeConfirmar && !processando) ? '#dc2626' : '#fca5a5',
+                            background: (podeConfirmar && !processando) ? '#dc2626' : '#fecaca',
                             cursor: (podeConfirmar && !processando) ? 'pointer' : 'not-allowed',
                         }
                     }, processando ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Reiniciando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Confirmar restart"))
@@ -294,7 +295,7 @@
                 });
                 const data = await r.json();
                 if (r.ok) {
-                    showToast('🔄 Restart iniciado — worker volta em ~30s', 'success');
+                    showToast('Restart iniciado — worker volta em ~30s', 'success');
                     setModalRestartAberto(false);
                     // Limpa dados e recarrega em 30s
                     setDados(null);
@@ -303,10 +304,10 @@
                         carregar();
                     }, 30000);
                 } else {
-                    showToast('❌ ' + (data.error || data.erro || 'Erro ao reiniciar'), 'error');
+                    showToast('' + (data.error || data.erro || 'Erro ao reiniciar'), 'error');
                 }
             } catch (e) {
-                showToast('❌ Erro de conexão: ' + e.message, 'error');
+                showToast('Erro de conexão: ' + e.message, 'error');
             } finally {
                 setReiniciando(false);
             }
@@ -331,7 +332,7 @@
 
         const statusCor = {
             'healthy': '#16a34a',
-            'degraded': '#f59e0b',
+            'degraded': '#d97706',
             'critical': '#dc2626',
             'starting': '#9ca3af',
             'error': '#9ca3af',

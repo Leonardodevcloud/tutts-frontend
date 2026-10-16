@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 /* ============================================================================
  * ModuloFinanceiroSolicitacoesV2.js
@@ -134,11 +135,11 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
   const corAvatar = (cod) => {
     const seed = String(cod || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     const gradients = [
-      "linear-gradient(135deg, #534AB7, #378ADD)",
-      "linear-gradient(135deg, #BA7517, #EF9F27)",
-      "linear-gradient(135deg, #1D9E75, #5DCAA5)",
-      "linear-gradient(135deg, #BE185D, #EC4899)",
-      "linear-gradient(135deg, #0E7490, #06B6D4)",
+      "linear-gradient(135deg, #724ab7, #376cdd)",
+      "linear-gradient(135deg, #ba7e17, #EF9F27)",
+      "linear-gradient(135deg, #1d9e4c, #5dca85)",
+      "linear-gradient(135deg, #be1818, #ec4848)",
+      "linear-gradient(135deg, #0e3790, #0647d4)",
     ];
     return gradients[seed % gradients.length];
   };
@@ -146,16 +147,16 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
   const isAutoSaque = (s) => s.admin_name === "Sistema (Auto-Saque)";
 
   const statusLabelCurto = (s) => {
-    if (s.stark_status === "pago" || s.status === "pago_stark") return { txt: "Pago", cor: "#065F46", bg: "#D1FAE5", dot: "#10B981" };
-    if (s.stark_status === "em_lote") return { txt: "Em lote", cor: "#92400E", bg: "#FEF3C7", dot: "#F59E0B" };
-    if (s.stark_status === "processando") return { txt: "Processando", cor: "#92400E", bg: "#FEF3C7", dot: "#F59E0B" };
-    if (s.stark_status === "erro") return { txt: "Erro Stark", cor: "#991B1B", bg: "#FEE2E2", dot: "#EF4444" };
-    if (s.status === "aprovado") return { txt: "Aprovado", cor: "#065F46", bg: "#D1FAE5", dot: "#10B981" };
-    if (s.status === "aprovado_gratuidade") return { txt: "Aprov. (grat.)", cor: "#1E40AF", bg: "#DBEAFE", dot: "#3B82F6" };
-    if (s.status === "rejeitado") return { txt: "Rejeitado", cor: "#991B1B", bg: "#FEE2E2", dot: "#EF4444" };
-    if (s.status === "inativo") return { txt: "Inativo", cor: "#92400E", bg: "#FEF3C7", dot: "#F59E0B" };
-    if (s.status === "aguardando_pagamento_stark") return { txt: "Aguard. Pgto", cor: "#92400E", bg: "#FEF3C7", dot: "#F59E0B" };
-    return { txt: "Aguardando", cor: "#92400E", bg: "#FEF3C7", dot: "#F59E0B" };
+    if (s.stark_status === "pago" || s.status === "pago_stark") return { txt: "Pago", cor: "#166534", bg: "#bbf7d0", dot: "#16a34a" };
+    if (s.stark_status === "em_lote") return { txt: "Em lote", cor: "#92400E", bg: "#fffbeb", dot: "#d97706" };
+    if (s.stark_status === "processando") return { txt: "Processando", cor: "#92400E", bg: "#fffbeb", dot: "#d97706" };
+    if (s.stark_status === "erro") return { txt: "Erro Stark", cor: "#991B1B", bg: "#fef2f2", dot: "#dc2626" };
+    if (s.status === "aprovado") return { txt: "Aprovado", cor: "#166534", bg: "#bbf7d0", dot: "#16a34a" };
+    if (s.status === "aprovado_gratuidade") return { txt: "Aprov. (grat.)", cor: "#1E40AF", bg: "#eff6ff", dot: "#2563eb" };
+    if (s.status === "rejeitado") return { txt: "Rejeitado", cor: "#991B1B", bg: "#fef2f2", dot: "#dc2626" };
+    if (s.status === "inativo") return { txt: "Inativo", cor: "#92400E", bg: "#fffbeb", dot: "#d97706" };
+    if (s.status === "aguardando_pagamento_stark") return { txt: "Aguard. Pgto", cor: "#92400E", bg: "#fffbeb", dot: "#d97706" };
+    return { txt: "Aguardando", cor: "#92400E", bg: "#fffbeb", dot: "#d97706" };
   };
 
   const formatHora = (dt) => new Date(dt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -186,17 +187,17 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
             e("circle", { cx: 32, cy: 32, r: 28, fill: "none", stroke: "#E5E7EB", strokeWidth: 5 }),
             e("circle", {
               cx: 32, cy: 32, r: 28, fill: "none",
-              stroke: scoreFinal >= 80 ? "#1D9E75" : scoreFinal >= 50 ? "#F59E0B" : "#EF4444",
+              stroke: scoreFinal >= 80 ? "#16a34a" : scoreFinal >= 50 ? "#d97706" : "#dc2626",
               strokeWidth: 5, strokeLinecap: "round",
               strokeDasharray: 175.9,
               strokeDashoffset: 175.9 - (175.9 * scoreFinal) / 100,
             })
           ),
-          e("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: scoreFinal >= 80 ? "#0F6E56" : scoreFinal >= 50 ? "#92400E" : "#991B1B" } }, scoreFinal)
+          e("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: scoreFinal >= 80 ? "#166534" : scoreFinal >= 50 ? "#92400E" : "#991B1B" } }, scoreFinal)
         ),
         e("div", null,
           e("p", { style: { fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 2px" } }, "Score do dia"),
-          e("p", { style: { fontSize: 14, fontWeight: 600, color: scoreFinal >= 80 ? "#0F6E56" : scoreFinal >= 50 ? "#92400E" : "#991B1B", margin: 0 } }, scoreFinal >= 80 ? "Excelente" : scoreFinal >= 50 ? "Bom" : "Atenção"),
+          e("p", { style: { fontSize: 14, fontWeight: 600, color: scoreFinal >= 80 ? "#166534" : scoreFinal >= 50 ? "#92400E" : "#991B1B", margin: 0 } }, scoreFinal >= 80 ? "Excelente" : scoreFinal >= 50 ? "Bom" : "Atenção"),
           e("p", { style: { fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" } }, `SLA 1h: ${atrasados.length === 0 ? "100%" : "atenção"}`)
         )
       ),
@@ -211,7 +212,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
         e("div", null,
           e("p", { style: { fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 4px" } }, "Tempo médio"),
           e("p", { style: { fontSize: 22, fontWeight: 600, color: "#111827", margin: 0, lineHeight: 1 } }, tempoMedio < 60 ? `${tempoMedio}min` : `${Math.floor(tempoMedio / 60)}h${tempoMedio % 60}m`),
-          e("p", { style: { fontSize: 11, color: tempoMedio <= 30 ? "#0F6E56" : tempoMedio <= 60 ? "#BA7517" : "#991B1B", marginTop: 4 } }, tempoMedio <= 30 ? "Excelente" : tempoMedio <= 60 ? "Bom" : "Lento")
+          e("p", { style: { fontSize: 11, color: tempoMedio <= 30 ? "#166534" : tempoMedio <= 60 ? "#d97706" : "#991B1B", marginTop: 4 } }, tempoMedio <= 30 ? "Excelente" : tempoMedio <= 60 ? "Bom" : "Lento")
         ),
         e("div", null,
           e("p", { style: { fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 4px" } }, "Aguardando"),
@@ -221,7 +222,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
         e("div", null,
           e("p", { style: { fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 4px" } }, "Atrasados"),
           e("p", { style: { fontSize: 22, fontWeight: 600, color: atrasados.length === 0 ? "#111827" : "#991B1B", margin: 0, lineHeight: 1 } }, atrasados.length),
-          e("p", { style: { fontSize: 11, color: atrasados.length === 0 ? "#0F6E56" : "#991B1B", marginTop: 4 } }, atrasados.length === 0 ? "Tudo no prazo" : "Ação necessária")
+          e("p", { style: { fontSize: 11, color: atrasados.length === 0 ? "#166534" : "#991B1B", marginTop: 4 } }, atrasados.length === 0 ? "Tudo no prazo" : "Ação necessária")
         )
       ),
 
@@ -240,7 +241,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               s.stark_status !== 'processando' && s.stark_status !== 'pago' && s.stark_status !== 'em_lote'
             );
             if (selecionadosValidos.length === 0) {
-              ja('⚠️ Nenhum saque válido selecionado. Selecione apenas saques aprovados que não estejam em lote.', 'warning');
+              ja('Nenhum saque válido selecionado. Selecione apenas saques aprovados que não estejam em lote.', 'warning');
               return;
             }
             const valorTotal = selecionadosValidos.reduce((a, s) => a + parseFloat(s.final_amount || 0), 0);
@@ -264,7 +265,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               });
               const data = await resp.json();
               if (resp.ok && data.success) {
-                ja(`✅ ${data.marcados} saque(s) marcado(s) para lote. Acesse "Pix Stark" para executar.`, 'success');
+                ja(`${data.marcados} saque(s) marcado(s) para lote. Acesse "Pix Stark" para executar.`, 'success');
                 // Atualização otimista: mover saques marcados pra stark_status='em_lote'
                 // sem precisar refetch completo (parent recarrega via polling/WS)
                 const idsMarcados = new Set(selecionadosValidos.map(s => s.id));
@@ -283,19 +284,19 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                 // Limpar seleção
                 if (typeof B === 'function') B([]);
               } else {
-                ja(`❌ ${data.error || 'Erro ao gerar lote'}`, 'error');
+                ja(`${data.error || 'Erro ao gerar lote'}`, 'error');
               }
             } catch (err) {
               console.error('[Gerar Lote] Erro:', err);
-              ja(`❌ Erro de rede: ${err.message || 'verifique conexão'}`, 'error');
+              ja(`Erro de rede: ${err.message || 'verifique conexão'}`, 'error');
             } finally {
               x(prev => Object.assign({}, prev, { gerandoLote: false }));
             }
           },
           disabled: !!p.gerandoLote,
           style: {
-            background: p.gerandoLote ? "#9CA3AF" : "#534AB7", color: "white",
-            border: "1px solid " + (p.gerandoLote ? "#9CA3AF" : "#534AB7"),
+            background: p.gerandoLote ? "#9CA3AF" : "#7c3aed", color: "white",
+            border: "1px solid " + (p.gerandoLote ? "#9CA3AF" : "#7c3aed"),
             padding: "8px 14px", borderRadius: 8,
             fontSize: 12, fontWeight: 600,
             cursor: p.gerandoLote ? "wait" : "pointer", whiteSpace: "nowrap",
@@ -320,10 +321,10 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               acima200.forEach(s => { texto += "" + (s.user_name || "Cód: " + s.user_cod) + " — *R$ " + parseFloat(s.final_amount).toFixed(2).replace(".", ",") + "*\n"; });
             }
             navigator.clipboard.writeText(texto.trim());
-            ja("✅ Resumo copiado!", "success");
+            ja("Resumo copiado!", "success");
           },
           style: {
-            background: "white", color: "#4B5563",
+            background: "white", color: "#374151",
             border: "1px solid #E5E7EB",
             padding: "6px 14px", borderRadius: 8,
             fontSize: 11, fontWeight: 500,
@@ -365,8 +366,8 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
             padding: "4px 10px", borderRadius: 999,
             fontSize: 11, fontWeight: 500,
             cursor: "pointer", border: "none",
-            background: ativo ? "#534AB7" : "#F3F4F6",
-            color: ativo ? "white" : "#4B5563",
+            background: ativo ? "#7c3aed" : "#F3F4F6",
+            color: ativo ? "white" : "#374151",
           }
         },
           chip.label,
@@ -454,9 +455,9 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
 
                 let bgRow = "white";
                 if (isOpen) bgRow = "#F5F3FF";
-                else if (isSelected) bgRow = "#EEF2FF";
+                else if (isSelected) bgRow = "#eff6ff";
                 else if (isAtrasado && !isPagoStark && !isEmLote && !isProcessandoPix) bgRow = "#FEF2F2";
-                else if (s.is_restricted && s.status !== "rejeitado" && !isPagoStark) bgRow = "#FEE2E2";
+                else if (s.is_restricted && s.status !== "rejeitado" && !isPagoStark) bgRow = "#fef2f2";
                 // Gratuidade visível em qualquer status (não só aguardando) — fundo azul bem clarinho
                 else if (s.has_gratuity) bgRow = "#EFF6FF";
 
@@ -467,7 +468,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     borderBottom: "1px solid #F3F4F6",
                     cursor: "pointer",
                     background: bgRow,
-                    boxShadow: isOpen ? "inset 3px 0 0 #534AB7" : "none",
+                    boxShadow: isOpen ? "inset 3px 0 0 #7c3aed" : "none",
                   },
                 },
                   e("td", { style: tdStyle(), onClick: (ev) => ev.stopPropagation() },
@@ -513,7 +514,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                   ),
                   // Recebido (líquido)
                   e("td", { style: { ...tdStyle(), textAlign: "right" } },
-                    e("span", { style: { fontWeight: 500, color: "#0F6E56", fontVariantNumeric: "tabular-nums" } }, er(s.final_amount))
+                    e("span", { style: { fontWeight: 500, color: "#166534", fontVariantNumeric: "tabular-nums" } }, er(s.final_amount))
                   ),
                   // PIX
                   e("td", { style: tdStyle(), onClick: (ev) => ev.stopPropagation() },
@@ -553,8 +554,8 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     auto && (s.status === "aprovado" || s.status === "aprovado_gratuidade" || isPagoStark || isEmLote || isProcessandoPix) && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", marginLeft: 4,
-                        padding: "1px 5px", background: "#EEF2FF",
-                        color: "#4338CA", borderRadius: 3,
+                        padding: "1px 5px", background: "#eff6ff",
+                        color: "#7c3aed", borderRadius: 3,
                         fontSize: 9, fontWeight: 500,
                       },
                       title: "Pago automaticamente pelo sistema"
@@ -562,7 +563,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     s.has_gratuity && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", gap: 3, marginLeft: 4,
-                        padding: "1px 6px", background: "#FEF3C7",
+                        padding: "1px 6px", background: "#fffbeb",
                         color: "#92400E", borderRadius: 3,
                         fontSize: 9, fontWeight: 700,
                         textTransform: "uppercase", letterSpacing: "0.4px",
@@ -572,7 +573,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                     s.is_restricted && e("span", {
                       style: {
                         display: "inline-flex", alignItems: "center", marginLeft: 4,
-                        padding: "1px 5px", background: "#FEE2E2",
+                        padding: "1px 5px", background: "#fef2f2",
                         color: "#991B1B", borderRadius: 3,
                         fontSize: 9, fontWeight: 500,
                       },
@@ -592,7 +593,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
                             style: { fontSize: 11, fontWeight: 700, color: s.vencimento_retroativo ? "#92400E" : "#374151" },
                             title: s.vencimento_retroativo ? "Competencia no DOMINGO ANTERIOR (saque seg/ter/qua ate 12h)" : "Competencia = data da realizacao"
                           }, String(s.vencimento_map).slice(8, 10) + "/" + String(s.vencimento_map).slice(5, 7) + "/" + String(s.vencimento_map).slice(0, 4)),
-                          s.vencimento_retroativo && e("span", { style: { fontSize: 9, fontWeight: 600, color: "#B45309", marginTop: 1 } }, "dom. anterior")
+                          s.vencimento_retroativo && e("span", { style: { fontSize: 9, fontWeight: 600, color: "#92400e", marginTop: 1 } }, "dom. anterior")
                         )
                       : e("span", { style: { color: "#D1D5DB" } }, "—")
                   ),
@@ -618,7 +619,7 @@ window.SolicitacoesV2 = function SolicitacoesV2(props) {
               disabled: solicitacoesPagina === 1,
               style: pagBtnStyle(solicitacoesPagina === 1),
             }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-arrowleft" }))),
-            e("span", { style: { fontSize: 12, color: "#4B5563", padding: "0 8px" } },
+            e("span", { style: { fontSize: 12, color: "#374151", padding: "0 8px" } },
               `${solicitacoesPagina} / ${totalPaginas}`
             ),
             e("button", {
@@ -702,12 +703,12 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
     // Financeiro
     sectionDrawer(e, "Financeiro", [
       ["Valor solicitado", er(s.requested_amount)],
-      ["Taxa", taxa > 0 ? e("span", { style: { color: "#BA7517" } }, `– ${er(taxa)}`) : "—"],
-      ["Líquido pago", e("span", { style: { color: "#0F6E56", fontWeight: 600 } }, er(s.final_amount))],
+      ["Taxa", taxa > 0 ? e("span", { style: { color: "#d97706" } }, `– ${er(taxa)}`) : "—"],
+      ["Líquido pago", e("span", { style: { color: "#166534", fontWeight: 600 } }, er(s.final_amount))],
       ["Débito Plific", s.debito_plific_at ? `${formatHora(s.debito_plific_at)}` : s.debito_erro ? e("span", { style: { color: "#991B1B" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-x" })), "Falha")) : "—"],
       /* VENC_MAP_V1: competência (vencimento) enviada à MAP */
       s.vencimento_map ? ["Competência MAP", e("span", { style: { fontWeight: 600, color: s.vencimento_retroativo ? "#92400E" : "#111827" } }, fmtVencMap(s.vencimento_map) + (s.vencimento_retroativo ? "  •  domingo anterior" : ""))] : null,
-      auto ? ["Origem", e("span", { style: { color: "#4338CA", fontWeight: 600 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" })), "Auto-saque"))] : ["Origem", e("span", { style: { color: "#6b7280" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-hand" })), "Manual"))],
+      auto ? ["Origem", e("span", { style: { color: "#7c3aed", fontWeight: 600 } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-zap" })), "Auto-saque"))] : ["Origem", e("span", { style: { color: "#6b7280" } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-hand" })), "Manual"))],
       s.admin_name ? ["Aprovado por", s.admin_name] : null,
     ]),
 
@@ -751,7 +752,7 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           else Jl(s.id, "aprovado");
           setDrawerSaque(null);
         },
-        style: { ...drawerActionStyle, background: "#0F6E56", color: "white", borderColor: "#0F6E56", gridColumn: "1 / -1" },
+        style: { ...drawerActionStyle, background: "#166534", color: "white", borderColor: "#166534", gridColumn: "1 / -1" },
       }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, e("use", { href: "#i-check" })), "Aprovar saque")),
       s.status === "aguardando_aprovacao" && e("button", {
         onClick: () => setDrawerEditandoStatus("rejeitar"),
@@ -767,13 +768,13 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
           if (abrirQRPix) abrirQRPix(s);
           else ja("Função QR não disponível", "error");
         },
-        style: { ...drawerActionStyle, background: "#534AB7", color: "white", borderColor: "#534AB7" },
+        style: { ...drawerActionStyle, background: "#7c3aed", color: "white", borderColor: "#7c3aed" },
       }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-star" })), "Gerar QR Pix")),
       e("button", {
         onClick: () => {
           const dados = `Saque #${s.id}\nMotoboy: ${s.user_name} (cod ${s.user_cod})\nValor: ${er(s.requested_amount)}\nLíquido: ${er(s.final_amount)}\nPIX: ${s.pix_key}\nStatus: ${status.txt}`;
           navigator.clipboard.writeText(dados);
-          ja("📋 Dados copiados!", "success");
+          ja("Dados copiados!", "success");
         },
         style: drawerActionStyle,
       }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-clipboard" })), "Copiar dados")),
@@ -805,7 +806,7 @@ function renderDrawer({ e, drawerSaque, setDrawerSaque, setDrawerEditandoStatus,
         }, "Confirmar rejeição"),
         e("button", {
           onClick: () => { setDrawerEditandoStatus(false); setDrawerMotivoRej(""); },
-          style: { padding: "6px 10px", background: "white", color: "#4B5563", border: "1px solid #E5E7EB", borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: "pointer" },
+          style: { padding: "6px 10px", background: "white", color: "#374151", border: "1px solid #E5E7EB", borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: "pointer" },
         }, "Cancelar")
       )
     )
@@ -837,7 +838,7 @@ function pagBtnStyle(disabled) {
   return {
     padding: "4px 8px",
     background: disabled ? "#F3F4F6" : "#FFFFFF",
-    color: disabled ? "#D1D5DB" : "#4B5563",
+    color: disabled ? "#D1D5DB" : "#374151",
     border: "1px solid #E5E7EB",
     borderRadius: 6,
     fontSize: 11,
@@ -847,7 +848,7 @@ function pagBtnStyle(disabled) {
 const drawerActionStyle = {
   background: "white",
   border: "1px solid #E5E7EB",
-  color: "#4B5563",
+  color: "#374151",
   padding: "7px",
   borderRadius: 6,
   fontSize: 11,
@@ -884,10 +885,10 @@ function sectionDrawer(e, titulo, rows) {
 }
 function timelineItem(e, hora, texto, tipo) {
   const colors = {
-    success: { bg: "#10B981", ring: "#10B981" },
-    warning: { bg: "#F59E0B", ring: "#F59E0B" },
-    error: { bg: "#EF4444", ring: "#EF4444" },
-    active: { bg: "#534AB7", ring: "#534AB7" },
+    success: { bg: "#16a34a", ring: "#16a34a" },
+    warning: { bg: "#d97706", ring: "#d97706" },
+    error: { bg: "#dc2626", ring: "#dc2626" },
+    active: { bg: "#7c3aed", ring: "#7c3aed" },
     pending: { bg: "#D1D5DB", ring: "#D1D5DB" },
   };
   const c = colors[tipo] || colors.pending;
@@ -902,6 +903,6 @@ function timelineItem(e, hora, texto, tipo) {
       }
     }),
     e("span", { style: { color: "#9CA3AF", fontSize: 10, marginRight: 6, fontVariantNumeric: "tabular-nums" } }, hora),
-    e("span", { style: { color: "#4B5563" } }, texto)
+    e("span", { style: { color: "#374151" } }, texto)
   );
 }

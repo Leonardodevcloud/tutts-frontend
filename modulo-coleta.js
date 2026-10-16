@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO COLETA DE ENDEREÇOS ====================
 // Arquivo: modulo-coleta.js
@@ -180,7 +181,7 @@
         useEffect(() => {
             fetchApi('/motoboy/coleta/minhas-regioes')
                 .then(setRegioes)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, []);
 
@@ -226,7 +227,7 @@
 
         const capturarGps = () => {
             if (!navigator.geolocation) {
-                showToast('❌ GPS não disponível', 'error');
+                showToast('GPS não disponível', 'error');
                 return;
             }
             setCapturandoGps(true);
@@ -238,11 +239,11 @@
                         accuracy: Math.round(pos.coords.accuracy)
                     });
                     setCapturandoGps(false);
-                    showToast('📍 Localização capturada', 'success');
+                    showToast('Localização capturada', 'success');
                 },
                 err => {
                     setCapturandoGps(false);
-                    showToast('❌ ' + (err.code === 1 ? 'Permissão de GPS negada' : 'Erro ao capturar GPS'), 'error');
+                    showToast('' + (err.code === 1 ? 'Permissão de GPS negada' : 'Erro ao capturar GPS'), 'error');
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
@@ -256,7 +257,7 @@
                 setFoto(base64);
                 setFotoPreview(base64);
             } catch {
-                showToast('❌ Erro ao processar foto', 'error');
+                showToast('Erro ao processar foto', 'error');
             }
         };
 
@@ -269,7 +270,7 @@
                 setFotoNF(base64);
                 setFotoNFPreview(base64);
             } catch {
-                showToast('❌ Erro ao processar foto da NF', 'error');
+                showToast('Erro ao processar foto da NF', 'error');
             }
         };
 
@@ -286,7 +287,7 @@
             if (!regiaoId) return showToast('Selecione uma região', 'warning');
             if (!nomeCliente.trim()) return showToast('Digite o nome do cliente', 'warning');
             if (!gps) return showToast('Capture a localização primeiro', 'warning');
-            if (!fotoNF) return showToast('📄 Foto da Nota Fiscal é obrigatória', 'warning');
+            if (!fotoNF) return showToast('Foto da Nota Fiscal é obrigatória', 'warning');
 
             setEnviando(true);
             try {
@@ -302,11 +303,11 @@
                     })
                 });
                 setResultado(resp);
-                showToast(resp.mensagem || '✅ Cadastrado!', 'success');
+                showToast(resp.mensagem || 'Cadastrado!', 'success');
             } catch (err) {
                 // Backend retorna `motivo` em alguns erros (NF inválida, duplicata)
                 const detalhe = (err && err.body && (err.body.motivo || err.body.error)) || err.message;
-                showToast('❌ ' + detalhe, 'error');
+                showToast('' + detalhe, 'error');
             } finally {
                 setEnviando(false);
             }
@@ -523,7 +524,7 @@
                     setHasMore(!!d.hasMore);
                     setPage(1);
                 })
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, [filtro]);
 
@@ -540,7 +541,7 @@
                     setHasMore(!!d.hasMore);
                     setPage(proxima);
                 })
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoadingMore(false));
         };
 
@@ -686,7 +687,7 @@
         useEffect(() => {
             fetchApi('/motoboy/coleta/ganhos')
                 .then(setDados)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, []);
 
@@ -790,7 +791,7 @@
             setLoading(true);
             fetchApi('/admin/coleta/fila')
                 .then(setPendentes)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, []);
 
@@ -820,9 +821,9 @@
                     method: 'POST',
                     body: JSON.stringify({ nome_cliente_editado: nomeEdit.trim() })
                 });
-                showToast('✅ Aprovado!', 'success');
+                showToast('Aprovado!', 'success');
                 setDetalhe(null); carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
             finally { setProcessando(false); }
         };
 
@@ -834,9 +835,9 @@
                     method: 'POST',
                     body: JSON.stringify({ motivo: motivoRejeicao.trim() })
                 });
-                showToast('🗑️ Rejeitado', 'success');
+                showToast('Rejeitado', 'success');
                 setDetalhe(null); carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
             finally { setProcessando(false); }
         };
 
@@ -1059,7 +1060,7 @@
             setLoading(true);
             fetchApi('/admin/coleta/regioes')
                 .then(setRegioes)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, []);
 
@@ -1087,19 +1088,19 @@
                     method: editarRegiao.id ? 'PATCH' : 'POST',
                     body: JSON.stringify(editarRegiao)
                 });
-                showToast('✅ Salvo!', 'success');
+                showToast('Salvo!', 'success');
                 setEditarRegiao(null);
                 carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
         };
 
         const excluir = async (r) => {
             if (!confirm(`Excluir a região "${r.nome}"?\n\nOs motoboys vinculados serão desvinculados e os itens na fila serão removidos.`)) return;
             try {
                 await fetchApi('/admin/coleta/regioes/' + r.id, { method: 'DELETE' });
-                showToast('🗑️ Excluído', 'success');
+                showToast('Excluído', 'success');
                 carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
         };
 
         return h('div', null,
@@ -1318,7 +1319,7 @@
         useEffect(() => {
             fetchApi('/admin/grupos-enderecos/' + grupoId)
                 .then(setDados)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, [grupoId]);
 
@@ -1380,7 +1381,7 @@
         useEffect(() => {
             fetchApi('/admin/coleta/regioes/' + regiao.id + '/motoboys')
                 .then(setMotoboys)
-                .catch(err => { showToast('❌ ' + err.message, 'error'); setMotoboys([]); });
+                .catch(err => { showToast('' + err.message, 'error'); setMotoboys([]); });
         }, [regiao.id]);
 
         const filtrados = useMemo(() => {
@@ -1474,7 +1475,7 @@
                 if (filtros.origem) params.set('origem', filtros.origem);
                 const r = await fetchApi('/admin/coleta/enderecos-cadastrados?' + params.toString());
                 setEnderecos(r);
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
             setLoading(false);
         };
 
@@ -1506,10 +1507,10 @@
                         grupo_enderecos_id: editando.grupo_enderecos_id ? parseInt(editando.grupo_enderecos_id) : null
                     })
                 });
-                showToast(isNovo ? '✅ Endereço criado' : '✅ Salvo', 'success');
+                showToast(isNovo ? 'Endereço criado' : 'Salvo', 'success');
                 setEditando(null);
                 carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
         };
 
         // Buscar endereço no Google e atualizar campos + mapa
@@ -1541,11 +1542,11 @@
                             c._marker.setLatLng([r.latitude, r.longitude]);
                         }
                     });
-                    showToast('📍 Endereço localizado', 'success');
+                    showToast('Endereço localizado', 'success');
                 } else {
-                    showToast('⚠️ Endereço não encontrado', 'warning');
+                    showToast('Endereço não encontrado', 'warning');
                 }
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
         };
 
         // Reverse geocode from map coordinates
@@ -1575,10 +1576,10 @@
         const excluir = async (id) => {
             try {
                 await fetchApi('/admin/coleta/enderecos-cadastrados/' + id, { method: 'DELETE' });
-                showToast('🗑️ Excluído', 'success');
+                showToast('Excluído', 'success');
                 setConfirmarExclusao(null);
                 carregar();
-            } catch (err) { showToast('❌ ' + err.message, 'error'); }
+            } catch (err) { showToast('' + err.message, 'error'); }
         };
 
         const totalMotoboy = enderecos.filter(e => e.origem === 'motoboy').length;
@@ -1892,7 +1893,7 @@
         useEffect(() => {
             fetchApi('/admin/coleta/stats')
                 .then(setStats)
-                .catch(err => showToast('❌ ' + err.message, 'error'))
+                .catch(err => showToast('' + err.message, 'error'))
                 .finally(() => setLoading(false));
         }, []);
 

@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 // ============================================================
 // FILAS AUTO-GERENCIÁVEIS — visão MOTOBOY (app)
 // ============================================================
@@ -284,7 +285,7 @@
           e('div', { className: 'flex-1 min-w-0' },
             e('h1', { className: 'text-base font-bold truncate' }, minhaCentral.central_nome),
             e('p', { className: 'text-purple-200 text-xs flex items-center gap-1' },
-              e('span', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#86EFAC' } }),
+              e('span', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#bbf7d0' } }),
               'Fila auto-gerenciável'
             )
           )
@@ -535,7 +536,7 @@
       // ── Tela fullscreen: barreira de horário ──────────────────
       barreiraHorario && e('div', {
         className: 'fixed inset-0 z-50 flex flex-col items-center justify-center p-6',
-        style: { background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)' }
+        style: { background: 'linear-gradient(135deg, #2d1b4b 0%, #4c2e81 50%, #4c1d95 100%)' }
       },
         e('div', { className: 'max-w-sm w-full text-center space-y-6' },
           // Ícone

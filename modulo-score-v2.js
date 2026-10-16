@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */ /* SCORE_ADMIN_REDESIGN_V1 */ /* SCORE_VISAO_ATIVOS_V1 */ /* SCORE_A_LIBERAR_V1 */
 // ==================== MÓDULO SCORE V2 (ADMIN) ====================
 // Arquivo: modulo-score-v2.js
@@ -34,9 +35,9 @@
         return h('svg', Object.assign({ className: 'ico', style: { width: tam || 16, height: tam || 16, flexShrink: 0 }, 'aria-hidden': 'true' }, extra || {}), h('use', { href: '#i-' + nome }));
     }
     const COR_NIVEL = {
-        3: { nome: 'Ouro', bar: '#eab308', bg: 'bg-yellow-50', txt: 'text-yellow-800', chip: 'bg-yellow-100 text-yellow-800' },
-        2: { nome: 'Prata', bar: '#94a3b8', bg: 'bg-slate-50', txt: 'text-slate-700', chip: 'bg-slate-100 text-slate-700' },
-        1: { nome: 'Bronze', bar: '#b45309', bg: 'bg-amber-50', txt: 'text-amber-800', chip: 'bg-amber-100 text-amber-800' },
+        3: { nome: 'Ouro', bar: '#d97706', bg: 'bg-yellow-50', txt: 'text-yellow-800', chip: 'bg-yellow-100 text-yellow-800' },
+        2: { nome: 'Prata', bar: '#9ca3af', bg: 'bg-slate-50', txt: 'text-slate-700', chip: 'bg-slate-100 text-slate-700' },
+        1: { nome: 'Bronze', bar: '#92400e', bg: 'bg-amber-50', txt: 'text-amber-800', chip: 'bg-amber-100 text-amber-800' },
     };
     const SITUACAO = {
         a_liberar: { label: 'A liberar (carência)', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -226,9 +227,9 @@
             // KPIs
             h('div', { className: 'grid grid-cols-2 lg:grid-cols-4 gap-3' },
                 // SCORE_A_LIBERAR_V1: ja conquistaram e estao na carencia
-                h('button', { onClick: () => irPara('contemplados', { situacao: 'a_liberar' }), className: 'text-left rounded-xl border p-3.5 min-w-0 transition-colors hover:border-amber-400', style: { background: '#fffbeb', borderColor: '#fcd34d' } },
+                h('button', { onClick: () => irPara('contemplados', { situacao: 'a_liberar' }), className: 'text-left rounded-xl border p-3.5 min-w-0 transition-colors hover:border-amber-400', style: { background: '#fffbeb', borderColor: '#fde68a' } },
                     h('div', { className: 'flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide', style: { color: '#92400e' } }, ico('clock', 14), 'A liberar (carência)'),
-                    h('div', { className: 'text-2xl font-bold mt-1', style: { color: '#78350f', fontVariantNumeric: 'tabular-nums' } }, ((t.a_liberar || {}).total || 0) + ' motoboys'),
+                    h('div', { className: 'text-2xl font-bold mt-1', style: { color: '#92400e', fontVariantNumeric: 'tabular-nums' } }, ((t.a_liberar || {}).total || 0) + ' motoboys'),
                     h('div', { className: 'text-[11px] mt-0.5', style: { color: '#92400e' } }, 'já conquistaram · ' + ((t.a_liberar || {}).ate_sabado || 0) + ' liberam até sábado · Ver lista →')
                 ),
                 h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 min-w-0' },
@@ -295,7 +296,7 @@
         if (tem(2) && Number(b.sorteio_valor_n2) > 0) sorteioTxt.push('Prata ' + fmtBRL(b.sorteio_valor_n2));
         if (tem(3) && Number(b.sorteio_valor_n3) > 0) sorteioTxt.push('Ouro ' + fmtBRL(b.sorteio_valor_n3));
 
-        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4 ' + (p.ativo ? '' : 'opacity-60'), style: { borderLeft: '3px solid ' + (p.ativo ? '#7c3aed' : '#cbd5e1') } },
+        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4 ' + (p.ativo ? '' : 'opacity-60'), style: { borderLeft: '3px solid ' + (p.ativo ? '#7c3aed' : '#d1d5db') } },
             h('div', { className: 'flex items-start justify-between gap-2 mb-3' },
                 h('div', { className: 'min-w-0' },
                     h('div', { className: 'flex items-center gap-2 flex-wrap' },
@@ -332,7 +333,7 @@
                     onClick: () => irPara('contemplados', { regiao: p.regiao, situacao: 'a_liberar' }),
                     className: 'rounded-lg px-2 py-1.5 text-center transition-colors border',
                     style: { background: '#fffbeb', borderColor: '#fde68a' }
-                }, h('div', { className: 'text-base font-bold leading-none', style: { color: '#b45309' } }, p.a_liberar || 0), h('div', { className: 'text-[10px] mt-0.5', style: { color: '#92400e' } }, 'a liberar')),
+                }, h('div', { className: 'text-base font-bold leading-none', style: { color: '#92400e' } }, p.a_liberar || 0), h('div', { className: 'text-[10px] mt-0.5', style: { color: '#92400e' } }, 'a liberar')),
                 [
                     { k: null, n: bm.lancados || 0, l: 'lançados', cls: 'text-gray-900' },
                     { k: 'sacou', n: bm.sacou || 0, l: 'sacaram', cls: 'text-emerald-700' },
@@ -349,7 +350,7 @@
                 p.proximos_a_liberar.map((x, i) => h('button', {
                     key: i, onClick: () => abrirDiagnostico(x.cod_prof),
                     className: 'w-full flex items-center gap-2 text-xs py-0.5 text-left hover:text-purple-700'
-                }, chipNivel(x.nivel), h('span', { className: 'flex-1 truncate text-gray-800' }, x.nome || ('#' + x.cod_prof)), h('span', { className: 'font-semibold whitespace-nowrap', style: { color: '#b45309' } }, x.quando)))
+                }, chipNivel(x.nivel), h('span', { className: 'flex-1 truncate text-gray-800' }, x.nome || ('#' + x.cod_prof)), h('span', { className: 'font-semibold whitespace-nowrap', style: { color: '#92400e' } }, x.quando)))
             ),
             (p.ultimos_sorteios || []).length > 0 && h('div', { className: 'text-[11px] text-gray-600 mb-3 flex flex-wrap gap-x-3 gap-y-1' },
                 h('span', { className: 'text-gray-400' }, 'Último sorteio:'),
@@ -506,7 +507,7 @@
                         className: 'px-2.5 py-1 rounded-full text-[11px] font-medium border transition ' + (situacao === k
                             ? (k === 'a_liberar' ? 'text-white' : 'bg-purple-600 text-white border-purple-600')
                             : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'),
-                        style: situacao === k && k === 'a_liberar' ? { background: '#b45309', borderColor: '#b45309' } : undefined
+                        style: situacao === k && k === 'a_liberar' ? { background: '#92400e', borderColor: '#92400e' } : undefined
                     }, k ? (SITUACAO[k] || {}).label || k : 'Todos', h('span', { className: 'ml-1.5 opacity-75' }, k ? porSit[k] : todos.length))),
                     h('div', { className: 'ml-auto flex items-center gap-3 text-xs text-gray-500' },
                         modoAL
@@ -564,7 +565,7 @@
     // SCORE_A_LIBERAR_V1: tabela de quem ja conquistou e esta na carencia
     // ============================================================
     function TabelaALiberar({ lista, abrirDiagnostico }) {
-        const aviso = h('div', { className: 'flex gap-2.5 items-center rounded-xl border px-3.5 py-2.5 text-xs', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#78350f' } },
+        const aviso = h('div', { className: 'flex gap-2.5 items-center rounded-xl border px-3.5 py-2.5 text-xs', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e' } },
             ico('clock', 16),
             h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis é lançado sozinho na data indicada (rotina diária das 07:30 ou avaliação de sábado, 12h — o que vier primeiro). Se caírem de categoria antes, a carência recomeça.'));
         if (!lista.length) return h('div', { className: 'space-y-3' }, aviso,
@@ -588,7 +589,7 @@
                             h('td', { className: 'px-3 py-2 text-xs text-gray-600 whitespace-nowrap' }, x.conquistou_em),
                             h('td', { className: 'px-3 py-2 whitespace-nowrap' },
                                 h('div', { className: 'text-[13px] font-semibold text-gray-900' }, x.libera_em),
-                                h('div', { className: 'text-[11px] font-medium', style: { color: '#b45309' } }, faltam)),
+                                h('div', { className: 'text-[11px] font-medium', style: { color: '#92400e' } }, faltam)),
                             h('td', { className: 'px-3 py-2', style: { minWidth: 140 } },
                                 h('div', { className: 'h-1.5 rounded-full overflow-hidden', style: { background: '#f3f4f6' } },
                                     h('div', { className: 'h-full rounded-full', style: { width: pct + '%', background: '#d97706' } })),
@@ -679,7 +680,7 @@
                                 h('div', { className: 'flex justify-between text-xs mb-1' },
                                     h('span', { className: 'flex items-center gap-1.5 ' + (r.ok ? 'text-emerald-700' : 'text-gray-700') }, ico(r.ok ? 'check' : 'target', 13), r.label),
                                     h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, (r.sufixo ? fmtPct(r.atual) : r.atual) + ' / ' + (r.sufixo ? fmtPct(r.meta) : r.meta))),
-                                h('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, Number(r.pct) || 0) + '%', background: r.ok ? '#22c55e' : '#a855f7' } })))))),
+                                h('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, Number(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#7c3aed' } })))))),
                         secao('Saques grátis do score', (d.beneficios || []).length === 0
                             ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum benefício lançado ainda.')
                             : h('div', { className: 'space-y-1.5' }, d.beneficios.map(b => {
@@ -1027,11 +1028,11 @@
                     method: 'POST',
                     body: JSON.stringify(cfg),
                 });
-                showToast('✅ Configuração salva', 'success');
+                showToast('Configuração salva', 'success');
                 setEditando(null);
                 carregar();
             } catch (err) {
-                showToast('❌ ' + err.message, 'error');
+                showToast('' + err.message, 'error');
             }
         };
 
@@ -1039,10 +1040,10 @@
             if (!confirm(`Desativar score para "${regiao}"?\n\nMotoboys da região vão deixar de ver/ganhar score. Histórico de sorteios é mantido.`)) return;
             try {
                 await fetchApi('/score-v2/admin/configuracoes/' + id, { method: 'DELETE' });
-                showToast('✅ Desativada', 'success');
+                showToast('Desativada', 'success');
                 carregar();
             } catch (err) {
-                showToast('❌ ' + err.message, 'error');
+                showToast('' + err.message, 'error');
             }
         };
 
@@ -1050,15 +1051,15 @@
         const reavaliar = async (regiao) => {
             if (!confirm(`Re-avaliar TODOS os motoboys de "${regiao}"?\n\nIsso vai recalcular o nível de cada motoboy da região (CRM + Planilha) e popular as contagens. Pode demorar alguns segundos.`)) return;
             try {
-                showToast('🔄 Re-avaliando... aguarde', 'info');
+                showToast('Re-avaliando... aguarde', 'info');
                 const r = await fetchApi('/score-v2/admin/reavaliar-regiao', {
                     method: 'POST',
                     body: JSON.stringify({ regiao }),
                 });
-                showToast(`✅ ${r.processados} avaliados — Bronze:${r.niveis[1]} Prata:${r.niveis[2]} Ouro:${r.niveis[3]}`, 'success');
+                showToast(`${r.processados} avaliados — Bronze:${r.niveis[1]} Prata:${r.niveis[2]} Ouro:${r.niveis[3]}`, 'success');
                 carregar();
             } catch (err) {
-                showToast('❌ ' + err.message, 'error');
+                showToast('' + err.message, 'error');
             }
         };
 
@@ -1066,13 +1067,13 @@
         const recalcularTudo = async () => {
             if (!confirm('Recalcular TODAS as praças agora?\n\nRecalcula o nível de todos os motoboys de todas as praças ativas (CRM + Planilha) e roda a análise de aproveitamento. Pode demorar alguns minutos.')) return;
             try {
-                showToast('🔄 Recalculando todas as praças... aguarde', 'info');
+                showToast('Recalculando todas as praças... aguarde', 'info');
                 const r = await fetchApi('/score-v2/admin/avaliar-agora', { method: 'POST', body: '{}' });
                 const mud = (r.mudancas || []).length;
-                showToast('✅ ' + (r.processados || 0) + ' motoboys · ' + (r.regioes || 0) + ' praças · ' + mud + ' mudanças de nível', 'success');
+                showToast('' + (r.processados || 0) + ' motoboys · ' + (r.regioes || 0) + ' praças · ' + mud + ' mudanças de nível', 'success');
                 carregar();
             } catch (err) {
-                showToast('❌ ' + err.message, 'error');
+                showToast('' + err.message, 'error');
             }
         };
 
@@ -1229,7 +1230,7 @@
 
         return h('div', {
             className: 'bg-white border border-gray-200 rounded-2xl p-4 ' + (ativo ? '' : 'opacity-60'),
-            style: { borderLeft: '3px solid ' + (ativo ? '#7c3aed' : '#cbd5e1') }
+            style: { borderLeft: '3px solid ' + (ativo ? '#7c3aed' : '#d1d5db') }
         },
             h('div', { className: 'flex items-start justify-between gap-3 mb-4 flex-wrap' },
                 h('div', null,
@@ -1258,10 +1259,10 @@
                 )
             ),
             h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2.5' },
-                miniCard({ bar: '#b45309', bg: '#fff', txt: '#92400e', num: '#1f2937' }, '', 'Bronze', counts[1], 'base da praça'),
-                miniCard({ bar: '#64748b', bg: '#fff', txt: '#475569', num: '#1f2937' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
-                miniCard({ bar: '#f67602', bg: '#fef6ee', txt: '#854f0b', num: '#633806' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
-                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#6d28d9', num: '#4c1d95' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
+                miniCard({ bar: '#92400e', bg: '#fff', txt: '#92400e', num: '#111827' }, '', 'Bronze', counts[1], 'base da praça'),
+                miniCard({ bar: '#6b7280', bg: '#fff', txt: '#374151', num: '#111827' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
+                miniCard({ bar: '#f67602', bg: '#fffbeb', txt: '#92400e', num: '#92400e' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
+                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#7c3aed', num: '#4c1d95' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
             )
         );
     }

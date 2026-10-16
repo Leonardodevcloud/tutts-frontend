@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO CONFIG ====================
 // Arquivo: modulo-config.js
@@ -58,7 +59,7 @@
         var codManual = codManualState[0], setCodManual = codManualState[1];
         var desbloquear = function(cod, nome) {
             if (!cod) return;
-            if (!confirm("🔓 Desbloquear a conta de " + (nome || cod) + "?\n\nO bloqueio e as tentativas de login registradas serão removidos.")) return;
+            if (!confirm("Desbloquear a conta de " + (nome || cod) + "?\n\nO bloqueio e as tentativas de login registradas serão removidos.")) return;
             setProcessando(cod);
             fetchAuth(API_URL + "/users/unblock-account", {
                 method: "POST",
@@ -71,16 +72,16 @@
                 .then(function(res) {
                     setProcessando(null);
                     if (res.ok) {
-                        showToast(res.data && res.data.somente_rate_limit ? ("🔓 " + (nome || cod) + ": limite de tentativas zerado (não havia bloqueio no banco)") : ("🔓 Conta de " + (nome || cod) + " desbloqueada!"), "success");
+                        showToast(res.data && res.data.somente_rate_limit ? ("" + (nome || cod) + ": limite de tentativas zerado (não havia bloqueio no banco)") : ("Conta de " + (nome || cod) + " desbloqueada!"), "success");
                         setCodManual("");
                         carregar();
                     } else {
-                        showToast("❌ " + (res.data.error || "Erro ao desbloquear"), "error");
+                        showToast("" + (res.data.error || "Erro ao desbloquear"), "error");
                     }
                 })
                 .catch(function() {
                     setProcessando(null);
-                    showToast("❌ Erro de conexão ao desbloquear", "error");
+                    showToast("Erro de conexão ao desbloquear", "error");
                 });
         };
 
@@ -330,34 +331,34 @@
         // PERM_V5: ativar/desativar (so master)
         var alternarAtivo = function(user) {
             var cod = getCod(user); if (cod && typeof cod === "string") cod = cod.replace("#", "");
-            if (!cod) { showToast("❌ Código do usuário não encontrado", "error"); return; }
+            if (!cod) { showToast("Código do usuário não encontrado", "error"); return; }
             var ativar = user.ativo === false;
             if (!confirm(ativar ? ("Reativar o acesso de " + getNome(user) + "?") : ("Desativar " + getNome(user) + "?\n\nA pessoa não consegue mais entrar e as sessões abertas são derrubadas. Nada é apagado — dá pra reativar depois."))) return;
             fetchAuth(API_URL + "/users/" + encodeURIComponent(cod) + "/ativo", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ativo: ativar }) })
                 .then(function(resp) { return resp.json().then(function(d) { return { ok: resp.ok, d: d }; }); })
                 .then(function(r) {
-                    if (r.ok && r.d.success) { showToast(ativar ? "✅ Usuário reativado" : "⛔ Usuário desativado", "success"); if (recarregar) recarregar(); }
-                    else showToast("❌ " + (r.d.error || "Erro"), "error");
+                    if (r.ok && r.d.success) { showToast(ativar ? "Usuário reativado" : "Usuário desativado", "success"); if (recarregar) recarregar(); }
+                    else showToast("" + (r.d.error || "Erro"), "error");
                 })
-                .catch(function() { showToast("❌ Erro ao alterar status", "error"); });
+                .catch(function() { showToast("Erro ao alterar status", "error"); });
         };
         var excluir = function(user) {
             var cod = getCod(user);
             if (cod && typeof cod === "string") cod = cod.replace("#", "");
-            if (!cod) { showToast("❌ Código do usuário não encontrado", "error"); return; }
-            if (!confirm("⚠️ Excluir " + getNome(user) + "?\n\nEsta ação não pode ser desfeita!")) return;
+            if (!cod) { showToast("Código do usuário não encontrado", "error"); return; }
+            if (!confirm("Excluir " + getNome(user) + "?\n\nEsta ação não pode ser desfeita!")) return;
             fetchAuth(API_URL + "/users/" + cod, { method: "DELETE" })
                 .then(function(resp) {
                     if (resp.ok) {
-                        showToast("🗑️ Usuário excluído!", "success");
+                        showToast("Usuário excluído!", "success");
                         if (recarregar) recarregar();
                     } else {
                         resp.json().catch(function() { return {}; }).then(function(e) {
-                            showToast("❌ Erro: " + (e.error || resp.statusText), "error");
+                            showToast("Erro: " + (e.error || resp.statusText), "error");
                         });
                     }
                 })
-                .catch(function() { showToast("❌ Erro ao excluir", "error"); });
+                .catch(function() { showToast("Erro ao excluir", "error"); });
         };
 
         // ---- Card de usuário ----
@@ -584,9 +585,9 @@
                 .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
                 .then(function(data) {
                     setPerms(normalizar(data));
-                    if (comToast) showToast("✅ Atualizado!", "success");
+                    if (comToast) showToast("Atualizado!", "success");
                 })
-                .catch(function() { showToast("❌ Erro ao carregar permissões", "error"); })
+                .catch(function() { showToast("Erro ao carregar permissões", "error"); })
                 .finally(function() { setLoading(false); });
         }
         React.useEffect(function() { carregar(false); }, []);
@@ -618,7 +619,7 @@
             Promise.all(lista.map(function(a) { return patchAdmin(a.codProfissional, perms); }))
                 .then(function(rs) {
                     var ok = rs.filter(Boolean).length;
-                    showToast(ok > 0 ? ("✅ " + ok + " admin(s) salvos!") : "⚠️ Nada para salvar",
+                    showToast(ok > 0 ? ("" + ok + " admin(s) salvos!") : "Nada para salvar",
                               ok > 0 ? "success" : "warning");
                 })
                 .finally(function() { setLoading(false); });
@@ -689,23 +690,23 @@
         // --- Excluir admin (somente admin_master) ---
         function excluirAdmin(admin) {
             var cod = admin.codProfissional;
-            if (!confirm("⚠️ Excluir o admin \"" + (admin.fullName || cod) + "\"?\n\n" +
+            if (!confirm("Excluir o admin \"" + (admin.fullName || cod) + "\"?\n\n" +
                 "A conta será removida. O histórico de auditoria e os registros do sistema são preservados.\n\n" +
                 "Esta ação não pode ser desfeita.")) return;
             setLoading(true);
             fetchAuth(API_URL + "/users/" + encodeURIComponent(cod), { method: "DELETE" })
                 .then(function(res) {
                     if (res.ok) {
-                        showToast("🗑️ Admin excluído!", "success");
+                        showToast("Admin excluído!", "success");
                         setExp(null);
                         if (recarregar) recarregar();
                     } else {
                         return res.json().catch(function() { return {}; }).then(function(e) {
-                            showToast("❌ " + (e.error || "Erro ao excluir"), "error");
+                            showToast("" + (e.error || "Erro ao excluir"), "error");
                         });
                     }
                 })
-                .catch(function() { showToast("❌ Erro ao excluir", "error"); })
+                .catch(function() { showToast("Erro ao excluir", "error"); })
                 .finally(function() { setLoading(false); });
         }
 
@@ -1170,7 +1171,7 @@
                                     });
                                     const data = await resp.json();
                                     if (resp.ok) {
-                                        ja("✅ Cliente criado com sucesso!", "success");
+                                        ja("Cliente criado com sucesso!", "success");
                                         x({...p, novoClienteApi: {}, clientesApiLista: null});
                                     } else {
                                         ja(data.error || "Erro ao criar cliente", "error");
@@ -1219,12 +1220,12 @@
                                         return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
                                     }
                                     function dot(set) {
-                                        return React.createElement("span", {className: "w-[5px] h-[5px] rounded-full flex-none mt-[6px]", style: {background: set ? "#0f766e" : "#dde2ea"}});
+                                        return React.createElement("span", {className: "w-[5px] h-[5px] rounded-full flex-none mt-[6px]", style: {background: set ? "#166534" : "#e5e7eb"}});
                                     }
                                     var LOGOS = {uber: {label: "Uber Flash", logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSIyMCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlViZXI8L3RleHQ+PC9zdmc+"}, "99": {label: "99 Moto", logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiNGRkQ3MDAiLz48dGV4dCB4PSIyMCIgeT0iMjciIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzFhMWExYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+OTk8L3RleHQ+PC9zdmc+"}};
                                     function provChip(code) {
                                         var inf = LOGOS[code] || {label: code, logo: null};
-                                        return React.createElement("span", {key: code, className: "inline-flex items-center gap-1 text-[12px] text-[#0f172a] font-medium"},
+                                        return React.createElement("span", {key: code, className: "inline-flex items-center gap-1 text-[12px] text-[#111827] font-medium"},
                                             inf.logo ? React.createElement("img", {src: inf.logo, style: {width: 16, height: 16, borderRadius: "50%", flexShrink: 0, objectFit: "cover"}}) : null,
                                             inf.label);
                                     }
@@ -1242,42 +1243,42 @@
                                         ? ("R$ " + fmtBRL(pj.valor_fixo) + (pj.valor_km_adicional != null ? " + R$ " + fmtBRL(pj.valor_km_adicional) + "/km" : " fixo"))
                                         : "Tabela global";
                                     var temEmpresa = cliente.empresa && cliente.empresa !== cliente.nome;
-                                    var actBase = "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#64748b] hover:bg-[#f1f3f7] hover:border-[#e5e8ee] hover:text-[#0f172a]";
+                                    var actBase = "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#6b7280] hover:bg-[#f3f4f6] hover:border-[#e5e7eb] hover:text-[#111827]";
 
                                     return React.createElement("div", {
                                         key: cliente.id,
-                                        className: "bg-white border border-[#e5e8ee] rounded-[10px] transition hover:border-[#cfd5e0] hover:shadow-sm flex flex-col" + (cliente.ativo ? "" : " opacity-60")
+                                        className: "bg-white border border-[#e5e7eb] rounded-[10px] transition hover:border-[#d1d5db] hover:shadow-sm flex flex-col" + (cliente.ativo ? "" : " opacity-60")
                                     },
                                         // ---- FAIXA 1: IDENTIDADE ----
                                         React.createElement("div", {className: "px-3.5 pt-3.5 pb-3"},
                                             React.createElement("div", {className: "flex items-center justify-end mb-1.5"},
                                                 cliente.ativo
-                                                    ? React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#ecfdf5", color: "#0f766e"}}, "Ativo")
-                                                    : React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#f1f3f7", color: "#64748b"}}, "Inativo")
+                                                    ? React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#f0fdf4", color: "#166534"}}, "Ativo")
+                                                    : React.createElement("span", {className: "inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full flex-none", style: {background: "#f3f4f6", color: "#6b7280"}}, "Inativo")
                                             ),
                                             React.createElement("h3", {
                                                 className: "text-[14px] font-semibold tracking-[-.01em] leading-snug mb-1",
                                                 title: cliente.nome,
                                                 style: {display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"}
                                             }, cliente.nome),
-                                            React.createElement("p", {className: "text-[12px] text-[#64748b] truncate", title: cliente.email}, cliente.email),
-                                            temEmpresa ? React.createElement("p", {className: "text-[11px] text-[#94a3b8] truncate mt-0.5", title: cliente.empresa}, cliente.empresa) : null
+                                            React.createElement("p", {className: "text-[12px] text-[#6b7280] truncate", title: cliente.email}, cliente.email),
+                                            temEmpresa ? React.createElement("p", {className: "text-[11px] text-[#9ca3af] truncate mt-0.5", title: cliente.empresa}, cliente.empresa) : null
                                         ),
                                         // ---- FAIXA 2: CONFIGURACAO ----
-                                        React.createElement("div", {className: "px-3.5 py-2.5 border-y border-[#e5e8ee] bg-[#fcfdfe] flex-1 space-y-0.5"},
+                                        React.createElement("div", {className: "px-3.5 py-2.5 border-y border-[#e5e7eb] bg-[#ffffff] flex-1 space-y-0.5"},
                                             React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
                                                 dot(freteSet),
-                                                React.createElement("span", {className: "text-[12px] leading-snug " + (freteSet ? "text-[#0f172a] font-medium" : "text-[#94a3b8]")}, freteTxt)
+                                                React.createElement("span", {className: "text-[12px] leading-snug " + (freteSet ? "text-[#111827] font-medium" : "text-[#9ca3af]")}, freteTxt)
                                             ),
                                             React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
                                                 dot(provSet),
                                                 provSet
                                                     ? React.createElement("span", {className: "flex items-center flex-wrap gap-x-3 gap-y-1"}, extras.map(provChip))
-                                                    : React.createElement("span", {className: "text-[12px] text-[#94a3b8]"}, "S\u00f3 frota Tutts")
+                                                    : React.createElement("span", {className: "text-[12px] text-[#9ca3af]"}, "S\u00f3 frota Tutts")
                                             ),
                                             React.createElement("div", {className: "flex items-start gap-2 py-[3px]"},
                                                 dot(temPreco),
-                                                React.createElement("span", {className: "text-[12px] truncate " + (temPreco ? "text-[#0f172a] font-medium" : "text-[#94a3b8]"), title: precoTxt}, precoTxt)
+                                                React.createElement("span", {className: "text-[12px] truncate " + (temPreco ? "text-[#111827] font-medium" : "text-[#9ca3af]"), title: precoTxt}, precoTxt)
                                             )
                                         ),
                                         // ---- FAIXA 3: ACOES ----
@@ -1290,7 +1291,7 @@
                                                         method: "PATCH",
                                                         body: JSON.stringify({ativo: !cliente.ativo})
                                                     });
-                                                    if (!respSt.ok) { ja("❌ Erro ao alterar status", "error"); return; }
+                                                    if (!respSt.ok) { ja("Erro ao alterar status", "error"); return; }
                                                     ja("Status alterado!", "success");
                                                     x({...p, clientesApiLista: null});
                                                 } catch (err) {
@@ -1298,7 +1299,7 @@
                                                 }
                                             },
                                                 title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
-                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border transition " + (cliente.ativo ? "text-[#7c3aed] bg-[#f5f2ff] border-[#efe8fe]" : "text-[#64748b] border-transparent hover:bg-[#f1f3f7] hover:border-[#e5e8ee] hover:text-[#0f172a]")
+                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border transition " + (cliente.ativo ? "text-[#7c3aed] bg-[#f9fafb] border-[#f5f3ff]" : "text-[#6b7280] border-transparent hover:bg-[#f3f4f6] hover:border-[#e5e7eb] hover:text-[#111827]")
                                             }, ico("power")),
                                             React.createElement("button", {
                                                 onClick: async function() {
@@ -1393,28 +1394,28 @@
                                                     });
                                                     var data = await resp.json().catch(function() { return {}; });
                                                     if (resp.ok) {
-                                                        ja("🗑️ Cliente excluído com sucesso!", "success");
+                                                        ja("Cliente excluído com sucesso!", "success");
                                                         x({...p, clientesApiLista: null});
                                                     } else {
                                                         var erro = (data.error || "").toLowerCase();
                                                         if (erro.indexOf("foreign key") >= 0 || erro.indexOf("violates") >= 0 || erro.indexOf("constraint") >= 0) {
-                                                            ja("❌ Não é possível excluir: cliente possui corridas no histórico. Desative em vez de excluir.", "error");
+                                                            ja("Não é possível excluir: cliente possui corridas no histórico. Desative em vez de excluir.", "error");
                                                         } else {
-                                                            ja("❌ " + (data.error || "Erro ao excluir"), "error");
+                                                            ja("" + (data.error || "Erro ao excluir"), "error");
                                                         }
                                                     }
                                                 } catch (err) {
-                                                    ja("❌ Erro de conexão ao excluir", "error");
+                                                    ja("Erro de conexão ao excluir", "error");
                                                 }
                                             },
                                                 title: "Excluir cliente permanentemente",
-                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#64748b] hover:bg-[#fff1f2] hover:border-[#fecdd3] hover:text-[#be123c]"
+                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border border-transparent transition text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#fecaca] hover:text-[#991b1b]"
                                             }, ico("trash"))
                                         )
                                     );
                                 })
                             ),
-                            React.createElement("p", {className: "text-[12px] text-[#94a3b8] mt-4 flex items-center gap-1.5"},
+                            React.createElement("p", {className: "text-[12px] text-[#9ca3af] mt-4 flex items-center gap-1.5"},
                                 React.createElement("svg", {className: "ico ico-sm", "aria-hidden": "true"}, React.createElement("use", {href: "#i-check"})),
                                 "Ponto verde: configurado neste cliente. Cinza: herda a configura\u00e7\u00e3o global."
                             )
@@ -1495,7 +1496,7 @@
                                                             headers: {"Authorization": "Bearer " + getToken()}
                                                         });
                                                         if (resp.ok) {
-                                                            ja("🗑️ Grupo excluído", "success");
+                                                            ja("Grupo excluído", "success");
                                                             x({...p, gruposEnderecosLista: null});
                                                         } else ja("Erro ao excluir grupo", "error");
                                                     } catch { ja("Erro de conexão", "error"); }
@@ -1689,7 +1690,7 @@
                                     })
                                 });
                                 if (res.ok) {
-                                    ja("✅ Usuário criado!", "success");
+                                    ja("Usuário criado!", "success");
                                     x({...p, newUserName: "", newUserCod: "", newUserPass: "", newRole: "user"});
                                     Ia();
                                 } else {
@@ -1836,15 +1837,15 @@
                             body: JSON.stringify({categorias: categorias})
                         });
                         if (resp.ok) {
-                            ja("✅ Categorias salvas!", "success");
+                            ja("Categorias salvas!", "success");
                             x({...p, modalCategorias: null, clientesApiLista: null});
                         } else {
                             var err = await resp.json().catch(function() { return {}; });
-                            ja("❌ " + (err.error || "Erro ao salvar"), "error");
+                            ja("" + (err.error || "Erro ao salvar"), "error");
                             x({...p, modalCategorias: {...mc, salvando: false}});
                         }
                     } catch (e) {
-                        ja("❌ Erro de conexão", "error");
+                        ja("Erro de conexão", "error");
                         x({...p, modalCategorias: {...mc, salvando: false}});
                     }
                 };
@@ -1873,7 +1874,7 @@
                                     React.createElement("div", {className: "flex items-center gap-3"},
                                         React.createElement("span", {
                                             className: "text-xs font-bold px-2 py-0.5 rounded",
-                                            style: ativa ? {background: "#EEEDFE", color: "#3C3489"} : {background: "#e5e7eb", color: "#9ca3af"}
+                                            style: ativa ? {background: "#f5f3ff", color: "#4c1d95"} : {background: "#e5e7eb", color: "#9ca3af"}
                                         }, cat.sigla),
                                         React.createElement("span", {className: "text-sm " + (ativa ? "text-gray-800" : "text-gray-400")}, cat.nome)
                                     ),
@@ -1881,7 +1882,7 @@
                                     React.createElement("button", {
                                         onClick: function() { toggleCat(cat.sigla); },
                                         className: "relative w-9 h-5 rounded-full transition-colors flex-shrink-0 border-0",
-                                        style: {background: ativa ? "#534AB7" : "#d1d5db"},
+                                        style: {background: ativa ? "#7c3aed" : "#d1d5db"},
                                         "aria-label": "Toggle " + cat.sigla
                                     },
                                         React.createElement("span", {
@@ -1966,12 +1967,12 @@
                         if (respGrupo.ok) {
                             var dataG = await respGrupo.json().catch(function() { return {}; });
                             if (dataG.enderecos_migrados > 0) {
-                                ja("✅ Cliente atualizado! " + dataG.enderecos_migrados + " endereço(s) migrado(s) pro grupo", "success");
+                                ja("Cliente atualizado! " + dataG.enderecos_migrados + " endereço(s) migrado(s) pro grupo", "success");
                             } else {
-                                ja("✅ Cliente atualizado!", "success");
+                                ja("Cliente atualizado!", "success");
                             }
                         } else {
-                            ja("⚠️ Dados salvos, mas erro ao atribuir grupo", "warning");
+                            ja("Dados salvos, mas erro ao atribuir grupo", "warning");
                         }
                         
                         x({...p, editarClienteSolicitacao: null, clientesApiLista: null});
@@ -2124,7 +2125,7 @@
                             body: JSON.stringify({nome: g.nome.trim(), descricao: g.descricao.trim(), ativo: g.ativo})
                         });
                         if (resp.ok) {
-                            ja(g.id ? "✅ Grupo atualizado!" : "✅ Grupo criado!", "success");
+                            ja(g.id ? "Grupo atualizado!" : "Grupo criado!", "success");
                             x({...p, editarGrupoEnderecos: null, gruposEnderecosLista: null});
                         } else {
                             var dataErr = await resp.json().catch(function() { return {}; });
@@ -2234,10 +2235,10 @@
                         });
                         var data = await resp.json().catch(function() { return {}; });
                         if (resp.ok) {
-                            ja("✅ Provedores salvos!", "success");
+                            ja("Provedores salvos!", "success");
                             x({...p, modalProvedores: null});
                         } else {
-                            ja("❌ " + (data.error || "Erro"), "error");
+                            ja("" + (data.error || "Erro"), "error");
                             x({...p, modalProvedores: {...mp, salvando: false}});
                         }
                     } catch(e) {
@@ -2285,8 +2286,8 @@
                                             className: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0",
                                             style: {
                                                 background: prov.code === "tutts" ? "#7c3aed" :
-                                                           prov.code === "uber"  ? "#1a1a1a" : "#FFD700",
-                                                color: prov.code === "99" ? "#1a1a1a" : "white"
+                                                           prov.code === "uber"  ? "#111827" : "#d97706",
+                                                color: prov.code === "99" ? "#111827" : "white"
                                             }
                                         },
                                             prov.code === "tutts"
@@ -2378,10 +2379,10 @@
                             });
                         }
                         if (resp.ok && respMsg.ok) {
-                            ja(limpar ? "🧹 Preço removido (herda global)" : "✅ Configurações salvas!", "success");
+                            ja(limpar ? "Preço removido (herda global)" : "Configurações salvas!", "success");
                             x({...p, modalPreco: null, clientesApiLista: null});
                         } else {
-                            ja("❌ " + (data.error || "Erro"), "error");
+                            ja("" + (data.error || "Erro"), "error");
                             x({...p, modalPreco: {...mp, salvando: false}});
                         }
                     } catch (e) {
@@ -2464,7 +2465,7 @@
                                             React.createElement("span", {className: "text-[11px] text-gray-500", style: {marginLeft: "auto"}}, "R$"),
                                             React.createElement("input", {type: "number", step: "0.1", min: "0", value: f.valor_km == null ? "" : f.valor_km, onChange: function (e) { upF(i, "valor_km", e.target.value); }, className: "w-16 px-1.5 py-1 border rounded text-sm text-center"}),
                                             React.createElement("span", {className: "text-[11px] text-gray-600"}, "/km"),
-                                            React.createElement("button", {type: "button", onClick: function () { rmF(i); }, className: "p-1 rounded hover:bg-gray-100", title: "remover"}, React.createElement("svg", {className: "ico", style: {width: 14, height: 14, color: "#b91c1c"}, "aria-hidden": "true"}, React.createElement("use", {href: "#i-trash"}))));
+                                            React.createElement("button", {type: "button", onClick: function () { rmF(i); }, className: "p-1 rounded hover:bg-gray-100", title: "remover"}, React.createElement("svg", {className: "ico", style: {width: 14, height: 14, color: "#991b1b"}, "aria-hidden": "true"}, React.createElement("use", {href: "#i-trash"}))));
                                     }),
                                     React.createElement("button", {type: "button", onClick: addF, className: "mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50"}, React.createElement("svg", {className: "ico", style: {width: 13, height: 13, display: "inline", verticalAlign: "-2px", marginRight: 3}, "aria-hidden": "true"}, React.createElement("use", {href: "#i-plus"})), "Adicionar faixa"),
                                     React.createElement("p", {className: "text-[10px] text-gray-400 mt-1"}, "Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima."));
@@ -2601,7 +2602,7 @@
                         });
                         var data = await resp.json().catch(function() { return {}; });
                         if (resp.ok) {
-                            ja(data.mensagem || "✅ Cadastro salvo!", "success");
+                            ja(data.mensagem || "Cadastro salvo!", "success");
                             x({...p, cadastroAdminModal: false, cadastroAdminUser: null});
                         } else {
                             x({...p, cadastroAdminSalvando: false, cadastroAdminErro: data.error || "Erro ao salvar"});
@@ -2719,7 +2720,7 @@
                             body: JSON.stringify({codProfissional: userCod, newPassword: senha})
                         });
                         if (response.ok) {
-                            ja("✅ Senha de " + userName + " alterada com sucesso!", "success");
+                            ja("Senha de " + userName + " alterada com sucesso!", "success");
                             fecharModal();
                         } else {
                             var errData = await response.json().catch(function() { return {}; });

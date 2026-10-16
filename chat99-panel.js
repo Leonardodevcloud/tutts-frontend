@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * chat99-panel.js  -  Painel do Chat 99 (pagina propria do Hub Logistico)
  *
@@ -14,7 +15,7 @@
  *   - fetchAuth retorna Response cru (usa res.ok / res.json())
  *   - API_URL ja inclui /api (nunca duplicar prefixo)
  *   - SEM lib de icone (Tabler/Lucide/FontAwesome) - so emoji nativo
- *   - Cores: roxo #7c3aed / #770fa8, laranja #f67602
+ *   - Cores: roxo #7c3aed / #4c1d95, laranja #f67602
  */
 (function () {
   'use strict';
@@ -72,8 +73,8 @@
     const hora = fmtHora(msg.criado_em, msg.horario_99);
     if (out) {
       let statusTxt = '';
-      if (msg.status_envio === 'pendente' || msg.status_envio === 'enviando') statusTxt = '\u23f3 enviando';
-      else if (msg.status_envio === 'erro') statusTxt = '\u26a0\ufe0f falhou';
+      if (msg.status_envio === 'pendente' || msg.status_envio === 'enviando') statusTxt = 'enviando';
+      else if (msg.status_envio === 'erro') statusTxt = 'falhou';
       else statusTxt = msg.lido ? '\u2713\u2713 Lido' : '\u2713 Enviada';
       return h('div', { className: 'self-end max-w-[74%]' },
         h('div', {
@@ -90,7 +91,7 @@
       foto
         ? h('img', { src: foto, className: 'w-6 h-6 rounded-full object-cover flex-shrink-0 bg-purple-100',
             onError: (ev) => { ev.target.style.display = 'none'; } })
-        : h('div', { className: 'w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-500 flex-shrink-0' }, '\ud83d\udeb4'),
+        : h('div', { className: 'w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-500 flex-shrink-0' }, Icon('bike')),
       h('div', null,
         h('div', { className: 'bg-white border border-gray-200 text-gray-800 rounded-[12px] rounded-bl-[3px] px-3 py-2 text-[13px] leading-snug break-words' },
           msg.texto || (msg.img_url ? '[imagem]' : '')),
@@ -216,14 +217,14 @@
         // Cabecalho
         h('div', { className: 'flex items-center justify-between mb-3 px-1' },
           h('div', { className: 'flex items-center gap-2' },
-            h('div', { className: 'w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm', style: { background: ROXO } }, '\ud83d\udcac'),
+            h('div', { className: 'w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm', style: { background: ROXO } }, Icon('message')),
             h('span', { className: 'text-base font-bold text-gray-800' }, 'Chat 99'),
             h('span', { className: 'text-xs text-gray-400' }, 'espelho da 99Entrega'),
           ),
           h('button', {
             onClick: puxarLista,
             className: 'text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-white',
-          }, '\ud83d\udd04 Atualizar'),
+          }, h('span', { className: 'inline-flex items-center gap-1.5' }, Icon('refresh'), 'Atualizar')),
         ),
 
         h('div', { className: 'grid grid-cols-1 md:grid-cols-[280px_1fr] gap-3', style: { height: 'calc(100vh - 180px)' } },
@@ -234,7 +235,7 @@
               h('input', {
                 value: busca,
                 onChange: (ev) => setBusca(ev.target.value),
-                placeholder: '\ud83d\udd0d Buscar por OS ou nome',
+                placeholder: 'Buscar por OS ou nome',
                 className: 'w-full text-[13px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-300',
               }),
               (buscaEhOS && !osNaLista) && h('button', {
@@ -260,7 +261,7 @@
             !selecionada
               ? h('div', { className: 'flex-1 flex items-center justify-center text-center text-gray-400 text-sm p-6' },
                   h('div', null,
-                    h('div', { className: 'text-4xl mb-2' }, '\ud83d\udcac'),
+                    h('div', { className: 'text-4xl mb-2' }, Icon('message')),
                     h('div', null, 'Selecione uma conversa a esquerda'),
                   ))
               : h(React.Fragment, null,
@@ -273,8 +274,8 @@
                     h('div', { className: 'flex-1 min-w-0' },
                       h('div', { className: 'text-[13px] font-semibold text-gray-800 truncate' }, (conv && conv.motoboy_nome) || 'Motoboy'),
                       h('div', { className: 'flex items-center gap-3 text-[11px] text-gray-500' },
-                        (conv && conv.motoboy_rating) && h('span', null, '\u2b50 ', conv.motoboy_rating),
-                        (conv && conv.motoboy_telefone) && h('span', null, '\ud83d\udcde ', conv.motoboy_telefone),
+                        (conv && conv.motoboy_rating) && h('span', { className: 'inline-flex items-center gap-1' }, Icon('star'), conv.motoboy_rating),
+                        (conv && conv.motoboy_telefone) && h('span', { className: 'inline-flex items-center gap-1' }, Icon('phone'), conv.motoboy_telefone),
                         h('span', { className: 'font-semibold', style: { color: ROXO } }, `OS ${selecionada}`),
                       ),
                     ),
@@ -307,10 +308,10 @@
                         disabled: enviando || !texto.trim(),
                         className: 'text-[13px] font-semibold text-white rounded-lg h-9 px-4 flex items-center gap-1.5 flex-shrink-0 ' + (enviando || !texto.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'),
                         style: { background: ROXO },
-                      }, enviando ? '...' : '\u27a4 Enviar'),
+                      }, enviando ? '...' : 'Enviar'),
                     ),
                     h('div', { className: 'text-[10px] text-gray-400 mt-1' },
-                      '\ud83e\udd16 Enviado pela conta 99 via agente \u00b7 limite de 140 caracteres'),
+                      h('span', { className: 'inline-flex items-center gap-1' }, Icon('bot'), 'Enviado pela conta 99 via agente \u00b7 limite de 140 caracteres')),
                   ),
                 ),
           ),

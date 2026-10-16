@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO ANTI-FRAUDE ====================
 // Arquivo: modulo-antifraude.js
@@ -379,7 +380,7 @@
         if (res.status === 409) {
           showToast('Já existe uma varredura em execução', 'error');
         } else {
-          showToast('🔍 Varredura iniciada!', 'success');
+          showToast('Varredura iniciada!', 'success');
           setTimeout(buscarStatus, 1000);
           pollRef.current = setInterval(buscarStatus, 3000);
         }
@@ -397,7 +398,7 @@
 
     const copiarRelatorio = () => {
       navigator.clipboard.writeText(relatorio);
-      showToast('📋 Relatório copiado!', 'success');
+      showToast('Relatório copiado!', 'success');
     };
 
     const executando = status && status.status === 'executando';
@@ -514,7 +515,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        if (res.ok) showToast('✅ Configurações salvas!', 'success');
+        if (res.ok) showToast('Configurações salvas!', 'success');
       } catch { showToast('Erro ao salvar', 'error'); }
       finally { setSaving(false); }
     };

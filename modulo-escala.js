@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /**
  * modulo-escala.js — ESCALA_V1
  * Aba do BI: quantos profissionais cada loja precisa por dia e quantos rodaram.
@@ -34,13 +35,13 @@
       h("div", { className: "text-[10px] font-semibold uppercase tracking-wide text-gray-500" }, rotulo),
       h("div", {
         className: "text-2xl font-bold mt-1",
-        style: { color: cor || "#0f172a", fontVariantNumeric: "tabular-nums" }
+        style: { color: cor || "#111827", fontVariantNumeric: "tabular-nums" }
       }, valor)
     );
   }
 
   function celulaSaldo(saldo) {
-    var cor = saldo < 0 ? "#b91c1c" : saldo === 0 ? "#64748b" : "#15803d";
+    var cor = saldo < 0 ? "#991b1b" : saldo === 0 ? "#6b7280" : "#166534";
     return h("span", { className: "font-bold", style: { color: cor, fontVariantNumeric: "tabular-nums" } },
       (saldo > 0 ? "+" : "") + saldo);
   }
@@ -270,22 +271,22 @@
       ),
 
       !k && dados && !dados.sem_configuracao && h("div", { className: "flex gap-3" },
-        kpi("Dias com operação", "—", "#cbd5e1"),
-        kpi("Dias abaixo do mínimo", "—", "#cbd5e1"),
-        kpi("Cobertura média", "—", "#cbd5e1"),
-        kpi("Saldo no período", "—", "#cbd5e1"),
-        kpi("Dias sem operação", "—", "#cbd5e1")
+        kpi("Dias com operação", "—", "#d1d5db"),
+        kpi("Dias abaixo do mínimo", "—", "#d1d5db"),
+        kpi("Cobertura média", "—", "#d1d5db"),
+        kpi("Saldo no período", "—", "#d1d5db"),
+        kpi("Dias sem operação", "—", "#d1d5db")
       ),
 
       k && h("div", { className: "flex gap-3" },
         kpi("Dias com operação", String(k.dias_analisados)),
         kpi("Dias abaixo do mínimo",
           String(k.dias_abaixo) + (k.ocorrencias_abaixo > k.dias_abaixo ? ("  (" + k.ocorrencias_abaixo + " ocorrências)") : ""),
-          k.dias_abaixo > 0 ? "#b91c1c" : "#15803d"),
+          k.dias_abaixo > 0 ? "#991b1b" : "#166534"),
         kpi("Cobertura média", k.cobertura_media === null ? "—" : k.cobertura_media + "%",
-          (k.cobertura_media !== null && k.cobertura_media < 100) ? "#b91c1c" : "#15803d"),
-        kpi("Saldo no período", (k.saldo > 0 ? "+" : "") + k.saldo, k.saldo < 0 ? "#b91c1c" : "#15803d"),
-        kpi("Dias sem operação", String(k.dias_sem_operacao || 0), "#64748b")
+          (k.cobertura_media !== null && k.cobertura_media < 100) ? "#991b1b" : "#166534"),
+        kpi("Saldo no período", (k.saldo > 0 ? "+" : "") + k.saldo, k.saldo < 0 ? "#991b1b" : "#166534"),
+        kpi("Dias sem operação", String(k.dias_sem_operacao || 0), "#6b7280")
       ),
 
       dados && !dados.sem_configuracao && h("div", { className: "flex gap-3 items-start flex-wrap" },
@@ -319,7 +320,7 @@
                   return h("tr", {
                     key: d.dia,
                     className: "border-b border-gray-50 hover:bg-purple-50",
-                    style: semOp ? { background: "#fafafa" } : null
+                    style: semOp ? { background: "#f9fafb" } : null
                   },
                     h("td", { className: "px-4 py-2" },
                       h("span", {
@@ -335,7 +336,7 @@
                         d.lojas_abaixo + (d.lojas_abaixo === 1 ? " loja em falta" : " lojas em falta"))
                     ),
                     h("td", { className: "px-3 py-2 text-right text-gray-500", style: { fontVariantNumeric: "tabular-nums" } }, d.minimo),
-                    h("td", { className: "px-3 py-2 text-right font-bold", style: { fontVariantNumeric: "tabular-nums", color: semOp ? "#94a3b8" : "#0f172a" } }, d.reais),
+                    h("td", { className: "px-3 py-2 text-right font-bold", style: { fontVariantNumeric: "tabular-nums", color: semOp ? "#9ca3af" : "#111827" } }, d.reais),
                     h("td", { className: "px-3 py-2 text-right" },
                       (d.saldo === null || d.saldo === undefined) ? h("span", { className: "text-gray-300" }, "—") : celulaSaldo(d.saldo)),
                     h("td", { className: "px-4 py-2 text-right" }, celulaCobertura(d.cobertura))
@@ -397,7 +398,7 @@
                     h("td", { className: "px-2 py-2 text-right text-gray-500", style: { fontVariantNumeric: "tabular-nums" } }, c.minimo_atual),
                     h("td", {
                       className: "px-2 py-2 text-right font-semibold",
-                      style: { fontVariantNumeric: "tabular-nums", color: c.dias_abaixo > 0 ? "#b91c1c" : "#64748b" }
+                      style: { fontVariantNumeric: "tabular-nums", color: c.dias_abaixo > 0 ? "#991b1b" : "#6b7280" }
                     }, c.dias_abaixo,
                       h("div", { className: "text-[9px] font-normal text-gray-400" }, "de " + c.dias_avaliados)
                     ),
@@ -613,7 +614,7 @@
                 return h("tr", {
                   key: (l.id || "novo") + "-" + idx,
                   className: "border-b border-gray-50",
-                  style: alterada ? { background: "#faf5ff" } : null
+                  style: alterada ? { background: "#f9fafb" } : null
                 },
                   h("td", { className: "px-4 py-2" },
                     h("span", { className: "font-semibold text-gray-800" }, l.nome_cliente),

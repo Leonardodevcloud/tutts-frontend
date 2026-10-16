@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* BI_ICONS_V1 */
 /* ============================================================================
  * BIGarantidoV2.js
@@ -66,11 +67,11 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
   const corAvatar = (cod) => {
     const seed = String(cod || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     const gradients = [
-      "linear-gradient(135deg, #534AB7, #378ADD)",
-      "linear-gradient(135deg, #BA7517, #EF9F27)",
-      "linear-gradient(135deg, #1D9E75, #5DCAA5)",
-      "linear-gradient(135deg, #BE185D, #EC4899)",
-      "linear-gradient(135deg, #0E7490, #06B6D4)",
+      "linear-gradient(135deg, #724ab7, #376cdd)",
+      "linear-gradient(135deg, #ba7e17, #EF9F27)",
+      "linear-gradient(135deg, #1d9e4c, #5dca85)",
+      "linear-gradient(135deg, #be1818, #ec4848)",
+      "linear-gradient(135deg, #0e3790, #0647d4)",
     ];
     return gradients[seed % gradients.length];
   };
@@ -108,7 +109,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
           e("div", {
             style: {
               width: 32, height: 32, borderRadius: 8,
-              background: "#DCFCE7", display: "flex",
+              background: "#f0fdf4", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 16,
             }
           }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-wallet" }))),
@@ -120,9 +121,9 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
 
         // KPIs inline
         garantidoStats && e("div", { style: { display: "flex", gap: 22, alignItems: "center" } },
-          kpiInline(e, "Negociado", fmtBRLshort(garantidoStats.total_negociado || 0), "#534AB7"),
+          kpiInline(e, "Negociado", fmtBRLshort(garantidoStats.total_negociado || 0), "#7c3aed"),
           kpiInline(e, "Produção", fmtBRLshort(garantidoStats.total_produzido || 0), "#111827"),
-          kpiInline(e, "A pagar", fmtBRLshort(garantidoStats.total_complemento || 0), "#BA7517"),
+          kpiInline(e, "A pagar", fmtBRLshort(garantidoStats.total_complemento || 0), "#d97706"),
           (garantidoStats.valor_nao_rodou > 0) && kpiInline(e, "Não rodou", fmtBRLshort(garantidoStats.valor_nao_rodou || 0), "#9CA3AF"),
         ),
       ),
@@ -173,7 +174,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
           onClick: carregarGarantido,
           disabled: garantidoLoading,
           style: {
-            background: "white", color: "#4B5563",
+            background: "white", color: "#374151",
             border: "1px solid #E5E7EB", borderRadius: 6,
             padding: "6px 12px", fontSize: 12,
             cursor: garantidoLoading ? "wait" : "pointer",
@@ -185,7 +186,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
           onClick: carregarGarantido,
           disabled: garantidoLoading,
           style: {
-            background: "#534AB7", color: "white",
+            background: "#7c3aed", color: "white",
             border: "none", borderRadius: 6,
             padding: "6px 14px", fontSize: 12, fontWeight: 500,
             cursor: garantidoLoading ? "wait" : "pointer",
@@ -254,7 +255,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
       e("div", {
         style: {
           display: "inline-block", width: 36, height: 36,
-          border: "3px solid #E5E7EB", borderTopColor: "#534AB7",
+          border: "3px solid #E5E7EB", borderTopColor: "#7c3aed",
           borderRadius: "50%", animation: "tuttsSpin 0.8s linear infinite",
           marginBottom: 10,
         }
@@ -328,15 +329,15 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
     let statusIconColor = "#6b7280";
     if (autoStatus === "nao_rodou") {
       statusIcon = "○";
-      statusIconBg = "#1F2937";
+      statusIconBg = "#111827";
       statusIconColor = "white";
     } else if (row.valor_produzido > row.valor_negociado) {
       statusIcon = "↑";
-      statusIconBg = "#D1FAE5";
-      statusIconColor = "#065F46";
+      statusIconBg = "#bbf7d0";
+      statusIconColor = "#166534";
     } else if (row.valor_produzido < row.valor_negociado) {
       statusIcon = "↓";
-      statusIconBg = "#FEE2E2";
+      statusIconBg = "#fef2f2";
       statusIconColor = "#991B1B";
     }
 
@@ -344,7 +345,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
     const pct = row.valor_negociado > 0
       ? Math.min(100, (row.valor_produzido / row.valor_negociado) * 100)
       : 0;
-    const barColor = row.valor_produzido >= row.valor_negociado ? "#10B981" : "#EF4444";
+    const barColor = row.valor_produzido >= row.valor_negociado ? "#16a34a" : "#dc2626";
 
     return e("tr", {
       key: idx,
@@ -352,7 +353,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
         borderBottom: "1px solid #F3F4F6",
         background: statusEfetivo === "lancado" ? "#F0FDF4" :
                     statusEfetivo === "reprovado" ? "#FEF2F2" :
-                    statusEfetivo === "nao_rodou" ? "#FAFAFA" : "white",
+                    statusEfetivo === "nao_rodou" ? "#f9fafb" : "white",
       }
     },
       // Status icon
@@ -417,7 +418,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
             e("div", { style: { height: "100%", width: pct + "%", background: barColor, transition: "width 0.3s" } })
           ),
           e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12 } },
-            e("span", { style: { color: row.valor_produzido >= row.valor_negociado ? "#0F6E56" : "#991B1B", fontWeight: 600, fontVariantNumeric: "tabular-nums" } },
+            e("span", { style: { color: row.valor_produzido >= row.valor_negociado ? "#166534" : "#991B1B", fontWeight: 600, fontVariantNumeric: "tabular-nums" } },
               fmtBRL(row.valor_produzido || 0)),
             e("span", { style: { color: "#6B7280", fontVariantNumeric: "tabular-nums" } },
               "/ " + fmtBRL(row.valor_negociado || 0))
@@ -433,8 +434,8 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
             padding: "3px 10px", borderRadius: 999,
             fontSize: 12, fontWeight: 600,
             fontVariantNumeric: "tabular-nums",
-            background: row.complemento > 0 ? "#FEE2E2" : "#D1FAE5",
-            color: row.complemento > 0 ? "#991B1B" : "#065F46",
+            background: row.complemento > 0 ? "#fef2f2" : "#bbf7d0",
+            color: row.complemento > 0 ? "#991B1B" : "#166534",
           }
         }, row.complemento > 0 ? "+" : "", fmtBRL(row.complemento || 0))
       ),
@@ -459,15 +460,15 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
               borderRadius: 4,
               border: "1px solid",
               maxWidth: 150,
-              borderColor: statusEfetivo === "lancado" ? "#86EFAC" :
-                           statusEfetivo === "reprovado" ? "#FCA5A5" :
+              borderColor: statusEfetivo === "lancado" ? "#bbf7d0" :
+                           statusEfetivo === "reprovado" ? "#fecaca" :
                            statusEfetivo === "nao_rodou" ? "#D1D5DB" :
-                           statusEfetivo === "ultrapassou" ? "#93C5FD" : "#FCD34D",
-              background: statusEfetivo === "lancado" ? "#D1FAE5" :
-                          statusEfetivo === "reprovado" ? "#FEE2E2" :
+                           statusEfetivo === "ultrapassou" ? "#bfdbfe" : "#fde68a",
+              background: statusEfetivo === "lancado" ? "#bbf7d0" :
+                          statusEfetivo === "reprovado" ? "#fef2f2" :
                           statusEfetivo === "nao_rodou" ? "#F3F4F6" :
-                          statusEfetivo === "ultrapassou" ? "#DBEAFE" : "#FEF3C7",
-              color: statusEfetivo === "lancado" ? "#065F46" :
+                          statusEfetivo === "ultrapassou" ? "#eff6ff" : "#fffbeb",
+              color: statusEfetivo === "lancado" ? "#166534" :
                      statusEfetivo === "reprovado" ? "#991B1B" :
                      statusEfetivo === "nao_rodou" ? "#374151" :
                      statusEfetivo === "ultrapassou" ? "#1E40AF" : "#92400E",
@@ -541,27 +542,27 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
 
             return [
               // Cabeçalho do cliente (mais sutil)
-              e("tr", { key: "head-" + clienteKey, style: { background: "#FAF7FF", borderTop: "1px solid #E5E7EB" } },
+              e("tr", { key: "head-" + clienteKey, style: { background: "#f9fafb", borderTop: "1px solid #E5E7EB" } },
                 e("td", { colSpan: 6, style: { padding: "10px 12px" } },
                   e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, flexWrap: "wrap", gap: 8 } },
                     e("span", {
-                      style: { fontWeight: 600, color: "#534AB7", display: "inline-flex", alignItems: "center", gap: 8 }
+                      style: { fontWeight: 600, color: "#7c3aed", display: "inline-flex", alignItems: "center", gap: 8 }
                     },
                       e("span", {
                         style: {
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
                           minWidth: 26, padding: "0 7px", height: 22,
-                          background: "#534AB7", color: "white",
+                          background: "#7c3aed", color: "white",
                           borderRadius: 5, fontSize: 11, fontWeight: 700,
                         }
                       }, clienteKey),
                       nomeFinal || ""
                     ),
-                    e("span", { style: { display: "flex", gap: 16, fontSize: 12, color: "#4B5563", flexWrap: "wrap" } },
+                    e("span", { style: { display: "flex", gap: 16, fontSize: 12, color: "#374151", flexWrap: "wrap" } },
                       e("span", null, linhas.length + " prof" + (linhas.length > 1 ? "s" : "")),
                       e("span", null, "Negociado: ", e("strong", { style: { color: "#111827", fontWeight: 600 } }, fmtBRL(totalNeg))),
                       e("span", null, "Produção: ", e("strong", { style: { color: "#111827", fontWeight: 600 } }, fmtBRL(totalProd))),
-                      e("span", { style: { color: diff < 0 ? "#991B1B" : "#0F6E56" } }, "Δ ", e("strong", { style: { fontWeight: 600 } }, (diff >= 0 ? "+" : "") + fmtBRL(diff))),
+                      e("span", { style: { color: diff < 0 ? "#991B1B" : "#166534" } }, "Δ ", e("strong", { style: { fontWeight: 600 } }, (diff >= 0 ? "+" : "") + fmtBRL(diff))),
                     )
                   )
                 )
@@ -602,7 +603,7 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
 
           // Linha de totais
           garantidoStats && e("tr", { style: { background: "#F9FAFB", borderTop: "2px solid #D1D5DB", fontWeight: 600 } },
-            e("td", { style: { padding: "12px", color: "#4B5563", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #F3F4F6" }, colSpan: 2 }, "Total geral"),
+            e("td", { style: { padding: "12px", color: "#374151", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #F3F4F6" }, colSpan: 2 }, "Total geral"),
             e("td", { style: { padding: "12px", textAlign: "center", color: "#111827", fontVariantNumeric: "tabular-nums", fontSize: 13, borderRight: "1px solid #F3F4F6" } },
               garantidoStats.total_entregas || garantidoData.reduce((s, r) => s + (r.entregas || 0), 0)),
             e("td", { style: { padding: "12px", color: "#111827", fontSize: 12, borderRight: "1px solid #F3F4F6" } },
@@ -649,11 +650,11 @@ function chipFiltro(e, opt, ativoAtual, onClick) {
   const ativo = (ativoAtual || "todos") === opt.id;
   // Cores por tipo
   const styles = {
-    default: { bg: ativo ? "#534AB7" : "#F3F4F6", color: ativo ? "white" : "#4B5563" },
-    red: { bg: ativo ? "#DC2626" : "#FEE2E2", color: ativo ? "white" : "#991B1B" },
-    green: { bg: ativo ? "#0F6E56" : "#D1FAE5", color: ativo ? "white" : "#065F46" },
-    gray: { bg: ativo ? "#1F2937" : "#F3F4F6", color: ativo ? "white" : "#6b7280" },
-    blue: { bg: ativo ? "#1D4ED8" : "#DBEAFE", color: ativo ? "white" : "#1E40AF" },
+    default: { bg: ativo ? "#7c3aed" : "#F3F4F6", color: ativo ? "white" : "#374151" },
+    red: { bg: ativo ? "#DC2626" : "#fef2f2", color: ativo ? "white" : "#991B1B" },
+    green: { bg: ativo ? "#166534" : "#bbf7d0", color: ativo ? "white" : "#166534" },
+    gray: { bg: ativo ? "#111827" : "#F3F4F6", color: ativo ? "white" : "#6b7280" },
+    blue: { bg: ativo ? "#2563eb" : "#eff6ff", color: ativo ? "white" : "#1E40AF" },
   };
   const s = styles[opt.color] || styles.default;
   return e("button", {
@@ -673,7 +674,7 @@ function thStyle() {
   return {
     textAlign: "left",
     fontSize: 11, fontWeight: 600,
-    color: "#4B5563",
+    color: "#374151",
     textTransform: "uppercase", letterSpacing: "0.4px",
     padding: "10px 12px",
     background: "#F9FAFB",

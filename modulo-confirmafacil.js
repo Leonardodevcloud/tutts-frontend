@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO CONFIRMA FÁCIL ====================
 // modulo-confirmafacil.js — v4
@@ -352,8 +353,8 @@
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
                 }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast('✅ Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success');
-                  else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
+                  if (d.ok) showToast('Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success');
+                  else showToast('' + (d.mensagem || 'Erro'), 'error');
                   return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
                 }).finally(() => setEnviando(false));
               },
@@ -369,8 +370,8 @@
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
                 }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast(d.mensagem || '✅ Protocolo enviado', 'success');
-                  else showToast('❌ ' + (d.mensagem || 'Erro'), 'error');
+                  if (d.ok) showToast(d.mensagem || 'Protocolo enviado', 'success');
+                  else showToast('' + (d.mensagem || 'Erro'), 'error');
                   return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
                 }).finally(() => setEnviando(false));
               },
@@ -391,8 +392,8 @@
                   fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
                   }).then(r => r.json()).then(d => {
-                    if (d.ok) showToast('🗄️ Corrida cancelada na central (Mapp intocada)', 'success');
-                    else showToast('❌ ' + (d.error || d.mensagem || 'Erro'), 'error');
+                    if (d.ok) showToast('Corrida cancelada na central (Mapp intocada)', 'success');
+                    else showToast('' + (d.error || d.mensagem || 'Erro'), 'error');
                     return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
                   }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
                 },
@@ -595,7 +596,7 @@
       try {
         await fetchAuth(API_URL + '/confirmafacil/sincronizar', { method: 'POST',
           headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-        showToast('🔄 Sincronização iniciada — aguarde 2-3 minutos e clique em Buscar', 'success');
+        showToast('Sincronização iniciada — aguarde 2-3 minutos e clique em Buscar', 'success');
       } catch(_) { showToast('Erro ao sincronizar', 'error'); }
       finally { setSinc(false); }
     }
@@ -606,7 +607,7 @@
         const r = await fetchAuth(API_URL + '/confirmafacil/reprocessar-barradas', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
         const d = await r.json();
-        if (d.ok) showToast('♻️ ' + (d.backoff_limpo || 0) + ' barrada(s) liberada(s) — reprocessando agora (aguarde ~1 min)', 'success');
+        if (d.ok) showToast('' + (d.backoff_limpo || 0) + ' barrada(s) liberada(s) — reprocessando agora (aguarde ~1 min)', 'success');
         else showToast(d.erro || 'Erro ao reprocessar', 'error');
       } catch(_) { showToast('Erro ao reprocessar', 'error'); }
       finally { setReproc(false); }
@@ -992,12 +993,12 @@
                   });
                   const d2 = await r2.json();
                   if (d2.ok) {
-                    showToast('✅ OS ' + d2.os_numero + ' criada!', 'success');
+                    showToast('OS ' + d2.os_numero + ' criada!', 'success');
                     setNfParaCriar(null);
                     setClienteSelCorrida('');
                     carregar(pagina);
                   } else {
-                    showToast('❌ ' + (d2.mensagem || 'Erro'), 'error');
+                    showToast('' + (d2.mensagem || 'Erro'), 'error');
                   }
                 } catch(e) { showToast('Erro: ' + e.message, 'error'); }
                 finally { setCriandoCorrida(false); }
@@ -1060,7 +1061,7 @@
           body: JSON.stringify({ cliente_id: clienteId, ...form }),
         });
         const d = await r.json();
-        d.ok ? (showToast('✅ Salvo!', 'success'), onSalvar()) : showToast(d.error || 'Erro', 'error');
+        d.ok ? (showToast('Salvo!', 'success'), onSalvar()) : showToast(d.error || 'Erro', 'error');
       } catch (_) { showToast('Erro', 'error'); }
       finally { setSalvando(false); }
     }
@@ -1194,7 +1195,7 @@
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: Number(clienteSel), ...formC, cf_id_cliente: Number(formC.cf_id_cliente) || 320 }) });
         const d = await r.json();
-        d.ok ? (showToast('✅ Salvo!', 'success'), setConfig(d.config)) : showToast(d.error || 'Erro', 'error');
+        d.ok ? (showToast('Salvo!', 'success'), setConfig(d.config)) : showToast(d.error || 'Erro', 'error');
       } catch (_) { showToast('Erro', 'error'); } finally { setLoading(false); }
     }
 
@@ -1204,7 +1205,7 @@
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/test/' + clienteSel, { method: 'POST' });
         const d = await r.json();
-        d.ok ? showToast('✅ Credenciais válidas!', 'success') : showToast('❌ ' + (d.mensagem || 'Inválidas'), 'error');
+        d.ok ? showToast('Credenciais válidas!', 'success') : showToast('' + (d.mensagem || 'Inválidas'), 'error');
       } catch (_) { showToast('Erro', 'error'); } finally { setTestando(false); }
     }
 
@@ -1392,10 +1393,10 @@
           data: {
             labels: pts.map((p) => p.label),
             datasets: [
-              { data: pts.map((p) => p.pct), borderColor: '#1baf7a', backgroundColor: 'rgba(27,175,122,0.10)',
+              { data: pts.map((p) => p.pct), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.10)',
                 borderWidth: 2, fill: true, tension: 0,
                 pointRadius: pts.map((p) => p.pct == null ? 0 : 3),
-                pointHoverRadius: 6, pointBackgroundColor: '#1baf7a', pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                pointHoverRadius: 6, pointBackgroundColor: '#16a34a', pointBorderColor: '#fff', pointBorderWidth: 1.5,
                 spanGaps: true },
               { data: pts.map(() => f.meta), borderColor: '#9ca3af', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
             ],
@@ -1522,7 +1523,7 @@
       try {
         const r = await fetchAuth(API_URL + '/confirmafacil/sla-teste', { method: 'POST' });
         const j = await r.json().catch(() => ({}));
-        if (j && j.enviado) { if (showToast) showToast('Mensagem de teste enviada ao grupo ✅', 'sucesso'); }
+        if (j && j.enviado) { if (showToast) showToast('Mensagem de teste enviada ao grupo', 'sucesso'); }
         else if (showToast) showToast('Não enviou: ' + ((j && j.motivo) || 'erro') + (j && j.status ? ' (' + j.status + ')' : ''), 'erro');
       } catch (e) { if (showToast) showToast('Erro ao enviar teste', 'erro'); }
     }
@@ -1656,7 +1657,7 @@
       if (m < 60) return m + ' min';
       return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0');
     };
-    const corMin = (m) => m == null ? '#6b7280' : (m <= SLA ? '#059669' : (m <= SLA * 2 ? '#d97706' : '#dc2626'));
+    const corMin = (m) => m == null ? '#6b7280' : (m <= SLA ? '#16a34a' : (m <= SLA * 2 ? '#d97706' : '#dc2626'));
     const classe = (m) => m <= SLA ? { t: 'Dentro do SLA', c: 'bg-green-100 text-green-700' }
       : (m <= SLA * 2 ? { t: 'Atenção', c: 'bg-amber-100 text-amber-700' } : { t: 'Fora do SLA', c: 'bg-red-100 text-red-700' });
 
@@ -1695,7 +1696,7 @@
       h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
         kpi('Tempo médio de embarque', fmtMin(dados.media_min), corMin(dados.media_min), 'emissão → embarque (dia útil)'),
         kpi('Notas embarcadas', String(dados.total), null, 'com Cod. 0 registrado'),
-        kpi('Dentro do SLA', pctSlaGeral + '%', '#059669', dist.dentro + ' de ' + dados.total),
+        kpi('Dentro do SLA', pctSlaGeral + '%', '#16a34a', dist.dentro + ' de ' + dados.total),
         kpi('Mais lento', dados.mais_lento ? fmtMin(dados.mais_lento.media_min) : '—', '#dc2626', dados.mais_lento ? dados.mais_lento.embarcador : '')
       ),
       // Ranking

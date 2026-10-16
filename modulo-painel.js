@@ -1,3 +1,4 @@
+/* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* PAINEL_V1 */
 // ============================================================
 // MÓDULO MEU PAINEL — FRONTEND v1
@@ -46,7 +47,7 @@
   };
   const Card = ({ children, className, style }) => h('div', { className: 'bg-white border border-violet-100 rounded-2xl p-5 ' + (className || ''), style }, children);
   const Kpi = ({ icone, tag, cor, valor, label, sub }) => {
-    const borda = { roxo: '#7c3aed', azul: '#0ea5e9', amarelo: '#f59e0b', vermelho: '#dc2626', verde: '#10b981' }[cor || 'roxo'];
+    const borda = { roxo: '#7c3aed', azul: '#2563eb', amarelo: '#d97706', vermelho: '#dc2626', verde: '#16a34a' }[cor || 'roxo'];
     const icoCor = { roxo: 'text-violet-700 bg-violet-50', azul: 'text-sky-700 bg-sky-50', amarelo: 'text-amber-700 bg-amber-50', vermelho: 'text-red-700 bg-red-50', verde: 'text-emerald-700 bg-emerald-50' }[cor || 'roxo'];
     return h('div', { className: 'bg-white border border-violet-100 rounded-2xl p-4 flex flex-col gap-1.5', style: { borderLeft: `4px solid ${borda}` } },
       h('div', { className: 'flex items-center justify-between' },
@@ -186,8 +187,8 @@
               h(Kpi, { icone: 'star', tag: 'Prioridade', cor: 'amarelo', valor: fmtNum(dg.prioridade), label: 'Cliente prioridade', sub: dg.chamados ? `${(100 * dg.prioridade / dg.chamados).toFixed(1).replace('.', ',')}% · tempo médio de atendimento ${fmtSeg(dg.tempo_medio_s)}` : null }))),
           // gráficos
           h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-3.5' },
-            h(BarrasHora, { titulo: 'Ligações por hora', sub: 'Atendidas e feitas em cada hora do expediente.', horas, dados: tel.por_hora || {}, s1: { key: 'atendidas', label: 'Atendidas' }, s2: { key: 'feitas', label: 'Feitas' }, cor1: '#7c3aed', cor2: '#0ea5e9' }),
-            h(BarrasHora, { titulo: 'Chamados por hora', sub: 'Horário de abertura do chamado.', horas, dados: dg.por_hora || {}, s1: { key: 'receptivos', label: 'Receptivos' }, s2: { key: 'ativos', label: 'Ativos' }, cor1: '#7c3aed', cor2: '#0ea5e9' })),
+            h(BarrasHora, { titulo: 'Ligações por hora', sub: 'Atendidas e feitas em cada hora do expediente.', horas, dados: tel.por_hora || {}, s1: { key: 'atendidas', label: 'Atendidas' }, s2: { key: 'feitas', label: 'Feitas' }, cor1: '#7c3aed', cor2: '#2563eb' }),
+            h(BarrasHora, { titulo: 'Chamados por hora', sub: 'Horário de abertura do chamado.', horas, dados: dg.por_hora || {}, s1: { key: 'receptivos', label: 'Receptivos' }, s2: { key: 'ativos', label: 'Ativos' }, cor1: '#7c3aed', cor2: '#2563eb' })),
           // histórico + cobertura
           h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-3.5' },
             h(Card, { className: 'lg:col-span-2 flex flex-col gap-3' },
@@ -385,7 +386,7 @@
         h('div', { className: `grid grid-cols-1 ${previa.arquivos.length > 1 ? 'xl:grid-cols-2' : ''} gap-3.5` }, previa.arquivos.map((a) => {
           if (a.erro) return h(Card, { key: a.nome, className: 'border-red-200 flex flex-col gap-2' }, h('div', { className: 'flex items-center justify-between' }, h('div', { className: 'font-bold text-[15px] truncate' }, a.nome), h(Tag, { cor: 'vermelho' }, 'não reconhecido')), h('div', { className: 'text-sm text-red-700' }, a.erro), a.headers && h('div', { className: 'text-xs text-gray-500' }, 'Colunas encontradas: ', a.headers.slice(0, 12).join(' · ')));
           const uv = a.fonte === 'uservoice'; const r = a.resumo;
-          return h(Card, { key: a.nome, className: 'flex flex-col gap-3', style: { borderTop: `4px solid ${uv ? '#7c3aed' : '#0ea5e9'}` } },
+          return h(Card, { key: a.nome, className: 'flex flex-col gap-3', style: { borderTop: `4px solid ${uv ? '#7c3aed' : '#2563eb'}` } },
             h('div', { className: 'flex items-center justify-between gap-2' }, h('div', { className: 'flex items-center gap-2 font-bold text-[15px]' }, ico(uv ? 'phone' : 'message', uv ? 'text-violet-700' : 'text-sky-700'), uv ? 'Telefonia · UserVoice (CDR)' : 'Chamados · Digisac (histórico)'), h(Tag, { cor: 'verde' }, 'reconhecido')),
             h('div', { className: 'text-xs text-gray-500 truncate', title: a.nome }, a.nome, ` · ${fmtNum(r.linhas_total)} linhas`),
             h('div', { className: 'grid grid-cols-3 gap-2.5 text-[13px]' },
@@ -451,7 +452,7 @@
         h('div', { className: 'flex items-center justify-between' }, h('div', { className: 'font-bold text-[15px]' }, 'Dias úteis cobertos'), h('div', { className: 'flex items-center gap-2 text-sm' }, h('button', { type: 'button', onClick: () => mudarMes(-1), className: 'w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50' }, '‹'), h('b', { className: 'w-20 text-center' }, `${mes.slice(5)}/${mes.slice(0, 4)}`), h('button', { type: 'button', onClick: () => mudarMes(1), className: 'w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50' }, '›'))),
         h('div', { className: 'text-xs text-gray-500' }, 'Roxo = telefonia importada · azul = Digisac · cinza = faltando. Fim de semana não aparece.'),
         h('div', { className: 'grid gap-1.5', style: { gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))' } }, diasMes.map((d) => { const f = dias[d] || []; const uv = f.includes('uservoice'), dg = f.includes('digisac'); const futuro = d > hoje();
-          return h('div', { key: d, title: `${fmtData(d)} · ${uv ? 'UserVoice ' : ''}${dg ? 'Digisac' : ''}${!uv && !dg ? 'nada importado' : ''}`, className: `h-10 rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold ${futuro ? 'bg-gray-50 text-gray-300' : (!uv && !dg) ? 'bg-gray-200 text-gray-600' : 'text-white'}`, style: !futuro && (uv || dg) ? { background: uv && dg ? 'linear-gradient(90deg,#7c3aed 50%,#0ea5e9 50%)' : uv ? '#7c3aed' : '#0ea5e9' } : {} }, d.slice(8)); }))),
+          return h('div', { key: d, title: `${fmtData(d)} · ${uv ? 'UserVoice ' : ''}${dg ? 'Digisac' : ''}${!uv && !dg ? 'nada importado' : ''}`, className: `h-10 rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold ${futuro ? 'bg-gray-50 text-gray-300' : (!uv && !dg) ? 'bg-gray-200 text-gray-600' : 'text-white'}`, style: !futuro && (uv || dg) ? { background: uv && dg ? 'linear-gradient(90deg,#7c3aed 50%,#0e53e9 50%)' : uv ? '#7c3aed' : '#2563eb' } : {} }, d.slice(8)); }))),
       h(Card, { className: 'flex flex-col gap-3' },
         h('div', { className: 'font-bold text-[15px]' }, 'Últimas importações'),
         !imps ? h(Spinner) : !imps.length ? h('div', { className: 'text-sm text-gray-500' }, 'Nenhuma importação ainda.') : h('div', { className: 'overflow-x-auto' }, h('table', { className: 'w-full text-[13px]' },
@@ -525,10 +526,10 @@
                 h('td', { className: 'py-3 px-2.5 whitespace-nowrap' }, u.vinculos.length ? (ram.length && dg.length ? h('span', { className: 'text-emerald-700 font-semibold' }, '✓ completo') : h('span', { className: 'text-amber-700 font-semibold' }, 'parcial')) : h('span', { className: 'text-gray-400' }, 'sem vínculo')));
             }))))),
         h('div', { className: 'flex flex-col gap-3.5' },
-          h(Card, { className: 'flex flex-col gap-2.5', style: { borderTop: '4px solid #f59e0b' } },
+          h(Card, { className: 'flex flex-col gap-2.5', style: { borderTop: '4px solid #d97706' } },
             h('div', { className: 'font-bold text-[15px]' }, 'Apareceram nos CSVs e ninguém reclamou'),
             h('div', { className: 'text-xs text-gray-500' }, 'Identidades vistas nas importações que ainda não pertencem a nenhum usuário. Vincule, ignore (não é pessoa) ou descarte o aviso.'),
-            !dados.pendentes.length ? h('div', { className: 'text-[13px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5' }, 'Nenhuma pendência 🎉') : dados.pendentes.map((p) => h('div', { key: p.id, className: 'flex items-center justify-between gap-2 bg-amber-50 rounded-xl px-3 py-2 text-[13px]' },
+            !dados.pendentes.length ? h('div', { className: 'text-[13px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5' }, 'Nenhuma pendência') : dados.pendentes.map((p) => h('div', { key: p.id, className: 'flex items-center justify-between gap-2 bg-amber-50 rounded-xl px-3 py-2 text-[13px]' },
               h('div', null, h(Chip, { cor: p.tipo }, p.identificador || '(vazio)'), h('div', { className: 'text-xs text-gray-500 mt-0.5' }, `${fmtNum(p.ocorrencias)} registro(s)${p.ultimo_visto ? ` · visto até ${fmtDataCurta(String(p.ultimo_visto).slice(0, 10))}` : ''}`)),
               h('select', { 'aria-label': 'Resolver', defaultValue: '', onChange: (e) => { const v = e.target.value; if (v === '__ign') ignorarPend(p); else if (v === '__desc') descartarPend(p); else if (v) criar(+v, p.tipo, p.identificador); e.target.value = ''; }, className: 'text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white max-w-[150px]' },
                 h('option', { value: '' }, 'Vincular a…'), dados.usuarios.map((u) => h('option', { key: u.id, value: u.id }, u.nome)), h('option', { value: '__ign' }, 'Ignorar sempre'), h('option', { value: '__desc' }, 'Descartar aviso'))))),
