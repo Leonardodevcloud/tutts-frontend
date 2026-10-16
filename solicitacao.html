@@ -55,6 +55,9 @@
         @keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(200px) rotate(720deg); } }
         @keyframes hubRing { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
         .hub-node-act::after { content: ""; position: absolute; inset: -4px; border-radius: 9999px; border: 2px solid rgba(255,255,255,.6); animation: hubRing 1.8s infinite; }
+        .cod-flash { animation: codFlash 1.6s ease-out 1; border-radius: 6px; }
+        @keyframes codFlash { 0% { background: #ede9fe; box-shadow: 0 0 0 6px #ede9fe; } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
+        @media (prefers-reduced-motion: reduce) { .cod-flash { animation: none; } }
         .hub-chip-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: currentColor; animation: pulse 1.4s infinite; }
         .confirm-card { animation: confirmIn 0.4s ease-out; }
         .confirm-check { animation: checkPop 0.5s ease-out 0.2s both; }
@@ -135,7 +138,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 <!-- SOLIC_JSX_ICONS_V4 -->
-<svg id="tutts-icons" style="display:none" aria-hidden="true"><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="i-arrowdown" viewBox="0 0 24 24"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></symbol><symbol id="i-arrowleft" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol><symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol><symbol id="i-filetext" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" /></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /> <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /> <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /> <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol><symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9" /> <line x1="4" x2="20" y1="15" y2="15" /> <line x1="10" x2="8" y1="3" y2="21" /> <line x1="16" x2="14" y1="3" y2="21" /></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol><symbol id="i-mail" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></symbol><symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol><symbol id="i-message" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" /></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /> <path d="M21 3v5h-5" /> <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /> <path d="M8 16H3v5" /></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /> <path d="m14.5 12.5 2-2" /> <path d="m11.5 9.5 2-2" /> <path d="m8.5 6.5 2-2" /> <path d="m17.5 15.5 2-2" /></symbol><symbol id="i-satellite" viewBox="0 0 24 24"><path d="M4 10a7.31 7.31 0 0 0 10 10Z" /><path d="m9 15 3-3" /><path d="M17 13a6 6 0 0 0-6-6" /><path d="M21 13A10 10 0 0 0 11 3" /></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.685 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.45 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /> <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /> <path d="M15 18H9" /> <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /> <circle cx="17" cy="18" r="2" /> <circle cx="7" cy="18" r="2" /></symbol><symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol></svg>
+<svg id="tutts-icons" style="display:none" aria-hidden="true"><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="i-arrowdown" viewBox="0 0 24 24"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></symbol><symbol id="i-arrowleft" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol><symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></symbol><symbol id="i-building" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol><symbol id="i-filetext" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" /></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /> <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /> <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /> <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol><symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9" /> <line x1="4" x2="20" y1="15" y2="15" /> <line x1="10" x2="8" y1="3" y2="21" /> <line x1="16" x2="14" y1="3" y2="21" /></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol><symbol id="i-mail" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></symbol><symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol><symbol id="i-message" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" /></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /> <path d="M21 3v5h-5" /> <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /> <path d="M8 16H3v5" /></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /> <path d="m14.5 12.5 2-2" /> <path d="m11.5 9.5 2-2" /> <path d="m8.5 6.5 2-2" /> <path d="m17.5 15.5 2-2" /></symbol><symbol id="i-satellite" viewBox="0 0 24 24"><path d="M4 10a7.31 7.31 0 0 0 10 10Z" /><path d="m9 15 3-3" /><path d="M17 13a6 6 0 0 0-6-6" /><path d="M21 13A10 10 0 0 0 11 3" /></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.685 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.45 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /> <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /> <path d="M15 18H9" /> <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /> <circle cx="17" cy="18" r="2" /> <circle cx="7" cy="18" r="2" /></symbol><symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol></svg>
 
     <div id="root"></div>
     
@@ -3643,120 +3646,87 @@
                                                     const temRetorno = c.pontos?.some(p => p.is_retorno || p.tipo_ponto === 'retorno') || 
                                                                        (c.dados_pontos && JSON.parse(typeof c.dados_pontos === 'string' ? c.dados_pontos : JSON.stringify(c.dados_pontos || []))?.some(p => p.is_retorno));
                                                     const ehAgendada = isCorridaAgendada(c);
-                                                    // Precedência da borda: retorno (laranja) > selecionada (azul escuro) > agendada (azul) > padrão.
-                                                    const classeBorda = temRetorno
-                                                        ? 'border-orange-400 bg-orange-50'
-                                                        : corridaSelecionada === c.id
-                                                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                                                            : ehAgendada
-                                                                ? 'border-blue-400 hover:border-blue-500 hover:shadow'
-                                                                : 'border-gray-200 hover:border-gray-300 hover:shadow';
+                                                    // CORRIDA_CLEAN_V1: card lateral sem bordas grossas; ponto + texto, barra fina de 3 segmentos, codigo de coleta legivel.
+                                                    const classeBorda = corridaSelecionada === c.id
+                                                        ? 'border-violet-600 bg-violet-50/40'
+                                                        : temRetorno
+                                                            ? 'border-orange-300 hover:border-orange-400'
+                                                            : 'border-gray-200 hover:border-gray-300';
+                                                    const estadoCard = analisarEstadoCorrida(c);
+                                                    const comMotoboy = deveExibirMotoboy(c);
+                                                    const progresso = (() => {
+                                                        if (c.status === 'cancelado' || c.status === 'erro') return null;
+                                                        const norm = (p) => {
+                                                            if (!p) return 'pendente';
+                                                            if (p.status && ['chegou','coletado','finalizado','pendente'].includes(p.status)) return p.status;
+                                                            const cod = (p.codigo || '').toUpperCase();
+                                                            if (cod === 'CHE') return 'chegou';
+                                                            if (cod === 'COL') return 'coletado';
+                                                            if (cod === 'FIN') return 'finalizado';
+                                                            return 'pendente';
+                                                        };
+                                                        let pts = c.pontos || c.pontos_status || c.dados_pontos;
+                                                        if (pts && typeof pts === 'string') { try { pts = JSON.parse(pts); } catch { pts = null; } }
+                                                        if (!Array.isArray(pts)) pts = null;
+                                                        const sc = pts && pts[0] ? norm(pts[0]) : 'pendente';
+                                                        const se = pts && pts[1] ? norm(pts[1]) : 'pendente';
+                                                        const fin = c.status === 'finalizado' || se === 'finalizado';
+                                                        const coletaOk = fin || sc === 'coletado' || sc === 'finalizado';
+                                                        return { fin, coletaOk, seg: [comMotoboy || coletaOk, coletaOk, fin] };
+                                                    })();
+                                                    const corDot = (c.status === 'cancelado' || c.status === 'erro') ? '#ef4444'
+                                                        : (progresso && progresso.fin) ? '#22c55e'
+                                                        : comMotoboy ? '#7c3aed' : '#a1a1aa';
+                                                    const codColetaCard = c.hub && c.hub.codigos && c.hub.codigos.coleta && !(progresso && progresso.coletaOk) && !(c.hub.etapa > 2)
+                                                        ? c.hub.codigos.coleta : null;
                                                     return (
-                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${classeBorda}`}>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                                    {deveExibirMotoboy(c) ? (
-                                                                        <>
-                                                                            {c.profissional_foto ? <img src={c.profissional_foto} className="w-8 h-8 rounded-full object-cover border-2 border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-bike"/></svg></div>}
-                                                                            <span className="font-medium text-sm text-gray-800 truncate">{c.profissional_nome || 'Aguardando...'}</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-search"/></svg></div>
-                                                                            <span className="font-medium text-sm text-gray-500 italic truncate">Buscando motoboy...</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                                    {/* Badge: agendada (azul com hora) vs imediata (cinza discreto).
-                                                                        Usa formatarHoraPonto pra evitar shift de timezone do driver pg. */}
-                                                                    {ehAgendada ? (
-                                                                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-semibold whitespace-nowrap"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarHoraPonto(c.data_retirada)}</span>
-                                                                    ) : (
-                                                                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium whitespace-nowrap">Imediata</span>
-                                                                    )}
-                                                                    <span className="text-xs font-bold text-gray-600 whitespace-nowrap">OS #{c.tutts_os_numero || c.id}</span>
+                                                        <div key={c.id} onClick={() => selecionarCorrida(c.id)} className={`p-3.5 rounded-xl border-[1.5px] bg-white cursor-pointer transition-colors flex flex-col gap-2.5 ${classeBorda}`}>
+                                                            <div className="flex items-center gap-2.5">
+                                                                {comMotoboy ? (
+                                                                    c.profissional_foto
+                                                                        ? <img src={c.profissional_foto} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                                                                        : <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-bike"/></svg></div>
+                                                                ) : (
+                                                                    <div className="w-9 h-9 rounded-full bg-gray-50 border-[1.5px] border-dashed border-gray-300 flex-shrink-0"></div>
+                                                                )}
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className={`text-[13px] font-semibold truncate ${comMotoboy ? 'text-gray-900' : 'text-gray-500'}`}>{comMotoboy ? (c.profissional_nome || 'Aguardando...') : 'Procurando entregador…'}</div>
+                                                                    <div className="text-[11px] text-gray-500 truncate">
+                                                                        OS {c.tutts_os_numero || c.id} · {ehAgendada ? <span className="text-blue-700 font-medium">Agendada {formatarHoraPonto(c.data_retirada)}</span> : 'Imediata'}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            {/* Status unificado: mensagem descritiva baseada no status + eventos do webhook */}
-                                                            {(() => {
-                                                                const estado = analisarEstadoCorrida(c);
-                                                                return (
-                                                                    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${estado.cor}`}>
-                                                                        <span>{estado.icone}</span>
-                                                                        <span>{estado.texto}</span>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            {/* Timeline-swoosh (redesign) — reflete o estagio real via mesma normalizacao de pontos */}
-                                                            {(() => {
-                                                                if (c.status === 'cancelado' || c.status === 'erro') return null;
-                                                                const norm = (p) => {
-                                                                    if (!p) return 'pendente';
-                                                                    if (p.status && ['chegou','coletado','finalizado','pendente'].includes(p.status)) return p.status;
-                                                                    const cod = (p.codigo || '').toUpperCase();
-                                                                    if (cod === 'CHE') return 'chegou';
-                                                                    if (cod === 'COL') return 'coletado';
-                                                                    if (cod === 'FIN') return 'finalizado';
-                                                                    return 'pendente';
-                                                                };
-                                                                let pts = c.pontos || c.pontos_status || c.dados_pontos;
-                                                                if (pts && typeof pts === 'string') { try { pts = JSON.parse(pts); } catch { pts = null; } }
-                                                                if (!Array.isArray(pts)) pts = null;
-                                                                const sc = pts && pts[0] ? norm(pts[0]) : 'pendente';
-                                                                const se = pts && pts[1] ? norm(pts[1]) : 'pendente';
-                                                                const fin = c.status === 'finalizado' || se === 'finalizado';
-                                                                const coletaOk = fin || sc === 'coletado' || sc === 'finalizado';
-                                                                const etapas = [
-                                                                    { lbl: 'Coleta',   ic: '', ok: coletaOk,            now: !coletaOk && c.status !== 'enviado' },
-                                                                    { lbl: 'Em rota',  ic: '', ok: fin,                 now: (coletaOk && !fin) || se === 'chegou' },
-                                                                    { lbl: 'Entregue', ic: '', ok: fin,                 now: false }
-                                                                ];
-                                                                return (
-                                                                    <div className="flex items-center mt-3 mb-1 px-1">
-                                                                        {etapas.map((et, i) => (
-                                                                            <React.Fragment key={i}>
-                                                                                {i > 0 && <div className={`flex-1 h-0.5 ${etapas[i-1].ok ? 'bg-gradient-to-r from-orange-400 to-purple-600' : 'bg-gray-200'}`}></div>}
-                                                                                <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] border-2 border-white ${et.ok ? 'bg-purple-700 text-white shadow' : et.now ? 'bg-orange-500 text-white shadow ring-2 ring-orange-200' : 'bg-gray-100 text-gray-400'}`}>{et.ok ? '' : et.ic}</div>
-                                                                                    <span className={`text-[10px] font-medium ${et.ok ? 'text-gray-700' : et.now ? 'text-orange-600' : 'text-gray-400'}`}>{et.lbl}</span>
-                                                                                </div>
-                                                                            </React.Fragment>
-                                                                        ))}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            {/* Alerta de retorno */}
-                                                            {temRetorno && (
-                                                                <div className="mt-2 group relative">
-                                                                    <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-300 rounded text-xs text-orange-700 font-medium">
-                                                                        <span><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-alert"/></svg></span>
-                                                                        <span>Atenção: Corrida com retorno</span>
-                                                                    </div>
-                                                                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50">
-                                                                        <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
-                                                                            Caso o retorno seja indevido, solicite o<br/>cancelamento ao suporte Tutts.
-                                                                        </div>
-                                                                        <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-4 -bottom-1"></div>
-                                                                    </div>
+                                                            <div className="flex items-center gap-2 text-xs text-gray-700">
+                                                                <span className="flex-shrink-0" style={{ width: 8, height: 8, borderRadius: 99, background: corDot }}></span>
+                                                                <span className="truncate">{estadoCard.texto}</span>
+                                                            </div>
+                                                            {progresso && (
+                                                                <div className="grid grid-cols-3 gap-1">
+                                                                    {progresso.seg.map((on, i) => <div key={i} className="h-1 rounded-full" style={{ background: on ? '#7c3aed' : '#e4e4e7' }}></div>)}
                                                                 </div>
                                                             )}
-                                                            {/* Código de devolução do hub — só quando devolveu (card, não só detalhe) */}
+                                                            {codColetaCard && (
+                                                                <div className="flex items-center justify-between rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-2">
+                                                                    <span className="text-[11px] text-gray-500">Código de coleta</span>
+                                                                    <span key={codColetaCard} className="cod-flash font-mono text-lg font-bold tracking-widest text-gray-900">{codColetaCard}</span>
+                                                                </div>
+                                                            )}
                                                             {c.hub && c.hub.codigos && c.hub.codigos.devolucao && (
-                                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-orange-50 border border-orange-200">
-                                                                    <span className="text-[10px] uppercase tracking-wider text-orange-500 font-semibold">↩️ Cód. devolução</span>
-                                                                    <span className="text-sm font-bold tracking-widest text-orange-800">{c.hub.codigos.devolucao}</span>
+                                                                <div className="flex items-center justify-between rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-2">
+                                                                    <span className="text-[11px] text-orange-700">Código de devolução</span>
+                                                                    <span key={c.hub.codigos.devolucao} className="cod-flash font-mono text-lg font-bold tracking-widest text-orange-800">{c.hub.codigos.devolucao}</span>
                                                                 </div>
                                                             )}
-                                                            <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                                                                <span><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-package"/></svg> {coletas} → <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> {entregas}</span>
-                                                            </div>
-                                                            {/* Linha destacada só em agendadas — reforça o horário de retirada pro admin. */}
-                                                            {ehAgendada && (
-                                                                <div className="mt-1 text-xs text-blue-700 font-medium"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarRetirada(c)}</div>
+                                                            {temRetorno && (
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-orange-700" title="Caso o retorno seja indevido, solicite o cancelamento ao suporte Tutts.">
+                                                                    <svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-alert"/></svg>
+                                                                    Corrida com retorno
+                                                                </div>
                                                             )}
-                                                            <div className="mt-1 text-xs text-gray-500"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-clock"/></svg> {formatarSolicitada(c.criado_em)}</div>
-                                                            {c.primeiro_numero_nota && <div className="mt-2 text-xs text-green-600 font-medium"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-tag"/></svg> {c.primeiro_numero_nota}</div>}
+                                                            <div className="flex items-center justify-between text-[11px] text-gray-500 gap-2">
+                                                                <span className="truncate">{formatarSolicitada(c.criado_em)}{entregas > 0 ? ` · ${entregas} ${entregas === 1 ? 'entrega' : 'entregas'}` : ''}</span>
+                                                                {c.primeiro_numero_nota && <span className="flex-shrink-0">Nota {c.primeiro_numero_nota}</span>}
+                                                            </div>
                                                             {/* REDESPACHO_BTN_V1 — so ate a coleta (hub.etapa <= 2).
                                                                 etapa 0 = buscando entregador | 1 = a caminho da coleta
                                                                 2 = chegou na coleta | 3 = COLETOU  <- fronteira
@@ -3766,7 +3736,7 @@
                                                             {/* HUB_VOLTOU_FILA_V1 — o Hub encerrou a tentativa (central cancelou so no painel / provedor falhou),
                                                                 mas a OS segue viva na Mapp esperando motoboy Tutts. A corrida NAO sumiu: voltou a ser Tutts. */}
                                                             {c.hub && c.hub.voltou_fila && (
-                                                                <div className="mt-2 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                                                                <div className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
                                                                     <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-refresh"/></svg>
                                                                     Voltou para a fila Tutts — a Central encerrou o entregador parceiro; buscando motoboy.
                                                                 </div>
@@ -3775,18 +3745,18 @@
                                                                 <button
                                                                     onClick={() => redespacharCorrida(c)}
                                                                     disabled={redespachando === c.tutts_os_numero}
-                                                                    className="mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50"
+                                                                    className="w-full text-xs font-semibold py-2 rounded-lg border border-gray-200 bg-white text-violet-700 hover:bg-violet-50 disabled:opacity-50"
                                                                 >
-                                                                    {redespachando === c.tutts_os_numero ? 'Chamando outro...' : '↻  Redespachar'}
+                                                                    {redespachando === c.tutts_os_numero ? 'Chamando outro...' : <span className="inline-flex items-center gap-1.5"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-refresh"/></svg> Redespachar</span>}
                                                                 </button>
                                                             )}
                                                             {/* CANCELAMENTO_CLIENTE_V2 — mesma fronteira: so ate a coleta. Outline, nunca cheio. */}
                                                             {podeCancelarCorrida(c) && (
                                                                 <button
                                                                     onClick={(ev) => { ev.stopPropagation(); cancelarCorrida(c); }}
-                                                                    className="mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50"
+                                                                    className="w-full text-xs font-semibold py-2 rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50"
                                                                 >
-                                                                    ✕  Cancelar corrida
+                                                                    <span className="inline-flex items-center gap-1.5"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar corrida</span>
                                                                 </button>
                                                             )}
                                                         </div>
@@ -3824,122 +3794,164 @@
                                                 const temRodape = (detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao))
                                                     || (detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno'))
                                                     || isCorridaAgendada(detalheCorrida);
+                                                // CORRIDA_CLEAN_V1: cabecalho branco, codigo grande, trilha fina com horarios.
+                                                const hubD = detalheCorrida.hub || null;
+                                                const cods = (hubD && hubD.codigos) || {};
+                                                const pts = detalheCorrida.pontos || [];
+                                                const pIni = pts[0] || {};
+                                                const pFim = pts.length ? pts[pts.length - 1] : {};
+                                                const tHub = (hubD && hubD.tempos) || {};
+                                                const horaIso = (v) => { if (!v) return ''; try { return formatarHora(v); } catch (e) { return ''; } };
+                                                const horasTrilha = [
+                                                    horaIso(detalheCorrida.criado_em),
+                                                    horaIso(tHub.atribuido),
+                                                    formatarHoraPonto(pIni.data_finalizado || pIni.data_coletado) || horaIso(tHub.coletado),
+                                                    '',
+                                                    formatarHoraPonto(pFim.data_finalizado) || horaIso(tHub.entregue),
+                                                ];
+                                                const corPill = et.cancelada
+                                                    ? { bg: '#fef2f2', fg: '#b91c1c', dot: '#ef4444' }
+                                                    : et.terminalEntregue
+                                                        ? { bg: '#f0fdf4', fg: '#15803d', dot: '#22c55e' }
+                                                        : { bg: '#f5f3ff', fg: '#5b21b6', dot: '#7c3aed' };
+                                                const nomeProvedor = hubD && hubD.via_hub && hubD.provider_label ? ' · via ' + hubD.provider_label : '';
+                                                const telefone = temMotoboy ? detalheCorrida.profissional_telefone : null;
+                                                const nota = pts[1] && pts[1].numero_nota;
+                                                // Bloco de codigo: devolucao > coleta > aguardando (hub antes de coletar)
+                                                const blocoCodigo = cods.devolucao
+                                                    ? { tipo: 'devolucao', rotulo: 'Código de devolução', valor: cods.devolucao, dica: 'Peça ao entregador ao receber a peça de volta', cor: '#9a3412', corRot: '#c2410c' }
+                                                    : (cods.coleta && !(et.idx >= 3 || et.terminalEntregue))
+                                                        ? { tipo: 'coleta', rotulo: 'Código de coleta', valor: cods.coleta, dica: 'Informe ao entregador na retirada', cor: '#18181b', corRot: '#71717a' }
+                                                        : (cods.coleta)
+                                                            ? { tipo: 'coleta_usado', rotulo: 'Código de coleta', valor: cods.coleta, dica: 'Coleta já confirmada', cor: '#a1a1aa', corRot: '#a1a1aa' }
+                                                            : (hubD && hubD.via_hub && !et.cancelada && !et.terminalEntregue && et.idx <= 2)
+                                                                ? { tipo: 'aguardando' }
+                                                                : null;
+                                                const copiarCodigo = (v) => {
+                                                    try { navigator.clipboard.writeText(String(v)); showToast('Código copiado', 'success'); } catch (e) {}
+                                                };
                                                 return (
-                                                <div className="rounded-2xl shadow-lg overflow-hidden border border-gray-100 bg-white">
-                                                    <div className="relative px-4 pt-3 pb-3 text-white" style={{ background: et.grad }}>{/* ATIVAS_COMPACTO_V1 */}
-                                                        <div className="relative z-10 flex items-start gap-3">
-                                                            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'rgba(255,255,255,.2)' }}>
-                                                                {temMotoboy && detalheCorrida.profissional_foto
-                                                                    ? <img src={detalheCorrida.profissional_foto} className="w-full h-full object-cover" />
-                                                                    : <svg className="ico" style={{width:20,height:20}} aria-hidden="true"><use href={temMotoboy ? '#i-bike' : '#i-search'}/></svg>}
+                                                <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4 md:px-6 md:py-5 flex flex-col gap-4">
+                                                    <div className="flex items-center gap-3 flex-wrap">
+                                                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden text-gray-500">
+                                                            {temMotoboy && detalheCorrida.profissional_foto
+                                                                ? <img src={detalheCorrida.profissional_foto} className="w-full h-full object-cover" />
+                                                                : <svg className="ico" style={{width:20,height:20}} aria-hidden="true"><use href={temMotoboy ? '#i-bike' : '#i-search'}/></svg>}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-lg font-bold text-gray-900 leading-tight truncate">
+                                                                {temMotoboy ? (detalheCorrida.profissional_nome || 'Aguardando profissional...') : 'Buscando entregador...'}
                                                             </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 text-[11px] font-medium" style={{ opacity: .9 }}>
-                                                                    <span>OS #{detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
-                                                                    {isCorridaAgendada(detalheCorrida) && (
-                                                                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: 'rgba(255,255,255,.25)' }}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarHoraPonto(detalheCorrida.data_retirada)}</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="font-bold text-lg leading-tight truncate" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
-                                                                    {temMotoboy ? (detalheCorrida.profissional_nome || 'Aguardando profissional...') : 'Buscando motoboy...'}
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-[11px] mt-0.5 flex-wrap" style={{ opacity: .9 }}>
-                                                                    <span className="inline-flex items-center gap-1"><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-clock"/></svg> {formatarSolicitada(detalheCorrida.criado_em)}</span>
-                                                                    {detalheCorrida.pontos && detalheCorrida.pontos[1] && detalheCorrida.pontos[1].numero_nota && (
-                                                                        <span className="inline-flex items-center gap-1"><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-tag"/></svg> {detalheCorrida.pontos[1].numero_nota}</span>
-                                                                    )}
-                                                                    {temMotoboy && detalheCorrida.profissional_telefone && (
-                                                                        <a href={`tel:${detalheCorrida.profissional_telefone}`} className="inline-flex items-center gap-1 hover:underline" style={{ opacity: .95 }}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-phone"/></svg> {detalheCorrida.profissional_telefone}</a>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex flex-col gap-1.5 flex-shrink-0">
-                                                                {urlRastreio && (
-                                                                    <a href={urlRastreio} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-bold" style={{ color: '#4D0669' }}>
-                                                                        <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-pin"/></svg> {labelRastreio}
-                                                                    </a>
-                                                                )}
-                                                                {podeCancelarCorrida(detalheCorrida) && (
-                                                                    <button onClick={() => cancelarCorrida(detalheCorrida)} className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.32)' }}>
-                                                                        <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar
-                                                                    </button>
-                                                                )}
+                                                            <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-x-1.5 flex-wrap">
+                                                                <span>OS {detalheCorrida.tutts_os_numero || detalheCorrida.id}</span>
+                                                                <span className="text-gray-300">·</span>
+                                                                <span>{formatarSolicitada(detalheCorrida.criado_em)}</span>
+                                                                {nota && <><span className="text-gray-300">·</span><span>Nota {nota}</span></>}
+                                                                {telefone && <><span className="text-gray-300">·</span><a href={`tel:${telefone}`} className="hover:underline text-gray-600">{telefone}</a></>}
+                                                                {isCorridaAgendada(detalheCorrida) && <><span className="text-gray-300">·</span><span className="text-blue-700 font-medium">{formatarRetirada(detalheCorrida)}</span></>}
                                                             </div>
                                                         </div>
-                                                        <div className="relative z-10 mt-2">
-                                                            <span className="inline-flex items-center gap-2 bg-white rounded-full px-3 py-1.5 text-xs font-bold shadow-sm" style={{ color: et.cancelada ? '#e11d48' : et.cor }}>
-                                                                {(!et.cancelada && !et.terminalEntregue) ? <span className="hub-chip-pulse"></span> : <span>{estado.icone}</span>}
-                                                                {estado.texto}
-                                                            </span>
+                                                        <div className="w-full md:w-auto flex items-center gap-2 flex-wrap">
+                                                        <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold" style={{ background: corPill.bg, color: corPill.fg }}>
+                                                            {(!et.cancelada && !et.terminalEntregue)
+                                                                ? <span className="hub-chip-pulse" style={{ background: corPill.dot }}></span>
+                                                                : <span style={{ width: 7, height: 7, borderRadius: 99, background: corPill.dot, display: 'inline-block' }}></span>}
+                                                            {estado.texto}{nomeProvedor && !String(estado.texto || '').includes('via') ? nomeProvedor : ''}
+                                                        </span>
+                                                        {urlRastreio && (
+                                                            <a href={urlRastreio} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                                                <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-pin"/></svg> {labelRastreio}
+                                                            </a>
+                                                        )}
+                                                        {podeCancelarCorrida(detalheCorrida) && (
+                                                            <button onClick={() => cancelarCorrida(detalheCorrida)} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-red-200 text-xs font-semibold text-red-700 hover:bg-red-50">
+                                                                <svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-x"/></svg> Cancelar
+                                                            </button>
+                                                        )}
                                                         </div>
-                                                        {!et.cancelada && (
-                                                        <div className="relative z-10 mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,.22)' }}>
-                                                            <div className="flex items-center">
+                                                    </div>
+
+                                                    {!et.cancelada && (
+                                                    <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-stretch">
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2.5">
+                                                            <div className="relative" style={{ height: 14 }}>
+                                                                <div className="absolute" style={{ left: 7, right: 7, top: 6, height: 2, background: '#e4e4e7' }}></div>
+                                                                <div className="absolute" style={{ left: 7, top: 6, height: 2, background: '#7c3aed', width: `calc((100% - 14px) * ${et.terminalEntregue ? 1 : Math.max(0, Math.min(4, et.idx)) / 4})` }}></div>
+                                                                <div className="absolute inset-0 flex justify-between">
+                                                                    {trilha.map((s, i) => {
+                                                                        const done = et.terminalEntregue ? true : i < et.idx;
+                                                                        const act = !et.terminalEntregue && i === et.idx;
+                                                                        const st = done
+                                                                            ? { background: '#7c3aed' }
+                                                                            : act
+                                                                                ? { background: '#fff', border: '3px solid #7c3aed', boxShadow: '0 0 0 4px #ede9fe' }
+                                                                                : { background: '#fff', border: '2px solid #d4d4d8' };
+                                                                        return <span key={i} style={{ width: 14, height: 14, borderRadius: 99, boxSizing: 'border-box', ...st }}></span>;
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs">
                                                                 {trilha.map((s, i) => {
                                                                     const done = et.terminalEntregue ? true : i < et.idx;
                                                                     const act = !et.terminalEntregue && i === et.idx;
+                                                                    const lbl = i === 1 ? 'Entregador' : (s.lbl === 'Coleta' && done) ? 'Coletado' : s.lbl;
+                                                                    const hora = act ? 'agora' : (done ? (horasTrilha[i] || '') : '');
                                                                     return (
-                                                                        <React.Fragment key={i}>
-                                                                            {i > 0 && <div className="flex-1 rounded" style={{ height: 2, margin: '0 -1px', background: (et.terminalEntregue || i <= et.idx) ? '#fff' : 'rgba(255,255,255,.28)' }}></div>}
-                                                                            <div className={`relative flex items-center justify-center rounded-full flex-shrink-0 ${act ? 'hub-node-act' : ''}`} style={{ width: 20, height: 20, background: (done || act) ? '#fff' : 'rgba(255,255,255,.22)', border: '2px solid ' + ((done || act) ? '#fff' : 'rgba(255,255,255,.5)'), color: et.cor }}>
-                                                                                <svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href={'#' + (done ? 'i-check' : s.ic)}/></svg>
-                                                                            </div>
-                                                                        </React.Fragment>
+                                                                        <div key={i} className={i === 0 ? 'text-left' : i === trilha.length - 1 ? 'text-right' : 'text-center'}>
+                                                                            <div className={act ? 'font-bold text-violet-800' : done ? 'font-medium text-gray-700' : 'font-medium text-gray-400'}>{lbl}</div>
+                                                                            <div className={act ? 'text-[11px] text-violet-600' : 'text-[11px] text-gray-400'}>{hora || '—'}</div>
+                                                                        </div>
                                                                     );
                                                                 })}
                                                             </div>
-                                                            <div className="flex mt-1">
-                                                                {trilha.map((s, i) => (
-                                                                    <div key={i} className={`flex-1 text-[9.5px] font-semibold ${i === 0 ? 'text-left' : i === trilha.length - 1 ? 'text-right' : 'text-center'}`} style={{ opacity: (i === et.idx || (et.terminalEntregue && i === 4)) ? 1 : .65 }}>{s.lbl}</div>
-                                                                ))}
-                                                            </div>
                                                         </div>
-                                                        )}
-                                                    </div>
-                                                    {temRodape && (
-                                                    <div className="px-4 py-3 space-y-2">
-                                                        {isCorridaAgendada(detalheCorrida) && (
-                                                            <div className="text-xs text-blue-700 font-medium flex items-center gap-1"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-calendar"/></svg> {formatarRetirada(detalheCorrida)}</div>
-                                                        )}
-                                                        {detalheCorrida.hub && detalheCorrida.hub.codigos && (detalheCorrida.hub.codigos.coleta || detalheCorrida.hub.codigos.entrega || detalheCorrida.hub.codigos.devolucao) && (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {detalheCorrida.hub.codigos.coleta && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. coleta: {detalheCorrida.hub.codigos.coleta}</span>}
-                                                                {detalheCorrida.hub.codigos.entrega && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. entrega: {detalheCorrida.hub.codigos.entrega}</span>}
-                                                                {detalheCorrida.hub.codigos.devolucao && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold"><svg className="ico" style={{width:14,height:14}} aria-hidden="true"><use href="#i-key"/></svg> Cod. devolucao: {detalheCorrida.hub.codigos.devolucao}</span>}
-                                                            </div>
-                                                        )}
-                                                        {detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
-                                                            <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 border border-orange-300 rounded-lg text-xs text-orange-700 font-medium">
-                                                                <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-alert"/></svg>
-                                                                <span>Atencao: corrida com retorno. Se for indevido, solicite o cancelamento ao suporte Tutts.</span>
-                                                            </div>
+
+                                                        {blocoCodigo && (
+                                                            <>
+                                                            <div className="hidden md:block w-px bg-gray-100"></div>
+                                                            {blocoCodigo.tipo === 'aguardando' ? (
+                                                                <div className="md:w-60 rounded-xl border border-dashed border-gray-300 px-4 py-3 flex flex-col justify-center gap-1">
+                                                                    <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Código de coleta</div>
+                                                                    <div className="text-sm text-gray-500">Aparece aqui assim que um entregador aceitar a corrida.</div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="md:w-60 flex flex-col justify-center gap-1.5">
+                                                                    <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: blocoCodigo.corRot }}>{blocoCodigo.rotulo}</div>
+                                                                    <div className="flex items-center gap-2.5">
+                                                                        <span key={blocoCodigo.valor} className="cod-flash" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize: 36, fontWeight: 700, letterSpacing: '.12em', lineHeight: 1, color: blocoCodigo.cor }}>{blocoCodigo.valor}</span>
+                                                                        <button onClick={() => copiarCodigo(blocoCodigo.valor)} aria-label="Copiar código" title="Copiar código" className="w-9 h-9 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 flex items-center justify-center">
+                                                                            <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-copy"/></svg>
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="text-[11px] text-gray-400">{blocoCodigo.dica}</div>
+                                                                    {cods.entrega && <div className="text-[11px] text-gray-500">Código de entrega: <b className="font-mono tracking-widest text-gray-800">{cods.entrega}</b></div>}
+                                                                </div>
+                                                            )}
+                                                            </>
                                                         )}
                                                     </div>
                                                     )}
+
+                                                    {detalheCorrida.pontos && detalheCorrida.pontos.some(p => p.is_retorno || p.tipo_ponto === 'retorno') && (
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-800">
+                                                            <svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-alert"/></svg>
+                                                            <span>Corrida com retorno. Se for indevido, solicite o cancelamento ao suporte Tutts.</span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex flex-wrap gap-x-7 gap-y-1 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                                                        <span><b className="text-sm text-gray-900">{detalheCorrida.tutts_distancia || '-'} km</b> distância</span>
+                                                        <span><b className="text-sm text-gray-900">{detalheCorrida.tutts_duracao || '-'}</b> tempo</span>
+                                                        <span><b className="text-sm text-gray-900">{detalheCorrida.pontos?.length || 0}</b> pontos</span>
+                                                    </div>
                                                 </div>
                                                 );
                                             })()}
 
-                                            {/* Métricas compactas */}
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="bg-white p-2 rounded-lg shadow text-center">
-                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_distancia || '-'} km</div>
-                                                    <div className="text-xs text-gray-400">Dist.</div>
-                                                </div>
-                                                <div className="bg-white p-2 rounded-lg shadow text-center">
-                                                    <div className="text-sm font-bold text-blue-600">{detalheCorrida.tutts_duracao || '-'}</div>
-                                                    <div className="text-xs text-gray-400">Tempo</div>
-                                                </div>
-                                                <div className="bg-white p-2 rounded-lg shadow text-center">
-                                                    <div className="text-sm font-bold text-purple-600">{detalheCorrida.pontos?.length || 0}</div>
-                                                    <div className="text-xs text-gray-400">Pontos</div>
-                                                </div>
-                                            </div>
-                                            
                                             <div className="flex flex-col md:flex-row gap-4 md:flex-1 md:min-h-0">
                                                 <div className="w-full md:w-80 bg-white p-4 rounded-xl shadow md:h-full md:min-h-0 md:flex md:flex-col">
                                                     <div className="text-sm font-bold text-gray-700 mb-3"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg> Pontos da Rota</div>
-                                                    <div className="space-y-3 max-h-96 md:max-h-none md:flex-1 md:min-h-0 overflow-y-auto">
+                                                    <div className="max-h-96 md:max-h-none md:flex-1 md:min-h-0 overflow-y-auto pr-1">
                                                         {detalheCorrida.pontos?.map((p, idx) => {
                                                             const isColeta = idx === 0;
                                                             const status = p.status || 'pendente';
@@ -3962,55 +3974,65 @@
                                                             const isRetorno = p.is_retorno || p.tipo_ponto === 'retorno';
                                                             
                                                             // Cores específicas para retorno
-                                                            const corBorda = isRetorno ? 'border-orange-300 bg-orange-50' : statusPontoCores[status];
-                                                            const corIcone = isRetorno ? 'bg-orange-500' : (status === 'finalizado' ? 'bg-green-500' : status === 'chegou' || status === 'coletado' ? 'bg-blue-500' : isColeta ? 'bg-amber-500' : 'bg-gray-400');
+                                                            // CORRIDA_CLEAN_V1: linha do tempo vertical, sem cartoes coloridos.
+                                                            const ultimo = idx === (detalheCorrida.pontos.length - 1);
+                                                            const feito = status === 'finalizado';
+                                                            const emCurso = status === 'chegou' || status === 'coletado';
+                                                            const estiloBolinha = isRetorno
+                                                                ? { background: '#fff7ed', border: '1.5px solid #fdba74', color: '#c2410c' }
+                                                                : feito
+                                                                    ? { background: '#7c3aed', border: '1.5px solid #7c3aed', color: '#fff' }
+                                                                    : emCurso
+                                                                        ? { background: '#fff', border: '2px solid #7c3aed', color: '#6d28d9', boxShadow: '0 0 0 3px #ede9fe' }
+                                                                        : { background: '#fff', border: '1.5px solid #d4d4d8', color: '#71717a' };
+                                                            const corStatusTxt = isRetorno ? 'text-orange-700' : feito ? 'text-violet-700' : emCurso ? 'text-violet-600' : 'text-gray-400';
                                                             
                                                             return (
-                                                                <div key={idx} className={`p-3 rounded-lg border-2 ${corBorda}`}>
-                                                                    <div className="flex items-start gap-2">
-                                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${corIcone}`}>
-                                                                            {isRetorno ? '↩️' : (status === 'finalizado' ? '✓' : isColeta ? '📦' : idx)}
+                                                                <div key={idx} className={`flex gap-3 ${ultimo ? '' : 'pb-4'}`}>
+                                                                    <div className="contents">
+                                                                        <div className="flex flex-col items-center flex-shrink-0" style={{ width: 22 }}>
+                                                                            <div className="rounded-full flex items-center justify-center text-[11px] font-bold" style={{ width: 22, height: 22, boxSizing: 'border-box', ...estiloBolinha }}>
+                                                                                {isRetorno ? <svg className="ico" style={{width:11,height:11}} aria-hidden="true"><use href="#i-refresh"/></svg> : feito ? <svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-check"/></svg> : isColeta ? <svg className="ico" style={{width:11,height:11}} aria-hidden="true"><use href="#i-package"/></svg> : idx}
+                                                                            </div>
+                                                                            {!ultimo && <div className="flex-1 mt-1" style={{ width: 2, background: feito ? '#c4b5fd' : '#e4e4e7', borderRadius: 2 }}></div>}
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                                                <span className={`text-xs font-bold ${isRetorno ? 'text-orange-700' : isColeta ? 'text-amber-700' : 'text-blue-700'}`}>
-                                                                                    {isRetorno ? '↩️ RETORNO' : isColeta ? 'COLETA' : `ENTREGA ${idx}`}
+                                                                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${isRetorno ? 'text-orange-700' : 'text-gray-500'}`}>
+                                                                                    {isRetorno ? 'Retorno' : isColeta ? 'Coleta' : `Entrega ${idx}`}
                                                                                 </span>
-                                                                                <span className={`text-xs px-1.5 py-0.5 rounded ${isRetorno ? 'bg-orange-100 text-orange-700' : statusPontoCores[status]}`}>
-                                                                                    {statusPontoIcons[status]} {statusPontoNomes[status]}
-                                                                                </span>
+                                                                                <span className={`text-[11px] font-medium ${corStatusTxt}`}>· {statusPontoNomes[status]}</span>
                                                                                 {isRetorno && p.ponto_retorno_de && (
                                                                                     <span className="text-xs text-orange-600">(do ponto {p.ponto_retorno_de})</span>
                                                                                 )}
                                                                             </div>
-                                                                            <div className="text-xs text-gray-700 leading-relaxed">{enderecoFinal}</div>
+                                                                            <div className="text-[13px] text-gray-800 leading-snug">{enderecoFinal}</div>
                                                                             
                                                                             {/* Razão social / Cliente — fallback entre campo novo e legado (corridas antigas só têm procurar_por) */}
                                                                             {!isColeta && !isRetorno && (p.nome_fantasia || p.razao_social || p.procurar_por) && (
-                                                                                <div className="text-xs text-gray-800 mt-1 font-medium"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-building"/></svg> {p.nome_fantasia || p.razao_social || p.procurar_por}{p.razao_social && p.nome_fantasia && p.razao_social.toUpperCase() !== p.nome_fantasia.toUpperCase() ? ` (${p.razao_social})` : ''}</div>
+                                                                                <div className="text-xs text-gray-800 mt-1 font-medium"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-building"/></svg> {p.nome_fantasia || p.razao_social || p.procurar_por}{p.razao_social && p.nome_fantasia && p.razao_social.toUpperCase() !== p.nome_fantasia.toUpperCase() ? ` (${p.razao_social})` : ''}</div>
                                                                             )}
-                                                                            {!isColeta && !isRetorno && p.complemento && <div className="text-xs text-blue-700 mt-0.5"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-home"/></svg> {p.complemento}</div>}
-                                                                            {!isColeta && !isRetorno && p.telefone && <div className="text-xs text-gray-600 mt-0.5"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-phone"/></svg> {p.telefone}</div>}
-                                                                            {!isColeta && !isRetorno && p.observacao && <div className="text-xs text-orange-700 mt-0.5"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-filetext"/></svg> {p.observacao}</div>}
+                                                                            {!isColeta && !isRetorno && p.complemento && <div className="text-xs text-blue-700 mt-0.5"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-home"/></svg> {p.complemento}</div>}
+                                                                            {!isColeta && !isRetorno && p.telefone && <div className="text-xs text-gray-600 mt-0.5"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-phone"/></svg> {p.telefone}</div>}
+                                                                            {!isColeta && !isRetorno && p.observacao && <div className="text-xs text-orange-700 mt-0.5"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-filetext"/></svg> {p.observacao}</div>}
                                                                             
                                                                             {/* Número da nota - só para entregas (não retorno) */}
-                                                                            {!isColeta && !isRetorno && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-tag"/></svg> Nota: {p.numero_nota}</div>}
+                                                                            {!isColeta && !isRetorno && p.numero_nota && <div className="text-xs text-green-600 mt-1 font-medium"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-tag"/></svg> Nota: {p.numero_nota}</div>}
                                                                             
                                                                             {/* Timeline unificada de eventos do ponto (chegou → coletou → finalizou) */}
                                                                             {(p.data_chegada || p.data_coletado || p.data_finalizado) && (
-                                                                                <div className="mt-2 pt-2 border-t border-gray-200">
-                                                                                    <div className="text-xs font-medium text-gray-500 mb-1.5"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-clock"/></svg> Linha do tempo</div>
-                                                                                    <div className="space-y-1">
+                                                                                <div className="mt-2">
+                                                                                    <div className="space-y-0.5">
                                                                                         {p.data_chegada && (
                                                                                             <div className="flex items-center gap-2 text-xs">
-                                                                                                <span className="w-5 text-center"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-pin"/></svg></span>
+                                                                                                <span className="w-5 text-center"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-pin"/></svg></span>
                                                                                                 <span className="text-blue-700 flex-1">Chegou no {isColeta ? 'ponto' : 'cliente'}</span>
                                                                                                 <span className="font-mono text-gray-600 text-xs">{formatarHoraPonto(p.data_chegada)}</span>
                                                                                             </div>
                                                                                         )}
                                                                                         {isColeta && p.data_coletado && (
                                                                                             <div className="flex items-center gap-2 text-xs">
-                                                                                                <span className="w-5 text-center"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-package"/></svg></span>
+                                                                                                <span className="w-5 text-center"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-package"/></svg></span>
                                                                                                 <span className="text-indigo-700 flex-1">Confirmou coleta</span>
                                                                                                 <span className="font-mono text-gray-600 text-xs">{formatarHoraPonto(p.data_coletado)}</span>
                                                                                             </div>
@@ -4019,7 +4041,7 @@
                                                                                             const motivo = (p.motivo_finalizacao || '').toLowerCase();
                                                                                             const sucesso = !motivo || motivo === 'sucesso' || motivo === 'entregue';
                                                                                             const label = isColeta ? 'Finalizou coleta' : (sucesso ? 'Entrega concluída' : 'Finalizado (insucesso)');
-                                                                                            const icone = sucesso ? '✅' : '⚠️';
+                                                                                            const icone = sucesso ? <svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-check"/></svg> : <svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-alert"/></svg>;
                                                                                             const corTexto = sucesso ? 'text-green-700' : 'text-orange-700';
                                                                                             return (
                                                                                                 <div className="flex items-center gap-2 text-xs">
@@ -4035,23 +4057,23 @@
                                                                             
                                                                             {/* Motivo de finalização - para entregas e retornos */}
                                                                             {!isColeta && p.motivo_finalizacao && (
-                                                                                <div className={`mt-2 text-xs px-2 py-1 rounded ${
-                                                                                    p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                                                <div className={`mt-1.5 text-xs ${
+                                                                                    p.motivo_finalizacao.toLowerCase() === 'sucesso' ? 'text-green-700' : 'text-red-700'
                                                                                 }`}>
-                                                                                    {p.motivo_finalizacao.toLowerCase() === 'sucesso' ? '✅' : '⚠️'} {p.motivo_descricao || p.motivo_finalizacao}
+                                                                                    {p.motivo_descricao || p.motivo_finalizacao}
                                                                                 </div>
                                                                             )}
                                                                             
                                                                             {/* Fotos de protocolo - para entregas e retornos */}
                                                                             {!isColeta && fotosArray.length > 0 && (
                                                                                 <div className="mt-2 text-xs">
-                                                                                    <span className="text-blue-600 font-medium"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-camera"/></svg> {fotosArray.length} foto(s):</span>
+                                                                                    <span className="text-blue-600 font-medium"><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-camera"/></svg> {fotosArray.length} foto(s):</span>
                                                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                                                         {fotosArray.map((foto, fotoIdx) => (
                                                                                             <button 
                                                                                                 key={fotoIdx}
                                                                                                 onClick={() => abrirFotoModal(fotosArray, fotoIdx)}
-                                                                                                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                                                                className="px-2 py-0.5 border border-gray-200 text-gray-700 rounded-md hover:bg-gray-50"
                                                                                             >
                                                                                                 Ver {fotoIdx + 1}
                                                                                             </button>
