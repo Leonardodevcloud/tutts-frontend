@@ -616,6 +616,83 @@ function tabLabelEl(label) {
 }
 /* EMOJI_ZERO_V1: navIconEl tambem converte icones vindos de dados (tour, niveis, milestones). */
 window.navIconEl = navIconEl;
+/* SOLIC_CLEAN_V1: helpers visuais do módulo Solicitações (admin) — mesmo padrão do FIN_CLEAN_V1
+   (cabeçalho Sora 24, faixa de KPIs, chips, tabela, drawer, pílula de status com ponto).
+   Só visual: nenhum handler/estado/API passa por aqui. */
+const solcIco = (nome, size, extra) => React.createElement("svg", { className: "ico", style: Object.assign({ width: size || 16, height: size || 16, flex: "none" }, extra || {}), "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + nome }));
+const SOLC_TONS = {
+    verde: { cor: "#166534", bg: "#f0fdf4", dot: "#16a34a" },
+    ambar: { cor: "#92400e", bg: "#fffbeb", dot: "#d97706" },
+    vermelho: { cor: "#991b1b", bg: "#fef2f2", dot: "#dc2626" },
+    azul: { cor: "#1e40af", bg: "#eff6ff", dot: "#2563eb" },
+    cinza: { cor: "#374151", bg: "#f3f4f6", dot: "#9ca3af" },
+    roxo: { cor: "#5d0b85", bg: "#faf7fd", dot: "#770fa8" }
+};
+function solcStatusInfo(s) {
+    const st = s && typeof s === "object" ? s.status : s;
+    const cs = s && typeof s === "object" ? s.contestacao_status : null;
+    if (cs === "aberta" || st === "contestado") return Object.assign({ txt: "Em análise" }, SOLC_TONS.azul);
+    if (st === "aprovado" || st === "validado") return Object.assign({ txt: "Aprovada" }, SOLC_TONS.verde);
+    if (st === "rejeitado") return Object.assign({ txt: "Rejeitada" }, SOLC_TONS.vermelho);
+    if (st === "pendente") return Object.assign({ txt: "Pendente" }, SOLC_TONS.ambar);
+    return Object.assign({ txt: st ? String(st).charAt(0).toUpperCase() + String(st).slice(1) : "—" }, SOLC_TONS.cinza);
+}
+function solcPilula(tom, txt, semPonto, grande) {
+    return React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 999, padding: grande ? "4px 10px" : "2px 9px", fontWeight: 600, fontSize: 12, lineHeight: "18px", whiteSpace: "nowrap", background: tom.bg, color: tom.cor } },
+        !semPonto && React.createElement("span", { "aria-hidden": "true", style: { width: 6, height: 6, borderRadius: 999, background: tom.dot, flex: "none" } }),
+        txt);
+}
+function solcTipo(motivo) {
+    if (!motivo) return null;
+    return React.createElement("span", { title: motivo, style: { display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", verticalAlign: "middle", borderRadius: 999, padding: "2px 9px", fontWeight: 500, fontSize: 12, lineHeight: "18px", whiteSpace: "nowrap", background: "#faf7fd", color: "#5d0b85", border: "1px solid #f3e8fb" } }, motivo);
+}
+const solcBtnBase = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, height: 40, padding: "0 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" };
+const solcBtnPri = Object.assign({}, solcBtnBase, { padding: "0 16px", border: "1px solid #770fa8", background: "#770fa8", color: "#ffffff" });
+const solcBtnSec = Object.assign({}, solcBtnBase, { border: "1px solid #e5e7eb", background: "#ffffff", color: "#374151" });
+const solcBtnDestr = Object.assign({}, solcBtnBase, { border: "1px solid #fecaca", background: "#ffffff", color: "#991b1b" });
+const solcSm = (base, extra) => Object.assign({}, base, { height: 32, padding: "0 10px", fontSize: 12.5, borderRadius: 8, gap: 6 }, extra || {});
+const solcIconBtn = (destr) => ({ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (destr ? "#fecaca" : "#e5e7eb"), background: "#ffffff", color: destr ? "#991b1b" : "#6b7280", cursor: "pointer", display: "inline-grid", placeItems: "center", padding: 0, flex: "none" });
+const solcCard = { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14 };
+const solcKpiLbl = { fontSize: 12, color: "#6b7280" };
+const solcKpiNum = { fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#111827", lineHeight: 1.25, margin: "2px 0" };
+const solcKpiSub = { fontSize: 11.5, color: "#6b7280" };
+const solcKpiCell = { flex: "1 1 150px", padding: "16px 20px", borderRight: "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginBottom: -1, minWidth: 0 };
+const SOLC_IN_CLS = "h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100";
+const solcLabel = { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 };
+const solcTh = (extra) => Object.assign({ textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280", padding: "10px 12px", background: "#f9fafb", whiteSpace: "nowrap" }, extra || {});
+const solcTd = (extra) => Object.assign({ padding: "10px 12px", verticalAlign: "middle", borderTop: "1px solid #f3f4f6" }, extra || {});
+const solcSecTitulo = { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" };
+function solcCabecalho(titulo, sub, acoes) {
+    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 } },
+        React.createElement("div", { style: { minWidth: 0 } },
+            React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, titulo),
+            sub && React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, sub)),
+        acoes && React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, acoes));
+}
+function solcChip(key, ativo, label, count, onClick) {
+    return React.createElement("button", {
+        key, type: "button", "aria-pressed": ativo, onClick,
+        style: { display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 999, fontSize: 12.5, fontWeight: ativo ? 600 : 500, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", border: ativo ? "1px solid #770fa8" : "1px solid #e5e7eb", background: ativo ? "#770fa8" : "#ffffff", color: ativo ? "#ffffff" : "#374151" }
+    }, label, count != null && React.createElement("span", { style: { opacity: 0.7, fontVariantNumeric: "tabular-nums" } }, Number(count).toLocaleString("pt-BR")));
+}
+function solcSegmentado(opcoes, ativo, onPick, aria) {
+    return React.createElement("div", { role: "group", "aria-label": aria, style: { display: "inline-flex", background: "#f3f4f6", borderRadius: 10, padding: 3, gap: 2, flexWrap: "wrap" } },
+        opcoes.map(([id, lbl]) => React.createElement("button", {
+            key: id, type: "button", "aria-pressed": ativo === id, onClick: () => onPick(id),
+            style: { height: 32, padding: "0 12px", borderRadius: 8, border: 0, fontSize: 12.5, fontFamily: "inherit", cursor: "pointer", fontWeight: ativo === id ? 600 : 500, background: ativo === id ? "#ffffff" : "transparent", color: ativo === id ? "#5d0b85" : "#6b7280", boxShadow: ativo === id ? "0 0 0 1px #e5e7eb" : "none" }
+        }, lbl)));
+}
+function solcVazio(txt, extra) {
+    return React.createElement("div", { style: Object.assign({ padding: "40px 16px", textAlign: "center", color: "#6b7280", fontSize: 13 }, extra || {}) }, txt);
+}
+function solcCarregando(txt) {
+    return React.createElement("div", { role: "status", style: { padding: "40px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, color: "#6b7280", fontSize: 13 } },
+        React.createElement("div", { className: "animate-spin", style: { width: 18, height: 18, borderRadius: 999, border: "2px solid #e9d5f9", borderTopColor: "#770fa8" } }), txt);
+}
+function solcHojeTxt() {
+    try { const d = new Date(); const dia = d.toLocaleDateString("pt-BR", { weekday: "long" }).replace("-feira", ""); return dia.charAt(0).toUpperCase() + dia.slice(1) + ", " + d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }); } catch (_) { return ""; }
+}
+const solcFmtDH = (dt) => { try { const d = new Date(dt); return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } };
 /* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V2 */
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
@@ -1741,9 +1818,9 @@ const hideLoadingScreen = () => {
     PieChart = ({ data: e, title: t }) => {
         const a = e.reduce((acc, it) => acc + (it.value || 0), 0);
         if (0 === a) return React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
+            className: "bg-white rounded-[14px] border border-gray-200 p-5" /* SOLIC_CLEAN_V1 */
         }, React.createElement("h3", {
-            className: "text-lg font-semibold mb-4"
+            className: "text-[15px] font-semibold mb-3 text-gray-900"
         }, t), React.createElement("p", {
             className: "text-gray-500 text-center py-8"
         }, "Sem dados disponíveis"));
@@ -1753,9 +1830,9 @@ const hideLoadingScreen = () => {
             // Versão Recharts moderna: animação, tooltip, hover, responsivo
             const dadosRC = e.map((it) => ({ name: it.label, value: it.value, color: it.color }));
             return React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
+                className: "bg-white rounded-[14px] border border-gray-200 p-5" /* SOLIC_CLEAN_V1 */
             }, React.createElement("h3", {
-                className: "text-lg font-semibold mb-4 text-gray-800"
+                className: "text-[15px] font-semibold mb-3 text-gray-900"
             }, t), React.createElement("div", {
                 className: "flex flex-col md:flex-row items-center gap-4"
             }, React.createElement("div", {
@@ -1773,7 +1850,7 @@ const hideLoadingScreen = () => {
                     }, dadosRC.map((entry, idx) => React.createElement(R.Cell, { key: `cell-${idx}`, fill: entry.color }))),
                     React.createElement(R.Tooltip, {
                         formatter: (val, name) => [`${val} (${(val / a * 100).toFixed(1)}%)`, name],
-                        contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
+                        contentStyle: { borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: 'none' }
                     })
                 )
             )), React.createElement("div", { className: "flex-1 space-y-2 w-full" },
@@ -1805,8 +1882,8 @@ const hideLoadingScreen = () => {
                   d = ang > 180 ? 1 : 0;
             return { ...it, path: `M 100 100 L ${s} ${n} A 90 90 0 ${d} 1 ${m} ${i} Z`, percentage: pct.toFixed(1) };
         });
-        return React.createElement("div", { className: "bg-white rounded-xl shadow p-6" },
-            React.createElement("h3", { className: "text-lg font-semibold mb-4" }, t),
+        return React.createElement("div", { className: "bg-white rounded-[14px] border border-gray-200 p-5" /* SOLIC_CLEAN_V1 */ },
+            React.createElement("h3", { className: "text-[15px] font-semibold mb-3 text-gray-900" }, t),
             React.createElement("div", { className: "flex flex-col md:flex-row items-center gap-6" },
                 React.createElement("svg", { viewBox: "0 0 200 200", className: "w-48 h-48" },
                     r.map((it, idx) => React.createElement("path", { key: idx, d: it.path, fill: it.color, className: "hover:opacity-80 transition-opacity cursor-pointer" }))
@@ -1920,7 +1997,7 @@ const hideLoadingScreen = () => {
             e.forEach(e => { t[e.motivo] = (t[e.motivo] || 0) + 1; });
             l = e.length;
         }
-        const a = ["#7c3aed", "#2563eb", "#059669", "#dc2626", "#ea580c", "#8b5cf6"],
+        const a = ["#770fa8", "#2563eb", "#16a34a", "#d97706", "#dc2626", "#c084e6", "#9ca3af"] /* SOLIC_CLEAN_V1: paleta Tutts */,
             r = Object.entries(t).map(([e, t], r) => ({
                 motivo: e,
                 count: t,
@@ -1929,10 +2006,10 @@ const hideLoadingScreen = () => {
             }));
         let o = 0;
         return React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
+            className: "bg-white rounded-[14px] border border-gray-200 p-5" /* SOLIC_CLEAN_V1 */
         }, React.createElement("h2", {
-            className: "text-lg font-semibold mb-4"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Distribuição por Motivo")), 0 === l ? React.createElement("p", {
+            className: "text-[15px] font-semibold mb-3 text-gray-900"
+        }, "Distribuição por motivo"), 0 === l ? React.createElement("p", {
             className: "text-gray-500"
         }, "Nenhuma solicitação") : React.createElement("div", {
             className: "flex flex-col md:flex-row items-center gap-6"
@@ -1978,7 +2055,7 @@ const hideLoadingScreen = () => {
             key: t,
             className: "flex items-center gap-3"
         }, React.createElement("div", {
-            className: "w-4 h-4 rounded",
+            className: "w-2.5 h-2.5 rounded-full flex-shrink-0",
             style: {
                 backgroundColor: e.color
             }
@@ -21040,517 +21117,471 @@ const hideLoadingScreen = () => {
         }),
         // Conteúdo principal (sub-abas removidas - navegação via sidebar)
         React.createElement("div", {
-            className: "max-w-7xl mx-auto p-6"
-        }, (!adminTabEfetivo || "dashboard" === adminTabEfetivo) && React.createElement(React.Fragment, null, (() => {
+            className: Ee === "solicitacoes" ? "max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-6" /* SOLIC_CLEAN_V1: 16px no mobile */ : "max-w-7xl mx-auto p-6"
+        }, (!adminTabEfetivo || "dashboard" === adminTabEfetivo) && (() => {
+            /* SOLIC_CLEAN_V1: Dashboard — cabeçalho, faixa única de KPIs (score + hoje + tempo + pendentes + prazo),
+               gráficos em cards limpos e fila "Aguardando validação" com chips. Filtros, respostas prontas,
+               expiradas, aprovar/rejeitar (Kl) e contestação: mesma lógica de antes. */
             const ds = dashStats || {},
-                totalCount = ds.total || j.length,
                 pendentesCount = ds.pendentes || j.filter(e => "pendente" === e.status).length,
-                aprovadosCount = ds.aprovados || j.filter(e => "aprovado" === e.status).length,
-                rejeitadosCount = ds.rejeitados || j.filter(e => "rejeitado" === e.status).length,
                 atrasadasCount = ds.atrasadas || 0,
                 hojeTotal = ds.hoje_total || 0,
                 hojeProcessadas = ds.hoje_processadas || 0,
-                o = ds.tempo_medio_horas || 0,
-                c = ds.atrasadas_os || [],
-                s = 0 === atrasadasCount ? 100 : Math.max(0, 100 - 15 * atrasadasCount),
-                n = o <= 6 ? 100 : o <= 12 ? 80 : o <= 24 ? 60 : 40,
-                m = Math.round((s + n) / 2);
-            return React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 text-white"
-            }, React.createElement("div", {
-                className: "flex flex-col md:flex-row items-center gap-6"
-            }, React.createElement("div", {
-                className: "relative w-28 h-28"
-            }, React.createElement("svg", {
-                className: "w-28 h-28 transform -rotate-90"
-            }, React.createElement("circle", {
-                cx: "56",
-                cy: "56",
-                r: "48",
-                stroke: "rgba(255,255,255,0.2)",
-                strokeWidth: "10",
-                fill: "none"
-            }), React.createElement("circle", {
-                cx: "56",
-                cy: "56",
-                r: "48",
-                stroke: m >= 80 ? "#16a34a" : m >= 50 ? "#d97706" : "#dc2626",
-                strokeWidth: "10",
-                fill: "none",
-                strokeDasharray: 3.02 * m + " 302",
-                strokeLinecap: "round"
-            })), React.createElement("div", {
-                className: "absolute inset-0 flex flex-col items-center justify-center"
-            }, React.createElement("span", {
-                className: "text-2xl font-bold"
-            }, m), React.createElement("span", {
-                className: "text-xs opacity-70"
-            }, "SCORE"))), React.createElement("div", {
-                className: "flex-1 grid grid-cols-2 md:grid-cols-4 gap-4"
-            }, React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Hoje"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, hojeTotal), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, hojeProcessadas, " processadas")), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Tempo Médio"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, o < 1 ? `${Math.round(60*o)}min` : `${o.toFixed(1)}h`), React.createElement("p", {
-                className: "text-xs " + (o <= 12 ? "text-green-300" : o <= 24 ? "text-yellow-300" : "text-red-300")
-            }, o <= 6 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Excelente") : o <= 12 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Bom") : o <= 24 ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Regular") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Lento"))), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Pendentes"), React.createElement("p", {
-                className: "text-xl font-bold"
-            }, pendentesCount), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, "aguardando")), React.createElement("div", {
-                className: "bg-white/10 rounded-lg p-3 text-center"
-            }, React.createElement("p", {
-                className: "text-white/70 text-xs"
-            }, "Prazo (24h)"), React.createElement("p", {
-                className: "text-xl font-bold " + (0 === c.length ? "text-green-300" : "text-red-300")
-            }, 0 === c.length ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("span", { className: "inline-flex items-center gap-1" }, String(c.length), React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })))), React.createElement("p", {
-                className: "text-xs text-white/60"
-            }, 0 === c.length ? "Nenhum atraso" : "Ação necessária!"))))))
-        })(), React.createElement("div", {
-            className: "grid md:grid-cols-2 gap-6 mb-6"
-        }, React.createElement(MotivosPieChart, {
-            submissions: j,
-            motivosData: dashStats && dashStats.motivos ? dashStats.motivos : null
-        }), React.createElement(PieChart, {
-            data: [{
-                label: "Aprovados",
-                value: dashStats ? dashStats.aprovados : j.filter(e => "aprovado" === e.status).length,
-                color: "#16a34a"
-            }, {
-                label: "Rejeitados",
-                value: dashStats ? dashStats.rejeitados : j.filter(e => "rejeitado" === e.status).length,
-                color: "#dc2626"
-            }, {
-                label: "Pendentes",
-                value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length,
-                color: "#d97706"
-            }, {
-                label: "Outros",
-                value: dashStats ? Math.max(0, dashStats.total - dashStats.aprovados - dashStats.rejeitados - dashStats.pendentes) : j.filter(e => !["aprovado","rejeitado","pendente"].includes(e.status)).length,
-                color: "#9ca3af"
-            }].filter(e => e.value > 0),
-            title: "Status das Solicitações"
-        })), React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
-        }, React.createElement("h2", {
-            className: "text-lg font-semibold mb-4"
-        }, "Aguardando Validação"), React.createElement("div", {
-            className: "mb-4 flex flex-wrap gap-2"
-        }, ["all", "contestacoes", "atrasados", "retorno", "ponto1", "pedagio", "simoesfilho", "expiradas"].map(e => React.createElement("button", {
-            key: e,
-            onClick: async () => { x({ ...p, pendingFilter: e }); if (e === "expiradas") { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r.ok) { const _d = await _r.json(); x(prev => ({ ...prev, _expiradas: _d.expiradas || [] })); } } catch {} } },
-            className: "px-4 py-2 rounded-lg font-semibold " + ((p.pendingFilter || "all") === e ? "contestacoes" === e ? "bg-orange-600 text-white" : "atrasados" === e ? "bg-red-600 text-white" : "expiradas" === e ? "bg-amber-500 text-white" : "bg-purple-600 text-white" : "bg-gray-100")
-        }, "all" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-list" })), `Todos (${j.filter(e=>"pendente"===e.status||e.contestacao_status==='aberta').length})`), "contestacoes" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), `Contestações (${j.filter(e=>e.contestacao_status==='aberta').length})`), "atrasados" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), `Atrasados (${j.filter(e=>"pendente"===e.status&&Date.now()-new Date(e.created_at).getTime()>=864e5).length})`), "retorno" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), `Retorno (${j.filter(e=>"pendente"===e.status&&"Ajuste de Retorno"===e.motivo).length})`), "ponto1" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" })), `Ponto 1 (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Ponto 1")).length})`), "pedagio" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), `Pedágio (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Pedágio")).length})`), "simoesfilho" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), `Simões Filho/Camaçari (${j.filter(e=>"pendente"===e.status&&e.motivo?.includes("Simões Filho")).length})`), "expiradas" === e && React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), `Expiradas (${(p._expiradas||[]).length})`)))), React.createElement("div", {
-            className: "flex justify-end mb-2"
-        }, React.createElement("button", {
-            onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
-            className: "px-3 py-1.5 rounded-lg text-xs font-semibold " + (p._showRespostas ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200")
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Respostas Prontas"))), p._showRespostas && React.createElement("div", {
-            className: "mb-4 bg-white border-2 border-purple-200 rounded-xl p-4"
-        }, React.createElement("h3", { className: "text-sm font-bold text-purple-800 mb-3" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Gerenciar Respostas Prontas")), React.createElement("div", { className: "flex gap-2 mb-3" }, React.createElement("input", {
-            type: "text", placeholder: "Título curto", value: p._rpTitulo || "",
-            onChange: e => x({ ...p, _rpTitulo: e.target.value }),
-            className: "flex-1 px-3 py-2 border rounded-lg text-xs"
-        }), React.createElement("select", {
-            value: p._rpMotivo || "", onChange: e => x({ ...p, _rpMotivo: e.target.value }),
-            className: "px-2 py-2 border rounded-lg text-xs"
-        }, React.createElement("option", { value: "" }, "Todos os motivos"), React.createElement("option", { value: "Ajuste de Retorno" }, "Retorno"), React.createElement("option", { value: "Ajuste de Pedágio" }, "Pedágio"), React.createElement("option", { value: "Ajustes Simões Filho e Camaçari" }, "Simões/Camaçari"))), React.createElement("textarea", {
-            placeholder: "Mensagem da resposta pronta...", value: p._rpMensagem || "",
-            onChange: e => x({ ...p, _rpMensagem: e.target.value }),
-            className: "w-full px-3 py-2 border rounded-lg text-xs mb-2", rows: "2"
-        }), React.createElement("button", {
-            onClick: async () => {
-                if (!p._rpTitulo?.trim() || !p._rpMensagem?.trim()) { ja("Preencha título e mensagem", "error"); return; }
-                try {
-                    const url = p._rpEditId ? `${API_URL}/submissions/respostas-prontas/${p._rpEditId}` : `${API_URL}/submissions/respostas-prontas`;
-                    const method = p._rpEditId ? "PUT" : "POST";
-                    const resp = await fetchAuth(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: p._rpTitulo.trim(), mensagem: p._rpMensagem.trim(), motivo: p._rpMotivo || null }) });
-                    if (resp.ok) { ja(p._rpEditId ? "Atualizada!" : "Criada!", "success"); x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }); const r2 = await fetchAuth(`${API_URL}/submissions/respostas-prontas`); if (r2.ok) { const rp = await r2.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } }
-                    else { const d = await resp.json(); ja(d.error || "Erro", "error"); }
-                } catch { ja("Erro de conexão", "error"); }
-            },
-            className: "px-4 py-2 rounded-lg text-xs font-semibold text-white " + (p._rpEditId ? "bg-orange-500" : "bg-purple-600")
-        }, p._rpEditId ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar Edição") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Adicionar")), p._rpEditId && React.createElement("button", {
-            onClick: () => x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }),
-            className: "ml-2 px-3 py-2 rounded-lg text-xs font-semibold bg-gray-200 text-gray-700"
-        }, "Cancelar"), React.createElement("div", { className: "mt-3 space-y-2" }, (p._respostasProntas || []).map(r => React.createElement("div", {
-            key: r.id, className: "flex items-start gap-2 p-2 bg-gray-50 rounded-lg border"
-        }, React.createElement("div", { className: "flex-1 min-w-0" },
-            React.createElement("p", { className: "text-xs font-bold text-gray-800" }, r.titulo, r.motivo && React.createElement("span", { className: "ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px]" }, r.motivo)),
-            React.createElement("p", { className: "text-xs text-gray-600 mt-0.5 truncate" }, r.mensagem)
-        ), React.createElement("button", {
-            onClick: () => x({ ...p, _rpTitulo: r.titulo, _rpMensagem: r.mensagem, _rpMotivo: r.motivo || "", _rpEditId: r.id }),
-            className: "text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-semibold shrink-0"
-        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pencil" }))), React.createElement("button", {
-            onClick: async () => {
-                if (!confirm("Excluir \"" + r.titulo + "\"?")) return;
-                try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
-            },
-            className: "text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-semibold shrink-0"
-        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))))), (p.pendingFilter || "all") === "expiradas" && React.createElement("div", { className: "space-y-3 py-2" },
-            (p._expiradas||[]).length === 0
-              ? React.createElement("p", { className: "text-center text-gray-400 py-10 text-sm" }, "Nenhuma solicitação expirada nas últimas 48h")
-              : (p._expiradas||[]).map(ex => React.createElement("div", { key: ex.id, className: "bg-white border rounded-xl p-4" + (ex.liberado_por_admin ? " opacity-60" : "") },
-                  React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-3" },
-                    React.createElement("span", { className: "font-bold text-gray-800 text-sm" }, "OS: " + ex.os),
-                    ex.subcategoria && React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800" }, ex.subcategoria),
-                    React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700" }, "expirada há " + Math.round(ex.horas_atras) + "h"),
-                    ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "liberada — ") + (ex.tipo_liberacao === "contestacao" ? "contestação" : "nova solicitação")),
-                    ex.ja_tem_submission && !ex.liberado_por_admin && React.createElement("span", { className: "ml-auto px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "já tem submission"))
-                  ),
-                  React.createElement("div", { className: "grid grid-cols-3 gap-3 mb-3" },
-                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "motoboy"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, ex.nome_prof || ex.cod_prof)),
-                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "tentativa"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, new Date(ex.tentativa_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }))),
-                    React.createElement("div", null, React.createElement("p", { className: "text-xs text-gray-400 mb-0.5" }, "OS gerada em"), React.createElement("p", { className: "text-sm font-medium text-gray-800" }, ex.data_hora_os ? new Date(ex.data_hora_os).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"))
-                  ),
-                  ex.motivo && React.createElement("div", { className: "bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500 mb-3" }, "Motivo: ", React.createElement("span", { className: "text-gray-800" }, ex.motivo)),
-                  !ex.liberado_por_admin && !ex.ja_tem_submission && React.createElement("div", { className: "flex gap-2 border-t pt-3" },
-                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "nova_solicitacao" }) }); if (_r.ok) { ja("Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-100 text-purple-700 border border-purple-200" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("refresh"), "Liberar para nova solicitação")),
-                    React.createElement("button", { onClick: async () => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: "contestacao" }) }); if (_r.ok) { ja("Liberado!", "success"); const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } }, className: "flex-1 py-2 text-xs font-semibold rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("shield"), "Liberar para contestação"))
-                  )
-                ))
-            ), React.createElement("div", {
-            className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
-        }, j.filter(e => {
-            const f = p.pendingFilter || "all";
-            if (f === "expiradas") return false;
-            if (f === "contestacoes") return e.contestacao_status === 'aberta';
-            const isPendente = "pendente" === e.status;
-            const isContestacao = e.contestacao_status === 'aberta';
-            if (f === "all") return isPendente || isContestacao;
-            if (!isPendente) return false;
-            if (f === "atrasados") return Date.now() - new Date(e.created_at).getTime() >= 864e5;
-            if (f === "retorno") return "Ajuste de Retorno" === e.motivo;
-            if (f === "ponto1") return e.motivo?.includes("Ponto 1");
-            if (f === "simoesfilho") return e.motivo?.includes("Simões Filho");
-            if (f === "pedagio") return e.motivo?.includes("Pedágio");
-            return true;
-        }).map(e => {
-            const t = Date.now() - new Date(e.created_at).getTime(),
-                a = Math.floor(t / 36e5),
-                l = Math.floor(t % 36e5 / 6e4),
-                r = t >= 864e5,
-                o = t >= 36e6 && !r,
-                rtnW = (() => {
-                    if ("Ajuste de Retorno" !== e.motivo) return 0;
-                    const t = new Date,
-                        a = t.getDay(),
-                        l = new Date(t);
-                    l.setDate(t.getDate() - a), l.setHours(0, 0, 0, 0);
-                    return j.filter(t => "Ajuste de Retorno" === t.motivo && t.codProfissional === e.codProfissional && new Date(t.created_at) >= l).length
-                })(),
-                rtnM = (() => {
-                    if ("Ajuste de Retorno" !== e.motivo) return 0;
-                    const t = new Date,
-                        a = new Date(t.getFullYear(), t.getMonth(), 1);
-                    return j.filter(t => "Ajuste de Retorno" === t.motivo && t.codProfissional === e.codProfissional && new Date(t.created_at) >= a).length
-                })(),
-                hasAlert = rtnW > 3 || rtnM > 5;
-            return React.createElement("div", {
-                key: e.id,
-                className: "border-2 rounded-lg p-3 text-sm " + (hasAlert ? "border-yellow-500 bg-yellow-50 ring-2 ring-yellow-400" : r ? "border-red-400 bg-red-50" : o ? "border-orange-300 bg-orange-50" : "border-gray-200")
-            }, hasAlert && React.createElement("div", {
-                className: "mb-2 p-2 bg-yellow-200 rounded-lg text-xs font-bold text-yellow-900 flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "text-lg"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" }))), React.createElement("span", null, "ATENÇÃO: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")), React.createElement("div", {
-                className: "flex justify-between items-start mb-2"
-            }, React.createElement("button", {
-                className: "font-mono text-lg font-bold flex items-center gap-1.5 group hover:text-purple-700 transition-colors cursor-pointer text-left",
-                title: "Clique para copiar o número da OS",
-                onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
-            }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("span", {
-                className: "px-2 py-0.5 rounded text-xs font-bold " + (r ? "bg-red-500 text-white animate-pulse" : o ? "bg-orange-400 text-white" : "bg-gray-100 text-gray-600")
-            }, r ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : o ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), a > 0 ? `${a}h ${l}m` : `${l}min`)), React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, (
-                // 🆕 2026-05: foto do profissional (e.foto) ou avatar de inicial
-                e.foto
-                    ? React.createElement("img", {
-                        src: e.foto,
-                        alt: e.fullName || "",
-                        className: "w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                    })
-                    : React.createElement("div", {
-                        className: "w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0"
-                    }, (e.fullName || "?").charAt(0).toUpperCase())
-            ), React.createElement("div", {
-                className: "min-w-0"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-700 truncate"
-            }, e.fullName), React.createElement("p", {
-                className: "text-xs text-gray-500 font-mono"
-            }, "COD: ", e.codProfissional))), React.createElement("p", {
-                className: "text-xs text-purple-900 font-semibold"
-            }, e.motivo), e.subcategoria && React.createElement("p", {
-                className: "text-[11px] text-purple-600 font-medium"
-            }, "↳ ", e.subcategoria), React.createElement("p", {
-                className: "text-[10px] text-gray-500 mt-1"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), ""), new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit"
-            })), e.coordenadas && React.createElement("div", {
-                className: "mt-2 bg-green-50 border border-green-200 rounded p-2"
-            }, React.createElement("p", {
-                className: "text-xs font-mono text-green-900"
-            }, e.coordenadas), React.createElement("div", {
-                className: "flex gap-2 mt-1"
-            }, React.createElement("button", {
-                onClick: () => {
-                    navigator.clipboard.writeText(e.coordenadas), ja("Copiado!", "success")
+                tm = ds.tempo_medio_horas || 0,
+                atrasadasOs = ds.atrasadas_os || [],
+                sPrazo = 0 === atrasadasCount ? 100 : Math.max(0, 100 - 15 * atrasadasCount),
+                sTempo = tm <= 6 ? 100 : tm <= 12 ? 80 : tm <= 24 ? 60 : 40,
+                score = Math.round((sPrazo + sTempo) / 2),
+                scoreCor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626",
+                scoreTxt = score >= 80 ? "Excelente" : score >= 50 ? "Bom" : "Atenção",
+                tempoTxt = tm < 1 ? `${Math.round(60 * tm)}min` : `${tm.toFixed(1)}h`,
+                tempoQual = tm <= 6 ? "Excelente" : tm <= 12 ? "Bom" : tm <= 24 ? "Regular" : "Lento",
+                filtroAtivo = p.pendingFilter || "all";
+            const chips = [
+                ["all", "Todos", j.filter(e => "pendente" === e.status || e.contestacao_status === 'aberta').length],
+                ["contestacoes", "Contestações", j.filter(e => e.contestacao_status === 'aberta').length],
+                ["atrasados", "Atrasados", j.filter(e => "pendente" === e.status && Date.now() - new Date(e.created_at).getTime() >= 864e5).length],
+                ["retorno", "Retorno", j.filter(e => "pendente" === e.status && "Ajuste de Retorno" === e.motivo).length],
+                ["ponto1", "Ponto 1", j.filter(e => "pendente" === e.status && e.motivo?.includes("Ponto 1")).length],
+                ["pedagio", "Pedágio", j.filter(e => "pendente" === e.status && e.motivo?.includes("Pedágio")).length],
+                ["simoesfilho", "Simões Filho/Camaçari", j.filter(e => "pendente" === e.status && e.motivo?.includes("Simões Filho")).length],
+                ["expiradas", "Expiradas", (p._expiradas || []).length]
+            ];
+            const fila = j.filter(e => {
+                const f = p.pendingFilter || "all";
+                if (f === "expiradas") return false;
+                if (f === "contestacoes") return e.contestacao_status === 'aberta';
+                const isPendente = "pendente" === e.status;
+                const isContestacao = e.contestacao_status === 'aberta';
+                if (f === "all") return isPendente || isContestacao;
+                if (!isPendente) return false;
+                if (f === "atrasados") return Date.now() - new Date(e.created_at).getTime() >= 864e5;
+                if (f === "retorno") return "Ajuste de Retorno" === e.motivo;
+                if (f === "ponto1") return e.motivo?.includes("Ponto 1");
+                if (f === "simoesfilho") return e.motivo?.includes("Simões Filho");
+                if (f === "pedagio") return e.motivo?.includes("Pedágio");
+                return true;
+            });
+            const linkBtn = { background: "none", border: 0, padding: 0, font: "inherit", fontSize: 12.5, color: "#770fa8", cursor: "pointer", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" };
+            const recarregarExpiradas = async () => { const _r2 = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r2.ok) { const _d2 = await _r2.json(); x(prev => ({ ...prev, _expiradas: _d2.expiradas || [] })); } };
+            const liberarExpirada = async (ex, tipo) => { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas/${ex.id}/liberar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo_liberacao: tipo }) }); if (_r.ok) { ja("Liberado!", "success"); await recarregarExpiradas(); } else { const _d = await _r.json(); ja(_d.error || "Erro", "error"); } } catch { ja("Erro", "error"); } };
+
+            const cardPendente = (e) => {
+                const t = Date.now() - new Date(e.created_at).getTime(),
+                    horas = Math.floor(t / 36e5),
+                    mins = Math.floor(t % 36e5 / 6e4),
+                    atrasada = t >= 864e5,
+                    alerta10h = t >= 36e6 && !atrasada,
+                    rtnW = (() => {
+                        if ("Ajuste de Retorno" !== e.motivo) return 0;
+                        const t = new Date, a = t.getDay(), l = new Date(t);
+                        l.setDate(t.getDate() - a), l.setHours(0, 0, 0, 0);
+                        return j.filter(t => "Ajuste de Retorno" === t.motivo && t.codProfissional === e.codProfissional && new Date(t.created_at) >= l).length
+                    })(),
+                    rtnM = (() => {
+                        if ("Ajuste de Retorno" !== e.motivo) return 0;
+                        const t = new Date, a = new Date(t.getFullYear(), t.getMonth(), 1);
+                        return j.filter(t => "Ajuste de Retorno" === t.motivo && t.codProfissional === e.codProfissional && new Date(t.created_at) >= a).length
+                    })(),
+                    hasAlert = rtnW > 3 || rtnM > 5,
+                    tempoTom = atrasada ? SOLC_TONS.vermelho : alerta10h ? SOLC_TONS.ambar : SOLC_TONS.cinza,
+                    contestAberta = e.contestacao_status === 'aberta';
+                let ia = null;
+                if (e.validacao_ia) { try { ia = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; } catch { ia = {}; } }
+                return React.createElement("article", {
+                    key: e.id,
+                    style: { background: "#ffffff", border: "1px solid " + (atrasada ? "#fecaca" : (hasAlert || alerta10h) ? "#fde68a" : "#e5e7eb"), borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10, fontSize: 13, minWidth: 0 }
                 },
-                className: "text-xs text-green-600"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Copiar")), React.createElement("a", {
-                href: `https://www.google.com/maps?q=${e.coordenadas}`,
-                target: "_blank",
-                className: "text-xs text-green-600"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Maps")))), e.temImagem && React.createElement("div", {
-                className: "mt-2"
-            }, e.imagemComprovante ? React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "flex gap-2 flex-wrap"
-            }, e.imagemComprovante.split("|||").map((e, t) => React.createElement("img", {
-                key: t,
-                src: e,
-                className: "h-20 rounded cursor-pointer",
-                onClick: () => g(e)
-            }))), React.createElement("button", {
-                onClick: () => C(t => t.map(t => t.id === e.id ? {
-                    ...t,
-                    imagemComprovante: null
-                } : t)),
-                className: "text-xs text-gray-500"
-            }, "▲ Ocultar")) : React.createElement("button", {
-                onClick: () => {
-                    ja("Carregando...", "success"), Fa(e.id)
-                },
-                className: "px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.validacao_ia && React.createElement("div", {
-                className: "mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs"
-            }, React.createElement("p", { className: "font-semibold text-blue-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" })), "Resumo IA:")), React.createElement("p", { className: "text-blue-700 mt-0.5" }, (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.resumo_admin || (v.sem_ia ? "Foto não validada pela IA" : "Sem resumo"); } catch { return "Sem resumo"; } })()), (() => { try { const v = typeof e.validacao_ia === "string" ? JSON.parse(e.validacao_ia) : e.validacao_ia; return v.alertas_admin?.length > 0 ? React.createElement("p", { className: "text-purple-700 mt-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), v.alertas_admin.join(" | ")) : null; } catch { return null; } })(), e.tentativas_foto > 1 && React.createElement("p", { className: "text-gray-500 mt-1" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Tentativas: "), e.tentativas_foto)),
-            // Esconder Aprovar/Rejeitar quando contestação está aberta
-            e.contestacao_status !== 'aberta' && React.createElement(React.Fragment, null, React.createElement("select", {
-                value: "",
-                onChange: t => { if (t.target.value) { x({ ...p, [`obs_${e.id}`]: t.target.value }); } t.target.selectedIndex = 0; },
-                className: "w-full px-2 py-1 border border-orange-300 bg-orange-50 rounded mt-2 text-xs text-gray-700"
-            }, React.createElement("option", { value: "" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Usar resposta pronta...")), (p._respostasProntas || []).filter(r => !r.motivo || r.motivo === e.motivo).map(r => React.createElement("option", { key: r.id, value: r.mensagem }, r.titulo))), React.createElement("textarea", {
-                placeholder: "Obs (opcional)",
-                value: p[`obs_${e.id}`] || "",
-                onChange: t => x({
-                    ...p,
-                    [`obs_${e.id}`]: t.target.value
-                }),
-                className: "w-full px-2 py-1 border rounded mt-2 text-xs",
-                rows: "1"
-            }), React.createElement("div", {
-                className: "flex gap-2 mt-2"
-            }, React.createElement("button", {
-                onClick: () => Kl(e.id, !0),
-                className: "flex-1 bg-green-600 text-white py-1 rounded text-xs font-semibold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovar")), React.createElement("button", {
-                onClick: () => Kl(e.id, !1),
-                className: "flex-1 bg-red-600 text-white py-1 rounded text-xs font-semibold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar")))),
-            // CONTESTAÇÃO - Badge + chat inline
-            e.contestacao_status === 'aberta' && React.createElement("div", { className: "mt-3 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg" },
-                React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 mb-2" },
-                    React.createElement("span", { className: "text-sm font-bold text-purple-800" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "CONTESTAÇÃO ABERTA")),
+                    hasAlert && React.createElement("div", { role: "note", style: { display: "flex", gap: 8, alignItems: "flex-start", background: "#fffbeb", color: "#92400e", borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 600 } },
+                        solcIco("alert", 14, { marginTop: 1 }),
+                        React.createElement("span", null, "Atenção: ", rtnW > 3 ? `${rtnW} retornos na semana (máx 3)` : "", " ", rtnM > 5 ? `| ${rtnM} retornos no mês (máx 5)` : "")),
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } },
+                        React.createElement("button", {
+                            type: "button",
+                            style: { background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums", display: "inline-flex", alignItems: "center", gap: 6 },
+                            title: "Clique para copiar o número da OS",
+                            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
+                        }, "OS ", e.ordemServico, solcIco("copy", 14, { color: "#9ca3af" })),
+                        solcPilula(tempoTom, React.createElement("span", { style: { fontVariantNumeric: "tabular-nums" } }, horas > 0 ? `${horas}h ${mins}m` : `${mins}min`))),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 } },
+                        e.foto
+                            ? React.createElement("img", { src: e.foto, alt: e.fullName || "", style: { width: 36, height: 36, borderRadius: 999, objectFit: "cover", border: "1px solid #e5e7eb", flex: "none" } })
+                            : React.createElement("div", { "aria-hidden": "true", style: { width: 36, height: 36, borderRadius: 999, background: "#f3e8fb", color: "#5d0b85", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13, flex: "none" } }, (e.fullName || "?").charAt(0).toUpperCase()),
+                        React.createElement("div", { style: { minWidth: 0 } },
+                            React.createElement("div", { style: { fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, e.fullName),
+                            React.createElement("div", { style: { fontSize: 12, color: "#6b7280", fontVariantNumeric: "tabular-nums" } }, "Cód. ", e.codProfissional))),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", minWidth: 0 } },
+                        solcTipo(e.motivo),
+                        e.subcategoria && React.createElement("span", { style: { fontSize: 12, color: "#6b7280" } }, "↳ ", e.subcategoria),
+                        React.createElement("span", { style: { fontSize: 12, color: "#6b7280", display: "inline-flex", alignItems: "center", gap: 5 } }, solcIco("calendar", 13), new Date(e.created_at).toLocaleDateString("pt-BR"), " às ", new Date(e.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))),
+                    e.coordenadas && React.createElement("div", { style: { background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 8, padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" } },
+                        React.createElement("span", { style: { fontSize: 12, color: "#374151", fontVariantNumeric: "tabular-nums", flex: "1 1 auto" } }, e.coordenadas),
+                        React.createElement("button", { type: "button", onClick: () => { navigator.clipboard.writeText(e.coordenadas), ja("Copiado!", "success") }, style: linkBtn }, solcIco("copy", 13), "Copiar"),
+                        React.createElement("a", { href: `https://www.google.com/maps?q=${e.coordenadas}`, target: "_blank", style: linkBtn }, solcIco("map", 13), "Maps")),
+                    e.temImagem && (e.imagemComprovante
+                        ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" } },
+                            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+                                e.imagemComprovante.split("|||").map((img, idx) => React.createElement("img", { key: idx, src: img, alt: "Comprovante " + (idx + 1), style: { height: 72, borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer" }, onClick: () => g(img) }))),
+                            React.createElement("button", { type: "button", onClick: () => C(t => t.map(t => t.id === e.id ? { ...t, imagemComprovante: null } : t)), style: Object.assign({}, linkBtn, { color: "#6b7280" }) }, "Ocultar fotos"))
+                        : React.createElement("button", { type: "button", onClick: () => { ja("Carregando...", "success"), Fa(e.id) }, style: solcSm(solcBtnSec, { alignSelf: "flex-start" }) }, solcIco("camera", 14), "Ver foto(s)")),
+                    ia && React.createElement("div", { style: { background: "#eff6ff", borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "#1e40af" } },
+                        React.createElement("div", { style: { fontWeight: 600, display: "flex", alignItems: "center", gap: 5 } }, solcIco("bot", 13), "Resumo IA"),
+                        React.createElement("div", { style: { marginTop: 2 } }, ia.resumo_admin || (ia.sem_ia ? "Foto não validada pela IA" : "Sem resumo")),
+                        ia.alertas_admin && ia.alertas_admin.length > 0 && React.createElement("div", { style: { marginTop: 4, color: "#92400e", display: "flex", gap: 5, alignItems: "flex-start" } }, solcIco("alert", 13, { marginTop: 1 }), ia.alertas_admin.join(" | ")),
+                        e.tentativas_foto > 1 && React.createElement("div", { style: { marginTop: 4, color: "#6b7280" } }, "Tentativas de foto: ", e.tentativas_foto)),
+                    // Esconder Aprovar/Rejeitar quando contestação está aberta
+                    !contestAberta && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginTop: "auto", paddingTop: 2 } },
+                        React.createElement("select", {
+                            value: "",
+                            "aria-label": "Usar resposta pronta",
+                            onChange: t => { if (t.target.value) { x({ ...p, [`obs_${e.id}`]: t.target.value }); } t.target.selectedIndex = 0; },
+                            className: SOLC_IN_CLS + " w-full !h-[34px] text-gray-700"
+                        }, React.createElement("option", { value: "" }, "Usar resposta pronta..."), (p._respostasProntas || []).filter(r => !r.motivo || r.motivo === e.motivo).map(r => React.createElement("option", { key: r.id, value: r.mensagem }, r.titulo))),
+                        React.createElement("textarea", {
+                            placeholder: "Observação (opcional)",
+                            "aria-label": "Observação para OS " + e.ordemServico,
+                            value: p[`obs_${e.id}`] || "",
+                            onChange: t => x({ ...p, [`obs_${e.id}`]: t.target.value }),
+                            className: "w-full px-3 py-2 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100",
+                            rows: "1"
+                        }),
+                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+                            React.createElement("button", { type: "button", onClick: () => Kl(e.id, !0), style: Object.assign({}, solcBtnPri, { height: 36, padding: "0 10px", gap: 6 }) }, solcIco("check", 14), "Aprovar"),
+                            React.createElement("button", { type: "button", onClick: () => Kl(e.id, !1), style: Object.assign({}, solcBtnDestr, { height: 36, padding: "0 10px", gap: 6 }) }, solcIco("x", 14), "Rejeitar"))),
+                    // CONTESTAÇÃO - pílula + chat inline
+                    contestAberta && React.createElement("div", { style: { border: "1px solid #bfdbfe", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
+                        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+                            solcPilula(SOLC_TONS.azul, "Contestação aberta"),
+                            React.createElement("button", {
+                                type: "button",
+                                onClick: async () => {
+                                    try {
+                                        const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`);
+                                        const d = await r.json();
+                                        if (d.success) x({ ...p, [`contest_msgs_${e.id}`]: d.mensagens, [`contest_open_${e.id}`]: true });
+                                    } catch { ja("Erro ao carregar", "error"); }
+                                },
+                                style: solcSm(solcBtnSec)
+                            }, p[`contest_open_${e.id}`] ? React.createElement(React.Fragment, null, solcIco("refresh", 13), "Atualizar") : React.createElement(React.Fragment, null, solcIco("message", 13), "Ver contestação"))),
+                        p[`contest_open_${e.id}`] && React.createElement(React.Fragment, null,
+                            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 192, overflowY: "auto" } },
+                                (p[`contest_msgs_${e.id}`] || []).map((m, mi) => React.createElement("div", {
+                                    key: mi,
+                                    style: m.autor_tipo === 'admin'
+                                        ? { background: "#faf7fd", border: "1px solid #f3e8fb", color: "#3a1556", borderRadius: 8, padding: "6px 8px", fontSize: 12, marginLeft: 16 }
+                                        : { background: "#ffffff", border: "1px solid #e5e7eb", color: "#374151", borderRadius: 8, padding: "6px 8px", fontSize: 12, marginRight: 16 }
+                                },
+                                    React.createElement("div", { style: { fontWeight: 600, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: 2 } }, solcIco(m.autor_tipo === 'admin' ? "user" : "bike", 12), m.autor_nome, React.createElement("span", { style: { fontWeight: 400, color: "#9ca3af", marginLeft: 4 } }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
+                                    React.createElement("div", null, m.mensagem),
+                                    m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { style: { display: "flex", gap: 4, marginTop: 4 } }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, alt: "Anexo", style: { height: 56, borderRadius: 6, cursor: "pointer", border: "1px solid #e5e7eb" }, onClick: () => g(img) }))) : null; } catch { return null; } })()
+                                ))),
+                            React.createElement("textarea", { value: p[`contest_resp_${e.id}`] || '', onChange: ev => x({ ...p, [`contest_resp_${e.id}`]: ev.target.value }), placeholder: "Responder ao motoboy...", "aria-label": "Responder ao motoboy", className: "w-full px-3 py-2 border border-gray-200 rounded-[10px] bg-white text-[13px] focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100", rows: 2 }),
+                            React.createElement("button", {
+                                type: "button",
+                                onClick: async () => {
+                                    const msg = p[`contest_resp_${e.id}`] || '';
+                                    if (!msg.trim()) { ja("Escreva uma resposta", "error"); return; }
+                                    try { await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-responder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: msg }) }); x({ ...p, [`contest_resp_${e.id}`]: '' }); ja("Resposta enviada!", "success"); const r2 = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`); const d2 = await r2.json(); if (d2.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d2.mensagens })); } catch { ja("Erro", "error"); }
+                                },
+                                style: Object.assign({}, solcBtnPri, { height: 36, gap: 6 })
+                            }, solcIco("message", 14), "Responder"),
+                            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+                                React.createElement("button", {
+                                    type: "button",
+                                    onClick: async () => {
+                                        if (!confirm("APROVAR a contestação? A solicitação será aprovada.")) return;
+                                        try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                                    },
+                                    style: Object.assign({}, solcBtnSec, { height: 36, padding: "0 8px", gap: 6, color: "#166534", borderColor: "#bbf7d0" })
+                                }, solcIco("check", 14), "Aprovar"),
+                                React.createElement("button", {
+                                    type: "button",
+                                    onClick: async () => {
+                                        if (!confirm("REJEITAR DEFINITIVAMENTE? O motoboy não poderá mais contestar.")) return;
+                                        try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
+                                    },
+                                    style: Object.assign({}, solcBtnDestr, { height: 36, padding: "0 8px", gap: 6 })
+                                }, solcIco("x", 14), "Rejeitar def.")))),
+                    (e.contestacao_status === 'encerrada_aprovada' || e.contestacao_status === 'encerrada_rejeitada') && React.createElement("div", null,
+                        e.contestacao_status === 'encerrada_aprovada' ? solcPilula(SOLC_TONS.verde, "Contestação aprovada") : solcPilula(SOLC_TONS.vermelho, "Contestação rejeitada definitivamente"))
+                );
+            };
+
+            const painelRespostas = p._showRespostas && React.createElement("div", { style: { margin: "0 12px 12px", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 12 } },
+                React.createElement("div", null,
+                    React.createElement("h3", { style: solcSecTitulo }, "Respostas prontas"),
+                    React.createElement("p", { style: { margin: "2px 0 0", fontSize: 12.5, color: "#6b7280" } }, "Textos rápidos para a observação de aprovação ou rejeição.")),
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12 } },
+                    React.createElement("label", { style: { flex: "2 1 220px", minWidth: 0 } },
+                        React.createElement("span", { style: solcLabel }, "Título"),
+                        React.createElement("input", { type: "text", placeholder: "Título curto", value: p._rpTitulo || "", onChange: e => x({ ...p, _rpTitulo: e.target.value }), className: SOLC_IN_CLS + " w-full" })),
+                    React.createElement("label", { style: { flex: "1 1 180px", minWidth: 0 } },
+                        React.createElement("span", { style: solcLabel }, "Motivo"),
+                        React.createElement("select", { value: p._rpMotivo || "", onChange: e => x({ ...p, _rpMotivo: e.target.value }), className: SOLC_IN_CLS + " w-full" },
+                            React.createElement("option", { value: "" }, "Todos os motivos"), React.createElement("option", { value: "Ajuste de Retorno" }, "Retorno"), React.createElement("option", { value: "Ajuste de Pedágio" }, "Pedágio"), React.createElement("option", { value: "Ajustes Simões Filho e Camaçari" }, "Simões/Camaçari")))),
+                React.createElement("label", null,
+                    React.createElement("span", { style: solcLabel }, "Mensagem"),
+                    React.createElement("textarea", { placeholder: "Mensagem da resposta pronta...", value: p._rpMensagem || "", onChange: e => x({ ...p, _rpMensagem: e.target.value }), className: "w-full px-3 py-2 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-900 focus:outline-none focus:border-purple-700 focus:ring-2 focus:ring-purple-100", rows: "2" })),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
                     React.createElement("button", {
+                        type: "button",
                         onClick: async () => {
+                            if (!p._rpTitulo?.trim() || !p._rpMensagem?.trim()) { ja("Preencha título e mensagem", "error"); return; }
                             try {
-                                const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`);
-                                const d = await r.json();
-                                if (d.success) x({ ...p, [`contest_msgs_${e.id}`]: d.mensagens, [`contest_open_${e.id}`]: true });
-                            } catch { ja("Erro ao carregar", "error"); }
+                                const url = p._rpEditId ? `${API_URL}/submissions/respostas-prontas/${p._rpEditId}` : `${API_URL}/submissions/respostas-prontas`;
+                                const method = p._rpEditId ? "PUT" : "POST";
+                                const resp = await fetchAuth(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: p._rpTitulo.trim(), mensagem: p._rpMensagem.trim(), motivo: p._rpMotivo || null }) });
+                                if (resp.ok) { ja(p._rpEditId ? "Atualizada!" : "Criada!", "success"); x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }); const r2 = await fetchAuth(`${API_URL}/submissions/respostas-prontas`); if (r2.ok) { const rp = await r2.json(); x(prev => ({ ...prev, _respostasProntas: rp })); } }
+                                else { const d = await resp.json(); ja(d.error || "Erro", "error"); }
+                            } catch { ja("Erro de conexão", "error"); }
                         },
-                        className: "px-3 py-1 bg-orange-600 text-white rounded text-xs font-bold"
-                    }, p[`contest_open_${e.id}`] ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Atualizar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Ver Contestação"))
-                ),
-                p[`contest_open_${e.id}`] && React.createElement(React.Fragment, null,
-                    React.createElement("div", { className: "space-y-2 max-h-48 overflow-y-auto mb-2" },
-                        (p[`contest_msgs_${e.id}`] || []).map((m, mi) => React.createElement("div", {
-                            key: mi,
-                            className: `p-2 rounded-lg text-xs ${m.autor_tipo === 'admin' ? 'bg-purple-100 text-purple-800 ml-4' : 'bg-white border mr-4'}`
-                        },
-                            React.createElement("p", { className: "font-bold mb-1" }, m.autor_tipo === 'admin' ? React.createElement(React.Fragment, null, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), " " + m.autor_nome) : React.createElement(React.Fragment, null, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), " " + m.autor_nome), React.createElement("span", { className: "font-normal text-gray-400 ml-2" }, new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))),
-                            React.createElement("p", null, m.mensagem),
-                            m.imagens && (() => { try { const imgs = typeof m.imagens === 'string' ? JSON.parse(m.imagens) : m.imagens; return imgs.length > 0 ? React.createElement("div", { className: "flex gap-1 mt-1" }, imgs.map((img, ii) => React.createElement("img", { key: ii, src: img, className: "h-16 rounded cursor-pointer", onClick: () => g(img) }))) : null; } catch { return null; } })()
-                        ))
-                    ),
-                    React.createElement("textarea", { value: p[`contest_resp_${e.id}`] || '', onChange: ev => x({ ...p, [`contest_resp_${e.id}`]: ev.target.value }), placeholder: "Responder ao motoboy...", className: "w-full px-2 py-1 border rounded text-xs mt-1", rows: 2 }),
-                    React.createElement("div", { className: "flex gap-2 mt-2" },
+                        style: Object.assign({}, solcBtnPri, { height: 38 })
+                    }, p._rpEditId ? React.createElement(React.Fragment, null, solcIco("save", 15), "Salvar edição") : React.createElement(React.Fragment, null, solcIco("plus", 15), "Adicionar resposta")),
+                    p._rpEditId && React.createElement("button", { type: "button", onClick: () => x({ ...p, _rpTitulo: "", _rpMensagem: "", _rpMotivo: "", _rpEditId: null }), style: Object.assign({}, solcBtnSec, { height: 38 }) }, "Cancelar")),
+                (p._respostasProntas || []).length > 0 && React.createElement("ul", { style: { listStyle: "none", margin: 0, padding: 0, borderTop: "1px solid #f3f4f6" } },
+                    (p._respostasProntas || []).map(r => React.createElement("li", { key: r.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #f3f4f6" } },
+                        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+                                React.createElement("span", { style: { fontWeight: 600, fontSize: 13, color: "#111827" } }, r.titulo), r.motivo && solcTipo(r.motivo)),
+                            React.createElement("div", { style: { fontSize: 12.5, color: "#6b7280", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, r.mensagem)),
+                        React.createElement("button", { type: "button", "aria-label": "Editar " + r.titulo, title: "Editar", onClick: () => x({ ...p, _rpTitulo: r.titulo, _rpMensagem: r.mensagem, _rpMotivo: r.motivo || "", _rpEditId: r.id }), style: solcIconBtn(false) }, solcIco("pencil", 14)),
                         React.createElement("button", {
+                            type: "button", "aria-label": "Excluir " + r.titulo, title: "Excluir",
                             onClick: async () => {
-                                const msg = p[`contest_resp_${e.id}`] || '';
-                                if (!msg.trim()) { ja("Escreva uma resposta", "error"); return; }
-                                try { await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-responder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensagem: msg }) }); x({ ...p, [`contest_resp_${e.id}`]: '' }); ja("Resposta enviada!", "success"); const r2 = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao`); const d2 = await r2.json(); if (d2.success) x(prev => ({ ...prev, [`contest_msgs_${e.id}`]: d2.mensagens })); } catch { ja("Erro", "error"); }
+                                if (!confirm("Excluir \"" + r.titulo + "\"?")) return;
+                                try { const resp = await fetchAuth(`${API_URL}/submissions/respostas-prontas/${r.id}`, { method: "DELETE" }); if (resp.ok) { ja("Excluída!", "success"); x(prev => ({ ...prev, _respostasProntas: (prev._respostasProntas || []).filter(x => x.id !== r.id) })); } } catch { ja("Erro", "error"); }
                             },
-                            className: "flex-1 py-1 bg-purple-600 text-white rounded text-xs font-bold"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" })), "Responder")),
-                        React.createElement("button", {
-                            onClick: async () => {
-                                if (!confirm("APROVAR a contestação? A solicitação será aprovada.")) return;
-                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "aprovar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Contestação aprovada!", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
-                            },
-                            className: "py-1 px-2 bg-green-600 text-white rounded text-xs font-bold"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovar")),
-                        React.createElement("button", {
-                            onClick: async () => {
-                                if (!confirm("REJEITAR DEFINITIVAMENTE? O motoboy não poderá mais contestar.")) return;
-                                try { const r = await fetchAuth(`${API_URL}/submissions/${e.id}/contestacao-encerrar`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decisao: "rejeitar", observacao: p[`contest_resp_${e.id}`] || '' }) }); const d = await r.json(); if (d.success) { ja("Rejeitada definitivamente", "success"); C(prev => prev.filter(s => s.id !== e.id)); try { La(); } catch {} } } catch { ja("Erro", "error"); }
-                            },
-                            className: "py-1 px-2 bg-red-700 text-white rounded text-xs font-bold"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitar Def."))
-                    )
-                )
-            ),
-            (e.contestacao_status === 'encerrada_aprovada' || e.contestacao_status === 'encerrada_rejeitada') && React.createElement("div", { className: `mt-2 p-2 rounded text-xs font-bold ${e.contestacao_status === 'encerrada_aprovada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}` }, e.contestacao_status === 'encerrada_aprovada' ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Contestação aprovada") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Contestação rejeitada definitivamente"))
-            )
-        })))), "search" === adminTabEfetivo && React.createElement("div", {
-            className: "bg-white rounded-xl shadow p-6"
-        }, React.createElement("div", {
-            className: "flex flex-wrap gap-4 mb-6"
-        }, React.createElement("input", {
-            type: "text",
-            placeholder: "Buscar por OS, código ou nome...",
-            value: p.searchOS || "",
-            onChange: e => x({
-                ...p,
-                searchOS: e.target.value
-            }),
-            onKeyDown: e => { if (e.key === "Enter") buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : ""); },
-            className: "flex-1 px-4 py-2 border rounded-lg"
-        }), React.createElement("select", {
-            value: p.statusFilter || "",
-            onChange: e => x({
-                ...p,
-                statusFilter: e.target.value
-            }),
-            className: "px-4 py-2 border rounded-lg"
-        }, React.createElement("option", {
-            value: ""
-        }, "Todos status"), React.createElement("option", {
-            value: "pendente"
-        }, "Pendente"), React.createElement("option", {
-            value: "aprovado"
-        }, "Aprovado"), React.createElement("option", {
-            value: "rejeitado"
-        }, "Rejeitado"), React.createElement("option", {
-            value: "contestado"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })), "Contestado"))), React.createElement("select", {
-            value: p.dateFilter || "",
-            onChange: e => x({
-                ...p,
-                dateFilter: e.target.value
-            }),
-            className: "px-4 py-2 border rounded-lg"
-        }, React.createElement("option", {
-            value: ""
-        }, "Todo período"), React.createElement("option", {
-            value: "today"
-        }, "Hoje"), React.createElement("option", {
-            value: "week"
-        }, "Esta semana"), React.createElement("option", {
-            value: "month"
-        }, "Este mês"), React.createElement("option", {
-            value: "custom"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Personalizado"))), p.dateFilter === "custom" && React.createElement(React.Fragment, null, React.createElement("input", {
-            type: "date",
-            value: p.buscaDataInicio || "",
-            onChange: e => x({ ...p, buscaDataInicio: e.target.value }),
-            className: "px-3 py-2 border rounded-lg"
-        }), React.createElement("span", { className: "text-gray-500 self-center" }, "até"), React.createElement("input", {
-            type: "date",
-            value: p.buscaDataFim || "",
-            onChange: e => x({ ...p, buscaDataFim: e.target.value }),
-            className: "px-3 py-2 border rounded-lg"
-        })), React.createElement("button", {
-            onClick: () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : ""),
-            disabled: buscaLoading,
-            className: "px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
-        }, buscaLoading ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Buscando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Buscar"))), buscaTotal > 0 && React.createElement("p", {
-            className: "text-sm text-gray-500 mb-4"
-        }, `${buscaTotal} resultado(s) encontrado(s)${buscaTotal > 100 ? " (mostrando 100)" : ""}`), 0 === buscaResults.length && !buscaLoading && React.createElement("div", {
-            className: "text-center py-12 text-gray-400"
-        }, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), React.createElement("p", { className: "text-lg" }, "Use os filtros acima para buscar solicitações")), React.createElement("div", {
-            className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
-        }, buscaResults.map(e => React.createElement("div", {
-            key: e.id,
-            className: "border rounded-lg p-3 text-sm " + ("aprovado" === e.status ? "bg-green-50" : "rejeitado" === e.status ? "bg-red-50" : "bg-yellow-50")
-        }, React.createElement("div", {
-            className: "flex justify-between items-start mb-1"
-        }, React.createElement("div", null, React.createElement("button", {
-            className: "font-mono font-bold flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
-            title: "Clique para copiar o número da OS",
-            onClick: () => { navigator.clipboard.writeText(String(e.ordemServico)); ja("OS " + e.ordemServico + " copiada!", "success"); }
-        }, "OS: ", e.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
-            className: "text-xs text-gray-700"
-        }, e.fullName)), React.createElement("div", {
-            className: "flex items-center gap-1"
-        }, React.createElement("span", {
-            className: "px-2 py-0.5 rounded-full text-xs font-bold " + ("aprovado" === e.status ? "bg-green-600 text-white" : "rejeitado" === e.status ? "bg-red-600 text-white" : "bg-yellow-600 text-white")
-        }, e.status?.toUpperCase()), React.createElement("button", {
-            onClick: async () => {
+                            style: solcIconBtn(true)
+                        }, solcIco("trash", 14))))));
+
+            const listaExpiradas = (p._expiradas || []).length === 0
+                ? solcVazio("Nenhuma solicitação expirada nas últimas 48h")
+                : React.createElement("div", { style: { padding: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: 12 } },
+                    (p._expiradas || []).map(ex => React.createElement("article", { key: ex.id, style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10, opacity: ex.liberado_por_admin ? 0.7 : 1 } },
+                        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 } },
+                            React.createElement("span", { style: { fontWeight: 700, fontSize: 15, color: "#111827", marginRight: 4, fontVariantNumeric: "tabular-nums" } }, "OS " + ex.os),
+                            ex.subcategoria && solcTipo(ex.subcategoria),
+                            solcPilula(SOLC_TONS.vermelho, "Expirada há " + Math.round(ex.horas_atras) + "h"),
+                            ex.liberado_por_admin && solcPilula(SOLC_TONS.verde, "Liberada · " + (ex.tipo_liberacao === "contestacao" ? "contestação" : "nova solicitação")),
+                            ex.ja_tem_submission && !ex.liberado_por_admin && solcPilula(SOLC_TONS.azul, "Já tem solicitação")),
+                        React.createElement("dl", { style: { margin: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, fontSize: 12.5 } },
+                            [["Motoboy", ex.nome_prof || ex.cod_prof], ["Tentativa", new Date(ex.tentativa_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })], ["OS gerada em", ex.data_hora_os ? new Date(ex.data_hora_os).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"]].map(([k, v]) => React.createElement("div", { key: k, style: { minWidth: 0 } },
+                                React.createElement("dt", { style: { color: "#6b7280", fontSize: 12 } }, k),
+                                React.createElement("dd", { style: { margin: 0, color: "#111827", fontWeight: 500, overflowWrap: "anywhere" } }, v)))),
+                        ex.motivo && React.createElement("div", { style: { fontSize: 12.5, color: "#6b7280" } }, "Motivo: ", React.createElement("span", { style: { color: "#111827" } }, ex.motivo)),
+                        !ex.liberado_por_admin && !ex.ja_tem_submission && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, borderTop: "1px solid #f3f4f6", paddingTop: 10 } },
+                            React.createElement("button", { type: "button", onClick: () => liberarExpirada(ex, "nova_solicitacao"), style: Object.assign({}, solcBtnSec, { height: 36, flex: "1 1 180px", fontSize: 12.5, gap: 6 }) }, solcIco("refresh", 14), "Liberar para nova solicitação"),
+                            React.createElement("button", { type: "button", onClick: () => liberarExpirada(ex, "contestacao"), style: Object.assign({}, solcBtnSec, { height: 36, flex: "1 1 180px", fontSize: 12.5, gap: 6 }) }, solcIco("shield", 14), "Liberar para contestação")))));
+
+            return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: "#111827" } },
+                solcCabecalho("Solicitações", `${solcHojeTxt() ? solcHojeTxt() + " · " : ""}${pendentesCount.toLocaleString("pt-BR")} aguardando validação`,
+                    React.createElement("button", {
+                        type: "button",
+                        "aria-pressed": !!p._showRespostas,
+                        onClick: () => x({ ...p, _showRespostas: !p._showRespostas }),
+                        style: Object.assign({}, solcBtnSec, p._showRespostas ? { background: "#faf7fd", borderColor: "#e9d5f9", color: "#5d0b85" } : {})
+                    }, solcIco("message", 15), "Respostas prontas")),
+                // ── Faixa de KPIs ──
+                React.createElement("section", { "aria-label": "Indicadores de validação", style: Object.assign({}, solcCard, { display: "flex", flexWrap: "wrap", overflow: "hidden" }) },
+                    React.createElement("div", { style: Object.assign({}, solcKpiCell, { flex: "1.4 1 240px", display: "flex", gap: 14, alignItems: "center" }) },
+                        React.createElement("div", { style: { position: "relative", width: 58, height: 58, flex: "none" } },
+                            React.createElement("svg", { width: 58, height: 58, style: { transform: "rotate(-90deg)", display: "block" }, "aria-hidden": "true" },
+                                React.createElement("circle", { cx: 29, cy: 29, r: 25, fill: "none", stroke: "#f3f4f6", strokeWidth: 6 }),
+                                React.createElement("circle", { cx: 29, cy: 29, r: 25, fill: "none", stroke: scoreCor, strokeWidth: 6, strokeLinecap: "round", strokeDasharray: 157.08, strokeDashoffset: 157.08 - 157.08 * score / 100 })),
+                            React.createElement("div", { style: { position: "absolute", inset: 0, display: "grid", placeItems: "center", fontWeight: 700, fontSize: 16, fontVariantNumeric: "tabular-nums", color: "#111827" } }, score)),
+                        React.createElement("div", { style: { minWidth: 0 } },
+                            React.createElement("div", { style: { fontWeight: 600, color: "#111827", fontSize: 13 } }, "Score · ", scoreTxt),
+                            React.createElement("div", { style: { fontSize: 12, color: atrasadasOs.length === 0 ? "#6b7280" : "#991b1b", marginTop: 2 } }, atrasadasOs.length === 0 ? "Prazo de 24h cumprido" : `${atrasadasOs.length} fora do prazo de 24h`))),
+                    React.createElement("div", { style: solcKpiCell },
+                        React.createElement("div", { style: solcKpiLbl }, "Hoje"),
+                        React.createElement("div", { style: solcKpiNum }, hojeTotal.toLocaleString("pt-BR")),
+                        React.createElement("div", { style: solcKpiSub }, hojeProcessadas, " processadas")),
+                    React.createElement("div", { style: solcKpiCell },
+                        React.createElement("div", { style: solcKpiLbl }, "Tempo médio"),
+                        React.createElement("div", { style: solcKpiNum }, tempoTxt),
+                        React.createElement("div", { style: solcKpiSub }, tempoQual, " · até a decisão")),
+                    React.createElement("div", { style: solcKpiCell },
+                        React.createElement("div", { style: solcKpiLbl }, "Pendentes"),
+                        React.createElement("div", { style: Object.assign({}, solcKpiNum, { color: pendentesCount > 0 ? "#92400e" : "#111827" }) }, pendentesCount.toLocaleString("pt-BR")),
+                        React.createElement("div", { style: solcKpiSub }, "aguardando")),
+                    React.createElement("div", { style: Object.assign({}, solcKpiCell, { borderRight: "none" }) },
+                        React.createElement("div", { style: solcKpiLbl }, "Prazo (24h)"),
+                        React.createElement("div", { style: Object.assign({}, solcKpiNum, { color: atrasadasOs.length > 0 ? "#991b1b" : "#111827" }) }, atrasadasOs.length),
+                        React.createElement("div", { style: solcKpiSub }, atrasadasOs.length === 0 ? "Nenhum atraso" : "Ação necessária"))),
+                // ── Gráficos ──
+                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement(MotivosPieChart, { submissions: j, motivosData: dashStats && dashStats.motivos ? dashStats.motivos : null }),
+                    React.createElement(PieChart, {
+                        data: [{
+                            label: "Aprovados", value: dashStats ? dashStats.aprovados : j.filter(e => "aprovado" === e.status).length, color: "#16a34a"
+                        }, {
+                            label: "Rejeitados", value: dashStats ? dashStats.rejeitados : j.filter(e => "rejeitado" === e.status).length, color: "#dc2626"
+                        }, {
+                            label: "Pendentes", value: dashStats ? dashStats.pendentes : j.filter(e => "pendente" === e.status).length, color: "#d97706"
+                        }, {
+                            label: "Outros", value: dashStats ? Math.max(0, dashStats.total - dashStats.aprovados - dashStats.rejeitados - dashStats.pendentes) : j.filter(e => !["aprovado","rejeitado","pendente"].includes(e.status)).length, color: "#9ca3af"
+                        }].filter(e => e.value > 0),
+                        title: "Status das solicitações"
+                    })),
+                // ── Fila de validação ──
+                React.createElement("section", { "aria-label": "Aguardando validação", style: Object.assign({}, solcCard, { overflow: "hidden" }) },
+                    React.createElement("div", { style: { padding: "14px 16px 0", display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" } },
+                        React.createElement("h2", { style: solcSecTitulo }, "Aguardando validação"),
+                        React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280" } }, filtroAtivo === "expiradas" ? `${(p._expiradas || []).length} expirada(s) nas últimas 48h` : `${fila.length} neste filtro`)),
+                    React.createElement("div", { role: "group", "aria-label": "Filtrar fila", style: { padding: 12, display: "flex", flexWrap: "wrap", gap: 6, borderBottom: "1px solid #f3f4f6" } },
+                        chips.map(([id, lbl, cnt]) => solcChip(id, filtroAtivo === id, lbl, cnt, async () => { x({ ...p, pendingFilter: id }); if (id === "expiradas") { try { const _r = await fetchAuth(`${API_URL}/submissions/expiradas`); if (_r.ok) { const _d = await _r.json(); x(prev => ({ ...prev, _expiradas: _d.expiradas || [] })); } } catch {} } }))),
+                    painelRespostas && React.createElement("div", { style: { paddingTop: 12 } }, painelRespostas),
+                    filtroAtivo === "expiradas"
+                        ? listaExpiradas
+                        : fila.length === 0
+                            ? solcVazio(filtroAtivo === "all" ? "Nenhuma solicitação aguardando validação" : "Nenhuma solicitação neste filtro")
+                            : React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3", style: { padding: 12, alignItems: "stretch" } }, fila.map(cardPendente))));
+        })(),"search" === adminTabEfetivo && (() => {
+            /* SOLIC_CLEAN_V1: Busca — cabeçalho, card de filtros (busca com ícone, selects brancos), tabela
+               no padrão e drawer de detalhe (fotos, coordenadas, observação, excluir). buscarSubmissions,
+               Fa, exclusão e cópia de OS: mesma lógica de antes. Drawer usa p._solBuscaSel (só UI). */
+            const executarBusca = () => buscarSubmissions(p.searchOS, p.statusFilter, p.dateFilter === "custom" ? "" : p.dateFilter, p.dateFilter === "custom" ? p.buscaDataInicio : "", p.dateFilter === "custom" ? p.buscaDataFim : "");
+            const copiarOS = (os) => { navigator.clipboard.writeText(String(os)); ja("OS " + os + " copiada!", "success"); };
+            const excluir = async (e) => {
                 confirm(`Excluir OS ${e.ordemServico}?`) && (await fetchAuth(`${API_URL}/submissions/${e.id}`, {
                     method: "DELETE"
                 }), ja("Excluída!", "success"), La())
+            };
+            const sel = p._solBuscaSel != null ? buscaResults.find(r => r.id === p._solBuscaSel) : null;
+            const linkBtn = { background: "none", border: 0, padding: 0, font: "inherit", fontSize: 12.5, color: "#770fa8", cursor: "pointer", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" };
+            const subTxt = buscaTotal > 0
+                ? `${buscaTotal} resultado(s) encontrado(s)${buscaTotal > 100 ? " · mostrando 100" : ""}`
+                : "Pesquise por OS, código ou nome do profissional";
+
+            const drawer = sel && React.createElement("aside", {
+                "aria-label": "Detalhe da solicitação",
+                "data-sol": "busca-drawer",
+                style: Object.assign({}, solcCard, { flex: "1 1 320px", maxWidth: 400, minWidth: 0, display: "flex", flexDirection: "column", position: "sticky", top: 12, maxHeight: "calc(100vh - 24px)", overflowY: "auto" })
             },
-            className: "px-1.5 py-0.5 bg-red-600 text-white rounded text-xs"
-        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" }))))), React.createElement("p", {
-            className: "text-xs text-gray-600"
-        }, e.motivo), e.coordenadas && React.createElement("div", {
-            className: "mt-1 bg-green-50 border border-green-200 rounded p-1.5 flex items-center justify-between"
-        }, React.createElement("p", {
-            className: "text-xs font-mono text-green-900"
-        }, e.coordenadas), React.createElement("button", {
-            onClick: () => {
-                navigator.clipboard.writeText(e.coordenadas), ja("Copiado!", "success")
-            },
-            className: "px-1.5 py-0.5 bg-green-600 text-white text-xs rounded"
-        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })))), e.temImagem && React.createElement("div", {
-            className: "mt-1"
-        }, e.imagemComprovante ? React.createElement(React.Fragment, null, React.createElement("div", {
-            className: "flex gap-1 flex-wrap"
-        }, e.imagemComprovante.split("|||").map((e, t) => React.createElement("img", {
-            key: t,
-            src: e,
-            className: "h-20 rounded cursor-pointer",
-            onClick: () => g(e)
-        }))), React.createElement("button", {
-            onClick: () => setBuscaResults(t => t.map(t => t.id === e.id ? {
-                ...t,
-                imagemComprovante: null
-            } : t)),
-            className: "text-xs text-gray-500"
-        }, "▲ Ocultar")) : React.createElement("button", {
-            onClick: () => {
-                ja("Carregando...", "success"), Fa(e.id)
-            },
-            className: "px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver foto(s)"))), e.observacao && React.createElement("div", {
-            className: "mt-1 bg-white p-1 rounded border"
-        }, React.createElement("p", {
-            className: "text-xs text-gray-600"
-        }, "Obs: ", e.observacao)), React.createElement("div", {
-            className: "flex justify-between items-center mt-1"
-        }, React.createElement("p", {
-            className: "text-xs text-gray-400"
-        }, e.timestamp), e.validated_by_name && "pendente" !== e.status && React.createElement("p", {
-            className: "text-xs text-purple-600 font-semibold"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), ""), e.validated_by_name)))))), "ranking" === adminTabEfetivo && (() => {
+                React.createElement("div", { style: { padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 10, borderBottom: "1px solid #f3f4f6" } },
+                    React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                        React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: "#111827" } }, sel.fullName || "—"),
+                        React.createElement("div", { style: { fontSize: 12, color: "#6b7280", marginTop: 2 } }, `Cód. ${sel.codProfissional || "—"} · OS ${sel.ordemServico}`)),
+                    React.createElement("button", { type: "button", onClick: () => x({ ...p, _solBuscaSel: null }), "aria-label": "Fechar detalhe", title: "Fechar", style: solcIconBtn(false) }, solcIco("x", 14))),
+                React.createElement("div", { style: { padding: 18, display: "flex", flexDirection: "column", gap: 16, fontSize: 13 } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" } },
+                        solcTipo(sel.motivo),
+                        solcPilula(solcStatusInfo(sel), solcStatusInfo(sel).txt, false, true)),
+                    React.createElement("dl", { style: { margin: 0, display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", rowGap: 8, columnGap: 12, fontSize: 12.5 } },
+                        [["Enviada em", sel.timestamp],
+                         sel.subcategoria ? ["Subcategoria", sel.subcategoria] : null,
+                         sel.validated_by_name && "pendente" !== sel.status ? ["Validada por", sel.validated_by_name] : null,
+                         sel.contestacao_status === 'encerrada_aprovada' ? ["Contestação", "Aprovada"] : sel.contestacao_status === 'encerrada_rejeitada' ? ["Contestação", "Rejeitada definitivamente"] : sel.contestacao_status === 'aberta' ? ["Contestação", "Aberta"] : null
+                        ].filter(Boolean).reduce((acc, [k, v], idx) => {
+                            acc.push(React.createElement("dt", { key: "t" + idx, style: { color: "#6b7280" } }, k));
+                            acc.push(React.createElement("dd", { key: "d" + idx, style: { margin: 0, textAlign: "right", color: "#111827", overflowWrap: "anywhere" } }, v));
+                            return acc;
+                        }, [])),
+                    sel.observacao && React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 12, color: "#6b7280", marginBottom: 4 } }, "Observação"),
+                        React.createElement("div", { style: { background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 8, padding: "8px 10px", color: "#374151" } }, sel.observacao)),
+                    sel.coordenadas && React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 12, color: "#6b7280", marginBottom: 4 } }, "Coordenadas"),
+                        React.createElement("div", { style: { background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 8, padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px" } },
+                            React.createElement("span", { style: { color: "#374151", fontVariantNumeric: "tabular-nums", flex: "1 1 auto" } }, sel.coordenadas),
+                            React.createElement("button", { type: "button", onClick: () => { navigator.clipboard.writeText(sel.coordenadas), ja("Copiado!", "success") }, style: linkBtn }, solcIco("copy", 13), "Copiar"),
+                            React.createElement("a", { href: `https://www.google.com/maps?q=${sel.coordenadas}`, target: "_blank", style: linkBtn }, solcIco("map", 13), "Maps"))),
+                    sel.temImagem && React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 12, color: "#6b7280", marginBottom: 6 } }, "Comprovante"),
+                        sel.imagemComprovante
+                            ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" } },
+                                React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+                                    sel.imagemComprovante.split("|||").map((img, t) => React.createElement("img", { key: t, src: img, alt: "Comprovante " + (t + 1), style: { height: 88, borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer" }, onClick: () => g(img) }))),
+                                React.createElement("button", { type: "button", onClick: () => setBuscaResults(t => t.map(t => t.id === sel.id ? { ...t, imagemComprovante: null } : t)), style: Object.assign({}, linkBtn, { color: "#6b7280" }) }, "Ocultar fotos"))
+                            : React.createElement("button", { type: "button", onClick: () => { ja("Carregando...", "success"), Fa(sel.id) }, style: solcSm(solcBtnSec) }, solcIco("camera", 14), "Ver fotos")),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, borderTop: "1px solid #f3f4f6", paddingTop: 14 } },
+                        React.createElement("button", { type: "button", onClick: () => copiarOS(sel.ordemServico), style: Object.assign({}, solcBtnSec, { height: 38 }) }, solcIco("copy", 14), "Copiar OS"),
+                        React.createElement("button", { type: "button", onClick: () => excluir(sel), style: Object.assign({}, solcBtnDestr, { height: 38 }) }, solcIco("trash", 14), "Excluir"))));
+
+            return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: "#111827" } },
+                solcCabecalho("Busca de solicitações", subTxt),
+                // ── Filtros ──
+                React.createElement("section", { "aria-label": "Filtros da busca", style: Object.assign({}, solcCard, { padding: 12, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }) },
+                    React.createElement("label", { className: "focus-within:border-purple-700 focus-within:ring-2 focus-within:ring-purple-100", style: { flex: "1 1 260px", minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: 10, color: "#9ca3af", background: "#ffffff" } },
+                        solcIco("search", 15),
+                        React.createElement("input", {
+                            type: "text",
+                            "aria-label": "Buscar por OS, código ou nome",
+                            placeholder: "Buscar por OS, código ou nome...",
+                            value: p.searchOS || "",
+                            onChange: e => x({ ...p, searchOS: e.target.value }),
+                            onKeyDown: e => { if (e.key === "Enter") executarBusca(); },
+                            style: { border: 0, outline: 0, flex: 1, minWidth: 0, font: "inherit", fontSize: 13, color: "#111827", background: "transparent" }
+                        })),
+                    React.createElement("select", {
+                        "aria-label": "Status",
+                        value: p.statusFilter || "",
+                        onChange: e => x({ ...p, statusFilter: e.target.value }),
+                        className: SOLC_IN_CLS + " flex-[1_1_140px] sm:flex-none"
+                    }, React.createElement("option", { value: "" }, "Todos status"), React.createElement("option", { value: "pendente" }, "Pendente"), React.createElement("option", { value: "aprovado" }, "Aprovado"), React.createElement("option", { value: "rejeitado" }, "Rejeitado"), React.createElement("option", { value: "contestado" }, "Contestado")),
+                    React.createElement("select", {
+                        "aria-label": "Período",
+                        value: p.dateFilter || "",
+                        onChange: e => x({ ...p, dateFilter: e.target.value }),
+                        className: SOLC_IN_CLS + " flex-[1_1_140px] sm:flex-none"
+                    }, React.createElement("option", { value: "" }, "Todo período"), React.createElement("option", { value: "today" }, "Hoje"), React.createElement("option", { value: "week" }, "Esta semana"), React.createElement("option", { value: "month" }, "Este mês"), React.createElement("option", { value: "custom" }, "Personalizado")),
+                    p.dateFilter === "custom" && React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+                        React.createElement("input", { type: "date", "aria-label": "Data inicial", value: p.buscaDataInicio || "", onChange: e => x({ ...p, buscaDataInicio: e.target.value }), className: SOLC_IN_CLS }),
+                        React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280" } }, "até"),
+                        React.createElement("input", { type: "date", "aria-label": "Data final", value: p.buscaDataFim || "", onChange: e => x({ ...p, buscaDataFim: e.target.value }), className: SOLC_IN_CLS })),
+                    React.createElement("button", {
+                        type: "button",
+                        onClick: executarBusca,
+                        disabled: buscaLoading,
+                        style: Object.assign({}, solcBtnPri, { height: 38, opacity: buscaLoading ? 0.7 : 1, cursor: buscaLoading ? "wait" : "pointer" })
+                    }, buscaLoading ? React.createElement(React.Fragment, null, solcIco("refresh", 15), "Buscando...") : React.createElement(React.Fragment, null, solcIco("search", 15), "Buscar"))),
+                // ── Resultados + drawer ──
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" } },
+                    React.createElement("section", { "aria-label": "Resultados", style: Object.assign({}, solcCard, { flex: "999 1 640px", minWidth: 0, overflow: "hidden" }) },
+                        0 === buscaResults.length
+                            ? (buscaLoading ? solcCarregando("Buscando solicitações...") : solcVazio("Use os filtros acima para buscar solicitações", { padding: "56px 16px" }))
+                            : React.createElement("div", { style: { overflowX: "auto" } },
+                                React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 820 } },
+                                    React.createElement("thead", null, React.createElement("tr", null,
+                                        React.createElement("th", { style: solcTh({ paddingLeft: 16 }) }, "OS"),
+                                        React.createElement("th", { style: solcTh() }, "Profissional"),
+                                        React.createElement("th", { style: solcTh() }, "Motivo"),
+                                        React.createElement("th", { style: solcTh() }, "Status"),
+                                        React.createElement("th", { style: solcTh() }, "Enviada em"),
+                                        React.createElement("th", { style: solcTh() }, "Validada por"),
+                                        React.createElement("th", { style: solcTh({ textAlign: "right", paddingRight: 16 }) }, React.createElement("span", { className: "sr-only" }, "Ações")))),
+                                    React.createElement("tbody", null, buscaResults.map(e => {
+                                        const aberto = sel && sel.id === e.id;
+                                        const st = solcStatusInfo(e);
+                                        return React.createElement("tr", {
+                                            key: e.id,
+                                            "data-sol": "busca-row",
+                                            onClick: () => x({ ...p, _solBuscaSel: aberto ? null : e.id }),
+                                            className: aberto ? "" : "hover:bg-gray-50",
+                                            style: { cursor: "pointer", background: aberto ? "#faf7fd" : undefined, boxShadow: aberto ? "inset 3px 0 0 #770fa8" : "none" }
+                                        },
+                                            React.createElement("td", { style: solcTd({ paddingLeft: 16, whiteSpace: "nowrap" }) },
+                                                React.createElement("button", {
+                                                    type: "button", title: "Clique para copiar o número da OS",
+                                                    onClick: ev => { ev.stopPropagation(); copiarOS(e.ordemServico); },
+                                                    style: { background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: "#111827", fontVariantNumeric: "tabular-nums", display: "inline-flex", alignItems: "center", gap: 5 }
+                                                }, e.ordemServico, solcIco("copy", 13, { color: "#9ca3af" }))),
+                                            React.createElement("td", { style: solcTd({ maxWidth: 240 }) },
+                                                React.createElement("div", { style: { fontWeight: 500, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, e.fullName),
+                                                React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280", fontVariantNumeric: "tabular-nums" } }, "Cód. ", e.codProfissional)),
+                                            React.createElement("td", { style: solcTd({ maxWidth: 220 }) }, solcTipo(e.motivo)),
+                                            React.createElement("td", { style: solcTd() }, solcPilula(st, st.txt)),
+                                            React.createElement("td", { style: solcTd({ color: "#374151", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }) }, e.timestamp),
+                                            React.createElement("td", { style: solcTd({ color: "#374151", whiteSpace: "nowrap" }) }, e.validated_by_name && "pendente" !== e.status ? e.validated_by_name : React.createElement("span", { style: { color: "#9ca3af" } }, "—")),
+                                            React.createElement("td", { style: solcTd({ textAlign: "right", paddingRight: 16, whiteSpace: "nowrap" }), onClick: ev => ev.stopPropagation() },
+                                                React.createElement("div", { style: { display: "inline-flex", gap: 6 } },
+                                                    e.temImagem && React.createElement("button", { type: "button", "aria-label": "Ver fotos da OS " + e.ordemServico, title: "Ver fotos", onClick: () => { if (e.imagemComprovante) { g(e.imagemComprovante.split("|||")[0]); } else { ja("Carregando...", "success"), Fa(e.id) } }, style: solcIconBtn(false) }, solcIco("camera", 14)),
+                                                    React.createElement("button", { type: "button", "aria-label": "Excluir OS " + e.ordemServico, title: "Excluir", onClick: () => excluir(e), style: solcIconBtn(true) }, solcIco("trash", 14)))));
+                                    }))))),
+                    drawer));
+        })(),"ranking" === adminTabEfetivo && (() => {
+            /* SOLIC_CLEAN_V1: Ranking — cabeçalho, filtros (segmentado + datas), faixa de KPIs por categoria
+               (selecionável), lista no padrão com expansão. aplicarFiltros, CSV e Fa: lógica original. */
             // Helper: aplica filtros e dispara recarregamento (resumo + ranking)
             const aplicarFiltros = (patch) => {
                 const novo = { ...p, ...patch };
@@ -21569,208 +21600,160 @@ const hideLoadingScreen = () => {
             const resumo = rankingResumo || { total_geral: 0, total_profissionais: 0, categorias: {} };
             const cats = resumo.categorias || {};
             const totalGeral = resumo.total_geral || 0;
-            // Estilos compartilhados pros 4 cards
             const cardCats = [
-                { key: 'retorno',  emoji: 'refresh', label: 'Retorno',         tema: { fg: '#92400e', bg: '#fffbeb', borda: '#d97706' } },
-                { key: 'pedagio',  emoji: 'map', label: 'Pedágio',         tema: { fg: '#92400e', bg: '#fffbeb', borda: '#f67602' } },
-                { key: 'simoes',   emoji: 'building', label: 'Simões/Camaçari', tema: { fg: '#166534', bg: '#f0fdf4', borda: '#16a34a' } },
-                { key: 'ponto1',   emoji: 'pin', label: 'Ponto 1',         tema: { fg: '#1e40af', bg: '#eff6ff', borda: '#bfdbfe' } }
+                { key: 'retorno', icone: 'refresh', label: 'Retorno' },
+                { key: 'pedagio', icone: 'map', label: 'Pedágio' },
+                { key: 'simoes', icone: 'building', label: 'Simões/Camaçari' },
+                { key: 'ponto1', icone: 'pin', label: 'Ponto 1' }
             ];
             const labelCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].label) || categoriaAtiva;
             const totalCategoria = (cats[categoriaAtiva] && cats[categoriaAtiva].total) || 0;
-            const btnPeriodo = (id, label) => React.createElement("button", {
-                key: id,
-                onClick: () => aplicarFiltros({ rankingPeriod: id, rankingDataInicio: '', rankingDataFim: '' }),
-                style: periodoAtivo === id ? { background: '#faf7fd', borderColor: '#770fa8', color: '#770fa8', fontWeight: 500 } : {},
-                className: "text-xs px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition"
-            }, label);
+            const exportarCSV = () => {
+                // Gera CSV com todos os profissionais (independente de quantos)
+                const linhas = [['Posição', 'Código', 'Nome', 'Aprovações']];
+                rankingRetorno.forEach((r, i) => {
+                    linhas.push([
+                        (i + 1) + 'º',
+                        r.user_cod || '',
+                        (r.user_name || '').replace(/"/g, '""'),
+                        r.total || 0
+                    ]);
+                });
+                const csv = '﻿' + linhas.map(r => r.map(c => `"${c}"`).join(';')).join('\r\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const periodoStr = (p.rankingDataInicio && p.rankingDataFim)
+                    ? `${p.rankingDataInicio}_a_${p.rankingDataFim}`
+                    : (p.rankingPeriod || 'todos');
+                a.download = `ranking_${categoriaAtiva}_${periodoStr}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
 
-            return React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            },
-                // ── Header ─────────────────────────────────────────────
-                React.createElement("div", { className: "flex items-start justify-between mb-4 flex-wrap gap-3" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-lg font-semibold text-gray-900" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trophy" })), "Ranking de Solicitações")),
-                        React.createElement("p", { className: "text-xs text-gray-500 mt-0.5" },
-                            totalGeral, " solicitações aprovadas no período · ",
-                            resumo.total_profissionais || 0, " profissionais")
-                    ),
-                    React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-                        btnPeriodo('today', 'Hoje'),
-                        btnPeriodo('week', 'Semana'),
-                        btnPeriodo('month', 'Mês'),
-                        btnPeriodo('all', 'Tudo'),
-                        React.createElement("span", { className: "text-gray-300 mx-1" }, "|"),
+            const lista = (() => {
+                if (rankingLoading) return solcCarregando("Carregando ranking...");
+                const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ id: s.id, ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem, imagemComprovante: s.imagemComprovante })) }]);
+                if (0 === l.length) return solcVazio("Sem dados no período");
+                return React.createElement("ol", { style: { listStyle: "none", margin: 0, padding: 0 } }, l.map(([k, v], i) => {
+                    const aberto = !!p[`rankingExp_${k}`];
+                    const alternar = () => x({ ...p, [`rankingExp_${k}`]: !p[`rankingExp_${k}`] });
+                    return React.createElement("li", { key: i, style: { borderTop: i === 0 ? "none" : "1px solid #f3f4f6" } },
+                        React.createElement("div", {
+                            className: "hover:bg-gray-50",
+                            style: { display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", cursor: "pointer", background: aberto ? "#faf7fd" : undefined },
+                            onClick: alternar
+                        },
+                            React.createElement("div", { style: { width: 32, height: 32, flex: "none", borderRadius: 999, display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13, fontVariantNumeric: "tabular-nums", background: i < 3 ? "#f3e8fb" : "transparent", color: i < 3 ? "#5d0b85" : "#6b7280" } }, `${i + 1}º`),
+                            React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                                React.createElement("div", { style: { fontWeight: 600, fontSize: 14, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, v.nome),
+                                React.createElement("div", { style: { fontSize: 12, color: "#6b7280", fontVariantNumeric: "tabular-nums" } }, "Cód. ", v.cod)),
+                            React.createElement("div", { style: { textAlign: "right" } },
+                                React.createElement("div", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: 20, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 } }, v.total),
+                                React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280" } }, "aprovações")),
+                            React.createElement("button", {
+                                type: "button",
+                                "aria-expanded": aberto,
+                                "aria-label": (aberto ? "Recolher" : "Expandir") + " solicitações de " + v.nome,
+                                onClick: ev => { ev.stopPropagation(); alternar(); },
+                                style: solcIconBtn(false)
+                            }, solcIco("arrowdown", 14, { transform: aberto ? "rotate(180deg)" : "none", transition: "transform .15s" }))),
+                        aberto && React.createElement("div", { style: { padding: "0 16px 14px 62px", background: "#faf7fd" } },
+                            v.solicitacoes.length === 0
+                                ? React.createElement("div", { style: { fontSize: 12.5, color: "#6b7280", padding: "4px 0" } }, "Sem solicitações detalhadas")
+                                : React.createElement("div", { style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10, maxHeight: 256, overflowY: "auto" } },
+                                    v.solicitacoes.map((s, idx) => React.createElement("div", { key: idx, style: { padding: "10px 12px", borderTop: idx === 0 ? "none" : "1px solid #f3f4f6" } },
+                                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" } },
+                                            React.createElement("div", null,
+                                                React.createElement("button", {
+                                                    type: "button",
+                                                    style: { background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: "#111827", fontVariantNumeric: "tabular-nums", display: "inline-flex", alignItems: "center", gap: 5 },
+                                                    title: "Clique para copiar o número da OS",
+                                                    onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("OS " + s.ordemServico + " copiada!", "success"); }
+                                                }, "OS ", s.ordemServico, solcIco("copy", 13, { color: "#9ca3af" })),
+                                                React.createElement("div", { style: { fontSize: 12, color: "#6b7280" } }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))),
+                                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                                                s.temImagem && React.createElement("button", {
+                                                    type: "button",
+                                                    onClick: e => {
+                                                        e.stopPropagation();
+                                                        if (s.imagemComprovante) {
+                                                            g(s.imagemComprovante.split("|||")[0])
+                                                        } else {
+                                                            ja("Carregando...", "success");
+                                                            Fa(s.id)
+                                                        }
+                                                    },
+                                                    style: solcSm(solcBtnSec)
+                                                }, solcIco("camera", 13), "Ver foto"),
+                                                solcPilula(SOLC_TONS.verde, "Aprovada"))),
+                                        s.imagemComprovante && React.createElement("div", { style: { marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" } },
+                                            s.imagemComprovante.split("|||").map((img, imgIdx) => React.createElement("img", {
+                                                key: imgIdx, src: img, alt: "Comprovante",
+                                                style: { height: 64, borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer" },
+                                                onClick: e => { e.stopPropagation(); g(img) }
+                                            })))))))
+                    );
+                }));
+            })();
+
+            return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: "#111827" } },
+                solcCabecalho("Ranking de solicitações", `${totalGeral.toLocaleString("pt-BR")} solicitações aprovadas no período · ${resumo.total_profissionais || 0} profissionais`),
+                // ── Filtros de período ──
+                React.createElement("section", { "aria-label": "Período", style: Object.assign({}, solcCard, { padding: 12, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }) },
+                    solcSegmentado([['today', 'Hoje'], ['week', 'Semana'], ['month', 'Mês'], ['all', 'Tudo']], periodoAtivo, (id) => aplicarFiltros({ rankingPeriod: id, rankingDataInicio: '', rankingDataFim: '' }), "Período"),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+                        React.createElement("span", { style: { fontSize: 12.5, color: periodoAtivo === 'custom' ? "#5d0b85" : "#6b7280", fontWeight: periodoAtivo === 'custom' ? 600 : 400 } }, "Personalizado"),
                         React.createElement("input", {
-                            type: 'date',
+                            type: 'date', "aria-label": "Data inicial",
                             value: p.rankingDataInicio || '',
                             onChange: (e) => {
                                 const di = e.target.value;
                                 if (di && p.rankingDataFim) aplicarFiltros({ rankingDataInicio: di, rankingPeriod: 'custom' });
                                 else x({ ...p, rankingDataInicio: di });
                             },
-                            className: "text-xs px-2 py-1 border border-gray-300 rounded-md bg-white",
-                            style: { width: '130px' }
+                            className: SOLC_IN_CLS + " !h-[34px]", style: { width: 140 }
                         }),
-                        React.createElement("span", { className: "text-xs text-gray-400" }, "→"),
+                        React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280" } }, "até"),
                         React.createElement("input", {
-                            type: 'date',
+                            type: 'date', "aria-label": "Data final",
                             value: p.rankingDataFim || '',
                             onChange: (e) => {
                                 const df = e.target.value;
                                 if (df && p.rankingDataInicio) aplicarFiltros({ rankingDataFim: df, rankingPeriod: 'custom' });
                                 else x({ ...p, rankingDataFim: df });
                             },
-                            className: "text-xs px-2 py-1 border border-gray-300 rounded-md bg-white",
-                            style: { width: '130px' }
-                        })
-                    )
-                ),
-                // ── 4 cards de categoria ──────────────────────────────
-                React.createElement("div", {
-                    className: "grid grid-cols-2 md:grid-cols-4 gap-2 mb-4"
-                }, cardCats.map(c => {
-                    const ativa = categoriaAtiva === c.key;
-                    const dados = cats[c.key] || { total: 0, pct: 0 };
-                    return React.createElement("div", {
-                        key: c.key,
-                        onClick: () => aplicarFiltros({ rankingCategoria: c.key }),
-                        style: ativa
-                            ? { background: c.tema.bg, border: `2px solid ${c.tema.borda}`, cursor: 'pointer' }
-                            : { background: '#f3f4f6', border: '2px solid transparent', cursor: 'pointer' },
-                        className: "rounded-lg p-3 transition hover:opacity-90"
-                    },
-                        React.createElement("div", {
-                            className: "text-xs font-semibold flex items-center gap-1",
-                            style: { color: ativa ? c.tema.fg : '#6b7280' }
-                        }, React.createElement("svg", { className: "ico", style: { width: 15, height: 15, color: c.tema.fg }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + c.emoji })), c.label),
-                        React.createElement("div", {
-                            className: "text-2xl font-medium mt-0.5",
-                            style: { color: ativa ? c.tema.fg : '#111827' }
-                        }, dados.total),
-                        React.createElement("div", {
-                            className: "text-[10px]",
-                            style: { color: ativa ? c.tema.fg : '#9ca3af', opacity: 0.85 }
-                        }, dados.pct, '% do total')
-                    );
-                })),
-                // ── Sub-header da categoria atual ─────────────────────
-                React.createElement("div", {
-                    className: "border-t border-gray-200 pt-3 pb-2 flex justify-between items-center"
-                },
-                    React.createElement("div", { className: "text-sm font-medium text-gray-900" },
-                        "Ranking · ", labelCategoria),
-                    React.createElement("div", { className: "flex items-center gap-3" },
-                        React.createElement("span", { className: "text-xs text-gray-500" },
-                            totalCategoria, ' solicitações · ', rankingRetorno.length, ' profissionais'),
+                            className: SOLC_IN_CLS + " !h-[34px]", style: { width: 140 }
+                        }))),
+                // ── Faixa de KPIs por categoria (clique seleciona) ──
+                React.createElement("section", { "aria-label": "Categorias", role: "group", style: Object.assign({}, solcCard, { display: "flex", flexWrap: "wrap", overflow: "hidden" }) },
+                    cardCats.map((c, ci) => {
+                        const ativa = categoriaAtiva === c.key;
+                        const dados = cats[c.key] || { total: 0, pct: 0 };
+                        return React.createElement("button", {
+                            key: c.key, type: "button", "aria-pressed": ativa,
+                            onClick: () => aplicarFiltros({ rankingCategoria: c.key }),
+                            className: ativa ? "" : "hover:bg-gray-50",
+                            style: Object.assign({}, solcKpiCell, { textAlign: "left", fontFamily: "inherit", cursor: "pointer", borderTop: 0, borderLeft: 0, borderRight: ci === cardCats.length - 1 ? "none" : "1px solid #f3f4f6", background: ativa ? "#faf7fd" : "#ffffff", boxShadow: ativa ? "inset 0 -2px 0 #770fa8" : "none" })
+                        },
+                            React.createElement("div", { style: Object.assign({}, solcKpiLbl, { display: "flex", alignItems: "center", gap: 6, color: ativa ? "#5d0b85" : "#6b7280", fontWeight: ativa ? 600 : 400 }) }, solcIco(c.icone, 14), c.label),
+                            React.createElement("div", { style: Object.assign({}, solcKpiNum, { color: ativa ? "#5d0b85" : "#111827" }) }, Number(dados.total || 0).toLocaleString("pt-BR")),
+                            React.createElement("div", { style: solcKpiSub }, dados.pct, "% do total"));
+                    })),
+                // ── Lista ──
+                React.createElement("section", { "aria-label": "Ranking", style: Object.assign({}, solcCard, { overflow: "hidden" }) },
+                    React.createElement("div", { style: { padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", borderBottom: "1px solid #f3f4f6" } },
+                        React.createElement("div", null,
+                            React.createElement("h2", { style: solcSecTitulo }, "Ranking · ", labelCategoria),
+                            React.createElement("div", { style: { fontSize: 12.5, color: "#6b7280", marginTop: 2 } }, totalCategoria, ' solicitações · ', rankingRetorno.length, ' profissionais')),
                         rankingRetorno.length > 0 && React.createElement("button", {
-                            onClick: () => {
-                                // Gera CSV com todos os profissionais (independente de quantos)
-                                const linhas = [['Posição', 'Código', 'Nome', 'Aprovações']];
-                                rankingRetorno.forEach((r, i) => {
-                                    linhas.push([
-                                        (i + 1) + 'º',
-                                        r.user_cod || '',
-                                        (r.user_name || '').replace(/"/g, '""'),
-                                        r.total || 0
-                                    ]);
-                                });
-                                const csv = '\uFEFF' + linhas.map(r => r.map(c => `"${c}"`).join(';')).join('\r\n');
-                                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                const periodoStr = (p.rankingDataInicio && p.rankingDataFim)
-                                    ? `${p.rankingDataInicio}_a_${p.rankingDataFim}`
-                                    : (p.rankingPeriod || 'todos');
-                                a.download = `ranking_${categoriaAtiva}_${periodoStr}.csv`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                            },
-                            className: "text-xs px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition flex items-center gap-1",
-                            title: "Exportar a lista completa em CSV"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-download" })), "Exportar CSV"))
-                    )
-                ),
-                // ── Lista de profissionais (lógica original preservada)
-                React.createElement("div", {
-                    className: "space-y-3"
-                }, (() => {
-            if (rankingLoading) return React.createElement("div", { className: "text-center py-8" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("p", { className: "mt-2 text-gray-500" }, "Carregando ranking..."));
-            const l = rankingRetorno.map(r => [r.user_cod, { nome: r.user_name, cod: r.user_cod, total: parseInt(r.total), solicitacoes: (r.solicitacoes || []).map(s => ({ id: s.id, ordemServico: s.ordemServico, created_at: s.created_at, temImagem: s.temImagem, imagemComprovante: s.imagemComprovante })) }]);
-            return 0 === l.length ? React.createElement("p", {
-                className: "text-gray-500 text-center py-8"
-            }, "Sem dados no período") : l.map(([k, v], i) => React.createElement("div", {
-                key: i,
-                className: "bg-gray-50 rounded-lg hover:bg-gray-100"
-            }, React.createElement("div", {
-                className: "flex items-center gap-4 p-4 cursor-pointer",
-                onClick: () => x({
-                    ...p,
-                    [`rankingExp_${k}`]: !p[`rankingExp_${k}`]
-                })
-            }, React.createElement("div", {
-                className: "text-3xl font-bold w-12 " + (0 === i ? "text-yellow-500" : 1 === i ? "text-gray-400" : 2 === i ? "text-purple-600" : "text-gray-400")
-            }, 0 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 1 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 2 === i ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : `${i+1}º`), React.createElement("div", {
-                className: "flex-1"
-            }, React.createElement("p", {
-                className: "font-semibold text-lg text-gray-800"
-            }, v.nome), React.createElement("p", {
-                className: "text-sm text-gray-500 font-mono"
-            }, "COD: ", v.cod)), React.createElement("div", {
-                className: "text-right flex items-center gap-3"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "text-3xl font-bold text-purple-600"
-            }, v.total), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, "aprovações")), React.createElement("button", {
-                className: "w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center hover:bg-purple-700 transition-all " + (p[`rankingExp_${k}`] ? "rotate-45" : "")
-            }, "+"))), p[`rankingExp_${k}`] && React.createElement("div", {
-                className: "px-4 pb-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-64 overflow-y-auto"
-            }, v.solicitacoes.map((s, idx) => React.createElement("div", {
-                key: idx,
-                className: "p-3 hover:bg-gray-50"
-            }, React.createElement("div", {
-                className: "flex justify-between items-center"
-            }, React.createElement("div", null, React.createElement("button", {
-                className: "font-mono font-semibold text-sm flex items-center gap-1 group hover:text-purple-700 transition-colors cursor-pointer text-left",
-                title: "Clique para copiar o número da OS",
-                onClick: () => { navigator.clipboard.writeText(String(s.ordemServico)); ja("OS " + s.ordemServico + " copiada!", "success"); }
-            }, "OS: ", s.ordemServico, React.createElement("svg", { className: "ico", style: { width: 14, height: 14 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, new Date(s.created_at).toLocaleDateString("pt-BR"), " às ", new Date(s.created_at).toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit"
-            }))), React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, s.temImagem && React.createElement("button", {
-                onClick: e => {
-                    e.stopPropagation();
-                    if (s.imagemComprovante) {
-                        g(s.imagemComprovante.split("|||")[0])
-                    } else {
-                        ja("Carregando...", "success");
-                        Fa(s.id)
-                    }
-                },
-                className: "px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200 flex items-center gap-1"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), "Ver Foto")), React.createElement("span", {
-                className: "px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovada")))), s.imagemComprovante && React.createElement("div", {
-                className: "mt-2 flex gap-2 flex-wrap"
-            }, s.imagemComprovante.split("|||").map((img, imgIdx) => React.createElement("img", {
-                key: imgIdx,
-                src: img,
-                className: "h-16 rounded cursor-pointer border border-gray-200 hover:border-purple-400",
-                onClick: e => {
-                    e.stopPropagation();
-                    g(img)
-                }
-            })))))))))
-        })()))})(), "disponibilidade" === adminTabEfetivo && (
+                            type: "button", onClick: exportarCSV,
+                            title: "Exportar a lista completa em CSV",
+                            style: Object.assign({}, solcBtnSec, { height: 36 })
+                        }, solcIco("download", 15), "Exportar CSV")),
+                    lista));
+        })(),"disponibilidade" === adminTabEfetivo && (
             typeof window.ModuloDisponibilidadeContent !== 'undefined' 
                 ? React.createElement(React.Fragment, null, React.createElement(window.ModuloDisponibilidadeContent, {
                     p, x, ja, API_URL, pe, Ta, A, l, fetchAuth, getToken
@@ -21782,10 +21765,15 @@ const hideLoadingScreen = () => {
                     )
                 )
         ), "relatorios" === adminTabEfetivo && (() => {
+            /* SOLIC_CLEAN_V1: Relatórios — cabeçalho com "Gerar PDF" (secundário), card de período
+               (segmentado Por mês/Personalizado), faixa única de KPIs, gráficos de barras sólidas e
+               tabelas no padrão. carregarRelatorio e o HTML do PDF: idênticos. */
             const e = void 0 !== p.relMes ? parseInt(p.relMes) : (new Date).getMonth(),
                 t = void 0 !== p.relAno ? parseInt(p.relAno) : (new Date).getFullYear();
             if (!relatorioData && !relatorioLoading) { carregarRelatorio(e, t); }
-            if (relatorioLoading) return React.createElement("div", { className: "flex items-center justify-center py-12" }, React.createElement("div", { className: "animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" }), React.createElement("span", { className: "ml-3 text-gray-600" }, "Carregando relatório..."));
+            if (relatorioLoading) return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
+                solcCabecalho("Relatório de solicitações", "Carregando..."),
+                React.createElement("section", { style: solcCard }, solcCarregando("Carregando relatório...")));
             const rd = relatorioData || {},
                 a = { length: rd.total || 0 },
                 l = { length: rd.aprovados || 0 },
@@ -21802,246 +21790,129 @@ const hideLoadingScreen = () => {
                 E = { length: rd.mesAnteriorTotal || 0 },
                 h = rd.variacao || "0.0",
                 f = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-            return React.createElement(React.Fragment, null, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap items-center gap-4"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("label", {
-                className: "font-semibold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Período:")), React.createElement("select", {
-                value: p.relTipoFiltro || "mes",
-                onChange: ev => { x({ ...p, relTipoFiltro: ev.target.value }); },
-                className: "px-3 py-2 border rounded-lg bg-purple-50 font-semibold"
-            }, React.createElement("option", { value: "mes" }, "Por Mês"), React.createElement("option", { value: "custom" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Personalizado"))),
-            p.relTipoFiltro === "custom" ? React.createElement(React.Fragment, null,
-                React.createElement("input", {
-                    type: "date", value: p.relDataInicio || "",
-                    onChange: ev => x({ ...p, relDataInicio: ev.target.value }),
-                    className: "px-3 py-2 border rounded-lg"
-                }),
-                React.createElement("span", { className: "text-gray-500" }, "até"),
-                React.createElement("input", {
-                    type: "date", value: p.relDataFim || "",
-                    onChange: ev => x({ ...p, relDataFim: ev.target.value }),
-                    className: "px-3 py-2 border rounded-lg"
-                }),
-                React.createElement("button", {
-                    onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
-                    className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtrar"))
-            ) : React.createElement(React.Fragment, null,
-                React.createElement("select", {
-                    value: e,
-                    onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
-                    className: "px-3 py-2 border rounded-lg"
-                }, f.map((e, t) => React.createElement("option", {
-                    key: t, value: t
-                }, e))),
-                React.createElement("select", {
-                    value: t,
-                    onChange: ev => { x({ ...p, relAno: ev.target.value }); carregarRelatorio(e, parseInt(ev.target.value)); },
-                    className: "px-3 py-2 border rounded-lg"
-                }, [2024, 2025, 2026].map(e => React.createElement("option", {
-                    key: e, value: e
-                }, e)))
-            )), React.createElement("button", {
-                onClick: () => {
+            const custom = p.relTipoFiltro === "custom";
+            const fmtBR = (iso) => iso ? String(iso).split("-").reverse().join("/") : "";
+            const subTxt = custom && p.relDataInicio && p.relDataFim ? `${fmtBR(p.relDataInicio)} a ${fmtBR(p.relDataFim)} · ${a.length.toLocaleString("pt-BR")} solicitações` : `${f[e]} de ${t} · ${a.length.toLocaleString("pt-BR")} solicitações`;
+            const varPos = parseFloat(h) >= 0;
+            const taxaTom = (pct) => pct >= 70 ? SOLC_TONS.verde : pct >= 40 ? SOLC_TONS.ambar : SOLC_TONS.vermelho;
+            const num = (extra) => solcTd(Object.assign({ textAlign: "right", fontVariantNumeric: "tabular-nums" }, extra || {}));
+            const kpi = (lbl, valor, sub, cor, ultimo) => React.createElement("div", { style: Object.assign({}, solcKpiCell, ultimo ? { borderRight: "none" } : {}) },
+                React.createElement("div", { style: solcKpiLbl }, lbl),
+                React.createElement("div", { style: Object.assign({}, solcKpiNum, cor ? { color: cor } : {}) }, valor),
+                React.createElement("div", { style: solcKpiSub }, sub));
+            const barras = (titulo, dados, max, rotulo) => React.createElement("section", { style: Object.assign({}, solcCard, { padding: 18 }) },
+                React.createElement("h2", { style: Object.assign({}, solcSecTitulo, { marginBottom: 14 }) }, titulo),
+                dados.length === 0
+                    ? solcVazio("Sem dados no período", { padding: "48px 16px" })
+                    : React.createElement("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 180, gap: 10 } },
+                        dados.map((it, idx) => React.createElement("div", { key: idx, style: { flex: 1, minWidth: 0, height: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 4 } },
+                            React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: "#111827", fontVariantNumeric: "tabular-nums" } }, it.total),
+                            React.createElement("div", { title: `${rotulo(it, idx)}: ${it.total}`, style: { width: "100%", maxWidth: 56, height: `calc(${it.total / max * 100}% - 40px)`, minHeight: 4, background: "#770fa8", borderRadius: "6px 6px 2px 2px" } }),
+                            React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280", whiteSpace: "nowrap" } }, rotulo(it, idx))))));
+
+            return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: "#111827" } },
+                solcCabecalho("Relatório de solicitações", subTxt,
+                    React.createElement("button", {
+                        type: "button",
+                        onClick: () => {
                     const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #770fa8; border-bottom: 2px solid #770fa8; padding-bottom: 10px; }\n                      h2 { color: #770fa8; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #d97706; }\n                      .purple { color: #770fa8; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #d1d5db; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#f0fdf4":"#fef2f2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
                     p.document.write(m), p.document.close(), p.print()
                 },
-                className: "ml-auto px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Gerar PDF"))), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4 border-l-4 border-purple-500"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Total Solicitações")), React.createElement("p", {
-                className: "text-3xl font-bold text-purple-600"
-            }, a.length)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4 border-l-4 border-green-500"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas")), React.createElement("p", {
-                className: "text-3xl font-bold text-green-600"
-            }, l.length)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4 border-l-4 border-red-500"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas")), React.createElement("p", {
-                className: "text-3xl font-bold text-red-600"
-            }, r.length)), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500"
-            }, React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes")), React.createElement("p", {
-                className: "text-3xl font-bold text-yellow-600"
-            }, o.length))), React.createElement("div", {
-                className: "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-            }, React.createElement("div", {
-                className: "bg-green-50 rounded-xl p-4 text-center border border-green-200"
-            }, React.createElement("p", {
-                className: "text-3xl font-bold text-green-600"
-            }, c, "%"), React.createElement("p", {
-                className: "text-xs text-green-700"
-            }, "Taxa de Aprovação")), React.createElement("div", {
-                className: "bg-red-50 rounded-xl p-4 text-center border border-red-200"
-            }, React.createElement("p", {
-                className: "text-3xl font-bold text-red-600"
-            }, s, "%"), React.createElement("p", {
-                className: "text-xs text-red-700"
-            }, "Taxa de Rejeição")), React.createElement("div", {
-                className: "bg-purple-50 rounded-xl p-4 text-center border border-purple-200"
-            }, React.createElement("p", {
-                className: "text-3xl font-bold text-purple-600"
-            }, rd.totalProfissionais || 0), React.createElement("p", {
-                className: "text-xs text-purple-700"
-            }, "Total Profissionais")), React.createElement("div", {
-                className: "bg-blue-50 rounded-xl p-4 text-center border border-blue-200"
-            }, React.createElement("p", {
-                className: "text-3xl font-bold text-blue-600"
-            }, rd.mediaPorProfissional || 0), React.createElement("p", {
-                className: "text-xs text-blue-700"
-            }, "Média por Profissional"))), React.createElement("div", {
-                className: "rounded-xl p-4 mb-6 " + (parseFloat(h) >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")
-            }, React.createElement("h3", {
-                className: "font-semibold mb-2"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Comparativo com Mês Anterior")), React.createElement("div", {
-                className: "flex items-center gap-6"
-            }, React.createElement("div", null, React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Mês anterior: ", React.createElement("strong", null, E.length), " solicitações"), React.createElement("p", {
-                className: "text-sm text-gray-600"
-            }, "Mês atual: ", React.createElement("strong", null, a.length), " solicitações")), React.createElement("div", {
-                className: "text-3xl font-bold " + (parseFloat(h) >= 0 ? "text-green-600" : "text-red-600")
-            }, parseFloat(h) >= 0 ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trenddown" })), " ", parseFloat(h) >= 0 ? "+" : "", h, "%"))), React.createElement("div", {
-                className: "grid md:grid-cols-2 gap-6 mb-6"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Evolução (Últimos 6 meses)")), React.createElement("div", {
-                className: "flex items-end justify-between h-40 gap-2"
-            }, g.map((e, t) => React.createElement("div", {
-                key: t,
-                className: "flex-1 flex flex-col items-center"
-            }, React.createElement("div", {
-                className: "w-full bg-gray-100 rounded-t relative",
-                style: {
-                    height: e.total / b * 100 + "%",
-                    minHeight: "20px"
-                }
-            }, React.createElement("div", {
-                className: "absolute inset-0 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t"
-            })), React.createElement("p", {
-                className: "text-xs font-bold mt-1"
-            }, e.total), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, e.label))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), "Por Semana ("), f[e], ")"), React.createElement("div", {
-                className: "flex items-end justify-between h-40 gap-2"
-            }, d.map((e, t) => React.createElement("div", {
-                key: t,
-                className: "flex-1 flex flex-col items-center"
-            }, React.createElement("div", {
-                className: "w-full bg-gray-100 rounded-t relative",
-                style: {
-                    height: e.total / u * 100 + "%",
-                    minHeight: "20px"
-                }
-            }, React.createElement("div", {
-                className: "absolute inset-0 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t"
-            })), React.createElement("p", {
-                className: "text-xs font-bold mt-1"
-            }, e.total), React.createElement("p", {
-                className: "text-xs text-gray-500"
-            }, "Sem ", t + 1)))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6 mb-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Por Motivo")), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-sm"
-            }, React.createElement("thead", {
-                className: "bg-gray-50"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Motivo"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Total"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovadas")), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitadas")), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Pendentes")), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Taxa"))), React.createElement("tbody", null, Object.entries(n).sort((e, t) => t[1].total - e[1].total).map(([e, t]) => React.createElement("tr", {
-                key: e,
-                className: "border-t hover:bg-gray-50"
-            }, React.createElement("td", {
-                className: "px-4 py-3 font-semibold"
-            }, e), React.createElement("td", {
-                className: "px-4 py-3 text-center font-bold"
-            }, t.total), React.createElement("td", {
-                className: "px-4 py-3 text-center text-green-600 font-semibold"
-            }, t.aprovadas), React.createElement("td", {
-                className: "px-4 py-3 text-center text-red-600 font-semibold"
-            }, t.rejeitadas), React.createElement("td", {
-                className: "px-4 py-3 text-center text-yellow-600 font-semibold"
-            }, t.pendentes), React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", {
-                className: "px-2 py-1 rounded text-xs font-bold " + (t.total > 0 && t.aprovadas / t.total >= .7 ? "bg-green-100 text-green-700" : t.total > 0 && t.aprovadas / t.total >= .4 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")
-            }, t.total > 0 ? (t.aprovadas / t.total * 100).toFixed(0) : 0, "%")))))))), React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-6"
-            }, React.createElement("h3", {
-                className: "font-semibold mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" })), "Top 10 Profissionais do Mês")), React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                className: "w-full text-sm"
-            }, React.createElement("thead", {
-                className: "bg-gray-50"
-            }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "#"), React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Profissional"), React.createElement("th", {
-                className: "px-4 py-3 text-left"
-            }, "Código"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Total"), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" }))), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))), React.createElement("th", {
-                className: "px-4 py-3 text-center"
-            }, "Taxa"))), React.createElement("tbody", null, i.map((e, t) => React.createElement("tr", {
-                key: t,
-                className: "border-t hover:bg-gray-50 " + (t < 3 ? "bg-yellow-50" : "")
-            }, React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, 0 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 1 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : 2 === t ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-medal" })) : t + 1), React.createElement("td", {
-                className: "px-4 py-3 font-semibold"
-            }, e.nome), React.createElement("td", {
-                className: "px-4 py-3 font-mono text-gray-600"
-            }, e.cod || "-"), React.createElement("td", {
-                className: "px-4 py-3 text-center font-bold"
-            }, e.total), React.createElement("td", {
-                className: "px-4 py-3 text-center text-green-600 font-semibold"
-            }, e.aprovadas), React.createElement("td", {
-                className: "px-4 py-3 text-center text-red-600 font-semibold"
-            }, e.rejeitadas), React.createElement("td", {
-                className: "px-4 py-3 text-center"
-            }, React.createElement("span", {
-                className: "px-2 py-1 rounded text-xs font-bold " + (parseInt(e.taxa) >= 70 ? "bg-green-100 text-green-700" : parseInt(e.taxa) >= 40 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700")
-            }, e.taxa, "%")))))))))
+                        style: solcBtnSec
+                    }, solcIco("filetext", 15), "Gerar PDF")),
+                // ── Período ──
+                React.createElement("section", { "aria-label": "Período do relatório", style: Object.assign({}, solcCard, { padding: 12, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }) },
+                    solcSegmentado([["mes", "Por mês"], ["custom", "Personalizado"]], custom ? "custom" : "mes", (id) => { x({ ...p, relTipoFiltro: id }); }, "Tipo de período"),
+                    custom ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+                        React.createElement("input", {
+                            type: "date", "aria-label": "Data inicial", value: p.relDataInicio || "",
+                            onChange: ev => x({ ...p, relDataInicio: ev.target.value }),
+                            className: SOLC_IN_CLS
+                        }),
+                        React.createElement("span", { style: { fontSize: 12.5, color: "#6b7280" } }, "até"),
+                        React.createElement("input", {
+                            type: "date", "aria-label": "Data final", value: p.relDataFim || "",
+                            onChange: ev => x({ ...p, relDataFim: ev.target.value }),
+                            className: SOLC_IN_CLS
+                        }),
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => { if (p.relDataInicio && p.relDataFim) carregarRelatorio(null, null, p.relDataInicio, p.relDataFim); else ja("Selecione data início e fim", "error"); },
+                            style: Object.assign({}, solcBtnPri, { height: 38 })
+                        }, solcIco("filter", 15), "Filtrar")
+                    ) : React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+                        React.createElement("select", {
+                            "aria-label": "Mês",
+                            value: e,
+                            onChange: ev => { x({ ...p, relMes: ev.target.value }); carregarRelatorio(parseInt(ev.target.value), t); },
+                            className: SOLC_IN_CLS
+                        }, f.map((e, t) => React.createElement("option", { key: t, value: t }, e))),
+                        React.createElement("select", {
+                            "aria-label": "Ano",
+                            value: t,
+                            onChange: ev => { x({ ...p, relAno: ev.target.value }); carregarRelatorio(e, parseInt(ev.target.value)); },
+                            className: SOLC_IN_CLS
+                        }, [2024, 2025, 2026].map(e => React.createElement("option", { key: e, value: e }, e))))),
+                // ── Faixa de KPIs ──
+                React.createElement("section", { "aria-label": "Resumo do período", style: Object.assign({}, solcCard, { display: "flex", flexWrap: "wrap", overflow: "hidden" }) },
+                    kpi("Total de solicitações", a.length.toLocaleString("pt-BR"), `Mês anterior: ${E.length.toLocaleString("pt-BR")}`),
+                    kpi("Aprovadas", l.length.toLocaleString("pt-BR"), `${c}% de aprovação`),
+                    kpi("Rejeitadas", r.length.toLocaleString("pt-BR"), `${s}% de rejeição`),
+                    kpi("Pendentes", o.length.toLocaleString("pt-BR"), "aguardando validação", o.length > 0 ? "#92400e" : null),
+                    kpi("Profissionais", (rd.totalProfissionais || 0).toLocaleString("pt-BR"), `Média de ${rd.mediaPorProfissional || 0} por profissional`),
+                    kpi("Vs. mês anterior", React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, solcIco(varPos ? "trendup" : "trenddown", 18), `${varPos ? "+" : ""}${h}%`), `${E.length.toLocaleString("pt-BR")} → ${a.length.toLocaleString("pt-BR")} solicitações`, varPos ? "#166534" : "#991b1b", true)),
+                // ── Gráficos ──
+                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                    barras("Evolução (últimos 6 meses)", g, b, (it) => it.label),
+                    barras(`Por semana (${f[e]})`, d, u, (it, idx) => "Sem " + (idx + 1))),
+                // ── Por motivo ──
+                React.createElement("section", { style: Object.assign({}, solcCard, { overflow: "hidden" }) },
+                    React.createElement("div", { style: { padding: "14px 16px" } }, React.createElement("h2", { style: solcSecTitulo }, "Por motivo")),
+                    React.createElement("div", { style: { overflowX: "auto" } },
+                        React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 620 } },
+                            React.createElement("thead", null, React.createElement("tr", null,
+                                React.createElement("th", { style: solcTh({ paddingLeft: 16 }) }, "Motivo"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Total"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Aprovadas"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Rejeitadas"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Pendentes"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right", paddingRight: 16 }) }, "Taxa"))),
+                            React.createElement("tbody", null,
+                                Object.keys(n).length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 6, style: solcTd({ textAlign: "center", color: "#6b7280", padding: "32px 16px" }) }, "Sem solicitações no período")),
+                                Object.entries(n).sort((e, t) => t[1].total - e[1].total).map(([e, t]) => {
+                                    const pct = t.total > 0 ? t.aprovadas / t.total * 100 : 0;
+                                    return React.createElement("tr", { key: e, className: "hover:bg-gray-50" },
+                                        React.createElement("td", { style: solcTd({ paddingLeft: 16, fontWeight: 500 }) }, e),
+                                        React.createElement("td", { style: num({ fontWeight: 600 }) }, t.total),
+                                        React.createElement("td", { style: num({ color: "#166534" }) }, t.aprovadas),
+                                        React.createElement("td", { style: num({ color: "#991b1b" }) }, t.rejeitadas),
+                                        React.createElement("td", { style: num({ color: "#92400e" }) }, t.pendentes),
+                                        React.createElement("td", { style: num({ paddingRight: 16 }) }, solcPilula(taxaTom(pct), (t.total > 0 ? pct.toFixed(0) : 0) + "%")));
+                                }))))),
+                // ── Top 10 ──
+                React.createElement("section", { style: Object.assign({}, solcCard, { overflow: "hidden" }) },
+                    React.createElement("div", { style: { padding: "14px 16px" } }, React.createElement("h2", { style: solcSecTitulo }, "Top 10 profissionais do mês")),
+                    React.createElement("div", { style: { overflowX: "auto" } },
+                        React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 640 } },
+                            React.createElement("thead", null, React.createElement("tr", null,
+                                React.createElement("th", { style: solcTh({ paddingLeft: 16, width: 48 }) }, "#"),
+                                React.createElement("th", { style: solcTh() }, "Profissional"),
+                                React.createElement("th", { style: solcTh() }, "Código"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Total"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Aprovadas"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right" }) }, "Rejeitadas"),
+                                React.createElement("th", { style: solcTh({ textAlign: "right", paddingRight: 16 }) }, "Taxa"))),
+                            React.createElement("tbody", null,
+                                i.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 7, style: solcTd({ textAlign: "center", color: "#6b7280", padding: "32px 16px" }) }, "Sem profissionais no período")),
+                                i.map((e, t) => React.createElement("tr", { key: t, className: "hover:bg-gray-50" },
+                                    React.createElement("td", { style: solcTd({ paddingLeft: 16 }) }, React.createElement("span", { style: { display: "inline-grid", placeItems: "center", width: 26, height: 26, borderRadius: 999, fontWeight: 700, fontSize: 12, fontVariantNumeric: "tabular-nums", background: t < 3 ? "#f3e8fb" : "transparent", color: t < 3 ? "#5d0b85" : "#6b7280" } }, t + 1)),
+                                    React.createElement("td", { style: solcTd({ fontWeight: 500 }) }, e.nome),
+                                    React.createElement("td", { style: solcTd({ color: "#6b7280", fontVariantNumeric: "tabular-nums" }) }, e.cod || "-"),
+                                    React.createElement("td", { style: num({ fontWeight: 600 }) }, e.total),
+                                    React.createElement("td", { style: num({ color: "#166534" }) }, e.aprovadas),
+                                    React.createElement("td", { style: num({ color: "#991b1b" }) }, e.rejeitadas),
+                                    React.createElement("td", { style: num({ paddingRight: 16 }) }, solcPilula(taxaTom(parseInt(e.taxa)), e.taxa + "%")))))))));
         })(), "users" === adminTabEfetivo && React.createElement("div", {
             className: "bg-white rounded-xl shadow p-6"
         }, React.createElement("h2", {
