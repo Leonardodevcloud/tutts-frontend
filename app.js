@@ -1110,22 +1110,22 @@ const TileHomeClean = ({ icone, titulo, desc, badge, badgeCor, onClick }) => Rea
     type: "button",
     onClick: onClick,
     className: "text-left bg-white border border-gray-200 hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors",
-    style: { borderRadius: 14, padding: 16, display: "flex", gap: 14, alignItems: "center", minWidth: 0, minHeight: 84, boxSizing: "border-box", color: "#111827" } /* HOME_D_V1 */
+    style: { borderRadius: 14, padding: 14, display: "flex", gap: 12, alignItems: "center", minWidth: 0, color: "#111827" }
 },
     React.createElement("span", {
-        style: { width: 48, height: 48, borderRadius: 13, background: "#f3e8fb", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" }
-    }, icoHomeClean(icone, 23)),
+        style: { width: 38, height: 38, borderRadius: 10, background: "#faf7fd", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" }
+    }, icoHomeClean(icone, 18)),
     React.createElement("span", { style: { minWidth: 0, flex: 1 } },
-        React.createElement("span", { style: { display: "block", fontWeight: 700, fontSize: 14.5 } }, titulo),
+        React.createElement("span", { style: { display: "block", fontWeight: 600, fontSize: 13.5 } }, titulo),
         React.createElement("span", {
-            style: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 12.5, lineHeight: 1.35, marginTop: 3, color: "#4b5563" },
+            style: { display: "block", fontSize: 12, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
             title: typeof desc === "string" ? desc : undefined
         }, desc)
     ),
-    badge > 0 ? React.createElement("span", {
-        style: { flex: "none", minWidth: 24, height: 22, padding: "0 7px", borderRadius: 99, background: (badgeCor || {}).bg || "#f3e8fb", color: (badgeCor || {}).fg || "#5d0b85", fontSize: 11.5, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
+    badge > 0 && React.createElement("span", {
+        style: { flex: "none", minWidth: 22, height: 20, padding: "0 6px", borderRadius: 99, background: (badgeCor || {}).bg || "#f3e8fb", color: (badgeCor || {}).fg || "#5d0b85", fontSize: 11, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
         "aria-label": badge + " pendente(s)"
-    }, badge > 99 ? "99+" : badge) : React.createElement("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#9ca3af", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", style: { flex: "none" } }, React.createElement("path", { d: "m9 6 6 6-6 6" }))
+    }, badge > 99 ? "99+" : badge)
 );
 
 /* HOME_CLEAN_V1: seção de tiles com rótulo caixa-alta; some se não houver tile visível */
@@ -1133,10 +1133,8 @@ const SecaoHomeClean = ({ nome, tiles }) => {
     const visiveis = (tiles || []).filter(Boolean);
     if (visiveis.length === 0) return null;
     return React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-        React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } } /* HOME_D_V1 */,
-            React.createElement("h2", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 17, fontWeight: 700, color: "#111827" } }, nome),
-            React.createElement("span", { style: { fontSize: 12, color: "#9ca3af" } }, visiveis.length + (visiveis.length === 1 ? " módulo" : " módulos"))),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 } },
+        React.createElement("h2", { style: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" } }, nome),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 } },
             visiveis.map(t => React.createElement(TileHomeClean, Object.assign({ key: t.key }, t)))
         )
     );
@@ -20600,16 +20598,16 @@ const hideLoadingScreen = () => {
 
             // Conteúdo Principal
             React.createElement("main", {
-                style: { padding: "28px 24px 40px", maxWidth: 1280, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 26 } /* HOME_D_V1 */,
+                style: { padding: "32px 16px", maxWidth: 1240, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 },
                 className: "sm:px-6"
             },
                 // Saudação + busca
                 React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 } },
                     React.createElement("div", { style: { minWidth: 0 } },
                         React.createElement("h1", {
-                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25, color: "#111827" }
-                        }, getSaudacao(), ", ", primeiroNome) /* HOME_D_V1 */,
-                        React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, "“", mensagemGentileza, "”")
+                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.2, color: "#111827" }
+                        }, getSaudacao(), ", ", React.createElement("span", { style: { color: "#f67602" } }, primeiroNome)),
+                        React.createElement("p", { style: { margin: "6px 0 0", color: "#6b7280", fontStyle: "italic", fontSize: 13.5 } }, "“", mensagemGentileza, "”")
                     ),
                     React.createElement("button", {
                         type: "button",

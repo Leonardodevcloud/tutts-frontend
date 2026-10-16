@@ -1689,20 +1689,20 @@
                 const tile = (key, onClick, icone, titulo, desc, badge) => React.createElement("button", {
                     key: key, type: "button", onClick: onClick,
                     className: "text-left bg-white border border-gray-200 hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors",
-                    style: { borderRadius: 14, padding: 16, display: "flex", gap: 14, alignItems: "center", minWidth: 0, minHeight: 84, boxSizing: "border-box", color: "#111827" } /* HOME_D_V1 */
+                    style: { borderRadius: 14, padding: 14, display: "flex", gap: 12, alignItems: "center", minWidth: 0, color: "#111827" }
                 },
-                    React.createElement("span", { style: { width: 48, height: 48, borderRadius: 13, background: "#f3e8fb", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" } }, icoH(icone, 23)),
+                    React.createElement("span", { style: { width: 38, height: 38, borderRadius: 10, background: "#faf7fd", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" } }, icoH(icone, 18)),
                     React.createElement("span", { style: { minWidth: 0, flex: 1 } },
-                        React.createElement("span", { style: { display: "block", fontWeight: 700, fontSize: 14.5 } }, titulo),
-                        React.createElement("span", { style: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 12.5, lineHeight: 1.35, marginTop: 3, color: "#4b5563" }, title: desc }, desc)),
-                    badge > 0 ? React.createElement("span", {
-                        style: { flex: "none", minWidth: 24, height: 22, padding: "0 7px", borderRadius: 99, background: "#f3e8fb", color: "#5d0b85", fontSize: 11.5, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
+                        React.createElement("span", { style: { display: "block", fontWeight: 600, fontSize: 13.5 } }, titulo),
+                        React.createElement("span", { style: { display: "block", fontSize: 12, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, title: desc }, desc)),
+                    badge > 0 && React.createElement("span", {
+                        style: { flex: "none", minWidth: 22, height: 20, padding: "0 6px", borderRadius: 99, background: "#f3e8fb", color: "#5d0b85", fontSize: 11, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
                         "aria-label": badge + " pendente(s)"
-                    }, badge > 99 ? "99+" : badge) : React.createElement("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "#9ca3af", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", style: { flex: "none" } }, React.createElement("path", { d: "m9 6 6 6-6 6" }))
+                    }, badge > 99 ? "99+" : badge)
                 );
                 const secao = (nome, tiles) => React.createElement("section", { key: nome, style: { display: "flex", flexDirection: "column", gap: 10 } },
-                    React.createElement("h2", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 17, fontWeight: 700, color: "#111827" } }, nome) /* HOME_D_V1 */,
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 } }, tiles));
+                    React.createElement("h2", { style: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" } }, nome),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 } }, tiles));
                 const pend = [
                     { key: "saq", rotulo: "Saques pendentes", n: y.solicitacoes || 0, cor: "#d97706", ir: () => { x({...p, finTab: "solicitacoes"}); } },
                     { key: "val", rotulo: "Ajustes p/ validar", n: y.validacao || 0, cor: "#2563eb", ir: irValidacao },
