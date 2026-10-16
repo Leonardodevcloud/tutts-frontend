@@ -151,7 +151,7 @@
           onClick: () => setAba('restricoes'),
           style: {
             padding: '7px 14px', fontSize: '13px', borderRadius: '8px', border: 0, cursor: 'pointer',
-            background: aba === 'restricoes' ? '#7c3aed' : '#e5e7eb',
+            background: aba === 'restricoes' ? '#770fa8' : '#e5e7eb',
             color: aba === 'restricoes' ? '#fff' : '#374151',
             fontWeight: aba === 'restricoes' ? 500 : 400,
           }
@@ -160,7 +160,7 @@
           onClick: () => setAba('historico'),
           style: {
             padding: '7px 14px', fontSize: '13px', borderRadius: '8px', border: 0, cursor: 'pointer',
-            background: aba === 'historico' ? '#7c3aed' : '#e5e7eb',
+            background: aba === 'historico' ? '#770fa8' : '#e5e7eb',
             color: aba === 'historico' ? '#fff' : '#374151',
             fontWeight: aba === 'historico' ? 500 : 400,
           }
@@ -222,7 +222,7 @@
                       e('span', { style: { fontSize: '10px', padding: '3px 9px', borderRadius: '999px', background: '#fecaca', color: '#991b1b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.3px' } }, 'Bloqueado'),
                       e('button', {
                         onClick: () => setModalLiberar(r),
-                        style: { background: '#7c3aed', color: '#fff', border: 0, height: '32px', padding: '0 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }
+                        style: { background: '#770fa8', color: '#fff', border: 0, height: '32px', padding: '0 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }
                       }, 'Liberar saque')
                     )
               ))
@@ -274,9 +274,9 @@
           onClick: (ev) => ev.stopPropagation(),
           style: { background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }
         },
-          e('div', { style: { background: '#f5f3ff', padding: '16px 20px 14px', borderBottom: '1px solid #ddd6fe' } },
-            e('div', { style: { width: '42px', height: '42px', borderRadius: '50%', background: '#ddd6fe', color: '#4c1d95', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '8px' } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
-            e('p', { style: { fontSize: '16px', fontWeight: 500, color: '#4c1d95', margin: 0 } }, 'Liberar saque do motoboy')
+          e('div', { style: { background: '#faf7fd', padding: '16px 20px 14px', borderBottom: '1px solid #e9d5f9' } },
+            e('div', { style: { width: '42px', height: '42px', borderRadius: '50%', background: '#e9d5f9', color: '#770fa8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '8px' } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-lock" }))),
+            e('p', { style: { fontSize: '16px', fontWeight: 500, color: '#5d0b85', margin: 0 } }, 'Liberar saque do motoboy')
           ),
           e('div', { style: { padding: '16px 20px' } },
             e('p', { style: { fontSize: '13px', color: '#111827', lineHeight: 1.6, margin: '0 0 14px' } },
@@ -310,7 +310,7 @@
               e('button', {
                 onClick: confirmarLiberacao,
                 disabled: processando,
-                style: { background: '#7c3aed', border: 0, color: '#fff', height: '34px', padding: '0 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: processando ? 0.6 : 1 }
+                style: { background: '#770fa8', border: 0, color: '#fff', height: '34px', padding: '0 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: processando ? 0.6 : 1 }
               }, processando ? '...' : 'Confirmar liberação')
             )
           )

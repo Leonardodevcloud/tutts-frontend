@@ -536,7 +536,7 @@
       // ── Tela fullscreen: barreira de horário ──────────────────
       barreiraHorario && e('div', {
         className: 'fixed inset-0 z-50 flex flex-col items-center justify-center p-6',
-        style: { background: 'linear-gradient(135deg, #2d1b4b 0%, #4c2e81 50%, #4c1d95 100%)' }
+        style: { background: 'linear-gradient(135deg, #3c1b4b 0%, #672e81 50%, #6f1d95 100%)' }
       },
         e('div', { className: 'max-w-sm w-full text-center space-y-6' },
           // Ícone

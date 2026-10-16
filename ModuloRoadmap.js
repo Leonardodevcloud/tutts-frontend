@@ -363,7 +363,7 @@
 
       // TABS
       e('div', { className: 'flex gap-1 border-b border-gray-200 mb-5' },
-        renderTab(e, tab, 'roadmap',  e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Roadmap"),   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#7c3aed'),
+        renderTab(e, tab, 'roadmap',  e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-rocket" })), "Roadmap"),   sumarStatus(contadores.roadmap),  () => setTab('roadmap'),  '#770fa8'),
         renderTab(e, tab, 'bug',      e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bug" })), "Bugs"),      sumarStatus(contadores.bug),      () => setTab('bug'),      '#991b1b'),
         renderTab(e, tab, 'sugestao', e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bulb" })), "Sugestões"), sumarStatus(contadores.sugestao), () => setTab('sugestao'), '#d97706'),
       ),
@@ -451,7 +451,7 @@
   // ────────────────────────────────────────────────────────────────────────────
 
   function corDoTab(tab) {
-    return tab === 'roadmap' ? '#7c3aed' : tab === 'bug' ? '#991b1b' : '#d97706';
+    return tab === 'roadmap' ? '#770fa8' : tab === 'bug' ? '#991b1b' : '#d97706';
   }
 
   function sumarStatus(obj) {
@@ -565,10 +565,10 @@
       style: {
         borderLeftWidth: '3px',
         borderLeftColor: st.cor,
-        borderColor: expandido ? '#ddd6fe' : '#E5E7EB',
+        borderColor: expandido ? '#e9d5f9' : '#E5E7EB',
         opacity: opacidade,
         minHeight: expandido ? 'auto' : 168,
-        boxShadow: expandido ? '0 4px 16px rgba(124,58,237,0.10)' : 'none'
+        boxShadow: expandido ? '0 4px 16px rgba(119,15,168,0.10)' : 'none'
       }
     },
       // ── CORPO CLICÁVEL (expande/recolhe) ──
@@ -593,7 +593,7 @@
           }, 'Alta'),
           item.origem_sugestao_id && e('span', {
             className: 'text-[10px] px-1.5 py-0.5 rounded',
-            style: { background: '#f5f3ff', color: '#4c1d95' }
+            style: { background: '#faf7fd', color: '#770fa8' }
           }, '↳ sugestão')
         ),
 
@@ -668,7 +668,7 @@
         ),
 
         // Dica de expandir/recolher
-        e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#7c3aed' } },
+        e('div', { className: 'text-[10px] font-medium mt-1 flex items-center gap-1', style: { color: '#770fa8' } },
           e('span', { style: { display: 'inline-block', transform: expandido ? 'rotate(180deg)' : 'none' } }, ''),
           e('span', null, expandido ? 'Recolher' : 'Ver detalhes')
         )

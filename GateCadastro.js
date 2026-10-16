@@ -164,13 +164,13 @@
     if (verificando) {
       return e('div', {
         style: {
-          position: 'fixed', inset: 0, background: '#4c1d95',
+          position: 'fixed', inset: 0, background: '#5d0b85',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999,
         }
-      }, e('div', { style: { color: '#ddd6fe', fontSize: '14px' } }, 'Carregando...'));
+      }, e('div', { style: { color: '#e9d5f9', fontSize: '14px' } }, 'Carregando...'));
     }
 
-    const ROXO = '#7c3aed', ROXO_ESC = '#4c1d95', ROXO_CLARO = '#ddd6fe';
+    const ROXO = '#770fa8', ROXO_ESC = '#5d0b85', ROXO_CLARO = '#c084e6';
 
     return e('div', {
       style: {
@@ -248,7 +248,7 @@
                   e('div', {
                     style: { width: '120px', height: '120px', borderRadius: '50%', border: '2px dashed ' + ROXO_CLARO, display: 'flex', alignItems: 'center', justifyContent: 'center' }
                   }, e('span', { style: { fontSize: '40px' } }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-camera" })))),
-                  e('span', { style: { fontSize: '12px', color: '#ddd6fe' } }, 'Toque para abrir a câmera')
+                  e('span', { style: { fontSize: '12px', color: '#e9d5f9' } }, 'Toque para abrir a câmera')
                 ),
                 erroCamera && e('p', { style: { fontSize: '12px', color: '#991b1b', margin: '8px 0 0' } }, erroCamera)
               ),

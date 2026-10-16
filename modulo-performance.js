@@ -394,15 +394,15 @@
             if (el && el.childNodes.length === 0) {
               for (let i = 0; i < 36; i++) {
                 const bar = document.createElement('div');
-                bar.style.cssText = 'width:4px;background:#7C3AED;border-radius:3px;animation:argosWave 1.2s ease-in-out infinite;animation-delay:' + (i * 0.06) + 's';
+                bar.style.cssText = 'width:4px;background:#770fa8;border-radius:3px;animation:argosWave 1.2s ease-in-out infinite;animation-delay:' + (i * 0.06) + 's';
                 el.appendChild(bar);
               }
             }
           }
         }),
         h('div', { style: { textAlign: 'center', animation: 'argosSlideUp .6s ease-out both' } },
-          h('div', { style: { fontSize: '12px', color: '#7C3AED', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
-          h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#ddd6fe' } }, 'Importando base do sistema externo'),
+          h('div', { style: { fontSize: '12px', color: '#770fa8', letterSpacing: '4px', marginBottom: '10px' } }, 'ARGOS INTELLIGENCE'),
+          h('div', { style: { fontSize: '20px', fontWeight: 500, color: '#f3e8fb' } }, 'Importando base do sistema externo'),
           h('div', { style: { fontSize: '14px', color: '#6b7280', marginTop: '10px' } },
             `Puxando planilha → alimentando o BI${importEtapa ? ' · ' + importEtapa : ''}`),
         ),

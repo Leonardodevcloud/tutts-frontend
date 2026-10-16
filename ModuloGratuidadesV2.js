@@ -54,11 +54,11 @@
     return Promise.resolve(window.confirm(msg));
   };
 
-  // Tema (alinhado com paleta do Tutts — roxo #7c3aed)
+  // Tema (alinhado com paleta do Tutts — roxo #770fa8)
   const cores = {
-    primary: '#7c3aed',
-    primarySoft: '#f5f3ff',
-    primaryDark: '#5b21b6',
+    primary: '#770fa8',
+    primarySoft: '#faf7fd',
+    primaryDark: '#770fa8',
     success: '#16a34a',
     successSoft: '#bbf7d0',
     warning: '#d97706',

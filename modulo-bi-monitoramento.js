@@ -144,11 +144,11 @@
       h('div', { className: 'flex justify-between items-start' },
         h('div', {
           className: 'w-9 h-9 rounded-lg flex items-center justify-center',
-          style: { background: iconeBg || '#f5f3ff' }
+          style: { background: iconeBg || '#faf7fd' }
         }, h('span', { style: { fontSize: '18px' } }, icone)),
         h('span', {
           className: 'text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full',
-          style: { color: labelCor || '#7c3aed', background: labelBg || '#f5f3ff' }
+          style: { color: labelCor || '#770fa8', background: labelBg || '#faf7fd' }
         }, label)
       ),
       h('div', { className: 'text-[28px] font-medium text-gray-900 leading-none mt-3 tabular-nums' },
@@ -236,7 +236,7 @@
       },
         h('div', {
           className: 'flex items-center justify-between px-5 py-3',
-          style: { background: 'linear-gradient(135deg, #7c3aed, #6928d9)' }
+          style: { background: 'linear-gradient(135deg, #b43aed, #a128d9)' }
         },
           h('div', { className: 'flex items-center gap-2 text-white font-medium' },
             h('span', null, h("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, h("use", { href: "#i-search" }))), 'Filtros Inteligentes'),
@@ -385,7 +385,7 @@
           }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, h("use", { href: "#i-trash" })), "Limpar Filtros")),
           h('button', {
             className: 'text-xs text-white px-5 py-2 rounded-md font-medium',
-            style: { background: 'linear-gradient(135deg, #7c3aed, #6928d9)' },
+            style: { background: 'linear-gradient(135deg, #b43aed, #a128d9)' },
             onClick: aplicar
           }, '● Aplicar Filtros')
         )
@@ -458,8 +458,8 @@
       // Linha 1: KPIs operacionais
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4' },
         h(KpiCard, {
-          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#7c3aed" }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), iconeBg: '#f5f3ff', accent: '#7c3aed',
-          label: 'Ordens de Serviço', labelCor: '#7c3aed', labelBg: '#f5f3ff',
+          icone: h("svg", { className: "ico", style: { width: 18, height: 18, color: "#770fa8" }, "aria-hidden": "true" }, h("use", { href: "#i-clipboard" })), iconeBg: '#faf7fd', accent: '#770fa8',
+          label: 'Ordens de Serviço', labelCor: '#770fa8', labelBg: '#faf7fd',
           valor: loading ? '—' : fmtNum(m.total_os),
           sub: 'Total de OS no período'
         }),
@@ -718,7 +718,7 @@
                     h('div', { className: 'flex items-center gap-2' },
                       h('div', {
                         className: 'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium',
-                        style: { background: '#f5f3ff', color: '#7c3aed' }
+                        style: { background: '#faf7fd', color: '#770fa8' }
                       }, iniciaisDe(p.nome_prof)),
                       h('div', null,
                         h('div', { className: 'text-gray-900 font-medium leading-tight' }, p.nome_prof || '—'),
@@ -833,7 +833,7 @@
                         h('div', { className: 'mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-32' },
                           h('div', {
                             className: 'h-full',
-                            style: { width: pctTotal + '%', background: '#7c3aed' }
+                            style: { width: pctTotal + '%', background: '#770fa8' }
                           })
                         )
                       )
@@ -911,7 +911,7 @@
           resumo.pct_pico != null ?
             h('span', {
               className: 'text-[10px] font-medium px-2 py-0.5 rounded-full ml-1',
-              style: { background: '#f5f3ff', color: '#7c3aed' }
+              style: { background: '#faf7fd', color: '#770fa8' }
             }, resumo.pct_pico.toFixed(1) + '% entre 8h–18h')
             : null
         ),
@@ -973,7 +973,7 @@
               return h('g', { key: 'b' + i },
                 h('rect', {
                   x, y, width: 22, height: Math.max(altura, 2),
-                  fill: noPico ? '#7c3aed' : '#d1d5db', rx: 2
+                  fill: noPico ? '#770fa8' : '#d1d5db', rx: 2
                 }),
                 hh.total_os > 0 ? h('text', {
                   x: x + 11, y: y - 4, textAnchor: 'middle',
@@ -987,7 +987,7 @@
             }),
             // legenda
             h('g', null,
-              h('rect', { x: 50, y: 262, width: 10, height: 10, fill: '#7c3aed', rx: 2 }),
+              h('rect', { x: 50, y: 262, width: 10, height: 10, fill: '#770fa8', rx: 2 }),
               h('text', { x: 65, y: 271, fontSize: 10, fill: '#6b7280' }, 'Pico (8h–18h)'),
               h('rect', { x: 160, y: 262, width: 10, height: 10, fill: '#d1d5db', rx: 2 }),
               h('text', { x: 175, y: 271, fontSize: 10, fill: '#6b7280' }, 'Fora do pico')

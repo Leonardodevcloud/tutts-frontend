@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutts - Solicitar Corrida</title>
-    <meta name="theme-color" content="#4c1d95">
+    <meta name="theme-color" content="#770fa8">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- ===== Tutts brand reskin (2026-06): remapeia paleta azul -> roxo da marca ===== -->
     <script>
       tailwind.config = {
-        /* CORES_TOKENS_V1: mesma paleta da Central (blue/indigo -> roxo da marca, como no reskin). */
+        /* CORES_TOKENS_V1: mesma paleta da Central (blue/indigo/purple -> Roxo Tutts, como no reskin). */
         theme: { extend: {
-          colors: {"purple":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"violet":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"indigo":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"fuchsia":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"pink":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"green":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"emerald":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"teal":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"lime":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"blue":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"sky":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"cyan":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"red":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"rose":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"amber":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"yellow":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"gray":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"slate":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"zinc":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"neutral":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"stone":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"}},
+          colors: {"purple":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"violet":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"indigo":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"fuchsia":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"pink":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"green":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"emerald":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"teal":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"lime":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"blue":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"sky":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"cyan":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"red":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"rose":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"amber":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"yellow":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"gray":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"slate":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"zinc":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"neutral":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"stone":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"}},
           fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['Sora','Inter','sans-serif'] }
         } }
       };
@@ -23,8 +23,8 @@
     <style>
       body{font-family:'Inter',system-ui,sans-serif}
       h1,h2{font-family:'Sora','Inter',sans-serif;letter-spacing:-0.01em}
-      ::-webkit-scrollbar-thumb{background:#ddd6fe !important}
-      header.bg-blue-900{background:linear-gradient(135deg,#2d1556 0%,#380b85 55%,#470fa8 100%) !important}
+      ::-webkit-scrollbar-thumb{background:#c084e6 !important}
+      header.bg-blue-900{background:linear-gradient(135deg,#3a1556 0%,#5d0b85 55%,#770fa8 100%) !important}
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -54,7 +54,7 @@
         @keyframes hubRing { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
         .hub-node-act::after { content: ""; position: absolute; inset: -4px; border-radius: 9999px; border: 2px solid rgba(255,255,255,.6); animation: hubRing 1.8s infinite; }
         .cod-flash { animation: codFlash 1.6s ease-out 1; border-radius: 6px; }
-        @keyframes codFlash { 0% { background: #f5f3ff; box-shadow: 0 0 0 6px #f5f3ff; } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
+        @keyframes codFlash { 0% { background: #faf7fd; box-shadow: 0 0 0 6px #faf7fd; } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
         @media (prefers-reduced-motion: reduce) { .cod-flash { animation: none; } }
         .hub-chip-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: currentColor; animation: pulse 1.4s infinite; }
         .confirm-card { animation: confirmIn 0.4s ease-out; }
@@ -68,11 +68,11 @@
       :root{ --tlg-logo:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAj0AAAFdCAMAAADfUyz0AAABNVBMVEVHcEz////////////////////////////////////////////zfAD////////zfAD////////zdgDxhgDzdgDzdgDzdwDzdgDzdgDxiQDyfwDzdgDzdgDyhQDzdwDzdgDxhgDxhQDxhADzdgDxhQDygQDzdgDyhQDzdgDygADyfgDyhADyfgDygQDxhQDxiADyfADyggDyfgDygQDxhgDzfADxiwDyfwDzeQDxhwDyfgDzfADyggDyfQDzewDzegDxhwDzewDyggDzeQDzewDyhADzeQDxhwDxiwD////zdgDxhgDxhwDxiADxiQDxhQDxigDxhADwjADxgwDyggDwiwDygQDwjQDygADyfwDyfgDyfQDyfADyewDxiwDzeQDzeADzdwDwjgDzegDyegDwjwDygwBSYxyTAAAASXRSTlMAYJ8wEO/PgEC/IN8Qj3Agr1DvQGDfQIC/gEAwz8+fj3CAv6+fv1BgcIBgUO9wr7/P37+f35+/r++PMN/vj1C/78qPr3AwjzCn4tpagQAAAAlwSFlzAAAITQAACE0BIYghgQAAIABJREFUeJztnWtXG0cShi2QkAQCAQJsY0OAgDHX+ILje+LjeJMjB8frhRDiywbHzv7/n7BHGl1G07e3urpnRqLfT3uyRjPT/XR1VXVX9xU3mplqNktjRUe/NjSanG02mxMVv69bmWg2m7Pjo9RugxprtjVxyfAZL0XfXfD5kEL0jNKo4lOsNjuq5uBt0lOh+9nNSX/PLHefURrNoVmcaKbRjLlTH57mmLd3G+s/xKuFy0pxeJqeXYA8aSb22d5sbgyeZnkom0mv8anmpaQn3q++6Om7BCNKT9dxvGwz1wA8nmauAas+ijNXAp5SDl4pDRUH4fHTsQl4miMXdBUGv685m4N3SkHJfvXSsYmB2WzmrhmYSsIzko6dKAEeHx0rwDNq2ZCZZCNeDqd5XIDHQ8cK8IzayBxLfl+zeRlyzWK/euhYwao3m3POH5KlJPBMjNQHyiWBx33HSuAZqZGZjDra8pdyzY0KEnicd6zoEjSbU0PcaEmJjmNzVHPpA5IZBecdKxuYoxTOyuEZfadZCo9rp1kKzwg5zWLUcTnomZZ/tlN6irPyh4wMPTLHccTGh1Ryo+A2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"); }
       .tlg-wrap{display:grid;grid-template-columns:1.05fr .95fr;min-height:100vh;font-family:'Inter',system-ui,sans-serif}
       .tlg-stage{position:relative;overflow:hidden;color:#fff;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;
-        background:radial-gradient(120% 100% at 0% 0%,#380b85 0%,#2d1556 45%,#1b093a 100%)}
+        background:radial-gradient(120% 100% at 0% 0%,#5d0b85 0%,#3a1556 45%,#26093a 100%)}
       .tlg-blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5;animation:tlgDrift 14s ease-in-out infinite}
-      .tlg-blob1{width:320px;height:320px;background:#5b21b6;top:-60px;left:-80px}
+      .tlg-blob1{width:320px;height:320px;background:#770fa8;top:-60px;left:-80px}
       .tlg-blob2{width:280px;height:280px;background:#f67602;bottom:-70px;left:30%;opacity:.25;animation-delay:-5s}
-      .tlg-blob3{width:240px;height:240px;background:#5b21b6;top:35%;right:-60px;opacity:.3;animation-delay:-9s}
+      .tlg-blob3{width:240px;height:240px;background:#770fa8;top:35%;right:-60px;opacity:.3;animation-delay:-9s}
       @keyframes tlgDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(24px,-18px) scale(1.08)}66%{transform:translate(-16px,20px) scale(.96)}}
       .tlg-grid{position:absolute;inset:0;opacity:.06;background:linear-gradient(#fff 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,#fff 1px,transparent 1px) 0 0/40px 40px;-webkit-mask-image:radial-gradient(80% 80% at 50% 45%,#000,transparent);mask-image:radial-gradient(80% 80% at 50% 45%,#000,transparent)}
       .tlg-top{position:relative;z-index:2;display:flex;align-items:center;gap:13px;opacity:0;animation:tlgFadeDown .7s .1s forwards}
@@ -94,10 +94,10 @@
       .tlg-htitle{font-family:'Sora','Inter',sans-serif;font-weight:800;font-size:clamp(24px,2.4vw,32px);line-height:1.1;letter-spacing:-.01em;margin-top:42px;opacity:0;animation:tlgFadeUp .8s .9s forwards}
       .tlg-grad{background:linear-gradient(100deg,#f67602,#ffd48a);-webkit-background-clip:text;background-clip:text;color:transparent}
       .tlg-side{background:#f3f4f6;display:flex;align-items:center;justify-content:center;padding:40px 28px;position:relative}
-      .tlg-side::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 80% 10%,#ede7f8,transparent),radial-gradient(50% 40% at 10% 100%,#fdf2de,transparent)}
-      .tlg-card{position:relative;width:100%;max-width:380px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:38px 34px;box-shadow:0 30px 70px -30px rgba(76,29,149,.4);opacity:0;transform:translateY(22px) scale(.98);animation:tlgCardIn .8s .2s cubic-bezier(.2,.7,.2,1) forwards}
+      .tlg-side::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 80% 10%,#f3e7f8,transparent),radial-gradient(50% 40% at 10% 100%,#fdf2de,transparent)}
+      .tlg-card{position:relative;width:100%;max-width:380px;background:#fff;border:1px solid #f3e8fb;border-radius:24px;padding:38px 34px;box-shadow:0 30px 70px -30px rgba(58,21,86,.4);opacity:0;transform:translateY(22px) scale(.98);animation:tlgCardIn .8s .2s cubic-bezier(.2,.7,.2,1) forwards}
       .tlg-cbrand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:26px}
-      .tlg-cmark{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;margin-bottom:14px;background:linear-gradient(140deg,#2d1556,#470fa8);box-shadow:0 14px 30px -10px rgba(76,29,149,.6);position:relative;overflow:hidden;animation:tlgFloaty 5s ease-in-out infinite}
+      .tlg-cmark{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;margin-bottom:14px;background:linear-gradient(140deg,#3a1556,#770fa8);box-shadow:0 14px 30px -10px rgba(119,15,168,.6);position:relative;overflow:hidden;animation:tlgFloaty 5s ease-in-out infinite}
       .tlg-cmark::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.25) 50%,transparent 70%);transform:translateX(-120%);animation:tlgShineCard 4.5s 1.5s ease-in-out infinite}
       .tlg-cmark img{width:48px;height:auto;position:relative;z-index:1}
       .tlg-ctitle{font-family:'Sora','Inter',sans-serif;font-weight:800;font-size:21px;color:#111827;letter-spacing:-.01em}
@@ -106,10 +106,10 @@
       .tlg-grp:nth-of-type(1){animation-delay:.45s}
       .tlg-grp:nth-of-type(2){animation-delay:.57s}
       .tlg-lbl{display:block;font-size:12.5px;font-weight:600;color:#111827;margin-bottom:7px}
-      .tlg-inp input{width:100%;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:13px;padding:13px 14px;font-family:'Inter';font-size:14.5px;color:#111827;transition:.18s}
-      .tlg-inp input:focus{outline:none;border-color:#4c1d95;background:#fff;box-shadow:0 0 0 4px #f5f3ff}
-      .tlg-btn{width:100%;border:0;border-radius:13px;padding:15px;font-family:'Sora','Inter',sans-serif;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(135deg,#470fa8,#380b85);cursor:pointer;position:relative;overflow:hidden;box-shadow:0 16px 30px -12px rgba(76,29,149,.7);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:6px;opacity:0;animation:tlgFadeUp .6s .7s forwards}
-      .tlg-btn:hover{transform:translateY(-2px);box-shadow:0 22px 38px -12px rgba(76,29,149,.8)}
+      .tlg-inp input{width:100%;border:1.5px solid #f3e8fb;background:#f9fafb;border-radius:13px;padding:13px 14px;font-family:'Inter';font-size:14.5px;color:#111827;transition:.18s}
+      .tlg-inp input:focus{outline:none;border-color:#770fa8;background:#fff;box-shadow:0 0 0 4px #faf7fd}
+      .tlg-btn{width:100%;border:0;border-radius:13px;padding:15px;font-family:'Sora','Inter',sans-serif;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(135deg,#770fa8,#5d0b85);cursor:pointer;position:relative;overflow:hidden;box-shadow:0 16px 30px -12px rgba(119,15,168,.7);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:6px;opacity:0;animation:tlgFadeUp .6s .7s forwards}
+      .tlg-btn:hover{transform:translateY(-2px);box-shadow:0 22px 38px -12px rgba(119,15,168,.8)}
       .tlg-btn:active{transform:translateY(0)}
       .tlg-btn:disabled{opacity:.6;cursor:wait}
       .tlg-btnsw{position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%)}
@@ -136,11 +136,17 @@
 <style>
   /* CORES_TOKENS_V1: paleta unica da Central. Use estes tokens; nao invente hex novo. */
 :root {
-  --tt-roxo-50: #f5f3ff;
-  --tt-roxo-200: #ddd6fe;
-  --tt-roxo-600: #7c3aed;
-  --tt-roxo-800: #5b21b6;
-  --tt-roxo-900: #4c1d95;
+  --tt-roxo-50: #faf7fd;
+  --tt-roxo-100: #f3e8fb;
+  --tt-roxo-200: #e9d5f9;
+  --tt-roxo-300: #d8b4f0;
+  --tt-roxo-400: #c084e6;
+  --tt-roxo-500: #a855d7;
+  --tt-roxo-600: #8b16c4;
+  --tt-roxo-700: #770fa8;
+  --tt-roxo-800: #5d0b85;
+  --tt-roxo-900: #3a1556;
+  --tt-roxo-950: #26093a;
   --tt-verde-50: #f0fdf4;
   --tt-verde-200: #bbf7d0;
   --tt-verde-600: #16a34a;
@@ -169,7 +175,7 @@
   --tt-laranja: #f67602;
 }
 </style>
-<script>window.TT_CORES = {"roxo50": "#f5f3ff", "roxo200": "#ddd6fe", "roxo600": "#7c3aed", "roxo800": "#5b21b6", "roxo900": "#4c1d95", "verde50": "#f0fdf4", "verde200": "#bbf7d0", "verde600": "#16a34a", "verde800": "#166534", "ambar50": "#fffbeb", "ambar200": "#fde68a", "ambar600": "#d97706", "ambar800": "#92400e", "vermelho50": "#fef2f2", "vermelho200": "#fecaca", "vermelho600": "#dc2626", "vermelho800": "#991b1b", "azul50": "#eff6ff", "azul200": "#bfdbfe", "azul600": "#2563eb", "azul800": "#1e40af", "neutro0": "#ffffff", "neutro50": "#f9fafb", "neutro100": "#f3f4f6", "neutro200": "#e5e7eb", "neutro300": "#d1d5db", "neutro400": "#9ca3af", "neutro500": "#6b7280", "neutro700": "#374151", "neutro900": "#111827", "laranja": "#f67602"};</script>
+<script>window.TT_CORES = {"roxo50": "#faf7fd", "roxo100": "#f3e8fb", "roxo200": "#e9d5f9", "roxo300": "#d8b4f0", "roxo400": "#c084e6", "roxo500": "#a855d7", "roxo600": "#8b16c4", "roxo700": "#770fa8", "roxo800": "#5d0b85", "roxo900": "#3a1556", "roxo950": "#26093a", "verde50": "#f0fdf4", "verde200": "#bbf7d0", "verde600": "#16a34a", "verde800": "#166534", "ambar50": "#fffbeb", "ambar200": "#fde68a", "ambar600": "#d97706", "ambar800": "#92400e", "vermelho50": "#fef2f2", "vermelho200": "#fecaca", "vermelho600": "#dc2626", "vermelho800": "#991b1b", "azul50": "#eff6ff", "azul200": "#bfdbfe", "azul600": "#2563eb", "azul800": "#1e40af", "neutro0": "#ffffff", "neutro50": "#f9fafb", "neutro100": "#f3f4f6", "neutro200": "#e5e7eb", "neutro300": "#d1d5db", "neutro400": "#9ca3af", "neutro500": "#6b7280", "neutro700": "#374151", "neutro900": "#111827", "laranja": "#f67602"};</script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 <!-- SOLIC_JSX_ICONS_V4 -->
@@ -340,8 +346,8 @@
 
                 // 1) Marcador: foto do entregador (se houver) ou moto como fallback.
                 const html = motoboyFoto
-                    ? `<div style="width:40px;height:40px;border-radius:50%;border:3px solid #7c3aed;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.45);background:#fff"><img src="${motoboyFoto}" style="width:100%;height:100%;object-fit:cover" /></div>`
-                    : `<div style="width:28px;height:28px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"><svg class="ico" style="width:15px;height:15px" aria-hidden="true"><use href="#i-bike"/></svg></div>`;
+                    ? `<div style="width:40px;height:40px;border-radius:50%;border:3px solid #770fa8;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.45);background:#fff"><img src="${motoboyFoto}" style="width:100%;height:100%;object-fit:cover" /></div>`
+                    : `<div style="width:28px;height:28px;border-radius:50%;background:#770fa8;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"><svg class="ico" style="width:15px;height:15px" aria-hidden="true"><use href="#i-bike"/></svg></div>`;
                 const sizeIco = motoboyFoto ? [40, 40] : [28, 28];
                 const anchorIco = motoboyFoto ? [20, 20] : [14, 14];
                 const icon = L.divIcon({ className: '', html, iconSize: sizeIco, iconAnchor: anchorIco });
@@ -360,7 +366,7 @@
                     // linha reta imediata (aparece rapido)
                     motoboyRotaRef.current = L.polyline(
                         [[motoboyPos.lat, motoboyPos.lng], [coleta.latitude, coleta.longitude]],
-                        { color: '#7c3aed', weight: 3, opacity: 0.5, dashArray: '4, 8', lineCap: 'round' }
+                        { color: '#770fa8', weight: 3, opacity: 0.5, dashArray: '4, 8', lineCap: 'round' }
                     ).addTo(map);
                     // rota real pelas ruas (OSRM); se falhar, mantem a reta
                     const urlOsrm = `https://router.project-osrm.org/route/v1/driving/${motoboyPos.lng},${motoboyPos.lat};${coleta.longitude},${coleta.latitude}?overview=full&geometries=geojson`;
@@ -368,7 +374,7 @@
                         if (d && d.routes && d.routes[0] && mapInstanceRef.current) {
                             const coords = d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
                             if (motoboyRotaRef.current) { mapInstanceRef.current.removeLayer(motoboyRotaRef.current); }
-                            motoboyRotaRef.current = L.polyline(coords, { color: '#7c3aed', weight: 4, opacity: 0.85, lineCap: 'round' }).addTo(mapInstanceRef.current);
+                            motoboyRotaRef.current = L.polyline(coords, { color: '#770fa8', weight: 4, opacity: 0.85, lineCap: 'round' }).addTo(mapInstanceRef.current);
                         }
                     }).catch(() => {});
                 }
@@ -1227,11 +1233,11 @@
         const ConfirmModal = ({ data, onClose }) => {
             const [executando, setExecutando] = useState(false);
             const variant = data.variant || 'primary';
-            const acentoCor = variant === 'danger' ? '#dc2626' : '#7c3aed';
-            const acentoHover = variant === 'danger' ? '#991b1b' : '#7c3aed';
-            const acentoBgSuave = variant === 'danger' ? '#fef2f2' : '#f5f3ff';
-            const iconeBgCor = variant === 'danger' ? '#fef2f2' : '#f5f3ff';
-            const iconeCor = variant === 'danger' ? '#991b1b' : '#7c3aed';
+            const acentoCor = variant === 'danger' ? '#dc2626' : '#770fa8';
+            const acentoHover = variant === 'danger' ? '#991b1b' : '#770fa8';
+            const acentoBgSuave = variant === 'danger' ? '#fef2f2' : '#faf7fd';
+            const iconeBgCor = variant === 'danger' ? '#fef2f2' : '#faf7fd';
+            const iconeCor = variant === 'danger' ? '#991b1b' : '#770fa8';
             const icone = variant === 'danger' ? <svg className="ico" style={{width:20,height:20}} aria-hidden="true"><use href="#i-alert"/></svg> : <svg className="ico" style={{width:20,height:20}} aria-hidden="true"><use href="#i-help"/></svg>;
 
             const handleConfirm = async () => {
@@ -1880,7 +1886,7 @@
             const iconeCanal = (canal, size) => {
                 const s = (size || 18) + 'px';
                 if (canal === 'tutts') {
-                    return <span style={{width:s,height:s,background:'#7c3aed',borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}} title="Tutts"><img src={ICONE_TUTTS_JPG} style={{width:'100%',height:'100%',objectFit:'contain',padding:'2px'}} /></span>;
+                    return <span style={{width:s,height:s,background:'#770fa8',borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}} title="Tutts"><img src={ICONE_TUTTS_JPG} style={{width:'100%',height:'100%',objectFit:'contain',padding:'2px'}} /></span>;
                 }
                 return <span style={{width:s,height:s,background:'#fff',border:'1px solid #e5e7eb',borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}} title="Hub">
                     <svg viewBox="0 0 64 64" style={{width:'100%',height:'100%',padding:'3px'}}>
@@ -2964,15 +2970,15 @@
             // Nos: 0 Solicitada, 1 Motoboy, 2 Coleta, 3 Em rota, 4 Entregue.
             const etapaDaCorrida = (corrida) => {
                 const g = (a, b) => 'linear-gradient(120deg, ' + a + ', ' + b + ')';
-                const AMBAR = '#f67602', LARANJA = '#F67602', ROXO = '#7c3aed', VERDE = '#16a34a', VERM = '#dc2626';
+                const AMBAR = '#f67602', LARANJA = '#F67602', ROXO = '#770fa8', VERDE = '#16a34a', VERM = '#dc2626';
                 const entregue = { idx: 4, terminalEntregue: true, cancelada: false, cor: VERDE, grad: g('#166534', '#16a34a') };
                 const cancel = { idx: -1, terminalEntregue: false, cancelada: true, cor: VERM, grad: g('#6b7280', '#9ca3af') };
                 if (corrida.hub && corrida.hub.via_hub) {
                     const h = corrida.hub;
                     if (h.terminal) return (h.status_canonico === 'DELIVERED') ? entregue : cancel;
-                    if (h.busca_simultanea) return { idx: 1, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#7c3aed', '#7c3aed') };
+                    if (h.busca_simultanea) return { idx: 1, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#770fa8', '#c084e6') };
                     const e = Number(h.etapa) || 0;
-                    if (e >= 4) return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#7c3aed', LARANJA) };
+                    if (e >= 4) return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#770fa8', LARANJA) };
                     if (e === 3) return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#d97706', LARANJA) };
                     if (e >= 1) return { idx: 2, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#d97706', '#d97706') };
                     return { idx: 1, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#d97706', '#d97706') };
@@ -2995,8 +3001,8 @@
                 const sc = pontos && pontos[0] ? norm(pontos[0]) : 'pendente';
                 const se = pontos && pontos[1] ? norm(pontos[1]) : 'pendente';
                 if (se === 'finalizado') return entregue;
-                if (se === 'chegou') return { idx: 3, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#7c3aed', LARANJA) };
-                if (sc === 'coletado' || sc === 'finalizado') return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#7c3aed', LARANJA) };
+                if (se === 'chegou') return { idx: 3, terminalEntregue: false, cancelada: false, cor: ROXO, grad: g('#770fa8', LARANJA) };
+                if (sc === 'coletado' || sc === 'finalizado') return { idx: 3, terminalEntregue: false, cancelada: false, cor: LARANJA, grad: g('#770fa8', LARANJA) };
                 if (sc === 'chegou') return { idx: 2, terminalEntregue: false, cancelada: false, cor: '#2563eb', grad: g('#2563eb', '#2563eb') };
                 return { idx: 2, terminalEntregue: false, cancelada: false, cor: AMBAR, grad: g('#d97706', '#d97706') };
             };
@@ -3196,10 +3202,10 @@
                                 <div className="rounded-2xl overflow-hidden w-full" style={{background:'rgba(255,255,255,0.80)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.85)', boxShadow:'0 8px 24px rgba(17,24,39,0.18)'}}>
                                     <div className="p-2 space-y-1.5" style={{maxHeight:'320px', overflowY:'auto'}}>
                                         {corridasAgendadas.map(a => { const r = rotuloAgendada(a.disparar_em); return (
-                                            <div key={a.id} onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); carregarCorridasAgendadas(); setPainelAgendadasAberto(false); }} className="rounded-lg px-2.5 py-2 cursor-pointer" style={{background:'rgba(255,255,255,0.75)', border:'1px solid rgba(124,58,237,0.12)'}}>
+                                            <div key={a.id} onClick={() => { setAbaAtiva('acompanhar'); carregarCorridasAtivas(); carregarCorridasAgendadas(); setPainelAgendadasAberto(false); }} className="rounded-lg px-2.5 py-2 cursor-pointer" style={{background:'rgba(255,255,255,0.75)', border:'1px solid rgba(119,15,168,0.12)'}}>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-medium text-gray-900 truncate">{a.destino || 'Corrida'}</span>
-                                                    <span className="text-[10px] font-semibold whitespace-nowrap ml-2" style={{color:'#7c3aed', background:'rgba(124,58,237,0.12)', borderRadius:'20px', padding:'2px 8px'}}>{r.restante}</span>
+                                                    <span className="text-[10px] font-semibold whitespace-nowrap ml-2" style={{color:'#770fa8', background:'rgba(119,15,168,0.12)', borderRadius:'20px', padding:'2px 8px'}}>{r.restante}</span>
                                                 </div>
                                                 <div className="text-[10px] text-gray-500 mt-0.5">{r.quando} · Hub</div>
                                                 {(a.numero_pedido || a.nf) && (<div className="text-[10px] text-gray-500">{a.numero_pedido ? ('Ped #' + a.numero_pedido) : ''}{(a.numero_pedido && a.nf) ? ' · ' : ''}{a.nf ? ('NF ' + a.nf) : ''}</div>)}
@@ -3208,7 +3214,7 @@
                                     </div>
                                 </div>
                             )}
-                            <div onClick={() => setPainelAgendadasAberto(v => !v)} className="flex items-center gap-2 cursor-pointer rounded-full px-3 py-2" style={{background:'rgba(124,58,237,0.96)', boxShadow:'0 6px 18px rgba(124,58,237,0.4)'}}>
+                            <div onClick={() => setPainelAgendadasAberto(v => !v)} className="flex items-center gap-2 cursor-pointer rounded-full px-3 py-2" style={{background:'rgba(119,15,168,0.96)', boxShadow:'0 6px 18px rgba(119,15,168,0.4)'}}>
                                 <svg className="ico" style={{width:14,height:14,color:'#fff'}} aria-hidden="true"><use href="#i-calendar"/></svg>
                                 <span className="text-xs font-semibold text-white">{corridasAgendadas.length} agendada{corridasAgendadas.length > 1 ? 's' : ''}</span>
                                 <span style={{color:'#fff', fontSize:'11px'}}>{painelAgendadasAberto ? '▾' : '▴'}</span>
@@ -3505,7 +3511,7 @@
                                                         <div className="mb-3">{/* PROVEDOR_CARD_UNICO_V1 */}
                                                             <label className="text-xs text-gray-600 mb-1 block"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-truck"/></svg> Provedor</label>
                                                             <div className="rounded-lg p-2 border-2 border-purple-600 bg-purple-50 flex items-center gap-2">
-                                                                <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0" style={{background: _only === 'tutts' ? '#7c3aed' : '#ffffff', border: _only === 'hub' ? '1px solid #e5e7eb' : 'none'}}>
+                                                                <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0" style={{background: _only === 'tutts' ? '#770fa8' : '#ffffff', border: _only === 'hub' ? '1px solid #e5e7eb' : 'none'}}>
                                                                     {_only === 'tutts'
                                                                         ? <img src={ICONE_TUTTS_JPG} style={{width:"100%",height:"100%",objectFit:"contain",padding:"2px"}} />
                                                                         : (<svg viewBox="0 0 64 64" style={{width:"100%",height:"100%",padding:"3px"}}><circle cx="18" cy="42" r="4" fill="#f67602" /><path d="M18 42 Q30 21 46 18" stroke="#f67602" strokeWidth="4" fill="none" strokeLinecap="round" /><path d="M46 18 l-7 -1 l3 7 z" fill="#f67602" /><path d="M18 42 Q31 37 45 34" stroke="#f67602" strokeWidth="3.5" fill="none" strokeLinecap="round" /><path d="M45 34 l-6 -2 l2 6 z" fill="#f67602" /><path d="M18 42 Q27 50 42 50" stroke="#f67602" strokeWidth="3" fill="none" strokeLinecap="round" /><path d="M42 50 l-6 -2 l0 6 z" fill="#f67602" /></svg>)}
@@ -3529,7 +3535,7 @@
                                                                         onClick={() => setConfig({...config, provider: code, codigo_profissional: code === 'tutts' ? config.codigo_profissional : ''})}
                                                                         className={"rounded-lg p-2 text-center cursor-pointer border-2 transition-all " + (sel ? "border-purple-600 bg-purple-50" : "border-gray-200 bg-gray-50 hover:bg-gray-100")}
                                                                     >
-                                                                        <div className="w-7 h-7 rounded-full mx-auto mb-1 flex items-center justify-center overflow-hidden" style={{background: code === 'tutts' ? '#7c3aed' : '#ffffff', border: code === 'hub' ? '1px solid #e5e7eb' : 'none'}}>
+                                                                        <div className="w-7 h-7 rounded-full mx-auto mb-1 flex items-center justify-center overflow-hidden" style={{background: code === 'tutts' ? '#770fa8' : '#ffffff', border: code === 'hub' ? '1px solid #e5e7eb' : 'none'}}>
                                                                             {code === 'tutts'
                                                                                 ? <img src={ICONE_TUTTS_JPG} style={{width:"100%",height:"100%",objectFit:"contain",padding:"2px"}} />
                                                                                 : (
@@ -3646,12 +3652,12 @@
                                             <div className="flex items-center gap-2 mb-2"><span className="text-sm font-bold text-purple-700"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-calendar"/></svg> Agendadas ({corridasAgendadas.length})</span></div>
                                             <div className="space-y-2">
                                                 {corridasAgendadas.map(a => { const r = rotuloAgendada(a.disparar_em); return (
-                                                    <div key={a.id} className="p-3 rounded-lg border-2 border-dashed" style={{borderColor:'#7c3aed'}}>
+                                                    <div key={a.id} className="p-3 rounded-lg border-2 border-dashed" style={{borderColor:'#c084e6'}}>
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-sm font-medium text-gray-900 truncate">{a.destino || 'Corrida'}</span>
-                                                            <span className="text-[10px] font-semibold whitespace-nowrap ml-2 px-2 py-0.5 rounded-full" style={{color:'#7c3aed', background:'#f5f3ff', border:'1px solid #ddd6fe'}}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {r.quando}</span>
+                                                            <span className="text-[10px] font-semibold whitespace-nowrap ml-2 px-2 py-0.5 rounded-full" style={{color:'#770fa8', background:'#faf7fd', border:'1px solid #f3e8fb'}}><svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-calendar"/></svg> {r.quando}</span>
                                                         </div>
-                                                        <div className="text-[11px] mt-1.5 flex items-center gap-1" style={{color:'#7c3aed'}}><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-clock"/></svg> {r.restante} · sera solicitada no Hub</div>
+                                                        <div className="text-[11px] mt-1.5 flex items-center gap-1" style={{color:'#c084e6'}}><svg className="ico" style={{width:13,height:13}} aria-hidden="true"><use href="#i-clock"/></svg> {r.restante} · sera solicitada no Hub</div>
                                                         {(a.numero_pedido || a.nf) && (<div className="text-[11px] text-gray-500 mt-1">{a.numero_pedido ? ('Pedido #' + a.numero_pedido) : ''}{(a.numero_pedido && a.nf) ? ' · ' : ''}{a.nf ? ('NF ' + a.nf) : ''}</div>)}
                                                         <div className="flex justify-end mt-1.5"><button onClick={() => cancelarAgendada(a.id)} className="text-[11px] text-red-500 hover:text-red-700 font-medium">Cancelar</button></div>
                                                     </div>
@@ -3711,7 +3717,7 @@
                                                     })();
                                                     const corDot = (c.status === 'cancelado' || c.status === 'erro') ? '#dc2626'
                                                         : (progresso && progresso.fin) ? '#16a34a'
-                                                        : comMotoboy ? '#7c3aed' : '#9ca3af';
+                                                        : comMotoboy ? '#770fa8' : '#9ca3af';
                                                     const codColetaCard = c.hub && c.hub.codigos && c.hub.codigos.coleta && !(progresso && progresso.coletaOk) && !(c.hub.etapa > 2)
                                                         ? c.hub.codigos.coleta : null;
                                                     return (
@@ -3737,7 +3743,7 @@
                                                             </div>
                                                             {progresso && (
                                                                 <div className="grid grid-cols-3 gap-1">
-                                                                    {progresso.seg.map((on, i) => <div key={i} className="h-1 rounded-full" style={{ background: on ? '#7c3aed' : '#e5e7eb' }}></div>)}
+                                                                    {progresso.seg.map((on, i) => <div key={i} className="h-1 rounded-full" style={{ background: on ? '#770fa8' : '#e5e7eb' }}></div>)}
                                                                 </div>
                                                             )}
                                                             {codColetaCard && (
@@ -3848,7 +3854,7 @@
                                                     ? { bg: '#fef2f2', fg: '#991b1b', dot: '#dc2626' }
                                                     : et.terminalEntregue
                                                         ? { bg: '#f0fdf4', fg: '#166534', dot: '#16a34a' }
-                                                        : { bg: '#f5f3ff', fg: '#5b21b6', dot: '#7c3aed' };
+                                                        : { bg: '#faf7fd', fg: '#770fa8', dot: '#770fa8' };
                                                 const nomeProvedor = hubD && hubD.via_hub && hubD.provider_label ? ' · via ' + hubD.provider_label : '';
                                                 const telefone = temMotoboy ? detalheCorrida.profissional_telefone : null;
                                                 const nota = pts[1] && pts[1].numero_nota;
@@ -3911,15 +3917,15 @@
                                                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-2.5">
                                                             <div className="relative" style={{ height: 14 }}>
                                                                 <div className="absolute" style={{ left: 7, right: 7, top: 6, height: 2, background: '#e5e7eb' }}></div>
-                                                                <div className="absolute" style={{ left: 7, top: 6, height: 2, background: '#7c3aed', width: `calc((100% - 14px) * ${et.terminalEntregue ? 1 : Math.max(0, Math.min(4, et.idx)) / 4})` }}></div>
+                                                                <div className="absolute" style={{ left: 7, top: 6, height: 2, background: '#770fa8', width: `calc((100% - 14px) * ${et.terminalEntregue ? 1 : Math.max(0, Math.min(4, et.idx)) / 4})` }}></div>
                                                                 <div className="absolute inset-0 flex justify-between">
                                                                     {trilha.map((s, i) => {
                                                                         const done = et.terminalEntregue ? true : i < et.idx;
                                                                         const act = !et.terminalEntregue && i === et.idx;
                                                                         const st = done
-                                                                            ? { background: '#7c3aed' }
+                                                                            ? { background: '#770fa8' }
                                                                             : act
-                                                                                ? { background: '#fff', border: '3px solid #7c3aed', boxShadow: '0 0 0 4px #f5f3ff' }
+                                                                                ? { background: '#fff', border: '3px solid #770fa8', boxShadow: '0 0 0 4px #faf7fd' }
                                                                                 : { background: '#fff', border: '2px solid #d1d5db' };
                                                                         return <span key={i} style={{ width: 14, height: 14, borderRadius: 99, boxSizing: 'border-box', ...st }}></span>;
                                                                     })}
@@ -4016,9 +4022,9 @@
                                                             const estiloBolinha = isRetorno
                                                                 ? { background: '#fffbeb', border: '1.5px solid #fde68a', color: '#d97706' }
                                                                 : feito
-                                                                    ? { background: '#7c3aed', border: '1.5px solid #7c3aed', color: '#fff' }
+                                                                    ? { background: '#770fa8', border: '1.5px solid #770fa8', color: '#fff' }
                                                                     : emCurso
-                                                                        ? { background: '#fff', border: '2px solid #7c3aed', color: '#7c3aed', boxShadow: '0 0 0 3px #f5f3ff' }
+                                                                        ? { background: '#fff', border: '2px solid #770fa8', color: '#770fa8', boxShadow: '0 0 0 3px #faf7fd' }
                                                                         : { background: '#fff', border: '1.5px solid #d1d5db', color: '#6b7280' };
                                                             const corStatusTxt = isRetorno ? 'text-orange-700' : feito ? 'text-violet-700' : emCurso ? 'text-violet-600' : 'text-gray-400';
                                                             
@@ -4029,7 +4035,7 @@
                                                                             <div className="rounded-full flex items-center justify-center text-[11px] font-bold" style={{ width: 22, height: 22, boxSizing: 'border-box', ...estiloBolinha }}>
                                                                                 {isRetorno ? <svg className="ico" style={{width:11,height:11}} aria-hidden="true"><use href="#i-refresh"/></svg> : feito ? <svg className="ico" style={{width:12,height:12}} aria-hidden="true"><use href="#i-check"/></svg> : isColeta ? <svg className="ico" style={{width:11,height:11}} aria-hidden="true"><use href="#i-package"/></svg> : idx}
                                                                             </div>
-                                                                            {!ultimo && <div className="flex-1 mt-1" style={{ width: 2, background: feito ? '#ddd6fe' : '#e5e7eb', borderRadius: 2 }}></div>}
+                                                                            {!ultimo && <div className="flex-1 mt-1" style={{ width: 2, background: feito ? '#e9d5f9' : '#e5e7eb', borderRadius: 2 }}></div>}
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -4333,12 +4339,12 @@
                                             <div className="text-xs opacity-90 mt-1">Finalizadas</div>
                                             <div className="absolute right-3 bottom-0 text-5xl opacity-20"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-check"/></svg></div>
                                         </div>
-                                        <div className="rounded-2xl p-4 text-white relative overflow-hidden" style={{background:'linear-gradient(135deg,#7633ea,#7c3aed)'}}>
+                                        <div className="rounded-2xl p-4 text-white relative overflow-hidden" style={{background:'linear-gradient(135deg,#b033ea,#b43aed)'}}>
                                             <div className="text-3xl font-extrabold leading-none">{corridasConcluidas.filter(c => c.status === 'cancelado').length}</div>
                                             <div className="text-xs opacity-90 mt-1">Canceladas</div>
                                             <div className="absolute right-3 bottom-0 text-5xl opacity-20"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-x"/></svg></div>
                                         </div>
-                                        <div className="rounded-2xl p-4 text-white relative overflow-hidden" style={{background:'linear-gradient(135deg,#2d1556,#470fa8)'}}>
+                                        <div className="rounded-2xl p-4 text-white relative overflow-hidden" style={{background:'linear-gradient(135deg,#3a1556,#770fa8)'}}>
                                             <div className="text-3xl font-extrabold leading-none">{corridasConcluidas.filter(c => c.status === 'finalizado').reduce((acc, c) => acc + parseFloat(c.tutts_distancia || 0), 0).toFixed(1)}<span className="text-base font-bold"> km</span></div>
                                             <div className="text-xs opacity-90 mt-1">Distância total</div>
                                             <div className="absolute right-3 bottom-0 text-5xl opacity-20"><svg className="ico" style={{width:16,height:16}} aria-hidden="true"><use href="#i-bike"/></svg></div>

@@ -1,3 +1,4 @@
+/* REDESIGN_CLEAN_V1: telas no padrao clean aprovado (mockups 16/10). */
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* APP_DEEMOJI_V2 */
 /* APP_DEEMOJI_FULL_V1 */
@@ -801,7 +802,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
     
     return React.createElement("div", { className: "sticky top-0 z-40" },
         // Header principal
-        React.createElement("header", { className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg" },
+        React.createElement("header", { className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg" },
             React.createElement("div", { className: "max-w-full mx-auto px-4 py-2" },
                 // Linha 1: Logo + Módulos + Usuário
                 React.createElement("div", { className: "flex items-center justify-between gap-4" },
@@ -1007,7 +1008,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
     return React.createElement("div", { className: "sticky top-0 z-30" },
         // Header principal
         React.createElement("header", {
-            className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg"
+            className: "bg-gradient-to-r from-[#26093a] via-[#3a1556] to-[#5d0b85] shadow-lg"
         },
             React.createElement("div", { className: "max-w-full mx-auto px-3 py-2" },
                 React.createElement("div", { className: "flex items-center justify-between gap-2" },
@@ -1098,6 +1099,272 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
         )
     );
 };
+
+// ==================== HOME_CLEAN_V1: componentes da Home do admin ====================
+/* HOME_CLEAN_V1: ícone do sprite (sem emoji) */
+const icoHomeClean = (nome, px) => React.createElement("svg", { className: "ico", style: { fontSize: (px || 16) + "px" }, "aria-hidden": "true" },
+    React.createElement("use", { href: "#i-" + nome }));
+
+/* HOME_CLEAN_V1: tile horizontal (ícone em quadrado roxo 50, título, descrição truncada) */
+const TileHomeClean = ({ icone, titulo, desc, badge, onClick }) => React.createElement("button", {
+    type: "button",
+    onClick: onClick,
+    className: "text-left bg-white border border-gray-200 hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors",
+    style: { borderRadius: 14, padding: 14, display: "flex", gap: 12, alignItems: "center", minWidth: 0, color: "#111827" }
+},
+    React.createElement("span", {
+        style: { width: 38, height: 38, borderRadius: 10, background: "#faf7fd", color: "#770fa8", display: "grid", placeItems: "center", flex: "none" }
+    }, icoHomeClean(icone, 18)),
+    React.createElement("span", { style: { minWidth: 0, flex: 1 } },
+        React.createElement("span", { style: { display: "block", fontWeight: 600, fontSize: 13.5 } }, titulo),
+        React.createElement("span", {
+            style: { display: "block", fontSize: 12, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+            title: typeof desc === "string" ? desc : undefined
+        }, desc)
+    ),
+    badge > 0 && React.createElement("span", {
+        style: { flex: "none", minWidth: 22, height: 20, padding: "0 6px", borderRadius: 99, background: "#f3e8fb", color: "#5d0b85", fontSize: 11, fontWeight: 700, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" },
+        "aria-label": badge + " pendente(s)"
+    }, badge > 9 ? "9+" : badge)
+);
+
+/* HOME_CLEAN_V1: seção de tiles com rótulo caixa-alta; some se não houver tile visível */
+const SecaoHomeClean = ({ nome, tiles }) => {
+    const visiveis = (tiles || []).filter(Boolean);
+    if (visiveis.length === 0) return null;
+    return React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+        React.createElement("h2", { style: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" } }, nome),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 } },
+            visiveis.map(t => React.createElement(TileHomeClean, Object.assign({ key: t.key }, t)))
+        )
+    );
+};
+
+/* HOME_CLEAN_V1: faixa "Precisa de atenção agora" — GET /api/home/pendencias.
+   Falhou / 404 / resposta inválida => a faixa inteira some, sem aviso.
+   Recarrega ao montar (entrar na home) e a cada 60s só com a aba do navegador visível. */
+const HomePendenciasClean = ({ usuario, onNavigate }) => {
+    const [dados, setDados] = React.useState(null);
+    React.useEffect(() => {
+        let vivo = true;
+        const carregar = () => {
+            if (typeof document !== "undefined" && document.visibilityState && document.visibilityState !== "visible") return;
+            Promise.resolve()
+                .then(() => fetchAuth(`${API_URL}/home/pendencias`) /* API_URL já termina em /api => GET /api/home/pendencias */)
+                .then(r => { if (!r || !r.ok) throw new Error("pendencias indisponível"); return r.json(); })
+                .then(j => {
+                    if (!vivo) return;
+                    const ok = j && typeof j === "object" && !Array.isArray(j) &&
+                        ["saques_aguardando", "lojas_criticas", "hub_falhas", "tarefas_hoje"].some(k => typeof j[k] === "number");
+                    setDados(ok ? j : null);
+                })
+                .catch(() => { if (vivo) setDados(null); });
+        };
+        carregar();
+        const timer = setInterval(carregar, 60000);
+        const onVis = () => { if (document.visibilityState === "visible") carregar(); };
+        document.addEventListener("visibilitychange", onVis);
+        return () => { vivo = false; clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
+    }, []);
+
+    if (!dados) return null;
+    const abaOk = (mod, aba) => (tabPermitida(usuario, mod, aba) ? aba : getFirstAllowedTab(usuario, mod, aba));
+    const plural = (n, um, varios) => (n === 1 ? um : varios);
+    const num = k => (typeof dados[k] === "number" && isFinite(dados[k]) ? dados[k] : 0);
+    const cards = [
+        hasModuleAccess(usuario, "financeiro") && { key: "fin", modulo: "Financeiro", cor: "#d97706", n: num("saques_aguardando"),
+            txt: plural(num("saques_aguardando"), "saque aguardando aprovação", "saques aguardando aprovação"),
+            ir: () => onNavigate("financeiro", abaOk("financeiro", "solicitacoes")) },
+        hasModuleAccess(usuario, "disponibilidade") && { key: "disp", modulo: "Disponibilidade", cor: "#dc2626", n: num("lojas_criticas"),
+            txt: plural(num("lojas_criticas"), "loja abaixo de 50% de cobertura", "lojas abaixo de 50% de cobertura"),
+            ir: () => onNavigate("disponibilidade") },
+        hasModuleAccess(usuario, "uber") && { key: "hub", modulo: "Hub Logístico", cor: "#dc2626", n: num("hub_falhas"),
+            txt: plural(num("hub_falhas"), "entrega com falha no despacho", "entregas com falha no despacho"),
+            ir: () => onNavigate("uber", abaOk("uber", "entregas")) },
+        hasModuleAccess(usuario, "todo") && { key: "todo", modulo: "TO-DO", cor: "#770fa8", n: num("tarefas_hoje"),
+            txt: plural(num("tarefas_hoje"), "tarefa para hoje", "tarefas para hoje"),
+            ir: () => onNavigate("todo") }
+    ].filter(Boolean);
+    if (cards.length === 0) return null;
+
+    return React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 }, "aria-label": "Precisa de atenção agora" },
+        React.createElement("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, "Precisa de atenção agora"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 } },
+            cards.map(c => React.createElement("button", {
+                key: c.key,
+                type: "button",
+                onClick: c.ir,
+                className: "text-left bg-white border border-gray-200 hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors",
+                style: { borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 6, color: "#111827" }
+            },
+                React.createElement("span", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6b7280" } },
+                    React.createElement("span", { style: { width: 8, height: 8, borderRadius: 99, background: c.cor, flex: "none" } }),
+                    c.modulo),
+                React.createElement("span", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: 26, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: "tabular-nums", color: c.n > 0 ? "#111827" : "#9ca3af" } },
+                    c.n.toLocaleString("pt-BR")),
+                React.createElement("span", { style: { color: "#374151", fontSize: 13 } }, c.txt)
+            ))
+        )
+    );
+};
+
+/* HOME_CLEAN_V1: paleta de comandos global do admin (Ctrl+K / Cmd+K).
+   Montada uma vez em root próprio (fim do arquivo). O App publica em window._tuttsCmdK
+   o usuário logado e a MESMA função de navegação usada pelo menu (navegarSidebar). */
+const normCmdK = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const CommandPaletteTutts = () => {
+    const [aberto, setAberto] = React.useState(false);
+    const [q, setQ] = React.useState("");
+    const [sel, setSel] = React.useState(0);
+    const abertoRef = React.useRef(false);
+    const inputRef = React.useRef(null);
+    const listaRef = React.useRef(null);
+    const focoAnterior = React.useRef(null);
+
+    const ctx = () => (typeof window !== "undefined" ? window._tuttsCmdK : null) || null;
+    const podeAbrir = () => {
+        const c = ctx();
+        const r = c && c.usuario && c.usuario.role;
+        return r === "admin" || r === "admin_master" || r === "admin_financeiro";
+    };
+    const fechar = React.useCallback((restaurar) => {
+        abertoRef.current = false;
+        setAberto(false);
+        const el = focoAnterior.current;
+        focoAnterior.current = null;
+        if (restaurar !== false && el && typeof el.focus === "function" && document.contains(el)) {
+            setTimeout(() => { try { el.focus(); } catch (e) {} }, 0);
+        }
+    }, []);
+    const abrir = React.useCallback(() => {
+        if (!podeAbrir() || abertoRef.current) return;
+        focoAnterior.current = document.activeElement;
+        abertoRef.current = true;
+        setQ(""); setSel(0); setAberto(true);
+    }, []);
+
+    // Listener registrado UMA vez; removido no unmount.
+    React.useEffect(() => {
+        const onKey = (e) => {
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === "k" || e.key === "K")) {
+                if (!podeAbrir()) return;
+                e.preventDefault();
+                if (abertoRef.current) fechar(); else abrir();
+            }
+        };
+        const onAbrir = () => abrir();
+        document.addEventListener("keydown", onKey);
+        window.addEventListener("tutts:cmdk", onAbrir);
+        return () => {
+            document.removeEventListener("keydown", onKey);
+            window.removeEventListener("tutts:cmdk", onAbrir);
+        };
+    }, [abrir, fechar]);
+
+    React.useEffect(() => {
+        if (aberto && inputRef.current) inputRef.current.focus();
+    }, [aberto]);
+
+    const itens = React.useMemo(() => {
+        if (!aberto) return [];
+        const c = ctx();
+        if (!c || !c.usuario) return [];
+        const u = c.usuario;
+        const out = [{ id: "__home__", titulo: "Início", sub: "Página inicial", icone: React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-home" })), modulo: true, ir: () => c.irHome && c.irHome() }];
+        (SISTEMA_MODULOS_CONFIG || []).filter(m => hasModuleAccess(u, m.id)).forEach(m => {
+            out.push({
+                id: m.id, titulo: m.label, sub: "Módulo", icone: navIconEl(m.icon), modulo: true,
+                ir: () => c.navegar(m.id, getFirstAllowedTab(u, m.id, (m.abas && m.abas[0] && m.abas[0].id) || null))
+            });
+            abasPermitidas(u, m.id).forEach(a => out.push({
+                id: m.id + "/" + a.id, titulo: a.label, sub: m.label, icone: null, modulo: false,
+                ir: () => c.navegar(m.id, a.id)
+            }));
+        });
+        return out;
+    }, [aberto]);
+
+    const filtrados = React.useMemo(() => {
+        const t = normCmdK(q.trim());
+        if (!t) return itens;
+        const r = [];
+        itens.forEach((it, i) => {
+            const tit = normCmdK(it.titulo), sub = normCmdK(it.sub);
+            let score = -1;
+            if (tit.startsWith(t)) score = it.modulo ? 0 : 1;
+            else if (tit.includes(t)) score = it.modulo ? 2 : 3;
+            else if (!it.modulo && (sub + " " + tit).includes(t)) score = 4;
+            if (score >= 0) r.push({ it, score, i });
+        });
+        r.sort((a, b) => a.score - b.score || a.i - b.i);
+        return r.map(x => x.it);
+    }, [itens, q]);
+
+    React.useEffect(() => { setSel(0); }, [q]);
+    React.useEffect(() => {
+        const el = listaRef.current && listaRef.current.querySelector('[data-idx="' + sel + '"]');
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }, [sel, aberto]);
+
+    if (!aberto) return null;
+
+    const executar = (it) => {
+        if (!it) return;
+        fechar(false);
+        try { it.ir(); } catch (e) { console.warn("[cmdk] navegação falhou", e); }
+    };
+    const onKeyDown = (e) => {
+        if (e.key === "ArrowDown") { e.preventDefault(); setSel(s => Math.min(s + 1, Math.max(filtrados.length - 1, 0))); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); setSel(s => Math.max(s - 1, 0)); }
+        else if (e.key === "Enter") { e.preventDefault(); executar(filtrados[sel]); }
+        else if (e.key === "Escape") { e.preventDefault(); fechar(); }
+        else if (e.key === "Tab") { e.preventDefault(); if (inputRef.current) inputRef.current.focus(); } // focus trap: único foco é o campo
+    };
+    const ativoId = filtrados[sel] ? "cmdk-opt-" + sel : undefined;
+
+    return React.createElement("div", {
+        style: { position: "fixed", inset: 0, zIndex: 10050, background: "rgba(17,24,39,.35)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "12vh 16px 16px" },
+        onMouseDown: (e) => { if (e.target === e.currentTarget) fechar(); }
+    },
+        React.createElement("div", {
+            role: "dialog", "aria-modal": "true", "aria-label": "Buscar módulo ou aba",
+            onKeyDown: onKeyDown,
+            style: { width: "100%", maxWidth: 560, background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", fontFamily: "Inter, system-ui, sans-serif", color: "#111827", boxShadow: "0 12px 32px rgba(17,24,39,.12)" }
+        },
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "0 14px", height: 50, borderBottom: "1px solid #f3f4f6", color: "#9ca3af" } },
+                React.createElement("svg", { className: "ico", style: { fontSize: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })),
+                React.createElement("input", {
+                    ref: inputRef, type: "text", value: q, onChange: (e) => setQ(e.target.value),
+                    placeholder: "Buscar módulo ou aba", "aria-label": "Buscar módulo ou aba",
+                    role: "combobox", "aria-expanded": "true", "aria-controls": "cmdk-lista", "aria-activedescendant": ativoId, autoComplete: "off",
+                    style: { flex: 1, minWidth: 0, border: 0, outline: 0, font: "inherit", fontSize: 14, color: "#111827", background: "transparent" }
+                }),
+                React.createElement("kbd", { style: { fontSize: 11, color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "1px 6px", fontFamily: "inherit" } }, "Esc")
+            ),
+            React.createElement("ul", { id: "cmdk-lista", role: "listbox", ref: listaRef, style: { listStyle: "none", margin: 0, padding: 6, maxHeight: "50vh", overflowY: "auto" } },
+                filtrados.length === 0 && React.createElement("li", { style: { padding: "18px 12px", color: "#6b7280", fontSize: 13, textAlign: "center" } }, "Nenhum módulo ou aba encontrado para “" + q + "”."),
+                filtrados.map((it, i) => React.createElement("li", {
+                    key: it.id, id: "cmdk-opt-" + i, "data-idx": i, role: "option", "aria-selected": i === sel,
+                    onMouseMove: () => { if (i !== sel) setSel(i); },
+                    onMouseDown: (e) => e.preventDefault(),
+                    onClick: () => executar(it),
+                    style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, cursor: "pointer", background: i === sel ? "#faf7fd" : "transparent", color: i === sel ? "#5d0b85" : "#111827" }
+                },
+                    React.createElement("span", { style: { width: 26, height: 26, borderRadius: 8, display: "grid", placeItems: "center", flex: "none", color: "#770fa8", fontSize: 15 } },
+                        it.icone || React.createElement("svg", { className: "ico", style: { fontSize: 13, color: "#9ca3af" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowright" }))),
+                    React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: it.modulo ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, it.titulo),
+                    React.createElement("span", { style: { flex: "none", fontSize: 12, color: "#6b7280" } }, it.sub)
+                ))
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 14, padding: "8px 14px", borderTop: "1px solid #f3f4f6", fontSize: 11.5, color: "#6b7280" } },
+                React.createElement("span", null, "↑↓ navegar"),
+                React.createElement("span", null, "Enter abrir"),
+                React.createElement("span", null, "Esc fechar")
+            )
+        )
+    );
+};
+window.CommandPaletteTutts = CommandPaletteTutts;
 
 // MENSAGENS DE GENTILEZA - Uma será exibida aleatoriamente a cada acesso
 const MENSAGENS_GENTILEZA = [
@@ -1356,7 +1623,7 @@ const hideLoadingScreen = () => {
         sucesso: '#16a34a',  // verde — no prazo, crescimento, lucro
         erro: '#dc2626',     // vermelho — fora prazo, queda, retorno
         info: '#2563eb',     // azul — volume, neutro informativo
-        destaque: '#7c3aed', // roxo Tutts — totais e destaques
+        destaque: '#770fa8', // roxo Tutts — totais e destaques
         aviso: '#d97706',    // amarelo — atenção, intermediário
         neutro: '#6b7280',   // cinza slate — secundário
         gradiente: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
@@ -1721,7 +1988,7 @@ const hideLoadingScreen = () => {
     },
     
     // 🎨 FASE 1A: LinhaTemporal — line/area chart suave para evolução temporal.
-    // Uso: <LinhaTemporal dados={[{label:"01/04",valor:120},...]} cor="#7c3aed" titulo="Entregas por dia" />
+    // Uso: <LinhaTemporal dados={[{label:"01/04",valor:120},...]} cor="#770fa8" titulo="Entregas por dia" />
     LinhaTemporal = ({ dados, cor, titulo, altura, formatador }) => {
         const R = (typeof window !== 'undefined') && window.Recharts;
         const c = cor || CORES_BI.destaque;
@@ -2070,7 +2337,7 @@ const hideLoadingScreen = () => {
             
             var pontosValidos = enderecosSelecionados.filter(function(e) { return e.latitude && e.longitude; });
             pontosValidos.forEach(function(p, i) {
-                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#770fa8') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
                 L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
             
@@ -2244,10 +2511,10 @@ const hideLoadingScreen = () => {
             markersLayer.clearLayers();
             if (routeLayer) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
             pontos.filter(function(p) { return !p.isRetorno; }).forEach(function(p, i) {
-                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#7c3aed') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+                var icon = L.divIcon({ className: '', html: '<div style="background:' + (i === 0 ? '#16a34a' : '#770fa8') + ';color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">' + (i === 0 ? '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flag"/></svg>' : i) + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
                 L.marker([p.latitude, p.longitude], { icon: icon }).addTo(markersLayer).bindPopup('<b>' + (i === 0 ? 'PARTIDA' : 'Parada ' + i) + '</b><br>' + escapeHtml((p.endereco || '').substring(0, 50)));
             });
-            if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#7c3aed', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
+            if (geo && geo.features) { var layer = L.geoJSON(geo, { style: { color: '#770fa8', weight: 5, opacity: 0.8 } }).addTo(mapaRoteirizador); setRouteLayer(layer); }
             if (pontos.length > 0) mapaRoteirizador.fitBounds(L.latLngBounds(pontos.filter(function(p) { return !p.isRetorno; }).map(function(p) { return [p.latitude, p.longitude]; })), { padding: [50, 50] });
         };
 
@@ -2283,7 +2550,7 @@ const hideLoadingScreen = () => {
             if (routeLayer && mapaRoteirizador) { mapaRoteirizador.removeLayer(routeLayer); setRouteLayer(null); }
         };
 
-        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#4c1d95' } },
+        return React.createElement('div', { className: 'fixed inset-0 z-[9999] flex flex-col', style: { background: '#3a1556' } },
             React.createElement('div', { className: 'bg-purple-900 text-white px-4 py-2 flex items-center justify-between' },
                 React.createElement('div', { className: 'flex items-center gap-3' },
                     React.createElement('button', { onClick: onClose, className: 'px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm' }, '← Voltar'),
@@ -2865,6 +3132,8 @@ const hideLoadingScreen = () => {
                 x(prev => ({...prev, logisticaTab: abaId || "dashboard"}));
             }
         };
+        /* HOME_CLEAN_V1: contexto da paleta Ctrl+K (usuário + mesma navegação do menu) */
+        window._tuttsCmdK = { usuario: l, navegar: navegarSidebar, irHome: () => he("home") };
 
         // ==================== PERSISTIR ESTADO DE NAVEGAÇÃO ====================
         // Sempre que o módulo ativo (Ee) ou qualquer state de aba mudar,
@@ -3055,7 +3324,7 @@ const hideLoadingScreen = () => {
                         style: {
                             position: 'fixed', inset: 0, zIndex: 99999,
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.95) 0%, rgba(28,10,60,0.97) 100%)',
+                            background: 'radial-gradient(ellipse at center, rgba(180,58,237,0.95) 0%, rgba(44,10,60,0.97) 100%)',
                             animation: 'fadeInBackdrop 0.4s ease-out'
                         },
                         onClick: function() {
@@ -4316,7 +4585,7 @@ const hideLoadingScreen = () => {
                 ctx.clip();
                 
                 // Fundo
-                ctx.fillStyle = '#7c3aed';
+                ctx.fillStyle = '#770fa8';
                 ctx.fillRect(0, 0, outputSize, outputSize);
                 
                 // Desenhar imagem
@@ -5926,7 +6195,7 @@ const hideLoadingScreen = () => {
             const doc = new jsPDF();
             
             // Cores oficiais da Tutts
-            const roxoTutts = [85, 7, 118]; // #4c1d95
+            const roxoTutts = [85, 7, 118]; // #5d0b85
             const laranjaTutts = [243, 118, 1]; // #f67602
             const branco = [255, 255, 255];
             const cinzaEscuro = [51, 51, 51];
@@ -9996,7 +10265,7 @@ const hideLoadingScreen = () => {
                         height: '256px',
                         overflow: 'hidden',
                         borderRadius: '50%',
-                        border: '4px solid #7c3aed',
+                        border: '4px solid #770fa8',
                         cursor: photoEditorDragging ? 'grabbing' : 'grab',
                         touchAction: 'none'
                     },
@@ -10230,7 +10499,7 @@ const hideLoadingScreen = () => {
         React.createElement("button", {
             onClick: () => setSobreTuttsAberto(true),
             className: "w-full mb-4 sm:mb-6 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group",
-            style: { background: "linear-gradient(135deg, #310976 0%, #401190 50%, #310976 100%)" }
+            style: { background: "linear-gradient(135deg, #530976 0%, #681190 50%, #530976 100%)" }
         },
             React.createElement("div", {
                 className: "w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform",
@@ -10246,7 +10515,7 @@ const hideLoadingScreen = () => {
         // ========== MODAL LANDING PAGE COM ANIMAÇÕES ==========
         sobreTuttsAberto && React.createElement("div", {
             className: "fixed inset-0 z-[100] overflow-y-auto",
-            style: { background: "linear-gradient(180deg, #310976 0%, #230656 50%, #190340 100%)" }
+            style: { background: "linear-gradient(180deg, #530976 0%, #3d0656 50%, #2d0340 100%)" }
         },
             // CSS para animações
             React.createElement("style", null, `
@@ -10290,7 +10559,7 @@ const hideLoadingScreen = () => {
             // Header fixo
             React.createElement("div", {
                 className: "sticky top-0 z-10 backdrop-blur-lg border-b border-white/10",
-                style: { backgroundColor: "rgba(76,29,149, 0.95)" }
+                style: { backgroundColor: "rgba(93,11,133, 0.95)" }
             },
                 React.createElement("div", {className: "max-w-4xl mx-auto px-4 py-4 flex items-center justify-between"},
                     React.createElement("div", {className: "flex items-center gap-3"},
@@ -10422,7 +10691,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {
                                     key: idx,
                                     className: "rounded-xl p-4 text-center transition-all hover:scale-110 animate-fadeInUp",
-                                    style: { backgroundColor: "rgba(76,29,149,0.5)", animationDelay: (0.4 + idx * 0.1) + "s", opacity: 0, animationFillMode: "forwards" }
+                                    style: { backgroundColor: "rgba(93,11,133,0.5)", animationDelay: (0.4 + idx * 0.1) + "s", opacity: 0, animationFillMode: "forwards" }
                                 },
                                     React.createElement("svg", { className: "ico block mb-2 animate-float", style: { width: 34, height: 34, animationDelay: idx * 0.2 + "s" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + item.icon })),
                                     React.createElement("span", {className: "text-white text-sm font-medium"}, item.text)
@@ -10476,7 +10745,7 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-5 border",
-                            style: { backgroundColor: "rgba(76,29,149,0.4)", borderColor: "rgba(246,118,2,0.3)" }
+                            style: { backgroundColor: "rgba(93,11,133,0.4)", borderColor: "rgba(246,118,2,0.3)" }
                         },
                             React.createElement("p", {className: "text-white flex items-start gap-3"},
                                 React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-party" })),
@@ -10495,7 +10764,7 @@ const hideLoadingScreen = () => {
                     React.createElement("div", {className: "flex items-center gap-3 mb-6"},
                         React.createElement("div", {
                             className: "w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-slow",
-                            style: { backgroundColor: "#4c1d95" }
+                            style: { backgroundColor: "#5d0b85" }
                         },
                             React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" }))
                         ),
@@ -10503,7 +10772,7 @@ const hideLoadingScreen = () => {
                     ),
                     React.createElement("div", {
                         className: "rounded-2xl p-6 border",
-                        style: { backgroundColor: "rgba(76,29,149,0.3)", borderColor: "rgba(246,118,2,0.3)" }
+                        style: { backgroundColor: "rgba(93,11,133,0.3)", borderColor: "rgba(246,118,2,0.3)" }
                     },
                         React.createElement("p", {className: "text-lg mb-6", style: { color: "rgba(255,255,255,0.9)" }},
                             "É ",
@@ -10560,7 +10829,7 @@ const hideLoadingScreen = () => {
                         ),
                         React.createElement("div", {
                             className: "rounded-xl p-5 border mb-6",
-                            style: { backgroundColor: "rgba(76,29,149,0.4)", borderColor: "rgba(246,118,2,0.3)" }
+                            style: { backgroundColor: "rgba(93,11,133,0.4)", borderColor: "rgba(246,118,2,0.3)" }
                         },
                             React.createElement("p", {className: "font-semibold mb-4 flex items-center gap-2", style: { color: "#f67602" }},
                                 React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bell" })),
@@ -11210,7 +11479,7 @@ const hideLoadingScreen = () => {
             className: "text-sm font-bold text-purple-800 mb-2"
         }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-camera" })), ""), p.subcategoria === "Cliente fechado / ausente" ? "Tire foto da FACHADA FECHADA" : p.subcategoria === "Produto incorreto / avariado" ? "Tire foto da RESSALVA no verso da NF" : p.subcategoria === "Endereço não encontrado" ? "Tire foto da PLACA DA RUA / local" : p.motivo === "Ajuste de Pedágio" ? "Tire foto do COMPROVANTE DE PEDÁGIO" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Foto do comprovante (opcional)" : "Tire foto do COMPROVANTE"), React.createElement("p", {
             className: "text-xs text-purple-600 mb-2"
-        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #7C3AED", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(124,58,237,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #7C3AED, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, Icon("camera"))), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#7C3AED", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#7C3AED", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
+        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), ""), p.subcategoria === "Produto incorreto / avariado" ? "Foto do VERSO da nota com a ressalva escrita à mão + assinatura do cliente" : p.subcategoria === "Endereço não encontrado" ? "Foto mostrando placa de rua, numeração ou terreno baldio" : p.motivo === "Ajuste de Pedágio" ? "Foto do recibo/comprovante com valor e data visíveis" : p.motivo === "Ajustes Simões Filho e Camaçari" ? "Se tiver comprovante, anexe aqui. Caso contrário, pode enviar sem foto." : "Tire a foto ou selecione da galeria"), p.validandoIA ? React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: "14px" } }, React.createElement("style", null, "@keyframes tScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes tBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}"), React.createElement("div", { style: { width: "80px", height: "80px", border: "2.5px solid #770fa8", borderRadius: "12px", position: "relative", overflow: "hidden", background: "rgba(119,15,168,0.03)" } }, React.createElement("div", { style: { position: "absolute", left: "8px", right: "8px", height: "2px", background: "linear-gradient(90deg, transparent, #b43aed, transparent)", animation: "tScan 1.8s ease-in-out infinite", borderRadius: "2px" } }), React.createElement("div", { style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "28px", opacity: "0.25" } }, Icon("camera"))), React.createElement("p", { style: { fontSize: "15px", fontWeight: "600", color: "#770fa8", margin: "0" } }, "IA analisando sua foto..."), React.createElement("div", { style: { display: "flex", gap: "6px" } }, React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#770fa8", animation: "tBounce 0.6s 0s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#770fa8", animation: "tBounce 0.6s 0.15s infinite" } }), React.createElement("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#770fa8", animation: "tBounce 0.6s 0.3s infinite" } })), React.createElement("p", { style: { fontSize: "12px", color: "#6B7280", margin: "0" } }, "Isso leva poucos segundos...")) : React.createElement(React.Fragment, null,
             React.createElement("input", {
             type: "file",
             accept: "image/*",
@@ -11764,12 +12033,12 @@ const hideLoadingScreen = () => {
             React.createElement("div", {
                 style: {
                     position: "relative",
-                    background: "linear-gradient(135deg, #533489 0%, #724ab7 50%, #ba7e17 100%)",
+                    background: "linear-gradient(135deg, #6e3489 0%, #944ab7 50%, #ba7e17 100%)",
                     borderRadius: "12px",
                     padding: "16px 18px",
                     color: "white",
                     overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(76,29,149, 0.25)"
+                    boxShadow: "0 4px 12px rgba(119,15,168, 0.25)"
                 }
             },
                 // Círculos decorativos sutis
@@ -12115,7 +12384,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {
                             style: {
                                 height: "100%",
-                                background: limitesSaque.diario.disponivel <= 0 ? "#dc2626" : "#7c3aed",
+                                background: limitesSaque.diario.disponivel <= 0 ? "#dc2626" : "#770fa8",
                                 width: Math.min(100, (limitesSaque.diario.utilizado / limitesSaque.diario.limite) * 100) + "%",
                                 transition: "width 0.3s"
                             }
@@ -12134,7 +12403,7 @@ const hideLoadingScreen = () => {
                         React.createElement("div", {
                             style: {
                                 height: "100%",
-                                background: limitesSaque.semanal.disponivel <= 0 ? "#dc2626" : "#7c3aed",
+                                background: limitesSaque.semanal.disponivel <= 0 ? "#dc2626" : "#770fa8",
                                 width: Math.min(100, (limitesSaque.semanal.utilizado / (limitesSaque.semanal.limite_efetivo || limitesSaque.semanal.limite)) * 100) + "%",
                                 transition: "width 0.3s"
                             }
@@ -12177,7 +12446,7 @@ const hideLoadingScreen = () => {
                     disabled: solicitandoLimite,
                     style: {
                         marginTop: "16px", width: "100%",
-                        background: "#7C3AED", color: "white",
+                        background: "#770fa8", color: "white",
                         border: "none", borderRadius: "8px",
                         padding: "10px 16px", fontWeight: 600, fontSize: "14px",
                         cursor: solicitandoLimite ? "wait" : "pointer",
@@ -12185,7 +12454,7 @@ const hideLoadingScreen = () => {
                     }
                 }, solicitandoLimite ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Enviando...") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, Icon("mail"), "Solicitar mais limite")),
                 limitesSaque.solicitacao_pendente && React.createElement("p", {
-                    style: { fontSize: "12px", color: "#7C3AED", marginTop: "12px", fontWeight: 600, textAlign: "center" }
+                    style: { fontSize: "12px", color: "#770fa8", marginTop: "12px", fontWeight: 600, textAlign: "center" }
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Você já tem uma solicitação pendente de limite extra."))
             )
         ),
@@ -12391,7 +12660,7 @@ const hideLoadingScreen = () => {
                                 setMaquinaPendenteModal(null);
                             },
                             style: {
-                                background: "#7c3aed", color: "white", border: 0,
+                                background: "#770fa8", color: "white", border: 0,
                                 padding: "0 16px", height: "34px",
                                 borderRadius: "8px", fontSize: "13px", fontWeight: 500,
                                 cursor: "pointer"
@@ -15969,7 +16238,7 @@ const hideLoadingScreen = () => {
                                 height: '256px',
                                 overflow: 'hidden',
                                 borderRadius: '50%',
-                                border: '4px solid #7c3aed',
+                                border: '4px solid #770fa8',
                                 background: '#f3f4f6',
                                 cursor: photoEditorDragging ? 'grabbing' : 'grab',
                                 touchAction: 'none'
@@ -16456,7 +16725,8 @@ const hideLoadingScreen = () => {
         const canAccessBI = hasModuleAccess(l, "bi");
         if (canAccessBI && "bi" === Ee) {
             return React.createElement("div", {
-                className: "min-h-screen bg-gray-100"
+                className: "min-h-screen",
+                style: { background: "#f9fafb" } /* BI_CLEAN_V1 */
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
             // ========== HEADER COM NAVEGAÇÃO - BI ==========
             React.createElement(HeaderCompacto, {
@@ -16472,131 +16742,84 @@ const hideLoadingScreen = () => {
                 onNavigate: navegarSidebar,
                 onChangeTab: (abaId) => ht(abaId)
             }),
-            // Barra de info do BI
-            React.createElement("div", {
-                className: "bg-white border-b px-4 py-2 text-xs text-gray-500 flex justify-between items-center"
-            }, 
-                React.createElement("div", null,
-                    React.createElement("span", null, "Últ. Leitura: ", (new Date).toLocaleString("pt-BR")), 
-                    React.createElement("span", { className: "ml-4" }, "Dados atualizados: ", ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-")
-                ),
-                React.createElement("button", {
-                    onClick: () => _a(!0),
-                    className: "px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-xs font-semibold"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtros"))
-            ), 
-            
-            // ===== BARRA DE FILTROS ATIVOS =====
-            (Et === "dashboard" || Et === "profissionais" || Et === "os") && (
-                (ua.cod_cliente && ua.cod_cliente.length > 0) || 
-                (ua.centro_custo && ua.centro_custo.length > 0) || 
-                (ua.categorias && ua.categorias.length > 0) || 
-                ua.regiao ||
-                ua.status_prazo ||
-                ua.status_retorno ||
-                ua.tipo_operacao
-            ) && React.createElement("div", {
-                className: "bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200 px-4 py-2"
-            },
-                React.createElement("div", {className: "max-w-full mx-auto flex items-center gap-2 flex-wrap"},
-                    React.createElement("span", {className: "text-xs font-semibold text-purple-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })), "Filtros:")),
-                    
-                    // Período
-                    ua.data_inicio && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"},
-                        "" + new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
-                    ),
-                    
-                    // Região
-                    ua.regiao && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"},
-                        "" + (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao)
-                    ),
-                    
-                    // Clientes - com tooltip quando há múltiplos
-                    ua.cod_cliente && ua.cod_cliente.length > 0 && React.createElement("span", {
-                        className: "inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs cursor-pointer relative group",
-                        title: ua.cod_cliente.length > 1 ? ua.cod_cliente.map(c => c + " - " + (il(c) || "Cliente")).join("\n") : ""
+            /* BI_CLEAN_V1: barra de filtros compacta num card. Mesmo estado (ua/ga) e mesmas ações:
+               período abre o calendário do modal existente, "Mais filtros" abre o modal,
+               "Limpar" = mesma lógica do antigo chip "Limpar", "Aplicar" = ol(ua). */
+            (function () {
+                const fmtDM = d => d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "";
+                const nCli = (ua.cod_cliente || []).length, nCC = (ua.centro_custo || []).length;
+                const nMais = ((ua.categorias || []).length > 0 ? 1 : 0) + (ua.tipo_operacao ? 1 : 0) + (ua.status_prazo ? 1 : 0) + (ua.status_prazo_prof ? 1 : 0) + (ua.status_retorno ? 1 : 0);
+                const temFiltro = nCli > 0 || nCC > 0 || !!ua.regiao || nMais > 0;
+                const infoTxt = "Últ. leitura " + (new Date).toLocaleString("pt-BR") + " · dados atualizados: " + (ua.data_fim ? new Date(ua.data_fim).toLocaleDateString("pt-BR") : "-");
+                const btnSt = (ativo) => ({ height: 36, padding: "0 12px", borderRadius: 10, border: "1px solid " + (ativo ? "#e9d5f9" : "#e5e7eb"), background: ativo ? "#faf7fd" : "#ffffff", color: ativo ? "#5d0b85" : "#374151", fontWeight: ativo ? 600 : 500, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" });
+                const btnCls = "hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] transition-colors";
+                const ico = nome => React.createElement("svg", { className: "ico", style: { fontSize: 14, flex: "none" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-" + nome }));
+                const abrirModal = () => _a(!0);
+                const abrirPeriodo = () => {
+                    _a(!0);
+                    setCalDataInicioAberto(true);
+                    setCalDataFimAberto(false);
+                    setCalMesAtual(ua.data_inicio ? new Date(ua.data_inicio + 'T12:00:00') : new Date());
+                };
+                const limpar = () => {
+                    const novoFiltro = {
+                        ...ua,
+                        cod_cliente: [],
+                        centro_custo: [],
+                        categoria: "",
+                        tipo_operacao: "",
+                        status_prazo: "",
+                        status_prazo_prof: "",
+                        status_retorno: "",
+                        regiao: ""
+                    };
+                    ga(novoFiltro);
+                    rl(novoFiltro);
+                    ol(novoFiltro); // BI-OS-LISTA-V2: antes limpava o chip mas os dados continuavam filtrados
+                };
+                const comFiltros = Et === "dashboard" || Et === "profissionais" || Et === "os";
+
+                // Abas sem filtros: só a linha de informação + botão Filtros (como antes)
+                if (!comFiltros) {
+                    return React.createElement("div", {
+                        style: { background: "#ffffff", borderBottom: "1px solid #e5e7eb", padding: "8px 16px", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12, color: "#6b7280" }
                     },
-                        "" + (ua.cod_cliente.length === 1 
-                            ? (il(ua.cod_cliente[0]) || "Cliente " + ua.cod_cliente[0])
-                            : ua.cod_cliente.length + " clientes"),
-                        // Tooltip customizado
-                        ua.cod_cliente.length > 1 && React.createElement("div", {
-                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
-                        },
-                            React.createElement("div", {className: "font-semibold mb-1 text-purple-300"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Clientes selecionados:")),
-                            ua.cod_cliente.map((c, i) => React.createElement("div", {key: c, className: "py-0.5"},
-                                c + " - " + (il(c) || "Cliente")
-                            ))
-                        )
+                        React.createElement("span", null, infoTxt),
+                        React.createElement("button", { type: "button", onClick: abrirModal, className: btnCls, style: Object.assign(btnSt(false), { height: 30, fontSize: 12 }) }, ico("filter"), "Filtros")
+                    );
+                }
+
+                const cliTxt = nCli === 0 ? "Todos os clientes" : nCli === 1 ? (il(ua.cod_cliente[0]) || "Cliente " + ua.cod_cliente[0]) : nCli + " clientes";
+                const ccTxt = "Centro de custo: " + (nCC === 0 ? "todos" : nCC === 1 ? ua.centro_custo[0] : nCC + " centros");
+                const regTxt = "Região: " + (ua.regiao ? (aa.find(r => r.id === parseInt(ua.regiao))?.nome || "Região " + ua.regiao) : "todas");
+                const periodoTxt = ua.data_inicio ? (fmtDM(ua.data_inicio) + " – " + (ua.data_fim ? fmtDM(ua.data_fim) : "…")) : "Selecionar período";
+                const tituloAba = ((SISTEMA_MODULOS_CONFIG.find(m => m.id === "bi")?.abas || []).find(a => a.id === Et)?.label) || "BI";
+
+                return React.createElement("div", { className: "max-w-full mx-auto", style: { padding: "20px 16px 0", display: "flex", flexDirection: "column", gap: 14 } },
+                    React.createElement("div", null,
+                        React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, tituloAba),
+                        React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, infoTxt)
                     ),
-                    
-                    // Centros de Custo - com tooltip quando há múltiplos
-                    ua.centro_custo && ua.centro_custo.length > 0 && React.createElement("span", {
-                        className: "inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs cursor-pointer relative group",
-                        title: ua.centro_custo.length > 1 ? ua.centro_custo.join("\n") : ""
+                    React.createElement("div", {
+                        role: "group", "aria-label": "Filtros do BI",
+                        style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, padding: 10, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }
                     },
-                        "" + (ua.centro_custo.length === 1 ? ua.centro_custo[0] : ua.centro_custo.length + " centros"),
-                        // Tooltip customizado
-                        ua.centro_custo.length > 1 && React.createElement("div", {
-                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
-                        },
-                            React.createElement("div", {className: "font-semibold mb-1 text-green-300"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centros de custo:")),
-                            ua.centro_custo.map((cc, i) => React.createElement("div", {key: cc, className: "py-0.5"}, cc))
+                        React.createElement("button", { type: "button", onClick: abrirPeriodo, className: btnCls, style: Object.assign(btnSt(false), { color: "#111827", fontWeight: 600 }), title: "Escolher período" }, ico("calendar"), periodoTxt),
+                        React.createElement("button", {
+                            type: "button", onClick: abrirModal, className: btnCls, style: btnSt(nCli > 0),
+                            title: nCli > 1 ? ua.cod_cliente.map(c => c + " - " + (il(c) || "Cliente")).join("\n") : undefined
+                        }, cliTxt),
+                        React.createElement("button", { type: "button", onClick: abrirModal, className: btnCls, style: btnSt(nCC > 0), title: nCC > 1 ? ua.centro_custo.join("\n") : undefined }, ccTxt),
+                        React.createElement("button", { type: "button", onClick: abrirModal, className: btnCls, style: btnSt(!!ua.regiao) }, regTxt),
+                        React.createElement("button", { type: "button", onClick: abrirModal, className: btnCls, style: btnSt(nMais > 0) }, ico("filter"), nMais > 0 ? "Mais filtros (" + nMais + ")" : "Mais filtros"),
+                        React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 } },
+                            temFiltro && React.createElement("button", { type: "button", onClick: limpar, className: "hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] rounded", style: { background: "transparent", border: 0, color: "#770fa8", fontSize: 13, fontWeight: 500, padding: "0 8px", height: 36 } }, "Limpar"),
+                            React.createElement("button", { type: "button", onClick: () => ol(ua), className: "bg-[#770fa8] hover:bg-[#5d0b85] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] focus-visible:ring-offset-1 transition-colors", style: { height: 36, padding: "0 16px", borderRadius: 10, border: 0, color: "#ffffff", fontWeight: 600, fontSize: 13 } }, "Aplicar")
                         )
-                    ),
-                    
-                    // Categoria(s)
-                    ua.categorias && ua.categorias.length > 0 && React.createElement("span", {
-                        className: "inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs cursor-pointer relative group",
-                        title: ua.categorias.length > 1 ? ua.categorias.join("\n") : ""
-                    },
-                        "" + (ua.categorias.length === 1 ? ua.categorias[0] : ua.categorias.length + " categorias"),
-                        ua.categorias.length > 1 && React.createElement("div", {
-                            className: "absolute left-0 top-full mt-1 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50 hidden group-hover:block whitespace-nowrap min-w-max"
-                        },
-                            React.createElement("div", {className: "font-semibold mb-1 text-yellow-300"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Categorias:")),
-                            ua.categorias.map(c => React.createElement("div", {key: c, className: "py-0.5"}, c))
-                        )
-                    ),
-                    
-                    // Tipo de Operacao (TIPO_OPERACAO_V1)
-                    ua.tipo_operacao && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs"},
-                        ua.tipo_operacao === "app_externo" ? "App Externo" : "Moto Própria"
-                    ),
-                    
-                    // Status Prazo
-                    ua.status_prazo && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_prazo === "dentro" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")},
-                        ua.status_prazo === "dentro" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo")
-                    ),
-                    
-                    // Status Retorno
-                    ua.status_retorno && React.createElement("span", {className: "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs " + (ua.status_retorno === "sem_retorno" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700")},
-                        ua.status_retorno === "sem_retorno" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Sem Retorno") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })), "Com Retorno")
-                    ),
-                    
-                    // Botão limpar
-                    React.createElement("button", {
-                        onClick: () => {
-                            const novoFiltro = {
-                                ...ua,
-                                cod_cliente: [],
-                                centro_custo: [],
-                                categoria: "",
-                                tipo_operacao: "",
-                                status_prazo: "",
-                                status_prazo_prof: "",
-                                status_retorno: "",
-                                regiao: ""
-                            };
-                            ga(novoFiltro);
-                            rl(novoFiltro);
-                            ol(novoFiltro); // BI-OS-LISTA-V2: antes limpava o chip mas os dados continuavam filtrados
-                        },
-                        className: "ml-auto px-2 py-1 text-xs text-red-600 hover:bg-red-100 rounded-full transition-colors"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar"))
-                )
-            ),
-            
+                    )
+                );
+            })(),
+
             wa && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 overflow-hidden"
             }, React.createElement("div", {
@@ -17114,453 +17337,216 @@ const hideLoadingScreen = () => {
             // =============================================
             // HOME BI - Página Inicial do Módulo
             // =============================================
-            "home-bi" === Et && React.createElement("div", {className: "min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50"},
-                // Hero Section com Logo
-                React.createElement("div", {className: "flex flex-col items-center justify-center py-12"},
-                    React.createElement("img", {
-                        src: "https://github.com/Leonardodevcloud/tutts-frontend/blob/main/Tutts%20BI(1).png?raw=true",
-                        alt: "Tutts BI",
-                        className: "w-64 h-64 object-contain mb-6 drop-shadow-2xl"
-                    }),
-                    React.createElement("h1", {className: "text-3xl font-bold text-gray-800 mb-2"}, "Business Intelligence"),
-                    React.createElement("p", {className: "text-gray-500 text-center max-w-xl"}, 
-                        "Análise completa de dados operacionais, métricas de desempenho e relatórios inteligentes para tomada de decisão estratégica."
-                    )
+            /* BI_CLEAN_V1: Home do BI — tiles no padrão do Início (TileHomeClean) e "Resumo rápido" como faixa de KPIs.
+               onClick de cada tile é o mesmo de antes. */
+            "home-bi" === Et && React.createElement("div", { style: { padding: "8px 0 24px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1240, margin: "0 auto" } },
+                React.createElement("div", null,
+                    React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, "Business Intelligence"),
+                    React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } },
+                        "Análise completa de dados operacionais, métricas de desempenho e relatórios inteligentes para tomada de decisão estratégica.")
                 ),
-                
-                // Cards de Navegação
-                React.createElement("div", {className: "max-w-6xl mx-auto px-6 pb-12"},
-                    React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"},
-                        
-                        // Card Dashboard
-                        React.createElement("div", {
-                            onClick: () => { ht("dashboard"); el(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-violet-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Dashboard"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Visão geral com métricas, gráficos e indicadores de desempenho em tempo real.")
-                            )
-                        ),
-                        
-                        // Card Acompanhamento
-                        React.createElement("div", {
-                            onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-blue-500 to-cyan-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Acompanhamento"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Análise temporal com múltiplas métricas e evolução de indicadores.")
-                            )
-                        ),
-                        
-                        // Card Por Profissional
-                        React.createElement("div", {
-                            onClick: () => { ht("profissionais"); el(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Por Profissional"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Ranking e análise detalhada do desempenho individual de cada entregador.")
-                            )
-                        ),
-                        
-                        // Card Análise por OS
-                        React.createElement("div", {
-                            onClick: () => { ht("os"); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Análise por OS"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Detalhamento completo de cada ordem de serviço e seus pontos de entrega.")
-                            )
-                        ),
-                        
-                        // Card Cliente 767
-                        React.createElement("div", {
-                            onClick: () => { ht("cliente767"); carregarCliente767(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-orange-500 to-red-500"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Cliente 767"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Dashboard exclusivo com prazo especial de 120 minutos e meta mensal.")
-                            )
-                        ),
-                        
-                        // Card Garantido
-                        React.createElement("div", {
-                            onClick: () => { ht("garantido"); carregarGarantido(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-emerald-500 to-green-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Garantido"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Análise de mínimo garantido, complementos e acompanhamento semanal.")
-                            )
-                        ),
-                        
-                        // Card Relatório IA
-                        React.createElement("div", {
-                            onClick: () => { ht("relatorio-ia"); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("img", {src: "https://raw.githubusercontent.com/Leonardodevcloud/tutts-frontend/main/gemini-app-icon-hd.png", className: "w-8 h-8 rounded"})
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Relatório IA"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Análises automáticas com Inteligência Artificial e geração de documentos.")
-                            )
-                        ),
-                        
-                        // Card Chat IA
-                        React.createElement("div", {
-                            onClick: () => { ht("chat-ia"); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Chat IA"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Converse com a IA para consultar dados, gerar SQL e exportar relatórios.")
-                            )
-                        ),
-                        
-                        // Card Upload
-                        React.createElement("div", {
-                            onClick: () => { ht("upload"); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-upload" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Importação"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "O agente baixa a planilha do sistema e atualiza o BI. Histórico e fila de importações.")
-                            )
-                        ),
-                        
-                        // Card Configurações
-                        React.createElement("div", {
-                            onClick: () => { ht("config"); tl(); al(); carregarPrazosProf(); },
-                            className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-300"
-                        },
-                            React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-gray-500 to-slate-600"}),
-                            React.createElement("div", {className: "p-5"},
-                                React.createElement("div", {className: "w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                    React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" }))
-                                ),
-                                React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Configurações"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Regiões, máscaras, prazos personalizados e regras de contagem.")
-                            )
+
+                // Resumo rápido (faixa de KPIs)
+                ft && React.createElement("section", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+                    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 } },
+                        React.createElement("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: "#111827" } }, "Resumo rápido"),
+                        React.createElement("span", { style: { fontSize: 12, color: "#6b7280", display: "inline-flex", alignItems: "center", gap: 6 } },
+                            React.createElement("svg", { className: "ico", style: { fontSize: 13 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })),
+                            ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "-",
+                            " a ",
+                            ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "-"
                         )
                     ),
-                    
-                    // Estatísticas Rápidas
-                    ft && React.createElement("div", {className: "mt-10"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-4"},
-                            React.createElement("h2", {className: "text-xl font-bold text-gray-800 flex items-center gap-2"},
-                                React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" })),
-                                "Resumo Rápido"
-                            ),
-                            React.createElement("div", {className: "bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold"},
-                                React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), " ",
-                                ua.data_inicio ? new Date(ua.data_inicio + "T12:00:00").toLocaleDateString("pt-BR") : "-",
-                                " a ",
-                                ua.data_fim ? new Date(ua.data_fim + "T12:00:00").toLocaleDateString("pt-BR") : "-"
-                            )
-                        ),
-                        React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"},
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-purple-600"}, ft.total_os?.toLocaleString() || 0),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Total OS")
-                            ),
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-blue-600"}, ft.total_entregas?.toLocaleString() || 0),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Entregas")
-                            ),
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-green-600"}, ft.taxa_prazo || 0, "%"),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "No Prazo")
-                            ),
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-amber-600"}, ft.total_profissionais || 0),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Entregadores")
-                            ),
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-violet-600"}, sl(ft.valor_total || 0)),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Valor Total")
-                            ),
-                            React.createElement("div", {className: "bg-white rounded-xl p-4 shadow text-center"},
-                                React.createElement("p", {className: "text-2xl font-bold text-teal-600"}, sl(ft.faturamento_total || 0)),
-                                React.createElement("p", {className: "text-xs text-gray-500"}, "Faturamento")
-                            )
-                        )
+                    React.createElement("div", { style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", overflow: "hidden" } },
+                        [
+                            ["Total OS", ft.total_os?.toLocaleString() || 0],
+                            ["Entregas", ft.total_entregas?.toLocaleString() || 0],
+                            ["No prazo", (ft.taxa_prazo || 0) + "%", "#166534"],
+                            ["Entregadores", ft.total_profissionais || 0],
+                            ["Valor total", sl(ft.valor_total || 0)],
+                            ["Faturamento", sl(ft.faturamento_total || 0), "#166534"]
+                        ].map((k, idx, arr) => React.createElement("div", {
+                            key: k[0],
+                            style: { padding: "14px 18px", borderRight: idx === arr.length - 1 ? "0" : "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginBottom: -1, minWidth: 0 }
+                        },
+                            React.createElement("div", { style: { fontSize: 12, color: "#6b7280" } }, k[0]),
+                            React.createElement("div", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: 22, fontWeight: 700, marginTop: 4, fontVariantNumeric: "tabular-nums", color: k[2] || "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, k[1])
+                        ))
                     )
-                )
+                ),
+
+                // Tiles de navegação
+                React.createElement(SecaoHomeClean, { nome: "Análises", tiles: [
+                    { key: "dashboard", onClick: () => { ht("dashboard"); el(); }, icone: "chart", titulo: "Dashboard", desc: "Visão geral com métricas, gráficos e indicadores de desempenho em tempo real." },
+                    { key: "acompanhamento", onClick: () => { ht("acompanhamento"); carregarAcompanhamento(); }, icone: "trendup", titulo: "Acompanhamento", desc: "Análise temporal com múltiplas métricas e evolução de indicadores." },
+                    { key: "profissionais", onClick: () => { ht("profissionais"); el(); }, icone: "user", titulo: "Por Profissional", desc: "Ranking e análise detalhada do desempenho individual de cada entregador." },
+                    { key: "os", onClick: () => { ht("os"); }, icone: "clipboard", titulo: "Análise por OS", desc: "Detalhamento completo de cada ordem de serviço e seus pontos de entrega." },
+                    { key: "cliente767", onClick: () => { ht("cliente767"); carregarCliente767(); }, icone: "building", titulo: "Cliente 767", desc: "Dashboard exclusivo com prazo especial de 120 minutos e meta mensal." },
+                    { key: "garantido", onClick: () => { ht("garantido"); carregarGarantido(); }, icone: "wallet", titulo: "Garantido", desc: "Análise de mínimo garantido, complementos e acompanhamento semanal." }
+                ] }),
+                React.createElement(SecaoHomeClean, { nome: "Inteligência artificial", tiles: [
+                    { key: "relatorio-ia", onClick: () => { ht("relatorio-ia"); }, icone: "sparkles", titulo: "Relatório IA", desc: "Análises automáticas com Inteligência Artificial e geração de documentos." },
+                    { key: "chat-ia", onClick: () => { ht("chat-ia"); }, icone: "message", titulo: "Chat IA", desc: "Converse com a IA para consultar dados, gerar SQL e exportar relatórios." }
+                ] }),
+                React.createElement(SecaoHomeClean, { nome: "Dados e ajustes", tiles: [
+                    { key: "upload", onClick: () => { ht("upload"); }, icone: "upload", titulo: "Importação", desc: "O agente baixa a planilha do sistema e atualiza o BI. Histórico e fila de importações." },
+                    { key: "config", onClick: () => { ht("config"); tl(); al(); carregarPrazosProf(); }, icone: "settings", titulo: "Configurações", desc: "Regiões, máscaras, prazos personalizados e regras de contagem." }
+                ] })
             ),
-            
+
             "dashboard" === Et && React.createElement(React.Fragment, null, 
 
-            // === HERO: Coluna OS+Entregas (cards brancos compactos) + 2 Donuts ===
-            React.createElement("div", {
-                className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-stretch"
-            },
-                // Coluna 1: stack vertical OS + Entregas (brancos, border-l-4)
-                React.createElement("div", {className: "flex flex-col gap-4"},
-                    // Card OS — branco compacto
-                    React.createElement("div", {
-                        className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-violet-500 flex-1 flex flex-col justify-center"
-                    },
-                        React.createElement("div", {className: "flex items-center justify-between mb-1"},
-                            React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })),
-                            React.createElement("span", {className: "text-[10px] text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded font-semibold"}, "Ordens de Serviço")
-                        ),
-                        React.createElement("p", {className: "text-3xl font-bold text-gray-800 leading-tight"},
-                            nl(ft?.total_os).toLocaleString("pt-BR")
-                        ),
-                        React.createElement("p", {className: "text-[11px] text-gray-500 font-medium"}, "Total de OS no período")
-                    ),
-                    // Card Entregas — branco compacto
-                    React.createElement("div", {
-                        className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500 flex-1 flex flex-col justify-center"
-                    },
-                        React.createElement("div", {className: "flex items-center justify-between mb-1"},
-                            React.createElement("svg", { className: "ico", style: { width: 22, height: 22 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-package" })),
-                            React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-semibold"}, "Entregas")
-                        ),
-                        React.createElement("p", {className: "text-3xl font-bold text-gray-800 leading-tight"},
-                            nl(ft?.total_entregas).toLocaleString("pt-BR")
-                        ),
-                        React.createElement("p", {className: "text-[11px] text-gray-500 font-medium"},
-                            "Realizadas — ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos"
-                        ),
-                        React.createElement("p", {className: "text-[11px] font-semibold mt-0.5"},
-                            React.createElement("span", {className: "text-cyan-700"}, "App Externo: ", nl(ft?.total_app_externo).toLocaleString("pt-BR")),
-                            React.createElement("span", {className: "text-gray-400"}, "  •  "),
-                            React.createElement("span", {className: "text-violet-700"}, "Moto Própria: ", nl(ft?.total_moto_propria).toLocaleString("pt-BR"))
-                        )
-                    )
-                ),
-                // Coluna 2: Donut Performance (Prazo de Entrega) — DonutPrazo já é o card
-                React.createElement("div", {className: "relative"},
-                    React.createElement(DonutPrazo, {
-                        dentro: nl(ft?.dentro_prazo),
-                        fora: nl(ft?.fora_prazo),
-                        semMedicao: nl(ft?.sem_prazo), // PRAZO_SEM_HORARIO_NO_PRAZO_V1
-                        titulo: "Prazo de Entrega",
-                        corDentro: CORES_BI.sucesso,
-                        corFora: CORES_BI.erro
-                    }),
-                    React.createElement("span", {
-                        className: "absolute top-4 right-4 text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full font-semibold z-10"
-                    }, React.createElement("span",{className:"inline-flex items-center gap-1.5"}, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Performance"))
-                ),
-                // Coluna 3: Donut Prazo Profissional — DonutPrazo já é o card
-                React.createElement("div", {className: "relative"},
-                    React.createElement(DonutPrazo, {
-                        dentro: nl(ft?.dentro_prazo_prof),
-                        fora: nl(ft?.fora_prazo_prof),
-                        semMedicao: nl(ft?.sem_prazo_prof), // PRAZO_SEM_HORARIO_NO_PRAZO_V1
-                        tipoSem: "prof", // PRAZO_REGRA_17H_V1
-                        titulo: "Prazo Profissional",
-                        corDentro: CORES_BI.info,
-                        corFora: CORES_BI.aviso
-                    }),
-                    React.createElement("div", {
-                        className: "absolute top-4 right-4 flex items-center gap-1.5 z-10"
-                    },
-                        React.createElement("span", {className: "text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full font-semibold"}, "T. Médio: ", cl(ft?.tempo_medio_entrega_prof)),
-                        React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-semibold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Profissional"))
-                    )
-                )
-            ),
-
-            // === BLOCO 2: LINHA SECUNDÁRIA — Financeiro + Retornos (5 cards) ===
-            React.createElement("div", {
-                className: "grid grid-cols-5 gap-3 mb-3"
-            },
-            React.createElement("div", {
-                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-violet-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })),
-               React.createElement("span", {className: "text-[10px] text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded font-semibold"}, "Lucro")),
-               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total))),
-               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Faturamento")),
-            React.createElement("div", {
-                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })),
-               React.createElement("span", {className: "text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-semibold"}, "Cliente")),
-               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.valor_total || 0)),
-               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Valor Total")),
-            React.createElement("div", {
-                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-cyan-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })),
-               React.createElement("span", {className: "text-[10px] text-cyan-700 bg-cyan-50 px-1.5 py-0.5 rounded font-semibold"}, "Profissional")),
-               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.valor_prof_total || 0)),
-               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Valor Prof")),
-            React.createElement("div", {
-                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-emerald-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-target" })),
-               React.createElement("span", {className: "text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold"}, "Por OS")),
-               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, sl(ft?.ticket_medio || 0)),
-               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Ticket Médio")),
-            React.createElement("div", {
-                className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-orange-500"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2 mb-1"
-            }, React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" })),
-               React.createElement("span", {className: "text-[10px] text-purple-700 bg-orange-50 px-1.5 py-0.5 rounded font-semibold"}, "Devoluções")),
-               React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_retornos || 0).toLocaleString('pt-BR')),
-               React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Retornos"))),
-
-            // === BLOCO 3: LINHA TERCIÁRIA COLAPSÁVEL — Tempos + Entregadores ===
-            React.createElement("div", {className: "mb-3"},
-                React.createElement("button", {
-                    onClick: () => setMostrarDetalhes(!mostrarDetalhes),
-                    className: "w-full bg-white rounded-2xl shadow-lg border-l-4 border-violet-500 px-4 py-2.5 flex items-center justify-between hover:bg-violet-50 transition-colors"
+            /* BI_CLEAN_V1: 4 KPIs limpos + faixa financeira + "Mais detalhes" (tempos, retornos, tipo de operação).
+               % de prazo = dentro/(dentro+fora), mesma regra do antigo DonutPrazo (PRAZO_DENOM_CARD_V1). */
+            (function () {
+                const pctDe = (d, f) => { const t = nl(d) + nl(f); return t > 0 ? nl(d) / t * 100 : 0; };
+                const temPrazo = nl(ft?.dentro_prazo) + nl(ft?.fora_prazo) > 0;
+                const temPrazoProf = nl(ft?.dentro_prazo_prof) + nl(ft?.fora_prazo_prof) > 0;
+                const pE = pctDe(ft?.dentro_prazo, ft?.fora_prazo);
+                const pP = pctDe(ft?.dentro_prazo_prof, ft?.fora_prazo_prof);
+                const corTxt = p => p >= 90 ? "#166534" : p >= 80 ? "#92400e" : "#991b1b";
+                const fmtPct = p => p.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+                const card = { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 };
+                const rot = { fontSize: 12, color: "#6b7280" };
+                const big = { fontFamily: "Sora, Inter, sans-serif", fontSize: 28, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: "tabular-nums", color: "#111827" };
+                const sub = { fontSize: 11.5, color: "#6b7280" };
+                const barra = p => React.createElement("div", { style: { height: 6, borderRadius: 99, background: "#fecaca", overflow: "hidden", display: "flex" }, "aria-hidden": "true" },
+                    React.createElement("div", { style: { width: Math.max(0, Math.min(100, p)) + "%", background: "#16a34a" } }));
+                const celula = (label, valor, extra, ultimo) => React.createElement("div", {
+                    key: label,
+                    style: { padding: "16px 18px", borderRight: ultimo ? "0" : "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginBottom: -1, minWidth: 0 }
                 },
-                    React.createElement("span", {className: "text-sm font-semibold text-gray-700"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Mais detalhes")),
-                    React.createElement("span", {className: "text-violet-600 text-lg font-bold"}, mostrarDetalhes ? "▲" : "▼")
-                ),
-                mostrarDetalhes && React.createElement("div", {className: "grid grid-cols-3 gap-3 mt-3"},
-                    // Card Tempos (médio / coleta / alocação)
-                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-indigo-500"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                            React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })),
-                            React.createElement("span", {className: "text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-semibold"}, "Tempos")
+                    React.createElement("div", { style: rot }, label),
+                    React.createElement("div", { style: Object.assign({ fontSize: 18, fontWeight: 700, marginTop: 4, fontVariantNumeric: "tabular-nums", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, extra || {}) }, valor)
+                );
+                const faixa = (cols, itens) => React.createElement("section", {
+                    style: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(" + cols + "px, 1fr))", overflow: "hidden" }
+                }, itens);
+
+                return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 } },
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 } },
+                        // Ordens de serviço
+                        React.createElement("div", { style: card },
+                            React.createElement("div", { style: rot }, "Ordens de serviço"),
+                            React.createElement("div", { style: big }, nl(ft?.total_os).toLocaleString("pt-BR")),
+                            React.createElement("div", { style: sub }, nl(ft?.total_entregas).toLocaleString("pt-BR"), " entregas · ", nl(ft?.total_retornos).toLocaleString("pt-BR"), " retornos")
                         ),
-                        React.createElement("div", {className: "space-y-1"},
-                            React.createElement("div", {className: "flex justify-between items-center"},
-                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Médio"),
-                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio))
-                            ),
-                            React.createElement("div", {className: "flex justify-between items-center"},
-                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Coleta"),
-                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio_coleta))
-                            ),
-                            React.createElement("div", {className: "flex justify-between items-center"},
-                                React.createElement("span", {className: "text-[10px] text-gray-500"}, "Alocação"),
-                                React.createElement("span", {className: "text-sm font-bold text-gray-800"}, cl(ft?.tempo_medio_alocacao))
-                            )
+                        // Prazo de entrega
+                        React.createElement("div", { style: card },
+                            React.createElement("div", { style: rot }, "Prazo de entrega"),
+                            React.createElement("div", { style: Object.assign({}, big, { color: temPrazo ? corTxt(pE) : "#9ca3af" }) }, temPrazo ? fmtPct(pE) : "—"),
+                            barra(temPrazo ? pE : 0),
+                            React.createElement("div", { style: sub }, nl(ft?.fora_prazo).toLocaleString("pt-BR"), " fora do prazo",
+                                nl(ft?.sem_prazo) > 0 ? " · inclui " + nl(ft?.sem_prazo).toLocaleString("pt-BR") + " com horário inconsistente" : "")
+                        ),
+                        // Prazo do profissional
+                        React.createElement("div", { style: card },
+                            React.createElement("div", { style: rot }, "Prazo do profissional"),
+                            React.createElement("div", { style: Object.assign({}, big, { color: temPrazoProf ? corTxt(pP) : "#9ca3af" }) }, temPrazoProf ? fmtPct(pP) : "—"),
+                            barra(temPrazoProf ? pP : 0),
+                            React.createElement("div", { style: sub }, "tempo médio ", cl(ft?.tempo_medio_entrega_prof),
+                                nl(ft?.sem_prazo_prof) > 0 ? " · inclui " + nl(ft?.sem_prazo_prof).toLocaleString("pt-BR") + " sem coleta" : "")
+                        ),
+                        // Entregadores ativos
+                        React.createElement("div", { style: card },
+                            React.createElement("div", { style: rot }, "Entregadores ativos"),
+                            React.createElement("div", { style: big }, nl(ft?.total_profissionais || 0).toLocaleString("pt-BR")),
+                            React.createElement("div", { style: sub }, (Number(ft?.media_entregas_por_prof) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }), " entregas por entregador")
                         )
                     ),
-                    // Card Total Entregadores
-                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-pink-500"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                            React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })),
-                            React.createElement("span", {className: "text-[10px] text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded font-semibold"}, "Entregadores")
+                    // Faixa financeira (antigo card "Lucro" agora é "Faturamento" = valor cliente − valor prof)
+                    faixa(200, [
+                        celula("Valor cliente", sl(ft?.valor_total || 0)),
+                        celula("Valor profissional", sl(ft?.valor_prof_total || 0)),
+                        celula("Faturamento", sl(nl(ft?.valor_total) - nl(ft?.valor_prof_total)), { color: "#166534" }),
+                        celula("Ticket médio por OS", sl(ft?.ticket_medio || 0), null, true)
+                    ]),
+                    // Mais detalhes (colapsável, mesmo estado mostrarDetalhes)
+                    React.createElement("div", null,
+                        React.createElement("button", {
+                            type: "button",
+                            onClick: () => setMostrarDetalhes(!mostrarDetalhes),
+                            "aria-expanded": mostrarDetalhes ? "true" : "false",
+                            className: "hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] rounded",
+                            style: { background: "transparent", border: 0, padding: "2px 0", color: "#770fa8", fontSize: 13, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }
+                        },
+                            React.createElement("svg", { className: "ico", style: { fontSize: 14, transform: mostrarDetalhes ? "rotate(-90deg)" : "rotate(90deg)" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowright" })),
+                            mostrarDetalhes ? "Menos detalhes" : "Mais detalhes"
                         ),
-                        React.createElement("p", {className: "text-xl font-bold text-gray-800"}, nl(ft?.total_profissionais || 0).toLocaleString('pt-BR')),
-                        React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Total ativos no período")
-                    ),
-                    // Card Média Ent/Entregador
-                    React.createElement("div", {className: "bg-white rounded-2xl p-4 shadow-lg border-l-4 border-teal-500"},
-                        React.createElement("div", {className: "flex items-center justify-between mb-2"},
-                            React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })),
-                            React.createElement("span", {className: "text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded font-semibold"}, "Média")
-                        ),
-                        React.createElement("p", {className: "text-xl font-bold text-gray-800"}, (Number(ft?.media_entregas_por_prof) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})),
-                        React.createElement("p", {className: "text-[10px] text-gray-500 font-medium"}, "Entregas / entregador")
+                        mostrarDetalhes && React.createElement("div", { style: { marginTop: 8 } },
+                            faixa(150, [
+                                celula("Tempo médio", cl(ft?.tempo_medio)),
+                                celula("Tempo de coleta", cl(ft?.tempo_medio_coleta)),
+                                celula("Tempo de alocação", cl(ft?.tempo_medio_alocacao)),
+                                celula("Retornos", nl(ft?.total_retornos || 0).toLocaleString("pt-BR")),
+                                celula("App externo", nl(ft?.total_app_externo).toLocaleString("pt-BR")),
+                                celula("Moto própria", nl(ft?.total_moto_propria).toLocaleString("pt-BR"), null, true)
+                            ])
+                        )
                     )
-                )
-            ),
-
+                );
+            })(),
 
             React.createElement("div", {
-                className: "bg-white rounded-lg shadow overflow-hidden"
+                className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden" /* BI_CLEAN_V1 */
             }, React.createElement("div", {
-                className: "bg-purple-100 px-4 py-3"
+                className: "bg-white px-5 py-4"
             }, React.createElement("h3", {
-                className: "font-bold text-purple-900"
+                className: "font-semibold text-gray-900 text-[15px]"
             }, "Resumo Geral por Cliente" /* PRAZO_DENOM_CARD_V1: % = dentro/(dentro+fora), igual ao card DonutPrazo e ao SQL do backend */), ((ua.cod_cliente || []).length > 0 || (ua.centro_custo || []).length > 0 || (ua.categorias || []).length > 0 || ua.regiao) && React.createElement("div", {
                 className: "mt-2 flex flex-wrap gap-2"
             }, ua.regiao && React.createElement("span", {
-                className: "text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full"
+                className: "text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded-full"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Região: "), aa.find(e => e.id === parseInt(ua.regiao))?.nome || ua.regiao), (ua.cod_cliente || []).length > 0 && !ua.regiao && React.createElement("span", {
-                className: "text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full"
+                className: "text-xs bg-purple-50 text-purple-800 px-2 py-1 rounded-full"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), (ua.cod_cliente || []).length, " cliente(s)"), (ua.centro_custo || []).length > 0 && React.createElement("span", {
-                className: "text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full"
+                className: "text-xs bg-green-50 text-green-800 px-2 py-1 rounded-full"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Centro(s): "), (ua.centro_custo || []).join(", ")), (ua.categorias || []).length > 0 && React.createElement("span", {
-                className: "text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full"
+                className: "text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded-full"
             }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), (ua.categorias || []).join(", ")))), React.createElement("div", {
                 className: "overflow-x-auto"
             }, React.createElement("table", {
-                className: "w-full text-sm"
+                className: "w-full text-sm tabular-nums"
             }, React.createElement("thead", {
-                className: "bg-purple-50"
+                className: "bg-gray-50 border-t border-gray-100"
             }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-2 py-2 text-left text-purple-900 w-8"
+                className: "px-2 py-2 text-left text-gray-500 font-semibold text-xs w-8"
             }), React.createElement("th", {
-                className: "px-2 py-2 text-left text-purple-900 max-w-[150px]"
+                className: "px-2 py-2 text-left text-gray-500 font-semibold text-xs max-w-[150px]"
             }, "Cliente"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "OS"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Entregas"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Retornos"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-50 min-w-[100px]"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs min-w-[100px]"
             }, "No Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-50 min-w-[100px]"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs min-w-[100px]"
             }, "Fora Prazo"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-50 min-w-[100px]"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs min-w-[100px]"
             }, "Prazo Prof"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-700 bg-orange-50 min-w-[100px]"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs min-w-[100px]"
             }, "Fora Prof"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Média"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Val. Cliente"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Val. Prof."), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Faturamento"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Tckt. Médio"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Entregadores"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Ent/Entreg"), React.createElement("th", {
-                className: "px-2 py-2 text-right text-purple-900"
+                className: "px-2 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Últ. Entrega"))), React.createElement("tbody", null, (zt || []).filter(e => parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0).map((e, t) => React.createElement(React.Fragment, {
                 key: t
             }, React.createElement("tr", {
-                className: "border-b hover:bg-purple-50 " + (t % 2 == 0 ? "bg-white" : "bg-gray-50")
+                className: "border-t border-gray-100 hover:bg-gray-50"
             }, React.createElement("td", {
                 className: "px-2 py-2"
             }, React.createElement("button", {
@@ -17576,13 +17562,13 @@ const hideLoadingScreen = () => {
             }, nl(e.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, nl(e.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-50"
+                className: "px-3 py-2 text-center text-green-800"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(e.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-50"
+                className: "px-3 py-2 text-center text-red-800"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo) / ((nl(e.dentro_prazo) + nl(e.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-50"
+                className: "px-3 py-2 text-center text-blue-800"
             }, React.createElement("div", { className: "font-bold" }, nl(e.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.dentro_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(e.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(e.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-purple-700 bg-orange-50"
+                className: "px-3 py-2 text-center text-amber-800"
             }, React.createElement("div", { className: "font-bold" }, nl(e.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm font-semibold" }, (nl(e.fora_prazo_prof || 0) / ((nl(e.dentro_prazo_prof || 0) + nl(e.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(e.tempo_medio)), React.createElement("td", {
@@ -17602,10 +17588,10 @@ const hideLoadingScreen = () => {
             })), React.createElement("td", {
                 className: "px-3 py-2 text-right text-xs"
             }, e.ultima_entrega ? React.createElement("span", {
-                className: new Date(e.ultima_entrega) > new Date(Date.now() - 6048e5) ? "text-green-600" : "text-orange-500"
+                className: new Date(e.ultima_entrega) > new Date(Date.now() - 6048e5) ? "text-green-800" : "text-amber-800"
             }, "● ", new Date(e.ultima_entrega).toLocaleDateString("pt-BR")) : "-")), Kt[`dash-cli-${t}`] && (e.centros_custo || []).map((a, l) => React.createElement("tr", {
                 key: `${t}-cc-${l}`,
-                className: "bg-purple-50 border-l-4 border-purple-400"
+                className: "bg-[#faf7fd] border-t border-gray-100"
             }, React.createElement("td", {
                 className: "px-2 py-2 text-purple-400 text-center"
             }, "└"), React.createElement("td", {
@@ -17615,15 +17601,15 @@ const hideLoadingScreen = () => {
             }, nl(a.total_os).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, nl(a.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-2 py-2 text-right text-orange-500"
+                className: "px-2 py-2 text-right text-amber-800"
             }, nl(a.total_retornos || 0).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-600 bg-green-50"
+                className: "px-3 py-2 text-center text-green-800"
             }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(a.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-600 bg-red-50"
+                className: "px-3 py-2 text-center text-red-800"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo) / ((nl(a.dentro_prazo) + nl(a.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-600 bg-blue-50"
+                className: "px-3 py-2 text-center text-blue-800"
             }, React.createElement("div", { className: "font-medium" }, nl(a.dentro_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.dentro_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(a.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(a.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-purple-600 bg-orange-50"
+                className: "px-3 py-2 text-center text-amber-800"
             }, React.createElement("div", { className: "font-medium" }, nl(a.fora_prazo_prof || 0).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(a.fora_prazo_prof || 0) / ((nl(a.dentro_prazo_prof || 0) + nl(a.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-600"
             }, cl(a.tempo_medio)), React.createElement("td", {
@@ -17638,7 +17624,7 @@ const hideLoadingScreen = () => {
                 colSpan: "3",
                 className: "px-2 py-2 text-center text-gray-400"
             }, "-")))))), React.createElement("tfoot", {
-                className: "bg-purple-200 font-bold"
+                className: "bg-gray-50 border-t border-gray-200 font-bold"
             }, React.createElement("tr", null, React.createElement("td", {
                 className: "px-2 py-2"
             }), React.createElement("td", {
@@ -17650,13 +17636,13 @@ const hideLoadingScreen = () => {
             }, nl(ft?.total_entregas).toLocaleString("pt-BR")), React.createElement("td", {
                 className: "px-2 py-2 text-right text-purple-700"
             }, nl(ft?.total_retornos).toLocaleString("pt-BR")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-green-700 bg-green-100"
+                className: "px-3 py-2 text-center text-green-800"
             }, React.createElement("div", null, nl(ft?.dentro_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Horário inconsistente na Mapp (ex.: finalização antes da criação) — contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo), " com horário inconsistente") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-red-700 bg-red-100"
+                className: "px-3 py-2 text-center text-red-800"
             }, React.createElement("div", null, nl(ft?.fora_prazo).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo) / ((nl(ft?.dentro_prazo) + nl(ft?.fora_prazo)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
-                className: "px-3 py-2 text-center text-blue-700 bg-blue-100"
+                className: "px-3 py-2 text-center text-blue-800"
             }, React.createElement("div", null, nl(ft?.dentro_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.dentro_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%"), nl(ft?.sem_prazo_prof) > 0 && React.createElement("div", { className: "text-[10px] text-amber-700", title: "Sem horário de coleta (ponto 1) na Mapp — prazo do profissional não medido, contadas como no prazo" }, "inclui ", nl(ft?.sem_prazo_prof), " sem coleta") /* PRAZO_SEM_HORARIO_NO_PRAZO_V1 */), React.createElement("td", {
-                className: "px-3 py-2 text-center text-purple-700 bg-purple-100"
+                className: "px-3 py-2 text-center text-amber-800"
             }, React.createElement("div", null, nl(ft?.fora_prazo_prof).toLocaleString("pt-BR")), React.createElement("div", { className: "text-sm" }, (nl(ft?.fora_prazo_prof) / ((nl(ft?.dentro_prazo_prof || 0) + nl(ft?.fora_prazo_prof || 0)) || 1) * 100).toFixed(1), "%")), React.createElement("td", {
                 className: "px-2 py-2 text-right"
             }, cl(ft?.tempo_medio)), React.createElement("td", {
@@ -17678,7 +17664,7 @@ const hideLoadingScreen = () => {
             }, ft?.ultima_entrega ? new Date(ft.ultima_entrega).toLocaleDateString("pt-BR") : "-")))))),
 
             // ========== ACOMPANHAMENTO POR CLIENTE (Gráfico interativo) ==========
-            (zt || []).length > 0 && React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100 mt-6", ref: function(container) {
+            (zt || []).length > 0 && React.createElement("div", {className: "bg-white rounded-[14px] p-6 border border-gray-200 mt-6", ref: function(container) {
                 if (!container || !window.Chart) return;
                 var clientes = (zt || []).filter(function(e) { return parseInt(e.total_os) > 0 || parseInt(e.total_entregas) > 0; }).slice(0, 20);
                 var dataHash = "acomp|" + clientes.length + "|" + clientes.slice(0,3).map(function(c){return c.cod_cliente;}).join(",");
@@ -17688,10 +17674,10 @@ const hideLoadingScreen = () => {
 
                 var METS = [
                     {g:"Volume", items:[
-                        {id:"os",l:"OS",f:"total_os",t:"bar",c:"#7c3aed",ax:"vol"},
+                        {id:"os",l:"OS",f:"total_os",t:"bar",c:"#3a1556",ax:"vol"},
                         {id:"ent",l:"Entregas",f:"total_entregas",t:"bar",c:"#2563eb",ax:"vol"},
-                        {id:"np",l:"No prazo",f:"dentro_prazo",t:"bar",c:"#16a34a",ax:"vol"},
-                        {id:"fp",l:"Fora prazo",f:"fora_prazo",t:"bar",c:"#dc2626",ax:"vol"},
+                        {id:"np",l:"No prazo",f:"dentro_prazo",t:"bar",c:"#770fa8",ax:"vol"} /* BI_CLEAN_V1 */,
+                        {id:"fp",l:"Fora prazo",f:"fora_prazo",t:"bar",c:"#f67602",ax:"vol"},
                         {id:"ret",l:"Retornos",f:"total_retornos",t:"bar",c:"#d97706",ax:"vol"},
                         {id:"profs",l:"Entregadores",f:"total_profissionais",t:"bar",c:"#166534",ax:"vol"},
                         {id:"epf",l:"Ent/prof",f:"media_entregas_por_prof",t:"line",c:"#d97706",ax:"pct"}
@@ -17699,10 +17685,10 @@ const hideLoadingScreen = () => {
                     {g:"Performance", items:[
                         {id:"txp",l:"Taxa prazo %",fn:function(c){var _n=parseInt(c.dentro_prazo)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo)||0),1)*100;},t:"line",c:"#16a34a",ax:"pct",s:"%"},
                         {id:"txpp",l:"Taxa prof %",fn:function(c){var _n=parseInt(c.dentro_prazo_prof||0)||0;return _n/Math.max(_n+(parseInt(c.fora_prazo_prof||0)||0),1)*100;},t:"line",c:"#16a34a",ax:"pct",s:"%"},
-                        {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#7c3aed",ax:"vol",isTempo:true}
+                        {id:"tent",l:"T. entrega",f:"tempo_medio",t:"line",c:"#c084e6",ax:"vol",isTempo:true}
                     ]},
                     {g:"Financeiro", items:[
-                        {id:"vc",l:"Val. cliente",f:"valor_total",t:"bar",c:"#7c3aed",ax:"money"},
+                        {id:"vc",l:"Val. cliente",f:"valor_total",t:"bar",c:"#770fa8",ax:"money"},
                         {id:"vp",l:"Val. prof.",f:"valor_prof",t:"bar",c:"#d97706",ax:"money"},
                         {id:"fat",l:"Faturamento",f:"faturamento",t:"line",c:"#d97706",ax:"money",dash:true},
                         {id:"tk",l:"Ticket médio",f:"ticket_medio",t:"line",c:"#dc2626",ax:"money"}
@@ -17826,7 +17812,7 @@ const hideLoadingScreen = () => {
                 className: "space-y-6 mt-6"
             }, 
             // ========== GRÁFICO 1: DISTRIBUIÇÃO POR TEMPO (Design v2 — Clean) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+            React.createElement("div", {className: "bg-white rounded-[14px] p-6 border border-gray-200"},
                 (function() {
                     var dados = Qt.porTempo || [];
                     var total = dados.reduce(function(acc, e) { return acc + (e.total || 0); }, 0) || 1;
@@ -17900,7 +17886,7 @@ const hideLoadingScreen = () => {
             ),
 
             // ========== GRÁFICO 2: DISTRIBUIÇÃO POR KM (Design v2 — Clean) ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+            React.createElement("div", {className: "bg-white rounded-[14px] p-6 border border-gray-200"},
                 (function() {
                     var todosKm = Qt.porKm || [];
                     var dadosVisiveis = todosKm.filter(function(e) { return !Gt?.includes(e.faixa); });
@@ -17962,7 +17948,7 @@ const hideLoadingScreen = () => {
                                     if (idx === 0) return "#16a34a";
                                     if (idx <= 3) return "#16a34a";
                                     if (idx <= 7) return "#2563eb";
-                                    return "#7c3aed";
+                                    return "#770fa8";
                                 });
                                 new Chart(cvs, {
                                     type: "bar",
@@ -18001,7 +17987,7 @@ const hideLoadingScreen = () => {
                         ),
                         // Legend
                         React.createElement("div", {className: "flex flex-wrap gap-3 mt-3"},
-                            [["Até 10 km","#16a34a"],["11–25 km","#16a34a"],["26–50 km","#2563eb"],["51+ km","#7c3aed"]].map(function(item, i) {
+                            [["Até 10 km","#16a34a"],["11–25 km","#16a34a"],["26–50 km","#2563eb"],["51+ km","#770fa8"]].map(function(item, i) {
                                 return React.createElement("span", {key: i, className: "flex items-center gap-1.5 text-xs text-gray-500"},
                                     React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: item[1], display: "inline-block"}}),
                                     item[0]
@@ -18014,7 +18000,7 @@ const hideLoadingScreen = () => {
             ),
 
             // ========== GRÁFICO 3: HORA A HORA — PICO ==========
-            React.createElement("div", {className: "bg-white rounded-xl shadow p-6 border border-gray-100"},
+            React.createElement("div", {className: "bg-white rounded-[14px] p-6 border border-gray-200"},
                 (function() {
                     var dados = Qt.porHora || [];
                     if (dados.length === 0) return React.createElement("p", {className: "text-gray-400 text-sm text-center py-8"}, "Sem dados de horário");
@@ -18046,7 +18032,7 @@ const hideLoadingScreen = () => {
                                 var rows = (j && j.rows) || [];
                                 var tot = (j && j.total) || 0;
                                 var tp = Math.max(1, Math.ceil(tot / st.per));
-                                var chip = function(val, label, cnt) { var on = st.status === val; return '<button data-st="' + val + '" class="pico-chip" style="font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;cursor:pointer;border:1px solid ' + (on ? "transparent" : "#e5e7eb") + ';background:' + (on ? "#7c3aed" : "#f3f4f6") + ';color:' + (on ? "#fff" : "#374151") + '">' + label + (cnt != null ? (" \u00b7 " + cnt.toLocaleString("pt-BR")) : "") + '</button>'; };
+                                var chip = function(val, label, cnt) { var on = st.status === val; return '<button data-st="' + val + '" class="pico-chip" style="font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;cursor:pointer;border:1px solid ' + (on ? "transparent" : "#e5e7eb") + ';background:' + (on ? "#770fa8" : "#f3f4f6") + ';color:' + (on ? "#fff" : "#374151") + '">' + label + (cnt != null ? (" \u00b7 " + cnt.toLocaleString("pt-BR")) : "") + '</button>'; };
                                 var thead = '<tr style="color:#9ca3af;font-size:11px;text-align:left"><th style="padding:6px 10px;font-weight:600">OS</th><th style="padding:6px 10px;font-weight:600">Motoboy</th><th style="padding:6px 10px;font-weight:600;text-align:right">Km</th><th style="padding:6px 10px;font-weight:600;text-align:right">Tempo</th><th style="padding:6px 10px;font-weight:600;text-align:right">Meta</th><th style="padding:6px 10px;font-weight:600;text-align:right">Excedeu / sobrou</th><th style="padding:6px 10px;font-weight:600">Prazo</th></tr>';
                                 var tbody;
                                 if (loading) tbody = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:28px">Carregando\u2026</td></tr>';
@@ -18059,7 +18045,7 @@ const hideLoadingScreen = () => {
                                     var bBg = sem ? "#f3f4f6" : (late ? "#fef2f2" : "#f0fdf4"), bCor = sem ? "#6b7280" : (late ? "#dc2626" : "#166534"), bTxt = sem ? "Sem meta" : (late ? "Fora" : "No prazo");
                                     return '<tr style="border-top:1px solid #f3f4f6"><td style="padding:8px 10px;font-weight:600;color:#374151">' + esc(r.os) + (r.num_pedido ? ('<div style="font-size:11px;color:#9ca3af;font-weight:400">' + esc(r.num_pedido) + '</div>') : "") + '</td><td style="padding:8px 10px;color:#374151">' + esc(r.nome_prof || "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#374151">' + (r.km != null ? (("" + r.km).replace(".", ",")) : "\u2014") + '</td><td style="padding:8px 10px;text-align:right;color:#374151">' + fmtDur(r.tempo) + '</td><td style="padding:8px 10px;text-align:right;color:#9ca3af">' + fmtDur(r.meta) + '</td><td style="padding:8px 10px;text-align:right;font-weight:600;color:' + deltaCor + '">' + deltaTxt + '</td><td style="padding:8px 10px"><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:' + bBg + ';color:' + bCor + '">' + bTxt + '</span></td></tr>';
                                 }).join("");
-                                root.innerHTML = '<div class="pico-ov" style="position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto"><div style="width:100%;max-width:720px;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,system-ui,sans-serif"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6"><div><div style="font-weight:600;font-size:15px;color:#374151">' + titulo + '</div><div style="font-size:12px;color:#9ca3af;margin-top:1px">' + rs.total.toLocaleString("pt-BR") + ' OS \u00b7 <span style="color:#16a34a">' + rs.dentro.toLocaleString("pt-BR") + ' no prazo</span> \u00b7 <span style="color:#dc2626">' + rs.fora.toLocaleString("pt-BR") + ' fora</span>' + (rs.sem ? (' \u00b7 <span style="color:#9ca3af">' + rs.sem + ' sem meta</span>') : "") + '</div></div><button class="pico-x" style="font-size:22px;color:#9ca3af;background:none;border:none;cursor:pointer;line-height:1">&times;</button></div><div style="display:flex;gap:7px;padding:12px 20px 4px;flex-wrap:wrap">' + chip("", "Todas", rs.total) + chip("dentro", "No prazo", rs.dentro) + chip("fora", "Fora", rs.fora) + (rs.sem ? chip("sem", "Sem meta", rs.sem) : "") + '</div><div style="padding:8px 8px 4px;max-height:52vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af"><span>' + (tot ? ("Mostrando " + ((st.page - 1) * st.per + 1) + "\u2013" + Math.min(st.page * st.per, tot) + " de " + tot.toLocaleString("pt-BR")) : "\u2014") + '</span><span style="display:flex;align-items:center;gap:8px"><button class="pico-prev" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Anterior</button><span style="color:#6b7280">' + st.page + "/" + tp + '</span><button class="pico-next" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Pr\u00f3xima</button><button class="pico-csv" style="cursor:pointer;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:4px 10px;color:#7c3aed;font-weight:600">Exportar CSV</button></span></div></div></div>';
+                                root.innerHTML = '<div class="pico-ov" style="position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto"><div style="width:100%;max-width:720px;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,system-ui,sans-serif"><div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6"><div><div style="font-weight:600;font-size:15px;color:#374151">' + titulo + '</div><div style="font-size:12px;color:#9ca3af;margin-top:1px">' + rs.total.toLocaleString("pt-BR") + ' OS \u00b7 <span style="color:#16a34a">' + rs.dentro.toLocaleString("pt-BR") + ' no prazo</span> \u00b7 <span style="color:#dc2626">' + rs.fora.toLocaleString("pt-BR") + ' fora</span>' + (rs.sem ? (' \u00b7 <span style="color:#9ca3af">' + rs.sem + ' sem meta</span>') : "") + '</div></div><button class="pico-x" style="font-size:22px;color:#9ca3af;background:none;border:none;cursor:pointer;line-height:1">&times;</button></div><div style="display:flex;gap:7px;padding:12px 20px 4px;flex-wrap:wrap">' + chip("", "Todas", rs.total) + chip("dentro", "No prazo", rs.dentro) + chip("fora", "Fora", rs.fora) + (rs.sem ? chip("sem", "Sem meta", rs.sem) : "") + '</div><div style="padding:8px 8px 4px;max-height:52vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af"><span>' + (tot ? ("Mostrando " + ((st.page - 1) * st.per + 1) + "\u2013" + Math.min(st.page * st.per, tot) + " de " + tot.toLocaleString("pt-BR")) : "\u2014") + '</span><span style="display:flex;align-items:center;gap:8px"><button class="pico-prev" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Anterior</button><span style="color:#6b7280">' + st.page + "/" + tp + '</span><button class="pico-next" style="cursor:pointer;background:#f3f4f6;border:none;border-radius:6px;padding:4px 10px;color:#374151">Pr\u00f3xima</button><button class="pico-csv" style="cursor:pointer;background:#faf7fd;border:1px solid #f3e8fb;border-radius:6px;padding:4px 10px;color:#770fa8;font-weight:600">Exportar CSV</button></span></div></div></div>';
                                 root.querySelector(".pico-x").onclick = fechar;
                                 root.querySelector(".pico-ov").onclick = function(e) { if (e.target === this) fechar(); };
                                 [].forEach.call(root.querySelectorAll(".pico-chip"), function(b) { b.onclick = function() { st.status = b.getAttribute("data-st"); st.page = 1; carregar(); }; });
@@ -18114,15 +18100,15 @@ const hideLoadingScreen = () => {
                             var cvs = document.createElement("canvas"); ct.appendChild(cvs);
                             var lbs = dados.map(function(d) { return String(d.hora).padStart(2, "0") + "h"; });
                             var _ds = [
-                                { label: "No prazo", data: dDentro, backgroundColor: "#16a34a", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" },
-                                { label: "Fora do prazo", data: dFora, backgroundColor: "#dc2626", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" }
+                                { label: "No prazo", data: dDentro, backgroundColor: "#770fa8" /* BI_CLEAN_V1 */, borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" },
+                                { label: "Fora do prazo", data: dFora, backgroundColor: "#f67602", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" }
                             ];
                             if (dSem.some(function(v) { return v > 0; })) _ds.push({ label: "Sem avaliação", data: dSem, backgroundColor: "#d1d5db", borderRadius: 3, borderSkipped: false, barPercentage: 0.82, stack: "os" });
-                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: _ds }, options: { responsive: true, maintainAspectRatio: false, onHover: function(e, el) { if (e.native && e.native.target) e.native.target.style.cursor = (el && el.length) ? "pointer" : "default"; }, onClick: function(evt, els) { if (els && els.length) { var h = dados[els[0].index] && dados[els[0].index].hora; if (h != null) window.abrirDetalhePicoHora({ apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: h }); } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + ctx.parsed.y.toLocaleString("pt-BR"); }, footer: function(items) { var d = dados[items[0].dataIndex] || {}; var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); return "Total: " + t.toLocaleString("pt-BR") + " OS"; } } } }, scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { stacked: true, grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "bandExp", beforeDraw: function(chart) { var xs = chart.scales.x, ca = chart.chartArea; if (!xs || !ca) return; var i8 = -1, i17 = -1; dados.forEach(function(d, idx) { if (d.hora === 8) i8 = idx; if (d.hora === 17) i17 = idx; }); if (i8 < 0 || i17 < 0) return; var x8 = xs.getPixelForValue(lbs[i8]), x17 = xs.getPixelForValue(lbs[i17]); var per = (i17 > i8) ? (x17 - x8) / (i17 - i8) : 24; var cx = chart.ctx; cx.save(); cx.fillStyle = "rgba(124,58,237,0.05)"; cx.fillRect(x8 - per / 2, ca.top, (x17 - x8) + per, ca.bottom - ca.top); cx.restore(); } }, { id: "hTotals", afterDatasetsDraw: function(chart) { var cx = chart.ctx; dados.forEach(function(d, j) { var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); if (t < 1) return; var topY = null, x = null; chart.data.datasets.forEach(function(ds, di) { if (!ds.data[j]) return; var b = chart.getDatasetMeta(di).data[j]; if (b) { if (topY === null || b.y < topY) topY = b.y; x = b.x; } }); if (topY === null) return; cx.fillStyle = "#111827"; cx.font = "600 12px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(t.toLocaleString("pt-BR"), x, topY - 6); }); } }] });
+                            new Chart(cvs, { type: "bar", data: { labels: lbs, datasets: _ds }, options: { responsive: true, maintainAspectRatio: false, onHover: function(e, el) { if (e.native && e.native.target) e.native.target.style.cursor = (el && el.length) ? "pointer" : "default"; }, onClick: function(evt, els) { if (els && els.length) { var h = dados[els[0].index] && dados[els[0].index].hora; if (h != null) window.abrirDetalhePicoHora({ apiUrl: API_URL, fetchAuth: fetchAuth, filtrosQS: filtrosQS, hora: h }); } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#111827", padding: 10, cornerRadius: 8, callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + ctx.parsed.y.toLocaleString("pt-BR"); }, footer: function(items) { var d = dados[items[0].dataIndex] || {}; var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); return "Total: " + t.toLocaleString("pt-BR") + " OS"; } } } }, scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#374151", font: { size: 12 }, maxRotation: 0 } }, y: { stacked: true, grid: { color: "rgba(0,0,0,0.06)" }, border: { display: false }, ticks: { color: "#374151", font: { size: 13 }, callback: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + "k" : v; } }, beginAtZero: true } }, layout: { padding: { top: 32 } } }, plugins: [{ id: "bandExp", beforeDraw: function(chart) { var xs = chart.scales.x, ca = chart.chartArea; if (!xs || !ca) return; var i8 = -1, i17 = -1; dados.forEach(function(d, idx) { if (d.hora === 8) i8 = idx; if (d.hora === 17) i17 = idx; }); if (i8 < 0 || i17 < 0) return; var x8 = xs.getPixelForValue(lbs[i8]), x17 = xs.getPixelForValue(lbs[i17]); var per = (i17 > i8) ? (x17 - x8) / (i17 - i8) : 24; var cx = chart.ctx; cx.save(); cx.fillStyle = "rgba(119,15,168,0.05)"; cx.fillRect(x8 - per / 2, ca.top, (x17 - x8) + per, ca.bottom - ca.top); cx.restore(); } }, { id: "hTotals", afterDatasetsDraw: function(chart) { var cx = chart.ctx; dados.forEach(function(d, j) { var t = (d.dentro || 0) + (d.fora || 0) + (d.sem || 0); if (t < 1) return; var topY = null, x = null; chart.data.datasets.forEach(function(ds, di) { if (!ds.data[j]) return; var b = chart.getDatasetMeta(di).data[j]; if (b) { if (topY === null || b.y < topY) topY = b.y; x = b.x; } }); if (topY === null) return; cx.fillStyle = "#111827"; cx.font = "600 12px system-ui"; cx.textAlign = "center"; cx.textBaseline = "bottom"; cx.fillText(t.toLocaleString("pt-BR"), x, topY - 6); }); } }] });
                         }}),
                         React.createElement("div", {className: "flex items-center gap-4 mt-3 flex-wrap"},
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#16a34a", display: "inline-block"}}), "No prazo"),
-                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#dc2626", display: "inline-block"}}), "Fora do prazo"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#770fa8", display: "inline-block"}}), "No prazo"),
+                            React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#f67602", display: "inline-block"}}), "Fora do prazo"),
                             temSem && React.createElement("span", {className: "flex items-center gap-1.5 text-xs text-gray-500"}, React.createElement("span", {style: {width: "10px", height: "10px", borderRadius: "2px", background: "#d1d5db", display: "inline-block"}}), "Sem avaliação"),
                             React.createElement("span", {className: "text-xs text-gray-400"}, "\u00b7 clique numa hora pra ver o detalhe")
                         )
@@ -18168,7 +18154,7 @@ const hideLoadingScreen = () => {
                 })()
             }),
 
-            "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-xl shadow-lg p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
+            "dashboard" === Et && React.createElement("div", {className: "bg-white rounded-[14px] border border-gray-200 p-6 mt-6 max-w-4xl mx-auto", style: {overflow: "hidden"}}, 
                 React.createElement("div", {className: "flex items-center justify-between mb-4"}, 
                     React.createElement("h3", {className: "text-lg font-bold text-gray-800"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" })), "Acompanhamento Regional")),
                     React.createElement("button", {onClick: function() { setMapaCalorVisivel(!mapaCalorVisivel); if (!mapaCalorVisivel && window.destroyMapaCalor) window.destroyMapaCalor(); }, className: "px-3 py-1 text-sm rounded-lg " + (mapaCalorVisivel ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600")}, mapaCalorVisivel ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Ocultar") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-eye" })), "Mostrar"))
@@ -18354,7 +18340,7 @@ const hideLoadingScreen = () => {
                                 React.createElement("div", {className: "text-2xl font-medium", style: {color: "#16a34a"}}, cliente767Dados.metricas.taxa_prazo + "%"),
                                 React.createElement("div", {className: "w-full h-1.5 bg-gray-200 rounded-full mt-2"}, React.createElement("div", {style: {width: Math.min(parseFloat(cliente767Dados.metricas.taxa_prazo) || 0, 100) + "%", background: "#16a34a", height: "100%", borderRadius: "9999px"}}))
                             ),
-                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #7c3aed"}},
+                            React.createElement("div", {className: "bg-gray-50 rounded-lg px-4 py-3", style: {borderLeft: "3px solid #770fa8"}},
                                 React.createElement("div", {className: "text-xs text-gray-400 mb-0.5"}, "Tempo med. entrega"),
                                 React.createElement("div", {className: "text-2xl font-medium text-gray-800"}, cliente767Dados.metricas.tempo_medio || "00:00")
                             ),
@@ -18482,7 +18468,7 @@ const hideLoadingScreen = () => {
                                     labels: labels,
                                     datasets: [
                                         { type: "line", label: "Taxa prazo (%)", data: taxas, borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", borderWidth: 2.5, tension: 0.3, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: "#16a34a", pointBorderColor: "#fff", pointBorderWidth: 2, fill: true, yAxisID: "y1", order: 0 },
-                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#ddd6fe", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
+                                        { type: "bar", label: "Entregas", data: entregas, backgroundColor: "#e9d5f9", borderRadius: 3, borderSkipped: false, barPercentage: 0.65, yAxisID: "y", order: 1 }
                                     ]
                                 },
                                 options: {
@@ -18549,11 +18535,11 @@ const hideLoadingScreen = () => {
             ),
             
             "profissionais" === Et && React.createElement("div", {
-                className: "bg-white rounded-lg shadow overflow-hidden"
+                className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden" /* BI_CLEAN_V1 */
             }, React.createElement("div", {
-                className: "bg-purple-100 px-4 py-3 flex justify-between items-center"
+                className: "bg-white px-5 py-4 flex justify-between items-center"
             }, React.createElement("h3", {
-                className: "font-bold text-purple-900"
+                className: "font-semibold text-gray-900 text-[15px]"
             }, "Análise por Profissional"), React.createElement("span", {
                 className: "text-sm text-purple-700"
             }, Vt.filter(e => parseInt(e.total_entregas) > 0).length, " profissional(is)")), React.createElement("div", {
@@ -18561,33 +18547,33 @@ const hideLoadingScreen = () => {
             }, React.createElement("table", {
                 className: "w-full text-sm"
             }, React.createElement("thead", {
-                className: "bg-purple-50"
+                className: "bg-gray-50 border-t border-gray-100"
             }, React.createElement("tr", null, React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900 w-10"
+                className: "px-3 py-2 text-left text-gray-500 font-semibold text-xs w-10"
             }), React.createElement("th", {
-                className: "px-3 py-2 text-left text-purple-900"
+                className: "px-3 py-2 text-left text-gray-500 font-semibold text-xs"
             }, "Profissional"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Entregas"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "T.Alocação"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "T.Coleta"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "T.Entrega"), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900 bg-green-50"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900 bg-red-50"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900 bg-violet-50"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "No Prazo Prof")), React.createElement("th", {
-                className: "px-3 py-2 text-center text-purple-900 bg-orange-50"
+                className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Fora Prazo Prof")), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Distância"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Retorno"), React.createElement("th", {
-                className: "px-3 py-2 text-right text-purple-900"
+                className: "px-3 py-2 text-right text-gray-500 font-semibold text-xs"
             }, "Valor"))), React.createElement("tbody", null, 
                 // Paginação: 20 por página - filtrar apenas profissionais com dados
                 Vt.filter(e => parseInt(e.total_entregas) > 0).slice((profPaginaAtual - 1) * 20, profPaginaAtual * 20).map((e, t) => {
@@ -18697,7 +18683,7 @@ const hideLoadingScreen = () => {
                     );
                 })
             ), React.createElement("tfoot", {
-                className: "bg-purple-200 font-bold"
+                className: "bg-gray-50 border-t border-gray-200 font-bold"
             }, React.createElement("tr", null, 
                 React.createElement("td", {className: "px-3 py-2"}), 
                 React.createElement("td", {className: "px-3 py-2"}, "Total (", Vt.filter(e => parseInt(e.total_entregas) > 0).length, " prof.)"), 
@@ -18742,7 +18728,7 @@ const hideLoadingScreen = () => {
                     );
                 })()), 
                 // Fora Prazo Prof - qtd + %
-                React.createElement("td", {className: "px-3 py-2 text-center bg-purple-100"}, (function() {
+                React.createElement("td", {className: "px-3 py-2 text-center text-gray-500 font-semibold text-xs"}, (function() {
                     var totalDentroProf = Vt.reduce((e, t) => e + nl(t.dentro_prazo_prof || 0), 0);
                     var totalForaProf = Vt.reduce((e, t) => e + nl(t.fora_prazo_prof || 0), 0);
                     var total = totalDentroProf + totalForaProf;
@@ -18816,7 +18802,7 @@ const hideLoadingScreen = () => {
                 setGarantidoMotivoReprovado: setGarantidoMotivoReprovado,
                 il: typeof il === "function" ? il : (cod) => null,
                 // Sub-abas Semanal e Por Cliente preservadas via callbacks (renderizam o JSX antigo)
-                renderSemanal: () => React.createElement("div", {className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                renderSemanal: () => React.createElement("div", {className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden"},
                     React.createElement("div", {className: "overflow-x-auto"},
                         React.createElement("table", {className: "w-full"},
                             React.createElement("thead", {className: "bg-gradient-to-r from-blue-100 to-blue-200"},
@@ -18920,13 +18906,13 @@ const hideLoadingScreen = () => {
                     )
                 ),
                 renderCliente: () => garantidoPorCliente && garantidoPorCliente.length > 0 ? React.createElement("div", {className: "space-y-4"},
-                    garantidoPorCliente.map((c, idx) => React.createElement("div", {key: idx, className: "bg-white rounded-xl shadow-lg overflow-hidden"},
+                    garantidoPorCliente.map((c, idx) => React.createElement("div", {key: idx, className: "bg-white border border-gray-200 rounded-[14px] overflow-hidden"},
                         React.createElement("div", {className: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3"},
                             React.createElement("h3", {className: "text-lg font-bold"}, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), "Cliente "), c.cod_cliente_garantido, c.nome_cliente_garantido ? " — " + c.nome_cliente_garantido : "")
                         ),
                         React.createElement("div", {className: "overflow-x-auto"},
                             React.createElement("table", {className: "w-full"},
-                                React.createElement("thead", {className: "bg-purple-50"},
+                                React.createElement("thead", {className: "bg-gray-50 border-t border-gray-100"},
                                     React.createElement("tr", null,
                                         React.createElement("th", {className: "px-3 py-2 text-left text-xs font-bold text-purple-800"}, "Profissional"),
                                         React.createElement("th", {className: "px-3 py-2 text-center text-xs font-bold text-purple-800"}, "Entregas"),
@@ -20909,13 +20895,58 @@ const hideLoadingScreen = () => {
         }
         
         // ========== PÁGINA HOME - BEM-VINDO ==========
+        /* HOME_CLEAN_V1: header global (HeaderCompacto com "Início" ativo), saudação limpa,
+           busca (abre a paleta Ctrl+K), faixa de pendências e tiles agrupados por seção.
+           Gates de permissão e onClick de cada tile são os mesmos de antes. */
         if ("home" === Ee && ("admin" === l.role || "admin_master" === l.role || "admin_financeiro" === l.role)) {
             const primeiroNome = (socialProfile?.display_name || l.fullName || "").split(" ")[0];
-            
+            const ehAdminOuMaster = l.role === "admin" || l.role === "admin_master";
+            const tileHome = (key, permitido, onClick, icone, titulo, desc, badge) => permitido ? { key, onClick, icone, titulo, desc, badge } : null;
+            const gruposHome = [
+                { nome: "Operação", tiles: [
+                    tileHome("uber", hasModuleAccess(l, "uber"), () => { he("uber"); x(e => ({...e, logisticaTab: "dashboard"})); }, "truck", "Hub Logístico", "Despacho multi-provedor"),
+                    tileHome("disponibilidade", hasModuleAccess(l, "disponibilidade"), () => { he("disponibilidade"); }, "calendar", "Disponibilidade", "Escalas e horários"),
+                    tileHome("operacional", hasModuleAccess(l, "operacional"), () => he("operacional"), "wrench", "Operacional", "Gestão operacional"),
+                    tileHome("filas", hasModuleAccess(l, "filas"), () => he("filas"), "users", "Filas", "Gestão de filas"),
+                    tileHome("solicitacoes", hasModuleAccess(l, "solicitacoes"), () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); }, "clipboard", "Solicitações", "Gerencie pedidos e ajustes"),
+                    tileHome("coleta", hasModuleAccess(l, "coleta"), () => he("coleta"), "map", "Consultar Endereços", "Base colaborativa")
+                ]},
+                { nome: "Financeiro", tiles: [
+                    tileHome("financeiro", hasModuleAccess(l, "financeiro"), () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); }, "wallet", "Financeiro", "Saques e valores"),
+                    // 2026-05 — Controle de Máquinas (liberação de saque) — só admin
+                    tileHome("controle-maquinas", (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro"), () => he("controle-maquinas"), "lock", "Controle de Máquinas", "Liberar saque de motoboy com máquina")
+                ]},
+                { nome: "Dados", tiles: [
+                    tileHome("bi", hasModuleAccess(l, "bi"), () => he("bi"), "chart", "BI", "Análises e dados"),
+                    tileHome("bi-monitoramento", (l?.role === "admin" || l?.role === "admin_master"), () => he("bi-monitoramento"), "satellite", "BI Monitoramento", "Visão operacional sem dados financeiros"),
+                    tileHome("performance", hasModuleAccess(l, "performance"), () => he("performance"), "trendup", "Performance", "Desempenho diário"),
+                    tileHome("gerencial", hasModuleAccess(l, "gerencial"), () => he("gerencial"), "chart", "Análise Gerencial", "Relatório semanal consolidado"),
+                    // PAINEL_V1 - Meu Painel (metricas de atendimento por operador) - so admin
+                    tileHome("painel", ehAdminOuMaster, () => he("painel"), "trendup", "Meu Painel", l.role === "admin_master" ? "Métricas da equipe de atendimento" : "Suas métricas de atendimento")
+                ]},
+                { nome: "Clientes", tiles: [
+                    tileHome("cs", hasModuleAccess(l, "cs"), () => he("cs"), "handshake", "Sucesso do Cliente", "CS & Raio-X IA"),
+                    tileHome("crm-whatsapp", hasModuleAccess(l, "crm-whatsapp"), () => he("crm-whatsapp"), "message", "CRM WhatsApp", "Leads e conversas"),
+                    // ConfirmaFácil — integração NFs e rastreamento — só admin
+                    tileHome("confirmafacil", ehAdminOuMaster, () => he("confirmafacil"), "link", "ConfirmaFácil", "Integração NFs e rastreamento de entregas"),
+                    tileHome("rastreio-clientes", hasModuleAccess(l, "rastreio-clientes"), () => he("rastreio-clientes"), "satellite", "Rastreio Clientes", "SLA e monitoramento")
+                ]},
+                { nome: "Sistema", tiles: [
+                    tileHome("agente", hasModuleAccess(l, "agente"), () => he("agente"), "bot", "Agente RPA", "Correção de endereços"),
+                    tileHome("antifraude", hasModuleAccess(l, "antifraude"), () => he("antifraude"), "shield", "Anti-Fraude", "Detecção de duplicatas"),
+                    tileHome("config", hasModuleAccess(l, "config"), () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); }, "settings", "Config", "Configurações"),
+                    tileHome("todo", hasModuleAccess(l, "todo"), () => he("todo"), "filetext", "TO-DO", "Suas tarefas", todoMeuDia.length),
+                    tileHome("social", true, () => he("social"), "heart", "Social", "Comunidade", socialUnread),
+                    // 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
+                    tileHome("roadmap", ehAdminOuMaster, () => he("roadmap"), "zap", "Desenvolvimentos", "Roadmap, bugs e sugestões")
+                ]}
+            ];
+
             return React.createElement("div", {
-                className: "min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50"
+                className: "min-h-screen",
+                style: { background: "#f9fafb", color: "#111827", fontFamily: "Inter, system-ui, sans-serif", fontSize: 13 }
             }, i && React.createElement(Toast, i), n && React.createElement(LoadingOverlay, null),
-            
+
             // Modal de notificação de tarefas pendentes
             todoNotifModal && todoPendentesNotif.length > 0 && React.createElement("div", {
                 className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -20946,417 +20977,61 @@ const hideLoadingScreen = () => {
                     className: "flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Ir para Tarefas"))
             ))),
-            
-            // Header
-            React.createElement("nav", {
-                className: "bg-gradient-to-r from-[#4c1d95] via-[#4c1d95] to-[#4c1d95] shadow-lg"
-            }, React.createElement("div", {
-                className: "max-w-7xl mx-auto px-4 py-4 flex justify-between items-center"
-            }, React.createElement("div", {className: "flex items-center gap-3"},
-                socialProfile?.profile_photo ? React.createElement("img", {
-                    src: socialProfile.profile_photo,
-                    className: "w-12 h-12 rounded-full object-cover border-2 border-white/50"
-                }) : React.createElement("div", {
-                    className: "w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-xl border-2 border-white/50"
-                }, primeiroNome?.charAt(0)?.toUpperCase() || "?"),
-                React.createElement("div", null,
-                    React.createElement("h1", {className: "text-xl font-bold text-white"}, "Central Tutts"),
-                    React.createElement("p", {className: "text-purple-200 text-sm"}, socialProfile?.display_name || l.fullName)
-                )
-            ), React.createElement("div", {className: "flex items-center gap-2"},
-                React.createElement("button", {
-                    onClick: () => o(null),
-                    className: "px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                }, "Sair")
-            ))),
-            
+
+            // HOME_CLEAN_V1: mesmo header global dos módulos, com "Início" ativo
+            React.createElement(HeaderCompacto, {
+                usuario: l,
+                moduloAtivo: "home",
+                abaAtiva: null,
+                socialProfile: socialProfile,
+                isLoading: f,
+                lastUpdate: E,
+                onRefresh: ul,
+                onLogout: () => o(null),
+                onGoHome: () => he("home"),
+                onNavigate: navegarSidebar
+            }),
+
             // Conteúdo Principal
-            React.createElement("div", {className: "max-w-6xl mx-auto px-4 py-12"},
-                // Saudação
-                React.createElement("div", {className: "text-center mb-12"},
-                    React.createElement("h1", {
-                        className: "text-4xl md:text-5xl font-bold text-gray-800 mb-4"
-                    }, getSaudacao(), ", ", React.createElement("span", {className: "text-purple-600 thome-name"}, primeiroNome), "!"),
-                    React.createElement("p", {className: "text-xl text-gray-600 mb-2"}, "Seja bem-vindo(a) à Central Tutts"),
-                    React.createElement("div", {className: "mt-8 p-6 bg-white rounded-2xl shadow-lg border-l-4 border-[#f67602] thome-quote"},
-                        React.createElement("p", {className: "text-lg text-gray-700 italic"}, "\"", mensagemGentileza, "\""),
-                        React.createElement("svg", { className: "ico", style: { width: 24, height: 24 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" }))
+            React.createElement("main", {
+                style: { padding: "32px 16px", maxWidth: 1240, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 },
+                className: "sm:px-6"
+            },
+                // Saudação + busca
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 } },
+                    React.createElement("div", { style: { minWidth: 0 } },
+                        React.createElement("h1", {
+                            style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.2, color: "#111827" }
+                        }, getSaudacao(), ", ", React.createElement("span", { style: { color: "#f67602" } }, primeiroNome)),
+                        React.createElement("p", { style: { margin: "6px 0 0", color: "#6b7280", fontStyle: "italic", fontSize: 13.5 } }, "“", mensagemGentileza, "”")
+                    ),
+                    React.createElement("button", {
+                        type: "button",
+                        onClick: () => window.dispatchEvent(new CustomEvent("tutts:cmdk")),
+                        "aria-label": "Buscar módulo ou aba (Ctrl K)",
+                        className: "hover:border-[#c084e6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#770fa8] transition-colors",
+                        style: { flex: "0 1 360px", minWidth: 220, display: "flex", alignItems: "center", gap: 8, height: 42, padding: "0 14px", border: "1px solid #e5e7eb", borderRadius: 12, background: "#ffffff", color: "#9ca3af", textAlign: "left", font: "inherit" }
+                    },
+                        React.createElement("svg", { className: "ico", style: { fontSize: 15 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })),
+                        React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 13 } }, "Buscar módulo ou aba"),
+                        React.createElement("kbd", { style: { fontSize: 11, color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "1px 6px", fontFamily: "inherit" } }, "Ctrl K")
                     )
                 ),
-                
-                // Botões de Acesso Rápido
-                React.createElement("div", {className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 thome-grid"},
-                    // Solicitações
-                    hasModuleAccess(l, "solicitacoes") &&
-                    React.createElement("div", {
-                        onClick: () => { he("solicitacoes"); x(e => ({...e, adminTab: "dashboard"})); },
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-violet-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Solicitações"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gerencie pedidos e ajustes")
-                        )
-                    ),
-                    // 🆕 2026-05 — Controle de Máquinas (liberação de saque) — só admin
-                    (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro") &&
-                    React.createElement("div", {
-                        onClick: () => he("controle-maquinas"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Controle de Máquinas"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Liberar saque de motoboy com máquina")
-                        )
-                    ),
 
-                    // PAINEL_V1 - Meu Painel (metricas de atendimento por operador) - so admin
-                    (l.role === "admin" || l.role === "admin_master") &&
-                    React.createElement("div", {
-                        onClick: () => he("painel"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Meu Painel"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, l.role === "admin_master" ? "Métricas da equipe de atendimento" : "Suas métricas de atendimento")
-                        )
-                    ),
-                    // 🆕 2026-05-05 — Desenvolvimentos (Roadmap, Bugs, Sugestões) — só admin
-                    (l.role === "admin" || l.role === "admin_master") &&
-                    React.createElement("div", {
-                        onClick: () => he("roadmap"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-zap" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Desenvolvimentos"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Roadmap, bugs e sugestões")
-                        )
-                    ),
+                // Precisa de atenção agora (some sozinha se a API falhar / não existir)
+                React.createElement(HomePendenciasClean, { usuario: l, onNavigate: navegarSidebar }),
 
-
-                    // ConfirmaFácil — integração NFs e rastreamento — só admin
-                    (l.role === "admin" || l.role === "admin_master") &&
-                    React.createElement("div", {
-                        onClick: () => he("confirmafacil"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "ConfirmaFácil"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Integração NFs e rastreamento de entregas")
-                        )
-                    ),
-
-                    // Coleta de Endereços (colaborativa — motoboys cadastram, IA valida)
-                    hasModuleAccess(l, "coleta") &&
-                    React.createElement("div", {
-                        onClick: () => he("coleta"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Consultar Endereços"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Base colaborativa")
-                        )
-                    ),
-                    
-                    // Financeiro
-                    hasModuleAccess(l, "financeiro") &&
-                    React.createElement("div", {
-                        onClick: () => { he("financeiro"); x(e => ({...e, finTab: getFirstAllowedTab(l, "financeiro", "home-fin")})); },
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Financeiro"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Saques e valores")
-                        )
-                    ),
-                    
-                    // Disponibilidade
-                    hasModuleAccess(l, "disponibilidade") && 
-                    React.createElement("div", {
-                        onClick: () => { he("disponibilidade"); },
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-blue-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-blue-500 to-cyan-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Disponibilidade"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Escalas e horários")
-                        )
-                    ),
-                    
-                    // TO-DO
-                    hasModuleAccess(l, "todo") &&
-                    React.createElement("div", {
-                        onClick: () => he("todo"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-indigo-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-indigo-500 to-purple-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })),
-                                todoMeuDia.length > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, todoMeuDia.length > 9 ? "9+" : todoMeuDia.length)
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "TO-DO"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Suas tarefas")
-                        )
-                    ),
-                    
-                    // Filas
-                    hasModuleAccess(l, "filas") &&
-                    React.createElement("div", {
-                        onClick: () => he("filas"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-cyan-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-cyan-500 to-teal-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-cyan-100 text-cyan-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Filas"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gestão de filas")
-                        )
-                    ),
-                    
-                    // BI
-                    hasModuleAccess(l, "bi") && 
-                    React.createElement("div", {
-                        onClick: () => he("bi"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-orange-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-orange-500 to-amber-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "BI"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Análises e dados")
-                        )
-                    ),
-                    
-                    // Social
-                    React.createElement("div", {
-                        onClick: () => he("social"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-pink-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-pink-500 to-rose-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" })),
-                                socialUnread > 0 && React.createElement("span", {className: "absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, socialUnread > 9 ? "9+" : socialUnread)
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Social"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Comunidade")
-                        )
-                    ),
-                    
-                    // Operacional
-                    hasModuleAccess(l, "operacional") &&
-                    React.createElement("div", {
-                        onClick: () => he("operacional"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-teal-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-teal-500 to-cyan-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wrench" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Operacional"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Gestão operacional")
-                        )
-                    ),
-                    
-                                        // Hub Logistico
-                    hasModuleAccess(l, "uber") &&
-                    React.createElement("div", {
-                        onClick: () => { he("uber"); x(e => ({...e, logisticaTab: "dashboard"})); },
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-truck" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Hub Logístico"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Despacho multi-provedor")
-                        )
-                    ),
-                    
-                    // Config (admins com permissão)
-                    hasModuleAccess(l, "config") && 
-                    React.createElement("div", {
-                        onClick: () => { he("config"); x(e => ({...e, configTab: getFirstAllowedTab(l, "config", "usuarios")})); },
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-gray-400"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-gray-500 to-slate-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Config"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Configurações")
-                        )
-                    ),
-                    
-                    // Sucesso do Cliente
-                    hasModuleAccess(l, "cs") &&
-                    React.createElement("div", {
-                        onClick: () => he("cs"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-violet-500 to-purple-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-handshake" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Sucesso do Cliente"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "CS & Raio-X IA")
-                        )
-                    ),
-                    
-                    // CRM WhatsApp
-                    hasModuleAccess(l, "crm-whatsapp") &&
-                    React.createElement("div", {
-                        onClick: () => he("crm-whatsapp"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-green-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-green-500 to-emerald-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-message" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "CRM WhatsApp"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Leads e conversas")
-                        )
-                    ),
-                    
-                    // Agente RPA
-                    hasModuleAccess(l, "agente") &&
-                    React.createElement("div", {
-                        onClick: () => he("agente"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-pink-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Agente RPA"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Correção de endereços")
-                        )
-                    ),
-                    
-                    // BI Monitoramento
-                    (l?.role === "admin" || l?.role === "admin_master") &&
-                    React.createElement("div", { onClick: () => he("bi-monitoramento"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300" },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "BI Monitoramento"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Visão operacional sem dados financeiros")
-                        )
-                    ),
-                    
-                    // Rastreio Clientes
-                    hasModuleAccess(l, "rastreio-clientes") &&
-                    React.createElement("div", { onClick: () => he("rastreio-clientes"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300" },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-fuchsia-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-satellite" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Rastreio Clientes"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "SLA e monitoramento")
-                        )
-                    ),
-                    
-                    // Anti-Fraude
-                    hasModuleAccess(l, "antifraude") &&
-                    React.createElement("div", {
-                        onClick: () => he("antifraude"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-red-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-red-500 to-rose-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Anti-Fraude"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Detecção de duplicatas")
-                        )
-                    ),
-                    
-                    // Performance Diária
-                    hasModuleAccess(l, "performance") &&
-                    React.createElement("div", {
-                        onClick: () => he("performance"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-amber-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-amber-500 to-orange-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Performance"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Desempenho diário")
-                        )
-                    ),
-
-                    // Análise Gerencial Semanal
-                    hasModuleAccess(l, "gerencial") &&
-                    React.createElement("div", {
-                        onClick: () => he("gerencial"),
-                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
-                    },
-                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
-                        React.createElement("div", {className: "p-5"},
-                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
-                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" }))
-                            ),
-                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Análise Gerencial"),
-                            React.createElement("p", {className: "text-xs text-gray-500"}, "Relatório semanal consolidado")
-                        )
-                    )
-                )
+                // Tiles agrupados
+                gruposHome.map(g => React.createElement(SecaoHomeClean, { key: g.nome, nome: g.nome, tiles: g.tiles }))
             ),
-            
+
             // Footer
-            React.createElement("div", {className: "text-center py-8 text-gray-400 text-sm"},
+            React.createElement("div", { style: { textAlign: "center", padding: "24px 16px 32px", color: "#9ca3af", fontSize: 12 } },
                 "Central Tutts © ", new Date().getFullYear()
             )
             )
         }
-        
+
         const rr = "admin_master" === l.role && ("solicitacoes" === Ee || "disponibilidade" === Ee),
             or = "admin" === l.role;
         
@@ -21987,7 +21662,7 @@ const hideLoadingScreen = () => {
             const btnPeriodo = (id, label) => React.createElement("button", {
                 key: id,
                 onClick: () => aplicarFiltros({ rankingPeriod: id, rankingDataInicio: '', rankingDataFim: '' }),
-                style: periodoAtivo === id ? { background: '#f5f3ff', borderColor: '#7c3aed', color: '#7c3aed', fontWeight: 500 } : {},
+                style: periodoAtivo === id ? { background: '#faf7fd', borderColor: '#770fa8', color: '#770fa8', fontWeight: 500 } : {},
                 className: "text-xs px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition"
             }, label);
 
@@ -22252,7 +21927,7 @@ const hideLoadingScreen = () => {
                 }, e)))
             )), React.createElement("button", {
                 onClick: () => {
-                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #4c1d95; border-bottom: 2px solid #4c1d95; padding-bottom: 10px; }\n                      h2 { color: #7c3aed; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #d97706; }\n                      .purple { color: #7c3aed; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #d1d5db; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#f0fdf4":"#fef2f2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
+                    const m = `\n                  <html>\n                  <head>\n                    <title>Relatório Tutts - ${f[e]}/${t}</title>\n                    <style>\n                      body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }\n                      h1 { color: #770fa8; border-bottom: 2px solid #770fa8; padding-bottom: 10px; }\n                      h2 { color: #770fa8; margin-top: 30px; }\n                      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n                      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }\n                      .card { background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; }\n                      .card-value { font-size: 28px; font-weight: bold; }\n                      .green { color: #16a34a; }\n                      .red { color: #dc2626; }\n                      .yellow { color: #d97706; }\n                      .purple { color: #770fa8; }\n                      table { width: 100%; border-collapse: collapse; margin: 15px 0; }\n                      th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }\n                      th { background: #f3f4f6; }\n                      .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #d1d5db; padding-top: 20px; }\n                      .comparativo { background: ${parseFloat(h)>=0?"#f0fdf4":"#fef2f2"}; padding: 15px; border-radius: 8px; margin: 20px 0; }\n                    </style>\n                  </head>\n                  <body>\n                    <div class="header">\n                      <h1>Relatório Tutts</h1>\n                      <div>\n                        <strong>${f[e]} / ${t}</strong><br>\n                        <small>Gerado em: ${(new Date).toLocaleString("pt-BR")}</small>\n                      </div>\n                    </div>\n                    \n                    <h2>Resumo Geral</h2>\n                    <div class="cards">\n                      <div class="card"><div class="card-value purple">${a.length}</div><div>Total</div></div>\n                      <div class="card"><div class="card-value green">${l.length}</div><div>Aprovadas</div></div>\n                      <div class="card"><div class="card-value red">${r.length}</div><div>Rejeitadas</div></div>\n                      <div class="card"><div class="card-value yellow">${o.length}</div><div>Pendentes</div></div>\n                    </div>\n                    \n                    <div class="cards">\n                      <div class="card"><div class="card-value green">${c}%</div><div>Taxa Aprovação</div></div>\n                      <div class="card"><div class="card-value red">${s}%</div><div>Taxa Rejeição</div></div>\n                      <div class="card"><div class="card-value purple">${rd.totalProfissionais||0}</div><div>Profissionais</div></div>\n                      <div class="card"><div class="card-value purple">${rd.mediaPorProfissional||0}</div><div>Média/Profissional</div></div>\n                    </div>\n                    \n                    <div class="comparativo">\n                      <strong>Comparativo com Mês Anterior:</strong> \n                      ${parseFloat(h)>=0?"+":""}${h}% \n                      (${E.length} → ${a.length} solicitações)\n                    </div>\n                    \n                    <h2>Por Motivo</h2>\n                    <table>\n                      <thead><tr><th>Motivo</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Pendentes</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${Object.entries(n).map(([e,t])=>`\n                          <tr>\n                            <td>${e}</td>\n                            <td>${t.total}</td>\n                            <td class="green">${t.aprovadas}</td>\n                            <td class="red">${t.rejeitadas}</td>\n                            <td class="yellow">${t.pendentes}</td>\n                            <td>${t.total>0?(t.aprovadas/t.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Top 10 Profissionais</h2>\n                    <table>\n                      <thead><tr><th>#</th><th>Profissional</th><th>Código</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${i.map((e,t)=>`\n                          <tr>\n                            <td>${t+1}</td>\n                            <td>${e.nome}</td>\n                            <td>${e.cod||"-"}</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td class="red">${e.rejeitadas}</td>\n                            <td>${e.taxa}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <h2>Por Semana</h2>\n                    <table>\n                      <thead><tr><th>Semana</th><th>Total</th><th>Aprovadas</th><th>Taxa</th></tr></thead>\n                      <tbody>\n                        ${d.map(e=>`\n                          <tr>\n                            <td>${e.label} (dias ${e.dias[0]}-${e.dias[1]})</td>\n                            <td>${e.total}</td>\n                            <td class="green">${e.aprovadas}</td>\n                            <td>${e.total>0?(e.aprovadas/e.total*100).toFixed(0):0}%</td>\n                          </tr>\n                        `).join("")}\n                      </tbody>\n                    </table>\n                    \n                    <div class="footer">\n                      <strong>Central do Entregador Tutts</strong> - Relatório Gerado Automaticamente<br>\n                      ${(new Date).toLocaleString("pt-BR")}\n                    </div>\n                  </body>\n                  </html>\n                `,
                         p = window.open("", "_blank");
                     p.document.write(m), p.document.close(), p.print()
                 },
@@ -22790,7 +22465,7 @@ function ScoreEntregador({ user, apiUrl, showToast }) {
       React.createElement('div', { className: 'w-full bg-gray-200 rounded-full h-3 overflow-hidden' },
         React.createElement('div', { 
           className: 'h-full rounded-full transition-all duration-500',
-          style: { width: `${proximo_milestone.progresso_percentual || 0}%`, background: `linear-gradient(90deg, ${proximo_milestone.milestone?.cor || '#7c3aed'}, #7c3aed)` }
+          style: { width: `${proximo_milestone.progresso_percentual || 0}%`, background: `linear-gradient(90deg, ${proximo_milestone.milestone?.cor || '#b43aed'}, #b43aed)` }
         })
       ),
       React.createElement('p', { className: 'text-xs text-gray-500 mt-2 text-center' }, `${(proximo_milestone.progresso_percentual || 0).toFixed(0)}% concluído`)
@@ -23600,6 +23275,14 @@ function AuditLogs({ apiUrl, showToast }) {
 }
 
 ReactDOM.render(React.createElement(App, null), document.getElementById("root"), hideLoadingScreen);
+/* HOME_CLEAN_V1: paleta de comandos (Ctrl+K / Cmd+K) em root próprio — listener registrado uma vez */
+(function () {
+    try {
+        var cmdkRoot = document.getElementById("tutts-cmdk-root");
+        if (!cmdkRoot) { cmdkRoot = document.createElement("div"); cmdkRoot.id = "tutts-cmdk-root"; document.body.appendChild(cmdkRoot); }
+        ReactDOM.render(React.createElement(CommandPaletteTutts, null), cmdkRoot);
+    } catch (e) { console.warn("[cmdk] não montou", e); }
+})();
 
 // 🛡️ 2026-04: detecta se a sessão anterior crashou durante processamento de foto
 // (PWA fechado pelo SO por OOM em mobile fraco). Reporta pro backend pra

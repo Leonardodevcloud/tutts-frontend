@@ -88,7 +88,7 @@
     wrap.id = 'tutts-push-banner';
     wrap.setAttribute('style', [
       'position:fixed', 'left:12px', 'right:12px', 'bottom:12px', 'z-index:99999',
-      'background:#4c1d95', 'color:#fff', 'border-radius:14px', 'padding:14px 16px',
+      'background:#3a1556', 'color:#fff', 'border-radius:14px', 'padding:14px 16px',
       'box-shadow:0 8px 30px rgba(0,0,0,.35)', 'font-family:Inter,-apple-system,sans-serif',
       'display:flex', 'gap:12px', 'align-items:center', 'max-width:520px', 'margin:0 auto',
     ].join(';'));

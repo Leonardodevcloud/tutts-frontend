@@ -1,3 +1,4 @@
+/* REDESIGN_CLEAN_V1: telas no padrao clean aprovado (mockups 16/10). */
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // ==================== MÓDULO UBER DIRECT ====================
@@ -58,7 +59,7 @@
         title: 'Clique para copiar',
         className: 'mt-1.5 inline-flex items-center gap-1.5 cursor-pointer bg-purple-50 border border-purple-200 rounded-lg px-2 py-1'
       },
-        h('span', { className: 'text-[10px] uppercase tracking-wider text-purple-500 font-semibold' }, label),
+        h('span', { className: 'text-[10px] uppercase tracking-wider text-purple-700 font-semibold' }, label),
         h('span', { className: 'text-sm font-bold tracking-widest text-purple-800' }, String(codigo)),
         h('span', { className: 'text-[10px] text-purple-400' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clipboard' })))
       );
@@ -186,10 +187,10 @@
   // Provedores (99 × Uber) + ETA prometido × real, motivos de cancelamento,
   // parceiros frequentes × novos, tendência diária e mapa de calor hora × dia.
   // Dados: GET /logistics/dashboard/analitico (agregado por corrida/OS).
-  // Cores: 99 = roxo #7c3aed, Uber = âmbar #f67602 (fixas por provedor, nunca por posição).
+  // Cores: 99 = roxo #770fa8, Uber = âmbar #f67602 (fixas por provedor, nunca por posição).
   // ════════════════════════════════════════════════════════
   // HUB_DASH_ANALITICO_V11: provider_code real da 99 e 'noventanove'
-  const PROV_COR = { '99': '#7c3aed', noventanove: '#7c3aed', uber: '#f67602', moto_propria: '#16a34a' };
+  const PROV_COR = { '99': '#770fa8', noventanove: '#770fa8', uber: '#f67602', moto_propria: '#16a34a' };
   const PROV_NOME = { '99': '99Entrega', noventanove: '99Entrega', uber: 'Uber Direct', moto_propria: 'Moto própria' };
   const provCor = (p) => PROV_COR[String(p || '').toLowerCase()] || '#6b7280';
   const provNome = (p) => PROV_NOME[String(p || '').toLowerCase()] || String(p || '—');
@@ -218,20 +219,21 @@
     const fmtMin = (m) => { const v = parseFloat(m); if (m == null || isNaN(v)) return '—'; const r = Math.round(v); return r < 60 ? r + ' min' : Math.floor(r / 60) + 'h' + (r % 60 ? ' ' + (r % 60) + 'min' : ''); };
     const pct = (a, b) => (b ? (a / b) * 100 : null);
     const fmtPct = (v, d = 0) => v == null ? '—' : v.toFixed(d) + '%';
-    const card = (titulo, icone, sub, corpo, extra) => h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3' },
+    // HUB_CLEAN_V1: card limpo (sem sombra, sem ícone no título)
+    const card = (titulo, icone, sub, corpo, extra) => h('section', { className: 'bg-white rounded-[14px] border border-gray-200 p-5 space-y-3 min-w-0' },
       h('div', { className: 'flex items-start gap-2 flex-wrap' },
         h('div', { className: 'flex-1 min-w-0' },
-          h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-' + icone })), titulo)),
-          sub && h('p', { className: 'text-xs text-gray-500 mt-0.5' }, sub)),
+          h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, titulo),
+          sub && h('p', { className: 'text-xs text-gray-500 mt-1' }, sub)),
         extra || null),
       corpo);
-    const tip = hover && h('div', { className: 'fixed z-50 pointer-events-none bg-gray-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 shadow-xl', style: { left: hover.x + 12, top: hover.y + 12, maxWidth: 260 } },
+    const tip = hover && h('div', { className: 'fixed z-50 pointer-events-none bg-gray-900 text-white text-[11px] rounded-lg px-2.5 py-1.5', style: { left: hover.x + 12, top: hover.y + 12, maxWidth: 260 } },
       hover.linhas.map((l, i) => h('div', { key: i, className: i === 0 ? 'font-bold' : 'text-gray-300' }, l)));
     const onMove = (linhas) => (e) => setHover({ x: e.clientX, y: e.clientY, linhas });
     const offHover = () => setHover(null);
 
-    if (erro) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl p-4' }, erro);
-    if (!an) return h('div', { className: 'flex items-center justify-center py-10' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full' }));
+    if (erro) return h('div', { className: 'bg-red-50 border border-red-200 text-red-800 text-sm rounded-[14px] p-4' }, erro);
+    if (!an) return h('div', { className: 'flex items-center justify-center py-10' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full' }));
 
     const provs = an.provedores || [];
     const totalCorr = provs.reduce((s, p) => s + p.corridas, 0);
@@ -241,30 +243,31 @@
       !provs.length ? h('div', { className: 'text-sm text-gray-400 py-4 text-center' }, 'Sem corridas no período.') :
       h('div', { className: 'space-y-3' },
         // barra de participação
-        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' },
-          provs.map(p => h('div', { key: p.provider, className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${pct(p.corridas, totalCorr)}%`, background: provCor(p.provider), minWidth: 40 }, onMouseMove: onMove([provNome(p.provider), `${p.corridas} corridas · ${fmtPct(pct(p.corridas, totalCorr))}`]), onMouseLeave: offHover }, `${provNome(p.provider)} ${fmtPct(pct(p.corridas, totalCorr))}`))),
-        h('div', { className: 'overflow-x-auto' },
-          h('table', { className: 'w-full text-xs' },
-            h('thead', null, h('tr', { className: 'text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100' },
-              ['Provedor', 'Corridas', 'Entregues', 'Canceladas', 'Redesp.', 'Tempo médio', 'Localização', 'Km médio', 'Custo médio', 'Receita', 'Margem', 'Margem %'].map((t, i) => h('th', { key: t, className: 'px-2 py-2 ' + (i === 0 ? 'text-left' : 'text-right') }, t)))),
+        h('div', { className: 'flex h-2.5 rounded-full overflow-hidden gap-0.5' },
+          provs.map(p => h('div', { key: p.provider, style: { width: `${pct(p.corridas, totalCorr)}%`, background: provCor(p.provider), minWidth: 4 }, onMouseMove: onMove([provNome(p.provider), `${p.corridas} corridas · ${fmtPct(pct(p.corridas, totalCorr))}`]), onMouseLeave: offHover }))),
+        h('div', { className: 'flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500' }, provs.map(p => h('span', { key: p.provider, className: 'inline-flex items-center gap-1.5' }, h('span', { className: 'w-2 h-2 rounded-sm', style: { background: provCor(p.provider) } }), `${provNome(p.provider)} · ${p.corridas} (${fmtPct(pct(p.corridas, totalCorr))})`))),
+        h('div', { className: 'overflow-x-auto -mx-5 border-t border-gray-100' },
+          h('table', { className: 'w-full text-[12.5px]', style: { minWidth: 960 } },
+            h('thead', null, h('tr', { className: 'bg-gray-50 text-xs text-gray-500' },
+              ['Provedor', 'Corridas', 'Entregues', 'Canceladas', 'Redesp.', 'Tempo médio', 'Localização', 'Km médio', 'Custo médio', 'Receita', 'Margem', 'Margem %'].map((t, i) => h('th', { key: t, scope: 'col', className: 'py-2.5 font-semibold ' + (i === 0 ? 'pl-5 pr-2 text-left' : i === 11 ? 'pl-2 pr-5 text-right' : 'px-2 text-right') }, t)))),
             h('tbody', null, provs.map(p => {
               const m = parseFloat(p.margem || 0), rec = parseFloat(p.receita || 0);
-              return h('tr', { key: p.provider, className: 'border-b border-gray-50 hover:bg-gray-50' },
-                h('td', { className: 'px-2 py-2 font-semibold text-gray-800' }, h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle', style: { background: provCor(p.provider) } }), provNome(p.provider)),
+              return h('tr', { key: p.provider, className: 'border-t border-gray-100 hover:bg-gray-50 tabular-nums' },
+                h('td', { className: 'pl-5 pr-2 py-2.5 font-semibold text-gray-900' }, h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle', style: { background: provCor(p.provider) } }), provNome(p.provider)),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, p.corridas),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, `${p.entregues} `, h('span', { className: 'text-gray-400' }, `(${fmtPct(pct(p.entregues, p.corridas))})`)),
-                h('td', { className: 'px-2 py-2 text-right ' + (pct(p.canceladas, p.corridas) > 20 ? 'text-red-600 font-semibold' : 'text-gray-700') }, `${p.canceladas} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(p.canceladas, p.corridas))})`)),
-                h('td', { className: 'px-2 py-2 text-right ' + (p.redespachos ? 'text-amber-600 font-semibold' : 'text-gray-400') }, p.redespachos),
+                h('td', { className: 'px-2 py-2 text-right ' + (pct(p.canceladas, p.corridas) > 20 ? 'text-red-800 font-semibold' : 'text-gray-700') }, `${p.canceladas} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(p.canceladas, p.corridas))})`)),
+                h('td', { className: 'px-2 py-2 text-right ' + (p.redespachos ? 'text-amber-800 font-semibold' : 'text-gray-400') }, p.redespachos),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMin(p.t_total_min), p.t_total_mediana_min != null && h('span', { className: 'text-gray-400' }, ` (${fmtMin(p.t_total_mediana_min)})`)),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMin(p.t_localizacao_min)),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, p.km_medio != null ? parseFloat(p.km_medio).toFixed(1) + ' km' : '—'),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(p.custo_medio || 0))),
                 h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(rec)),
-                h('td', { className: 'px-2 py-2 text-right font-semibold ' + (m >= 0 ? 'text-green-600' : 'text-red-600') }, (m >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(m))),
-                h('td', { className: 'px-2 py-2 text-right text-gray-600' }, fmtPct(pct(m, rec))),
+                h('td', { className: 'px-2 py-2 text-right font-semibold ' + (m >= 0 ? 'text-green-800' : 'text-red-800') }, (m >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(m))),
+                h('td', { className: 'pl-2 pr-5 py-2 text-right text-gray-600' }, fmtPct(pct(m, rec))),
               );
             })))),
-        h('p', { className: 'text-[10px] text-gray-400' }, 'Tempo médio = 1ª solicitação → entrega (mediana entre parênteses). Redesp. = tentativas a mais que a corrida precisou; a corrida é atribuída ao provedor que entregou.'),
+        h('p', { className: 'text-[11px] text-gray-400' }, 'Tempo médio = 1ª solicitação → entrega (mediana entre parênteses). Redesp. = tentativas a mais que a corrida precisou; a corrida é atribuída ao provedor que entregou.'),
       ));
 
     // ── 2) ETA PROMETIDO × REAL ──
@@ -274,19 +277,19 @@
           const cumpriu = pct(p.eta_cumpriu, p.eta_avaliadas);
           const desvio = p.eta_desvio_min;
           const maxV = Math.max(parseFloat(p.eta_medio) || 0, parseFloat(p.real_tentativa_min) || 0, 1);
-          return h('div', { key: p.provider, className: 'border border-gray-200 rounded-xl p-3 space-y-2' },
+          return h('div', { key: p.provider, className: 'border border-gray-200 rounded-xl p-3 space-y-2' }, /* HUB_CLEAN_V1 */
             h('div', { className: 'flex items-center gap-2' },
               h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: provCor(p.provider) } }),
               h('span', { className: 'font-bold text-sm text-gray-800' }, provNome(p.provider)),
               h('span', { className: 'ml-auto text-[10px] text-gray-400' }, `${p.eta_avaliadas} entregas com ETA`)),
             [['ETA prometido', p.eta_medio, '#d1d5db'], ['Tempo real', p.real_tentativa_min, provCor(p.provider)]].map(([l, v, cor]) => h('div', { key: l, className: 'flex items-center gap-2 text-[11px]' },
               h('span', { className: 'w-24 text-gray-500' }, l),
-              h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded', style: { width: `${((parseFloat(v) || 0) / maxV) * 100}%`, background: cor, minWidth: 2 } })),
+              h('div', { className: 'flex-1 h-2 bg-gray-100 rounded-full overflow-hidden' }, h('div', { className: 'h-full rounded-full', style: { width: `${((parseFloat(v) || 0) / maxV) * 100}%`, background: cor, minWidth: 2 } })),
               h('span', { className: 'w-14 text-right font-semibold text-gray-800' }, fmtMin(v)))),
             h('div', { className: 'flex items-start gap-4 pt-1 border-t border-gray-100' },
-              h('div', { className: 'shrink-0' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400 whitespace-nowrap' }, 'Cumpriu o ETA'), h('div', { className: 'text-lg font-extrabold whitespace-nowrap ' + (cumpriu >= 80 ? 'text-green-600' : cumpriu >= 60 ? 'text-amber-600' : 'text-red-600') }, fmtPct(cumpriu))),
-              h('div', { className: 'shrink-0' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400 whitespace-nowrap' }, 'Desvio médio'), h('div', { className: 'text-lg font-extrabold whitespace-nowrap ' + (desvio > 0 ? 'text-amber-600' : 'text-green-600') }, desvio == null ? '—' : (desvio > 0 ? '+' : '') + fmtMin(desvio))),
-              h('div', { className: 'text-[10px] text-gray-400 leading-snug' },
+              h('div', { className: 'shrink-0' }, h('div', { className: 'text-xs text-gray-500 whitespace-nowrap' }, 'Cumpriu o ETA'), h('div', { className: 'text-lg font-bold tabular-nums whitespace-nowrap ' + (cumpriu >= 80 ? 'text-green-800' : cumpriu >= 60 ? 'text-amber-800' : 'text-red-800') }, fmtPct(cumpriu))),
+              h('div', { className: 'shrink-0' }, h('div', { className: 'text-xs text-gray-500 whitespace-nowrap' }, 'Desvio médio'), h('div', { className: 'text-lg font-bold tabular-nums whitespace-nowrap ' + (desvio > 0 ? 'text-amber-800' : 'text-green-800') }, desvio == null ? '—' : (desvio > 0 ? '+' : '') + fmtMin(desvio))),
+              h('div', { className: 'text-[11px] text-gray-500 leading-snug' },
                 desvio > 5 ? 'Promete menos do que entrega — ETA otimista.'
                 : desvio < -10 ? 'Promete com folga — cumpre quase sempre, mas a ETA superestima o tempo.'
                 : cumpriu < 70 ? 'Promessa justa: na média bate, mas estoura em boa parte das corridas.'
@@ -307,19 +310,19 @@
           h('span', { className: 'w-2 h-2 rounded-full shrink-0', style: { background: provCor(m.provider) }, title: provNome(m.provider) }),
           h('span', { className: 'w-40 shrink-0 truncate text-gray-700', title: m.motivo }, m.motivo),
           h('span', { className: 'w-20 shrink-0 text-[10px] text-gray-400 truncate' }, QUEM_ROT[m.por] || m.por),
-          h('div', { className: 'flex-1 h-4 bg-gray-50 rounded overflow-hidden' }, h('div', { className: 'h-full rounded bg-red-400', style: { width: `${pct(m.total, motivos[0].total)}%`, minWidth: 2 } })),
-          h('span', { className: 'w-16 text-right font-semibold text-gray-800' }, `${m.total} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(m.total, totalCanc))})`))))),
+          h('div', { className: 'flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden' }, h('div', { className: 'h-full rounded-full bg-red-600', style: { width: `${pct(m.total, motivos[0].total)}%`, minWidth: 2 } })),
+          h('span', { className: 'w-16 text-right font-semibold text-gray-900 tabular-nums' }, `${m.total} `, h('span', { className: 'text-gray-400 font-normal' }, `(${fmtPct(pct(m.total, totalCanc))})`))))),
         motivos.length > 10 && h('p', { className: 'text-[10px] text-gray-400' }, `+${motivos.length - 10} motivos menores.`)));
 
     // ── 4) PARCEIROS: frequentes × novos × ocasionais, por provedor ──
     const parc = an.parceiros || [];
-    const TIPO = { frequente: { rot: 'Parceiros frequentes', cor: '#7c3aed', d: '> 3 entregas nos 30 dias antes do fim do período' }, ocasional: { rot: 'Ocasionais', cor: '#9ca3af', d: 'já entregaram antes, mas não são frequentes' }, novo: { rot: 'Motos novas', cor: '#16a34a', d: '1ª entrega com a gente caiu no período' }, sem_id: { rot: 'Sem identificação', cor: '#e5e7eb', d: 'provedor não mandou telefone do entregador' } };
+    const TIPO = { frequente: { rot: 'Parceiros frequentes', cor: '#770fa8', d: '> 3 entregas nos 30 dias antes do fim do período' }, ocasional: { rot: 'Ocasionais', cor: '#9ca3af', d: 'já entregaram antes, mas não são frequentes' }, novo: { rot: 'Motos novas', cor: '#16a34a', d: '1ª entrega com a gente caiu no período' }, sem_id: { rot: 'Sem identificação', cor: '#e5e7eb', d: 'provedor não mandou telefone do entregador' } };
     const ORDEM = ['frequente', 'ocasional', 'novo', 'sem_id'];
     const agrupa = (lista) => { const o = {}; ORDEM.forEach(t => { o[t] = { entregas: 0, motoboys: 0 }; }); lista.forEach(p => { if (o[p.tipo]) { o[p.tipo].entregas += p.entregas; o[p.tipo].motoboys += p.motoboys; } }); return o; };
     const barraParc = (titulo, lista, cor) => { const g = agrupa(lista); const tot = ORDEM.reduce((s, t) => s + g[t].entregas, 0); if (!tot) return null;
       return h('div', { key: titulo, className: 'space-y-1.5' },
         h('div', { className: 'flex items-center gap-2 text-xs' }, cor && h('span', { className: 'inline-block w-2.5 h-2.5 rounded-full', style: { background: cor } }), h('span', { className: 'font-bold text-gray-800' }, titulo), h('span', { className: 'text-gray-400' }, `· ${tot} entregas`)),
-        h('div', { className: 'flex h-7 rounded-lg overflow-hidden gap-0.5' }, ORDEM.filter(t => g[t].entregas).map(t => h('div', { key: t, className: 'flex items-center justify-center text-[10px] font-bold', style: { width: `${pct(g[t].entregas, tot)}%`, background: TIPO[t].cor, color: t === 'sem_id' || t === 'ocasional' ? '#374151' : '#fff', minWidth: 28 }, onMouseMove: onMove([TIPO[t].rot, `${g[t].entregas} entregas (${fmtPct(pct(g[t].entregas, tot))}) · ${g[t].motoboys} motoboys`, TIPO[t].d]), onMouseLeave: offHover }, fmtPct(pct(g[t].entregas, tot))))));
+        h('div', { className: 'flex h-6 rounded-md overflow-hidden gap-0.5' }, ORDEM.filter(t => g[t].entregas).map(t => h('div', { key: t, className: 'flex items-center justify-center text-[10px] font-bold', style: { width: `${pct(g[t].entregas, tot)}%`, background: TIPO[t].cor, color: t === 'sem_id' || t === 'ocasional' ? '#374151' : '#fff', minWidth: 28 }, onMouseMove: onMove([TIPO[t].rot, `${g[t].entregas} entregas (${fmtPct(pct(g[t].entregas, tot))}) · ${g[t].motoboys} motoboys`, TIPO[t].d]), onMouseLeave: offHover }, fmtPct(pct(g[t].entregas, tot))))));
     };
     const provsParc = [...new Set(parc.map(p => p.provider))];
     const secParceiros = card('Parceiros frequentes × motos novas', 'users', 'Quem está entregando: proporção das entregas feitas por parceiros frequentes, motos novas e ocasionais. Mesma régua da aba Frequentes.',
@@ -342,15 +345,15 @@
       const path = pts.reduce((acc, p, i) => p ? acc + (acc && pts[i - 1] ? ' L' : ' M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1) : acc, '');
       return card('Tendência diária', 'trendup', 'Corridas por dia (entregues em roxo, o resto em cinza) e % no prazo. Um gráfico por medida — sem eixo duplo.',
         h('div', { className: 'space-y-2' },
-          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, 'Corridas por dia'),
+          h('div', { className: 'text-xs text-gray-500' }, 'Corridas por dia'),
           h('svg', { viewBox: `0 0 ${W} ${HB + 18}`, className: 'w-full', style: { height: 150 } },
             [0.5, 1].map(f => h('g', { key: f }, h('line', { x1: padL, x2: W - padR, y1: HB - f * (HB - 10), y2: HB - f * (HB - 10), stroke: '#f3f4f6' }), h('text', { x: padL - 4, y: HB - f * (HB - 10) + 3, fontSize: 9, fill: '#9ca3af', textAnchor: 'end' }, Math.round(maxC * f)))),
             h('line', { x1: padL, x2: W - padR, y1: HB, y2: HB, stroke: '#e5e7eb' }),
             dias.map((d, i) => { const hT = (d.corridas / maxC) * (HB - 10), hE = (d.entregues / maxC) * (HB - 10); return h('g', { key: d.dia, onMouseMove: onMove([fmtDia(d.dia), `${d.corridas} corridas · ${d.entregues} entregues · ${d.canceladas} canceladas`, `no prazo ${fmtPct(d.pct_no_prazo)} · tempo médio ${fmtMin(d.t_total_min)}`, `margem ${fmtMoney(d.margem)}`]), onMouseLeave: offHover },
               h('rect', { x: x(i) + bw * 0.15, y: HB - hT, width: Math.max(bw * 0.7, 2), height: hT, fill: '#e5e7eb', rx: 3 }),
-              h('rect', { x: x(i) + bw * 0.15, y: HB - hE, width: Math.max(bw * 0.7, 2), height: hE, fill: '#7c3aed', rx: 3 }),
+              h('rect', { x: x(i) + bw * 0.15, y: HB - hE, width: Math.max(bw * 0.7, 2), height: hE, fill: '#770fa8', rx: 3 }),
               (i % passo === 0) && h('text', { x: x(i) + bw / 2, y: HB + 13, fontSize: 9, fill: '#6b7280', textAnchor: 'middle' }, fmtDia(d.dia))); })),
-          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400 pt-1' }, '% no prazo por dia'),
+          h('div', { className: 'text-xs text-gray-500 pt-1' }, '% no prazo por dia'),
           h('svg', { viewBox: `0 0 ${W} ${HL}`, className: 'w-full', style: { height: 80 } },
             [0, 50, 100].map(v => h('g', { key: v }, h('line', { x1: padL, x2: W - padR, y1: HL - 6 - (v / 100) * (HL - 14), y2: HL - 6 - (v / 100) * (HL - 14), stroke: v === 100 ? '#e5e7eb' : '#f3f4f6', strokeDasharray: v === 50 ? '3 3' : null }), h('text', { x: padL - 4, y: HL - 6 - (v / 100) * (HL - 14) + 3, fontSize: 9, fill: '#9ca3af', textAnchor: 'end' }, v + '%'))),
             path && h('path', { d: path, fill: 'none', stroke: '#16a34a', strokeWidth: 2, strokeLinejoin: 'round' }),
@@ -367,9 +370,9 @@
       const val = (c) => !c ? null : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? c.pct_no_prazo : c.t_total_min;
       const vals = heat.map(val).filter(v => v != null); const vMax = Math.max(...vals, 1), vMin = Math.min(...vals, 0);
       // sequencial: um tom (roxo) claro → escuro; pra % no prazo, inverte (baixo = escuro = ruim)
-      const cor = (v) => { if (v == null) return '#f9fafb'; let t = vMax === vMin ? 1 : (v - vMin) / (vMax - vMin); if (heatMetrica === 'pct_no_prazo') t = 1 - t; const L = 96 - t * 58; return `hsl(262 70% ${L}%)`; };
+      const cor = (v) => { if (v == null) return '#f9fafb'; let t = vMax === vMin ? 1 : (v - vMin) / (vMax - vMin); if (heatMetrica === 'pct_no_prazo') t = 1 - t; const L = 96 - t * 58; return `hsl(281 62% ${L}%)`; }; /* HUB_CLEAN_V1: matiz do Roxo Tutts */
       const fmtV = (c) => !c ? '' : heatMetrica === 'corridas' ? c.corridas : heatMetrica === 'pct_no_prazo' ? fmtPct(c.pct_no_prazo) : fmtMin(c.t_total_min);
-      const seletor = h('div', { className: 'flex gap-1 bg-gray-100 rounded-lg p-0.5 text-[11px] font-semibold' }, [['corridas', 'Volume'], ['pct_no_prazo', '% no prazo'], ['t_total_min', 'Tempo médio']].map(([k, r]) => h('button', { key: k, onClick: () => setHeatMetrica(k), className: `px-2.5 py-1 rounded-md ${heatMetrica === k ? 'bg-white shadow text-purple-700' : 'text-gray-500'}` }, r)));
+      const seletor = h('div', { role: 'group', 'aria-label': 'Métrica do mapa', className: 'flex gap-1 bg-gray-100 rounded-[10px] p-[3px] text-xs' }, [['corridas', 'Volume'], ['pct_no_prazo', '% no prazo'], ['t_total_min', 'Tempo médio']].map(([k, r]) => h('button', { key: k, type: 'button', 'aria-pressed': heatMetrica === k, onClick: () => setHeatMetrica(k), className: `px-2.5 py-1 rounded-lg ${heatMetrica === k ? 'bg-white text-gray-900 font-semibold' : 'text-gray-500'}` }, r)));
       return card('Quando estoura: hora × dia da semana', 'calendar', 'Corridas pela hora da 1ª solicitação (horário de Brasília). Mais escuro = mais volume / mais tempo; em "% no prazo", mais escuro = pior.',
         h('div', { className: 'overflow-x-auto' },
           h('table', { className: 'text-[10px] border-separate', style: { borderSpacing: 2 } },
@@ -422,16 +425,11 @@
     }, []);
     const irPara = (e, id) => { e.preventDefault(); const el = document.getElementById(id); if (!el) return; const topo = el.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop) - 84; window.scrollTo({ top: topo, behavior: 'smooth' }); setAtiva(id); };
     const fmtD = (s) => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '';
-    return h('nav', { 'aria-label': 'Seções do dashboard', className: 'w-full lg:w-56 flex-shrink-0 flex flex-col gap-2.5 lg:sticky lg:top-[82px] lg:max-h-[calc(100vh-98px)] lg:overflow-y-auto lg:pb-1' },
-      h('div', { className: 'bg-white border border-gray-200 rounded-xl p-3' },
-        h('div', { className: 'px-2.5 pb-2 text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Seções do dashboard'),
-        h('div', { className: 'flex flex-col gap-0.5' }, HUB_SECOES.map(sec => { const on = ativa === sec.id; return h('a', { key: sec.id, href: '#' + sec.id, onClick: (e) => irPara(e, sec.id), className: 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg no-underline transition-colors ' + (on ? 'bg-purple-50 ring-1 ring-purple-200' : 'hover:bg-gray-50') },
-          h('span', { className: 'w-[3px] h-[17px] flex-shrink-0 rounded-full ' + (on ? 'bg-purple-700' : 'bg-transparent') }),
-          h('span', { className: 'flex-1 text-[13px] ' + (on ? 'font-bold text-purple-700' : 'font-medium text-slate-600') }, sec.rotulo)); }))),
-      h('div', { className: 'bg-white border border-gray-200 rounded-xl px-3.5 py-3 flex flex-col gap-1' },
-        h('div', { className: 'text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400' }, 'Período'),
-        h('div', { className: 'text-[13.5px] font-bold text-gray-900' }, de === ate ? fmtD(de) : `${fmtD(de)} – ${fmtD(ate)}`),
-        total != null && h('div', { className: 'text-[11.5px] text-gray-500' }, `${total} corridas`)));
+    /* HUB_CLEAN_V1: menu de seções como lista simples (sem card/fundo), ativo em roxo */
+    return h('nav', { 'aria-label': 'Seções do dashboard', title: de === ate ? fmtD(de) : `${fmtD(de)} – ${fmtD(ate)}${total != null ? ` · ${total} corridas` : ''}`, className: 'w-full lg:w-52 flex-shrink-0 lg:sticky lg:top-[82px] lg:max-h-[calc(100vh-98px)] lg:overflow-y-auto' },
+      h('div', { className: 'px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400' }, 'Seções'),
+      h('div', { className: 'flex flex-row flex-wrap lg:flex-col gap-0.5' }, HUB_SECOES.map(sec => { const on = ativa === sec.id; return h('a', { key: sec.id, href: '#' + sec.id, onClick: (e) => irPara(e, sec.id), 'aria-current': on ? 'true' : undefined,
+        className: 'block px-3 py-1.5 text-[13px] no-underline border-l-2 transition-colors ' + (on ? 'border-purple-700 text-purple-800 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-800') }, sec.rotulo); })));
   }
 
   function TabDashboard({ API_URL, fetchAuth, showToast }) {
@@ -513,7 +511,7 @@
     }, [fetchAuth, API_URL, de, ate]);
 
     if (loading || !data) return h('div', { className: 'flex items-center justify-center py-16' },
-      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
+      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full' })
     );
 
     const ni = (x) => parseInt(x || 0, 10);
@@ -531,108 +529,113 @@
 
     const pills = [['1d', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['custom', 'Período']];
 
-    return h('div', { className: 'max-w-[1500px] mx-auto p-4 space-y-4' },
+    // HUB_CLEAN_V1: dashboard no padrão clean (cards brancos, borda #e5e7eb, raio 14,
+    // sem sombra, sem gradiente, sem caixa de ícone colorida). Mesmos dados/estados.
+    const SORA = { fontFamily: 'Sora, Inter, sans-serif' };
+    const cardCls = 'bg-white border border-gray-200 rounded-[14px]';
+    const fmtDm = (s) => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '';
+    const periodoTxt = de === ate ? fmtDm(de) : `${fmtDm(de)} a ${fmtDm(ate)}`;
+    const pillPrazo = (np) => {
+      const t = np >= 80 ? ['bg-green-50 text-green-800', 'bg-green-600'] : np >= 60 ? ['bg-amber-50 text-amber-800', 'bg-amber-600'] : ['bg-red-50 text-red-800', 'bg-red-600'];
+      return h('span', { className: `inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${t[0]}` },
+        h('span', { className: `w-1.5 h-1.5 rounded-full ${t[1]}` }), `${np.toFixed(0)}%`);
+    };
+    const kpis = [
+      // HUB_DASH_OS_V1: contagem por CORRIDA (OS). Redespacho nao infla total/cancelados.
+      { lbl: 'Total de corridas', val: total, foot: data.tentativas_total != null ? `${ni(data.tentativas_total)} tentativas · ${ni(data.redespachos)} redespachos em ${ni(data.os_redespachadas)} corridas` : null },
+      { lbl: 'Entregues', val: entregues, cor: 'text-green-800', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total${ni(data.devolvidos) ? ` · ${ni(data.devolvidos)} devolvida${ni(data.devolvidos) > 1 ? 's' : ''}` : ''}` : null },
+      { lbl: 'Em andamento', val: emand, foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
+      { lbl: 'Canceladas', val: cancel, cor: cancel ? 'text-red-800' : null, foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback · só cancelamento definitivo` : null },
+      // HUB_DASH_ANALITICO_V1: KPI de destaque — tempo médio de entrega (1ª solicitação → entrega, só entregues)
+      { lbl: 'Tempo médio de entrega', val: fmtMin(tTot), foot: data.t_total_mediana_min != null ? `mediana ${fmtMin(data.t_total_mediana_min)} · ${ni(data.n_trilha)} entregues` : null },
+    ];
+    const segs = [
+      { v: tLoc, c: '#c084e6', l: 'Localização', md: data.t_localizacao_mediana_min, d: '1ª solicitação → entregador' },
+      { v: tCol, c: '#770fa8', l: 'Coleta', md: data.t_coleta_mediana_min, d: 'atribuição → coleta' },
+      { v: tRota, c: '#3a1556', l: 'Entrega', md: data.t_rota_mediana_min, d: 'coleta → entrega' },
+    ];
+    const temSeg = segs.some(s => parseFloat(s.v) > 0);
+    const celSla = (rot, val, cor) => h('div', { key: rot },
+      h('div', { className: 'text-xs text-gray-500' }, rot),
+      h('div', { className: `text-lg font-bold tabular-nums ${cor || 'text-gray-900'}` }, val));
+
+    return h('div', { className: 'max-w-[1500px] mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
       // HEADER
-      h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+      h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
         h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Dashboard do Hub'),
-          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Operação, tempo e SLA'),
+          h('h1', { className: 'text-2xl font-bold text-gray-900', style: Object.assign({ letterSpacing: '-0.01em' }, SORA) }, 'Dashboard do Hub'),
+          h('p', { className: 'text-sm text-gray-500 mt-1' }, `${periodoTxt} · ${total} corrida${total !== 1 ? 's' : ''}`),
         ),
         h('div', { className: 'flex items-center gap-2 flex-wrap' },
-          h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
-            pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
-              className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
+          h('div', { role: 'group', 'aria-label': 'Período', className: 'inline-flex bg-gray-100 rounded-[10px] p-[3px]' },
+            pills.map(([p, lbl]) => h('button', { key: p, type: 'button', onClick: () => setPeriodo(p), 'aria-pressed': periodo === p,
+              className: `px-3 py-1.5 text-[13px] rounded-lg ${periodo === p ? 'bg-white text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-800'}` }, lbl)),
           ),
-          periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
-            h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+          periodo === 'custom' && h('div', { className: 'flex items-center gap-1.5' },
+            h('input', { type: 'date', 'aria-label': 'Data inicial', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'h-[38px] px-2.5 border border-gray-200 rounded-[10px] text-[13px] text-gray-700 bg-white' }),
             h('span', { className: 'text-gray-400 text-xs' }, 'até'),
-            h('input', { type: 'date', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
+            h('input', { type: 'date', 'aria-label': 'Data final', value: ateCustom, onChange: e => setAteCustom(e.target.value), className: 'h-[38px] px-2.5 border border-gray-200 rounded-[10px] text-[13px] text-gray-700 bg-white' }),
           ),
-          h('button', { onClick: () => { carregar(); carregarMargem(); }, className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700' }, '⟳ Atualizar'),
+          h('button', { type: 'button', onClick: () => { carregar(); carregarMargem(); }, className: 'h-[38px] px-3.5 inline-flex items-center gap-2 bg-white border border-gray-200 rounded-[10px] text-[13px] font-semibold text-gray-700 hover:bg-gray-50' },
+            h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' })), 'Atualizar'),
         ),
       ),
 
       // HUB_MENU_SECOES_V1: menu lateral + conteúdo
-      h('div', { className: 'flex flex-col lg:flex-row gap-5 items-start' },
+      h('div', { className: 'flex flex-col lg:flex-row gap-6 items-start' },
       h(MenuSecoesHub, { de, ate, total }),
       h('div', { className: 'flex-1 min-w-0 w-full space-y-4' },
       // KPIs
       h('div', { id: 'hub-kpis', className: 'grid grid-cols-2 md:grid-cols-5 gap-3 scroll-mt-24' },
-        [
-          // HUB_DASH_OS_V1: contagem por CORRIDA (OS). Redespacho nao infla total/cancelados.
-          { lbl: 'Total de corridas', val: total, ico: 'package', chip: 'bg-purple-50 text-purple-600', foot: data.tentativas_total != null ? `${ni(data.tentativas_total)} tentativas · ${ni(data.redespachos)} redespachos em ${ni(data.os_redespachadas)} corridas` : null },
-          { lbl: 'Entregues', val: entregues, ico: 'check', chip: 'bg-green-50 text-green-600', foot: total ? `${(entregues / total * 100).toFixed(0)}% do total${ni(data.devolvidos) ? ` · ${ni(data.devolvidos)} devolvida${ni(data.devolvidos) > 1 ? 's' : ''}` : ''}` : null },
-          { lbl: 'Em andamento', val: emand, ico: 'bike', chip: 'bg-blue-50 text-blue-600', foot: `${ni(data.and_procurando)} buscando · ${ni(data.and_coletar)} p/ coletar · ${ni(data.and_rota)} em rota` },
-          { lbl: 'Canceladas', val: cancel, ico: 'x', chip: 'bg-red-50 text-red-600', foot: total ? `${(cancel / total * 100).toFixed(0)}% · ${ni(data.fallback)} fallback · só cancelamento definitivo` : null },
-          // HUB_DASH_ANALITICO_V1: KPI de destaque — tempo médio de entrega (1ª solicitação → entrega, só entregues)
-          { lbl: 'Tempo médio de entrega', val: fmtMin(tTot), ico: 'clock', chip: 'bg-amber-50 text-amber-600', foot: data.t_total_mediana_min != null ? `mediana ${fmtMin(data.t_total_mediana_min)} · ${ni(data.n_trilha)} entregues` : null },
-        ].map(k => h('div', { key: k.lbl, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4' },
-          h('div', { className: `w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${k.chip}` }, h('svg', { className: 'ico ico-lg', 'aria-hidden': 'true' }, h('use', { href: '#i-' + k.ico }))),
-          h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, k.lbl),
-          h('div', { className: 'text-3xl font-extrabold text-gray-800 mt-1 leading-none' }, k.val),
-          k.foot && h('div', { className: 'text-[11px] text-gray-500 mt-2' }, k.foot),
+        kpis.map(k => h('div', { key: k.lbl, className: cardCls + ' p-4 flex flex-col gap-1.5 min-w-0' },
+          h('span', { className: 'text-xs text-gray-500' }, k.lbl),
+          h('span', { className: 'text-[28px] leading-tight font-bold tabular-nums ' + (k.cor || 'text-gray-900'), style: Object.assign({ letterSpacing: '-0.01em' }, SORA) }, k.val),
+          k.foot && h('span', { className: 'text-[11.5px] text-gray-500 leading-snug' }, k.foot),
         )),
       ),
 
       // TEMPO + SLA
-      h('div', { id: 'hub-tempo', className: 'grid grid-cols-1 lg:grid-cols-3 gap-3 scroll-mt-24' },
-        h('div', { className: 'lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
-          h('div', { className: 'flex items-center gap-2 mb-1' },
-            h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-clock' })), 'Desempenho de tempo')),
-            h('span', { className: 'ml-auto text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full' }, `média · ${ni(data.n_trilha)} entregues`),
+      h('div', { id: 'hub-tempo', className: 'grid grid-cols-1 lg:grid-cols-5 gap-3 scroll-mt-24' },
+        h('section', { className: cardCls + ' lg:col-span-3 p-5 flex flex-col gap-4 min-w-0' },
+          h('div', null,
+            h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'Desempenho de tempo'),
+            h('p', { className: 'text-xs text-gray-500 mt-1' }, `Tempo médio de cada etapa nas ${ni(data.n_trilha)} corridas entregues, contado desde a 1ª solicitação — redespacho não zera o relógio. Mediana entre parênteses.`),
           ),
-          h('p', { className: 'text-xs text-gray-500 mb-4' }, 'Tempo médio de cada estágio, só corridas entregues. Conta desde a 1ª solicitação — redespacho não zera o relógio. Mediana entre parênteses.'),
-          h('div', { className: 'flex h-9 rounded-xl overflow-hidden mb-4' },
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tLoc) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#b48bfa,#945cf6)', minWidth: '44px' } }, fmtMin(tLoc)),
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tCol) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#f6b74a,#f5921e)', minWidth: '44px' } }, fmtMin(tCol)),
-            h('div', { className: 'flex items-center justify-center text-white text-[11px] font-bold', style: { width: `${(parseFloat(tRota) || 0) / somaEst * 100}%`, background: 'linear-gradient(180deg,#34c76a,#15a048)', minWidth: '44px' } }, fmtMin(tRota)),
+          h('div', { className: 'flex h-2.5 rounded-full overflow-hidden gap-0.5 bg-gray-100', role: 'img', 'aria-label': segs.map(s => `${s.l} ${fmtMin(s.v)}`).join(', ') },
+            temSeg && segs.filter(s => parseFloat(s.v) > 0).map(s => h('div', { key: s.l, title: `${s.l}: ${fmtMin(s.v)}`, style: { flex: parseFloat(s.v), background: s.c } })),
           ),
-          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2' },
-            [
-              { c: '#7c3aed', l: 'Localização', v: fmtMin(tLoc), md: data.t_localizacao_mediana_min, d: '1ª solicitação → entregador' },
-              { c: '#f67602', l: 'Coleta', v: fmtMin(tCol), md: data.t_coleta_mediana_min, d: 'atribuição → coleta' },
-              { c: '#16a34a', l: 'Entrega', v: fmtMin(tRota), md: data.t_rota_mediana_min, d: 'coleta → entrega' },
-            ].map(t => h('div', { key: t.l, className: 'border border-gray-200 rounded-xl p-3' },
-              h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' },
-                h('span', { className: 'inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle', style: { background: t.c } }), t.l),
-              h('div', { className: 'text-lg font-extrabold text-gray-800 mt-0.5' }, t.v, t.md != null && h('span', { className: 'text-[11px] font-semibold text-gray-400 ml-1' }, `(${fmtMin(t.md)})`)),
-              h('div', { className: 'text-[10px] text-gray-400' }, t.d),
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
+            segs.map(t => h('div', { key: t.l, className: 'min-w-0' },
+              h('div', { className: 'flex items-center gap-1.5 text-xs text-gray-500' }, h('span', { className: 'inline-block w-2 h-2 rounded-sm', style: { background: t.c } }), t.l),
+              h('div', { className: 'text-xl font-bold text-gray-900 tabular-nums mt-1' }, fmtMin(t.v), t.md != null && h('span', { className: 'text-xs font-medium text-gray-400 ml-1' }, `(${fmtMin(t.md)})`)),
+              h('div', { className: 'text-[11px] text-gray-400' }, t.d),
             )).concat([
-              h('div', { key: 'total', className: 'border rounded-xl p-3', style: { background: '#f9fafb', borderColor: '#ddd6fe' } },
-                h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-purple-600' }, 'Tempo total'),
-                h('div', { className: 'text-lg font-extrabold text-purple-700 mt-0.5' }, fmtMin(tTot), data.t_total_mediana_min != null && h('span', { className: 'text-[11px] font-semibold text-purple-400 ml-1' }, `(${fmtMin(data.t_total_mediana_min)})`)),
-                h('div', { className: 'text-[10px] text-purple-400' }, '1ª solicitação → entrega'),
+              h('div', { key: 'total', className: 'min-w-0 md:pl-3 md:border-l border-gray-100' },
+                h('div', { className: 'text-xs text-gray-500' }, 'Tempo total'),
+                h('div', { className: 'text-xl font-bold text-purple-800 tabular-nums mt-1' }, fmtMin(tTot), data.t_total_mediana_min != null && h('span', { className: 'text-xs font-medium text-gray-400 ml-1' }, `(${fmtMin(data.t_total_mediana_min)})`)),
+                h('div', { className: 'text-[11px] text-gray-400' }, '1ª solicitação → entrega'),
               ),
             ]),
           ),
         ),
-        (function () {
-          const pct = pctNP != null ? pctNP : 0;
-          const R = 54, CIRC = 2 * Math.PI * R;
-          const off = CIRC * (1 - pct / 100);
-          return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5' },
-            h('h3', { className: 'text-base font-bold text-gray-800 mb-1' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-target' })), 'SLA / Prazo')),
-            h('p', { className: 'text-xs text-gray-500 mb-3' }, `Prazo pela distância, contado da 1ª solicitação · ${sla ? sla.total_avaliado : 0} entregues avaliadas${sla && sla.sem_km ? ` · ${sla.sem_km} sem km` : ''}.`),
-            h('div', { className: 'flex flex-col items-center' },
-              h('div', { className: 'relative', style: { width: '140px', height: '140px' } },
-                h('svg', { width: 140, height: 140, viewBox: '0 0 140 140' },
-                  h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#fef2f2', strokeWidth: 14 }),
-                  pctNP != null && h('circle', { cx: 70, cy: 70, r: R, fill: 'none', stroke: '#16a34a', strokeWidth: 14, strokeLinecap: 'round', strokeDasharray: CIRC, strokeDashoffset: off, transform: 'rotate(-90 70 70)' }),
-                ),
-                h('div', { className: 'absolute inset-0 flex flex-col items-center justify-center' },
-                  h('div', { className: 'text-2xl font-extrabold text-green-600' }, pctNP != null ? `${pctNP.toFixed(0)}%` : '—'),
-                  h('div', { className: 'text-[9px] font-bold uppercase tracking-wide text-gray-400' }, 'no prazo'),
-                ),
-              ),
-              h('div', { className: 'grid grid-cols-2 gap-2 w-full mt-3' },
-                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'No prazo'), h('div', { className: 'text-lg font-extrabold text-gray-800' }, sla ? sla.no_prazo : 0)),
-                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Fora do prazo'), h('div', { className: 'text-lg font-extrabold text-red-600' }, sla ? sla.fora : 0)),
-                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'Atraso médio'), h('div', { className: 'text-lg font-extrabold text-amber-600' }, (sla && sla.fora) ? '+' + fmtMin(sla.atraso_medio_min) : '—')),
-                h('div', { className: 'border border-gray-200 rounded-xl p-2.5' }, h('div', { className: 'text-[9px] font-bold uppercase text-gray-400' }, 'ETA prov.'), h('div', { className: 'text-lg font-extrabold text-gray-800' }, `${Math.round(parseFloat(data.eta_medio || 0))} min`)),
-              ),
-            ),
-          );
-        })(),
+        h('section', { className: cardCls + ' lg:col-span-2 p-5 flex flex-wrap items-center gap-5 min-w-0' },
+          h('div', { className: 'flex-none grid place-items-center rounded-full', role: 'img', 'aria-label': pctNP != null ? `${pctNP.toFixed(0)}% no prazo` : 'sem dados de prazo',
+            style: { width: 116, height: 116, background: pctNP != null ? `conic-gradient(#16a34a 0 ${pctNP}%, #f3f4f6 ${pctNP}% 100%)` : '#f3f4f6' } },
+            h('div', { className: 'grid place-items-center rounded-full bg-white text-center', style: { width: 92, height: 92 } },
+              h('div', null,
+                h('div', { className: 'text-2xl font-bold text-gray-900 tabular-nums', style: SORA }, pctNP != null ? `${pctNP.toFixed(0)}%` : '—'),
+                h('div', { className: 'text-[10.5px] text-gray-500' }, 'no prazo'))),
+          ),
+          h('div', { className: 'flex-1 min-w-[180px] grid grid-cols-2 gap-3.5' },
+            h('div', { className: 'col-span-2' },
+              h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'SLA / Prazo'),
+              h('p', { className: 'text-[11.5px] text-gray-500 mt-1' }, `Prazo pela distância, contado da 1ª solicitação · ${sla ? sla.total_avaliado : 0} entregues avaliadas${sla && sla.sem_km ? ` · ${sla.sem_km} sem km` : ''}.`)),
+            celSla('No prazo', sla ? sla.no_prazo : 0),
+            celSla('Fora do prazo', sla ? sla.fora : 0, (sla && sla.fora) ? 'text-red-800' : null),
+            celSla('Atraso médio', (sla && sla.fora) ? '+' + fmtMin(sla.atraso_medio_min) : '—'),
+            celSla('ETA do provedor', `${Math.round(parseFloat(data.eta_medio || 0))} min`),
+          ),
+        ),
       ),
 
       // FINANCEIRO — HUB_FIN_REGRA_V1
@@ -643,79 +646,68 @@
       //   Regra        = valor do Hub pela tabela (regra do cliente → cliente → global → Mapp)
       //   Margem       = regra − provedor · Ticket médio = margem ÷ corridas
       h('div', { id: 'hub-financeiro', className: 'scroll-mt-24' }, (function () {
-        if (finRel === undefined) return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-2 text-xs text-gray-400' }, h('div', { className: 'animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full' }), 'Calculando financeiro pelas linhas do Relatório...');
-        if (finRel === null) return h('div', { className: 'bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl p-4' }, 'Não deu pra carregar o financeiro (relatório indisponível).');
+        if (finRel === undefined) return h('div', { className: cardCls + ' p-4 flex items-center gap-2 text-xs text-gray-500' }, h('div', { className: 'animate-spin w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full' }), 'Calculando financeiro pelas linhas do Relatório...');
+        if (finRel === null) return h('div', { className: 'bg-red-50 border border-red-200 text-red-800 text-xs rounded-[14px] p-4' }, 'Não deu pra carregar o financeiro (relatório indisponível). Tente Atualizar.');
         const f = finRel;
         const cells = [
-          { l: 'Valor Mapp', v: fmtMoney(f.mapp), c: 'text-gray-700', s: `${f.n} corridas do Hub faturáveis${f.semMapp ? ` · ${f.semMapp} sem valor Mapp` : ''}${f.semValor ? ` · ${f.semValor} sem valor (fora)` : ''}` },
-          { l: 'Valor provedor', v: fmtMoney(f.prov), c: 'text-gray-800', s: `média ${fmtMoney(f.n ? f.prov / f.n : 0)} por corrida` },
-          { l: 'Valor com regra aplicada', v: fmtMoney(f.regra), c: 'text-gray-800', s: `${f.regraDif >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(f.regraDif))} vs Mapp${f.origens ? ' · ' + f.origens : ''}` },
-          { l: 'Margem (regra − provedor)', v: (f.margem >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.margem)), c: f.margem >= 0 ? 'text-green-600' : 'text-red-600', s: f.regra ? `${((f.margem / f.regra) * 100).toFixed(1)}% do valor com regra` : null },
-          { l: 'Ticket médio da margem', v: (f.ticket >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.ticket)), c: f.ticket >= 0 ? 'text-green-600' : 'text-red-600', s: `(regra − provedor) ÷ ${f.n} corridas · ticket cliente ${fmtMoney(f.n ? f.regra / f.n : 0)}` },
+          { l: 'Valor Mapp', v: fmtMoney(f.mapp), s: `${f.n} corridas do Hub faturáveis${f.semMapp ? ` · ${f.semMapp} sem valor Mapp` : ''}${f.semValor ? ` · ${f.semValor} sem valor (fora)` : ''}` },
+          { l: 'Valor provedor', v: fmtMoney(f.prov), s: `média ${fmtMoney(f.n ? f.prov / f.n : 0)} por corrida` },
+          { l: 'Valor com regra aplicada', v: fmtMoney(f.regra), s: `${f.regraDif >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(f.regraDif))} vs Mapp${f.origens ? ' · ' + f.origens : ''}` },
+          { l: 'Margem (regra − provedor)', v: (f.margem >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.margem)), c: f.margem >= 0 ? 'text-green-800' : 'text-red-800', s: f.regra ? `${((f.margem / f.regra) * 100).toFixed(1)}% do valor com regra` : null },
+          { l: 'Ticket médio da margem', v: (f.ticket >= 0 ? '+ ' : '− ') + fmtMoney(Math.abs(f.ticket)), c: f.ticket >= 0 ? 'text-green-800' : 'text-red-800', s: `(regra − provedor) ÷ ${f.n} corridas · ticket cliente ${fmtMoney(f.n ? f.regra / f.n : 0)}` },
         ];
-        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-5 divide-x divide-gray-100' },
-          cells.map(c => h('div', { key: c.l, className: 'p-4' },
-            h('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, c.l),
-            h('div', { className: `text-xl font-extrabold mt-1 ${c.c}` }, c.v),
-            c.s && h('div', { className: 'text-[10px] text-gray-400 mt-1' }, c.s))));
+        return h('section', { className: cardCls + ' grid grid-cols-2 md:grid-cols-5 overflow-hidden', 'aria-label': 'Financeiro' },
+          cells.map((c, i) => h('div', { key: c.l, className: 'px-[18px] py-4 min-w-0 border-gray-100 ' + (i < cells.length - 1 ? 'border-b md:border-b-0 md:border-r' : '') },
+            h('div', { className: 'text-xs text-gray-500' }, c.l),
+            h('div', { className: `text-lg font-bold mt-1 tabular-nums ${c.c || 'text-gray-900'}` }, c.v),
+            c.s && h('div', { className: 'text-[11px] text-gray-400 mt-1 leading-snug' }, c.s))));
       })()),
 
       // MARGEM POR CLIENTE
-      h('div', { id: 'hub-margem', className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4 scroll-mt-24' },
-        h('div', null,
-          h('h3', { className: 'text-base font-bold text-gray-800' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-wallet' })), 'Margem por cliente')),
-          h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Quanto cada cliente rende quando despachado pelo hub. Por corrida (OS): receita e custo só do que fatura (entregue + devolvida), custo da tentativa final. Margem = valor cliente − custo do provedor.'),
+      h('section', { id: 'hub-margem', className: cardCls + ' overflow-hidden scroll-mt-24' },
+        h('div', { className: 'px-5 pt-4 pb-3' },
+          h('h2', { className: 'text-[15px] font-semibold text-gray-900' }, 'Margem por cliente'),
+          h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Quanto cada cliente rende quando despachado pelo hub. Por corrida (OS): receita e custo só do que fatura (entregue + devolvida), custo da tentativa final. Margem = valor cliente − custo do provedor.'),
         ),
         margemLoading
-          ? h('div', { className: 'text-center py-10' }, h('div', { className: 'animate-spin w-7 h-7 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+          ? h('div', { className: 'text-center py-10' }, h('div', { className: 'animate-spin w-7 h-7 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' }))
           : (!margemData || !margemData.por_cliente || margemData.por_cliente.length === 0)
-            ? h('div', { className: 'text-center py-10 text-gray-400' }, h('p', { className: 'font-semibold' }, 'Nenhuma entrega no período'))
+            ? h('div', { className: 'text-center py-10 px-5' }, h('p', { className: 'text-sm font-semibold text-gray-700' }, 'Nenhuma entrega no período'), h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Escolha outro período acima para ver a margem por cliente.'))
             : h('div', null,
                 (margemData.por_dia && margemData.por_dia.length > 0) && (function () {
                   const porDia = margemData.por_dia;
                   const maxAbs = Math.max(1, ...porDia.map(d => Math.abs(parseFloat(d.margem || 0))));
-                  return h('div', { className: 'mb-4' },
+                  return h('div', { className: 'px-5 pb-4' },
                     h('div', { className: 'text-xs text-gray-500 mb-2' }, `Margem por dia (${porDia.length} dia${porDia.length !== 1 ? 's' : ''})`),
-                    h('div', { className: 'flex items-end gap-1 h-24 border-b border-gray-200' },
+                    h('div', { className: 'flex items-end gap-1 h-20 border-b border-gray-200' },
                       porDia.map((d, i) => {
                         const v = parseFloat(d.margem || 0), pos = v >= 0, pc = (Math.abs(v) / maxAbs) * 100;
-                        return h('div', { key: i, className: 'flex-1 flex flex-col justify-end', title: `${new Date(d.dia).toLocaleDateString('pt-BR')}: ${pos ? '+' : '−'} ${fmtMoney(Math.abs(v))}` },
-                          h('div', { className: `w-full rounded-t ${pos ? 'bg-green-400' : 'bg-red-400'}`, style: { height: `${Math.max(2, pc)}%` } }));
+                        return h('div', { key: i, className: 'flex-1 flex flex-col justify-end h-full', title: `${new Date(d.dia).toLocaleDateString('pt-BR')}: ${pos ? '+' : '−'} ${fmtMoney(Math.abs(v))}` },
+                          h('div', { className: `w-full rounded-t ${pos ? 'bg-green-600' : 'bg-red-600'}`, style: { height: `${Math.max(2, pc)}%` } }));
                       }),
                     ),
                   );
                 })(),
                 h('div', { className: 'overflow-x-auto' },
-                  h('table', { className: 'w-full text-sm' },
-                    h('thead', { className: 'text-[10px] uppercase text-gray-400 border-b border-gray-200' },
-                      h('tr', null,
-                        h('th', { className: 'px-2 py-2 text-left' }, 'Cliente'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Corridas'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Entregues'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Redesp.'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Receita'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Custo'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Margem'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'Méd. coleta'),
-                        h('th', { className: 'px-2 py-2 text-right' }, 'No prazo'),
-                        h('th', { className: 'px-2 py-2 text-right' }, '% Cancel.'),
-                      )),
+                  h('table', { className: 'w-full text-[12.5px]', style: { minWidth: 900, borderCollapse: 'collapse' } },
+                    h('thead', null,
+                      h('tr', { className: 'bg-gray-50 text-gray-500 text-xs' },
+                        ['Cliente', 'Corridas', 'Entregues', 'Redesp.', 'Receita', 'Custo', 'Margem', 'Méd. coleta', 'No prazo', '% Cancel.'].map((t, i) =>
+                          h('th', { key: t, scope: 'col', className: 'py-2.5 font-semibold ' + (i === 0 ? 'pl-5 pr-2.5 text-left' : i === 8 ? 'px-2.5 text-left' : i === 9 ? 'pl-2.5 pr-5 text-right' : 'px-2.5 text-right') }, t)))),
                     h('tbody', null,
                       margemData.por_cliente.map((c, i) => {
                         const m = parseFloat(c.margem_total || 0), pos = m >= 0, np = c.pct_no_prazo;
-                        return h('tr', { key: i, className: `border-b border-gray-50 hover:bg-gray-50 ${m < 0 ? 'bg-red-50/40' : ''}` },
-                          h('td', { className: 'px-2 py-2' }, h('div', { className: 'font-semibold text-gray-800' }, c.cliente), !c.regra_id && h('div', { className: 'text-[10px] text-gray-400' }, 'Sem regra')),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, c.qtd),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, c.entregues != null ? c.entregues : '—'),
-                          h('td', { className: 'px-2 py-2 text-right ' + (ni(c.redespachos) ? 'text-amber-600 font-semibold' : 'text-gray-400') }, c.redespachos != null ? c.redespachos : '—'),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
-                          h('td', { className: `px-2 py-2 text-right font-semibold ${pos ? 'text-green-700' : 'text-red-700'}` }, `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-600' }, fmtMin(c.medio_coleta_min)),
-                          h('td', { className: 'px-2 py-2 text-right' }, np == null
-                            ? h('span', { className: 'text-gray-300' }, '—')
-                            : h('span', { className: `inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${np >= 80 ? 'bg-green-50 text-green-700' : np >= 60 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}` }, `${np.toFixed(0)}%`)),
-                          h('td', { className: 'px-2 py-2 text-right text-gray-600' }, `${parseFloat(c.taxa_cancelamento || 0).toFixed(0)}%`),
+                        return h('tr', { key: i, className: 'border-t border-gray-100 hover:bg-gray-50' },
+                          h('td', { className: 'pl-5 pr-2.5 py-2.5' }, h('div', { className: 'font-semibold text-gray-900' }, c.cliente), !c.regra_id && h('div', { className: 'text-[11px] text-gray-400' }, 'Sem regra')),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums text-gray-700' }, c.qtd),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums text-gray-700' }, c.entregues != null ? c.entregues : '—'),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums ' + (ni(c.redespachos) ? 'text-amber-800 font-semibold' : 'text-gray-400') }, c.redespachos != null ? c.redespachos : '—'),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums text-gray-700' }, fmtMoney(parseFloat(c.receita_total || 0))),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums text-gray-700' }, fmtMoney(parseFloat(c.custo_uber_total || 0))),
+                          h('td', { className: `px-2.5 py-2.5 text-right tabular-nums font-semibold ${pos ? 'text-green-800' : 'text-red-800'}` }, `${pos ? '+' : '−'} ${fmtMoney(Math.abs(m))}`),
+                          h('td', { className: 'px-2.5 py-2.5 text-right tabular-nums text-gray-700' }, fmtMin(c.medio_coleta_min)),
+                          h('td', { className: 'px-2.5 py-2.5' }, np == null ? h('span', { className: 'text-gray-300' }, '—') : pillPrazo(np)),
+                          h('td', { className: 'pl-2.5 pr-5 py-2.5 text-right tabular-nums text-gray-700' }, `${parseFloat(c.taxa_cancelamento || 0).toFixed(0)}%`),
                         );
                       })
                     ),
@@ -840,7 +832,7 @@
       } else {
         markerRef.current = new google.maps.Marker({
           position: pos, map: mapRef.current,
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#7c3aed', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#770fa8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
           title: 'Entregador',
         });
       }
@@ -851,7 +843,7 @@
       h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })), 'Tracking em tempo real')),
       h('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-4' },
         // Lista
-        h('div', { className: 'lg:col-span-1 bg-white rounded-xl border shadow-sm p-3 max-h-[600px] overflow-y-auto' },
+        h('div', { className: 'lg:col-span-1 bg-white rounded-[14px] border border-gray-200 p-3 max-h-[600px] overflow-y-auto' },
           h('div', { className: 'text-xs font-semibold text-gray-500 uppercase mb-2' }, `${ativas.length} entrega(s) ativas`),
           ativas.length === 0
             ? h('p', { className: 'text-sm text-gray-400 text-center py-8' }, 'Nenhuma entrega em andamento')
@@ -884,7 +876,7 @@
         // Mapa + detalhes
         h('div', { className: 'lg:col-span-2 space-y-3' },
           selecionada ? [
-            h('div', { key: 'info', className: 'bg-white rounded-xl border shadow-sm p-4' },
+            h('div', { key: 'info', className: 'bg-white rounded-[14px] border border-gray-200 p-4' },
               // Header com OS + botão tracking oficial
               h('div', { className: 'flex items-start justify-between gap-3 mb-3' },
                 h('div', { className: 'flex items-center gap-3 min-w-0' },
@@ -927,7 +919,7 @@
                 posicaoAtual.at && h('span', { className: 'ml-2' }, `· ${fmtDT(posicaoAtual.at)}`)
               )
             ),
-            h('div', { key: 'map', id: 'uber-map', className: 'w-full h-[500px] rounded-xl border shadow-sm bg-gray-100' })
+            h('div', { key: 'map', id: 'uber-map', className: 'w-full h-[500px] rounded-[14px] border border-gray-200 bg-gray-100' })
           ] : h('div', { className: 'bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 p-12 text-center' },
             h('p', { className: 'text-gray-400' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-arrowleft" })), "Selecione uma entrega para acompanhar"))
           )
@@ -1022,7 +1014,7 @@
   const PROVIDER_SVGS = {
     proprio:
       '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
-      '<circle cx="30" cy="30" r="30" fill="#4c1d95"/>' +
+      '<circle cx="30" cy="30" r="30" fill="#770fa8"/>' +
       '<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
       '<circle cx="20" cy="38" r="6"/><circle cx="40" cy="38" r="6"/>' +
       '<path d="M20 38l6-12h6l4 6h4"/><path d="M26 26h8"/></g>' +
@@ -1115,10 +1107,13 @@
   // no TOPO, revelando os passos antigos.
   const MAX_TRILHA = 4;
 
-  function TentativasDespacho({ dados }) {
+  function TentativasDespacho({ dados, aberta, onToggle }) {
     // Hook ANTES de qualquer early return (regras dos hooks). O estado
     // sobrevive ao refresh de 30s porque o CardKanban tem key: e.id estavel.
-    const [trilhaAberta, setTrilhaAberta] = useState(false);
+    // HUB_CLEAN_V1: aberta/onToggle opcionais (o menu "…" do card abre a trilha).
+    const [_trilhaAbertaInt, _setTrilhaAbertaInt] = useState(false);
+    const trilhaAberta = aberta != null ? aberta : _trilhaAbertaInt;
+    const setTrilhaAberta = onToggle ? (() => onToggle()) : _setTrilhaAbertaInt;
     if (!dados || !Array.isArray(dados.eventos)) return null;
     const evs = dados.eventos;
     const temCancelamento = evs.some(x => x.tipo === 'canceled');
@@ -1147,13 +1142,12 @@
     const _grupoCount = {};
     evs.forEach(x => { if (x.tipo === 'dispatch_success' && x.grupo) _grupoCount[x.grupo] = (_grupoCount[x.grupo] || 0) + 1; });
     const _grupoContado = {};
-    return h('div', { className: 'pt-3 border-t border-gray-100' },
+    return h('div', { className: 'pt-2.5 border-t border-gray-100' },
       /* MP_TRILHA_DROPDOWN_V4: trilha inteira colapsada num dropdown (fechada por padrao) */
-      h('button', { onClick: () => setTrilhaAberta(v => !v), className: 'w-full flex items-center gap-2 mb-1 text-left' },
-        h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 14, height: 14 } }, h('use', { href: '#i-refresh' })),
-        h('span', { className: 'text-xs uppercase tracking-wider text-purple-700 font-semibold' }, 'Tentativas de despacho'),
-        h('span', { className: 'text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5' }, String(totalTent)),
-        h('svg', { className: 'ico ml-auto text-purple-400', 'aria-hidden': 'true', style: { width: 14, height: 14, transform: trilhaAberta ? 'rotate(180deg)' : 'none' } }, h('use', { href: '#i-arrowdown' })),
+      h('button', { type: 'button', 'aria-expanded': !!trilhaAberta, onClick: () => setTrilhaAberta(v => !v), className: 'w-full flex items-center gap-2 mb-1 text-left' },
+        h('span', { className: 'text-xs font-semibold text-gray-700' }, 'Tentativas de despacho'),
+        h('span', { className: 'text-[11px] font-semibold bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 tabular-nums' }, String(totalTent)),
+        h('svg', { className: 'ico ml-auto text-gray-400', 'aria-hidden': 'true', style: { width: 14, height: 14, transform: trilhaAberta ? 'rotate(180deg)' : 'none' } }, h('use', { href: '#i-arrowdown' })),
       ),
       trilhaAberta && h('div', { className: 'pl-1 mt-2' },
         evs.map((ev, i) => {
@@ -1291,7 +1285,7 @@
     }
 
     return h('div', {
-      className: 'bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-5 space-y-4',
+      className: 'bg-white rounded-[14px] border border-gray-200 p-4 md:p-5 space-y-4',
     },
 
       // ── Cabeçalho ──
@@ -1527,7 +1521,9 @@
     return 'bg-green-50 text-green-700';
   }
 
-  // Indicador de tempo do card. Retorna { label, texto, cls } ou null.
+  // HUB_CLEAN_V1: % decorrido do limite, p/ a barra de 4px do card (0–100).
+  function _pctBar(m, lim) { if (m == null || !lim) return 100; return Math.max(4, Math.min(100, Math.round((m / lim) * 100))); }
+  // Indicador de tempo do card. Retorna { label, texto, cls, pct } ou null.
   function indicadorTempo(e) {
     const st = e && e.status_canonico;
     if (['CANCELED', 'FAILED', 'FALLBACK_QUEUE'].includes(st)) return null;
@@ -1540,17 +1536,17 @@
     if (st === 'DELIVERED') {
       const fim = _tsValido(e.entregue_at) || _tsValido(e.finalizado_at);
       const tot = fim != null ? _minsEntre(e.created_at, fim) : null;
-      if (tot == null) return { label: 'entregue', texto: 'concluída', cls: 'bg-gray-50 text-gray-500' };
+      if (tot == null) return { label: 'entregue', texto: 'concluída', cls: 'bg-gray-50 text-gray-500', pct: 100 };
       const dentro = (prazo != null) ? tot <= prazo : null;
       const cls = dentro == null ? 'bg-gray-50 text-gray-500' : (dentro ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
       const suf = dentro == null ? '' : (dentro ? ' · no prazo' : ' · fora do prazo');
-      return { label: 'tempo total', texto: '' + (_fmtDur(tot) || '—') + metaTxt + suf, cls };
+      return { label: 'tempo total', texto: '' + (_fmtDur(tot) || '—') + metaTxt + suf, cls, pct: _pctBar(tot, prazo) };
     }
     if (st === 'RETURNING') {
-      return { label: 'devolução', texto: '↩ devolvendo', cls: 'bg-amber-50 text-amber-700' };
+      return { label: 'devolução', texto: 'devolvendo', cls: 'bg-amber-50 text-amber-700', pct: 100 };
     }
     if (st === 'RETURNED') {
-      return { label: 'devolução', texto: '↩ devolvido', cls: 'bg-amber-50 text-amber-700' };
+      return { label: 'devolução', texto: 'devolvido', cls: 'bg-amber-50 text-amber-700', pct: 100 };
     }
 
     // cor por (decorrido, limite) com faixa curta de atenção (3 min antes)
@@ -1568,7 +1564,7 @@
       const atrasado = prazo != null && m != null && m > prazo;
       const perto    = prazo != null && m != null && m >= prazo - 10 && m <= prazo;
       const cls = atrasado ? 'bg-red-50 text-red-700' : (perto ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700');
-      return { label: 'em rota de entrega', texto: '' + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls };
+      return { label: 'em rota de entrega', texto: '' + (m != null ? _fmtDur(m) : '—') + metaTxt + (atrasado ? ' · atrasado' : ''), cls, pct: _pctBar(m, prazo) };
     }
 
     // ESTÁGIO 2 — entregador atribuído → coleta: limite desde a ATRIBUIÇÃO
@@ -1577,13 +1573,13 @@
       const base = _tsValido(e.atribuido_at) || _tsValido(e.created_at);
       const m = _minsEntre(base, Date.now());
       const atrasado = m != null && m > SLA_COLETA_MIN;
-      return { label: 'aguardando coleta', texto: '' + (m != null ? _fmtDur(m) : '—') + ' / ' + _fmtDur(SLA_COLETA_MIN) + (atrasado ? ' · atrasado' : ''), cls: _corLim(m, SLA_COLETA_MIN) };
+      return { label: 'aguardando coleta', texto: '' + (m != null ? _fmtDur(m) : '—') + ' / ' + _fmtDur(SLA_COLETA_MIN) + (atrasado ? ' · atrasado' : ''), cls: _corLim(m, SLA_COLETA_MIN), pct: _pctBar(m, SLA_COLETA_MIN) };
     }
 
     // ESTÁGIO 1 — procurando entregador: limite desde a CRIAÇÃO
     const mLoc = _minsEntre(e.created_at, Date.now());
     const atrasadoLoc = mLoc != null && mLoc > SLA_LOCALIZAR_MIN;
-    return { label: 'aguardando entregador', texto: '' + (mLoc != null ? _fmtDur(mLoc) : '—') + ' / ' + _fmtDur(SLA_LOCALIZAR_MIN) + (atrasadoLoc ? ' · atrasado' : ''), cls: _corLim(mLoc, SLA_LOCALIZAR_MIN) };
+    return { label: 'aguardando entregador', texto: '' + (mLoc != null ? _fmtDur(mLoc) : '—') + ' / ' + _fmtDur(SLA_LOCALIZAR_MIN) + (atrasadoLoc ? ' · atrasado' : ''), cls: _corLim(mLoc, SLA_LOCALIZAR_MIN), pct: _pctBar(mLoc, SLA_LOCALIZAR_MIN) };
   }
   // Extrai o payload de um evento (JSONB pode vir como objeto ou string).
   function _payloadEvt(w) {
@@ -1664,15 +1660,16 @@
   // [hub-falha-alerta-v2] Falhas em PRIMEIRO lugar: e a coluna que exige acao
   // imediata do admin. As demais seguem o fluxo natural da corrida.
   const KANBAN_COLS = [
-    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500' },
-    { id: 'aguard',   nome: 'Aguardando entregador', dot: 'bg-purple-500', cnt: 'bg-purple-500' },
-    { id: 'coleta',   nome: 'Aguardando coleta',     dot: 'bg-blue-500',   cnt: 'bg-blue-500' },
-    { id: 'coletou',  nome: 'Coletou',               dot: 'bg-amber-500',  cnt: 'bg-amber-500' },
-    { id: 'entregue', nome: 'Entregue',              dot: 'bg-green-500',  cnt: 'bg-green-500' },
-    { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500' },
-    { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400' },
+    // HUB_CLEAN_V1: cor = ponto do cabeçalho; recolhida = vai pra coluna estreita "Recolhidas"
+    { id: 'falha',    nome: 'Falhas',                dot: 'bg-red-500',    cnt: 'bg-red-500',    cor: '#dc2626' },
+    { id: 'aguard',   nome: 'Aguardando entregador', dot: 'bg-purple-600', cnt: 'bg-purple-600', cor: '#770fa8' },
+    { id: 'coleta',   nome: 'Aguardando coleta',     dot: 'bg-blue-500',   cnt: 'bg-blue-500',   cor: '#2563eb' },
+    { id: 'coletou',  nome: 'Coletou',               dot: 'bg-amber-500',  cnt: 'bg-amber-500',  cor: '#d97706' },
+    { id: 'entregue', nome: 'Entregue',              dot: 'bg-green-500',  cnt: 'bg-green-500',  cor: '#16a34a' },
+    { id: 'devol',    nome: 'Devolução',             dot: 'bg-orange-500', cnt: 'bg-orange-500', cor: '#d97706', recolhida: true },
+    { id: 'cancel',   nome: 'Cancelado',             dot: 'bg-gray-400',   cnt: 'bg-gray-400',   cor: '#9ca3af', recolhida: true },
     // EXTRAVIADOS_COL_V1
-    { id: 'extraviado', nome: 'Extraviados',         dot: 'bg-pink-500',   cnt: 'bg-pink-500' },
+    { id: 'extraviado', nome: 'Extraviados',         dot: 'bg-pink-500',   cnt: 'bg-pink-500',   cor: '#991b1b', recolhida: true },
   ];
 
   // Mapeia uma entrega pra uma das 7 colunas, a partir do status canônico
@@ -1696,6 +1693,17 @@
   // REDESPACHO_BTN_V1: onRedespachoRapido e prop nova (ver CardEntrega).
   function CardKanban({ entrega, coluna, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, onChat, unread, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) {
     const e = entrega;
+    // HUB_CLEAN_V1: menu "…" (posição fixa) e trilha de tentativas aberta pelo menu
+    const [menu, setMenu] = useState(null);
+    const [verTent, setVerTent] = useState(false);
+    useEffect(() => {
+      if (!menu) return;
+      const fora = (ev) => { if (ev.target && ev.target.closest && ev.target.closest('[data-hub-menu],[data-hub-menu-btn]')) return; setMenu(null); };
+      const rolou = (ev) => { if (ev.target && ev.target.closest && ev.target.closest('[data-hub-menu]')) return; setMenu(null); };
+      const esc = (ev) => { if (ev.key === 'Escape') setMenu(null); };
+      document.addEventListener('mousedown', fora); window.addEventListener('scroll', rolou, true); document.addEventListener('keydown', esc); window.addEventListener('resize', fora);
+      return () => { document.removeEventListener('mousedown', fora); window.removeEventListener('scroll', rolou, true); document.removeEventListener('keydown', esc); window.removeEventListener('resize', fora); };
+    }, [menu]);
     const ehProprio    = String(e.provider_code || '') === 'proprio'; // MOTO_PROPRIA_FRONT_V1
     const freq = !!(ehFrequente && e.entregador_telefone && ehFrequente(e.entregador_telefone));
     // EXTRAVIADOS_CARD_V1: so da pra extraviar o que ja foi coletado — antes
@@ -1751,9 +1759,9 @@
     // Todos com o mesmo peso (2px): quem diferencia frequente/extraviado e a
     // cor + a faixa no topo, nao a espessura.
     // BORDA_LILAS_V2: card comum com borda lilas VISIVEL.
-    // purple-300 (#ddd6fe) e o equivalente do amber-300 na escala do Tailwind
+    // purple-300 (#e9d5f9) e o equivalente do amber-300 na escala do Tailwind
     // — mesmo nivel de definicao da borda do parceiro frequente, so que roxo.
-    // (o v1 usava purple-200 = #ddd6fe, que e cor de FUNDO: some como borda)
+    // (o v1 usava purple-200 = #f3e8fb, que e cor de FUNDO: some como borda)
     // Todos com o mesmo peso (2px): quem diferencia e a cor + a faixa no topo.
     // BUSCA_SIMULTANEA_LOGO_V1: em corrida simultanea (grupo sem vencedor),
     // mostra os DOIS provedores pulsando no lugar do logo unico.
@@ -1761,167 +1769,162 @@
       && !['DELIVERED','CANCELED','RETURNED','FAILED','FALLBACK_QUEUE'].includes(String(e.status_canonico || '').toUpperCase())
       && !ehProprio;
 
-    return h('div', { className: `bg-white rounded-xl shadow-sm overflow-hidden ${extraviado ? 'border-2 border-pink-300' : (freq ? 'border-2 border-amber-300' : 'border-2 border-purple-300')}` },
-      ehProprio && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold' },
-        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' }))),
-        h('span', null, 'MOTO PRÓPRIA'), /* MP_FAIXA_MAIUSCULA_V4 */
+    // HUB_CLEAN_V1 — card no padrão clean: branco, borda #e5e7eb, sem faixas/gradientes.
+    // Frequente/extraviado viram pílulas no topo; ações raras foram pro menu "…".
+    // Nenhuma ação sumiu: Detalhes, Editar, Cancelar, Desfazer, Reportar, Extraviar,
+    // Copiar (OS/telefone), Tentativas de despacho continuam acessíveis.
+    const temHistorico = !!(tentativas && Array.isArray(tentativas.eventos) &&
+      (tentativas.eventos.length > 1 || tentativas.eventos.some(x => x.tipo === 'canceled')));
+    const nTent = temHistorico ? (tentativas.total_tentativas || tentativas.eventos.filter(x => String(x.tipo).indexOf('dispatch') === 0).length) : 0;
+    const MONO = { fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" };
+    const corInd = !ind ? null : /red/.test(ind.cls) ? ['#dc2626', '#991b1b'] : /amber/.test(ind.cls) ? ['#d97706', '#92400e'] : /green/.test(ind.cls) ? ['#16a34a', '#166534'] : ['#9ca3af', '#6b7280'];
+    const statusTxt = resolverStatus(e).label;
+    const hora = (function () { const t = _tsValido(e.created_at); if (t == null) return '—'; try { return new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch (_) { return '—'; } })();
+    const kmTxt = e.distancia_km != null ? Number(e.distancia_km).toFixed(1).replace('.', ',') + ' km' : null; /* MP_KM_CARD_V4 */
+    const provBadge = (code) => {
+      const c = (code === '99') ? 'noventanove' : code;
+      const st = c === 'uber' ? { background: '#111827', color: '#ffffff', t: 'Uber', title: 'Uber Direct' }
+        : c === 'noventanove' ? { background: '#f3f4f6', color: '#111827', t: '99', title: '99Entrega' }
+        : c === 'proprio' ? { background: '#f0fdf4', color: '#166534', t: 'Moto própria', title: 'Moto própria (Tutts)' }
+        : { background: '#f3f4f6', color: '#6b7280', t: 'sem provedor', title: 'Sem provedor identificado' };
+      return h('span', { key: c || 'na', title: st.title, style: { fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: st.background, color: st.color, whiteSpace: 'nowrap', flexShrink: 0 } }, st.t);
+    };
+    const pilula = (txt, cls, extra) => h(extra && extra.onClick ? 'button' : 'span', Object.assign({ className: `inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cls}` }, extra || {}), txt);
+    const btnBase = 'h-8 px-2 rounded-lg border text-xs inline-flex items-center gap-1.5 whitespace-nowrap ';
+    const temRastreio = !!(e.rastreio_token || e.tracking_url);
+    const nomeProvBusca = prov.tipo === 'uber' ? 'Uber' : prov.tipo === '99' ? '99' : 'provedor';
+
+    // menu "…" — posição fixa (escapa do overflow do quadro)
+    function abrirMenu(ev) {
+      if (menu) { setMenu(null); return; }
+      const r = ev.currentTarget.getBoundingClientRect();
+      const W = 232, H = itensMenu.length * 36 + 10;
+      const left = Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8));
+      let top = r.bottom + 4;
+      if (top + H > window.innerHeight - 8) top = Math.max(8, r.top - H - 4);
+      setMenu({ top, left, W });
+    }
+    const itensMenu = [
+      onVerDetalhes && { l: 'Detalhes', ic: 'eye', fn: () => onVerDetalhes(e) },
+      temHistorico && { l: (verTent ? 'Ocultar' : 'Ver') + ` tentativas de despacho (${nTent})`, ic: 'list', fn: () => setVerTent(v => !v) },
+      podeCancelar && onRedespachar && { l: 'Editar', ic: 'pencil', fn: () => onRedespachar(e) },
+      { l: 'Copiar OS', ic: 'copy', fn: () => copiarTextoOS(e.codigo_os, showToast) },
+      temEntregador && e.entregador_telefone && { l: 'Copiar telefone', ic: 'phone', fn: copiarTel },
+      temEntregador && !ehProprio && onReportar && { l: 'Reportar ocorrência / bloquear', ic: 'alert', fn: () => onReportar(e) },
+      // EXTRAVIADOS_BTN_V1
+      temEntregador && podeExtraviar && onExtraviar && { l: 'Marcar como extraviado', ic: 'package', fn: () => onExtraviar(e) },
+      // EXTRAVIADOS_DESFAZER_V1
+      extraviado && onDesfazerExtravio && { l: 'Desfazer extravio', ic: 'refresh', fn: () => onDesfazerExtravio(e) },
+      (podeCancelar || ehProprio) && onCancelar && { l: 'Cancelar', ic: 'x', perigo: true, fn: () => onCancelar(e) }, /* MP_CANCEL_BTN_V4 */
+    ].filter(Boolean);
+
+    return h('article', { className: 'bg-white border border-gray-200 rounded-[14px] p-3.5 flex flex-col gap-2.5 min-w-0' },
+      // pílulas discretas no topo (frequente / extraviado / tentativas)
+      (extraviado || freq || temHistorico) && h('div', { className: 'flex flex-wrap gap-1.5' },
+        extraviado && pilula([h('span', { key: 'd', className: 'w-1.5 h-1.5 rounded-full bg-red-600' }), 'Extraviado'], 'bg-red-50 text-red-800'),
+        !extraviado && freq && pilula([h('span', { key: 'd', className: 'w-1.5 h-1.5 rounded-full bg-amber-600' }), 'Parceiro frequente'], 'bg-amber-50 text-amber-800'),
+        temHistorico && pilula(`${nTent} tentativas`, 'bg-gray-100 text-gray-600 hover:bg-gray-200', { type: 'button', onClick: () => setVerTent(v => !v), 'aria-expanded': verTent, title: 'Ver tentativas de despacho' }),
       ),
-      // EXTRAVIADOS_FAIXA_V1: faixa no topo, tem prioridade sobre a de frequente
-      extraviado && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-pink-100 text-pink-700 text-[11px] font-bold' },
-        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
-        h('span', null, 'Extraviado'),
+      // linha 1: OS + provedor + hora
+      h('div', { className: 'flex items-center gap-2 min-w-0' },
+        h('button', { type: 'button', className: 'text-[13px] font-bold text-gray-900 whitespace-nowrap', style: MONO, title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os}`),
+        buscandoSimultaneo ? [provBadge('noventanove'), provBadge('uber')] : provBadge(ehProprio ? 'proprio' : prov.code),
+        h('span', { className: 'ml-auto text-[11px] text-gray-400 whitespace-nowrap tabular-nums', title: 'Despachada ' + fmtDT(e.created_at) }, hora, kmTxt && ' · ' + kmTxt),
       ),
-      // faixa "Parceiro frequente" no topo (Opcao A)
-      !extraviado && freq && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-[11px] font-bold' },
-        h('span', null, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-crown' }))),
-        h('span', null, 'Parceiro frequente'),
+      // linha 2: cliente + status
+      h('div', { className: 'flex items-center gap-2 text-xs min-w-0' },
+        h('span', { className: 'text-gray-500 truncate', title: e.cliente_nome_regra || 'Manual / sem regra' }, e.cliente_nome_regra || 'Manual / sem regra'),
+        h('span', { className: 'ml-auto text-[11px] text-gray-400 whitespace-nowrap' }, statusTxt),
       ),
-      // BUSCA_SIMULTANEA_BADGE_V1: faixa no topo enquanto a OS esta em corrida
-      // simultanea (grupo sem vencedor e nao-terminal).
-      buscandoSimultaneo && h('div', { className: 'flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-purple-700 to-violet-500 text-white text-[11px] font-bold' },
-        h('span', null, h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-3.5 h-3.5' }, h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' }))),
-        h('span', { className: 'animate-pulse' }, 'BUSCA SIMULT\u00c2NEA \u2014 buscando entregador'),
+      // faixa de tempo: texto + barra 4px (lógica do indicadorTempo)
+      ind && h('div', { className: 'flex flex-col gap-1' },
+        h('div', { className: 'flex justify-between gap-2 text-[11.5px]' },
+          h('span', { className: 'text-gray-500' }, ind.label),
+          h('span', { className: 'font-semibold tabular-nums text-right', style: { color: corInd[1] } }, ind.texto)),
+        h('div', { className: 'h-1 rounded-full bg-gray-100 overflow-hidden' },
+          h('div', { className: 'h-1 rounded-full', style: { width: (ind.pct != null ? ind.pct : 100) + '%', background: corInd[0] } })),
       ),
-      // cabeçalho
-      h('div', { className: 'flex items-center gap-2 px-3 pt-3 pb-2' },
-        h('span', { className: 'text-sm font-bold text-gray-800 cursor-pointer', title: 'Clique para copiar a OS', onClick: (ev) => { ev.stopPropagation(); copiarTextoOS(e.codigo_os, showToast); } }, `OS ${e.codigo_os} `, h('svg', { className: 'ico oscopy-c', style: { width: 12, height: 12, opacity: 0.45, display: 'inline-block', marginLeft: 3, verticalAlign: 'baseline' }, 'aria-hidden': 'true' }, h('use', { href: '#i-copy' }))),
-        h(Badge, { entrega: e }),
-        h('span', { className: 'ml-auto inline-flex items-center gap-1 flex-shrink-0' },
-          buscandoSimultaneo
-            ? ['uber', 'noventanove'].map(pc =>
-                h('span', { key: pc, className: 'relative inline-flex', title: 'Buscando neste provedor' },
-                  h('span', { className: 'absolute inset-0 rounded-full bg-purple-400 opacity-60 animate-ping' }),
-                  h('span', { className: 'relative inline-flex' }, h(ProviderLogo, { code: pc, size: 15 }))))
-            : h(ProviderLogo, { code: prov.code, size: 15 })),
+      // rota: coleta (anel) e entrega (ponto)
+      h('div', { className: 'grid gap-x-2 gap-y-1 text-xs items-center', style: { gridTemplateColumns: '10px minmax(0,1fr)' } },
+        h('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: 99, border: '2px solid #770fa8', boxSizing: 'border-box' } }),
+        h('span', { className: 'truncate text-gray-700', title: 'Coleta: ' + (e.endereco_coleta || '—') }, e.endereco_coleta || '—'),
+        h('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: 99, background: '#770fa8' } }),
+        h('span', { className: 'truncate text-gray-700', title: 'Entrega: ' + (e.endereco_entrega || '—') }, e.endereco_entrega || '—'),
       ),
-      // cliente
-      h('div', { className: 'px-3 pb-2 text-[11px] text-gray-500 font-semibold border-b border-gray-100' },
-        'Cliente: ', e.cliente_nome_regra || 'Manual / sem regra'),
-      // faixa de tempo — indicador de coleta / atrasado
-      ind && h('div', { className: `flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 ${ind.cls}` },
-        h('span', { className: 'text-[9px] uppercase tracking-wider font-semibold opacity-70' }, ind.label),
-        h('span', { className: 'ml-auto text-[11px] font-bold' }, ind.texto),
+      // extras da entrega: devolução, geocodificado, cliente final, NF
+      (e.return_code || e.entrega_geocodificada || e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap gap-1.5' },
+        e.return_code && pilula(['Devolução ', h('b', { key: 'c', style: MONO }, String(e.return_code))], 'bg-amber-50 text-amber-800 cursor-pointer', { title: 'Código de devolução — clique para copiar', onClick: () => { try { navigator.clipboard.writeText(String(e.return_code)); } catch (_) {} } }),
+        /* MP_GEOCOD_SELO_V1 */
+        e.entrega_geocodificada && pilula('Endereço geocodificado', 'bg-amber-50 text-amber-800', { title: 'O cliente não enviou a localização. O endereço foi geocodificado automaticamente no Google — confira antes de confiar 100%.' }),
+        // CLIENTE_FINAL_NF_CARD
+        e.cliente_final && pilula(e.cliente_final, 'bg-gray-100 text-gray-700', { title: 'Cliente final' }),
+        e.nota_fiscal && pilula('NF ' + e.nota_fiscal, 'bg-gray-100 text-gray-700', { title: 'Nota fiscal' }),
       ),
-      // rota
-      h('div', { className: 'px-3 py-2.5 border-b border-gray-100 space-y-1.5' },
-        h('div', { className: 'flex gap-2' },
-          h('span', { className: 'w-2 h-2 rounded-full bg-amber-500 mt-1 flex-shrink-0' }),
-          h('div', { className: 'min-w-0 flex-1' },
-            h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Coleta'),
-            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_coleta || '—'),
-            CodigoBadge('Código de coleta', e.pickup_code),
-            e.return_code ? CodigoBadgeDevol('Código de devolução', e.return_code) : null,
-          )),
-        h('div', { className: 'flex gap-2' },
-          h('span', { className: 'w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0' }),
-          h('div', { className: 'min-w-0 flex-1' },
-            h('div', { className: 'text-[9px] font-bold uppercase tracking-wider text-gray-400' }, 'Entrega'),
-            h('div', { className: 'text-xs text-gray-800 leading-snug break-words' }, e.endereco_entrega || '—'),
-            /* MP_GEOCOD_SELO_V1: corrida que saiu na central e teve o endereco de entrega geocodificado no Google */
-            e.entrega_geocodificada && h('span', {
-              className: 'inline-flex items-center gap-1 mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700',
-              title: 'O cliente não enviou a localização. O endereço foi geocodificado automaticamente no Google — confira antes de confiar 100%.',
-            },
-              h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 11, height: 11 } }, h('use', { href: '#i-pin' })),
-              'Endereço geocodificado'),
-            // CLIENTE_FINAL_NF_CARD: nome do cliente final + NF (ja tratados no backend).
-            // Clientes so-NF (1165/1178/1188) vem com cliente_final = null.
-            (e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap items-center gap-1 mt-1' },
-              e.cliente_final && h('span', {
-                className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-0.5',
-                title: 'Cliente final',
-              }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-building' })), e.cliente_final),
-              e.nota_fiscal && h('span', {
-                className: 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5',
-                title: 'Nota fiscal',
-              }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-filetext' })), 'NF '), e.nota_fiscal),
-            ),
-          )),
-      ),
-      // financeiro (custo/valor/margem) removido do card — fica so nos detalhes
-      // entregador
+      // entregador / busca / falha
       temEntregador
-        ? h('div', { className: 'flex items-center gap-2 px-3 py-2.5 border-b border-gray-100' },
+        ? h('div', { className: 'flex items-center gap-2.5 pt-2.5 border-t border-gray-100 min-w-0' },
             e.entregador_foto
-              ? h('img', { src: e.entregador_foto, alt: e.entregador_nome, className: 'w-7 h-7 rounded-full object-cover flex-shrink-0 bg-purple-100',
-                  onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'flex'; } })
+              ? h('img', { src: e.entregador_foto, alt: '', className: 'w-[30px] h-[30px] rounded-full object-cover flex-shrink-0 bg-purple-100',
+                  onError: (ev) => { ev.target.style.display = 'none'; const fb = ev.target.nextSibling; if (fb) fb.style.display = 'grid'; } })
               : null,
-            h('div', { className: 'w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[10px] text-purple-700 flex-shrink-0', style: e.entregador_foto ? { display: 'none' } : {} }, iniciaisDoNome(e.entregador_nome)),
-            h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'text-xs font-semibold text-gray-800 truncate' }, e.entregador_nome),
-              h('div', { className: 'text-[10px] text-gray-400 truncate' }, ehProprio ? 'motoboy próprio' : (fmtTelefoneBR(e.entregador_telefone) || '—')),
-            ),
-            h('div', { className: 'flex gap-1 flex-shrink-0' },
-              !ehProprio && onReportar && h('button', { onClick: () => onReportar(e), title: 'Reportar ocorrencia / bloquear', className: 'text-[10px] px-2 py-1 bg-red-50 rounded-md text-red-600 hover:bg-red-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
-              // EXTRAVIADOS_BTN_V1: discreto, mesmo padrao do Reportar.
-              podeExtraviar && onExtraviar && h('button', { onClick: () => onExtraviar(e), title: 'Marcar como extraviado', className: 'text-[10px] px-2 py-1 bg-pink-50 rounded-md text-pink-600 hover:bg-pink-100' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-package' }))),
-              e.entregador_telefone && h('button', { onClick: copiarTel, className: 'text-[10px] px-2 py-1 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200' }, 'Copiar'),
-            ),
+            h('span', { className: 'w-[30px] h-[30px] rounded-full bg-purple-100 text-purple-800 text-[11px] font-bold flex-shrink-0 place-items-center', style: { display: e.entregador_foto ? 'none' : 'grid' } }, iniciaisDoNome(e.entregador_nome)),
+            h('div', { className: 'min-w-0 flex-1' },
+              h('div', { className: 'text-[12.5px] font-semibold text-gray-900 truncate' }, e.entregador_nome),
+              h('div', { className: 'text-[11px] text-gray-500 truncate' }, ehProprio ? 'motoboy próprio' : (fmtTelefoneBR(e.entregador_telefone) || '—'))),
+            e.pickup_code && h('button', { type: 'button', className: 'text-right flex-shrink-0', title: 'Código de coleta — clique para copiar', onClick: () => { try { navigator.clipboard.writeText(String(e.pickup_code)); showToast && showToast('Código copiado', 'success'); } catch (_) {} } },
+              h('div', { className: 'text-[10px] text-gray-400 uppercase', style: { letterSpacing: '.06em' } }, 'Coleta'),
+              h('div', { className: 'text-base font-bold text-gray-900', style: Object.assign({ letterSpacing: '.1em' }, MONO) }, String(e.pickup_code))),
           )
-        : buscandoSimultaneo
-        ? h('div', { className: 'px-3 py-3 border-b border-gray-100' }, /* BUSCA_SIMULTANEA_CARDANIM_V1 */
-            h('div', { className: 'rounded-lg border border-purple-100 bg-purple-50/40 p-2.5' },
-              h('div', { className: 'flex items-center justify-center gap-1.5 mb-2 text-[11px] font-bold text-purple-700' },
-                h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-3 h-3 text-orange-500' }, h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' })),
-                'Buscando entregador \u2014 2 provedores'),
-              h('div', { className: 'flex gap-4 justify-center' },
-                ['uber', 'noventanove'].map(pc =>
-                  h('div', { key: pc, className: 'flex flex-col items-center gap-1' },
-                    h('div', { className: 'relative' },
-                      h('span', { className: 'absolute inset-0 rounded-full bg-purple-400 opacity-60 animate-ping' }),
-                      h('span', { className: 'relative inline-flex' }, h(ProviderLogo, { code: pc, size: 26 }))),
-                    h('div', { className: 'text-[9px] font-semibold text-purple-600 animate-pulse' }, 'chamando\u2026')))),
-              h('div', { className: 'text-center text-[9px] text-gray-400 mt-2' }, 'o primeiro que aceitar leva')))
-        : h('div', { className: `px-3 py-2 border-b border-gray-100 text-[11px] text-center ${(coluna.id === 'falha' || coluna.id === 'cancel') ? 'text-red-600 bg-red-50' : 'text-gray-400 italic'}` },
-            msgSemEntregador()),
-      // rodapé (hora despachada)
-      h('div', { className: 'px-3 pt-2 pb-1 text-[10px] text-gray-400' },
-        h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Despachada "), fmtDT(e.created_at),
-        (e.distancia_km != null) && h('span', { className: 'ml-2 text-gray-500' }, '\u00b7 ' + Number(e.distancia_km).toFixed(1).replace('.', ',') + ' km')), /* MP_KM_CARD_V4 */
-      // 🆕 tentativas de despacho (so quando houve re-despacho/cancelamento)
-      tentativas && h('div', { className: 'px-3' }, h(TentativasDespacho, { dados: tentativas })),
+        : buscandoSimultaneo /* BUSCA_SIMULTANEA_CARDANIM_V1 */
+        ? h('div', { className: 'flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-xs font-medium', style: { background: '#faf7fd', color: '#5d0b85' } },
+            h('span', { className: 'w-[7px] h-[7px] rounded-full flex-shrink-0 animate-pulse', style: { background: '#770fa8', boxShadow: '0 0 0 4px #e9d5f9' } }),
+            'Buscando na 99 e na Uber · o primeiro que aceitar leva')
+        : (coluna.id === 'falha' || coluna.id === 'cancel')
+        ? h('div', { className: 'flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-xs font-medium bg-red-50 text-red-800' },
+            h('span', { className: 'w-[7px] h-[7px] rounded-full bg-red-600 flex-shrink-0' }), msgSemEntregador())
+        : estaProcurando(e)
+        ? h('div', { className: 'flex items-center gap-2 px-2.5 py-2 rounded-[10px] text-xs font-medium', style: { background: '#faf7fd', color: '#5d0b85' } },
+            h('span', { className: 'w-[7px] h-[7px] rounded-full flex-shrink-0', style: { background: '#770fa8', boxShadow: '0 0 0 4px #e9d5f9' } }),
+            `Chamando entregador na ${nomeProvBusca} · aguardando atribuição`)
+        : h('div', { className: 'text-[11.5px] text-gray-500 pt-2.5 border-t border-gray-100' }, msgSemEntregador()),
+      // tentativas de despacho (aberta pelo menu ou pela pílula)
+      temHistorico && verTent && h(TentativasDespacho, { dados: tentativas, aberta: true, onToggle: () => setVerTent(false) }),
       // ações
-      h('div', { className: 'flex gap-1.5 px-2.5 pb-2.5 pt-1' },
-        (eh99 && onChat) && h('button', {
-          onClick: () => onChat(e),
-          title: 'Abrir chat com o motoboy (99)',
-          className: 'relative flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100',
-        }, Icon('message'), ' Chat',
-          (unread > 0) && h('span', { className: 'absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center', style: { background: '#f67602' } }, unread > 9 ? '9+' : String(unread))
-        ),
-        h('button', {
-          onClick: () => ehProprio ? (e.tracking_url && window.open(e.tracking_url, '_blank', 'noopener,noreferrer')) : (onVerTracking && onVerTracking(e)),
-          disabled: !(e.rastreio_token || e.tracking_url),
-          title: ehProprio ? 'Abrir rastreio nativo da Tutts' : null,
-          className: `flex-1 text-[11px] font-semibold py-1.5 rounded-lg border ${(e.rastreio_token || e.tracking_url) ? 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100' : 'border-gray-100 text-gray-300 cursor-not-allowed'}`,
-        }, ehProprio ? 'Abrir rastreio Tutts' : 'Tracking'),
-        h('button', { onClick: () => onVerDetalhes && onVerDetalhes(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Detalhes'),
-        podeCancelar && onRedespachar && h('button', { onClick: () => onRedespachar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50' }, 'Editar'),
-        podeCancelar && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'),
-        ehProprio && onCancelar && h('button', { onClick: () => onCancelar(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50' }, 'Cancelar'), /* MP_CANCEL_BTN_V4 */
-        // EXTRAVIADOS_DESFAZER_V1
-        extraviado && onDesfazerExtravio && h('button', { onClick: () => onDesfazerExtravio(e), className: 'flex-1 text-[11px] font-semibold py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50' }, 'Desfazer'),
-      ),
-      // REDESPACHO_BTN_V1 — linha propria, nome por extenso.
-      // Corrida extraviada nao redespacha: o pacote sumiu, chamar outro
-      // motoboy nao traz ele de volta.
-      !ehProprio && podeRedespachar && !extraviado && onRedespachoRapido && h('div', { className: 'mt-1.5' },
-        h('button', {
-          onClick: () => onRedespachoRapido(e),
+      h('div', { className: 'flex flex-wrap items-center gap-1' },
+        // REDESPACHO_BTN_V1 — corrida extraviada nao redespacha
+        !ehProprio && podeRedespachar && !extraviado && onRedespachoRapido && h('button', { type: 'button', onClick: () => onRedespachoRapido(e),
           title: 'Cancela a corrida atual e chama outro entregador. O atual fica de fora desta OS.',
-          className: 'w-full text-[11px] font-semibold py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100',
-        }, '\u21bb  Redespachar'),
+          className: btnBase + 'font-semibold', style: { borderColor: '#e9d5f9', background: '#faf7fd', color: '#5d0b85' } }, 'Redespachar'),
+        h('button', { type: 'button',
+          onClick: () => ehProprio ? (e.tracking_url && window.open(e.tracking_url, '_blank', 'noopener,noreferrer')) : (onVerTracking && onVerTracking(e)),
+          disabled: !temRastreio, 'aria-label': ehProprio ? 'Abrir rastreio nativo da Tutts' : 'Abrir rastreio',
+          title: temRastreio ? null : 'Rastreio disponível quando o entregador aceitar',
+          className: btnBase + (temRastreio ? 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50' : 'border-gray-100 bg-white text-gray-300 cursor-not-allowed') }, ehProprio ? 'Rastreio Tutts' : 'Rastreio'),
+        (eh99 && onChat) && h('button', { type: 'button', onClick: () => onChat(e), title: 'Abrir chat com o motoboy (99)',
+          className: btnBase + 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50' }, 'Chat',
+          (unread > 0) && h('span', { className: 'min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold grid place-items-center', style: { background: '#f67602', color: '#26093a' }, 'aria-label': `${unread} não lidas` }, unread > 9 ? '9+' : String(unread))),
+        h('button', { type: 'button', 'data-hub-menu-btn': '1', 'aria-label': 'Mais ações', 'aria-haspopup': 'menu', 'aria-expanded': !!menu, onClick: abrirMenu,
+          className: 'ml-auto w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 inline-flex items-center justify-center gap-[3px]' },
+          [0, 1, 2].map(i => h('span', { key: i, 'aria-hidden': 'true', className: 'w-[3.5px] h-[3.5px] rounded-full bg-current' }))),
       ),
+      menu && h('div', { 'data-hub-menu': '1', role: 'menu', 'aria-label': `Ações da OS ${e.codigo_os}`, className: 'bg-white border border-gray-200 rounded-xl py-1',
+        style: { position: 'fixed', top: menu.top, left: menu.left, width: menu.W, zIndex: 60, boxShadow: '0 8px 24px rgba(17,24,39,.08)' } },
+        itensMenu.map((it, i) => h('button', { key: i, type: 'button', role: 'menuitem', autoFocus: i === 0,
+          onClick: () => { setMenu(null); it.fn(); },
+          className: 'w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none ' + (it.perigo ? 'text-red-800' : 'text-gray-700') },
+          h('svg', { className: 'ico', 'aria-hidden': 'true', style: { color: it.perigo ? '#dc2626' : '#9ca3af' } }, h('use', { href: '#i-' + it.ic })), it.l))),
     );
   }
 
-  // Quadro Kanban — agrupa as entregas filtradas nas 7 colunas.
+  // Quadro Kanban — agrupa as entregas filtradas nas colunas.
   // EXTRAVIADOS_KSIG_V2: marcador UNICO deste patch. A v1 usava um texto que o
   // patch do CardKanban ja gravava, entao este aqui pulava como 'ja aplicado'
   // e o KanbanEntregas ficava sem onExtraviar -> ReferenceError.
   function KanbanEntregas({ entregas, tentativas, onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, onChat, unreadMap, ehFrequente, showToast, onExtraviar, onDesfazerExtravio }) { // REDESPACHO_BTN_V1
     // Arrastar pra rolar o quadro na horizontal (click-and-drag estilo carrossel).
     const boardRef = useRef(null);
+    // HUB_CLEAN_V1: colunas recolhidas (Devolução/Cancelado/Extraviados) abertas pelo operador
+    const [abertas, setAbertas] = useState({});
     useEffect(() => {
       const el = boardRef.current;
       if (!el) return;
@@ -1947,29 +1950,42 @@
     const grupos = {};
     KANBAN_COLS.forEach(c => { grupos[c.id] = []; });
     (entregas || []).forEach(e => { (grupos[colunaDoStatus(e)] || grupos.aguard).push(e); });
+    const visiveis = KANBAN_COLS.filter(c => !c.recolhida || abertas[c.id]);
+    const recolhidas = KANBAN_COLS.filter(c => c.recolhida);
+    const ponto = (cor) => h('span', { 'aria-hidden': 'true', className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: cor } });
 
-    return h('div', { ref: boardRef, className: 'flex gap-4 overflow-x-auto pb-3 items-start cursor-grab select-none' },
-      KANBAN_COLS.map(col => {
+    return h('div', { ref: boardRef, className: 'flex gap-3.5 overflow-x-auto pb-2 items-start cursor-grab select-none' },
+      visiveis.map(col => {
         const itens = grupos[col.id] || [];
-        return h('div', { key: col.id, className: 'flex-shrink-0 w-[330px]' },
-          h('div', { className: 'flex items-center gap-2 px-1 pb-3' },
-            h('span', { className: `w-2 h-2 rounded-full ${col.dot}` }),
-            h('span', { className: 'text-[11px] font-bold uppercase tracking-wider text-gray-500' }, col.nome),
-            h('span', { className: `ml-auto text-[11px] font-bold text-white ${col.cnt} rounded-full px-2 py-0.5 min-w-[20px] text-center opacity-90` }, String(itens.length)),
+        return h('section', { key: col.id, 'aria-label': col.nome, className: 'flex-shrink-0 w-[300px] flex flex-col gap-2.5' },
+          h('div', { className: 'flex items-center gap-2 px-1 py-0.5' },
+            ponto(col.cor),
+            h('h2', { className: 'text-[13px] font-semibold text-gray-700' }, col.nome),
+            h('span', { className: 'ml-auto text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5 tabular-nums' }, String(itens.length)),
           ),
-          h('div', { className: 'space-y-3' },
-            itens.length
-              ? itens.map(e => h(CardKanban, {
-                  key: e.id, entrega: e, coluna: col,
-                  tentativas: tentativas && tentativas[e.codigo_os],
-                  onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, ehFrequente, showToast, // REDESPACHO_BTN_V1
-                  onExtraviar, onDesfazerExtravio,
-                  onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
-                }))
-              : h('div', { className: 'text-[11px] text-gray-300 text-center py-4 border border-dashed border-gray-200 rounded-xl' }, 'Nenhuma entrega')
-          )
+          itens.length
+            ? itens.map(e => h(CardKanban, {
+                key: e.id, entrega: e, coluna: col,
+                tentativas: tentativas && tentativas[e.codigo_os],
+                onCancelar, onVerTracking, onVerDetalhes, onRedespachar, onRedespachoRapido, onReportar, ehFrequente, showToast, // REDESPACHO_BTN_V1
+                onExtraviar, onDesfazerExtravio,
+                onChat, unread: (unreadMap && unreadMap[e.codigo_os]) || 0,
+              }))
+            : h('div', { className: 'text-xs text-gray-400 text-center py-6 border border-dashed border-gray-200 rounded-[14px]' }, 'Nenhuma entrega aqui')
         );
-      })
+      }),
+      // coluna estreita "Recolhidas": clicar abre/fecha a coluna no quadro
+      h('div', { className: 'flex-shrink-0 w-[168px] flex flex-col gap-2' },
+        h('div', { className: 'text-[11px] font-semibold uppercase text-gray-400 px-1 py-1', style: { letterSpacing: '.08em' } }, 'Recolhidas'),
+        recolhidas.map(col => {
+          const on = !!abertas[col.id];
+          return h('button', { key: col.id, type: 'button', 'aria-pressed': on, title: on ? 'Recolher coluna' : 'Mostrar coluna no quadro',
+            onClick: () => setAbertas(a => Object.assign({}, a, { [col.id]: !a[col.id] })),
+            className: 'flex items-center gap-2 p-3 rounded-xl border text-left text-[13px] ' + (on ? 'border-purple-200 bg-purple-50 text-purple-800 font-semibold' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50') },
+            ponto(col.cor), col.nome,
+            h('b', { className: 'ml-auto tabular-nums' }, String((grupos[col.id] || []).length)));
+        }),
+      ),
     );
   }
 
@@ -2769,144 +2785,148 @@
       }
     }
 
-    return h('div', { className: (viewMode === 'kanban' ? 'max-w-full' : 'max-w-6xl') + ' mx-auto p-4 space-y-4' },
+    // HUB_CLEAN_V1: cabeçalho + barra de filtros no padrão clean (mesmos estados/handlers)
+    const _ctl = 'h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-700 hover:bg-gray-50 focus:outline-none focus:border-purple-400';
+    return h('div', { className: (viewMode === 'kanban' ? 'max-w-full' : 'max-w-6xl') + ' mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
 
       // ── Header ──
-      h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
+      h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
         h('div', null,
-          h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Entregas'),
-          h('p', { className: 'text-xs text-gray-500 mt-1' },
-            `${resumo.qtd} entrega${resumo.qtd !== 1 ? 's' : ''} · `,
-            'Margem total ',
-            h('span', {
-              className: resumo.total >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold',
-            }, `${resumo.total >= 0 ? '+' : '−'} ${fmtMoney(Math.abs(resumo.total))}`),
-            resumo.negativas > 0 && h('span', { className: 'text-red-600 ml-2' }, `· ${resumo.negativas} no prejuízo`),
+          h('h1', { className: 'text-2xl font-bold text-gray-900', style: { fontFamily: 'Sora, Inter, sans-serif', letterSpacing: '-0.01em' } }, 'Entregas'),
+          h('p', { className: 'text-[13px] text-gray-500 mt-1' },
+            `${resumo.qtd} entrega${resumo.qtd !== 1 ? 's' : ''}${modoData === 'hoje' ? ' hoje' : ''} · margem `,
+            h('b', { className: resumo.total >= 0 ? 'text-green-800' : 'text-red-800', style: { fontWeight: 800 } },
+              `${resumo.total >= 0 ? '+' : '−'}${fmtMoney(Math.abs(resumo.total))}`),
+            resumo.negativas > 0 && ' · ',
+            resumo.negativas > 0 && h('b', { className: 'text-red-800', style: { fontWeight: 800 } }, `${resumo.negativas} no prejuízo`),
           )
         ),
-        h('div', { className: 'flex gap-2 flex-wrap items-center' },
+        h('div', { className: 'flex gap-2 items-center' },
           h('button', {
-            onClick: despacharOS,
-            className: 'px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 font-semibold',
-          }, '+ Despachar OS'),
-          h('button', {
-            onClick: carregar,
-            className: 'px-3 py-1.5 bg-gray-200 rounded-lg text-sm hover:bg-gray-300',
+            type: 'button', onClick: carregar, 'aria-label': 'Atualizar entregas', title: 'Atualizar',
+            className: 'w-10 h-10 rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 grid place-items-center',
           }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-refresh' }))),
+          h('button', {
+            type: 'button', onClick: despacharOS,
+            className: 'h-10 px-4 rounded-[10px] bg-purple-700 text-white text-sm font-semibold hover:bg-purple-800',
+          }, 'Despachar OS'),
         )
       ),
 
       // ── Filtros ──
-      h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap items-center gap-3' },
-        h('input', {
-          type: 'search',
-          value: busca,
-          onChange: e => setBusca(e.target.value),
-          placeholder: 'Buscar OS, NF, cliente, endereço, entregador...',
-          className: 'flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm',
-        }),
-        h('div', { className: 'flex items-center gap-1.5' },
-          // [periodo-v1] Hoje | Personalizado
-          h('div', { className: 'inline-flex rounded-lg overflow-hidden border border-gray-200' },
-            h('button', {
-              onClick: () => { const hj = dataLocalBRT(new Date()); setModoData('hoje'); setDDe(hj); setDAte(hj); aplicarPeriodo(hj, hj); },
-              className: 'px-3 py-2 text-sm font-semibold ' + (modoData === 'hoje' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
-            }, 'Hoje'),
-            h('button', {
-              onClick: () => setModoData('custom'),
-              className: 'px-3 py-2 text-sm font-semibold border-l border-gray-200 ' + (modoData === 'custom' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'),
-            }, 'Personalizado'),
-          ),
-          // [periodo-aplicar-v1] os inputs mexem no RASCUNHO (dDe/dAte). A busca so
-          // dispara quando o usuario define a data FINAL (Ate) ou clica em "Buscar".
-          modoData === 'custom' && h('div', { className: 'inline-flex items-center gap-1.5' },
-            h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'De'),
-            h('input', {
-              type: 'date', value: dDe, max: dAte || undefined,
-              onChange: e => setDDe(e.target.value),   // so rascunho — nao busca
-              className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
-            }),
-            h('span', { className: 'text-xs text-gray-500 font-semibold' }, 'Até'),
-            h('input', {
-              type: 'date', value: dAte, min: dDe || undefined,
-              // definir a data FINAL aplica o periodo e dispara a busca
-              onChange: e => { const v = e.target.value; setDAte(v); if (dDe && v) aplicarPeriodo(dDe, v); },
-              className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700',
-            }),
-            // botao Buscar — util quando so o "De" mudou (aplica dDe/dAte na mao)
-            (dDe !== dataDe || dAte !== dataAte) && h('button', {
-              onClick: () => aplicarPeriodo(dDe, dAte),
-              className: 'px-3 py-2 rounded-lg text-sm font-semibold bg-purple-600 text-white hover:bg-purple-700',
-            }, 'Buscar'),
-          ),
+      h('div', { className: 'bg-white rounded-[14px] border border-gray-200 p-2.5 flex flex-wrap items-center gap-2' },
+        h('label', { className: 'flex items-center gap-2 h-[38px] px-3 border border-gray-200 rounded-[10px] text-gray-400 focus-within:border-purple-400', style: { flex: '1 1 280px', minWidth: 0 } },
+          h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-search' })),
+          h('input', {
+            type: 'search', value: busca, 'aria-label': 'Buscar entrega',
+            onChange: e => setBusca(e.target.value),
+            placeholder: 'Buscar OS, NF, cliente, endereço ou entregador',
+            className: 'flex-1 min-w-0 border-0 outline-none bg-transparent text-[13px] text-gray-900',
+          })),
+        // [periodo-v1] Hoje | Período
+        h('div', { role: 'group', 'aria-label': 'Período', className: 'inline-flex bg-gray-100 rounded-[10px] p-[3px]' },
+          h('button', {
+            type: 'button', 'aria-pressed': modoData === 'hoje',
+            onClick: () => { const hj = dataLocalBRT(new Date()); setModoData('hoje'); setDDe(hj); setDAte(hj); aplicarPeriodo(hj, hj); },
+            className: 'px-3 py-[7px] rounded-lg text-[13px] ' + (modoData === 'hoje' ? 'bg-white text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-800'),
+          }, 'Hoje'),
+          h('button', {
+            type: 'button', 'aria-pressed': modoData === 'custom',
+            onClick: () => setModoData('custom'),
+            className: 'px-3 py-[7px] rounded-lg text-[13px] ' + (modoData === 'custom' ? 'bg-white text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-800'),
+          }, 'Período'),
+        ),
+        // [periodo-aplicar-v1] os inputs mexem no RASCUNHO (dDe/dAte). A busca so
+        // dispara quando o usuario define a data FINAL (Ate) ou clica em "Buscar".
+        modoData === 'custom' && h('div', { className: 'inline-flex items-center gap-1.5' },
+          h('label', { className: 'text-xs text-gray-500', htmlFor: 'hub-ent-de' }, 'De'),
+          h('input', {
+            id: 'hub-ent-de', type: 'date', value: dDe, max: dAte || undefined,
+            onChange: e => setDDe(e.target.value),   // so rascunho — nao busca
+            className: _ctl,
+          }),
+          h('label', { className: 'text-xs text-gray-500', htmlFor: 'hub-ent-ate' }, 'até'),
+          h('input', {
+            id: 'hub-ent-ate', type: 'date', value: dAte, min: dDe || undefined,
+            // definir a data FINAL aplica o periodo e dispara a busca
+            onChange: e => { const v = e.target.value; setDAte(v); if (dDe && v) aplicarPeriodo(dDe, v); },
+            className: _ctl,
+          }),
+          // botao Buscar — util quando so o "De" mudou (aplica dDe/dAte na mao)
+          (dDe !== dataDe || dAte !== dataAte) && h('button', {
+            type: 'button', onClick: () => aplicarPeriodo(dDe, dAte),
+            className: 'h-[38px] px-3 rounded-[10px] text-[13px] font-semibold bg-purple-700 text-white hover:bg-purple-800',
+          }, 'Buscar período'),
         ),
         h('select', {
-          value: filtroStatus,
+          value: filtroStatus, 'aria-label': 'Status',
           onChange: e => setFiltroStatus(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+          className: _ctl,
         },
-          h('option', { value: '' }, 'Todos os status'),
+          h('option', { value: '' }, 'Status: todos'),
           // Só os status canônicos (UPPER) — o backend casa status_canonico
           // OU status_native, e as chaves legadas só duplicariam labels.
           STATUS_FILTRO_OPCOES.map(s => h('option', { key: s, value: s }, STATUS_LABELS[s].label))
         ),
         h('select', {
-          value: filtroMargem,
+          value: filtroProvider, 'aria-label': 'Provedor',
+          onChange: e => setFiltroProvider(e.target.value),
+          className: _ctl,
+          title: 'Filtrar por provedor logístico',
+        },
+          h('option', { value: 'todos' }, 'Provedor: todos'),
+          h('option', { value: 'uber' }, 'Uber'),
+          h('option', { value: 'noventanove' }, '99'),
+        ),
+        h('select', {
+          value: filtroCliente, 'aria-label': 'Cliente',
+          onChange: e => setFiltroCliente(e.target.value),
+          className: _ctl + ' max-w-[220px]',
+          title: 'Filtrar por cliente',
+        },
+          h('option', { value: 'todos' }, 'Cliente: todos'),
+          clientesLista.map(nome => h('option', { key: nome, value: nome }, nome)),
+          h('option', { value: '__sem__' }, 'Manual / sem regra'),
+        ),
+        h('select', {
+          value: filtroMargem, 'aria-label': 'Margem',
           onChange: e => setFiltroMargem(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+          className: _ctl,
         },
           h('option', { value: 'todas' }, 'Margem: todas'),
           h('option', { value: 'positiva' }, 'Margem: positiva'),
           h('option', { value: 'negativa' }, 'Margem: negativa (prejuízo)'),
         ),
         h('select', {
-          value: filtroProvider,
-          onChange: e => setFiltroProvider(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
-          title: 'Filtrar por provedor logístico',
-        },
-          h('option', { value: 'todos' }, 'Todos os provedores'),
-          h('option', { value: 'uber' }, 'Uber'),
-          h('option', { value: 'noventanove' }, '99'),
-        ),
-        h('select', {
-          value: filtroCliente,
-          onChange: e => setFiltroCliente(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
-          title: 'Filtrar por cliente',
-        },
-          h('option', { value: 'todos' }, 'Todos os clientes'),
-          clientesLista.map(nome => h('option', { key: nome, value: nome }, nome)),
-          h('option', { value: '__sem__' }, 'Manual / sem regra'),
-        ),
-        h('select', {
-          value: ordenacao,
+          value: ordenacao, 'aria-label': 'Ordenação',
           onChange: e => setOrdenacao(e.target.value),
-          className: 'px-3 py-2 border border-gray-200 rounded-lg text-sm',
+          className: _ctl,
         },
-          h('option', { value: 'recente' }, 'Mais recente primeiro'),
-          h('option', { value: 'antiga' }, 'Mais antiga primeiro'),
+          h('option', { value: 'recente' }, 'Mais recente'),
+          h('option', { value: 'antiga' }, 'Mais antiga'),
           h('option', { value: 'margem_menor' }, 'Margem: menor primeiro'),
           h('option', { value: 'margem_maior' }, 'Margem: maior primeiro'),
         ),
         // MP_TOGGLE_VER_V1: liga/desliga a exibicao de moto propria no painel.
         h('button', {
+          type: 'button', role: 'switch', 'aria-checked': !!verProprios,
           onClick: () => setVerProprios(v => {
             const nv = !v;
             try { localStorage.setItem('tutts_kanban_ver_proprios', nv ? '1' : '0'); } catch (_) {}
             return nv;
           }),
           title: 'Mostrar ou ocultar as corridas de moto propria no painel',
-          className: `px-3 py-2 rounded-lg text-sm font-semibold border inline-flex items-center gap-1.5 ${verProprios ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-400'}`,
+          className: 'inline-flex items-center gap-2 h-[38px] px-1.5 text-[13px] text-gray-700',
         },
-          h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-bike' })),
-          verProprios ? 'Moto própria: on' : 'Moto própria: off'),
+          h('span', { 'aria-hidden': 'true', className: 'relative inline-block rounded-full transition-colors', style: { width: 32, height: 18, background: verProprios ? '#770fa8' : '#d1d5db' } },
+            h('span', { className: 'absolute rounded-full bg-white transition-all', style: { top: 2, left: verProprios ? 16 : 2, width: 14, height: 14 } })),
+          'Moto própria'),
       ),
 
       // ── Lista de cards ──
       (loading && entregas.length === 0)
         ? h('div', { className: 'text-center py-12' },
-            h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
+            h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' })
           )
         : viewMode === 'kanban'
           ? h(KanbanEntregas, {
@@ -2978,15 +2998,12 @@
         className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget) setFalhaAlerta(null); }
       },
-        h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden' },
-          // cabecalho vermelho
-          h('div', { className: 'bg-red-50 border-b border-red-100 px-5 py-4 flex items-center gap-3' },
-            h('div', { className: 'w-9 h-9 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0' },
-              h('span', { className: 'text-white text-lg font-bold' }, '!')
-            ),
+        h('div', { role: 'alertdialog', 'aria-modal': 'true', className: 'bg-white rounded-[14px] border border-gray-200 w-full max-w-md overflow-hidden' },
+          // cabecalho limpo — HUB_CLEAN_V1
+          h('div', { className: 'border-b border-gray-100 px-5 pt-5 pb-3 flex items-center gap-3' },
             h('div', null,
-              h('p', { className: 'text-[15px] font-bold text-red-800' }, 'Nova falha na entrega'),
-              h('p', { className: 'text-[12px] text-red-500' }, 'Uma corrida precisa de atenção')
+              h('p', { className: 'inline-flex items-center gap-2 text-[15px] font-semibold text-red-800' }, h('span', { className: 'w-2 h-2 rounded-full bg-red-600' }), 'Nova falha na entrega'),
+              h('p', { className: 'text-[13px] text-gray-500 mt-0.5' }, 'Uma corrida precisa de atenção')
             )
           ),
           // corpo
@@ -3031,11 +3048,11 @@
           h('div', { className: 'px-5 pb-5 flex gap-2' },
             h('button', {
               onClick: () => { const alvo = falhaAlerta.entrega; setFalhaAlerta(null); abrirDetalhes(alvo); },
-              className: 'flex-1 text-[13px] font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg py-2.5 hover:bg-gray-50'
+              className: 'flex-1 h-10 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-[10px] hover:bg-gray-50'
             }, 'Ver detalhes'),
             h('button', {
               onClick: () => confirmarFalhaCiente(falhaAlerta.entrega),
-              className: 'flex-1 text-[13px] font-semibold text-white bg-red-600 rounded-lg py-2.5 hover:bg-red-700'
+              className: 'flex-1 h-10 text-sm font-semibold text-white bg-purple-700 rounded-[10px] hover:bg-purple-800'
             }, h('span', { className: 'inline-flex items-center gap-1.5' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-check' })), 'Confirmar ciente'))
           ),
           falhaAlerta.restantes > 0 && h('p', {
@@ -3070,13 +3087,12 @@
         className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget && !cancelarModal.enviando) setCancelarModal(null); },
       },
-        h('div', { className: 'bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden' },
-          h('div', { className: 'bg-gradient-to-r from-red-600 to-red-700 px-5 py-4 flex items-center gap-3' },
-            h('span', { className: 'w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white flex-shrink-0' },
-              h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-alert' }))),
+        h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'hub-cancel-tit', className: 'bg-white rounded-[14px] border border-gray-200 max-w-md w-full overflow-hidden' },
+          /* HUB_CLEAN_V1: cabeçalho branco (sem gradiente) */
+          h('div', { className: 'px-5 pt-5 pb-3 border-b border-gray-100' },
             h('div', { className: 'min-w-0' },
-              h('h3', { className: 'text-base font-bold text-white leading-tight' }, `Cancelar OS ${cancelarModal.entrega.codigo_os || ''}`),
-              h('p', { className: 'text-[11px] text-red-100 mt-0.5' }, cancelarModal.entrega.is_moto_propria ? 'Confirmar cancelamento da moto própria?' : 'Como tu quer cancelar essa corrida?')), /* MP_MODAL_SUB_V5 */
+              h('h3', { id: 'hub-cancel-tit', className: 'text-base font-semibold text-gray-900 leading-tight' }, `Cancelar OS ${cancelarModal.entrega.codigo_os || ''}`),
+              h('p', { className: 'text-[13px] text-gray-500 mt-1' }, cancelarModal.entrega.is_moto_propria ? 'Confirmar cancelamento da moto própria?' : 'Como tu quer cancelar essa corrida?')), /* MP_MODAL_SUB_V5 */
           ),
           h('div', { className: 'p-5 space-y-3' },
             /* CANCEL_MOTIVO_V3: motivo obrigatorio — fica registrado no historico (aba Cancelamentos). */
@@ -3113,29 +3129,29 @@
             cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'proprio'),
-              className: 'w-full text-center bg-red-600 text-white rounded-xl p-3 hover:bg-red-700 disabled:opacity-50 font-semibold text-sm',
+              className: 'w-full text-center bg-white border border-red-200 text-red-800 rounded-[10px] h-10 hover:bg-red-50 disabled:opacity-50 font-semibold text-sm',
             }, cancelarModal.enviando ? 'Removendo...' : 'Cancelar no painel'), /* MP_BTN_CENTRAL_V1 */
             !cancelarModal.entrega.is_moto_propria && cancelarModal.jaColetou && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800' },
               h('b', null, 'Atencao: '), 'o entregador da 99 ja coletou. A 99 nao cancela depois da coleta -- a corrida segue viva e cobrada. Aqui so marca como cancelada no painel.'),
             !cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'central'),
-              className: 'w-full text-left border border-gray-200 rounded-xl p-3 hover:bg-gray-50 disabled:opacity-50',
+              className: 'w-full text-left border border-gray-200 rounded-[10px] p-3 hover:bg-gray-50 disabled:opacity-50',
             },
               h('div', { className: 'text-sm font-semibold text-gray-800' }, 'Cancelar so na central'),
               h('div', { className: 'text-[12px] text-gray-500 mt-0.5' }, 'A OS volta a ficar aberta na Mapp pra um motoboy pegar. O Hub nao re-aciona.')),
             !cancelarModal.entrega.is_moto_propria && h('button', {
               type: 'button', disabled: cancelarModal.enviando,
               onClick: () => executarCancelamento(cancelarModal.entrega, 'ambos'),
-              className: 'w-full text-left border border-red-200 rounded-xl p-3 hover:bg-red-50 disabled:opacity-50',
+              className: 'w-full text-left border border-red-200 rounded-[10px] p-3 hover:bg-red-50 disabled:opacity-50',
             },
-              h('div', { className: 'text-sm font-semibold text-red-700' }, 'Cancelar na central e na Mapp'),
+              h('div', { className: 'text-sm font-semibold text-red-800' }, 'Cancelar na central e na Mapp'),
               h('div', { className: 'text-[12px] text-gray-500 mt-0.5' }, 'Cancela tambem na Tutts -- a OS some de vez (nao fica na Mapp).')),
             h('div', { className: 'flex justify-end pt-1' },
               h('button', {
                 type: 'button', disabled: cancelarModal.enviando,
                 onClick: () => setCancelarModal(null),
-                className: 'text-[13px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50',
+                className: 'h-10 px-4 text-sm text-gray-700 bg-white border border-gray-200 rounded-[10px] hover:bg-gray-50 disabled:opacity-50',
               }, cancelarModal.enviando ? 'Cancelando...' : 'Voltar')),
           ),
         )),
@@ -3144,15 +3160,13 @@
         className: 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget && !redespachandoRapido) setRedespachoRapidoModal(null); },
       },
-        h('div', { className: 'bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden' },
-          h('div', { className: 'bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-4 flex items-center gap-3' },
-            h('span', {
-              className: 'w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-lg flex-shrink-0',
-            }, '\u21bb'),
+        h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'hub-rr-tit', className: 'bg-white rounded-[14px] border border-gray-200 max-w-md w-full overflow-hidden' },
+          /* HUB_CLEAN_V1: cabeçalho branco (sem gradiente) */
+          h('div', { className: 'px-5 pt-5 pb-3 border-b border-gray-100 flex items-start gap-3' },
             h('div', { className: 'min-w-0' },
-              h('h3', { className: 'text-base font-bold text-white leading-tight' },
+              h('h3', { id: 'hub-rr-tit', className: 'text-base font-semibold text-gray-900 leading-tight' },
                 `Redespachar OS ${_rrEnt.codigo_os}`),
-              h('p', { className: 'text-[11px] text-purple-100 mt-0.5' },
+              h('p', { className: 'text-[13px] text-gray-500 mt-1' },
                 'Chama outro entregador. Da pra trocar de provedor.'), // RDA_QUICK_SUB_V2
             ),
             _rrProv && h('span', {
@@ -3193,7 +3207,7 @@
                       return h('button', { key: o.value || 'mesmo', type: 'button', onClick: function () { setRedespachoRapidoModal(Object.assign({}, redespachoRapidoModal, { providerCode: o.value })); setProvDropAberto(false); }, className: 'w-full flex items-center gap-2.5 px-3 py-2 text-left ' + (o.value === _cur ? 'bg-purple-50' : 'hover:bg-gray-50') },
                         _logo(o.code),
                         h('span', { className: 'flex-1 text-sm ' + (o.value === _cur ? 'text-purple-700 font-medium' : 'text-gray-700') }, o.label),
-                        o.value === _cur && h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: { width: 16, height: 16, color: '#7c3aed', flexShrink: 0 }, 'aria-hidden': 'true' }, h('path', { d: 'M20 6 9 17l-5-5' }))
+                        o.value === _cur && h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: { width: 16, height: 16, color: '#770fa8', flexShrink: 0 }, 'aria-hidden': 'true' }, h('path', { d: 'M20 6 9 17l-5-5' }))
                       );
                     })
                   )
@@ -3203,7 +3217,7 @@
             // Quem sai. E o unico efeito irreversivel do botao, entao vem primeiro
             // e com cara e nome — nao como texto solto no meio de um paragrafo.
             _rrEnt.entregador_nome && h('div', {
-              className: 'flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3',
+              className: 'flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-[10px] p-3',
             },
               _rrEnt.entregador_foto
                 ? h('img', {
@@ -3227,34 +3241,36 @@
                 ['', 'A mesma OS é despachada de novo — endereço e valor não mudam'],
                 ['', 'Se a nova cotação vier mais cara, o custo sobe'],
               ].map((it, i) => h('li', { key: i, className: 'flex gap-2 items-start' },
-                h('span', { className: 'flex-shrink-0' }, it[0]),
+                h('span', { className: 'flex-shrink-0 w-1.5 h-1.5 rounded-full bg-purple-700 mt-[7px]', 'aria-hidden': 'true' }),
                 h('span', null, it[1]),
               )),
             ),
 
             // Custo atual: a decisao fica com numero na frente, nao com sensacao.
             _rrEnt.valor_provider != null && h('div', {
-              className: 'flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2',
+              className: 'flex items-center justify-between bg-gray-50 border border-gray-200 rounded-[10px] px-3 py-2',
             },
-              h('span', { className: 'text-[10px] font-bold text-amber-800 uppercase tracking-wide' }, 'Custo atual'),
-              h('span', { className: 'text-sm font-bold text-amber-900' }, fmtMoney(parseFloat(_rrEnt.valor_provider))),
+              h('span', { className: 'text-xs text-gray-500' }, 'Custo atual'),
+              h('span', { className: 'text-sm font-bold text-gray-900 tabular-nums' }, fmtMoney(parseFloat(_rrEnt.valor_provider))),
             ),
 
-            redespachoRapidoModal.erro && h('div', {
-              className: 'bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700',
+            redespachoRapidoModal.erro && h('div', { role: 'alert',
+              className: 'bg-red-50 border border-red-200 rounded-[10px] px-3 py-2 text-xs text-red-800',
             }, redespachoRapidoModal.erro),
           ),
 
-          h('div', { className: 'border-t border-gray-200 bg-gray-50 px-5 py-3 flex justify-end gap-2' },
+          h('div', { className: 'border-t border-gray-100 px-5 py-3 flex justify-end gap-2' },
             h('button', {
+              type: 'button',
               onClick: () => setRedespachoRapidoModal(null),
               disabled: redespachandoRapido,
-              className: 'px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50',
-            }, 'Cancelar'),
+              className: 'h-10 px-4 bg-white border border-gray-200 rounded-[10px] text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50',
+            }, 'Voltar'),
             h('button', {
+              type: 'button',
               onClick: confirmarRedespachoRapido,
               disabled: redespachandoRapido,
-              className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 disabled:opacity-60',
+              className: 'h-10 px-4 bg-purple-700 text-white rounded-[10px] text-sm font-semibold hover:bg-purple-800 disabled:opacity-60',
             }, redespachandoRapido ? 'Redespachando…' : 'Sim, redespachar'),
           ),
         )
@@ -3265,9 +3281,9 @@
         className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget) fecharRedespacho(); },
       },
-        h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-lg w-full' },
-          h('div', { className: 'border-b border-gray-200 px-5 py-4' },
-            h('h3', { className: 'text-lg font-bold text-gray-800' },
+        h('div', { role: 'dialog', 'aria-modal': 'true', className: 'bg-white rounded-[14px] border border-gray-200 max-w-lg w-full' }, /* HUB_CLEAN_V1 */
+          h('div', { className: 'border-b border-gray-100 px-5 pt-5 pb-3' },
+            h('h3', { className: 'text-base font-semibold text-gray-900' },
               `Redespachar OS ${redespachoAberto.entrega.codigo_os}`),
             h('p', { className: 'text-xs text-gray-500 mt-1' },
               'A entrega atual será cancelada e a OS será redespachada.'),
@@ -3314,14 +3330,16 @@
           ),
           h('div', { className: 'border-t border-gray-200 px-5 py-3 flex justify-end gap-2' },
             h('button', {
+              type: 'button',
               onClick: fecharRedespacho,
               disabled: redespachando,
-              className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50',
-            }, 'Cancelar'),
+              className: 'h-10 px-4 bg-white border border-gray-200 rounded-[10px] text-sm text-gray-700 hover:bg-gray-50',
+            }, 'Voltar'),
             h('button', {
+              type: 'button',
               onClick: confirmarRedespacho,
               disabled: redespachando,
-              className: 'px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-50',
+              className: 'h-10 px-4 bg-purple-700 text-white rounded-[10px] text-sm font-semibold hover:bg-purple-800 disabled:opacity-50',
             }, redespachando ? 'Redespachando…' : 'Confirmar redespacho'),
           ),
         )
@@ -3332,9 +3350,9 @@
         className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
         onClick: (ev) => { if (ev.target === ev.currentTarget) setPedirCodigoModal(null); },
       },
-        h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-sm w-full' },
-          h('div', { className: 'border-b border-gray-200 px-5 py-4' },
-            h('h3', { className: 'text-base font-bold text-gray-800' }, 'Despachar OS'),
+        h('div', { role: 'dialog', 'aria-modal': 'true', className: 'bg-white rounded-[14px] border border-gray-200 max-w-sm w-full' }, /* HUB_CLEAN_V1 */
+          h('div', { className: 'border-b border-gray-100 px-5 pt-5 pb-3' },
+            h('h3', { className: 'text-base font-semibold text-gray-900' }, 'Despachar OS'),
             h('p', { className: 'text-xs text-gray-500 mt-0.5' }, 'Digite o código da OS pra cotar')
           ),
           h('div', { className: 'p-5' },
@@ -3348,18 +3366,20 @@
                 if (e.key === 'Escape') setPedirCodigoModal(null);
               },
               placeholder: 'ex: 1129725',
-              className: 'w-full px-4 py-3 border-2 border-purple-200 rounded-lg text-base font-mono focus:border-purple-500 focus:outline-none',
+              'aria-label': 'Código da OS', className: 'w-full h-11 px-3 border border-gray-200 rounded-[10px] text-base font-mono focus:border-purple-700 focus:outline-none',
             }),
           ),
-          h('div', { className: 'border-t border-gray-200 px-5 py-3 bg-gray-50 flex justify-end gap-2 rounded-b-xl' },
+          h('div', { className: 'border-t border-gray-100 px-5 py-3 flex justify-end gap-2' },
             h('button', {
+              type: 'button',
               onClick: () => setPedirCodigoModal(null),
-              className: 'px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-white',
-            }, 'Cancelar'),
+              className: 'h-10 px-4 bg-white border border-gray-200 rounded-[10px] text-sm text-gray-700 hover:bg-gray-50',
+            }, 'Voltar'),
             h('button', {
+              type: 'button',
               onClick: confirmarCodigoEcotar,
-              className: 'px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700',
-            }, 'Cotar →'),
+              className: 'h-10 px-4 bg-purple-700 text-white rounded-[10px] text-sm font-semibold hover:bg-purple-800',
+            }, 'Cotar OS'),
           )
         )
       ),
@@ -3480,7 +3500,7 @@
           className: 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4',
           onClick: (ev) => { if (ev.target === ev.currentTarget) fecharCotacaoModal(); },
         },
-          h('div', { className: 'bg-white rounded-xl shadow-2xl max-w-2xl w-full' },
+          h('div', { role: 'dialog', 'aria-modal': 'true', className: 'bg-white rounded-[14px] border border-gray-200 max-w-2xl w-full' },
 
             // Header
             h('div', { className: 'border-b border-gray-200 px-5 py-4 flex items-start justify-between' },
@@ -3505,7 +3525,7 @@
             // Body
             (m.state === 'cotando')
               ? h('div', { className: 'p-12 text-center' },
-                  h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-3' }),
+                  h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full mx-auto mb-3' }),
                   h('p', { className: 'text-sm text-gray-500' }, 'Cotando nos provedores ativos…'))
 
             : (m.state === 'erro')
@@ -3619,7 +3639,7 @@
 
                 // Nota da estratégia
                 h('div', { className: 'mt-4 bg-gray-50 rounded-lg px-3 py-2 text-[11px] text-gray-600 flex items-center gap-1.5' },
-                  h('span', null, 'ℹ️'),
+                  h('svg', { className: 'ico', 'aria-hidden': 'true', style: { color: '#9ca3af' } }, h('use', { href: '#i-info' })), /* HUB_CLEAN_V1 */
                   h('span', null, 'Recomendado = maior margem para o veículo selecionado. O despacho automático do worker usa a estratégia configurada.')),
 
                 // Rodapé
@@ -3628,7 +3648,7 @@
                   (blocos.length > 1 && !expirou) && h('button', {
                     onClick: despacharSimultaneo,
                     title: 'Dispara nos provedores ao mesmo tempo; o primeiro que aceitar leva, os outros s\u00e3o cancelados',
-                    className: 'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-purple-700 to-violet-500 hover:brightness-110 shadow-sm',
+                    className: 'inline-flex items-center gap-1.5 h-10 px-4 rounded-[10px] text-sm font-semibold text-white bg-purple-700 hover:bg-purple-800',
                   },
                     h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-4 h-4' },
                       h('path', { d: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' })),
@@ -3813,7 +3833,7 @@
         // Body
         loading
           ? h('div', { className: 'p-12 text-center' },
-              h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' })
+              h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' })
             )
           : h('div', { className: 'p-5 space-y-5' },
 
@@ -4079,7 +4099,7 @@
 
                   // Loading
                   loadingComprovante && h('div', { className: 'flex items-center justify-center gap-2 py-6 text-gray-500 text-sm' },
-                    h('div', { className: 'w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' }),
+                    h('div', { className: 'w-5 h-5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin' }),
                     'Buscando comprovante na Uber...'
                   ),
 
@@ -4404,7 +4424,7 @@
 
     if (!cfg) {
       return h('div', { className: 'bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-center' },
-        h('div', { className: 'animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full' })
+        h('div', { className: 'animate-spin w-5 h-5 border-2 border-purple-700 border-t-transparent rounded-full' })
       );
     }
 
@@ -4718,7 +4738,7 @@
     }
 
     if (loading) return h('div', { className: 'flex items-center justify-center py-16' },
-      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' })
+      h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full' })
     );
 
     const up = (k, v) => setEditando(e => ({ ...e, [k]: v }));
@@ -4743,7 +4763,7 @@
       // Lista de regras
       // REGRAS_CARDS_V1: lista de regras em cards (era tabela inline)
       regras.length === 0
-        ? h('div', { className: 'bg-white rounded-xl border shadow-sm p-12 text-center text-gray-400' },
+        ? h('div', { className: 'bg-white rounded-[14px] border border-gray-200 p-12 text-center text-gray-400' },
             h('div', { className: 'text-4xl mb-2' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-list' }))),
             h('p', { className: 'font-semibold' }, 'Nenhuma regra cadastrada'),
             h('p', { className: 'text-xs mt-1' }, 'Enquanto nao houver regras, o worker nao vai despachar nada automaticamente.'))
@@ -4754,15 +4774,15 @@
               var temRetorno = (r.preco_retorno_valor != null && r.preco_retorno_valor !== '') || (r.preco_retorno_percentual != null && r.preco_retorno_percentual !== '');
               var provs = (r.providers_preferidos && r.providers_preferidos.length > 0) ? r.providers_preferidos : ['todos'];
               var provNome = function (p) { return (p === '99' || p === 'noventanove') ? '99' : (p === 'uber' ? 'Uber' : (p === 'tutts' ? 'Tutts' : p)); };
-              return h('div', { key: r.id, className: 'bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col ' + (r.ativo ? '' : 'opacity-70') },
-                h('div', { className: 'h-1 ' + (r.ativo ? 'bg-gradient-to-r from-purple-600 to-purple-400' : 'bg-gray-300') }),
+              return h('div', { key: r.id, className: 'bg-white rounded-[14px] border border-gray-200 overflow-hidden flex flex-col ' + (r.ativo ? '' : 'opacity-70') },
+                h('div', { className: 'h-1 ' + (r.ativo ? 'bg-purple-700' : 'bg-gray-300') /* HUB_CLEAN_V1 */ }),
                 h('div', { className: 'px-4 pt-3.5 pb-2 flex items-start gap-2' },
                   h('div', { className: 'font-bold text-[15px] text-gray-800 leading-tight flex-1' }, r.cliente_nome),
                   h('button', { onClick: function () { toggleAtivo(r); }, className: 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ' + (r.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400') }, r.ativo ? 'Ativa' : 'Inativa')
                 ),
                 h('div', { className: 'px-4 pb-3.5 flex flex-col gap-2 flex-1' },
                   h('div', { className: 'flex gap-2 text-[12.5px] text-gray-600 items-start' },
-                    h('svg', { className: 'ico flex-shrink-0', style: { width: 15, height: 15, color: '#7c3aed', marginTop: 1 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })),
+                    h('svg', { className: 'ico flex-shrink-0', style: { width: 15, height: 15, color: '#770fa8', marginTop: 1 }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })),
                     h('span', { className: 'leading-snug' }, r.trecho_endereco || r.cliente_nome)),
                   r.cliente_identificador && h('div', { className: 'text-[11px] text-gray-400 pl-6 -mt-1' }, '+ alt: ' + r.cliente_identificador),
                   h('div', { className: 'flex gap-2 text-[12.5px] items-center' },
@@ -4894,7 +4914,7 @@
                   placeholder: 'ex: 6ea2ef73...',
                   className: 'w-full px-3 py-2 border border-purple-200 rounded-lg text-sm bg-white',
                 }),
-                h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'So pra OS que vem direto da Mapp (sem portal). O token vem da env TUTTS_CANCEL_TOKEN.')),
+                h('p', { className: 'text-[10px] text-purple-700 mt-1' }, 'So pra OS que vem direto da Mapp (sem portal). O token vem da env TUTTS_CANCEL_TOKEN.')),
               h('div', { className: 'text-xs font-semibold text-purple-800 uppercase mb-3' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-ruler" })), "Tabela de preço por distância — override deste cliente")),
               h('div', { className: 'grid grid-cols-3 gap-3 mb-2' },
                 h('div', null,
@@ -4934,19 +4954,19 @@
                 return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
                   h('div', { className: 'flex items-center justify-between mb-2' },
                     h('span', { className: 'text-xs font-semibold text-purple-800 uppercase' }, 'Faixas por km (opcional)'),
-                    h('span', { className: 'text-[10px] text-purple-500' }, 'vazio = usa "por km adicional" acima')),
+                    h('span', { className: 'text-[10px] text-purple-700' }, 'vazio = usa "por km adicional" acima')),
                   faixas.map(function (f, i) {
                     return h('div', { key: i, className: 'flex items-center gap-1.5 mb-1.5' },
-                      h('span', { className: 'text-[11px] text-purple-500' }, 'a partir de'),
+                      h('span', { className: 'text-[11px] text-purple-700' }, 'a partir de'),
                       h('input', { type: 'number', step: '1', min: '0', value: f.inicio_km == null ? '' : f.inicio_km, onChange: function (e) { upFaixa(i, 'inicio_km', e.target.value); }, placeholder: 'km', className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
                       h('span', { className: 'text-[11px] text-purple-600' }, 'km'),
-                      h('span', { className: 'text-[11px] text-purple-500', style: { marginLeft: 'auto' } }, 'R$'),
+                      h('span', { className: 'text-[11px] text-purple-700', style: { marginLeft: 'auto' } }, 'R$'),
                       h('input', { type: 'number', step: '0.1', min: '0', value: f.valor_km == null ? '' : f.valor_km, onChange: function (e) { upFaixa(i, 'valor_km', e.target.value); }, className: 'w-16 px-1.5 py-1 border border-purple-200 rounded text-sm bg-white text-center' }),
                       h('span', { className: 'text-[11px] text-purple-600' }, '/km'),
                       h('button', { type: 'button', onClick: function () { rmFaixa(i); }, className: 'p-1 rounded hover:bg-purple-100', title: 'remover' }, h('svg', { className: 'ico', style: { width: 14, height: 14, color: '#991b1b' }, 'aria-hidden': 'true' }, h('use', { href: '#i-trash' }))));
                   }),
                   h('button', { type: 'button', onClick: addFaixa, className: 'mt-1 text-xs font-semibold text-purple-700 border border-purple-300 rounded-lg px-3 py-1.5 hover:bg-purple-50' }, h('svg', { className: 'ico', style: { width: 13, height: 13, display: 'inline', verticalAlign: '-2px', marginRight: 3 }, 'aria-hidden': 'true' }, h('use', { href: '#i-plus' })), 'Adicionar faixa'),
-                  h('p', { className: 'text-[10px] text-purple-500 mt-1' }, 'Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima.'));
+                  h('p', { className: 'text-[10px] text-purple-700 mt-1' }, 'Cada faixa vale do km informado em diante, ate a proxima comecar. Ex: a partir de 3 = 1,50; de 7 = 1,80. Distancia quebrada sobe pro km de cima.'));
               })(),
 
               // [preco-retorno-v1] Adicional cobrado quando a corrida vira devolução.
@@ -4966,7 +4986,7 @@
                   return h('label', { key: val, className: 'flex items-center gap-1.5 cursor-pointer text-xs text-purple-700' },
                     h('input', { type: 'radio', checked: modo === val,
                       onChange: function () { up('preco_retorno_modo', val); },
-                      style: { accentColor: '#7c3aed' } }),
+                      style: { accentColor: '#770fa8' } }),
                     rotulo);
                 };
                 return h('div', { className: 'mt-3 pt-3 border-t border-purple-200' },
@@ -5408,7 +5428,7 @@
         )),
       ),
       loading
-        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' }))
         : lista.length === 0
           ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum entregador bloqueado')
           : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
@@ -5512,7 +5532,7 @@
       ),
       h('div', { className: 'text-xs text-gray-400' }, 'Regra: entregador com mais de 3 pedidos concluidos. Ordenado por volume.'),
       loading
-        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto' }))
+        ? h('div', { className: 'py-16 text-center' }, h('div', { className: 'animate-spin w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full mx-auto' }))
         : lista.length === 0
           ? h('div', { className: 'bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400' }, 'Nenhum motoboy frequente ainda')
           : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
@@ -5783,9 +5803,9 @@
       h('path', { d: 'M42 50 l-6 -2 l0 6 z', fill: '#f67602' }),
     );
     const iconeCanal = (canal) => /* MP_ICONE_CANAL_V1 */ (canal === 'Moto própria' || canal === 'proprio')
-      ? h('span', { title: 'Moto própria', style: { width: '20px', height: '20px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#7c3aed' } }, h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 13, height: 13 } }, h('use', { href: '#i-bike' })))
+      ? h('span', { title: 'Moto própria', style: { width: '20px', height: '20px', background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#770fa8' } }, h('svg', { className: 'ico', 'aria-hidden': 'true', style: { width: 13, height: 13 } }, h('use', { href: '#i-bike' })))
       : canal === 'tutts'
-      ? h('span', { title: 'Tutts', style: { width: '20px', height: '20px', background: '#7c3aed', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } },
+      ? h('span', { title: 'Tutts', style: { width: '20px', height: '20px', background: '#770fa8', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } },
           h('img', { src: ICONE_TUTTS_JPG, style: { width: '100%', height: '100%', objectFit: 'contain', padding: '2px' } }))
       : h('span', { title: 'Hub', style: { width: '20px', height: '20px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 } }, hubSvg());
     const statusBadge = (s) => {
@@ -5807,7 +5827,7 @@
       return h('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${cor}` }, s || '—');
     };
     const trajeto = (r) => h('div', null,
-      h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-500 leading-4' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-circle' }))), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
+      h('div', { className: 'flex items-start gap-1.5' }, h('span', { className: 'text-purple-700 leading-4' }, h('svg', { className: 'ico', 'aria-hidden': 'true' }, h('use', { href: '#i-circle' }))), h('span', { className: 'text-gray-600' }, r.endereco_coleta || '—')),
       h('div', { className: 'flex items-start gap-1.5 mt-1' }, h('span', { className: 'text-orange-500 leading-4' }, ''), h('span', { className: 'text-gray-700' }, r.endereco_entrega || '—')),
     );
 
@@ -6003,7 +6023,7 @@
               h('div', { className: 'flex items-center gap-2 flex-wrap' },
                 h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
                   pills.map(([p, lbl]) => h('button', { key: p, onClick: () => setPeriodo(p),
-                    className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500'}` }, lbl)),
+                    className: `px-3 py-1.5 text-xs font-semibold rounded-md ${periodo === p ? 'bg-white text-purple-800' : 'text-gray-500'}` }, lbl)),
                 ),
                 periodo === 'custom' && h('div', { className: 'flex items-center gap-1' },
                   h('input', { type: 'date', value: deCustom, onChange: e => setDeCustom(e.target.value), className: 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700' }),
@@ -6073,7 +6093,7 @@
             : 'Os totais somam apenas Entregue e Devolvido. Cancelado / Nao entregue / Pendente aparecem na tabela mas nao entram no faturamento.'),
         card('KM total', km(totaisView.km)),
         h('div', { className: 'rounded-xl border p-3 bg-purple-50 border-purple-200' },
-          h('div', { className: 'text-[11px] text-purple-500' }, 'Valor do Hub'),
+          h('div', { className: 'text-[11px] text-purple-700' }, 'Valor do Hub'),
           h('div', { className: 'text-2xl font-bold text-purple-700' }, 'R$ ' + brl(totaisView.valor)),
         ),
         h('div', { className: 'rounded-xl border p-3 bg-white border-gray-200' },
@@ -6109,7 +6129,7 @@
 
       loading
         ? h('div', { className: 'flex items-center justify-center py-16' },
-            h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full' }))
+            h('div', { className: 'animate-spin w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full' }))
         : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-hidden' },
             h('div', { className: 'overflow-x-auto' },
               h('table', { className: 'w-full text-xs' },

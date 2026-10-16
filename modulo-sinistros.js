@@ -105,11 +105,11 @@
       className: p.destaque
         ? 'rounded-xl p-4 text-white flex flex-col gap-1'
         : 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-1',
-      style: p.destaque ? { background: 'linear-gradient(135deg,#7c3aed,#7633ea)' } : null
+      style: p.destaque ? { background: 'linear-gradient(135deg,#b43aed,#b033ea)' } : null
     },
       h('div', {
         className: 'text-[10.5px] font-extrabold uppercase tracking-wider',
-        style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' }
+        style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' }
       }, p.rotulo),
       h('div', {
         className: 'text-[22px] font-extrabold tabular-nums leading-tight',
@@ -117,7 +117,7 @@
       }, p.valor),
       p.auxiliar ? h('div', {
         className: 'text-[11px]',
-        style: { color: p.destaque ? '#ddd6fe' : '#9ca3af' }
+        style: { color: p.destaque ? '#f3e8fb' : '#9ca3af' }
       }, p.auxiliar) : null
     );
   }

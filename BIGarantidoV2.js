@@ -67,7 +67,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
   const corAvatar = (cod) => {
     const seed = String(cod || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     const gradients = [
-      "linear-gradient(135deg, #724ab7, #376cdd)",
+      "linear-gradient(135deg, #944ab7, #376cdd)",
       "linear-gradient(135deg, #ba7e17, #EF9F27)",
       "linear-gradient(135deg, #1d9e4c, #5dca85)",
       "linear-gradient(135deg, #be1818, #ec4848)",
@@ -121,7 +121,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
 
         // KPIs inline
         garantidoStats && e("div", { style: { display: "flex", gap: 22, alignItems: "center" } },
-          kpiInline(e, "Negociado", fmtBRLshort(garantidoStats.total_negociado || 0), "#7c3aed"),
+          kpiInline(e, "Negociado", fmtBRLshort(garantidoStats.total_negociado || 0), "#770fa8"),
           kpiInline(e, "Produção", fmtBRLshort(garantidoStats.total_produzido || 0), "#111827"),
           kpiInline(e, "A pagar", fmtBRLshort(garantidoStats.total_complemento || 0), "#d97706"),
           (garantidoStats.valor_nao_rodou > 0) && kpiInline(e, "Não rodou", fmtBRLshort(garantidoStats.valor_nao_rodou || 0), "#9CA3AF"),
@@ -186,7 +186,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
           onClick: carregarGarantido,
           disabled: garantidoLoading,
           style: {
-            background: "#7c3aed", color: "white",
+            background: "#770fa8", color: "white",
             border: "none", borderRadius: 6,
             padding: "6px 14px", fontSize: 12, fontWeight: 500,
             cursor: garantidoLoading ? "wait" : "pointer",
@@ -255,7 +255,7 @@ window.BIGarantidoV2 = function BIGarantidoV2(props) {
       e("div", {
         style: {
           display: "inline-block", width: 36, height: 36,
-          border: "3px solid #E5E7EB", borderTopColor: "#7c3aed",
+          border: "3px solid #E5E7EB", borderTopColor: "#770fa8",
           borderRadius: "50%", animation: "tuttsSpin 0.8s linear infinite",
           marginBottom: 10,
         }
@@ -546,13 +546,13 @@ function renderTabelaAnalise({ e, garantidoData, garantidoStatusMap, garantidoSt
                 e("td", { colSpan: 6, style: { padding: "10px 12px" } },
                   e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, flexWrap: "wrap", gap: 8 } },
                     e("span", {
-                      style: { fontWeight: 600, color: "#7c3aed", display: "inline-flex", alignItems: "center", gap: 8 }
+                      style: { fontWeight: 600, color: "#770fa8", display: "inline-flex", alignItems: "center", gap: 8 }
                     },
                       e("span", {
                         style: {
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
                           minWidth: 26, padding: "0 7px", height: 22,
-                          background: "#7c3aed", color: "white",
+                          background: "#770fa8", color: "white",
                           borderRadius: 5, fontSize: 11, fontWeight: 700,
                         }
                       }, clienteKey),
@@ -650,7 +650,7 @@ function chipFiltro(e, opt, ativoAtual, onClick) {
   const ativo = (ativoAtual || "todos") === opt.id;
   // Cores por tipo
   const styles = {
-    default: { bg: ativo ? "#7c3aed" : "#F3F4F6", color: ativo ? "white" : "#374151" },
+    default: { bg: ativo ? "#770fa8" : "#F3F4F6", color: ativo ? "white" : "#374151" },
     red: { bg: ativo ? "#DC2626" : "#fef2f2", color: ativo ? "white" : "#991B1B" },
     green: { bg: ativo ? "#166534" : "#bbf7d0", color: ativo ? "white" : "#166534" },
     gray: { bg: ativo ? "#111827" : "#F3F4F6", color: ativo ? "white" : "#6b7280" },

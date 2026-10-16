@@ -51,7 +51,7 @@
 
   // ═══ KPI Card ═══
   function KpiCard(p) {
-    return h('div', { className: 'bg-white rounded-xl shadow-sm p-4', style: { borderLeft: '4px solid ' + (p.cor || '#7c3aed') } },
+    return h('div', { className: 'bg-white rounded-xl shadow-sm p-4', style: { borderLeft: '4px solid ' + (p.cor || '#770fa8') } },
       h('div', { className: 'text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2' }, p.label),
       h('div', { className: 'text-2xl font-extrabold text-gray-900' }, p.valor),
       p.sub ? h('div', { className: 'text-xs mt-1 font-semibold', style: { color: p.subCor || '#9ca3af' } }, p.sub) : null
@@ -105,7 +105,7 @@
               h('td', { className: 'px-3 py-2 text-right' }, ppV(r.var_pp))
             );
           }),
-          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.04)' } },
+          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(119,15,168,.04)' } },
             h('td', { className: 'px-3 py-2 font-extrabold text-purple-700' }, 'TOTAL'),
             TD(fN(tot.e), { fontWeight: 800 }), TD(fN(tot.np), { fontWeight: 700, color: '#16a34a' }),
             TD(fP(tot.e > 0 ? r2(tot.np/tot.e*100) : 0), { fontWeight: 800, color: tot.np/tot.e >= .85 ? '#16a34a' : '#d97706' }),
@@ -185,10 +185,10 @@
             );
           }),
           // Linha TOTAL
-          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.04)' } },
+          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(119,15,168,.04)' } },
             h('td', { className: 'px-3 py-2 font-extrabold text-purple-700' }, 'TOTAL'),
             totSemanas.map(function(v, j) {
-              return h('td', { key: j, className: 'px-3 py-2 text-right font-bold', style: { color: v != null ? '#7c3aed' : '#d1d5db' } }, v != null ? fmt(v) : '\u2014');
+              return h('td', { key: j, className: 'px-3 py-2 text-right font-bold', style: { color: v != null ? '#770fa8' : '#d1d5db' } }, v != null ? fmt(v) : '\u2014');
             }),
             h('td', { className: 'px-3 py-2 text-right font-extrabold', style: { color: corV(totVar) } }, totVar != null ? setaV(totVar) + '%' : '\u2014')
           )
@@ -329,7 +329,7 @@
               h('td', { className: 'px-3 py-2 text-right font-bold', style: { color: r.saldo >= 0 ? '#16a34a' : '#dc2626' } }, fR(r.saldo))
             );
           }),
-          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.04)' } },
+          h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(119,15,168,.04)' } },
             h('td', { className: 'px-3 py-2 font-extrabold text-purple-700' }, 'TOTAL'),
             h('td', { className: 'px-3 py-2 text-right font-bold' }, fR(tot.n)),
             h('td', { className: 'px-3 py-2 text-right font-bold' }, fR(tot.p)),
@@ -590,8 +590,8 @@
     if (lista.length === 0) return h('div', null, header, h('div', { className: 'bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm' }, 'Nenhum cliente com dinamica aplicada nesta semana'));
 
     var kpi = function(lab, val, destaque, tip) {
-      return h('div', { className: destaque ? 'rounded-xl p-4 text-white' : 'bg-white rounded-xl border border-gray-200 p-4', title: tip || null, style: destaque ? { background: 'linear-gradient(135deg,#7c3aed,#7633ea)' } : null },
-        h('div', { className: 'text-[11px] font-bold uppercase', style: { color: destaque ? '#ddd6fe' : '#9ca3af' } }, lab),
+      return h('div', { className: destaque ? 'rounded-xl p-4 text-white' : 'bg-white rounded-xl border border-gray-200 p-4', title: tip || null, style: destaque ? { background: 'linear-gradient(135deg,#b43aed,#b033ea)' } : null },
+        h('div', { className: 'text-[11px] font-bold uppercase', style: { color: destaque ? '#f3e8fb' : '#9ca3af' } }, lab),
         h('div', { className: 'text-2xl font-extrabold', style: { color: destaque ? '#fff' : '#111827' } }, val));
     };
     var th = function(txt, right) { return h('th', { className: (right ? 'text-right' : 'text-left') + ' py-2.5 px-3 text-[11px] font-bold uppercase text-gray-400' }, txt); };
@@ -780,7 +780,7 @@
 
     // ── Tabela 1: resumo ──
     var linhasPct = [
-      { rot: 'Qtd. ativos',   sub: '% sobre os cadastros da semana', bloco: dt.ativos,   cor: '#7c3aed' },
+      { rot: 'Qtd. ativos',   sub: '% sobre os cadastros da semana', bloco: dt.ativos,   cor: '#770fa8' },
       { rot: 'Qtd. alocados', sub: '% sobre os cadastros da semana', bloco: dt.alocados, cor: '#2563eb' }
     ];
 
@@ -789,7 +789,7 @@
         cabecalho('Indicador'),
         h('tbody', null,
           // Cadastros — base de todos os percentuais
-          h('tr', { key: 'cad', className: 'border-b border-gray-100', style: { background: 'rgba(124,58,237,.05)' } },
+          h('tr', { key: 'cad', className: 'border-b border-gray-100', style: { background: 'rgba(119,15,168,.05)' } },
             h('td', { className: 'px-3 py-3 font-extrabold text-purple-700' }, 'Qtd. cadastros novos'),
             dt.cadastros.valores.map(function(v, j) {
               return h('td', { key: j, className: 'px-3 py-3 text-right text-[17px] font-extrabold text-purple-700 tabular-nums ' + (j === ult ? 'bg-purple-50' : '') }, fN(v));
@@ -863,7 +863,7 @@
                     celVar(variacao(o.valores), false)
                   );
                 }),
-                h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(124,58,237,.05)' } },
+                h('tr', { className: 'border-t-2 border-purple-500', style: { background: 'rgba(119,15,168,.05)' } },
                   h('td', { className: 'px-3 py-2.5 font-extrabold text-purple-700' }, 'TOTAL'),
                   bloco.valores.map(function(v, j) {
                     return h('td', { key: j, className: 'px-3 py-2.5 text-right ' + (j === ult ? 'bg-purple-50' : '') },
@@ -881,7 +881,7 @@
     return h('div', null,
       header,
       tabelaResumo,
-      tabelaOperador('Ativacoes por operador', 'Percentual sobre os cadastros novos da mesma semana', dt.ativos, '#7c3aed'),
+      tabelaOperador('Ativacoes por operador', 'Percentual sobre os cadastros novos da mesma semana', dt.ativos, '#770fa8'),
       tabelaOperador('Alocacoes por operador', 'Percentual sobre os cadastros novos da mesma semana', dt.alocados, '#2563eb'),
       h('div', { className: 'mt-2 text-[11.5px] text-gray-400 leading-relaxed' },
         'Cadastros: leads com data de cadastro na semana. Ativos: leads com status ativo e data de ativacao na semana, atribuidos a quem ativou. ',
@@ -978,12 +978,12 @@
           // KPIs
           h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), id: 'sec-kpis', titulo: 'KPIs da Semana', sub: d.semana ? d.semana.label : '' }),
           h('div', { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3' },
-            h(KpiCard, { label: 'Entregas', valor: fN(k.entregas), cor: '#7c3aed', sub: k.var_entregas != null ? setaV(k.var_entregas) + '%' : null, subCor: corV(k.var_entregas) }),
+            h(KpiCard, { label: 'Entregas', valor: fN(k.entregas), cor: '#770fa8', sub: k.var_entregas != null ? setaV(k.var_entregas) + '%' : null, subCor: corV(k.var_entregas) }),
             h(KpiCard, { label: 'No Prazo', valor: fP(k.prazo_pct), cor: k.prazo_pct >= 85 ? '#16a34a' : '#d97706', sub: k.var_prazo_pp != null ? (k.var_prazo_pp >= 0 ? '+' : '') + fD(k.var_prazo_pp) + ' pp' : null, subCor: corV(k.var_prazo_pp) }),
             h(KpiCard, { label: 'Faturamento', valor: fR(k.faturamento), cor: '#2563eb', sub: k.var_faturamento != null ? setaV(k.var_faturamento) + '%' : null, subCor: corV(k.var_faturamento) }),
             h(KpiCard, { label: 'Ticket Médio', valor: fR(k.ticket_medio), cor: '#1e40af' }),
-            h(KpiCard, { label: 'OS', valor: fN(k.os_count), cor: '#7c3aed' }),
-            h(KpiCard, { label: 'Entregadores', valor: fN(k.entregadores), cor: '#7c3aed' })
+            h(KpiCard, { label: 'OS', valor: fN(k.os_count), cor: '#c084e6' }),
+            h(KpiCard, { label: 'Entregadores', valor: fN(k.entregadores), cor: '#c084e6' })
           ),
           // SLA 767
           h(Secao, { icone: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-building" })), id: 'sec-767', titulo: 'SLA Comollati (767)', sub: 'SLA fixo de 2 horas' }),

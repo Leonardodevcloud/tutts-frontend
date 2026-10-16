@@ -151,7 +151,7 @@
       if (!pBox) return;
       var interval = setInterval(function() {
         var p = document.createElement('div');
-        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#ddd6fe' : '#7c3aed') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
+        p.style.cssText = 'position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;left:' + (25 + Math.random() * 90) + 'px;top:' + (25 + Math.random() * 90) + 'px;background:' + (Math.random() > 0.5 ? '#c084e6' : '#770fa8') + ';animation:rxParticle ' + (1.5 + Math.random()) + 's ease forwards';
         pBox.appendChild(p);
         setTimeout(function() { p.remove(); }, 2500);
       }, 300);
@@ -170,37 +170,37 @@
         // Orbe com anéis
         h('div', { style: { position: 'relative', width: '140px', height: '140px' } },
           // Anel 1
-          h('div', { style: { position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7c3aed', borderRightColor: '#7c3aed', animation: 'rxSpin 2s linear infinite' } }),
+          h('div', { style: { position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#770fa8', borderRightColor: '#770fa8', animation: 'rxSpin 2s linear infinite' } }),
           // Anel 2
-          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#ddd6fe', borderLeftColor: '#ddd6fe', animation: 'rxSpinR 2.8s linear infinite' } }),
+          h('div', { style: { position: 'absolute', inset: '12px', borderRadius: '50%', border: '2px solid transparent', borderBottomColor: '#c084e6', borderLeftColor: '#c084e6', animation: 'rxSpinR 2.8s linear infinite' } }),
           // Anel 3
-          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#ddd6fe', borderRightColor: '#ddd6fe', animation: 'rxSpin 3.6s linear infinite' } }),
+          h('div', { style: { position: 'absolute', inset: '24px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#e9d5f9', borderRightColor: '#e9d5f9', animation: 'rxSpin 3.6s linear infinite' } }),
           // Core
-          h('div', { style: { position: 'absolute', inset: '34px', borderRadius: '50%', background: 'rgba(124,58,237,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+          h('div', { style: { position: 'absolute', inset: '34px', borderRadius: '50%', background: 'rgba(119,15,168,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
             h('span', { style: { fontSize: '28px', animation: 'rxFloat 2s ease-in-out infinite' } }, (window.navIconEl ? window.navIconEl(msg.icon) : msg.icon))
           ),
           // Scan line
-          h('div', { style: { position: 'absolute', left: '34px', right: '34px', height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, #7c3aed, transparent)', animation: 'rxScan 2s ease-in-out infinite', borderRadius: '1px' } }),
+          h('div', { style: { position: 'absolute', left: '34px', right: '34px', height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, #b43aed, transparent)', animation: 'rxScan 2s ease-in-out infinite', borderRadius: '1px' } }),
           // Particles container
           h('div', { className: 'rx-particles', style: { position: 'absolute', inset: '0', pointerEvents: 'none' } })
         ),
 
         // Dots
         h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
-          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease infinite' } }),
-          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .2s infinite' } }),
-          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .4s infinite' } }),
-          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', animation: 'rxDot 1.2s ease .6s infinite' } })
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#770fa8', animation: 'rxDot 1.2s ease infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#770fa8', animation: 'rxDot 1.2s ease .2s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#770fa8', animation: 'rxDot 1.2s ease .4s infinite' } }),
+          h('div', { style: { width: '6px', height: '6px', borderRadius: '50%', background: '#770fa8', animation: 'rxDot 1.2s ease .6s infinite' } })
         ),
 
         // Mensagem principal
         h('div', {
-          style: { fontSize: '14px', fontWeight: '500', color: '#7c3aed', textAlign: 'center', minHeight: '22px', transition: 'opacity 0.3s ease, transform 0.3s ease', opacity: fadeOut ? 0 : 1, transform: fadeOut ? 'translateY(-6px)' : 'translateY(0)' }
+          style: { fontSize: '14px', fontWeight: '500', color: '#770fa8', textAlign: 'center', minHeight: '22px', transition: 'opacity 0.3s ease, transform 0.3s ease', opacity: fadeOut ? 0 : 1, transform: fadeOut ? 'translateY(-6px)' : 'translateY(0)' }
         }, msg.t),
 
         // Barra de progresso
-        h('div', { style: { width: '220px', height: '3px', background: 'rgba(124,58,237,0.1)', borderRadius: '2px', overflow: 'hidden' } },
-          h('div', { style: { height: '100%', background: '#7c3aed', borderRadius: '2px', animation: 'rxBar 20s ease-out forwards' } })
+        h('div', { style: { width: '220px', height: '3px', background: 'rgba(119,15,168,0.1)', borderRadius: '2px', overflow: 'hidden' } },
+          h('div', { style: { height: '100%', background: '#770fa8', borderRadius: '2px', animation: 'rxBar 20s ease-out forwards' } })
         ),
 
         // Sub texto
@@ -1080,7 +1080,7 @@
         return h('div', { key: i, className: 'bg-white rounded-xl border border-gray-200 p-4 flex gap-4 items-start' },
           h('span', { className: 'text-2xl' }, int.tipo === 'visita' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })) : int.tipo === 'reuniao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-users" })) : int.tipo === 'ligacao' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })) : int.tipo === 'whatsapp' ? h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-message" })) : int.tipo === 'pos_venda' ? h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })) : h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-filetext" }))),
           h('div', { className: 'flex-1 min-w-0' },
-            h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#7c3aed' })),
+            h('div', { className: 'flex items-center gap-2 mb-1' }, h('h4', { className: 'font-semibold text-gray-900' }, int.titulo), h(Badge, { text: int.tipo, cor: '#c084e6' })),
             h('p', { className: 'text-sm text-gray-600 mb-1' }, int.nome_fantasia || 'Cliente ' + int.cod_cliente),
             int.descricao && h('p', { className: 'text-sm text-gray-500 line-clamp-2' }, int.descricao),
             int.resultado && h('p', { className: 'text-xs text-emerald-600 mt-1' }, '' + int.resultado),
@@ -1174,7 +1174,7 @@
       .replace(/(https?:\/\/[^\s<]+)/g, function(url) {
         var decoded = url.replace(/&amp;/g, '&');
         if (decoded.indexOf('mapa-calor') !== -1) {
-          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6928d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">Abrir Mapa de Calor Interativo</a>';
+          return '<a href="' + decoded + '" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#b43aed,#a128d9);color:white;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;margin:8px 0">Abrir Mapa de Calor Interativo</a>';
         }
         return '<a href="' + decoded + '" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">' + decoded.substring(0, 60) + '...</a>';
       })
@@ -1191,11 +1191,11 @@
 
   var STATUS_BADGE = {
     sent:           { label: 'Enviado',   bg: '#E5E7EB', fg: '#374151' },
-    scheduled:      { label: 'Agendado',  bg: '#f5f3ff', fg: '#5B21B6' },
+    scheduled:      { label: 'Agendado',  bg: '#faf7fd', fg: '#770fa8' },
     delivered:      { label: 'Entregue',  bg: '#eff6ff', fg: '#1e40af' },
     delivery_delayed:{ label: 'Atrasado', bg: '#fffbeb', fg: '#92400e' },
     opened:         { label: 'Aberto',    bg: '#f0fdf4', fg: '#166534' },
-    clicked:        { label: 'Clicado',   bg: '#f5f3ff', fg: '#4c1d95' },
+    clicked:        { label: 'Clicado',   bg: '#faf7fd', fg: '#5d0b85' },
     bounced:        { label: 'Bounce',    bg: '#fef2f2', fg: '#991b1b' },
     failed:         { label: 'Falhou',    bg: '#fef2f2', fg: '#991b1b' },
     complained:     { label: 'Spam',      bg: '#fef2f2', fg: '#991b1b' },
@@ -1207,12 +1207,12 @@
     'email.delivered':         '#16a34a',
     'email.delivery_delayed':  '#d97706',
     'email.opened':            '#2563eb',
-    'email.clicked':           '#7c3aed',
+    'email.clicked':           '#770fa8',
     'email.bounced':           '#dc2626',
     'email.failed':            '#dc2626',
     'email.complained':        '#dc2626',
     'email.suppressed':        '#dc2626',
-    'email.scheduled':         '#7c3aed',
+    'email.scheduled':         '#c084e6',
   };
 
   var EVENTO_LABEL = {
@@ -1456,7 +1456,7 @@
               h('button', {
                 onClick: function() { setHtmlModal(detalhe.email.id); },
                 className: 'px-3 py-1.5 text-xs font-medium text-white rounded-lg hover:opacity-90 shrink-0',
-                style: { background: '#7c3aed' }
+                style: { background: '#770fa8' }
               }, 'Ver relatório ↗')
             ),
 
@@ -1482,7 +1482,7 @@
                     key: i,
                     className: 'text-[10px] px-2 py-1 bg-purple-50 text-purple-900 rounded font-mono'
                   },
-                    h('span', { style: { color: '#7c3aed' } }, t.name + ':'),
+                    h('span', { style: { color: '#c084e6' } }, t.name + ':'),
                     t.value
                   );
                 })

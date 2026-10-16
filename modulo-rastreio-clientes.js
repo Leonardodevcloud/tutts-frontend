@@ -1,7 +1,7 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
 // modulo-rastreio-clientes.js — v1.0
-// 2 abas: Histórico + Configuração. Tema #7c3aed. Padrão Tutts.
+// 2 abas: Histórico + Configuração. Tema #770fa8. Padrão Tutts.
 (function () {
   const h = React.createElement;
 
@@ -100,8 +100,8 @@
     }, [tab, filtros]);
 
     const card = { background:'#fff', borderRadius:8, padding:16, boxShadow:'0 1px 3px rgba(0,0,0,.08)' };
-    const btnPrim = { background:'#7c3aed', color:'#fff', padding:'8px 16px', border:'none', borderRadius:6, cursor:'pointer', fontWeight:600 };
-    const tabBtn = (active) => ({ padding:'12px 24px', border:'none', background:active?'#7c3aed':'transparent', color:active?'#fff':'#6b7280', cursor:'pointer', fontWeight:600, borderRadius:'6px 6px 0 0' });
+    const btnPrim = { background:'#770fa8', color:'#fff', padding:'8px 16px', border:'none', borderRadius:6, cursor:'pointer', fontWeight:600 };
+    const tabBtn = (active) => ({ padding:'12px 24px', border:'none', background:active?'#770fa8':'transparent', color:active?'#fff':'#6b7280', cursor:'pointer', fontWeight:600, borderRadius:'6px 6px 0 0' });
 
     return h('div', { className: 'min-h-screen bg-gray-50 flex flex-col' },
       HeaderCompacto && h(HeaderCompacto, {
@@ -153,7 +153,7 @@
                 h('td',{style:{padding:10,fontSize:12,color:'#6b7280'}},r.criado_em ? new Date(r.criado_em).toLocaleString('pt-BR',{timeZone:'America/Bahia'}) : '-'),
                 h('td',{style:{padding:10,fontSize:12,color:'#6b7280'}},r.enviado_em ? new Date(r.enviado_em).toLocaleString('pt-BR',{timeZone:'America/Bahia'}) : '-'),
                 h('td',{style:{padding:10}},
-                  r.status==='falhou' && h('button',{onClick:()=>reenviar(r.id),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Reenviar'),
+                  r.status==='falhou' && h('button',{onClick:()=>reenviar(r.id),style:{background:'#770fa8',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Reenviar'),
                   r.erro && h('span',{title:r.erro,style:{marginLeft:8,cursor:'help'}},h("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, h("use", { href: "#i-alert" })))
                 )
               );
@@ -190,7 +190,7 @@
                 c.enviar_grupo===false && h('span',{title:'Envio no grupo desligado — a captura continua',style:{marginLeft:6,background:'#fffbeb',color:'#92400e',padding:'3px 8px',borderRadius:12,fontSize:11,fontWeight:600}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-bell" })), "sem grupo"))
               ),
               h('td',{style:{padding:10}},
-                h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#7c3aed',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
+                h('button',{onClick:()=>setEditing({...c,termos_filtro_str:(c.termos_filtro||[]).join('\n')}),style:{background:'#770fa8',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12,marginRight:6}},'Editar'),
                 h('button',{onClick:()=>removerCliente(c.id),style:{background:'#dc2626',color:'#fff',border:'none',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:12}},'Remover')
               )
             )))
@@ -239,8 +239,8 @@
             ),
 
             // ── Rastreio direto ao cliente ──
-            h('div',{style:{background:'#f5f3ff',border:'1px solid #ddd6fe',borderRadius:8,padding:12,marginBottom:12}},
-              h('p',{style:{fontWeight:700,fontSize:13,color:'#7c3aed',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Rastreio direto ao cliente")),
+            h('div',{style:{background:'#faf7fd',border:'1px solid #f3e8fb',borderRadius:8,padding:12,marginBottom:12}},
+              h('p',{style:{fontWeight:700,fontSize:13,color:'#770fa8',margin:'0 0 8px 0'}},h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-phone" })), "Rastreio direto ao cliente")),
               h('p',{style:{fontSize:12,color:'#6b7280',margin:'0 0 10px 0'}},
                 'Quando ativo, o sistema extrai o telefone da nota fiscal e envia o link de rastreio diretamente ao cliente.'
               ),

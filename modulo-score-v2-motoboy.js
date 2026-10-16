@@ -103,7 +103,7 @@
 
         return h('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
             h('div', { className: 'flex items-center gap-2 mb-2' },
-                h("svg", { className: "ico", style: { width: 18, height: 18, color: '#7c3aed' }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })),
+                h("svg", { className: "ico", style: { width: 18, height: 18, color: '#770fa8' }, "aria-hidden": "true" }, h("use", { href: "#i-wallet" })),
                 h('h3', { className: 'text-sm font-bold text-gray-900' }, 'Meus saques grátis')
             ),
             aLiberar && h(BlocoALiberar, { a: aLiberar }),
@@ -385,7 +385,7 @@
                 })
             ),
             // SCORE_AVISO_AVALIACAO_V1: quando acontece a próxima avaliação
-            proxNome && h('div', { className: 'flex items-center gap-2', style: { marginTop: 16, padding: '10px 12px', borderRadius: 12, background: '#f5f3ff', color: '#5b21b6' } },
+            proxNome && h('div', { className: 'flex items-center gap-2', style: { marginTop: 16, padding: '10px 12px', borderRadius: 12, background: '#faf7fd', color: '#770fa8' } },
                 h('svg', { className: 'ico', style: { width: 16, height: 16, flexShrink: 0 }, 'aria-hidden': 'true' }, h('use', { href: '#i-calendar' })),
                 h('span', { className: 'text-xs', style: { lineHeight: 1.4 } }, 'Próxima avaliação: ', h('b', null, aval.rotuloCurto), ' · ' + aval.falta)
             )
@@ -485,7 +485,7 @@
                 nivel.bonus.map((b, i) => h('div', { key: i, className: 'text-gray-600 ml-2' }, b)),
                 _extras.length > 0 && h('div', { className: 'font-semibold text-gray-700 mt-2' }, 'Bônus extras:'),
                 _extras.map((bx, i) => h('div', { key: 'ex' + i, className: 'flex items-start gap-2 ml-2 mt-1' },
-                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#16a34a' : bx.tipo === 'item' ? '#2563eb' : bx.tipo === 'sorteio' ? '#f67602' : '#7c3aed' } }, _icoExtra(bx.tipo)),
+                    h('span', { className: 'flex-shrink-0 mt-0.5', style: { color: bx.tipo === 'valor' ? '#16a34a' : bx.tipo === 'item' ? '#2563eb' : bx.tipo === 'sorteio' ? '#f67602' : '#770fa8' } }, _icoExtra(bx.tipo)),
                     h('div', null,
                         h('div', { className: 'text-gray-800 font-semibold text-[11px]' },
                             (bx.titulo || '') + (((bx.tipo === 'valor' || bx.tipo === 'sorteio') && bx.valor != null) ? (' — R$ ' + (parseFloat(bx.valor) || 0).toFixed(2).replace('.', ',')) : '')),
@@ -1035,7 +1035,7 @@
                             h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, fmtReq(r.atual, r.sufixo || '') + ' / ' + fmtReq(r.meta, r.sufixo || ''))
                         ),
                         h('div', { className: 'w-full bg-gray-200 rounded-full h-1.5' },
-                            h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, parseFloat(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#7c3aed' } })
+                            h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, parseFloat(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#c084e6' } })
                         )
                     )))
                 ),

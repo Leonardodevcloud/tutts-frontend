@@ -296,7 +296,7 @@
         if (tem(2) && Number(b.sorteio_valor_n2) > 0) sorteioTxt.push('Prata ' + fmtBRL(b.sorteio_valor_n2));
         if (tem(3) && Number(b.sorteio_valor_n3) > 0) sorteioTxt.push('Ouro ' + fmtBRL(b.sorteio_valor_n3));
 
-        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4 ' + (p.ativo ? '' : 'opacity-60'), style: { borderLeft: '3px solid ' + (p.ativo ? '#7c3aed' : '#d1d5db') } },
+        return h('div', { className: 'bg-white rounded-2xl border border-gray-200 p-4 ' + (p.ativo ? '' : 'opacity-60'), style: { borderLeft: '3px solid ' + (p.ativo ? '#770fa8' : '#d1d5db') } },
             h('div', { className: 'flex items-start justify-between gap-2 mb-3' },
                 h('div', { className: 'min-w-0' },
                     h('div', { className: 'flex items-center gap-2 flex-wrap' },
@@ -680,7 +680,7 @@
                                 h('div', { className: 'flex justify-between text-xs mb-1' },
                                     h('span', { className: 'flex items-center gap-1.5 ' + (r.ok ? 'text-emerald-700' : 'text-gray-700') }, ico(r.ok ? 'check' : 'target', 13), r.label),
                                     h('span', { className: 'text-gray-500', style: { fontVariantNumeric: 'tabular-nums' } }, (r.sufixo ? fmtPct(r.atual) : r.atual) + ' / ' + (r.sufixo ? fmtPct(r.meta) : r.meta))),
-                                h('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, Number(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#7c3aed' } })))))),
+                                h('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' }, h('div', { className: 'h-full rounded-full', style: { width: Math.min(100, Number(r.pct) || 0) + '%', background: r.ok ? '#16a34a' : '#c084e6' } })))))),
                         secao('Saques grátis do score', (d.beneficios || []).length === 0
                             ? h('div', { className: 'text-xs text-gray-400' }, 'Nenhum benefício lançado ainda.')
                             : h('div', { className: 'space-y-1.5' }, d.beneficios.map(b => {
@@ -1157,7 +1157,7 @@
             [regioes]
         );
 
-        return h('div', { className: 'bg-white border border-gray-200 rounded-2xl mb-4 overflow-hidden', style: { borderLeft: '3px solid #7c3aed' } },
+        return h('div', { className: 'bg-white border border-gray-200 rounded-2xl mb-4 overflow-hidden', style: { borderLeft: '3px solid #770fa8' } },
             h('button', {
                 onClick: () => setAberto(!aberto),
                 className: 'w-full flex items-center justify-between gap-2 p-4 hover:bg-gray-50 transition-colors text-left'
@@ -1230,7 +1230,7 @@
 
         return h('div', {
             className: 'bg-white border border-gray-200 rounded-2xl p-4 ' + (ativo ? '' : 'opacity-60'),
-            style: { borderLeft: '3px solid ' + (ativo ? '#7c3aed' : '#d1d5db') }
+            style: { borderLeft: '3px solid ' + (ativo ? '#770fa8' : '#d1d5db') }
         },
             h('div', { className: 'flex items-start justify-between gap-3 mb-4 flex-wrap' },
                 h('div', null,
@@ -1262,7 +1262,7 @@
                 miniCard({ bar: '#92400e', bg: '#fff', txt: '#92400e', num: '#111827' }, '', 'Bronze', counts[1], 'base da praça'),
                 miniCard({ bar: '#6b7280', bg: '#fff', txt: '#374151', num: '#111827' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
                 miniCard({ bar: '#f67602', bg: '#fffbeb', txt: '#92400e', num: '#92400e' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
-                miniCard({ bar: '#7c3aed', bg: '#f5f3ff', txt: '#7c3aed', num: '#4c1d95' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
+                miniCard({ bar: '#770fa8', bg: '#faf7fd', txt: '#770fa8', num: '#770fa8' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
             )
         );
     }

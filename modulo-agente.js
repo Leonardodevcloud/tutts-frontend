@@ -3,7 +3,7 @@
 // ==================== MÓDULO AGENTE RPA — CORREÇÃO DE ENDEREÇOS ====================
 // Arquivo: modulo-agente.js
 // Admin: só histórico  |  User/Motoboy: formulário com GPS nativo + foto fachada
-// Cores: roxo #4c1d95, laranja #f67602, dark mode responsivo
+// Cores: roxo #5d0b85, laranja #f67602, dark mode responsivo
 // ==================================================================================
 
 (function () {
@@ -239,7 +239,7 @@
             h('p', { className: 'text-[10px] font-bold mb-1' }, 'ANTES'), _cardVal(sucesso.antes, 'text-orange-700')),
           sucesso.depois && h('div', { className: 'bg-green-50 border border-green-200 rounded-xl p-3 text-green-600' },
             h('p', { className: 'text-[10px] font-bold mb-1' }, 'DEPOIS'), _cardVal(sucesso.depois, 'text-green-700'))),
-        h('button', { type: 'button', onClick: () => { setSucesso(null); setAberto(false); }, className: 'w-full py-3 rounded-xl font-bold text-white', style: { background: 'linear-gradient(135deg,#300776,#7c3aed)' } }, 'Concluir')));
+        h('button', { type: 'button', onClick: () => { setSucesso(null); setAberto(false); }, className: 'w-full py-3 rounded-xl font-bold text-white', style: { background: 'linear-gradient(135deg,#530776,#b43aed)' } }, 'Concluir')));
 
     return h(React.Fragment, null,
       h('button', {
@@ -384,7 +384,7 @@
     return h('button', {
       type: 'button', onClick: ativar, disabled: carregando,
       className: 'w-full mb-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border transition ' + (carregando ? 'opacity-60' : 'hover:bg-purple-50 active:scale-[0.99]'),
-      style: { borderColor: '#7c3aed', color: '#7c3aed' },
+      style: { borderColor: '#770fa8', color: '#770fa8' },
     },
       h('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, h('use', { href: '#i-bell' })),
       carregando ? 'Ativando...' : 'Ativar notificacoes'
@@ -926,21 +926,21 @@
     },
       h('style', {}, '@keyframes agentScan{0%{top:10%}50%{top:80%}100%{top:10%}}@keyframes agentPulse{0%,100%{opacity:0.3}50%{opacity:1}}'),
       h('div', { style: { position: 'relative', width: '80px', height: '80px', marginBottom: '24px' } },
-        h('div', { style: { position: 'absolute', inset: 0, border: '2px solid #7C3AED', borderRadius: '50%', opacity: 0.2 } }),
-        h('div', { style: { position: 'absolute', inset: '10px', border: '2px solid #7C3AED', borderRadius: '50%', opacity: 0.4 } }),
-        h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#7C3AED', animation: 'spin 1.5s linear infinite' } }),
-        h('div', { style: { position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #7C3AED, transparent)', opacity: 0.6, animation: 'agentScan 2s linear infinite' } }),
+        h('div', { style: { position: 'absolute', inset: 0, border: '2px solid #770fa8', borderRadius: '50%', opacity: 0.2 } }),
+        h('div', { style: { position: 'absolute', inset: '10px', border: '2px solid #770fa8', borderRadius: '50%', opacity: 0.4 } }),
+        h('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#770fa8', animation: 'spin 1.5s linear infinite' } }),
+        h('div', { style: { position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #b43aed, transparent)', opacity: 0.6, animation: 'agentScan 2s linear infinite' } }),
         h('div', { style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '24px' } }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-pin" })))
       ),
-      h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#ddd6fe', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
+      h('p', { style: { fontSize: '15px', fontWeight: 600, color: '#f3e8fb', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 } },
         // GPS_UNICO_V1: o texto falava da "foto enviada" — que nao existe desde o
         // AGENTE_BCE_V1. Ficou dois deploys em producao descrevendo um fluxo morto.
         'Estamos conferindo o CNPJ na Receita Federal e comparando com a sua localização.'
       ),
       h('div', { style: { display: 'flex', gap: '6px', marginTop: '20px' } },
-        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0s infinite' } }),
-        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.2s infinite' } }),
-        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED', animation: 'agentPulse 1s 0.4s infinite' } })
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#770fa8', animation: 'agentPulse 1s 0s infinite' } }),
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#770fa8', animation: 'agentPulse 1s 0.2s infinite' } }),
+        h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', background: '#770fa8', animation: 'agentPulse 1s 0.4s infinite' } })
       )
     );
 
@@ -956,7 +956,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
       }, '↩ Voltar')
     );
 
@@ -977,7 +977,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
       }, '↩ Voltar')
     );
 
@@ -1093,7 +1093,7 @@
         h('button', {
           onClick: function() { setFase('idle'); setBarradoInfo(null); },
           className: 'w-full max-w-md py-3 rounded-xl font-semibold text-white mb-3',
-          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
         }, v.botao),
 
         h('a', {
@@ -1159,7 +1159,7 @@
           iniciarPolling(solicitacaoId);
         },
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
       }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Entendi, prosseguir"))
     );
 
@@ -1248,7 +1248,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
       }, '+ Nova Correção')
       ) // fecha wrapper successSlide
     );
@@ -1275,7 +1275,7 @@
       h('button', {
         onClick: resetar,
         className: 'px-8 py-3 rounded-xl font-semibold text-white',
-        style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+        style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
       }, '+ Nova Correção')
     );
 
@@ -1297,7 +1297,7 @@
 
       return h('div', {
         className: 'fixed inset-0 z-50 flex flex-col items-center justify-center px-6 overflow-hidden',
-        style: { background: 'linear-gradient(135deg, #300776 0%, #7c3aed 50%, #300776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
+        style: { background: 'linear-gradient(135deg, #530776 0%, #b43aed 50%, #530776 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite', overflowX: 'hidden', overflowY: 'auto', width: '100vw', maxWidth: '100%' }
       },
         h('style', null, `
           @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
@@ -1331,7 +1331,7 @@
             // Pin caindo e quicando
             h('g', { style: { animation: 'pinDrop 3s ease-out infinite', transformOrigin: '100px 110px' } },
               h('path', { d: 'M 100 75 C 84 75 84 96 100 120 C 116 96 116 75 100 75 Z', fill: '#d97706' }),
-              h('circle', { cx: '100', cy: '92', r: '6', fill: '#4c1d95' })
+              h('circle', { cx: '100', cy: '92', r: '6', fill: '#5d0b85' })
             )
           )
         ),
@@ -1395,8 +1395,8 @@
       // Cabeçalho
       h('div', { className: 'text-center mb-8' },
         h('div', { className: 'relative w-20 h-20 mx-auto mb-4' }, /* HERO_ICON_V2 */
-          h('div', { className: 'absolute inset-0 rounded-[1.75rem] blur-xl opacity-30', style: { background: 'linear-gradient(135deg, #7c3aed, #9055f7)' } }),
-          h('div', { className: 'relative w-20 h-20 rounded-[1.75rem] flex items-center justify-center shadow-xl ring-1 ring-white/40', style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' } },
+          h('div', { className: 'absolute inset-0 rounded-[1.75rem] blur-xl opacity-30', style: { background: 'linear-gradient(135deg, #b43aed, #c455f7)' } }),
+          h('div', { className: 'relative w-20 h-20 rounded-[1.75rem] flex items-center justify-center shadow-xl ring-1 ring-white/40', style: { background: 'linear-gradient(135deg, #530776, #b43aed)' } },
             h('svg', { className: 'ico', style: { width: 38, height: 38, color: '#ffffff' }, 'aria-hidden': 'true' }, h('use', { href: '#i-pin' })))
         ),
         h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Correção de Endereço')
@@ -1642,7 +1642,7 @@
           disabled: !podeEnviar,
           className: `w-full py-4 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-3
             ${!podeEnviar ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-[0.98]'}`,
-          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
         },
           loading
             ? h(React.Fragment, null,
@@ -1796,12 +1796,12 @@
           }
         } else {
           if (temAntigo && temCorrigido) {
-            L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#7c3aed', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
+            L.polyline([[antigoLat, antigoLng], [corrLat, corrLng]], { color: '#770fa8', weight: 3, dashArray: '6, 6', opacity: 0.6 }).addTo(map);
             const dist = map.distance([antigoLat, antigoLng], [corrLat, corrLng]);
             const distStr = dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
             L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
               .setLatLng([(antigoLat + corrLat) / 2, (antigoLng + corrLng) / 2])
-              .setContent('<div style="font-weight:bold;color:#7c3aed">\u2194 ' + distStr + '</div>')
+              .setContent('<div style="font-weight:bold;color:#770fa8">\u2194 ' + distStr + '</div>')
               .openOn(map);
           }
         }
@@ -2003,7 +2003,7 @@
         h('button', {
           onClick: aplicarFiltros,
           className: 'col-span-2 md:col-span-1 rounded-xl text-sm font-semibold text-white py-2 transition hover:opacity-90',
-          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
         }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-search" })), "Filtrar"))
       ),
 
@@ -3019,7 +3019,7 @@
       { k: 'corrigidas', cor: '#16a34a' },
       { k: 'barradas',   cor: '#dc2626' },
       { k: 'falhas',     cor: '#d97706' },
-      { k: 'bloqueadas', cor: '#ddd6fe' },
+      { k: 'bloqueadas', cor: '#c084e6' },
       { k: 'na_fila',    cor: '#d1d5db' },
     ];
     const somaComp = comp.reduce((s, c) => s + (t[c.k] || 0), 0);
@@ -3073,7 +3073,7 @@
         h('button', {
           onClick: aplicarRange,
           className: 'px-4 py-2 rounded-lg text-sm font-semibold text-white',
-          style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' },
+          style: { background: 'linear-gradient(135deg, #530776, #b43aed)' },
         }, 'Aplicar'),
         h('p', { className: 'text-xs text-slate-400 ml-auto' }, 'O período vale pra tudo nesta tela.')
       ),
@@ -3123,7 +3123,7 @@
             }))
           ),
           t.bloqueadas > 0 && h('p', { className: 'text-[11px] text-slate-400 mt-2' },
-            h('span', { className: 'inline-block w-2 h-2 rounded-sm mr-1.5 align-middle', style: { background: '#ddd6fe' } }),
+            h('span', { className: 'inline-block w-2 h-2 rounded-sm mr-1.5 align-middle', style: { background: '#c084e6' } }),
             `${anlNum(t.bloqueadas)} de cliente bloqueado (não passam pela validação)`)
         ),
 
@@ -3204,7 +3204,7 @@
                       h('div', { className: 'h-1.5 bg-slate-100 rounded-full overflow-hidden' },
                         h('div', {
                           className: 'h-full rounded-full transition-all duration-300',
-                          style: { width: `${(f.total / maxFase) * 100}%`, background: '#7c3aed' },
+                          style: { width: `${(f.total / maxFase) * 100}%`, background: '#770fa8' },
                         })
                       ),
                       // A chave crua e a explicacao na MESMA linha: a chave voce precisa
@@ -3509,7 +3509,7 @@
         h('div', { className: 'grid gap-3' },
           h('input', { value: nomeLoja, onChange: (e) => setNomeLoja(e.target.value), placeholder: 'Nome da loja/cliente (ex: Abobrinha)', className: 'border rounded-lg px-3 py-2 text-sm' }),
           h('input', { value: endereco, onChange: (e) => setEndereco(e.target.value), placeholder: 'Endereço do Ponto 1', className: 'border rounded-lg px-3 py-2 text-sm' }),
-          h('button', { onClick: adicionar, disabled: salvando, className: 'px-4 py-2 rounded-lg text-white text-sm font-semibold', style: { background: 'linear-gradient(135deg, #300776, #7c3aed)' } }, salvando ? 'Salvando...' : '+ Adicionar cliente')
+          h('button', { onClick: adicionar, disabled: salvando, className: 'px-4 py-2 rounded-lg text-white text-sm font-semibold', style: { background: 'linear-gradient(135deg, #530776, #b43aed)' } }, salvando ? 'Salvando...' : '+ Adicionar cliente')
         )
       ),
       loading

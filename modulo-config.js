@@ -1299,7 +1299,7 @@
                                                 }
                                             },
                                                 title: cliente.ativo ? "Desativar cliente" : "Ativar cliente",
-                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border transition " + (cliente.ativo ? "text-[#7c3aed] bg-[#f9fafb] border-[#f5f3ff]" : "text-[#6b7280] border-transparent hover:bg-[#f3f4f6] hover:border-[#e5e7eb] hover:text-[#111827]")
+                                                className: "w-[29px] h-[29px] grid place-items-center rounded-[7px] border transition " + (cliente.ativo ? "text-[#770fa8] bg-[#faf7fd] border-[#faf7fd]" : "text-[#6b7280] border-transparent hover:bg-[#f3f4f6] hover:border-[#e5e7eb] hover:text-[#111827]")
                                             }, ico("power")),
                                             React.createElement("button", {
                                                 onClick: async function() {
@@ -1372,7 +1372,7 @@
                                                     }});
                                                 },
                                                 title: "Configura\u00e7\u00f5es do Hub (pre\u00e7o e mensagem)",
-                                                className: actBase + (temPreco ? " text-[#7c3aed]" : "")
+                                                className: actBase + (temPreco ? " text-[#770fa8]" : "")
                                             }, ico("wallet")) : null,
                                             React.createElement("span", {className: "flex-1"}),
                                             React.createElement("button", {
@@ -1874,7 +1874,7 @@
                                     React.createElement("div", {className: "flex items-center gap-3"},
                                         React.createElement("span", {
                                             className: "text-xs font-bold px-2 py-0.5 rounded",
-                                            style: ativa ? {background: "#f5f3ff", color: "#4c1d95"} : {background: "#e5e7eb", color: "#9ca3af"}
+                                            style: ativa ? {background: "#faf7fd", color: "#770fa8"} : {background: "#e5e7eb", color: "#9ca3af"}
                                         }, cat.sigla),
                                         React.createElement("span", {className: "text-sm " + (ativa ? "text-gray-800" : "text-gray-400")}, cat.nome)
                                     ),
@@ -1882,7 +1882,7 @@
                                     React.createElement("button", {
                                         onClick: function() { toggleCat(cat.sigla); },
                                         className: "relative w-9 h-5 rounded-full transition-colors flex-shrink-0 border-0",
-                                        style: {background: ativa ? "#7c3aed" : "#d1d5db"},
+                                        style: {background: ativa ? "#770fa8" : "#d1d5db"},
                                         "aria-label": "Toggle " + cat.sigla
                                     },
                                         React.createElement("span", {
@@ -2285,7 +2285,7 @@
                                         React.createElement("div", {
                                             className: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0",
                                             style: {
-                                                background: prov.code === "tutts" ? "#7c3aed" :
+                                                background: prov.code === "tutts" ? "#770fa8" :
                                                            prov.code === "uber"  ? "#111827" : "#d97706",
                                                 color: prov.code === "99" ? "#111827" : "white"
                                             }
@@ -2311,7 +2311,7 @@
                                         disabled: prov.fixo,
                                         readOnly: true,
                                         className: "w-4 h-4",
-                                        style: {accentColor: "#7c3aed"}
+                                        style: {accentColor: "#770fa8"}
                                     })
                                 );
                             })
@@ -2421,7 +2421,7 @@
                                 React.createElement("input", {
                                     type: "checkbox", checked: mp.ativo !== false,
                                     onChange: function(e) { up("ativo", e.target.checked); },
-                                    className: "w-4 h-4", style: {accentColor: "#7c3aed"}
+                                    className: "w-4 h-4", style: {accentColor: "#770fa8"}
                                 }),
                                 React.createElement("span", {className: "text-sm text-gray-700"}, "Usar tabela própria deste cliente",
                                     React.createElement("span", {className: "block text-[11px] text-gray-400"}, "Desligado: herda a tabela global"))
@@ -2480,7 +2480,7 @@
                                     return React.createElement("label", {key: val, className: "flex items-center gap-1.5 cursor-pointer text-xs text-gray-700"},
                                         React.createElement("input", {type: "radio", checked: modo === val,
                                             onChange: function() { up("retorno_modo", val); },
-                                            style: {accentColor: "#7c3aed"}}),
+                                            style: {accentColor: "#770fa8"}}),
                                         rotulo);
                                 };
                                 return React.createElement("div", {className: "mb-4 pt-3 border-t"},

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#4c1d95" />
+  <meta name="theme-color" content="#770fa8" />
   <!-- TRACKING_ICONS_V1 --><title>Rastreamento Tutts</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2354168a'/><text y='.92em' x='8' font-size='62' font-style='italic' font-family='Trebuchet MS' fill='white'>t</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    :root{--roxo:#4c1d95;--roxo2:#7c3aed;--laranja:#f67602;--tinta:#111827;--muted:#6b7280;--linha:#e5e7eb;--ok:#16a34a;--err:#dc2626}
+    :root{--roxo:#770fa8;--roxo2:#770fa8;--laranja:#f67602;--tinta:#111827;--muted:#6b7280;--linha:#f3e8fb;--ok:#16a34a;--err:#dc2626}
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
     body{font-family:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--tinta);-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -21,7 +21,7 @@
 
     .painel{position:fixed;z-index:5;top:20px;left:20px;width:384px;max-height:calc(100vh - 40px);
       background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
-      border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(76,29,149,.22);
+      border:1px solid rgba(255,255,255,.6);border-radius:22px;box-shadow:0 20px 60px rgba(38,9,58,.22);
       overflow:hidden;display:flex;flex-direction:column}
 
     .topo{background:linear-gradient(135deg,var(--roxo) 0%,var(--roxo2) 100%);color:#fff;padding:18px 20px;flex-shrink:0;position:relative}
@@ -43,7 +43,7 @@
     .tl-item.done .tl-rail{background:var(--roxo2)}
     .tl-ic{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--linha);color:#9ca3af;z-index:1}
     .tl-item.done .tl-ic{background:var(--roxo2);color:#fff}
-    .tl-item.cur .tl-ic{background:#fff;color:var(--roxo2);border:2px solid var(--roxo2);box-shadow:0 0 0 4px rgba(124,58,237,.14)}
+    .tl-item.cur .tl-ic{background:#fff;color:var(--roxo2);border:2px solid var(--roxo2);box-shadow:0 0 0 4px rgba(119,15,168,.14)}
     .tl-item.fin .tl-ic{background:var(--ok);color:#fff}
     .tl-tx{padding-top:4px}
     .tl-tx .t{font-size:14px;font-weight:500;color:#9ca3af}
@@ -53,7 +53,7 @@
     .sep{height:1px;background:var(--linha);margin:16px 0}
 
     .moto{display:flex;align-items:center;gap:12px}
-    .av{width:48px;height:48px;border-radius:50%;background:#f5f3ff;color:var(--roxo2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;overflow:hidden}
+    .av{width:48px;height:48px;border-radius:50%;background:#faf7fd;color:var(--roxo2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;overflow:hidden}
     .moto .nome{font-size:15px;font-weight:600}
     .moto .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
     .moto .fone{font-size:12.5px;color:var(--roxo);font-weight:600;margin-top:1px}
@@ -67,7 +67,7 @@
 
     .tl-hora{font-size:10.5px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;opacity:.85}
     .tl-item.cur .tl-hora{color:var(--roxo2);opacity:1;font-weight:600}
-    .rod{padding:13px 20px;text-align:center;font-size:11.5px;color:#7c3aed;border-top:1px solid var(--linha);flex-shrink:0}
+    .rod{padding:13px 20px;text-align:center;font-size:11.5px;color:#c084e6;border-top:1px solid var(--linha);flex-shrink:0}
     .rod b.r{color:var(--roxo)} .rod b.l{color:var(--laranja)}
     .msg{padding:30px 20px;text-align:center;color:#6b7280;font-size:14px;line-height:1.6}
 
@@ -113,7 +113,7 @@
 
       <div class="sep"></div>
 
-      <div class="end"><div class="eico" style="color:#7c3aed"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div><div><div class="lbl">Coleta</div><div class="val" id="aColeta">-</div><div id="aColetaCod" style="display:none;margin-top:5px;font-weight:800;color:#7c3aed"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> C&#243;digo de coleta: <span id="aColetaCodVal"></span></div></div></div>
+      <div class="end"><div class="eico" style="color:#770fa8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div><div><div class="lbl">Coleta</div><div class="val" id="aColeta">-</div><div id="aColetaCod" style="display:none;margin-top:5px;font-weight:800;color:#770fa8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> C&#243;digo de coleta: <span id="aColetaCodVal"></span></div></div></div>
       <div class="end"><div class="eico" style="color:#f67602"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></div><div><div class="lbl">Entrega</div><div class="val" id="aEntrega">-</div><div id="aDevolCod" style="display:none;margin-top:5px;font-weight:800;color:#f67602"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> C&#243;digo de devolu&#231;&#227;o: <span id="aDevolCodVal"></span></div></div></div>
     </div>
 
@@ -143,9 +143,9 @@
 
   function emojiMarker(e,size){var s=size||28;return L.divIcon({className:'',html:'<div style="font-size:'+s+'px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4)">'+e+'</div>',iconSize:[s,s],iconAnchor:[s/2,s]});}
   function motoIcon(foto){
-    var base='<div style="width:38px;height:38px;border-radius:50%;background:#fff;border:2.5px solid #7c3aed;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:21px">\uD83D\uDEF5</div>';
-    var img=foto?'<img src="'+foto+'" alt="" style="position:absolute;left:0;top:0;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #7c3aed;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,.3)" onerror="this.style.display=\'none\'">':'';
-    return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;background:#7c3aed;opacity:.18"></div><div style="position:absolute;left:-19px;top:-19px;width:38px;height:38px">'+base+img+'</div></div>',iconSize:[0,0],iconAnchor:[0,0]});
+    var base='<div style="width:38px;height:38px;border-radius:50%;background:#fff;border:2.5px solid #770fa8;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:21px">\uD83D\uDEF5</div>';
+    var img=foto?'<img src="'+foto+'" alt="" style="position:absolute;left:0;top:0;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2.5px solid #770fa8;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,.3)" onerror="this.style.display=\'none\'">':'';
+    return L.divIcon({className:'',html:'<div style="position:relative;width:0;height:0"><div style="position:absolute;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;background:#770fa8;opacity:.18"></div><div style="position:absolute;left:-19px;top:-19px;width:38px;height:38px">'+base+img+'</div></div>',iconSize:[0,0],iconAnchor:[0,0]});
   }
 
   function initMap(c){map=L.map('map',{zoomControl:true,attributionControl:true}).setView(c,14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);setTimeout(function(){try{map.invalidateSize()}catch(e){}},200);}

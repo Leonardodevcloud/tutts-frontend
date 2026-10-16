@@ -64,14 +64,14 @@
     // Catálogo de métricas plotáveis no gráfico.
     // Cada uma tem: chave da serie, label, cor, escala (0-100 ou auto), formatação.
     const METRICAS_CATALOGO = [
-        { id: 'total_os',         label: 'OS',                cor: '#7c3aed', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
+        { id: 'total_os',         label: 'OS',                cor: '#770fa8', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
         { id: 'total_entregas',   label: 'Entregas',          cor: '#2563eb', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
         { id: 'no_prazo',         label: 'No Prazo',          cor: '#16a34a', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
         { id: 'fora_prazo',       label: 'Fora Prazo',        cor: '#d97706', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
         { id: 'pct_prazo',        label: '% No Prazo',        cor: '#16a34a', escala: 'pct',  fmt: v => v.toFixed(1) + '%' },
         { id: 'retornos',         label: 'Retornos',          cor: '#dc2626', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
-        { id: 'valor_total',      label: 'Valor Total',       cor: '#7c3aed', escala: 'auto', fmt: v => fmtMoneyShort(v) },
-        { id: 'valor_prof',       label: 'Valor Prof.',       cor: '#ddd6fe', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'valor_total',      label: 'Valor Total',       cor: '#c084e6', escala: 'auto', fmt: v => fmtMoneyShort(v) },
+        { id: 'valor_prof',       label: 'Valor Prof.',       cor: '#c084e6', escala: 'auto', fmt: v => fmtMoneyShort(v) },
         { id: 'fat_total',        label: 'Fat. Total',        cor: '#166534', escala: 'auto', fmt: v => fmtMoneyShort(v) },
         { id: 'ticket_medio',     label: 'Ticket Médio',      cor: '#f67602', escala: 'auto', fmt: v => 'R$ ' + (v || 0).toFixed(2) },
         { id: 'tempo_medio_min',  label: 'Tempo Médio Entrega',   cor: '#6b7280', escala: 'auto', fmt: v => fmtMinTime(v) },
@@ -822,7 +822,7 @@
             h('div', { className: 'bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col' },
                 // Header
                 h('div', {
-                    style: { background: 'linear-gradient(to right, #724ab7, #1845a5)' },
+                    style: { background: 'linear-gradient(to right, #944ab7, #1845a5)' },
                     className: 'p-4 text-white flex items-center justify-between flex-shrink-0'
                 },
                     h('div', null,

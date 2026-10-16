@@ -522,7 +522,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                         },
                             centrais.map((c, idx) => {
                                 const ehAuto = c.tipo === 'auto';
-                                const corBarra = !c.ativa ? '#9ca3af' : (ehAuto ? '#7c3aed' : '#6b7280');
+                                const corBarra = !c.ativa ? '#9ca3af' : (ehAuto ? '#770fa8' : '#6b7280');
                                 const cardId = `fila-card-${c.id}`;
                                 return React.createElement('div', {
                                     key: c.id,
@@ -574,7 +574,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
                                                 }, 'Inativa')
                                                 : ehAuto
                                                     ? React.createElement('span', {
-                                                        style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#f5f3ff', color: '#4c1d95', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
+                                                        style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#faf7fd', color: '#770fa8', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
                                                     }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" })), "Auto"))
                                                     : React.createElement('span', {
                                                         style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#e5e7eb', color: '#374151', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }
@@ -619,7 +619,7 @@ function ModuloFilas({ usuario, apiUrl, showToast, abaAtiva, onChangeTab }) {
         const badgeCentral = !centralSelecionada.ativa
             ? React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#fef2f2', color: '#991b1b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
             : ehAutoCentral
-                ? React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#f5f3ff', color: '#4c1d95', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" })), "Auto"))
+                ? React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#faf7fd', color: '#770fa8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bot" })), "Auto"))
                 : React.createElement('span', { style: { fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#e5e7eb', color: '#374151', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' } }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-users" })), "Manual"));
 
         return React.createElement('div', {

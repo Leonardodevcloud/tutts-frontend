@@ -1,3 +1,4 @@
+/* REDESIGN_CLEAN_V1: telas no padrao clean aprovado (mockups 16/10). */
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DISP_ICONS_V1 */
 // ==================== MÓDULO DISPONIBILIDADE ====================
@@ -6,7 +7,7 @@
 
 (function() {
     'use strict';
-    console.log('%c📦 MODULO-DISPONIBILIDADE CARREGADO', 'background:#7c3aed;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
+    console.log('%c📦 MODULO-DISPONIBILIDADE CARREGADO', 'background:#770fa8;color:#fff;font-size:14px;padding:4px 8px;border-radius:4px;');
 
     window.ModuloDisponibilidadeContent = function(props) {
         const {
@@ -608,19 +609,573 @@
                     )
                 );
             }, n = {
-                "A CONFIRMAR": "bg-yellow-100 text-yellow-800 border-yellow-300",
-                CONFIRMADO: "bg-green-100 text-green-800 border-green-300",
-                "A CAMINHO": "bg-orange-100 text-orange-800 border-orange-300",
-                "EM LOJA": "bg-blue-100 text-blue-800 border-blue-300",
-                FALTANDO: "bg-red-100 text-red-800 border-red-300",
-                "SEM CONTATO": "bg-gray-100 text-gray-800 border-gray-300"
+                "A CONFIRMAR": "bg-gray-100 text-gray-700 border-gray-200",
+                CONFIRMADO: "bg-blue-50 text-blue-800 border-blue-200",
+                "A CAMINHO": "bg-amber-50 text-amber-800 border-amber-200",
+                "EM LOJA": "bg-green-50 text-green-800 border-green-200",
+                FALTANDO: "bg-red-50 text-red-800 border-red-200",
+                "SEM CONTATO": "bg-gray-100 text-gray-700 border-gray-300"
             }, m = {
-                "A CONFIRMAR": "bg-yellow-50",
-                CONFIRMADO: "bg-green-50",
-                "A CAMINHO": "bg-orange-50",
-                "EM LOJA": "bg-blue-50",
+                "A CONFIRMAR": "bg-gray-50",
+                CONFIRMADO: "bg-blue-50",
+                "A CAMINHO": "bg-amber-50",
+                "EM LOJA": "bg-green-50",
                 FALTANDO: "bg-red-50",
-                "SEM CONTATO": "bg-gray-50"
+                "SEM CONTATO": "bg-gray-100"
+            };
+            /* DISP_CLEAN_V1 — redesign clean: tokens de status unificados em todas as telas da Disponibilidade.
+               A confirmar = cinza, Confirmado = azul, A caminho = âmbar, Em loja = verde, Faltando = vermelho, Sem contato = cinza escuro. */
+            const _h = React.createElement;
+            const DS_SORA = "Sora, Inter, sans-serif";
+            const DS_MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace";
+            const DS = {
+                "A CONFIRMAR": { label: "A confirmar", cor: "#6b7280", txt: "#374151", bg: "#f3f4f6" },
+                CONFIRMADO: { label: "Confirmado", cor: "#2563eb", txt: "#1e40af", bg: "#eff6ff" },
+                "A CAMINHO": { label: "A caminho", cor: "#d97706", txt: "#92400e", bg: "#fffbeb" },
+                "EM LOJA": { label: "Em loja", cor: "#16a34a", txt: "#166534", bg: "#f0fdf4" },
+                FALTANDO: { label: "Faltando", cor: "#dc2626", txt: "#991b1b", bg: "#fef2f2" },
+                "SEM CONTATO": { label: "Sem contato", cor: "#374151", txt: "#374151", bg: "#f3f4f6" }
+            };
+            const DS_ORDEM = ["A CONFIRMAR", "CONFIRMADO", "A CAMINHO", "EM LOJA", "FALTANDO", "SEM CONTATO"];
+            // Fundo das linhas do Painel (bate com a legenda)
+            const DS_ROW = { reposicao: "#eff6ff", excedente: "#fffbeb", falta: "#fef2f2" };
+            const _dsIco = (nome, sz, cor) => _h("svg", { className: "ico", style: { width: sz || 16, height: sz || 16, color: cor }, "aria-hidden": "true" }, _h("use", { href: "#i-" + nome }));
+            const _dsDot = (cor, sz) => _h("span", { "aria-hidden": "true", style: { width: sz || 6, height: sz || 6, borderRadius: 99, background: cor, flex: "none", display: "inline-block" } });
+            const _dsPill = (status, texto) => {
+                const s = DS[status] || DS["A CONFIRMAR"];
+                return _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, padding: "2px 9px", fontWeight: 600, fontSize: 11.5, background: s.bg, color: s.txt, whiteSpace: "nowrap" } }, _dsDot(s.cor), texto || s.label);
+            };
+            const _dsFaixa = (pct, verdeEm) => pct >= (verdeEm || 80) ? ["#16a34a", "#166534"] : pct >= 50 ? ["#d97706", "#92400e"] : ["#dc2626", "#991b1b"];
+            const _dsBar = (pct, cor, alt) => _h("div", { style: { flex: 1, height: alt || 6, borderRadius: 99, background: "#f3f4f6", overflow: "hidden", minWidth: 40 } }, _h("div", { style: { height: alt || 6, width: Math.max(0, Math.min(100, pct)) + "%", background: cor, borderRadius: 99 } }));
+            const DS_CARD = { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 14 };
+            const DS_BTN = { height: 38, padding: "0 12px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#ffffff", color: "#374151", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "inherit" };
+            const DS_BTN_SM = { height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#ffffff", color: "#374151", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", whiteSpace: "nowrap" };
+            const _dsHoje = () => (new Date).toISOString().split("T")[0];
+            const _dsKpi = (rotulo, valor, sub, cor, extra) => _h("div", { style: Object.assign({ padding: "16px 20px", borderRight: "1px solid #f3f4f6", minWidth: 0 }, extra || {}) },
+                _h("div", { style: { fontSize: 12, color: "#6b7280" } }, rotulo),
+                _h("div", { style: { fontFamily: DS_SORA, fontSize: 26, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: cor || "#111827", lineHeight: 1.25, marginTop: 2 } }, valor),
+                sub ? _h("div", { style: { fontSize: 11.5, color: "#6b7280", marginTop: 2 } }, sub) : null);
+
+            /* DISP_CLEAN_V1 — Panorama do dia */
+            const _dispPanoramaClean = () => {
+                const linhasAll = e.linhas || [];
+                const titularesN = linhasAll.filter(l => !l.is_excedente && !l.is_reposicao).length;
+                const emLojaN = linhasAll.filter(l => "EM LOJA" === l.status).length;
+                const aCaminhoN = linhasAll.filter(l => "A CAMINHO" === l.status).length;
+                const confirmadoN = linhasAll.filter(l => "CONFIRMADO" === l.status).length;
+                const semContato = linhasAll.filter(l => "SEM CONTATO" === l.status).length;
+                const faltam100 = Math.max(0, titularesN - emLojaN);
+                const percGeral = titularesN > 0 ? Math.round(Math.min(emLojaN / titularesN * 100, 100)) : 0;
+                const faixaGeral = _dsFaixa(percGeral);
+                const lojasCriticas = (e.lojas || []).filter(loja => {
+                    const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
+                    const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
+                    const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
+                    return lojaTit.length > 0 && (lojaEmLoja / lojaTit.length) < 0.5;
+                });
+                const horaSync = (new Date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+                // Linhas da tabela (mesmos cálculos de antes)
+                const ordem = p.panoramaOrdem || "regiao",
+                    regs = e.regioes || [],
+                    lojas = e.lojas || [],
+                    lin = e.linhas || [],
+                    rows = lojas.map(lj => {
+                        const tl = lin.filter(li => li.loja_id === lj.id),
+                            tit = tl.filter(li => !li.is_excedente && !li.is_reposicao).length,
+                            aCam = tl.filter(li => "A CAMINHO" === li.status).length,
+                            conf = tl.filter(li => "CONFIRMADO" === li.status).length,
+                            emL = tl.filter(li => "EM LOJA" === li.status).length,
+                            semC = tl.filter(li => "SEM CONTATO" === li.status).length,
+                            emOp = aCam + conf + emL,
+                            falta = Math.max(0, tit - emOp),
+                            perc = tit > 0 ? Math.min(emL / tit * 100, 100) : 0,
+                            regiao = regs.find(rg => rg.id === lj.regiao_id);
+                        return { ...lj, titulares: tit, aCaminho: aCam, confirmado: conf, emLoja: emL, semContato: semC, emOperacao: emOp, falta, perc, regiao };
+                    });
+                const tot = { aCaminho: 0, confirmado: 0, emLoja: 0, titulares: 0, falta: 0, semContato: 0, emOperacao: 0 };
+                rows.forEach(rw => { tot.aCaminho += rw.aCaminho; tot.confirmado += rw.confirmado; tot.emLoja += rw.emLoja; tot.titulares += rw.titulares; tot.falta += rw.falta; tot.semContato += rw.semContato; tot.emOperacao += rw.emOperacao; });
+                const totPerc = tot.titulares > 0 ? Math.min(tot.emLoja / tot.titulares * 100, 100) : 0;
+                "pior" === ordem ? rows.sort((a1, b1) => a1.perc - b1.perc) : "melhor" === ordem ? rows.sort((a1, b1) => b1.perc - a1.perc) : "alfa" === ordem && rows.sort((a1, b1) => a1.nome.localeCompare(b1.nome));
+
+                const tdNum = (v, cor, peso, txt) => _h("td", { style: { padding: "9px 10px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: peso || 400, color: v > 0 ? cor : "#d1d5db" } }, txt !== undefined ? txt : v);
+                const tdCobertura = (perc, peso) => {
+                    const fx = _dsFaixa(perc);
+                    return _h("td", { style: { padding: "9px 18px" } }, _h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                        _dsBar(perc, fx[0]),
+                        _h("b", { style: { width: 40, textAlign: "right", fontVariantNumeric: "tabular-nums", color: fx[1], fontWeight: peso || 700 } }, perc.toFixed(0) + "%")));
+                };
+                const trLoja = (rw, idx, comRegiao) => _h("tr", { key: rw.id, style: { borderTop: "1px solid #f3f4f6", background: rw.perc < 50 ? "#fef2f2" : "#ffffff" } },
+                    _h("td", { style: { padding: "9px 18px", fontWeight: 500, whiteSpace: "nowrap", color: "#111827" } },
+                        comRegiao ? _h("span", { style: { color: "#9ca3af", marginRight: 6, fontVariantNumeric: "tabular-nums" } }, (idx + 1) + ".") : null,
+                        rw.nome,
+                        comRegiao && rw.regiao ? _h("span", { style: { color: "#9ca3af", fontWeight: 400 } }, " · " + rw.regiao.nome) : null),
+                    tdNum(rw.aCaminho, DS["A CAMINHO"].txt),
+                    tdNum(rw.confirmado, DS.CONFIRMADO.txt),
+                    tdNum(rw.emLoja, DS["EM LOJA"].txt, 600),
+                    _h("td", { style: { padding: "9px 10px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#6b7280" } }, rw.titulares),
+                    tdNum(rw.falta, DS.FALTANDO.txt, 600, rw.falta > 0 ? "−" + rw.falta : 0),
+                    tdNum(rw.semContato, DS["SEM CONTATO"].txt),
+                    tdCobertura(rw.perc));
+                const trTotal = _h("tr", { style: { background: "#f9fafb", borderTop: "1px solid #e5e7eb" } },
+                    _h("td", { style: { padding: "10px 18px", fontWeight: 700, color: "#111827" } }, "Total geral"),
+                    tdNum(tot.aCaminho, DS["A CAMINHO"].txt, 700),
+                    tdNum(tot.confirmado, DS.CONFIRMADO.txt, 700),
+                    tdNum(tot.emLoja, DS["EM LOJA"].txt, 700),
+                    _h("td", { style: { padding: "9px 10px", textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#6b7280", fontWeight: 700 } }, tot.titulares),
+                    tdNum(tot.falta, DS.FALTANDO.txt, 700, tot.falta > 0 ? "−" + tot.falta : 0),
+                    tdNum(tot.semContato, DS["SEM CONTATO"].txt, 700),
+                    tdCobertura(totPerc, 800));
+                const th = (txt, esq, extra) => _h("th", { style: Object.assign({ padding: esq ? "10px 18px" : "10px", fontWeight: 600, textAlign: esq ? "left" : "right", whiteSpace: "nowrap" }, extra || {}) }, txt);
+
+                return _h("div", { className: "space-y-4" },
+                    // Cabeçalho da página
+                    _h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 } },
+                        _h("div", null,
+                            _h("h1", { style: { margin: 0, fontFamily: DS_SORA, fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, "Panorama do dia"),
+                            _h("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13, display: "flex", alignItems: "center", gap: 6 } }, _dsDot("#16a34a", 7), "Sincronizado às " + horaSync)),
+                        _h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                            _h("input", {
+                                type: "date",
+                                "aria-label": "Data da planilha",
+                                value: p.dispDataPlanilha || _dsHoje(),
+                                onChange: ev => x({ ...p, dispDataPlanilha: ev.target.value }),
+                                style: DS_BTN
+                            }),
+                            _h("select", {
+                                "aria-label": "Ordenação",
+                                value: p.panoramaOrdem || "regiao",
+                                onChange: ev => x({ ...p, panoramaOrdem: ev.target.value }),
+                                style: DS_BTN
+                            }, _h("option", { value: "regiao" }, "Ordenar: por região"), _h("option", { value: "pior" }, "Ordenar: pior → melhor"), _h("option", { value: "melhor" }, "Ordenar: melhor → pior"), _h("option", { value: "alfa" }, "Ordenar: A → Z")),
+                            _h("button", {
+                                type: "button",
+                                onClick: () => { navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("Link copiado!", "success") },
+                                title: "Copiar link público (somente leitura)",
+                                style: { ...DS_BTN, fontWeight: 600 }
+                            }, _dsIco("link", 15), "Copiar link público"),
+                            _h("button", { type: "button", onClick: r, title: "Atualizar", "aria-label": "Atualizar", style: { ...DS_BTN, width: 38, padding: 0, justifyContent: "center" } }, _dsIco("refresh", 16)))),
+                    // Faixa de KPIs
+                    _h("section", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]", style: { ...DS_CARD, overflow: "hidden" } },
+                        _h("div", { style: { padding: "16px 20px", borderRight: "1px solid #f3f4f6", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 } },
+                            _h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" } },
+                                _h("span", { style: { fontSize: 12, color: "#6b7280" } }, "Cobertura geral"),
+                                _h("span", { style: { fontSize: 12, color: "#6b7280" } }, faltam100 > 0 ? "faltam " + faltam100 + " para 100%" : "meta atingida")),
+                            _h("div", { style: { fontFamily: DS_SORA, fontSize: 30, fontWeight: 700, color: faixaGeral[1], lineHeight: 1.15, fontVariantNumeric: "tabular-nums" } }, percGeral + "%"),
+                            _h("div", { style: { display: "flex" } }, _dsBar(percGeral, faixaGeral[0]))),
+                        _dsKpi("Em loja", _h(React.Fragment, null, emLojaN, _h("span", { style: { fontSize: 15, color: "#9ca3af", fontWeight: 600 } }, " / " + titularesN)), aCaminhoN + " a caminho · " + confirmadoN + " confirmado" + (confirmadoN === 1 ? "" : "s")),
+                        _dsKpi("Sem contato", semContato, semContato === 1 ? "motoboy sem retorno" : "motoboys sem retorno", semContato > 0 ? "#374151" : "#111827"),
+                        _dsKpi("Lojas críticas", lojasCriticas.length, "abaixo de 50%", lojasCriticas.length > 0 ? "#991b1b" : "#111827", { borderRight: 0 })),
+                    // Precisam de atenção
+                    lojasCriticas.length > 0 && _h("section", { style: { ...DS_CARD, padding: "6px 0", overflow: "hidden" } },
+                        _h("div", { style: { padding: "10px 18px 8px", fontWeight: 600, fontSize: 14, color: "#111827", display: "flex", alignItems: "center", gap: 8 } }, "Precisam de atenção", _h("span", { style: { fontWeight: 400, fontSize: 12, color: "#6b7280" } }, lojasCriticas.length + " abaixo de 50%")),
+                        lojasCriticas.slice(0, 5).map(loja => {
+                            const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
+                            const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
+                            const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
+                            const lojaPerc = lojaTit.length > 0 ? Math.round((lojaEmLoja / lojaTit.length) * 100) : 0;
+                            const regiaoLoja = (e.regioes || []).find(rg => rg.id === loja.regiao_id);
+                            const ir = () => x({ ...p, dispRegiaoAtiva: loja.regiao_id, dispSubTab: "principal", dispLojasAbertas: [loja.id] });
+                            return _h("div", {
+                                key: loja.id,
+                                role: "button",
+                                tabIndex: 0,
+                                onClick: ir,
+                                onKeyDown: ev => { (ev.key === "Enter" || ev.key === " ") && (ev.preventDefault(), ir()) },
+                                className: "hover:bg-gray-50",
+                                title: "Clique para ir ao painel desta loja",
+                                style: { display: "grid", gridTemplateColumns: "64px minmax(0, 1fr) auto 48px", gap: 12, alignItems: "center", padding: "10px 18px", borderTop: "1px solid #f3f4f6", cursor: "pointer", color: "#111827", fontSize: 13 }
+                            },
+                                _h("span", { style: { fontFamily: DS_MONO, fontSize: 12, color: "#5d0b85", fontWeight: 700 } }, loja.codigo),
+                                _h("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, _h("b", { style: { fontWeight: 600 } }, loja.nome), regiaoLoja ? _h("span", { style: { color: "#6b7280" } }, " · " + regiaoLoja.nome) : null),
+                                _h("span", { style: { color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" } }, lojaEmLoja + " em loja de " + lojaTit.length),
+                                _h("span", { style: { textAlign: "right", fontWeight: 700, color: "#991b1b", fontVariantNumeric: "tabular-nums" } }, lojaPerc + "%"));
+                        })),
+                    // Tabela
+                    _h("section", { style: { ...DS_CARD, overflow: "hidden" } },
+                        _h("div", { style: { padding: "12px 18px", display: "flex", flexWrap: "wrap", gap: 14, fontSize: 12, color: "#6b7280", borderBottom: "1px solid #f3f4f6" } },
+                            ["EM LOJA", "CONFIRMADO", "A CAMINHO", "FALTANDO", "SEM CONTATO"].map(st => _h("span", { key: st, style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot(DS[st].cor, 8), st === "FALTANDO" ? "Falta" : DS[st].label)),
+                            _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, marginLeft: "auto" } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: "#fef2f2", border: "1px solid #fecaca" } }), "Loja abaixo de 50%")),
+                        _h("div", { style: { overflowX: "auto" } },
+                            _h("table", { id: "panorama-table", style: { width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 760 } },
+                                _h("thead", null, _h("tr", { style: { color: "#6b7280", background: "#f9fafb", fontSize: 12 } },
+                                    th("Loja", true), th("A caminho"), th("Confirm."), th("Em loja"), th("Ideal"), th("Falta"), th("S/ contato"), th("Cobertura", true, { width: 190 }))),
+                                _h("tbody", null, "regiao" === ordem
+                                    ? _h(React.Fragment, null, regs.map(rg => {
+                                        const doGrupo = rows.filter(rw => rw.regiao_id === rg.id);
+                                        return 0 === doGrupo.length ? null : _h(React.Fragment, { key: rg.id },
+                                            _h("tr", { style: { background: "#f9fafb", borderTop: "1px solid #e5e7eb" } },
+                                                _h("td", { colSpan: 8, style: { padding: "8px 18px", fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#6b7280" } }, rg.nome, rg.gestores ? " · " + rg.gestores : "")),
+                                            doGrupo.map((rw, i2) => trLoja(rw, i2, false)));
+                                    }), trTotal)
+                                    : _h(React.Fragment, null, rows.map((rw, i2) => trLoja(rw, i2, true)), trTotal))))));
+            };
+
+            /* DISP_CLEAN_V1 — Painel (edição da escala do dia) */
+            const _dispPainelClean = () => {
+                const dataEscolhida = p.dispDataPlanilha || _dsHoje();
+                const resetarDia = async () => {
+                    const dataEsc = p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
+                        dataFmt = new Date(dataEsc + "T12:00:00").toLocaleDateString("pt-BR");
+                    if (!window.confirm("Resetar disponibilidade do dia " + dataFmt + "?\n\n• Salva espelho do dia\n• Remove motoboys com 3+ dias SEM CONTATO\n• Reseta status para A CONFIRMAR\n• Limpa observações\n• Converte reposição em excedente")) return;
+                    try {
+                        x(es => ({ ...es, dispLoading: !0 }));
+                        const a = await _fetch(`${API_URL}/disponibilidade/resetar`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ data_planilha: dataEsc })
+                            }),
+                            l = await a.json();
+                        if (l.success) {
+                            let msg = "Status resetado! Espelho salvo em " + dataFmt;
+                            if (l.em_loja_registrados > 0) msg += " | " + l.em_loja_registrados + " em loja";
+                            if (l.sem_contato_registrados > 0) msg += " | " + l.sem_contato_registrados + " sem contato";
+                            ja(msg, "success");
+                            if (l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0) {
+                                setTimeout(() => alert("Removidos por 3 dias SEM CONTATO:\n\n" + l.removidos_por_sem_contato.map(rm => rm.cod + " - " + rm.nome).join("\n")), 500);
+                            }
+                        } else ja("Erro ao resetar", "error");
+                        r();
+                    } catch (err) {
+                        console.error("Erro ao resetar:", err);
+                        ja("Erro ao resetar", "error");
+                        x(es => ({ ...es, dispLoading: !1 }));
+                    }
+                };
+
+                // Seletor segmentado de status (6 opções; Faltando abre o modal "Registrar Falta")
+                const seletorStatus = (linha) => {
+                    const status = linha.status || "A CONFIRMAR";
+                    return _h("div", { role: "radiogroup", "aria-label": "Status do entregador", style: { display: "inline-flex", background: "#f3f4f6", borderRadius: 10, padding: 3, gap: 2, flexWrap: "nowrap" } },
+                        DS_ORDEM.map(key => {
+                            const st = DS[key];
+                            const ativo = status === key;
+                            return _h("button", {
+                                key,
+                                type: "button",
+                                role: "radio",
+                                "aria-checked": ativo ? "true" : "false",
+                                title: "Marcar como " + st.label,
+                                onClick: () => {
+                                    if (key === "FALTANDO") {
+                                        x(prev => ({ ...prev, modalFaltando: !0, faltandoLinha: linha, faltandoMotivo: "" }));
+                                    } else {
+                                        c(linha.id, "status", key);
+                                    }
+                                },
+                                className: ativo ? "" : "hover:bg-white",
+                                style: { border: 0, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: ativo ? 600 : 500, whiteSpace: "nowrap", cursor: "pointer", color: ativo ? "#ffffff" : "#6b7280", background: ativo ? st.cor : "transparent", fontFamily: "inherit" }
+                            }, st.label);
+                        }));
+                };
+
+                const linhaEntregador = (linha, lojaId) => {
+                    const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "–";
+                    const tipo = linha.is_reposicao ? "Reposição" : linha.is_excedente ? "Excedente" : "Titular";
+                    const fundo = linha.is_reposicao ? DS_ROW.reposicao : linha.is_excedente ? DS_ROW.excedente : (linha.status === "FALTANDO" ? DS_ROW.falta : "#ffffff");
+                    const obsText = linha.observacao || "";
+                    const chips = [];
+                    const dataMatch = obsText.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?/);
+                    if (dataMatch) chips.push({ icon: "calendar", text: dataMatch[0], bg: "#fffbeb", fg: "#92400e" });
+                    const horaMatch = obsText.match(/(\d{1,2})(?::?(\d{2}))?\s?h\b/i);
+                    if (horaMatch) chips.push({ icon: "clock", text: horaMatch[0].toLowerCase(), bg: "#eff6ff", fg: "#1e40af" });
+                    if (linha.status === "SEM CONTATO") chips.push({ icon: "phone", text: "sem contato", bg: "#f3f4f6", fg: "#374151" });
+                    return _h("tr", { key: linha.id, style: { borderTop: "1px solid #f3f4f6", background: fundo } },
+                        _h("td", { style: { padding: "10px 10px 10px 18px", width: 84 } },
+                            _h("input", {
+                                type: "text",
+                                value: linha.cod_profissional || "",
+                                onChange: ev => c(linha.id, "cod_profissional", ev.target.value),
+                                "data-cod-input": linha.id,
+                                "aria-label": "Código do entregador",
+                                placeholder: "—",
+                                className: "focus:outline-none focus:border-[#770fa8]",
+                                style: { width: 66, height: 30, border: "1px solid #e5e7eb", borderRadius: 8, textAlign: "center", fontFamily: DS_MONO, fontSize: 12, color: "#374151", background: "#ffffff" }
+                            })),
+                        _h("td", { style: { padding: "10px", minWidth: 180 } },
+                            _h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                                linha.foto
+                                    ? _h("img", { src: linha.foto, alt: linha.nome_profissional || "", style: { width: 30, height: 30, borderRadius: 99, objectFit: "cover", flex: "none", border: "1px solid #e5e7eb" } })
+                                    : _h("span", { style: { width: 30, height: 30, borderRadius: 99, background: linha.nome_profissional ? "#f3e8fb" : "#f3f4f6", color: linha.nome_profissional ? "#5d0b85" : "#9ca3af", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700, flex: "none" } }, initials),
+                                _h("div", { style: { minWidth: 0 } },
+                                    _h("div", { style: { fontWeight: 600, fontSize: 13, color: linha.nome_profissional ? "#111827" : "#9ca3af", fontStyle: linha.nome_profissional ? "normal" : "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 } }, linha.nome_profissional || (linha.is_reposicao || linha.is_excedente ? "—" : "Vaga livre")),
+                                    _h("div", { style: { fontSize: 11, color: "#9ca3af" } }, tipo)))),
+                        _h("td", { style: { padding: "10px" } }, seletorStatus(linha)),
+                        _h("td", { style: { padding: "10px", minWidth: 200 } },
+                            _h("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" } },
+                                chips.map((chip, ci) => _h("span", { key: ci, style: { display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 99, fontSize: 11, fontWeight: 500, background: chip.bg, color: chip.fg } }, _dsIco(chip.icon, 12), chip.text)),
+                                _h("input", {
+                                    type: "text",
+                                    value: linha.observacao || "",
+                                    onChange: ev => c(linha.id, "observacao", ev.target.value),
+                                    placeholder: chips.length > 0 ? "" : "Observação",
+                                    "aria-label": "Observação",
+                                    title: linha.observacao_criada_por ? linha.observacao_criada_por : "",
+                                    className: "focus:outline-none focus:border-[#770fa8]",
+                                    style: { flex: 1, minWidth: 90, height: 30, padding: "0 8px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12, color: "#374151", background: "#ffffff" }
+                                }))),
+                        _h("td", { style: { padding: "10px 18px 10px 4px", width: 44, textAlign: "center" } },
+                            _h("button", {
+                                type: "button",
+                                onClick: () => {
+                                    if (window.confirm("Remover esta linha?")) {
+                                        _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" })
+                                            .then(resp => resp.ok ? r() : ja("Erro ao remover", "error"));
+                                    }
+                                },
+                                className: "hover:bg-red-50 hover:text-red-700",
+                                style: { width: 28, height: 28, borderRadius: 8, border: 0, background: "transparent", color: "#9ca3af", display: "inline-grid", placeItems: "center", cursor: "pointer" },
+                                title: "Remover linha",
+                                "aria-label": "Remover linha"
+                            }, _dsIco("x", 14))));
+                };
+
+                const lojaAcordeao = (t) => {
+                    const a = (e.linhas || []).filter(li => li.loja_id === t.id),
+                        aberta = (p.dispLojasAbertas || []).includes(t.id),
+                        o = a.filter(li => "EM LOJA" === li.status).length,
+                        totalTitulares = a.filter(li => !li.is_excedente && !li.is_reposicao).length,
+                        i = a.filter(li => "FALTANDO" === li.status).length,
+                        aCam = a.filter(li => "A CAMINHO" === li.status).length,
+                        semC = a.filter(li => "SEM CONTATO" === li.status).length;
+                    const pill = i > 0 ? _dsPill("FALTANDO", i + " faltando")
+                        : (o >= totalTitulares && totalTitulares > 0) ? _dsPill("EM LOJA", "Completa")
+                        : aCam > 0 ? _dsPill("A CAMINHO", aCam + " a caminho")
+                        : semC > 0 ? _dsPill("SEM CONTATO", semC + " sem contato") : null;
+                    const alternar = () => {
+                        const atuais = p.dispLojasAbertas || [];
+                        x(aberta ? { ...p, dispLojasAbertas: atuais.filter(id => id !== t.id) } : { ...p, dispLojasAbertas: [...atuais, t.id] });
+                    };
+                    const ordenadas = [...a].sort((e1, t1) => e1.is_reposicao && !t1.is_reposicao ? -1 : !e1.is_reposicao && t1.is_reposicao || e1.is_excedente && !t1.is_excedente ? 1 : !e1.is_excedente && t1.is_excedente ? -1 : 0);
+                    return _h("section", { key: t.id, style: { ...DS_CARD, overflow: "hidden" } },
+                        _h("div", {
+                            role: "button",
+                            tabIndex: 0,
+                            "aria-expanded": aberta ? "true" : "false",
+                            onClick: alternar,
+                            onKeyDown: ev => { (ev.key === "Enter" || ev.key === " ") && ev.target === ev.currentTarget && (ev.preventDefault(), alternar()) },
+                            className: "hover:bg-gray-50",
+                            style: { padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", cursor: "pointer", borderBottom: aberta ? "1px solid #f3f4f6" : "0" }
+                        },
+                            _h("span", { style: { display: "inline-flex", color: "#6b7280", transform: aberta ? "rotate(90deg)" : "none", transition: "transform .15s" } }, _dsIco("arrowright", 14)),
+                            _h("span", { style: { fontFamily: DS_MONO, color: "#5d0b85", fontWeight: 700, fontSize: 13 } }, t.codigo),
+                            _h("b", { style: { fontSize: 14, fontWeight: 600, color: "#111827" } }, t.nome),
+                            pill,
+                            _h("span", { style: { color: "#6b7280", fontSize: 13, fontVariantNumeric: "tabular-nums" } }, o + " de " + totalTitulares + " em loja"),
+                            _h("div", { style: { marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" } },
+                                _h("button", { type: "button", onClick: ev => { ev.stopPropagation(); s(t.id, 1, false); }, title: "Adicionar 1 titular", className: "hover:bg-gray-50", style: DS_BTN_SM }, _dsIco("plus", 13), "Adicionar titular"),
+                                _h("button", { type: "button", onClick: ev => { ev.stopPropagation(); s(t.id, 1, true); }, title: "Adicionar 1 excedente", className: "hover:bg-gray-50", style: DS_BTN_SM }, _dsIco("plus", 13), "Adicionar excedente"))),
+                        aberta && _h("div", { "data-loja-id": t.id, style: { overflowX: "auto" } },
+                            _h("table", { style: { width: "100%", borderCollapse: "collapse", minWidth: 940, fontSize: 13 } },
+                                _h("thead", null, _h("tr", { style: { color: "#6b7280", textAlign: "left", background: "#f9fafb", fontSize: 12 } },
+                                    _h("th", { style: { padding: "9px 10px 9px 18px", fontWeight: 600 } }, "Cód."),
+                                    _h("th", { style: { padding: "9px 10px", fontWeight: 600 } }, "Entregador"),
+                                    _h("th", { style: { padding: "9px 10px", fontWeight: 600 } }, "Status · clique para mudar"),
+                                    _h("th", { style: { padding: "9px 10px", fontWeight: 600 } }, "Observação"),
+                                    _h("th", { style: { padding: "9px 18px 9px 4px" } }, _h("span", { className: "sr-only" }, "Ações")))),
+                                _h("tbody", null,
+                                    ordenadas.length === 0 && _h("tr", null, _h("td", { colSpan: 5, style: { padding: "18px", textAlign: "center", color: "#9ca3af", fontSize: 12.5 } }, "Nenhuma linha nesta loja. Use \"Adicionar titular\".")),
+                                    ordenadas.map((linha, idx, arr) => {
+                                        const isFirstExcedente = linha.is_excedente && (idx === 0 || !arr[idx - 1].is_excedente);
+                                        return _h(React.Fragment, { key: linha.id },
+                                            isFirstExcedente && _h("tr", { style: { borderTop: "1px solid #fde68a", background: "#fffbeb" } },
+                                                _h("td", { colSpan: 5, style: { padding: "7px 18px" } },
+                                                    _h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+                                                        _h("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#92400e" } }, "Excedentes · ", arr.filter(z => z.is_excedente).length),
+                                                        _h("button", { type: "button", onClick: () => s(t.id, 1, true), style: { height: 26, padding: "0 10px", borderRadius: 8, border: "1px solid #fde68a", background: "#ffffff", color: "#92400e", fontSize: 11.5, fontWeight: 600, cursor: "pointer" } }, "+ Adicionar")))),
+                                            linhaEntregador(linha, t.id));
+                                    })))));
+                };
+
+                return _h("div", { className: "space-y-4" },
+                    // Cabeçalho
+                    _h("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 } },
+                        _h("h1", { style: { margin: "0 12px 0 0", fontFamily: DS_SORA, fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, "Painel"),
+                        _h("input", {
+                            type: "date",
+                            "aria-label": "Data da planilha",
+                            value: dataEscolhida,
+                            onChange: ev => x({ ...p, dispDataPlanilha: ev.target.value }),
+                            style: DS_BTN
+                        }),
+                        _h("label", { style: { flex: "1 1 260px", display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: 10, background: "#ffffff", color: "#9ca3af" } },
+                            _dsIco("search", 14),
+                            _h("input", {
+                                type: "text",
+                                "aria-label": "Buscar motoboy",
+                                placeholder: "Buscar código ou nome",
+                                value: p.buscaEntregador || "",
+                                onChange: ev => x({ ...p, buscaEntregador: ev.target.value }),
+                                style: { flex: 1, minWidth: 0, border: 0, outline: 0, fontSize: 13, color: "#111827", background: "transparent", fontFamily: "inherit" }
+                            }),
+                            p.buscaEntregador && _h("button", {
+                                type: "button",
+                                onClick: () => x({ ...p, buscaEntregador: "" }),
+                                style: { background: "none", border: "none", padding: 0, color: "#9ca3af", cursor: "pointer", display: "inline-flex" },
+                                "aria-label": "Limpar busca"
+                            }, _dsIco("x", 14))),
+                        _h("button", { type: "button", onClick: r, className: "hover:bg-gray-50", style: { ...DS_BTN, fontWeight: 600 } }, _dsIco("refresh", 15), "Atualizar"),
+                        _h("button", { type: "button", onClick: resetarDia, style: { ...DS_BTN, fontWeight: 600, border: "1px solid #fde68a", background: "#fffbeb", color: "#92400e" } }, "Resetar dia")),
+                    // Resultados da busca
+                    p.buscaEntregador && p.buscaEntregador.length >= 2 && _h("section", { style: { ...DS_CARD, overflow: "hidden" } },
+                        _h("div", { style: { padding: "10px 18px", fontSize: 12, color: "#6b7280", borderBottom: "1px solid #f3f4f6" } }, 'Resultados para "', _h("b", { style: { color: "#111827" } }, p.buscaEntregador), '"'),
+                        _h("div", { style: { maxHeight: 240, overflowY: "auto" } }, (() => {
+                            const q = p.buscaEntregador.toLowerCase(),
+                                achados = (e.linhas || []).filter(li => li.cod_profissional && li.cod_profissional.toLowerCase().includes(q) || li.nome_profissional && li.nome_profissional.toLowerCase().includes(q));
+                            return 0 === achados.length ? _h("p", { style: { margin: 0, padding: "14px 18px", color: "#6b7280", fontSize: 13 } }, "Nenhum resultado encontrado") : achados.slice(0, 10).map(li => {
+                                const lj = (e.lojas || []).find(z => z.id === li.loja_id);
+                                return _h("div", { key: li.id, style: { display: "flex", alignItems: "center", gap: 12, padding: "9px 18px", borderTop: "1px solid #f3f4f6", fontSize: 13, flexWrap: "wrap" } },
+                                    _h("span", { style: { fontFamily: DS_MONO, fontWeight: 700, color: "#374151", fontSize: 12, minWidth: 54 } }, li.cod_profissional || "-"),
+                                    _h("span", { style: { fontWeight: 600, color: "#111827", flex: 1, minWidth: 120 } }, li.nome_profissional || "Sem nome"),
+                                    _h("span", { style: { color: "#6b7280", fontSize: 12 } }, lj?.nome || ""),
+                                    _dsPill(li.status || "A CONFIRMAR"));
+                            });
+                        })())),
+                    p.modalFaltando && React.createElement("div", {
+                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            }, React.createElement("div", {
+                className: "bg-white rounded-[14px] border border-gray-200 shadow-xl p-6 w-full max-w-md mx-4"
+            }, React.createElement("h3", {
+                className: "text-lg font-semibold text-gray-900 mb-4"
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Registrar Falta")), React.createElement("div", {
+                className: "mb-4"
+            }, React.createElement("p", {
+                className: "text-sm text-gray-600 mb-2"
+            }, React.createElement("strong", null, "Profissional:"), " ", p.faltandoLinha?.nome_profissional || p.faltandoLinha?.cod_profissional || "Não identificado"), React.createElement("label", {
+                className: "text-sm font-semibold text-gray-700"
+            }, "Motivo da falta *"), React.createElement("textarea", {
+                value: p.faltandoMotivo || "",
+                onChange: e => x({
+                    ...p,
+                    faltandoMotivo: e.target.value
+                }),
+                placeholder: "Digite o motivo da falta...",
+                className: "w-full px-3 py-2 border border-gray-200 rounded-[10px] mt-1 text-sm focus:outline-none focus:border-[#770fa8]",
+                rows: 3,
+                autoFocus: !0
+            })), React.createElement("div", {
+                className: "flex gap-2"
+            }, React.createElement("button", {
+                onClick: () => x({
+                    ...p,
+                    modalFaltando: !1,
+                    faltandoLinha: null,
+                    faltandoMotivo: ""
+                }),
+                className: "flex-1 h-10 px-4 bg-white border border-gray-200 text-gray-700 rounded-[10px] font-semibold hover:bg-gray-50"
+            }, "Cancelar"), React.createElement("button", {
+                onClick: async () => {
+                    const t = p.faltandoLinha,
+                        a = p.faltandoMotivo?.trim();
+                    if (!a) return void ja("Digite o motivo da falta", "error");
+                    const l = p.dispDataPlanilha || (new Date).toISOString().split("T")[0];
+                    try {
+                        await _fetch(`${API_URL}/disponibilidade/linhas/${t.id}`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                cod_profissional: t.cod_profissional,
+                                nome_profissional: t.nome_profissional,
+                                status: "FALTANDO",
+                                observacao: a
+                            })
+                        }), await _fetch(`${API_URL}/disponibilidade/faltosos`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                loja_id: t.loja_id,
+                                cod_profissional: t.cod_profissional,
+                                nome_profissional: t.nome_profissional,
+                                motivo: a,
+                                data_falta: l
+                            })
+                        });
+                        const r = await _fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    loja_id: t.loja_id,
+                                    after_linha_id: t.id
+                                })
+                            }),
+                            o = await r.json(),
+                            c = [...e.linhas || []],
+                            s = c.findIndex(e => e.id === t.id); - 1 !== s && (c[s] = {
+                            ...c[s],
+                            status: "FALTANDO",
+                            observacao: a
+                        }), c.push(o), x(t => ({
+                            ...t,
+                            modalFaltando: !1,
+                            faltandoLinha: null,
+                            faltandoMotivo: "",
+                            dispData: {
+                                ...e,
+                                linhas: c
+                            }
+                        })), ja("Falta registrada e linha de reposição criada!", "success")
+                    } catch (e) {
+                        console.error("Erro ao registrar falta:", e), ja("Erro ao registrar falta", "error")
+                    }
+                },
+                className: "flex-1 h-10 px-4 bg-white border border-red-200 text-red-800 rounded-[10px] font-semibold hover:bg-red-50"
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Confirmar Falta"))))),
+                    0 === (e.regioes || []).length
+                        ? _h("div", { style: { ...DS_CARD, padding: 32, textAlign: "center" } },
+                            _h("p", { style: { margin: 0, color: "#6b7280", fontSize: 15 } }, "Nenhuma estrutura configurada."),
+                            _h("button", { type: "button", onClick: () => x({ ...p, dispSubTab: "config" }), style: { marginTop: 16, height: 40, padding: "0 16px", borderRadius: 10, border: 0, background: "#770fa8", color: "#ffffff", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" } }, _dsIco("settings", 16), "Configurar estrutura"))
+                        : _h(React.Fragment, null,
+                            // Chips de região
+                            _h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 } },
+                                (e.regioes || []).map(t => {
+                                    const a = (e.lojas || []).filter(lj => lj.regiao_id === t.id),
+                                        l = (e.linhas || []).filter(li => a.some(lj => lj.id === li.loja_id)),
+                                        emL = l.filter(li => "EM LOJA" === li.status).length,
+                                        tit = l.filter(li => !li.is_excedente && !li.is_reposicao).length,
+                                        isAtiva = p.dispRegiaoAtiva === t.id;
+                                    const pct = tit > 0 ? (emL / tit) * 100 : 0;
+                                    const fx = _dsFaixa(pct, 100);
+                                    return _h("button", {
+                                        key: t.id,
+                                        type: "button",
+                                        "aria-pressed": isAtiva ? "true" : "false",
+                                        onClick: () => x({ ...p, dispRegiaoAtiva: p.dispRegiaoAtiva === t.id ? null : t.id }),
+                                        className: isAtiva ? "" : "hover:border-gray-300",
+                                        style: { display: "flex", flexDirection: "column", gap: 8, padding: isAtiva ? "11.5px 13.5px" : "12px 14px", borderRadius: 12, color: "#111827", cursor: "pointer", textAlign: "left", background: isAtiva ? "#faf7fd" : "#ffffff", border: isAtiva ? "1.5px solid #770fa8" : "1px solid #e5e7eb", fontFamily: "inherit" }
+                                    },
+                                        _h("span", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 } },
+                                            _h("b", { style: { fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 } }, t.nome),
+                                            _h("span", { style: { fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 13, color: fx[1] } }, Math.round(pct) + "%")),
+                                        _h("span", { style: { display: "flex" } }, _dsBar(pct, fx[0], 4)),
+                                        _h("span", { style: { fontSize: 11.5, color: "#6b7280" } }, emL + " em loja de " + tit));
+                                })),
+                            p.dispRegiaoAtiva && (() => {
+                                const t = (e.regioes || []).find(rg => rg.id === p.dispRegiaoAtiva);
+                                if (!t) return null;
+                                const a = (e.lojas || []).filter(lj => lj.regiao_id === t.id);
+                                return _h("div", { className: "space-y-3" },
+                                    a.map(lojaAcordeao),
+                                    _h("div", { style: { display: "flex", gap: 8, paddingTop: 4, flexWrap: "wrap" } },
+                                        _h("button", { type: "button", onClick: () => x({ ...p, dispLojasAbertas: a.map(lj => lj.id) }), className: "hover:bg-gray-50", style: DS_BTN_SM }, _dsIco("arrowdown", 13), "Expandir todas"),
+                                        _h("button", { type: "button", onClick: () => x({ ...p, dispLojasAbertas: [] }), className: "hover:bg-gray-50", style: DS_BTN_SM }, "Recolher todas")));
+                            })(),
+                            !p.dispRegiaoAtiva && _h("div", { style: { ...DS_CARD, padding: "32px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" } },
+                                _h("span", { style: { color: "#9ca3af", display: "inline-flex" } }, _dsIco("map", 22)),
+                                _h("p", { style: { margin: 0, fontSize: 14, fontWeight: 600, color: "#111827" } }, "Selecione uma região acima"),
+                                _h("p", { style: { margin: 0, fontSize: 12.5, color: "#6b7280" } }, "As lojas e motoboys da região aparecem aqui"))),
+                    // Legenda (cores de status + fundos das linhas)
+                    (e.regioes || []).length > 0 && _h("div", { style: { display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center", fontSize: 12, color: "#6b7280", padding: "2px 2px" } },
+                        DS_ORDEM.map(st => _h("span", { key: st, style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _dsDot(DS[st].cor, 8), DS[st].label)),
+                        _h("span", { "aria-hidden": "true", style: { width: 1, height: 14, background: "#e5e7eb" } }),
+                        _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.excedente, border: "1px solid #fde68a" } }), "Excedente"),
+                        _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.reposicao, border: "1px solid #bfdbfe" } }), "Reposição"),
+                        _h("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 } }, _h("span", { style: { width: 14, height: 10, borderRadius: 3, background: DS_ROW.falta, border: "1px solid #fecaca" } }), "Titular com falta")));
             };
             return a ? React.createElement("div", {
                 className: "flex items-center justify-center py-12"
@@ -631,29 +1186,23 @@
             }), React.createElement("p", {
                 className: "mt-4 text-gray-600"
             }, "Carregando..."))) : React.createElement("div", {
-                className: "space-y-4"
+                className: "space-y-4 disp-clean-root" /* DISP_CLEAN_V1: abas limpas, sem barra de sync duplicada */
             }, React.createElement("div", {
-                className: "flex items-center justify-end gap-2 text-xs text-gray-500"
-            }, React.createElement("span", {
-                className: "flex items-center gap-1"
-            }, React.createElement("span", {
-                className: "w-2 h-2 bg-green-500 rounded-full animate-pulse"
-            }), "Sincronização em tempo real ativa")), React.createElement("div", {
-                className: "bg-white rounded-xl shadow"
+                className: "bg-white rounded-[14px] border border-gray-200"
             }, React.createElement("div", {
-                className: "flex border-b overflow-x-auto"
+                className: "flex gap-1 px-2 overflow-x-auto"
             }, React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     dispSubTab: "panorama"
                 }),
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("panorama" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("panorama" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-chart" })), "Panorama")), React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     dispSubTab: "principal"
                 }),
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("principal" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("principal" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Painel")), React.createElement("button", {
                 onClick: async () => {
                     x(e => ({
@@ -671,8 +1220,8 @@
                         console.error("Erro ao carregar faltosos:", e)
                     }
                 },
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("faltosos" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Faltosos")), React.createElement("button", {
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("faltosos" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Faltosos")), React.createElement("button", {
                 onClick: async () => {
                     x(e => ({
                         ...e,
@@ -689,7 +1238,7 @@
                         console.error("Erro ao carregar datas espelho:", e)
                     }
                 },
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("espelho" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("espelho" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-copy" })), "Espelho")), React.createElement("button", {
                 onClick: async () => {
                     x(e => ({
@@ -733,7 +1282,7 @@
                         }))
                     }
                 },
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("relatorios" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("relatorios" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trendup" })), "Relatórios")), React.createElement("button", {
                 onClick: async () => {
                     x(e => ({
@@ -760,7 +1309,7 @@
                         }))
                     }
                 },
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("motoboys" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("motoboys" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
             }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" })), "Motoboys")), React.createElement("button", {
                 onClick: async () => {
                     x(e => ({
@@ -783,603 +1332,14 @@
                         }))
                     }
                 },
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("restricoes" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Restrições")), React.createElement("button", {
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("restricoes" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-ban" })), "Restrições")), React.createElement("button", {
                 onClick: () => x({
                     ...p,
                     dispSubTab: "config"
                 }),
-                className: "px-3 py-2 font-semibold text-sm whitespace-nowrap " + ("config" === t ? "text-purple-700 border-b-2 border-purple-600 bg-purple-50" : "text-gray-600")
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Config")))), "panorama" === t && React.createElement("div", null, React.createElement("div", {
-                className: "bg-gray-800 text-white px-2 py-1.5 flex justify-between items-center text-[10px] flex-wrap gap-1"
-            }, React.createElement("div", {
-                className: "flex items-center gap-2"
-            }, React.createElement("span", {
-                className: "font-bold"
-            }, "PANORAMA DIÁRIO"), (() => {
-                const t = e.linhas || [],
-                    a = t.filter(e => !e.is_excedente && !e.is_reposicao).length,
-                    l = t.filter(e => "EM LOJA" === e.status).length,
-                    r = (t.filter(e => ["A CAMINHO", "CONFIRMADO", "EM LOJA"].includes(e.status)).length, Math.max(0, a - l)),
-                    o = a > 0 ? Math.min(l / a * 100, 100).toFixed(0) : 0;
-                return React.createElement("div", {
-                    className: "flex items-center gap-2"
-                }, React.createElement("span", {
-                    className: "px-2 py-0.5 rounded text-xs font-bold " + (o >= 80 ? "bg-green-500" : o >= 50 ? "bg-yellow-500 text-black" : "bg-red-500")
-                }, o, "% GERAL"), r > 0 && React.createElement("span", {
-                    className: "px-2 py-0.5 rounded text-xs font-bold bg-red-600 animate-pulse"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "FALTAM "), r, " P/ 100%"))
-            })()), React.createElement("div", {
-                className: "flex items-center gap-1 flex-wrap"
-            }, React.createElement("span", {
-                className: "text-gray-400 text-[9px]"
-            }, "Atualizado: ", (new Date).toLocaleTimeString("pt-BR", {
-                hour: "2-digit",
-                minute: "2-digit"
-            })), React.createElement("select", {
-                value: p.panoramaOrdem || "regiao",
-                onChange: e => x({
-                    ...p,
-                    panoramaOrdem: e.target.value
-                }),
-                className: "px-1 py-0 bg-gray-700 border border-gray-600 rounded text-[9px]"
-            }, React.createElement("option", {
-                value: "regiao"
-            }, "Por Região"), React.createElement("option", {
-                value: "pior"
-            }, "Pior → Melhor"), React.createElement("option", {
-                value: "melhor"
-            }, "Melhor → Pior"), React.createElement("option", {
-                value: "alfa"
-            }, "A → Z")), React.createElement("input", {
-                type: "date",
-                value: p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
-                onChange: e => x({
-                    ...p,
-                    dispDataPlanilha: e.target.value
-                }),
-                className: "px-1 py-0 border border-gray-600 rounded text-[10px] text-white bg-gray-700"
-            }), React.createElement("button", {
-                onClick: r,
-                className: "px-1.5 py-0.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-[10px]"
-            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))), React.createElement("button", {
-                onClick: () => {
-                    navigator.clipboard.writeText(`${API_URL}/disponibilidade/publico`), ja("Link copiado!", "success")
-                },
-                className: "px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px]",
-                title: "Copiar link público (somente leitura)"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-link" })), "Link Público")))),
-            (() => {
-                const linhasAll = e.linhas || [];
-                const titulares = linhasAll.filter(l => !l.is_excedente && !l.is_reposicao);
-                const emLoja = titulares.filter(l => l.status === "EM LOJA").length;
-                const semContato = linhasAll.filter(l => l.status === "SEM CONTATO").length;
-                const totalT = titulares.length;
-                const percGeral = totalT > 0 ? Math.round((emLoja / totalT) * 100) : 0;
-                const lojasCriticas = (e.lojas || []).filter(loja => {
-                    const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
-                    const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
-                    const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
-                    return lojaTit.length > 0 && (lojaEmLoja / lojaTit.length) < 0.5;
-                });
-                return React.createElement("div", { style: { padding: "12px" } },
-                    React.createElement("div", {
-                        style: {
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                            gap: "10px",
-                            marginBottom: "12px"
-                        }
-                    },
-                        React.createElement("div", { style: { background: "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6b7280", fontWeight: "500" } }, "EM OPERAÇÃO"),
-                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500" } },
-                                emLoja, React.createElement("span", { style: { fontSize: "13px", color: "#9ca3af", fontWeight: "400" } }, "/" + totalT))
-                        ),
-                        React.createElement("div", { style: { background: "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6b7280", fontWeight: "500" } }, "% GERAL"),
-                            React.createElement("p", {
-                                style: {
-                                    margin: "2px 0 0", fontSize: "22px", fontWeight: "500",
-                                    color: percGeral >= 80 ? "#166534" : (percGeral >= 50 ? "#92400e" : "#991b1b")
-                                }
-                            }, percGeral + "%")
-                        ),
-                        React.createElement("div", { style: { background: semContato > 0 ? "#fffbeb" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: semContato > 0 ? "#92400e" : "#6b7280", fontWeight: "500" } }, "SEM CONTATO"),
-                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: semContato > 0 ? "#92400e" : "#111827" } }, semContato)
-                        ),
-                        React.createElement("div", { style: { background: lojasCriticas.length > 0 ? "#fef2f2" : "#f9fafb", padding: "10px 14px", borderRadius: "8px" } },
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojasCriticas.length > 0 ? "#991b1b" : "#6b7280", fontWeight: "500" } }, "LOJAS CRÍTICAS"),
-                            React.createElement("p", { style: { margin: "2px 0 0", fontSize: "22px", fontWeight: "500", color: lojasCriticas.length > 0 ? "#991b1b" : "#111827" } }, lojasCriticas.length)
-                        )
-                    ),
-                    lojasCriticas.length > 0 && React.createElement("div", { style: { marginBottom: "12px" } },
-                        React.createElement("p", {
-                            style: {
-                                margin: "0 0 8px",
-                                fontSize: "11px",
-                                color: "#6b7280",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.3px",
-                                fontWeight: "500",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px"
-                            }
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Atenção · "), lojasCriticas.length, " loja(s) abaixo de 50%"),
-                        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } },
-                            lojasCriticas.slice(0, 5).map(loja => {
-                                const lojaLinhas = linhasAll.filter(l => l.loja_id === loja.id);
-                                const lojaTit = lojaLinhas.filter(l => !l.is_excedente && !l.is_reposicao);
-                                const lojaEmLoja = lojaTit.filter(l => l.status === "EM LOJA").length;
-                                const lojaPerc = lojaTit.length > 0 ? Math.round((lojaEmLoja / lojaTit.length) * 100) : 0;
-                                const regiaoLoja = (e.regioes || []).find(r => r.id === loja.regiao_id);
-                                return React.createElement("div", {
-                                    key: loja.id,
-                                    onClick: () => x({ ...p, dispRegiaoAtiva: loja.regiao_id, dispSubTab: "principal", dispLojasAbertas: [loja.id] }),
-                                    style: {
-                                        display: "flex", alignItems: "center", gap: "10px",
-                                        padding: "10px 12px",
-                                        background: lojaPerc < 33 ? "#fef2f2" : "#fffbeb",
-                                        borderRadius: "8px",
-                                        borderLeft: "3px solid " + (lojaPerc < 33 ? "#991b1b" : "#d97706"),
-                                        cursor: "pointer"
-                                    },
-                                    title: "Clique para ir ao painel desta loja"
-                                },
-                                    React.createElement("span", { style: { fontFamily: "monospace", fontSize: "11px", color: lojaPerc < 33 ? "#991b1b" : "#92400e", fontWeight: "500", width: "50px" } }, loja.codigo),
-                                    React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                                        React.createElement("p", { style: { margin: 0, fontSize: "13px", color: lojaPerc < 33 ? "#991b1b" : "#92400e", fontWeight: "500" } }, loja.nome),
-                                        React.createElement("p", { style: { margin: 0, fontSize: "11px", color: lojaPerc < 33 ? "#991b1b" : "#92400e" } }, regiaoLoja ? regiaoLoja.nome : "")
-                                    ),
-                                    React.createElement("div", { style: { display: "flex", gap: "4px", fontSize: "11px" } },
-                                        React.createElement("span", { style: { padding: "2px 7px", background: lojaPerc < 33 ? "#fecaca" : "#fde68a", color: lojaPerc < 33 ? "#991b1b" : "#92400e", borderRadius: "4px" } }, lojaEmLoja + " em loja"),
-                                        React.createElement("span", { style: { padding: "2px 7px", background: "white", color: lojaPerc < 33 ? "#991b1b" : "#92400e", borderRadius: "4px", border: "0.5px solid " + (lojaPerc < 33 ? "#fecaca" : "#fde68a") } }, lojaTit.length + " ideal")
-                                    ),
-                                    React.createElement("span", { style: { fontSize: "18px", fontWeight: "500", color: lojaPerc < 33 ? "#991b1b" : "#92400e" } }, lojaPerc + "%")
-                                );
-                            })
-                        )
-                    )
-                );
-            })(),
-            React.createElement("div", {
-                className: "overflow-x-auto"
-            }, React.createElement("table", {
-                id: "panorama-table",
-                style: {
-                    fontSize: "9px",
-                    borderCollapse: "collapse",
-                    width: "100%"
-                }
-            }, React.createElement("thead", null, React.createElement("tr", {
-                style: {
-                    backgroundColor: "#f9fafb",
-                    borderBottom: "2px solid #e5e7eb"
-                }
-            }, React.createElement("th", {
-                style: {
-                    padding: "4px 6px",
-                    border: "1px solid #e5e7eb",
-                    textAlign: "left",
-                    fontWeight: "600",
-                    color: "#374151"
-                }
-            }, "LOJAS"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151",
-                    whiteSpace: "nowrap"
-                }
-            }, "A CAMINHO"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151"
-                }
-            }, "CONFIR."), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151",
-                    whiteSpace: "nowrap"
-                }
-            }, "EM LOJA"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151"
-                }
-            }, "IDEAL"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151"
-                }
-            }, "FALTA"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151",
-                    whiteSpace: "nowrap"
-                }
-            }, "S/ CONTATO"), React.createElement("th", {
-                style: {
-                    padding: "4px 4px",
-                    border: "1px solid #e5e7eb",
-                    fontWeight: "600",
-                    color: "#374151"
-                }
-            }, "%"))), React.createElement("tbody", null, (() => {
-                const t = p.panoramaOrdem || "regiao",
-                    a = e.regioes || [],
-                    l = e.lojas || [],
-                    r = e.linhas || [],
-                    o = l.map(e => {
-                        const t = r.filter(t => t.loja_id === e.id),
-                            l = t.filter(e => !e.is_excedente && !e.is_reposicao).length,
-                            o = t.filter(e => "A CAMINHO" === e.status).length,
-                            c = t.filter(e => "CONFIRMADO" === e.status).length,
-                            s = t.filter(e => "EM LOJA" === e.status).length,
-                            n = t.filter(e => "SEM CONTATO" === e.status).length,
-                            m = o + c + s,
-                            i = Math.max(0, l - m),
-                            d = l > 0 ? Math.min(s / l * 100, 100) : 0,
-                            p = a.find(t => t.id === e.regiao_id);
-                        return {
-                            ...e,
-                            titulares: l,
-                            aCaminho: o,
-                            confirmado: c,
-                            emLoja: s,
-                            semContato: n,
-                            emOperacao: m,
-                            falta: i,
-                            perc: d,
-                            regiao: p
-                        }
-                    });
-                let c = {
-                    aCaminho: 0,
-                    confirmado: 0,
-                    emLoja: 0,
-                    titulares: 0,
-                    falta: 0,
-                    semContato: 0,
-                    emOperacao: 0
-                };
-                o.forEach(e => {
-                    c.aCaminho += e.aCaminho, c.confirmado += e.confirmado, c.emLoja += e.emLoja, c.titulares += e.titulares, c.falta += e.falta, c.semContato += e.semContato, c.emOperacao += e.emOperacao
-                });
-                const s = c.titulares > 0 ? Math.min(c.emLoja / c.titulares * 100, 100) : 0;
-                return "pior" === t ? o.sort((e, t) => e.perc - t.perc) : "melhor" === t ? o.sort((e, t) => t.perc - e.perc) : "alfa" === t && o.sort((e, t) => e.nome.localeCompare(t.nome)), "regiao" === t ? React.createElement(React.Fragment, null, a.map(e => {
-                    const t = o.filter(t => t.regiao_id === e.id);
-                    return 0 === t.length ? null : React.createElement(React.Fragment, {
-                        key: e.id
-                    }, React.createElement("tr", null, React.createElement("td", {
-                        colSpan: "8",
-                        style: {
-                            padding: "4px 6px",
-                            border: "1px solid #d1d5db",
-                            backgroundColor: "#e5e7eb",
-                            fontWeight: "700",
-                            color: "#111827",
-                            fontSize: "9px",
-                            textAlign: "center"
-                        }
-                    }, e.nome, e.gestores ? ` (${e.gestores})` : "")), t.map(e => React.createElement("tr", {
-                        key: e.id,
-                        style: {
-                            backgroundColor: e.perc < 50 ? "#fef2f2" : "white"
-                        }
-                    }, React.createElement("td", {
-                        style: {
-                            padding: "2px 6px",
-                            border: "1px solid #e5e7eb",
-                            backgroundColor: e.perc < 50 ? "#fef2f2" : "#f9fafb",
-                            fontWeight: "500",
-                            whiteSpace: "nowrap"
-                        }
-                    }, e.perc < 50 && React.createElement("span", {
-                        style: {
-                            color: "#dc2626",
-                            marginRight: "2px"
-                        }
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" }))), e.nome), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "500",
-                            color: e.aCaminho > 0 ? "#f67602" : "#d1d5db"
-                        }
-                    }, e.aCaminho), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "500",
-                            color: e.confirmado > 0 ? "#16a34a" : "#d1d5db"
-                        }
-                    }, e.confirmado), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "700",
-                            color: e.emLoja > 0 ? "#2563eb" : "#d1d5db"
-                        }
-                    }, e.emLoja), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "500",
-                            color: "#6b7280"
-                        }
-                    }, e.titulares), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "600",
-                            color: e.falta > 0 ? "#dc2626" : "#d1d5db"
-                        }
-                    }, e.falta > 0 ? -e.falta : 0), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "500",
-                            color: e.semContato > 0 ? "#d97706" : "#d1d5db"
-                        }
-                    }, e.semContato), React.createElement("td", {
-                        style: {
-                            padding: "2px 4px",
-                            border: "1px solid #e5e7eb",
-                            textAlign: "center",
-                            fontWeight: "700",
-                            backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f3f4f6",
-                            color: e.perc < 50 ? "#991b1b" : e.perc < 80 ? "#92400e" : e.perc >= 100 ? "#166534" : "#374151"
-                        }
-                    }, e.perc.toFixed(0), "%"))))
-                }), React.createElement("tr", {
-                    style: {
-                        backgroundColor: "#f9fafb",
-                        borderTop: "2px solid #d1d5db"
-                    }
-                }, React.createElement("td", {
-                    style: {
-                        padding: "4px 6px",
-                        border: "1px solid #e5e7eb",
-                        fontWeight: "700",
-                        fontSize: "9px",
-                        color: "#111827"
-                    }
-                }, "TOTAL GERAL"), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#f67602"
-                    }
-                }, c.aCaminho), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#16a34a"
-                    }
-                }, c.confirmado), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#2563eb"
-                    }
-                }, c.emLoja), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#6b7280"
-                    }
-                }, c.titulares), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "700",
-                        color: c.falta > 0 ? "#dc2626" : "#d1d5db"
-                    }
-                }, c.falta > 0 ? -c.falta : 0), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: c.semContato > 0 ? "#d97706" : "#d1d5db"
-                    }
-                }, c.semContato), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "800",
-                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f3f4f6",
-                        color: s < 50 ? "#991b1b" : s < 80 ? "#92400e" : s >= 100 ? "#166534" : "#374151"
-                    }
-                }, s.toFixed(0), "%"))) : React.createElement(React.Fragment, null, o.map((e, t) => React.createElement("tr", {
-                    key: e.id,
-                    style: {
-                        backgroundColor: e.perc < 50 ? "#fef2f2" : "white"
-                    }
-                }, React.createElement("td", {
-                    style: {
-                        padding: "2px 6px",
-                        border: "1px solid #e5e7eb",
-                        backgroundColor: e.perc < 50 ? "#fef2f2" : "#f9fafb",
-                        fontWeight: "500",
-                        whiteSpace: "nowrap"
-                    }
-                }, React.createElement("span", {
-                    style: {
-                        color: "#9ca3af",
-                        fontSize: "8px",
-                        marginRight: "3px"
-                    }
-                }, t + 1, "."), e.perc < 50 && React.createElement("span", {
-                    style: {
-                        color: "#dc2626",
-                        marginRight: "2px"
-                    }
-                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-circle" }))), e.nome, React.createElement("span", {
-                    style: {
-                        color: "#9ca3af",
-                        fontSize: "7px",
-                        marginLeft: "3px"
-                    }
-                }, "(", e.regiao?.nome || "", ")")), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color: e.aCaminho > 0 ? "#f67602" : "#d1d5db"
-                    }
-                }, e.aCaminho), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color: e.confirmado > 0 ? "#16a34a" : "#d1d5db"
-                    }
-                }, e.confirmado), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "700",
-                        color: e.emLoja > 0 ? "#2563eb" : "#d1d5db"
-                    }
-                }, e.emLoja), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color: "#6b7280"
-                    }
-                }, e.titulares), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: e.falta > 0 ? "#dc2626" : "#d1d5db"
-                    }
-                }, e.falta > 0 ? -e.falta : 0), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "500",
-                        color: e.semContato > 0 ? "#d97706" : "#d1d5db"
-                    }
-                }, e.semContato), React.createElement("td", {
-                    style: {
-                        padding: "2px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "700",
-                        backgroundColor: e.perc < 50 ? "#fecaca" : e.perc < 80 ? "#fde68a" : e.perc >= 100 ? "#bbf7d0" : "#f3f4f6",
-                        color: e.perc < 50 ? "#991b1b" : e.perc < 80 ? "#92400e" : e.perc >= 100 ? "#166534" : "#374151"
-                    }
-                }, e.perc.toFixed(0), "%"))), React.createElement("tr", {
-                    style: {
-                        backgroundColor: "#f9fafb",
-                        borderTop: "2px solid #d1d5db"
-                    }
-                }, React.createElement("td", {
-                    style: {
-                        padding: "4px 6px",
-                        border: "1px solid #e5e7eb",
-                        fontWeight: "700",
-                        fontSize: "9px",
-                        color: "#111827"
-                    }
-                }, "TOTAL GERAL"), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#f67602"
-                    }
-                }, c.aCaminho), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#16a34a"
-                    }
-                }, c.confirmado), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#2563eb"
-                    }
-                }, c.emLoja), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: "#6b7280"
-                    }
-                }, c.titulares), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "700",
-                        color: c.falta > 0 ? "#dc2626" : "#d1d5db"
-                    }
-                }, c.falta > 0 ? -c.falta : 0), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        color: c.semContato > 0 ? "#d97706" : "#d1d5db"
-                    }
-                }, c.semContato), React.createElement("td", {
-                    style: {
-                        padding: "3px 4px",
-                        border: "1px solid #e5e7eb",
-                        textAlign: "center",
-                        fontWeight: "800",
-                        backgroundColor: s < 50 ? "#fecaca" : s < 80 ? "#fde68a" : s >= 100 ? "#bbf7d0" : "#f3f4f6",
-                        color: s < 50 ? "#991b1b" : s < 80 ? "#92400e" : s >= 100 ? "#166534" : "#374151"
-                    }
-                }, s.toFixed(0), "%")))
-            })())))), "relatorios" === t && React.createElement("div", {
+                className: "px-3 py-3 text-sm whitespace-nowrap border-b-2 " + ("config" === t ? "text-[#5d0b85] font-semibold border-[#770fa8]" : "text-gray-500 border-transparent hover:text-gray-700")
+            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Config")))), "panorama" === t && _dispPanoramaClean(), "relatorios" === t && React.createElement("div", {
                 className: "space-y-4"
             }, p.relatoriosLoading ? React.createElement("div", {
                 className: "flex items-center justify-center py-12"
@@ -2382,566 +2342,7 @@
                     }
                 },
                 className: "px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, "Limpar Linhas")))), "principal" === t && React.createElement("div", {
-                className: "space-y-4"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl border border-gray-200 overflow-hidden"
-            },
-                React.createElement("div", {
-                    style: {
-                        padding: "14px 18px",
-                        borderBottom: "0.5px solid #E5E7EB",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "14px",
-                        flexWrap: "wrap"
-                    }
-                },
-                    React.createElement("div", {
-                        style: { display: "flex", alignItems: "center", gap: "10px", flex: "1", minWidth: "200px" }
-                    },
-                        React.createElement("div", {
-                            style: {
-                                width: "36px", height: "36px", borderRadius: "8px",
-                                background: "#f5f3ff", display: "flex",
-                                alignItems: "center", justifyContent: "center"
-                            }
-                        }, React.createElement("span", { style: { fontSize: "20px" } }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })))),
-                        React.createElement("div", null,
-                            React.createElement("p", { style: { margin: 0, fontWeight: "500", fontSize: "15px" } }, "Disponibilidade"),
-                            React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#6B7280" } },
-                                React.createElement("span", {
-                                    style: {
-                                        display: "inline-block", width: "6px", height: "6px",
-                                        background: "#16a34a", borderRadius: "50%",
-                                        marginRight: "4px", verticalAlign: "middle"
-                                    }
-                                }),
-                                "Sincronização em tempo real"
-                            )
-                        )
-                    ),
-                    React.createElement("div", {
-                        style: {
-                            display: "flex", alignItems: "center", gap: "6px",
-                            background: "#e5e7eb", padding: "4px 10px", borderRadius: "8px"
-                        }
-                    },
-                        React.createElement("input", {
-                            type: "date",
-                            value: p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
-                            onChange: e => x({ ...p, dispDataPlanilha: e.target.value }),
-                            style: { width: "120px", height: "28px", fontSize: "12px", border: "none", background: "transparent", padding: 0 }
-                        })
-                    ),
-                    React.createElement("div", {
-                        style: {
-                            display: "flex", alignItems: "center", gap: "4px",
-                            flex: "1", minWidth: "180px", maxWidth: "280px",
-                            border: "0.5px solid #E5E7EB", padding: "0 10px",
-                            borderRadius: "8px", background: "white"
-                        }
-                    },
-                        React.createElement("span", { style: { fontSize: "12px" } }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
-                        React.createElement("input", {
-                            type: "text",
-                            placeholder: "Buscar código ou nome...",
-                            value: p.buscaEntregador || "",
-                            onChange: e => x({ ...p, buscaEntregador: e.target.value }),
-                            style: { flex: 1, height: "28px", fontSize: "12px", border: "none", background: "transparent", padding: 0, outline: "none" }
-                        }),
-                        p.buscaEntregador && React.createElement("button", {
-                            onClick: () => x({ ...p, buscaEntregador: "" }),
-                            style: { background: "none", border: "none", padding: 0, color: "#9CA3AF", cursor: "pointer" },
-                            "aria-label": "Limpar busca"
-                        }, React.createElement("span", { style: { fontSize: "14px", color: "#9CA3AF" } }, "×"))
-                    ),
-                    React.createElement("div", { style: { display: "flex", gap: "6px" } },
-                        React.createElement("button", {
-                            onClick: r,
-                            style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
-                        },
-                            React.createElement("span", { style: { fontSize: "13px" } }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))),
-                            React.createElement("span", null, "Atualizar")
-                        ),
-                        React.createElement("button", {
-                            onClick: async () => {
-                                const dataEsc = p.dispDataPlanilha || (new Date).toISOString().split("T")[0],
-                                    dataFmt = new Date(dataEsc + "T12:00:00").toLocaleDateString("pt-BR");
-                                if (!window.confirm("Resetar disponibilidade do dia " + dataFmt + "?\n\n• Salva espelho do dia\n• Remove motoboys com 3+ dias SEM CONTATO\n• Reseta status para A CONFIRMAR\n• Limpa observações\n• Converte reposição em excedente")) return;
-                                try {
-                                    x(es => ({ ...es, dispLoading: !0 }));
-                                    const a = await _fetch(`${API_URL}/disponibilidade/resetar`, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ data_planilha: dataEsc })
-                                        }),
-                                        l = await a.json();
-                                    if (l.success) {
-                                        let msg = "Status resetado! Espelho salvo em " + dataFmt;
-                                        if (l.em_loja_registrados > 0) msg += " | " + l.em_loja_registrados + " em loja";
-                                        if (l.sem_contato_registrados > 0) msg += " | " + l.sem_contato_registrados + " sem contato";
-                                        ja(msg, "success");
-                                        if (l.removidos_por_sem_contato && l.removidos_por_sem_contato.length > 0) {
-                                            setTimeout(() => alert("Removidos por 3 dias SEM CONTATO:\n\n" + l.removidos_por_sem_contato.map(rm => rm.cod + " - " + rm.nome).join("\n")), 500);
-                                        }
-                                    } else ja("Erro ao resetar", "error");
-                                    r();
-                                } catch (err) {
-                                    console.error("Erro ao resetar:", err);
-                                    ja("Erro ao resetar", "error");
-                                    x(es => ({ ...es, dispLoading: !1 }));
-                                }
-                            },
-                            style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", padding: "6px 10px" }
-                        },
-                            React.createElement("span", { style: { fontSize: "13px", color: "#d97706" } }, "↺"),
-                            React.createElement("span", null, "Resetar")
-                        )
-                    )
-                )
-            , p.buscaEntregador && p.buscaEntregador.length >= 2 && React.createElement("div", {
-                className: "mt-3 p-3 bg-blue-50 rounded-lg"
-            }, React.createElement("p", {
-                className: "text-xs font-semibold text-blue-700 mb-2"
-            }, 'Resultados para "', p.buscaEntregador, '":'), React.createElement("div", {
-                className: "space-y-1 max-h-40 overflow-y-auto"
-            }, (() => {
-                const t = p.buscaEntregador.toLowerCase(),
-                    a = (e.linhas || []).filter(e => e.cod_profissional && e.cod_profissional.toLowerCase().includes(t) || e.nome_profissional && e.nome_profissional.toLowerCase().includes(t));
-                return 0 === a.length ? React.createElement("p", {
-                    className: "text-gray-500 text-sm"
-                }, "Nenhum resultado encontrado") : a.slice(0, 10).map(t => {
-                    const a = (e.lojas || []).find(e => e.id === t.loja_id);
-                    return React.createElement("div", {
-                        key: t.id,
-                        className: "flex items-center justify-between p-2 bg-white rounded text-xs"
-                    }, React.createElement("div", {
-                        className: "flex items-center gap-2"
-                    }, React.createElement("span", {
-                        className: "font-mono font-bold"
-                    }, t.cod_profissional || "-"), React.createElement("span", null, t.nome_profissional || "Sem nome")), React.createElement("div", {
-                        className: "flex items-center gap-2"
-                    }, React.createElement("span", {
-                        className: "text-gray-500"
-                    }, a?.nome || ""), React.createElement("span", {
-                        className: "px-2 py-0.5 rounded text-[10px] font-bold " + ("EM LOJA" === t.status ? "bg-blue-100 text-blue-700" : "CONFIRMADO" === t.status ? "bg-green-100 text-green-700" : "A CAMINHO" === t.status ? "bg-orange-100 text-orange-700" : "FALTANDO" === t.status ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700")
-                    }, t.status)))
-                })
-            })()))), p.modalFaltando && React.createElement("div", {
-                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            }, React.createElement("div", {
-                className: "bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4"
-            }, React.createElement("h3", {
-                className: "text-lg font-bold text-red-600 mb-4"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Registrar Falta")), React.createElement("div", {
-                className: "mb-4"
-            }, React.createElement("p", {
-                className: "text-sm text-gray-600 mb-2"
-            }, React.createElement("strong", null, "Profissional:"), " ", p.faltandoLinha?.nome_profissional || p.faltandoLinha?.cod_profissional || "Não identificado"), React.createElement("label", {
-                className: "text-sm font-semibold text-gray-700"
-            }, "Motivo da falta *"), React.createElement("textarea", {
-                value: p.faltandoMotivo || "",
-                onChange: e => x({
-                    ...p,
-                    faltandoMotivo: e.target.value
-                }),
-                placeholder: "Digite o motivo da falta...",
-                className: "w-full px-3 py-2 border rounded-lg mt-1 text-sm",
-                rows: 3,
-                autoFocus: !0
-            })), React.createElement("div", {
-                className: "flex gap-2"
-            }, React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    modalFaltando: !1,
-                    faltandoLinha: null,
-                    faltandoMotivo: ""
-                }),
-                className: "flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
-            }, "Cancelar"), React.createElement("button", {
-                onClick: async () => {
-                    const t = p.faltandoLinha,
-                        a = p.faltandoMotivo?.trim();
-                    if (!a) return void ja("Digite o motivo da falta", "error");
-                    const l = p.dispDataPlanilha || (new Date).toISOString().split("T")[0];
-                    try {
-                        await _fetch(`${API_URL}/disponibilidade/linhas/${t.id}`, {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                cod_profissional: t.cod_profissional,
-                                nome_profissional: t.nome_profissional,
-                                status: "FALTANDO",
-                                observacao: a
-                            })
-                        }), await _fetch(`${API_URL}/disponibilidade/faltosos`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                loja_id: t.loja_id,
-                                cod_profissional: t.cod_profissional,
-                                nome_profissional: t.nome_profissional,
-                                motivo: a,
-                                data_falta: l
-                            })
-                        });
-                        const r = await _fetch(`${API_URL}/disponibilidade/linha-reposicao`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify({
-                                    loja_id: t.loja_id,
-                                    after_linha_id: t.id
-                                })
-                            }),
-                            o = await r.json(),
-                            c = [...e.linhas || []],
-                            s = c.findIndex(e => e.id === t.id); - 1 !== s && (c[s] = {
-                            ...c[s],
-                            status: "FALTANDO",
-                            observacao: a
-                        }), c.push(o), x(t => ({
-                            ...t,
-                            modalFaltando: !1,
-                            faltandoLinha: null,
-                            faltandoMotivo: "",
-                            dispData: {
-                                ...e,
-                                linhas: c
-                            }
-                        })), ja("Falta registrada e linha de reposição criada!", "success")
-                    } catch (e) {
-                        console.error("Erro ao registrar falta:", e), ja("Erro ao registrar falta", "error")
-                    }
-                },
-                className: "flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Confirmar Falta"))))), 0 === (e.regioes || []).length ? React.createElement("div", {
-                className: "bg-white rounded-xl shadow p-8 text-center"
-            }, React.createElement("p", {
-                className: "text-gray-500 text-lg"
-            }, "Nenhuma estrutura configurada."), React.createElement("button", {
-                onClick: () => x({
-                    ...p,
-                    dispSubTab: "config"
-                }),
-                className: "mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold"
-            }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-settings" })), "Configurar Estrutura"))) : React.createElement(React.Fragment, null, React.createElement("div", {
-                style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "6px" }
-            }, (e.regioes || []).map(t => {
-                const a = (e.lojas || []).filter(e => e.regiao_id === t.id),
-                    l = (e.linhas || []).filter(e => a.some(t => t.id === e.loja_id)),
-                    r = l.filter(e => "EM LOJA" === e.status).length,
-                    o = l.filter(e => !e.is_excedente && !e.is_reposicao).length,
-                    isAtiva = p.dispRegiaoAtiva === t.id;
-                // Semáforo: verde >=100%, amarelo 50-99%, vermelho <50%
-                const pct = o > 0 ? (r / o) * 100 : 0;
-                let semaforoColor, semaforoBg, semaforoText, badgeBg, badgeText;
-                if (pct >= 100) {
-                    semaforoColor = "#16a34a"; semaforoBg = "white"; semaforoText = "#166534";
-                    badgeBg = "#f0fdf4"; badgeText = "#166534";
-                } else if (pct >= 50) {
-                    semaforoColor = "#f67602"; semaforoBg = "white"; semaforoText = "#92400e";
-                    badgeBg = "#fffbeb"; badgeText = "#92400e";
-                } else {
-                    semaforoColor = "#fecaca"; semaforoBg = "white"; semaforoText = "#991b1b";
-                    badgeBg = "#fef2f2"; badgeText = "#991b1b";
-                }
-                // Se está ativa, fica roxo
-                if (isAtiva) {
-                    semaforoColor = "#7c3aed"; semaforoBg = "#f5f3ff"; semaforoText = "#4c1d95";
-                    badgeBg = "white"; badgeText = "#4c1d95";
-                }
-                return React.createElement("button", {
-                    key: t.id,
-                    onClick: () => x({
-                        ...p,
-                        dispRegiaoAtiva: p.dispRegiaoAtiva === t.id ? null : t.id
-                    }),
-                    style: {
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px 10px",
-                        background: semaforoBg,
-                        border: "0.5px solid " + semaforoColor,
-                        borderLeft: "3px solid " + semaforoColor,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "all 0.15s"
-                    }
-                },
-                    React.createElement("span", { style: { fontSize: "14px" } }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-pin" }))),
-                    React.createElement("span", {
-                        style: { flex: "1", fontSize: "12px", fontWeight: "500", color: semaforoText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
-                    }, t.nome),
-                    React.createElement("span", {
-                        style: { fontSize: "11px", fontWeight: "500", color: badgeText, background: badgeBg, padding: "2px 6px", borderRadius: "4px", flexShrink: 0 }
-                    }, r + "/" + o)
-                );
-            })), p.dispRegiaoAtiva && (() => {
-                const t = (e.regioes || []).find(e => e.id === p.dispRegiaoAtiva);
-                if (!t) return null;
-                const a = (e.lojas || []).filter(e => e.regiao_id === t.id);
-                return React.createElement("div", {
-                    className: "space-y-2"
-                }, a.map(t => {
-                    const a = (e.linhas || []).filter(e => e.loja_id === t.id),
-                        l = (p.dispLojasAbertas || []).includes(t.id),
-                        o = a.filter(e => "EM LOJA" === e.status).length,
-                        totalTitulares = a.filter(e => !e.is_excedente && !e.is_reposicao).length,
-                        i = a.filter(e => "FALTANDO" === e.status).length;
-                    a.filter(e => e.is_reposicao).length;
-                    let d = "bg-gray-100 hover:bg-gray-200";
-                    return o >= totalTitulares && totalTitulares > 0 ? d = "bg-green-100 hover:bg-green-200" : i > 0 ? d = "bg-red-100 hover:bg-red-200" : o > 0 && (d = "bg-yellow-100 hover:bg-yellow-200"), React.createElement("div", {
-                        key: t.id,
-                        className: "bg-white rounded-lg shadow overflow-hidden"
-                    }, React.createElement("button", {
-                        onClick: () => {
-                            const e = p.dispLojasAbertas || [];
-                            x(l ? {
-                                ...p,
-                                dispLojasAbertas: e.filter(e => e !== t.id)
-                            } : {
-                                ...p,
-                                dispLojasAbertas: [...e, t.id]
-                            })
-                        },
-                        className: `w-full px-3 py-2 flex items-center justify-between ${d} transition-colors`
-                    }, React.createElement("div", {
-                        className: "flex items-center gap-2"
-                    }, React.createElement("span", {
-                        className: "transform transition-transform text-xs " + (l ? "rotate-90" : "")
-                    }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" }))), React.createElement("span", {
-                        className: "font-mono font-bold text-purple-700 text-sm"
-                    }, t.codigo), React.createElement("span", {
-                        className: "font-semibold text-gray-800 text-sm"
-                    }, t.nome)), React.createElement("div", {
-                        className: "flex items-center gap-2"
-                    }, i > 0 && React.createElement("span", {
-                        className: "px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold"
-                    }, i, " faltando"), React.createElement("span", {
-                        className: "text-xs font-semibold px-2 py-0.5 rounded " + (o >= totalTitulares ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-700")
-                    }, o, "/", totalTitulares, " em loja"), React.createElement("button", {
-                        onClick: ev => { ev.stopPropagation(); s(t.id, 1, false); },
-                        className: "px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-semibold hover:bg-purple-200 transition-colors",
-                        title: "Adicionar 1 titular"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Titular")), React.createElement("button", {
-                        onClick: ev => { ev.stopPropagation(); s(t.id, 1, true); },
-                        className: "px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded font-semibold hover:bg-red-200 transition-colors",
-                        title: "Adicionar 1 excedente"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-plus" })), "Excedente")))), l && React.createElement("div", {
-                        className: "border-t bg-white",
-                        "data-loja-id": t.id
-                    },
-                        React.createElement("div", { className: "px-4 py-2.5 text-[11px] uppercase tracking-wide font-semibold text-gray-500 flex gap-3" },
-                            React.createElement("span", { style: { width: "60px" } }, "Cód"),
-                            React.createElement("span", { style: { flex: "1.2", minWidth: "120px" } }, "Entregador"),
-                            React.createElement("span", { style: { flex: "2.4", minWidth: "260px", textAlign: "center" } }, "Status (clique pra avançar)"),
-                            React.createElement("span", { style: { flex: "1.6", minWidth: "140px" } }, "Observação"),
-                            React.createElement("span", { style: { width: "28px" } })
-                        ),
-                        [...a].sort((e, t) => e.is_reposicao && !t.is_reposicao ? -1 : !e.is_reposicao && t.is_reposicao || e.is_excedente && !t.is_excedente ? 1 : !e.is_excedente && t.is_excedente ? -1 : 0).map((linha, idx, arr) => {
-                            const isFirstExcedente = linha.is_excedente && (idx === 0 || !arr[idx - 1].is_excedente);
-                            const ehDestaque = linha.is_reposicao || linha.is_excedente;
-                            const rowBgTint = ehDestaque ? "rgba(255,251,235, 0.3)" : (linha.status === "FALTANDO" ? "rgba(254,242,242, 0.5)" : "white");
-
-                            const stepperConfig = [
-                                { key: "A CONFIRMAR", label: "A confirmar", color: "#6b7280" },
-                                { key: "A CAMINHO", label: "A caminho", color: "#d97706" },
-                                { key: "EM LOJA", label: "Em loja", color: "#16a34a" },
-                                { key: "FALTANDO", label: "Faltando", color: "#991b1b" },
-                                { key: "SEM CONTATO", label: "Sem contato", color: "#374151" }
-                            ];
-
-                            const initials = (linha.nome_profissional || "").split(" ").filter(Boolean).slice(0, 2).map(s => s[0]).join("").toUpperCase() || "?";
-
-                            const obsText = linha.observacao || "";
-                            const chips = [];
-                            const dataMatch = obsText.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?/);
-                            if (dataMatch) chips.push({ icon: React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-calendar" })), text: dataMatch[0], tone: "warn" });
-                            const horaMatch = obsText.match(/(\d{1,2})(?::?(\d{2}))?\s?h\b/i);
-                            if (horaMatch) chips.push({ icon: React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), text: horaMatch[0].toLowerCase(), tone: "info" });
-                            const semContatoChip = linha.status === "SEM CONTATO";
-                            if (semContatoChip) chips.push({ icon: React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-phone" })), text: "sem contato", tone: "danger" });
-
-                            return React.createElement(React.Fragment, { key: linha.id },
-                                isFirstExcedente && React.createElement("div", {
-                                    className: "px-4 py-2 mt-1 text-[11px] uppercase tracking-wide font-semibold text-gray-500 bg-amber-50 border-t border-amber-200 flex justify-between items-center"
-                                },
-                                    React.createElement("span", null, "Excedentes · ", arr.filter(x => x.is_excedente).length),
-                                    React.createElement("button", {
-                                        onClick: () => s(t.id, 1, true),
-                                        className: "text-[11px] px-2 py-0.5 bg-white border border-amber-300 text-amber-700 rounded hover:bg-amber-100"
-                                    }, "+ Adicionar")
-                                ),
-                                React.createElement("div", {
-                                    className: "px-4 py-2 flex items-center gap-3 border-t border-gray-100",
-                                    style: { background: rowBgTint }
-                                },
-                                    React.createElement("input", {
-                                        type: "text",
-                                        value: linha.cod_profissional || "",
-                                        onChange: e => c(linha.id, "cod_profissional", e.target.value),
-                                        "data-cod-input": linha.id,
-                                        placeholder: "—",
-                                        className: "px-1.5 py-1 border border-gray-200 rounded text-center font-mono text-[11px] bg-white",
-                                        style: { width: "60px" }
-                                    }),
-                                    React.createElement("div", { style: { flex: "1.2", minWidth: "120px", display: "flex", alignItems: "center", gap: "8px" } },
-                                        linha.foto
-                                            ? React.createElement("img", {
-                                                src: linha.foto,
-                                                alt: linha.nome_profissional || "",
-                                                className: "rounded-full object-cover flex-shrink-0",
-                                                style: { width: "28px", height: "28px", border: "1px solid #e5e7eb" }
-                                            })
-                                            : React.createElement("div", {
-                                                className: "rounded-full flex items-center justify-center flex-shrink-0",
-                                                style: {
-                                                    width: "28px", height: "28px",
-                                                    background: linha.nome_profissional ? "#f5f3ff" : "#e5e7eb",
-                                                    color: linha.nome_profissional ? "#7c3aed" : "#6b7280",
-                                                    fontSize: "10px", fontWeight: "500"
-                                                }
-                                            }, initials),
-                                        React.createElement("span", {
-                                            className: "text-[12px] truncate",
-                                            style: { color: linha.nome_profissional ? "#111827" : "#9ca3af", fontStyle: linha.nome_profissional ? "normal" : "italic" }
-                                        }, linha.nome_profissional || (linha.is_reposicao || linha.is_excedente ? "—" : "Vazio"))
-                                    ),
-                                    React.createElement("div", {
-                                        style: { flex: "2.4", minWidth: "260px", display: "flex" }
-                                    }, stepperConfig.map((step, sidx) => {
-                                        const status = linha.status || "A CONFIRMAR";
-                                        // CONFIRMADO mostra "A confirmar" ativo (sub-estado do mesmo passo)
-                                        // SEM CONTATO mostra todos cinza com indicador externo
-                                        const isActive = status === step.key
-                                            || (status === "CONFIRMADO" && step.key === "A CONFIRMAR");
-                                        const baseStyle = {
-                                            flex: "1",
-                                            textAlign: "center",
-                                            padding: "6px 4px",
-                                            fontSize: "11px",
-                                            fontWeight: "500",
-                                            cursor: "pointer",
-                                            border: "0.5px solid #e5e7eb",
-                                            borderRadius: sidx === 0 ? "6px 0 0 6px" : (sidx === stepperConfig.length - 1 ? "0 6px 6px 0" : "0"),
-                                            background: isActive ? step.color : "white",
-                                            color: isActive ? "white" : "#6b7280",
-                                            borderColor: isActive ? step.color : "#e5e7eb"
-                                        };
-                                        return React.createElement("button", {
-                                            key: step.key,
-                                            onClick: () => {
-                                                if (step.key === "FALTANDO") {
-                                                    x(prev => ({ ...prev, modalFaltando: !0, faltandoLinha: linha, faltandoMotivo: "" }));
-                                                } else {
-                                                    c(linha.id, "status", step.key);
-                                                }
-                                            },
-                                            style: baseStyle,
-                                            title: "Marcar como " + step.label
-                                        }, step.label);
-                                    })),
-                                    React.createElement("div", { style: { flex: "1.6", minWidth: "140px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" } },
-                                        chips.length > 0 && chips.map((chip, ci) => React.createElement("span", {
-                                            key: ci,
-                                            className: "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
-                                            style: {
-                                                background: chip.tone === "warn" ? "#fffbeb" : (chip.tone === "info" ? "#eff6ff" : (chip.tone === "danger" ? "#fef2f2" : "#e5e7eb")),
-                                                color: chip.tone === "warn" ? "#92400e" : (chip.tone === "info" ? "#1e40af" : (chip.tone === "danger" ? "#991b1b" : "#374151"))
-                                            }
-                                        }, React.createElement("span", { style: { fontSize: "11px" } }, chip.icon), chip.text)),
-                                        React.createElement("input", {
-                                            type: "text",
-                                            value: linha.observacao || "",
-                                            onChange: e => c(linha.id, "observacao", e.target.value),
-                                            placeholder: chips.length > 0 ? "" : "obs...",
-                                            title: linha.observacao_criada_por ? linha.observacao_criada_por : "",
-                                            className: "flex-1 min-w-0 px-1.5 py-0.5 border border-gray-200 rounded text-[11px] bg-white",
-                                            style: { minWidth: "60px" }
-                                        })
-                                    ),
-                                    React.createElement("div", { style: { width: "28px", display: "flex", justifyContent: "center" } },
-                                        React.createElement("button", {
-                                            onClick: () => {
-                                                if (window.confirm("Remover esta linha?")) {
-                                                    _fetch(`${API_URL}/disponibilidade/linhas/${linha.id}`, { method: "DELETE" })
-                                                        .then(resp => resp.ok ? r() : ja("Erro ao remover", "error"));
-                                                }
-                                            },
-                                            className: "w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
-                                            title: "Remover linha",
-                                            "aria-label": "Remover linha"
-                                        }, React.createElement("span", { style: { fontSize: "16px" } }, "×"))
-                                    )
-                                )
-                            );
-                        })
-                    ))
-                }), React.createElement("div", {
-                    className: "flex gap-2 pt-2"
-                }, React.createElement("button", {
-                    onClick: () => x({
-                        ...p,
-                        dispLojasAbertas: a.map(e => e.id)
-                    }),
-                    className: "px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-arrowdown" })), "Expandir Todas")), React.createElement("button", {
-                    onClick: () => x({
-                        ...p,
-                        dispLojasAbertas: []
-                    }),
-                    className: "px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
-                }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Recolher Todas"))))
-            })(), !p.dispRegiaoAtiva && React.createElement("div", {
-                style: {
-                    background: "#F9FAFB",
-                    border: "0.5px dashed #D1D5DB",
-                    borderRadius: "12px",
-                    padding: "32px 18px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "10px"
-                }
-            },
-                React.createElement("div", {
-                    style: {
-                        width: "44px", height: "44px", borderRadius: "50%",
-                        background: "white", border: "0.5px solid #E5E7EB",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "22px"
-                    }
-                }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-map" }))),
-                React.createElement("div", { style: { textAlign: "center" } },
-                    React.createElement("p", {
-                        style: { margin: 0, fontSize: "14px", fontWeight: "500", color: "#111827" }
-                    }, "Selecione uma região acima"),
-                    React.createElement("p", {
-                        style: { margin: "2px 0 0", fontSize: "12px", color: "#6B7280" }
-                    }, "As lojas e motoboys da região aparecem aqui")
-                )
-            )), (e.regioes || []).length > 0 && React.createElement("div", {
-                style: { padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", fontSize: "10px" }
-            },
-                React.createElement("span", { style: { color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.3px", marginRight: "4px" } }, "Legenda:"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#fffbeb", color: "#92400E", borderRadius: "3px", fontWeight: "500" } }, "A confirmar"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#bbf7d0", color: "#166534", borderRadius: "3px", fontWeight: "500" } }, "Confirmado"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#eff6ff", color: "#1E40AF", borderRadius: "3px", fontWeight: "500" } }, "Em loja"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#fef2f2", color: "#991B1B", borderRadius: "3px", fontWeight: "500" } }, "Faltando"),
-                React.createElement("span", { style: { padding: "1px 6px", background: "#F3F4F6", color: "#374151", borderRadius: "3px", fontWeight: "500" } }, "Sem contato"),
-                React.createElement("span", { style: { color: "#D1D5DB", margin: "0 4px" } }, "|"),
-                React.createElement("span", { style: { color: "#9CA3AF" } }, "Fundo amarelo = excedente · Fundo azul = reposição")
-            )), "faltosos" === t && React.createElement("div", {
+            }, "Limpar Linhas")))), "principal" === t && _dispPainelClean(), "faltosos" === t && React.createElement("div", {
                 className: "space-y-4"
             }, React.createElement("div", {
                 className: "bg-white rounded-xl shadow p-4"
@@ -3216,7 +2617,7 @@
                         }, "excedente"), React.createElement("span", null, e.nome_profissional || (e.is_reposicao || e.is_excedente ? "" : "-")))), React.createElement("td", {
                             className: "px-2 py-1 w-28"
                         }, React.createElement("span", {
-                            className: "px-1 py-0.5 rounded text-xs " + ("EM LOJA" === e.status ? "bg-blue-100 text-blue-800" : "CONFIRMADO" === e.status ? "bg-green-100 text-green-800" : "FALTANDO" === e.status ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800")
+                            className: "px-2 py-0.5 rounded-full text-xs font-semibold " + (n[e.status] || n["A CONFIRMAR"]) /* DISP_CLEAN_V1 */
                         }, e.status)), React.createElement("td", {
                             className: "px-2 py-1 text-gray-500"
                         }, e.observacao || ""))))))

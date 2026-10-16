@@ -7,8 +7,8 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <script src="https://cdn.tailwindcss.com"></script>
   <script>
-/* CORES_TOKENS_V1: Tailwind com 5 familias + neutros. purple/indigo/fuchsia/pink viram o roxo da marca (violet), emerald/teal/lime -> verde, sky/cyan -> azul, rose -> vermelho, yellow -> ambar, slate/zinc/stone -> cinza. orange fica livre (laranja da marca). */
-window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { colors: {"purple":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"violet":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"indigo":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"fuchsia":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"pink":{"50":"#f5f3ff","100":"#ede9fe","200":"#ddd6fe","300":"#c4b5fd","400":"#a78bfa","500":"#8b5cf6","600":"#7c3aed","700":"#6d28d9","800":"#5b21b6","900":"#4c1d95","950":"#2e1065"},"green":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"emerald":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"teal":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"lime":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"blue":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"sky":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"cyan":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"red":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"rose":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"amber":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"yellow":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"gray":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"slate":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"zinc":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"neutral":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"stone":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"}} } } };
+/* CORES_TOKENS_V1: Tailwind com 5 familias + neutros. purple/violet/indigo/fuchsia/pink viram o Roxo Tutts (magenta, principal #770fa8), emerald/teal/lime -> verde, sky/cyan -> azul, rose -> vermelho, yellow -> ambar, slate/zinc/stone -> cinza. orange fica livre (laranja da marca). */
+window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { colors: {"purple":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"violet":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"indigo":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"fuchsia":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"pink":{"50":"#faf7fd","100":"#f3e8fb","200":"#e9d5f9","300":"#d8b4f0","400":"#c084e6","500":"#a855d7","600":"#8b16c4","700":"#770fa8","800":"#5d0b85","900":"#3a1556","950":"#26093a"},"green":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"emerald":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"teal":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"lime":{"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},"blue":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"sky":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"cyan":{"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},"red":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"rose":{"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},"amber":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"yellow":{"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},"gray":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"slate":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"zinc":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"neutral":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"},"stone":{"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"}} } } };
 </script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +16,7 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
     <style>
-        .gradient-bg { background: linear-gradient(135deg, #2d1b4b 0%, #4c1d95 50%, #7c3aed 100%); }
+        .gradient-bg { background: linear-gradient(135deg, #3c1b4b 0%, #6f1d95 50%, #b43aed 100%); }
         .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -46,19 +46,19 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
         /* Scrollbar customizada */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #ddd6fe; }
+        ::-webkit-scrollbar-thumb { background: #e9d5f9; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c084e6; }
         
         /* Área de rotas com scroll destacado */
         .rotas-scroll {
             max-height: 280px;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: #ddd6fe #f3f4f6;
+            scrollbar-color: #c084e6 #f3f4f6;
         }
         .rotas-scroll::-webkit-scrollbar { width: 8px; }
-        .rotas-scroll::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 4px; }
-        .rotas-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #b48bfa, #7c3aed); border-radius: 4px; }
+        .rotas-scroll::-webkit-scrollbar-track { background: #faf7fd; border-radius: 4px; }
+        .rotas-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #d78bfa, #b43aed); border-radius: 4px; }
         
         /* Indicador de mais conteúdo */
         .rotas-container {
@@ -89,11 +89,17 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
 <style>
   /* CORES_TOKENS_V1: paleta unica da Central. Use estes tokens; nao invente hex novo. */
 :root {
-  --tt-roxo-50: #f5f3ff;
-  --tt-roxo-200: #ddd6fe;
-  --tt-roxo-600: #7c3aed;
-  --tt-roxo-800: #5b21b6;
-  --tt-roxo-900: #4c1d95;
+  --tt-roxo-50: #faf7fd;
+  --tt-roxo-100: #f3e8fb;
+  --tt-roxo-200: #e9d5f9;
+  --tt-roxo-300: #d8b4f0;
+  --tt-roxo-400: #c084e6;
+  --tt-roxo-500: #a855d7;
+  --tt-roxo-600: #8b16c4;
+  --tt-roxo-700: #770fa8;
+  --tt-roxo-800: #5d0b85;
+  --tt-roxo-900: #3a1556;
+  --tt-roxo-950: #26093a;
   --tt-verde-50: #f0fdf4;
   --tt-verde-200: #bbf7d0;
   --tt-verde-600: #16a34a;
@@ -122,7 +128,7 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
   --tt-laranja: #f67602;
 }
 </style>
-<script>window.TT_CORES = {"roxo50": "#f5f3ff", "roxo200": "#ddd6fe", "roxo600": "#7c3aed", "roxo800": "#5b21b6", "roxo900": "#4c1d95", "verde50": "#f0fdf4", "verde200": "#bbf7d0", "verde600": "#16a34a", "verde800": "#166534", "ambar50": "#fffbeb", "ambar200": "#fde68a", "ambar600": "#d97706", "ambar800": "#92400e", "vermelho50": "#fef2f2", "vermelho200": "#fecaca", "vermelho600": "#dc2626", "vermelho800": "#991b1b", "azul50": "#eff6ff", "azul200": "#bfdbfe", "azul600": "#2563eb", "azul800": "#1e40af", "neutro0": "#ffffff", "neutro50": "#f9fafb", "neutro100": "#f3f4f6", "neutro200": "#e5e7eb", "neutro300": "#d1d5db", "neutro400": "#9ca3af", "neutro500": "#6b7280", "neutro700": "#374151", "neutro900": "#111827", "laranja": "#f67602"};</script>
+<script>window.TT_CORES = {"roxo50": "#faf7fd", "roxo100": "#f3e8fb", "roxo200": "#e9d5f9", "roxo300": "#d8b4f0", "roxo400": "#c084e6", "roxo500": "#a855d7", "roxo600": "#8b16c4", "roxo700": "#770fa8", "roxo800": "#5d0b85", "roxo900": "#3a1556", "roxo950": "#26093a", "verde50": "#f0fdf4", "verde200": "#bbf7d0", "verde600": "#16a34a", "verde800": "#166534", "ambar50": "#fffbeb", "ambar200": "#fde68a", "ambar600": "#d97706", "ambar800": "#92400e", "vermelho50": "#fef2f2", "vermelho200": "#fecaca", "vermelho600": "#dc2626", "vermelho800": "#991b1b", "azul50": "#eff6ff", "azul200": "#bfdbfe", "azul600": "#2563eb", "azul800": "#1e40af", "neutro0": "#ffffff", "neutro50": "#f9fafb", "neutro100": "#f3f4f6", "neutro200": "#e5e7eb", "neutro300": "#d1d5db", "neutro400": "#9ca3af", "neutro500": "#6b7280", "neutro700": "#374151", "neutro900": "#111827", "laranja": "#f67602"};</script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 <!-- ROTA_JSX_ICONS_V4 -->
@@ -480,11 +486,11 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
                 enderecos.forEach((e, idx) => {
                     const icon = L.divIcon({
                         className: '',
-                        html: `<div style="background:${idx === 0 ? '#16a34a' : '#7c3aed'};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">${idx === 0 ? '<svg class="ico" style="width:13px;height:13px" aria-hidden="true"><use href="#i-flag"/></svg>' : idx}</div>`,
+                        html: `<div style="background:${idx === 0 ? '#16a34a' : '#770fa8'};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3)">${idx === 0 ? '<svg class="ico" style="width:13px;height:13px" aria-hidden="true"><use href="#i-flag"/></svg>' : idx}</div>`,
                         iconSize: [28, 28],
                         iconAnchor: [14, 14]
                     });
-                    const obsHtml = e.obs ? `<br><span style="color:#7c3aed;font-weight:bold">${e.obs}</span>` : '';
+                    const obsHtml = e.obs ? `<br><span style="color:#770fa8;font-weight:bold">${e.obs}</span>` : '';
                     L.marker([e.latitude, e.longitude], { icon })
                         .addTo(markersLayer)
                         .bindPopup(`<b>${idx === 0 ? 'PARTIDA' : 'Parada ' + idx}</b>${obsHtml}<br><span style="font-size:11px">${e.endereco.substring(0, 60)}</span>`)
@@ -614,7 +620,7 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
                     });
                     
                     // Atualizar mapa
-                    atualizarMapaRota(ordem, geo, '#7c3aed');
+                    atualizarMapaRota(ordem, geo, '#770fa8');
                     
                     // Salvar no histórico
                     salvarHistorico([{ pontos: ordem, distanciaKm: (km/1000).toFixed(1), tempoMin: Math.round(min/60) }], km, min);

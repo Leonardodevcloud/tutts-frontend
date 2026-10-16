@@ -3,7 +3,7 @@
 // modulo-diaria.js — Painel ADMIN da Diária (sub-aba das filas) · DIARIA_FECHAMENTO_V1: + fechamento do dia
 // Auto-contido: config por central (o PADRÃO) + escala (as EXCEÇÕES) + registros do dia.
 // Exposto como window.ModuloDiariaAdmin. Sem JSX, sem Tabler/Lucide (emojis/SVG inline).
-// Tema roxo #7c3aed, consistente com o modulo-garantido.js — do qual isto é irmão.
+// Tema roxo #770fa8, consistente com o modulo-garantido.js — do qual isto é irmão.
 //
 // A Diária é o Garantido com UMA diferença: o horário pode ser individual.
 //   PADRÃO da central -> vale pra TODO MUNDO que entrar na fila
@@ -48,13 +48,13 @@
   const SIT = {
     fim:    { bg: '#f0fdf4', fg: '#166534' },
     atraso: { bg: '#fffbeb', fg: '#92400e' },
-    meio:   { bg: '#f5f3ff', fg: '#5b21b6' },
+    meio:   { bg: '#faf7fd', fg: '#770fa8' },
     cedo:   { bg: '#fffbeb', fg: '#92400e' },
     aberta: { bg: '#eff6ff', fg: '#1e40af' },
     sem:    { bg: '#fef2f2', fg: '#991b1b' },
     longe:  { bg: '#bbf7d0', fg: '#166534' }, // DIARIA_ENCERROU_LONGE_V1
-    ausente:{ bg: '#ddd6fe', fg: '#991b1b' }, // DIARIA_DISPONIBILIDADE_V1
-    fila:   { bg: '#eff6ff', fg: '#5b21b6' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
+    ausente:{ bg: '#faf7fd', fg: '#991b1b' }, // DIARIA_DISPONIBILIDADE_V1
+    fila:   { bg: '#eff6ff', fg: '#770fa8' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
@@ -73,7 +73,7 @@
     if (r === 'nao') return { txt: 'Não pago', bg: '#fef2f2', fg: '#991b1b' };
     if (it.minutos_atraso > 0) return { txt: it.nota, bg: '#fffbeb', fg: '#92400e' };
     if (it.situacao === 'aberta') return { txt: 'Integral · corrida em execução', bg: '#eff6ff', fg: '#1e40af' };
-    if (it.situacao === 'fila') return { txt: 'Integral · na fila aguardando (' + it.nota + ')', bg: '#eff6ff', fg: '#5b21b6' };
+    if (it.situacao === 'fila') return { txt: 'Integral · na fila aguardando (' + it.nota + ')', bg: '#eff6ff', fg: '#770fa8' };
     if (it.situacao === 'longe') return { txt: 'Integral · encerrou longe (' + it.nota + ')', bg: '#bbf7d0', fg: '#166534' };
     return { txt: 'Integral', bg: '#f0fdf4', fg: '#166534' };
   }
@@ -82,7 +82,7 @@
       (Array.isArray(d) ? d : [d]).map((x, i) => e('path', { key: i, d: x })));
   }
   function Card({ titulo, cor, valor, sub, escuro }) {
-    return e('div', { className: 'rounded-xl p-4 flex flex-col gap-1 ' + (escuro ? 'text-white' : 'bg-white border border-gray-200'), style: escuro ? { background: '#4c1d95' } : null },
+    return e('div', { className: 'rounded-xl p-4 flex flex-col gap-1 ' + (escuro ? 'text-white' : 'bg-white border border-gray-200'), style: escuro ? { background: '#770fa8' } : null },
       e('span', { className: 'text-xs font-semibold flex items-center gap-1.5', style: escuro ? { opacity: .9 } : { color: cor } },
         !escuro && e('span', { style: { width: 8, height: 8, borderRadius: '50%', background: cor, display: 'inline-block' } }), titulo),
       e('span', { className: 'text-2xl font-extrabold' }, valor),
@@ -192,7 +192,7 @@
           dados && e('span', {
             className: 'text-[10px] font-bold px-2 py-0.5 rounded-full',
             style: dados.fechado
-              ? (dados.fechamento.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#f5f3ff', color: '#5b21b6' })
+              ? (dados.fechamento.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#faf7fd', color: '#770fa8' })
               : { background: '#fffbeb', color: '#92400e' }
           }, dados.fechado ? (dados.fechamento.status === 'pago' ? 'PAGO' : 'ENVIADO AO FINANCEIRO') : 'ABERTO')),
         e('div', { className: 'text-xs text-gray-600 mt-1 leading-relaxed' },
@@ -208,8 +208,8 @@
         job
           ? e('div', { className: 'flex flex-col items-end gap-1', role: 'status' },
               e('span', { className: 'text-xs font-semibold text-purple-700' }, 'Atualizando dados do BI… ' + (Number(job.progresso) || 0) + '%'),
-              e('div', { style: { width: 220, height: 6, borderRadius: 999, background: '#f5f3ff', overflow: 'hidden' } },
-                e('div', { style: { width: (Number(job.progresso) || 3) + '%', height: '100%', background: '#7c3aed', transition: 'width .4s' } })))
+              e('div', { style: { width: 220, height: 6, borderRadius: 999, background: '#faf7fd', overflow: 'hidden' } },
+                e('div', { style: { width: (Number(job.progresso) || 3) + '%', height: '100%', background: '#770fa8', transition: 'width .4s' } })))
           : e('button', { onClick: atualizar, className: 'h-10 px-4 rounded-lg border border-purple-600 text-purple-700 text-sm font-semibold hover:bg-purple-50 inline-flex items-center gap-2' },
               e(Ico, { d: ['M21 12a9 9 0 1 1-2.6-6.4', 'M21 3v6h-6'] }), 'Atualizar dados agora'),
         e('span', { className: 'text-xs text-gray-600' }, dados.dados_de_txt ? ('Dados do BI de ' + dados.dados_de_txt) : 'Sem importação do BI nesse dia ainda'))
@@ -394,7 +394,7 @@
                             e(Ico, { d: 'M20 6 9 17l-5-5' }), it.situacao === 'aberta' ? 'Pagar (ainda rodando)' : 'Pagar')
                         : e('div', { role: 'radiogroup', 'aria-label': 'Decisão da diária de ' + nomeDe(it), className: 'inline-flex border border-gray-300 rounded-lg overflow-hidden' },
                             escolhaBtn(it, 'integral', 'Integral', '#16a34a'),
-                            (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#7c3aed'),
+                            (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#770fa8'),
                             escolhaBtn(it, 'nao', 'Não pagar', '#991b1b'))));
                 }))))),
       itens.length > 0 && e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-3' },
@@ -432,7 +432,7 @@
             className: 'w-full text-left px-4 py-3 border-t border-gray-100 first:border-t-0 hover:bg-gray-50 flex flex-wrap items-center gap-3'
           },
             e('span', { className: 'font-semibold text-gray-800 tabular-nums', style: { minWidth: 96 } }, dataBR(x.data_ref)),
-            e('span', { className: 'text-[10px] font-bold px-2 py-0.5 rounded-full', style: x.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#f5f3ff', color: '#5b21b6' } }, x.status === 'pago' ? 'PAGO' : 'A PAGAR'),
+            e('span', { className: 'text-[10px] font-bold px-2 py-0.5 rounded-full', style: x.status === 'pago' ? { background: '#f0fdf4', color: '#166534' } : { background: '#faf7fd', color: '#770fa8' } }, x.status === 'pago' ? 'PAGO' : 'A PAGAR'),
             e('span', { className: 'text-xs text-gray-600 flex-1' }, x.qtd_pagos + ' motoboys · fechado por ' + (x.fechado_por || '-') + ' em ' + (x.fechado_em || '-') + (x.pago_em ? ' · pago em ' + x.pago_em : '')),
             e('span', { className: 'font-bold text-gray-800 tabular-nums' }, brl(x.total))))
     );

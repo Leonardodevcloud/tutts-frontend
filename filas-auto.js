@@ -621,7 +621,7 @@
                 className: 'fila-card-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
               },
                 centrais.map((c, idx) => {
-                  const corBarra = !c.ativa ? '#9ca3af' : '#7c3aed'; // roxa pra auto, cinza pra inativa
+                  const corBarra = !c.ativa ? '#9ca3af' : '#770fa8'; // roxa pra auto, cinza pra inativa
                   return e('div', {
                     key: c.id,
                     id: `fila-card-${c.id}`,
@@ -657,7 +657,7 @@
                         ),
                         !c.ativa
                           ? e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#fef2f2', color: '#991b1b', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, 'Inativa')
-                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#f5f3ff', color: '#4c1d95', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Auto"))
+                          : e('span', { style: { fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#faf7fd', color: '#770fa8', fontWeight: 500, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' } }, e("span", { className: "inline-flex items-center gap-1.5" }, e("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, e("use", { href: "#i-bot" })), "Auto"))
                       ),
                       // Stats
                       e('div', { style: { display: 'flex', gap: '18px' } },

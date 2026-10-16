@@ -15,7 +15,7 @@
  *   - fetchAuth retorna Response cru (usa res.ok / res.json())
  *   - API_URL ja inclui /api (nunca duplicar prefixo)
  *   - SEM lib de icone (Tabler/Lucide/FontAwesome) - so emoji nativo
- *   - Cores: roxo #7c3aed / #4c1d95, laranja #f67602
+ *   - Cores: roxo #770fa8 / #770fa8, laranja #f67602
  */
 (function () {
   'use strict';
@@ -26,7 +26,7 @@
   const POLL_LISTA_MS = 15000;
   const POLL_THREAD_MS = 5000;
 
-  const ROXO = '#7c3aed';
+  const ROXO = '#770fa8';
   const LARANJA = '#f67602';
 
   function iniciais(nome) {

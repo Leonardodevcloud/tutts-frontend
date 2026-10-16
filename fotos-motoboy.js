@@ -116,7 +116,7 @@
     return e('div', {
       className: props.className || '',
       style: Object.assign({}, estiloBase, {
-        background: '#f5f3ff', color: '#7c3aed', fontWeight: 700,
+        background: '#faf7fd', color: '#770fa8', fontWeight: 700,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         fontSize: Math.round(size * 0.4),
       }),

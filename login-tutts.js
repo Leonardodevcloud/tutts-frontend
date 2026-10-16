@@ -14,38 +14,38 @@
 
   const CSS = `
   .tl-cena{position:relative;min-height:100vh;background:#f9fafb;overflow:hidden;font-family:inherit}
-  .tl-malha{position:absolute;inset:-20%;background:conic-gradient(from 0deg at 50% 50%,#ece4fa,#fdedd2,#e5d8fb,#f3ecff,#fff0d6,#ece4fa);animation:tlGira 40s linear infinite;opacity:.7;filter:blur(40px);pointer-events:none}
+  .tl-malha{position:absolute;inset:-20%;background:conic-gradient(from 0deg at 50% 50%,#f3e4fa,#fdedd2,#f0d8fb,#f9ecff,#fff0d6,#f3e4fa);animation:tlGira 40s linear infinite;opacity:.7;filter:blur(40px);pointer-events:none}
   @keyframes tlGira{to{transform:rotate(360deg)}}
   .tl-aura{position:absolute;border-radius:50%;filter:blur(90px);opacity:.75;pointer-events:none;transition:transform .6s ease-out}
-  .tl-aura.a{width:720px;height:720px;background:#ddd6fe;left:-220px;top:-200px}
+  .tl-aura.a{width:720px;height:720px;background:#c084e6;left:-220px;top:-200px}
   .tl-aura.b{width:620px;height:620px;background:#fde68a;right:-180px;bottom:-200px}
   .tl-mapa{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .tl-topo{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;pointer-events:none}
   .tl-topo *{pointer-events:auto}
   .tl-marca{font-size:13px;font-weight:700;color:#6b7280;letter-spacing:.02em}
-  .tl-status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:7px 12px}
+  .tl-status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#6b7280;background:#fff;border:1px solid #f3e8fb;border-radius:999px;padding:7px 12px}
   .tl-status i{width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;animation:tlPisca 1.8s ease-in-out infinite}
   .tl-status.fora i{background:#d97706}
   @keyframes tlPisca{50%{opacity:.3}}
   .tl-fx{position:fixed;inset:0;pointer-events:none;z-index:40}
-  .tl-onda{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid rgba(124,58,237,.55);transform:translate(-50%,-50%);animation:tlOnda .9s ease-out forwards}
+  .tl-onda{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid rgba(119,15,168,.55);transform:translate(-50%,-50%);animation:tlOnda .9s ease-out forwards}
   @keyframes tlOnda{to{width:220px;height:220px;opacity:0;border-width:1px}}
   .tl-card{position:relative;z-index:2;will-change:transform}
   .tl-card.treme{animation:tlTreme .4s}
   @keyframes tlTreme{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
-  .tl-brilho{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(124,58,237,.10),transparent 45%);opacity:0;transition:opacity .3s}
+  .tl-brilho{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(180,58,237,.10),transparent 45%);opacity:0;transition:opacity .3s}
   .tl-card:hover .tl-brilho{opacity:1}
   .tl-campo{position:relative}
   .tl-campo .tl-ico{position:absolute;left:15px;top:16px;width:18px;height:18px;color:#9ca3af;pointer-events:none;transition:color .2s}
-  .tl-campo:focus-within .tl-ico{color:#7c3aed}
-  .tl-inp{width:100%;height:50px;border:1.5px solid #e5e7eb;border-radius:14px;padding:0 46px 0 44px;font:inherit;font-size:15px;background:#fff;color:#111827;transition:border-color .2s,box-shadow .2s;box-sizing:border-box}
+  .tl-campo:focus-within .tl-ico{color:#770fa8}
+  .tl-inp{width:100%;height:50px;border:1.5px solid #f3e8fb;border-radius:14px;padding:0 46px 0 44px;font:inherit;font-size:15px;background:#fff;color:#111827;transition:border-color .2s,box-shadow .2s;box-sizing:border-box}
   .tl-inp::placeholder{color:#9ca3af}
-  .tl-inp:focus{outline:none;border-color:#7c3aed;animation:tlFoco .5s ease-out;box-shadow:0 0 0 4px rgba(124,58,237,.12)}
-  @keyframes tlFoco{0%{box-shadow:0 0 0 0 rgba(124,58,237,.35)}100%{box-shadow:0 0 0 4px rgba(124,58,237,.12)}}
+  .tl-inp:focus{outline:none;border-color:#770fa8;animation:tlFoco .5s ease-out;box-shadow:0 0 0 4px rgba(119,15,168,.12)}
+  @keyframes tlFoco{0%{box-shadow:0 0 0 0 rgba(119,15,168,.35)}100%{box-shadow:0 0 0 4px rgba(119,15,168,.12)}}
   .tl-inp.err{border-color:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}
   .tl-inp:disabled{opacity:.6}
   .tl-eye,.tl-ok{position:absolute;right:6px;top:5px;width:40px;height:40px;border:0;background:none;border-radius:10px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .tl-eye:hover{background:#f5f3ff;color:#4c1d95}
+  .tl-eye:hover{background:#faf7fd;color:#5d0b85}
   .tl-ok{color:#16a34a;pointer-events:none;opacity:0;transform:scale(.6);transition:all .25s}
   .tl-ok.show{opacity:1;transform:scale(1)}
   .tl-ok.show svg path{stroke-dasharray:30;stroke-dashoffset:30;animation:tlDesenha .4s ease-out forwards}
@@ -53,9 +53,9 @@
   .tl-dica{display:flex;align-items:center;gap:6px;font-size:12px;color:#92400e;min-height:16px;margin-top:6px}
   .tl-linha{display:flex;justify-content:space-between;align-items:center;font-size:13px}
   .tl-check{display:flex;align-items:center;gap:8px;color:#6b7280;cursor:pointer}
-  .tl-check input{width:16px;height:16px;accent-color:#4c1d95}
-  .tl-btn{position:relative;overflow:hidden;width:100%;height:50px;border:0;border-radius:14px;background:#4c1d95;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 12px 24px -12px rgba(76,29,149,.7);transition:transform .15s,background .2s}
-  .tl-btn:hover{background:#4c1d95;transform:translateY(-1px)}
+  .tl-check input{width:16px;height:16px;accent-color:#5d0b85}
+  .tl-btn{position:relative;overflow:hidden;width:100%;height:50px;border:0;border-radius:14px;background:#5d0b85;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 12px 24px -12px rgba(93,11,133,.7);transition:transform .15s,background .2s}
+  .tl-btn:hover{background:#3a1556;transform:translateY(-1px)}
   .tl-btn:active{transform:scale(.99)}
   .tl-btn:disabled{cursor:progress;transform:none}
   .tl-btn .tl-prog{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.22);transition:width .4s ease}
@@ -68,8 +68,8 @@
   .tl-alerta.info{background:#fffbeb;border-color:#fde68a;color:#92400e}
   @keyframes tlEntra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .tl-links{display:flex;justify-content:space-between;font-size:13px}
-  .tl-links button{background:none;border:0;padding:0;font:inherit;font-weight:700;color:#7c3aed;cursor:pointer}
-  .tl-links button:hover{color:#4c1d95}
+  .tl-links button{background:none;border:0;padding:0;font:inherit;font-weight:700;color:#770fa8;cursor:pointer}
+  .tl-links button:hover{color:#5d0b85}
   .tl-links button.sec{color:#6b7280;font-weight:600}
   @media (prefers-reduced-motion:reduce){.tl-malha,.tl-status i{animation:none}}
   `;
@@ -130,10 +130,10 @@
       function desenha() {
         if (!vivo) return; tempo += 1 / 60; ctx.clearRect(0, 0, W, H);
         ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(ruas.ang); ctx.translate(-W / 2, -H / 2);
-        for (const r of ruas) { ctx.strokeStyle = r.g ? 'rgba(124,58,237,.16)' : 'rgba(124,58,237,.07)'; ctx.lineWidth = r.g ? 2.2 : 1; ctx.beginPath(); if (r.tipo === 'v') { ctx.moveTo(r.k, -H); ctx.lineTo(r.k, H * 2); } else { ctx.moveTo(-W, r.k); ctx.lineTo(W * 2, r.k); } ctx.stroke(); }
+        for (const r of ruas) { ctx.strokeStyle = r.g ? 'rgba(119,15,168,.16)' : 'rgba(119,15,168,.07)'; ctx.lineWidth = r.g ? 2.2 : 1; ctx.beginPath(); if (r.tipo === 'v') { ctx.moveTo(r.k, -H); ctx.lineTo(r.k, H * 2); } else { ctx.moveTo(-W, r.k); ctx.lineTo(W * 2, r.k); } ctx.stroke(); }
         ctx.restore();
-        for (const c of ruas.av) { ctx.strokeStyle = 'rgba(124,58,237,.18)'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); ctx.bezierCurveTo(c[1][0], c[1][1], c[2][0], c[2][1], c[3][0], c[3][1]); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1; ctx.setLineDash([8, 10]); ctx.lineDashOffset = -tempo * 30; ctx.stroke(); ctx.setLineDash([]); }
-        if (mouse.x > 0) { const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 260); g.addColorStop(0, 'rgba(124,58,237,.10)'); g.addColorStop(1, 'rgba(124,58,237,0)'); ctx.fillStyle = g; ctx.fillRect(mouse.x - 260, mouse.y - 260, 520, 520); }
+        for (const c of ruas.av) { ctx.strokeStyle = 'rgba(119,15,168,.18)'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); ctx.bezierCurveTo(c[1][0], c[1][1], c[2][0], c[2][1], c[3][0], c[3][1]); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1; ctx.setLineDash([8, 10]); ctx.lineDashOffset = -tempo * 30; ctx.stroke(); ctx.setLineDash([]); }
+        if (mouse.x > 0) { const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 260); g.addColorStop(0, 'rgba(119,15,168,.10)'); g.addColorStop(1, 'rgba(119,15,168,0)'); ctx.fillStyle = g; ctx.fillRect(mouse.x - 260, mouse.y - 260, 520, 520); }
         for (const m of motos) {
           const [a, c, b] = m.p; ctx.strokeStyle = 'rgba(246,118,2,.35)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.lineDashOffset = -tempo * 40; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
           m.t += m.v; const q = posMoto(m); m.trilha.push(q); if (m.trilha.length > 22) m.trilha.shift();
@@ -144,7 +144,7 @@
         for (const p of pins) {
           p.f += .03; const pulso = (Math.sin(p.f) + 1) / 2; const dm = Math.hypot(p.x - mouse.x, p.y - mouse.y); const l = dm < 260 ? 1 - dm / 260 : 0;
           ctx.strokeStyle = p.entregue ? `rgba(5,150,105,${.5 - pulso * .4})` : `rgba(124,58,237,${.5 - pulso * .4})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, 6 + pulso * 16, 0, Math.PI * 2); ctx.stroke();
-          ctx.fillStyle = p.entregue ? '#16a34a' : '#4c1d95'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.arc(p.x, p.y - 10, 7 + l * 2, Math.PI * .8, Math.PI * 2.2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y - 10, 2.6, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = p.entregue ? '#16a34a' : '#5d0b85'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.arc(p.x, p.y - 10, 7 + l * 2, Math.PI * .8, Math.PI * 2.2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y - 10, 2.6, 0, Math.PI * 2); ctx.fill();
           if (p.novo) { p.novo *= .9; ctx.strokeStyle = `rgba(246,118,2,${p.novo})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, 40 * (1 - p.novo), 0, Math.PI * 2); ctx.stroke(); if (p.novo < .02) p.novo = 0; }
         }
         if (!reduz) raf = requestAnimationFrame(desenha);
@@ -213,12 +213,12 @@
         h('div', { className: 'tl-dica', style: { visibility: caps ? 'visible' : 'hidden' } }, ico(h('g', null, h('path', { d: 'M12 9v4m0 4h.01' }), h('circle', { cx: 12, cy: 12, r: 9 })), { width: 14, height: 14 }), 'Caps Lock está ativado')),
       h('div', { className: 'tl-linha' },
         h('label', { className: 'tl-check' }, h('input', { type: 'checkbox', checked: lembrar, onChange: (e) => setLembrar(e.target.checked) }), 'Lembrar código'),
-        h('button', { type: 'button', onClick: onEsqueci, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 600, color: erro ? '#f67602' : '#7c3aed', cursor: 'pointer' } }, 'Esqueci minha senha')),
+        h('button', { type: 'button', onClick: onEsqueci, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 600, color: erro ? '#f67602' : '#770fa8', cursor: 'pointer' } }, 'Esqueci minha senha')),
       h('button', { type: 'submit', className: 'tl-btn', ref: btnRef, disabled: loading, onPointerDown: ripple },
         h('span', { className: 'tl-prog', ref: progRef }),
         loading ? h(React.Fragment, null, ico(h('path', { d: 'M21 12a9 9 0 1 1-6.2-8.56' }), { className: 'tl-spin', strokeWidth: 2.5 }), h('span', null, 'Validando acesso…'))
                 : h(React.Fragment, null, h('span', null, 'Entrar'), ico(h('path', { d: 'M5 12h14m-6-6 6 6-6 6' }), { strokeWidth: 2.5 }))),
-      h('p', { style: { margin: '4px 0 0', textAlign: 'center', fontSize: 13, color: '#6b7280' } }, 'Ainda não tem conta? ', h('button', { type: 'button', onClick: onCriar, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#7c3aed', cursor: 'pointer' } }, 'Criar nova conta')));
+      h('p', { style: { margin: '4px 0 0', textAlign: 'center', fontSize: 13, color: '#6b7280' } }, 'Ainda não tem conta? ', h('button', { type: 'button', onClick: onCriar, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#770fa8', cursor: 'pointer' } }, 'Criar nova conta')));
   }
 
   // Inclinação 3D do cartão + brilho seguindo o mouse (aplica em qualquer .tl-card)

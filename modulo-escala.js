@@ -382,7 +382,7 @@
                   return h("tr", {
                     key: chave,
                     className: "border-b border-gray-50 cursor-pointer hover:bg-purple-50",
-                    style: ativa ? { background: "#f5f3ff" } : null,
+                    style: ativa ? { background: "#faf7fd" } : null,
                     onClick: function () {
                       setAberta(ativa ? null : {
                         chave: chave, nome: c.nome_cliente,

@@ -8,7 +8,7 @@
 (function () {
   var h = React.createElement;
   var useState = React.useState, useEffect = React.useEffect;
-  var ROXO = "#7c3aed";
+  var ROXO = "#770fa8";
   var inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200";
   function label(t) { return h("label", { className: "block text-xs font-semibold text-gray-500 mb-1" }, t); }
 
@@ -208,7 +208,7 @@
       )
     );
 
-    function pill(txt) { return h("span", { className: "inline-block text-[11px] font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#eff6ff", color: "#7c3aed" } }, txt); }
+    function pill(txt) { return h("span", { className: "inline-block text-[11px] font-semibold rounded-full px-2 py-0.5 mr-1 mt-1", style: { background: "#eff6ff", color: "#770fa8" } }, txt); }
     var listaCard = h("div", { className: "bg-white rounded-xl shadow p-6" },
       h("div", { className: "flex items-center justify-between mb-3" },
         h("h3", { className: "font-bold text-[15px]" }, "Acessos ativos"),
