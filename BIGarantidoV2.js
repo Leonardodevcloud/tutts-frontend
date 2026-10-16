@@ -205,7 +205,7 @@
     ];
 
     return e("div", {
-      className: "max-w-7xl mx-auto",
+      className: "w-full" /* BI_MARGEM_V1 */,
       style: { display: "flex", flexDirection: "column", gap: 16, padding: "8px 0 24px", color: "#111827", fontSize: 13 }
     },
 

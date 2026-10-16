@@ -584,7 +584,7 @@
         h('div', { className: 'bg-gray-100 flex flex-col min-h-0' }, h('div', { className: 'px-6 py-3 text-[12px] text-gray-500 flex items-center gap-2' }, h('b', { className: 'text-gray-700' }, 'Prévia'), 'A4 paisagem · o arquivo sai idêntico', h('span', { className: 'ml-auto' }, `${rowsView.length} linhas`)), h('div', { className: 'flex-1 overflow-auto px-6 pb-6' }, h(PreviewPdf, { html: htmlPdf })))));
 
     // ── página ──
-    return h('div', { className: 'max-w-[1400px] mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' }, /* HUB_MARGEM_V1 */
       // HUB_ABAS_V1: cabeçalho de página (título Sora 24 + subtítulo com período e contagem; ações secundárias)
       h('div', { className: 'flex items-end gap-3 flex-wrap' },
         h('div', { className: 'flex-1 min-w-[260px]' },

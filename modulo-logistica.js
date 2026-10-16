@@ -2892,7 +2892,7 @@
 
     // HUB_CLEAN_V1: cabeçalho + barra de filtros no padrão clean (mesmos estados/handlers)
     const _ctl = 'h-[38px] px-3 border border-gray-200 rounded-[10px] bg-white text-[13px] text-gray-700 hover:bg-gray-50 focus:outline-none focus:border-purple-400';
-    return h('div', { className: (viewMode === 'kanban' ? 'max-w-full' : 'max-w-6xl') + ' mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: (viewMode === 'kanban' ? 'max-w-full' : 'max-w-7xl' /* HUB_MARGEM_V1 */) + ' mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
 
       // ── Header ──
       h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
@@ -4845,7 +4845,7 @@
 
     // HUB_ABAS_V1: Regras no padrão clean — cabeçalho, card do worker, lista de regras em cards brancos
     const nAtivas = regras.filter(r => r.ativo).length;
-    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
       h(HxCabecalho, {
         titulo: 'Regras de despacho',
         sub: 'O worker só despacha OS cujo endereço de coleta casa com algum trecho cadastrado aqui. A Mapp não retorna nome do cliente — o match é por trecho do endereço. Sem regra ativa = sem despacho automático.',
@@ -5500,7 +5500,7 @@
     const lista = (dados && dados.bloqueados) || [];
 
     // HUB_ABAS_V1: Barrados no padrão clean — KPIs em faixa única, busca em card, tabela, Desbloquear destrutivo
-    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
       h(HxCabecalho, {
         titulo: 'Entregadores barrados',
         sub: 'Bloqueio do nosso lado (a 99/Uber têm os protocolos deles). Casamos por telefone e placa.',
@@ -5589,7 +5589,7 @@
     }
 
     // HUB_ABAS_V1: Frequentes no padrão clean — KPIs em faixa única, busca em card e tabela
-    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
       h(HxCabecalho, {
         titulo: 'Motoboys frequentes',
         sub: `Entregadores com mais de 3 pedidos concluídos via Hub nos últimos ${m.dias || 30} dias · contagem por telefone, ordenada por volume.`,
@@ -6058,7 +6058,7 @@
       sub2 && h('div', { className: 'text-[9px] text-gray-400 mt-0.5' }, sub2),
     );
 
-    return h('div', { className: 'max-w-7xl mx-auto p-4 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' /* HUB_MARGEM_V1 */ },
       h('div', { className: 'flex items-center justify-between flex-wrap gap-3' },
         h('div', null,
           h('h2', { className: 'text-2xl font-bold text-gray-800' }, 'Relatório de corridas'),

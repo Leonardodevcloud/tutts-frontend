@@ -214,7 +214,7 @@
     const foto = conv && conv.motoboy_foto_url;
 
     const naoLidasTot = conversas.reduce((acc, c) => acc + (Number(c.nao_lidas) || 0), 0);
-    return h('div', { className: 'max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return h('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' }, /* HUB_MARGEM_V1 */
 
         // Cabecalho — HUB_ABAS_V1
         h('div', { className: 'flex items-end justify-between flex-wrap gap-3' },

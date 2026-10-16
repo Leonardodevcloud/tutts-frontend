@@ -16865,7 +16865,7 @@ const hideLoadingScreen = () => {
                 const periodoTxt = ua.data_inicio ? (fmtDM(ua.data_inicio) + " – " + (ua.data_fim ? fmtDM(ua.data_fim) : "…")) : "Selecionar período";
                 const tituloAba = ((SISTEMA_MODULOS_CONFIG.find(m => m.id === "bi")?.abas || []).find(a => a.id === Et)?.label) || "BI";
 
-                return React.createElement("div", { className: "max-w-full mx-auto", style: { padding: "20px 16px 0", display: "flex", flexDirection: "column", gap: 14 } },
+                return React.createElement("div", { className: "max-w-full mx-auto px-4 sm:px-6" /* BI_MARGEM_V1 */, style: { paddingTop: 20, display: "flex", flexDirection: "column", gap: 14 } },
                     React.createElement("div", null,
                         React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, tituloAba),
                         React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } }, infoTxt)
@@ -17149,7 +17149,7 @@ const hideLoadingScreen = () => {
                     )
                 ));
             })(), React.createElement("div", {
-                className: "max-w-full mx-auto p-4"
+                className: "max-w-full mx-auto px-4 py-4 sm:px-6" /* BI_MARGEM_V1 */
             }, ba ? React.createElement("div", {
                 className: "flex flex-col items-center justify-center py-20"
             }, 
@@ -17195,7 +17195,7 @@ const hideLoadingScreen = () => {
             // =============================================
             /* BI_CLEAN_V1: Home do BI — tiles no padrão do Início (TileHomeClean) e "Resumo rápido" como faixa de KPIs.
                onClick de cada tile é o mesmo de antes. */
-            "home-bi" === Et && React.createElement("div", { style: { padding: "8px 0 24px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1240, margin: "0 auto" } },
+            "home-bi" === Et && React.createElement("div", { style: { padding: "8px 0 24px", display: "flex", flexDirection: "column", gap: 24 } /* BI_MARGEM_V1 */ },
                 React.createElement("div", null,
                     React.createElement("h1", { style: { margin: 0, fontFamily: "Sora, Inter, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", color: "#111827" } }, "Business Intelligence"),
                     React.createElement("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } },
@@ -17266,8 +17266,31 @@ const hideLoadingScreen = () => {
                 const rot = { fontSize: 12, color: "#6b7280" };
                 const big = { fontFamily: "Sora, Inter, sans-serif", fontSize: 28, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: "tabular-nums", color: "#111827" };
                 const sub = { fontSize: 11.5, color: "#6b7280" };
-                const barra = p => React.createElement("div", { style: { height: 6, borderRadius: 99, background: "#fecaca", overflow: "hidden", display: "flex" }, "aria-hidden": "true" },
-                    React.createElement("div", { style: { width: Math.max(0, Math.min(100, p)) + "%", background: "#16a34a" } }));
+                /* BI_DONUT_V1: donut de prazo de volta (pedido do dono), no estilo clean — SVG puro, % no centro, legenda No prazo / Fora */
+                const donut = (dentro, fora, cD, cF, txt) => {
+                    const d = nl(dentro), f = nl(fora), t = d + f, pct = t > 0 ? d / t * 100 : 0;
+                    const R = 46, C = 2 * Math.PI * R, sw = 12, gap = t > 0 && d > 0 && f > 0 ? 3 : 0;
+                    const lD = Math.max(0, C * pct / 100 - gap), lF = Math.max(0, C * (100 - pct) / 100 - gap);
+                    const leg = (cor, rotulo, n, pc, dir) => React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexDirection: dir ? "row-reverse" : "row", textAlign: dir ? "right" : "left" } },
+                        React.createElement("span", { style: { width: 8, height: 8, borderRadius: 99, background: cor, flex: "none" } }),
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280" } }, rotulo),
+                            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" } }, n.toLocaleString("pt-BR"),
+                                React.createElement("span", { style: { marginLeft: 4, fontSize: 11.5, fontWeight: 600, color: "#6b7280" } }, "(" + fmtPct(pc) + ")"))));
+                    return React.createElement(React.Fragment, null,
+                        React.createElement("div", { style: { position: "relative", width: 132, height: 132, margin: "4px auto 2px" } },
+                            React.createElement("svg", { width: 132, height: 132, viewBox: "0 0 120 120", role: "img", "aria-label": fmtPct(pct) + " no prazo" },
+                                React.createElement("circle", { cx: 60, cy: 60, r: R, fill: "none", stroke: "#f3f4f6", strokeWidth: sw }),
+                                t > 0 && lD > 0 && React.createElement("circle", { cx: 60, cy: 60, r: R, fill: "none", stroke: cD, strokeWidth: sw, strokeDasharray: lD + " " + (C - lD), transform: "rotate(-90 60 60)", style: { transition: "stroke-dasharray .6s ease" } }),
+                                t > 0 && lF > 0 && React.createElement("circle", { cx: 60, cy: 60, r: R, fill: "none", stroke: cF, strokeWidth: sw, strokeDasharray: lF + " " + (C - lF), strokeDashoffset: -(C * pct / 100), transform: "rotate(-90 60 60)" })),
+                            React.createElement("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" } },
+                                React.createElement("div", { style: { fontFamily: "Sora, Inter, sans-serif", fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: t > 0 ? corTxt(pct) : "#9ca3af" } }, t > 0 ? fmtPct(pct) : "—"),
+                                React.createElement("div", { style: { fontSize: 10.5, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".04em" } }, t > 0 ? "no prazo" : "sem dados"))),
+                        t > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 10, borderTop: "1px solid #f3f4f6" } },
+                            leg(cD, "No prazo", d, pct, false),
+                            leg(cF, "Fora do prazo", f, 100 - pct, true)),
+                        txt && React.createElement("div", { style: sub }, txt));
+                };
                 const celula = (label, valor, extra, ultimo) => React.createElement("div", {
                     key: label,
                     style: { padding: "16px 18px", borderRight: ultimo ? "0" : "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", marginBottom: -1, minWidth: 0 }
@@ -17290,18 +17313,16 @@ const hideLoadingScreen = () => {
                         // Prazo de entrega
                         React.createElement("div", { style: card },
                             React.createElement("div", { style: rot }, "Prazo de entrega"),
-                            React.createElement("div", { style: Object.assign({}, big, { color: temPrazo ? corTxt(pE) : "#9ca3af" }) }, temPrazo ? fmtPct(pE) : "—"),
-                            barra(temPrazo ? pE : 0),
-                            React.createElement("div", { style: sub }, nl(ft?.fora_prazo).toLocaleString("pt-BR"), " fora do prazo",
-                                nl(ft?.sem_prazo) > 0 ? " · inclui " + nl(ft?.sem_prazo).toLocaleString("pt-BR") + " com horário inconsistente" : "")
+                            donut(ft?.dentro_prazo, ft?.fora_prazo, "#16a34a", "#dc2626",
+                                nl(ft?.sem_prazo) > 0 ? "Inclui " + nl(ft?.sem_prazo).toLocaleString("pt-BR") + " com horário inconsistente" : null)
                         ),
                         // Prazo do profissional
                         React.createElement("div", { style: card },
-                            React.createElement("div", { style: rot }, "Prazo do profissional"),
-                            React.createElement("div", { style: Object.assign({}, big, { color: temPrazoProf ? corTxt(pP) : "#9ca3af" }) }, temPrazoProf ? fmtPct(pP) : "—"),
-                            barra(temPrazoProf ? pP : 0),
-                            React.createElement("div", { style: sub }, "tempo médio ", cl(ft?.tempo_medio_entrega_prof),
-                                nl(ft?.sem_prazo_prof) > 0 ? " · inclui " + nl(ft?.sem_prazo_prof).toLocaleString("pt-BR") + " sem coleta" : "")
+                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } },
+                                React.createElement("div", { style: rot }, "Prazo do profissional"),
+                                React.createElement("span", { style: { fontSize: 11, color: "#1e40af", background: "#eff6ff", borderRadius: 99, padding: "2px 8px", fontWeight: 600, whiteSpace: "nowrap" } }, "T. médio ", cl(ft?.tempo_medio_entrega_prof))),
+                            donut(ft?.dentro_prazo_prof, ft?.fora_prazo_prof, "#2563eb", "#d97706",
+                                nl(ft?.sem_prazo_prof) > 0 ? "Inclui " + nl(ft?.sem_prazo_prof).toLocaleString("pt-BR") + " sem coleta" : null)
                         ),
                         // Entregadores ativos
                         React.createElement("div", { style: card },

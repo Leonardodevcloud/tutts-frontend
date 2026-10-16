@@ -234,7 +234,7 @@
 
     // ─── Render ─── HUB_ABAS_V1: cabeçalho de página + lista em cards no padrão clean
     const nAtivos = providers.filter(p => p.ativo).length;
-    return e('div', { className: 'max-w-4xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' },
+    return e('div', { className: 'max-w-7xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-4' }, /* HUB_MARGEM_V1 */
       e('div', { className: 'flex items-end justify-between flex-wrap gap-3' },
         e('div', null,
           e('h1', { className: 'text-2xl font-bold text-gray-900', style: { fontFamily: 'Sora, Inter, sans-serif', letterSpacing: '-0.01em' } }, 'Provedores'),

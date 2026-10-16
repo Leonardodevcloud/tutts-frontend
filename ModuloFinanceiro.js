@@ -1710,7 +1710,7 @@
                     { key: "loj", rotulo: "Pedidos Loja", n: y.loja || 0, cor: "#16a34a", ir: () => { x({...p, finTab: "loja"}); } }
                 ];
                 return React.createElement("main", {
-                    style: { padding: "32px 16px", maxWidth: 1240, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28, color: "#111827", fontSize: 13 },
+                    style: { padding: "32px 24px", maxWidth: 1280 /* FIN_MARGEM_V1 */, width: "100%", boxSizing: "border-box", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28, color: "#111827", fontSize: 13 },
                     className: "sm:px-6"
                 },
                     React.createElement("div", null,
@@ -5621,26 +5621,26 @@
                 }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bulb" })), "Dicas de Backup")), React.createElement("ul", {
                     className: "text-sm text-gray-700 mt-2 space-y-1"
                 }, React.createElement("li", null, "• Faça backups regularmente (recomendado: semanalmente)"), React.createElement("li", null, "• O arquivo JSON pode ser usado para restaurar dados"), React.createElement("li", null, "• O arquivo CSV pode ser aberto no Excel ou Google Sheets"), React.createElement("li", null, "• Guarde os backups em local seguro (Google Drive, OneDrive, etc.)"))))
-            })())), "stark-bank" === p.finTab && React.createElement(React.Fragment, null,
+            })())), "stark-bank" === p.finTab && React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-6 sm:px-6" /* FIN_MARGEM_V1 */ },
                 window.StarkBankComponent && React.createElement(window.StarkBankComponent, {
                     fetchAuth: fetchAuth,
                     API_URL: API_URL,
                     Toast: Toast,
                     showToast: ja
                 })
-            ), "acerto-prof" === p.finTab && React.createElement(React.Fragment, null,
+            ), "acerto-prof" === p.finTab && React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-6 sm:px-6" /* FIN_MARGEM_V1 */ },
                 window.AcertoProfComponent && React.createElement(window.AcertoProfComponent, {
                     fetchAuth: fetchAuth,
                     API_URL: API_URL,
                     Toast: Toast
                 })
-            ), "conciliacao-acerto" === p.finTab && React.createElement(React.Fragment, null,
+            ), "conciliacao-acerto" === p.finTab && React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-6 sm:px-6" /* FIN_MARGEM_V1 */ },
                 window.ConciliacaoAcertoComponent && React.createElement(window.ConciliacaoAcertoComponent, {
                     fetchAuth: fetchAuth,
                     API_URL: API_URL,
                     Toast: Toast
                 })
-            ), "saldo-plific" === p.finTab && React.createElement("div", {className: "space-y-6"}, /* FIN_ABAS_V1: Saldo Plific no padrão clean */
+            ), "saldo-plific" === p.finTab && React.createElement("div", {className: "max-w-7xl mx-auto px-4 py-6 sm:px-6 space-y-6" /* FIN_MARGEM_V1 */}, /* FIN_ABAS_V1: Saldo Plific no padrão clean */
     // Header
     window.FinUI.cabecalho("Saldo Plific", "Consulte saldos dos profissionais e lance débitos"),
     

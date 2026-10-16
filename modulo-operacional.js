@@ -1469,7 +1469,7 @@
             // 🔧 FIX: usa fetchAuth (padrão Tutts) em vez de localStorage direto.
             // O Tutts usa httpOnly cookies + Bearer via getToken() — montar fetch
             // na mão sem isso resultava em 401 + loop infinito de toast.
-            p.opTab === "score-prof" && React.createElement("div", {className: "max-w-7xl mx-auto p-6"},
+            p.opTab === "score-prof" && React.createElement("div", {className: "max-w-7xl mx-auto" /* OPER_MARGEM_V1: o Score já tem padding próprio */},
                 typeof window.ModuloScoreV2Component !== 'undefined'
                     ? React.createElement(window.ModuloScoreV2Component, {
                         fetchApi: async (url, opts) => {
