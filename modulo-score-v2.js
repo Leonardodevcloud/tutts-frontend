@@ -324,7 +324,7 @@
                     (tem(3) ? 'Ouro ≥' + c.pct_ouro + '% + ' + c.dias_pico_ouro + ' dias' : '')),
                 linha('Saque grátis', [
                     tem(2) ? 'Prata ' + qtdTxt(b.saque_qtd_n2) + '/mês até ' + tetoTxt(b.saque_teto_n2) : null,
-                    tem(3) ? 'Ouro ' + qtdTxt(b.saque_qtd_n3) + '/semana até ' + tetoTxt(b.saque_teto_n3) : null,
+                    tem(3) ? 'Ouro 1/semana (vale 3 dias) até ' + tetoTxt(b.saque_teto_n3) : null, // SCORE_OURO_1SEMANA_V1
                 ].filter(Boolean).join(' · ') || '—'),
                 linha('Sorteio', sorteioTxt.length ? sorteioTxt.join(' · ') + ' (mensal, ≥20 dias na categoria)' : 'desligado')
             ),
@@ -1277,7 +1277,7 @@
             saque_teto_n2: cfg.saque_teto_n2 != null ? Number(cfg.saque_teto_n2) : 500,
             saque_teto_n3: cfg.saque_teto_n3 != null ? Number(cfg.saque_teto_n3) : 500,
             saque_qtd_n2: cfg.saque_qtd_n2 != null ? Number(cfg.saque_qtd_n2) : 1,
-            saque_qtd_n3: cfg.saque_qtd_n3 != null ? Number(cfg.saque_qtd_n3) : 1,
+            saque_qtd_n3: cfg.saque_qtd_n3 != null ? Math.min(Number(cfg.saque_qtd_n3), 1) : 1, // SCORE_OURO_1SEMANA_V1
             n2_min_entregas: cfg.n2_min_entregas != null ? Number(cfg.n2_min_entregas) : 80,
             n2_min_dias_16h: cfg.n2_min_dias_16h != null ? Number(cfg.n2_min_dias_16h) : 15,
             n2_min_pct_prazo: cfg.n2_min_pct_prazo != null ? Number(cfg.n2_min_pct_prazo) : 80,
@@ -1340,7 +1340,10 @@
                 ),
                 h('div', { className: 'grid grid-cols-2 gap-2.5' },
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0)),
-                    h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
+                    isOuro
+                        ? h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Saque grátis'), /* SCORE_OURO_1SEMANA_V1 */
+                            h('div', { className: 'px-2.5 py-1.5 rounded-lg text-sm bg-gray-50 border border-gray-200 text-gray-700' }, '1 por semana · vale 3 dias'))
+                        : h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
                 ),
                 // BONUS_EXTRAS_FRONT_V1: editor da lista de bonus extras
                 h('div', { className: 'pt-3 border-t border-gray-100' },

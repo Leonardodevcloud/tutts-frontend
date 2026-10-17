@@ -432,7 +432,7 @@
                     '≥ ' + fmtPct(m.pct_ouro) + '% no prazo',
                 ],
                 bonus: [
-                    (b.qtd_n3 || 1) + (Number(b.qtd_n3) === 1 ? ' saque grátis/semana de até ' : ' saques grátis/semana de até ') + fmt(b.saque_n3),
+                    '1 saque grátis por semana de até ' + fmt(b.saque_n3) + ' (vale 3 dias)', // SCORE_OURO_1SEMANA_V1
                 ],
             },
         ];
