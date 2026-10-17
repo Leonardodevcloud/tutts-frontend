@@ -39,13 +39,23 @@
     // ============================================================
     // SCORE_BENEFICIO_REAL_V1: card "Meus saques grátis"
     // ============================================================
+    // SCORE_APP_TEXTO_V1: 'DD/MM/YYYY HH:MI' -> 'ter, 20/10 às 07:30' (com hora) ou '20/10'
+    function prazoBR(s, comHora) {
+        const m = String(s || '').match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}:\d{2}))?/);
+        if (!m) return String(s || '').slice(0, 10);
+        if (!comHora) return m[1] + '/' + m[2];
+        const dias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+        const dow = new Date(Date.UTC(+m[3], +m[2] - 1, +m[1])).getUTCDay();
+        return dias[dow] + ', ' + m[1] + '/' + m[2] + (m[4] ? ' às ' + m[4] : '');
+    }
     function textoSaqueGratis(b) {
         if (!b) return '';
         const qtd = Number(b.restantes != null ? b.restantes : (b.quantidade || 1)) || 1;
         const per = b.tipo === 'saque_semanal' ? 'desta semana' : b.tipo === 'sorteio' ? 'do sorteio' : 'deste mês';
-        return (qtd === 1 ? 'Você tem 1 saque sem taxa' : 'Você tem ' + qtd + ' saques sem taxa') + ' ' + per +
-            (b.valor ? ' (até ' + fmtBRL(b.valor) + ')' : '') +
-            (b.expira_em ? '. Vale até ' + String(b.expira_em).slice(0, 10) + '.' : '.');
+        // SCORE_APP_TEXTO_V1
+        return (qtd === 1 ? 'Você tem 1 saque sem taxa ' + per + (b.valor ? ' de até ' + fmtBRL(b.valor) : '')
+                          : 'Você tem ' + qtd + ' saques sem taxa ' + per + (b.valor ? ', de até ' + fmtBRL(b.valor) + ' cada' : '')) +
+            (b.expira_em ? '. Use até ' + prazoBR(b.expira_em, b.tipo === 'saque_semanal') + '.' : '.');
     }
 
     // SCORE_A_LIBERAR_V1: direito garantido, libera apos a carencia
@@ -92,7 +102,7 @@
             removida: ['Cancelado', 'bg-gray-100 text-gray-500'],
             usada_sem_saque: ['Usado', 'bg-gray-100 text-gray-600'],
         };
-        const origem = (b) => b.tipo === 'saque_semanal' ? 'Saque Ouro · semana ' + String(b.periodo || '').replace(/^\d{4}-W/, '')
+        const origem = (b) => b.tipo === 'saque_semanal' ? 'Semana ' + String(b.periodo || '').replace(/^\d{4}-W/, '') + ' · Ouro' /* SCORE_APP_TEXTO_V1 */
             : b.tipo === 'saque_mensal' ? 'Saque Prata · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
             : b.tipo === 'sorteio' ? 'Prêmio do sorteio · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
             : 'Saque grátis';
@@ -111,14 +121,21 @@
                 h('div', null,
                     h('div', { style: { fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Disponível agora'),
                     h('div', { style: { fontSize: 15, fontWeight: 700, color: '#1e40af', marginTop: 2 } },
-                        bonus.tipo === 'saque_semanal' ? 'Saque Ouro desta semana' : bonus.tipo === 'sorteio' ? 'Prêmio do sorteio' : 'Saque Prata do mês'),
-                    h('div', { style: { fontSize: 12, color: '#1e40af', marginTop: 2 } },
-                        'até ' + fmtBRL(bonus.valor) + (bonus.expira_em ? ' · vale até ' + String(bonus.expira_em).slice(0, 5) : '')),
-                    h('div', { style: { fontSize: 11, color: '#1e40af', marginTop: 6 } }, 'É aplicado automaticamente nos seus próximos saques — sem taxa.')
+                        bonus.tipo === 'saque_semanal' ? 'Saque grátis desta semana' : bonus.tipo === 'sorteio' ? 'Prêmio do sorteio' : 'Saque grátis do mês'), /* SCORE_APP_TEXTO_V1 */
+                    (function () {
+                        const q = Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1)) || 1;
+                        return h('div', { style: { fontSize: 13, color: '#1e40af', marginTop: 3 } },
+                            q === 1 ? '1 saque sem taxa de até ' : q + ' saques sem taxa, de até ', h('b', null, fmtBRL(bonus.valor)), q === 1 ? '' : ' cada');
+                    })(),
+                    bonus.expira_em && h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: '#fff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#1e40af' } },
+                        h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': 'true' },
+                            h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 7v5l3 2' })),
+                        'Use até ' + prazoBR(bonus.expira_em, bonus.tipo === 'saque_semanal')),
+                    h('div', { style: { fontSize: 11.5, color: '#1e40af', marginTop: 8, lineHeight: 1.4 } }, 'Entra sozinho no seu próximo saque, sem taxa. Se não usar até a data, ele expira.')
                 ),
                 h('div', { style: { textAlign: 'center', background: '#fff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '6px 10px', minWidth: 64 } },
                     h('div', { style: { fontSize: 26, fontWeight: 800, color: '#2563eb', lineHeight: 1 } }, Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1))),
-                    h('div', { style: { fontSize: 10, color: '#1e40af', fontWeight: 600 } }, 'restantes'))
+                    h('div', { style: { fontSize: 10, color: '#1e40af', fontWeight: 600 } }, Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1)) === 1 ? 'restante' : 'restantes'))
             ),
             emCarencia && !bonus && !aLiberar && h('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 text-xs text-amber-900' },
                 'Você está em carência na categoria. O saque grátis libera em ' + (carencia.dias_restantes || 1) +
@@ -129,9 +146,11 @@
                     h('div', { className: 'min-w-0' },
                         h('div', { className: 'text-xs font-medium text-gray-800 truncate' }, origem(b)),
                         h('div', { className: 'text-[11px] text-gray-500' },
-                            b.situacao === 'disponivel' && b.expira_em ? 'vale até ' + String(b.expira_em).slice(0, 10) :
-                            b.situacao === 'sacou' && b.valor_sacado ? fmtBRL(b.valor_sacado) + ' sacados sem taxa' :
-                            'liberado em ' + String(b.lancado_em || '').slice(0, 10))
+                            /* SCORE_APP_TEXTO_V1 */
+                            (b.lancado_em ? 'liberado ' + prazoBR(b.lancado_em, false) : '') +
+                            (b.situacao === 'disponivel' && b.expira_em ? ' · vale até ' + prazoBR(b.expira_em, b.tipo === 'saque_semanal') :
+                             b.situacao === 'sacou' && b.valor_sacado ? ' · ' + fmtBRL(b.valor_sacado) + ' sacados sem taxa' :
+                             b.situacao === 'expirou' && b.expira_em ? ' · venceu ' + prazoBR(b.expira_em, false) : ''))
                     ),
                     h('span', { className: 'text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ' + lb[1] }, lb[0])
                 );
@@ -432,7 +451,8 @@
                     '≥ ' + fmtPct(m.pct_ouro) + '% no prazo',
                 ],
                 bonus: [
-                    '1 saque grátis por semana de até ' + fmt(b.saque_n3) + ' (vale 3 dias)', // SCORE_OURO_1SEMANA_V1
+                    '1 saque grátis por semana, de até ' + fmt(b.saque_n3) + '. Ele chega no fim de semana e vale 3 dias.', // SCORE_APP_TEXTO_V1
+                    'Ficando no Ouro o mês todo, são cerca de 4 saques grátis no mês — um por semana.',
                 ],
             },
         ];
