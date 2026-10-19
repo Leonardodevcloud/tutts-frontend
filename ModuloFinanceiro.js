@@ -6993,6 +6993,11 @@
                         if (_outros.length > 0) Toast('' + _outros.length + ' removido(s) do lote por restrição: ' + _outros.map(function(b) { return '#' + b.cod_prof; }).join(', '), 'error');
                     }
                     Toast('Lote #' + d.lote_id + ' criado com ' + d.quantidade + ' profissionais. Vá para "Em Aprovação" para executar.', 'success');
+                    /* LOCACAO_ABAT_V1: parcela da moto alugada abatida do repasse (Motoboy Tutts) */
+                    if (d.abatimentos_locacao && d.abatimentos_locacao.length > 0) {
+                        var _totAb = d.abatimentos_locacao.reduce(function(s, a) { return s + Number(a.abatido || 0); }, 0);
+                        Toast('Locação de motos: ' + d.abatimentos_locacao.length + ' profissional(is) com parcela abatida do repasse (R$ ' + _totAb.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '). Valor do lote já é o líquido.', 'info');
+                    }
                     // Limpar dados e ir para aprovação
                     setSt(function(p) { return Object.assign({}, p, { dados: null, subTab: 'aprovacao' }); });
                     setSel({});

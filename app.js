@@ -737,6 +737,7 @@ let SISTEMA_MODULOS_CONFIG = [
     },
     { id: "performance", label: "Performance Diária", icon: "📈", abas: [{id:"dashboard",label:"Dashboard"},{id:"busca",label:"Busca"},{id:"config",label:"Configurações"},{id:"jobs",label:"Importações"}] },
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
+    { id: "locacao", label: "Locação de Motos", icon: "🏍️", abas: [] }, // LOCACAO_MOTOS_V1
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"cancelamentos",label:"Cancelamentos"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
     { id: "painel", label: "Meu Painel", icon: "📈", admin: true, abas: [] }, // PAINEL_V1
@@ -16829,6 +16830,24 @@ const hideLoadingScreen = () => {
                 );
             }
         }
+        // ========== LOCACAO_MOTOS_V1: MÓDULO LOCAÇÃO DE MOTOS (CARREGAMENTO EXTERNO) ==========
+        if (hasModuleAccess(l, "locacao") && "locacao" === Ee) {
+            if (typeof window.ModuloLocacaoComponent !== 'undefined') {
+                return React.createElement(window.ModuloLocacaoComponent, {
+                    usuario: l, estado: p, setEstado: x, API_URL: API_URL, getToken: getToken, fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto, Toast: Toast, LoadingOverlay: LoadingOverlay, Ee: Ee,
+                    socialProfile: socialProfile, ul: ul, o: o, he: he, navegarSidebar: navegarSidebar,
+                    showToast: ja, n: n, i: i, f: f, E: E,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo Locação de Motos...")
+                    )
+                );
+            }
+        }
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
         // ========== MODULO UBER DIRECT (CARREGAMENTO EXTERNO) ==========
         const canAccessUber = hasModuleAccess(l, "uber");
@@ -21016,6 +21035,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Análise Gerencial"),
                             React.createElement("p", {className: "text-xs text-gray-500"}, "Relatório semanal consolidado")
+                        )
+                    ),
+
+                    // LOCACAO_MOTOS_V1: Locação de Motos
+                    hasModuleAccess(l, "locacao") &&
+                    React.createElement("div", {
+                        onClick: () => he("locacao"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-indigo-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-bike" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Locação de Motos"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "Frota, contratos e cobranças")
                         )
                     )
                 )

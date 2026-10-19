@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="robots" content="noindex">
+<title>Tutts · Locação de motos</title>
+<link rel="icon" href="/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+<style>
+  /* LOCACAO_MOTOS_V1: página pública (cadastro por link, documentos) e portal do locatário */
+  :root{--roxo:#770fa8;--roxo-esc:#5d0b85;--roxo-50:#faf7fd;--roxo-100:#f3e8fb;--roxo-200:#e9d5f9;--tinta:#111827;--muted:#6b7280;--linha:#e5e7eb;--linha2:#f3f4f6;--bg:#f9fafb}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--tinta);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;-webkit-text-size-adjust:100%}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  button:disabled{cursor:not-allowed}
+  input,select,textarea{font:inherit;color:var(--tinta)}
+  a{color:var(--roxo)}
+  .sora{font-family:Sora,Inter,sans-serif}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  .wrap{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  .top{background:#fff;border-bottom:1px solid var(--linha);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .marca{font-family:Sora,Inter,sans-serif;font-weight:800;font-size:17px;color:var(--roxo-esc)}
+  .marca span{color:#9ca3af;font-weight:600}
+  main{padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;flex:1}
+  .card{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .h1{margin:0;font-family:Sora,Inter,sans-serif;font-size:21px;font-weight:700}
+  .sub{margin:0;color:var(--muted);font-size:13.5px;line-height:1.45}
+  .sec{font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.04em}
+  .fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .fld>span.l{font-size:12.5px;font-weight:600;color:#374151}
+  .fld>span.h{font-size:11.5px;color:var(--muted)}
+  .fld>span.e{font-size:11.5px;color:#991b1b;font-weight:500}
+  .inp{height:44px;padding:0 12px;border:1px solid var(--linha);border-radius:10px;background:#fff;width:100%;min-width:0;font-size:15px}
+  textarea.inp{height:auto;padding:10px 12px;resize:vertical;line-height:1.45}
+  .inp:focus{outline:none;border-color:var(--roxo);box-shadow:0 0 0 3px var(--roxo-100)}
+  .inp.err{border:1.5px solid #dc2626;background:#fef2f2}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .g130{display:grid;grid-template-columns:130px 1fr;gap:10px}
+  .btn{height:48px;border-radius:12px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;width:100%}
+  .btn.pri{background:var(--roxo);color:#fff}
+  .btn.pri:disabled{background:#d8b4f0}
+  .btn.sec{background:#fff;color:#374151;border:1px solid var(--linha)}
+  .btn.ok{background:#16a34a;color:#fff}
+  .lnk{color:var(--roxo);font-weight:600;font-size:13px;padding:0}
+  .seg{display:grid;background:#f3f4f6;border-radius:10px;padding:3px;gap:3px}
+  .seg button{height:38px;border-radius:8px;font-weight:600;color:var(--muted);font-size:13.5px}
+  .seg button[aria-checked="true"]{background:#fff;color:var(--roxo-esc);font-weight:700;box-shadow:0 1px 2px rgba(17,24,39,.08)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+  .progress{height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden}
+  .progress>div{height:100%;background:var(--roxo)}
+  .tile{border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center;text-align:left;width:100%}
+  .tile .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--linha2);font-size:13.5px}
+  .nav{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--linha);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding:6px 0}
+  .nav button[aria-current="page"]{color:var(--roxo);font-weight:700}
+  .foto{aspect-ratio:1/1;border-radius:12px;position:relative;overflow:hidden;display:grid;place-items:center;width:100%}
+  .foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:50;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+  .ov{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+  .sheet{background:#fff;width:100%;max-width:480px;max-height:86vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  .spin{width:28px;height:28px;border-radius:99px;border:3px solid var(--roxo-200);border-top-color:var(--roxo);animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.spin{animation-duration:2s}}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  :focus-visible{outline:2px solid var(--roxo);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<noscript>Ative o JavaScript para usar esta página.</noscript>
+<script>
+(function () {
+  'use strict';
+  var API = (window.LOCACAO_API || 'https://tutts-backend-production.up.railway.app/api');
+  var h = React.createElement, useState = React.useState, useEffect = React.useEffect, useRef = React.useRef, useCallback = React.useCallback;
+  var ROXO = '#770fa8', ROXO_ESC = '#5d0b85';
+  var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  var POSICOES = [['frente', 'Frente'], ['traseira', 'Traseira'], ['lateral_esq', 'Lateral esq.'], ['lateral_dir', 'Lateral dir.'], ['painel', 'Painel/hodômetro'], ['pneus', 'Pneus']];
+  var TIPOS_VIST = [['retirada', 'Retirada'], ['revisao', 'Revisão'], ['periodica', 'Periódica'], ['devolucao', 'Devolução']];
+  var DOCS = [['cnh_frente', 'CNH · frente'], ['cnh_verso', 'CNH · verso'], ['selfie_cnh', 'Selfie com a CNH'], ['comprovante', 'Comprovante de residência']];
+  var TONS = { verde: ['#f0fdf4', '#166534'], ambar: ['#fffbeb', '#92400e'], vermelho: ['#fef2f2', '#991b1b'], azul: ['#eff6ff', '#1e40af'], roxo: ['#f3e8fb', '#5d0b85'], cinza: ['#f3f4f6', '#374151'] };
+  var TOM_PARC = { a_vencer: 'azul', vence_hoje: 'azul', atrasada: 'vermelho', paga: 'verde', cancelada: 'cinza' };
+  var TOM_SIT = { em_dia: 'verde', atrasada: 'ambar', em_retomada: 'vermelho', quitado: 'roxo', aguardando_assinatura: 'azul', encerrado: 'cinza' };
+  var TOM_VIST = { aguardando: 'ambar', aprovada: 'verde', com_avaria: 'vermelho' };
+  var ROT_VIST = { aguardando: 'Em análise', aprovada: 'Aprovada', com_avaria: 'Com avaria' };
+
+  // ───── ícones (Lucide, traço) ─────
+  var P = {
+    cam: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    ok: 'm5 12 5 5 9-10', x: 'M18 6 6 18M6 6l12 12', back: 'm15 18-6-6 6-6', copy: 'M8 8h12v12H8zM4 16V4h12',
+    home: 'M3 11 12 4l9 7v9H3z', card: 'M2 6h20v12H2zM2 10h20', user: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+    shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2', alert: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    moto: 'M5.5 19.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18.5 19.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.5 16.5h5l3-6h-4l-2-3H8M15 5h3l1.5 5.5', pin: 'M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+    file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6', out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
+  };
+  function I(n, s, extra) { return h('svg', Object.assign({ width: s || 18, height: s || 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', style: { flex: 'none' } }, extra || {}), h('path', { d: P[n] })); }
+
+  // ───── utilitários ─────
+  function dig(s) { return String(s || '').replace(/\D/g, ''); }
+  function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  function fR(v) { return 'R$ ' + num(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function pd(s) { if (!s) return null; var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s)); if (m) return new Date(+m[1], +m[2] - 1, +m[3]); var d = new Date(s); return isNaN(d) ? null : d; }
+  function fD(s) { var d = pd(s); return d ? p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() : '—'; }
+  function fDC(s) { var d = pd(s); return d ? p2(d.getDate()) + '/' + p2(d.getMonth() + 1) : '—'; }
+  function fDS(s) { var d = pd(s); return d ? DIAS[d.getDay()] + ', ' + fDC(d) : '—'; }
+  function mCPF(v) { var d = dig(v).slice(0, 11); return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); }
+  function mTel(v) { var d = dig(v).slice(0, 11); if (d.length <= 2) return d.length ? '(' + d : ''; if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2); if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6); return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7); }
+  function mCEP(v) { var d = dig(v).slice(0, 8); return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d; }
+  function cpfOk(v) {
+    var c = dig(v); if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+    for (var t = 9; t < 11; t++) { var s = 0; for (var i = 0; i < t; i++) s += +c[i] * (t + 1 - i); var r = (s * 10) % 11 % 10; if (r !== +c[t]) return false; }
+    return true;
+  }
+  function emailOk(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
+  function telOk(v) { var d = dig(v); return (d.length === 10 || d.length === 11) && +d.slice(0, 2) >= 11; }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  function lerFoto(file, max, q) {
+    return new Promise(function (res, rej) {
+      if (!file) return rej(new Error('Sem arquivo'));
+      var fr = new FileReader();
+      fr.onerror = function () { rej(new Error('Não deu para ler a foto. Tente de novo.')); };
+      fr.onload = function () {
+        if (!/^image\//.test(file.type)) return res(fr.result);
+        var img = new Image();
+        img.onload = function () {
+          var M = max || 1280, k = Math.min(1, M / Math.max(img.naturalWidth, img.naturalHeight));
+          var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          try { res(c.toDataURL('image/jpeg', q || 0.8)); } catch (e) { res(fr.result); }
+        };
+        img.onerror = function () { res(fr.result); };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function copiar(txt) {
+    return new Promise(function (res) {
+      try { if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(txt).then(function () { res(true); }, fb); return; } } catch (e) { /* segue */ }
+      fb();
+      function fb() { var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } document.body.removeChild(ta); res(ok); }
+    });
+  }
+  function req(path, opts) {
+    opts = opts || {};
+    var headers = { 'Content-Type': 'application/json' };
+    if (opts.token) headers.Authorization = 'Bearer ' + opts.token;
+    return fetch(API + path, { method: opts.method || 'GET', headers: headers, body: opts.body ? JSON.stringify(opts.body) : undefined })
+      .then(function (r) {
+        return r.text().then(function (t) {
+          var j = {}; try { j = t ? JSON.parse(t) : {}; } catch (e) { j = {}; }
+          if (!r.ok) { var e = new Error(j.error || j.erro || 'Algo deu errado (' + r.status + '). Tente de novo.'); e.status = r.status; e.data = j; throw e; }
+          return j;
+        });
+      }, function () { var e = new Error('Sem conexão. Confira a internet e tente de novo.'); e.status = 0; throw e; });
+  }
+
+  // ───── peças de UI ─────
+  function Pill(t, tom) { var T = TONS[tom] || TONS.cinza; return h('span', { className: 'pill', style: { background: T[0], color: T[1] } }, t); }
+  function Topo(dir) { return h('header', { className: 'top' }, h('span', { className: 'marca' }, 'Tutts ', h('span', null, '· Locação')), dir || null); }
+  function Campo(p) {
+    return h('label', { className: 'fld', style: p.style || null },
+      h('span', { className: 'l' }, p.label, p.opt ? h('span', { style: { color: '#9ca3af', fontWeight: 500 } }, ' · opcional') : null),
+      p.children,
+      p.erro ? h('span', { className: 'e', role: 'alert' }, p.erro) : p.hint ? h('span', { className: 'h' }, p.hint) : null);
+  }
+  function Seg(op, val, set, nome, cols) {
+    return h('div', { className: 'seg', role: 'radiogroup', 'aria-label': nome, style: { gridTemplateColumns: 'repeat(' + (cols || op.length) + ', 1fr)' } },
+      op.map(function (o) { return h('button', { key: String(o[0]), type: 'button', role: 'radio', 'aria-checked': val === o[0], onClick: function () { set(o[0]); } }, o[1]); }));
+  }
+  function Carregando(t) { return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '60px 16px', color: '#6b7280' } }, h('div', { className: 'spin' }), t || 'Carregando...'); }
+  function Toast(p) { return p.msg ? h('div', { className: 'toast', role: 'status' }, p.msg) : null; }
+  function useToast() {
+    var s = useState(null), msg = s[0], set = s[1], t = useRef(null);
+    var show = useCallback(function (m) { set(m); clearTimeout(t.current); t.current = setTimeout(function () { set(null); }, 2600); }, []);
+    return [msg, show];
+  }
+  function Sheet(p) {
+    return h('div', { className: 'ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': p.titulo, onClick: function (e) { if (e.target === e.currentTarget) p.onClose(); } },
+      h('div', { className: 'sheet' },
+        h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 12 } }, h('h2', { className: 'sora', style: { margin: 0, fontSize: 17, flex: 1 } }, p.titulo), h('button', { type: 'button', onClick: p.onClose, 'aria-label': 'Fechar', style: { width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#6b7280' } }, I('x', 18))),
+        p.children));
+  }
+  function Mensagem(p) {
+    return h('div', { className: 'wrap' }, Topo(),
+      h('main', { style: { justifyContent: 'center' } },
+        h('div', { className: 'card', style: { alignItems: 'center', textAlign: 'center', padding: '28px 18px' } },
+          h('div', { style: { width: 56, height: 56, borderRadius: 99, display: 'grid', placeItems: 'center', background: (TONS[p.tom || 'roxo'] || TONS.roxo)[0], color: (TONS[p.tom || 'roxo'] || TONS.roxo)[1] } }, I(p.icone || 'ok', 26)),
+          h('h1', { className: 'h1', style: { fontSize: 20 } }, p.titulo),
+          h('p', { className: 'sub' }, p.texto),
+          p.acao || null)));
+  }
+  function TermoTexto(p) { return h('div', { style: { whiteSpace: 'pre-wrap', fontSize: 13.5, lineHeight: 1.55, color: '#374151' } }, p.texto || 'Termo indisponível no momento.'); }
+
+  // ───── Tile de documento ─────
+  function DocTile(p) {
+    var feito = !!p.valor;
+    return h('label', { className: 'tile', style: feito ? { background: '#fff', border: '1px solid #bbf7d0', cursor: 'pointer' } : { background: '#fff', border: '1.5px dashed #d8b4f0', cursor: 'pointer' } },
+      h('input', { type: 'file', className: 'sr', accept: p.pdf ? 'image/*,application/pdf' : 'image/*', onChange: function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) p.onFile(f); } }),
+      feito && /^data:image/.test(p.valor) ? h('img', { src: p.valor, alt: '', style: { width: 38, height: 38, borderRadius: 10, objectFit: 'cover', flex: 'none' } })
+        : h('span', { className: 'ic', style: feito ? { background: '#f0fdf4', color: '#16a34a' } : { background: '#f3e8fb', color: ROXO } }, I(feito ? 'ok' : (p.pdf ? 'file' : 'cam'), 20)),
+      h('span', { style: { flex: 1, minWidth: 0 } },
+        h('span', { style: { display: 'block', fontWeight: 600, fontSize: 14 } }, p.titulo),
+        h('span', { style: { display: 'block', fontSize: 12.5, color: feito ? '#166534' : ROXO, fontWeight: feito ? 500 : 600 } }, feito ? 'Enviado · trocar' : (p.pdf ? 'Foto ou PDF' : 'Tirar foto'))));
+  }
+
+  // ═════════ CADASTRO POR LINK ═════════
+  var CAMPOS = [
+    ['nome', 'Nome completo'], ['cpf', 'CPF'], ['rg', 'RG'], ['nacionalidade', 'Nacionalidade'], ['estado_civil', 'Estado civil'], ['profissao', 'Profissão'],
+    ['whatsapp', 'WhatsApp'], ['email', 'E-mail'], ['cep', 'CEP'], ['logradouro', 'Rua'], ['numero', 'Número'], ['bairro', 'Bairro'], ['cidade', 'Cidade'], ['uf', 'UF'],
+    ['cnh_numero', 'Nº da CNH'], ['cnh_categoria', 'Categoria'], ['cnh_validade', 'Validade da CNH'], ['cnh_ear', 'EAR'], ['entregador_tutts', 'Entregador Tutts']
+  ];
+  var VAZIO = { nome: '', cpf: '', rg: '', data_nascimento: '', nacionalidade: 'Brasileira', estado_civil: '', profissao: '', whatsapp: '', email: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', cnh_numero: '', cnh_categoria: '', cnh_validade: '', cnh_ear: null, entregador_tutts: null, cod_profissional: '' };
+  function validar(d) {
+    var e = {};
+    CAMPOS.forEach(function (c) { var v = d[c[0]]; if (v === null || v === undefined || String(v).trim() === '') e[c[0]] = (c[0] === 'cnh_ear' || c[0] === 'entregador_tutts') ? 'Escolha Sim ou Não.' : (c[0] === 'estado_civil' || c[0] === 'cnh_categoria') ? 'Escolha uma opção.' : 'Campo obrigatório.'; });
+    if (d.nome && String(d.nome).trim().split(/\s+/).length < 2) e.nome = 'Escreva nome e sobrenome.';
+    if (d.cpf && !e.cpf) { var n = dig(d.cpf).length; if (n !== 11) e.cpf = n < 11 ? 'Falta' + (11 - n > 1 ? 'm ' : ' ') + (11 - n) + ' dígito' + (11 - n > 1 ? 's' : '') + ' — o CPF tem 11.' : 'O CPF tem 11 dígitos.'; else if (!cpfOk(d.cpf)) e.cpf = 'Esse CPF não confere. Revise os números.'; }
+    if (d.email && !emailOk(d.email)) e.email = 'Confira o e-mail (ex.: nome@email.com).';
+    if (d.whatsapp && !telOk(d.whatsapp)) e.whatsapp = 'Use DDD + número, ex.: (71) 98765-4321.';
+    if (d.cep && dig(d.cep).length !== 8) e.cep = 'O CEP tem 8 dígitos.';
+    if (d.uf && !/^[A-Za-z]{2}$/.test(d.uf)) e.uf = 'Use a sigla, ex.: BA.';
+    if (d.cnh_validade) { var v = pd(d.cnh_validade); if (!v) e.cnh_validade = 'Data inválida.'; else if (v < new Date(new Date().toDateString())) e.cnh_validade = 'Essa CNH está vencida.'; }
+    if (d.data_nascimento) { var nd = pd(d.data_nascimento); if (!nd || nd > new Date()) e.data_nascimento = 'Data inválida.'; }
+    return e;
+  }
+
+  function Cadastro(p) {
+    var token = p.token, chave = 'tutts_loc_cad_' + token;
+    var _c = useState(null), conv = _c[0], setConv = _c[1];
+    var _ce = useState(null), convErro = _ce[0], setConvErro = _ce[1];
+    var _d = useState(function () { try { var s = store(chave); return s ? Object.assign({}, VAZIO, JSON.parse(s)) : Object.assign({}, VAZIO); } catch (e) { return Object.assign({}, VAZIO); } }), d = _d[0], setD = _d[1];
+    var _t = useState({}), toq = _t[0], setToq = _t[1];
+    var _e = useState(1), etapa = _e[0], setEtapa = _e[1];
+    var _docs = useState({}), docs = _docs[0], setDocs = _docs[1];
+    var _a = useState(false), aceite = _a[0], setAceite = _a[1];
+    var _s = useState(false), enviando = _s[0], setEnviando = _s[1];
+    var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
+    var _tm = useState(false), verTermo = _tm[0], setVerTermo = _tm[1];
+    var _srv = useState({}), errSrv = _srv[0], setErrSrv = _srv[1];
+    var _ts = useToast(), toast = _ts[0], showToast = _ts[1];
+    var _cep = useState(''), cepInfo = _cep[0], setCepInfo = _cep[1];
+
+    useEffect(function () {
+      req('/locacao-publico/convite/' + encodeURIComponent(token)).then(function (r) { setConv(r); }).catch(function (e) { setConvErro(e); });
+    }, [token]);
+    useEffect(function () { var c = Object.assign({}, d); store(chave, JSON.stringify(c)); }, [d]);
+
+    var set = function (k, v) { setD(function (x) { var n = Object.assign({}, x); n[k] = v; return n; }); setErrSrv(function (x) { if (!x[k]) return x; var n = Object.assign({}, x); delete n[k]; return n; }); };
+    var blur = function (k) { setToq(function (x) { if (x[k]) return x; var n = Object.assign({}, x); n[k] = true; return n; }); };
+    var erros = Object.assign(validar(d), errSrv);
+    var faltam = Object.keys(erros).length;
+    var errDe = function (k) { return toq[k] || toq.__todos ? erros[k] : null; };
+
+    // ViaCEP (opcional)
+    useEffect(function () {
+      var c = dig(d.cep); if (c.length !== 8) { setCepInfo(''); return; }
+      var cancel = false;
+      fetch('https://viacep.com.br/ws/' + c + '/json/').then(function (r) { return r.json(); }).then(function (j) {
+        if (cancel) return;
+        if (j && !j.erro) {
+          setD(function (x) { return Object.assign({}, x, { logradouro: x.logradouro || j.logradouro || '', bairro: x.bairro || j.bairro || '', cidade: x.cidade || j.localidade || '', uf: x.uf || j.uf || '' }); });
+          setCepInfo([j.logradouro, j.bairro, (j.localidade || '') + (j.uf ? '/' + j.uf : '')].filter(Boolean).join(' · '));
+        } else setCepInfo('CEP não encontrado. Preencha o endereço à mão.');
+      }).catch(function () { if (!cancel) setCepInfo(''); });
+      return function () { cancel = true; };
+    }, [d.cep]);
+
+    if (convErro) {
+      var mot = convErro.data && convErro.data.motivo;
+      if (convErro.status === 410 || mot) return h(Mensagem, { tom: 'cinza', icone: 'clock', titulo: mot === 'usado' ? 'Este link já foi usado' : mot === 'cancelado' ? 'Este link foi cancelado' : 'Este link expirou', texto: mot === 'usado' ? 'O cadastro deste link já foi enviado. Se precisar corrigir algo, fale com o time Tutts.' : 'Peça um novo link ao time Tutts pelo WhatsApp.' });
+      if (convErro.status === 404) return h(Mensagem, { tom: 'cinza', icone: 'alert', titulo: 'Link não encontrado', texto: 'Confira se o link está completo ou peça um novo ao time Tutts.' });
+      return h(Mensagem, { tom: 'vermelho', icone: 'alert', titulo: 'Não deu para abrir o cadastro', texto: convErro.message, acao: h('button', { className: 'btn sec', onClick: function () { location.reload(); } }, 'Tentar de novo') });
+    }
+    if (!conv) return h('div', { className: 'wrap' }, Topo(), Carregando('Abrindo seu cadastro...'));
+    if (conv.tipo === 'documentos') return h(Documentos, { token: token, conv: conv });
+    if (ok) return h(Mensagem, { titulo: 'Cadastro enviado!', texto: 'Recebemos seus dados, entraremos em contato. A análise leva até 2 dias úteis e o aviso chega pelo WhatsApp ' + mTel(d.whatsapp) + '.' });
+
+    var inp = function (k, extra) {
+      extra = extra || {};
+      var er = errDe(k);
+      return h('input', Object.assign({ className: 'inp' + (er ? ' err' : ''), value: d[k] == null ? '' : d[k], 'aria-invalid': er ? 'true' : null,
+        onChange: function (e) { set(k, extra.mask ? extra.mask(e.target.value) : e.target.value); }, onBlur: function () { blur(k); } }, extra.attrs || {}));
+    };
+    var continuar = function () {
+      if (faltam) {
+        setToq({ __todos: true });
+        setTimeout(function () { var el = document.querySelector('.inp.err, [aria-invalid="true"]'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); try { el.focus({ preventScroll: true }); } catch (e) { /* ok */ } } }, 30);
+        return;
+      }
+      setEtapa(2); window.scrollTo(0, 0);
+    };
+    var enviar = function () {
+      setEnviando(true);
+      var dados = Object.assign({}, d, { cpf: dig(d.cpf), whatsapp: dig(d.whatsapp), cep: dig(d.cep), uf: String(d.uf).toUpperCase(), nome: d.nome.trim(), email: d.email.trim(), data_nascimento: d.data_nascimento || null, cod_profissional: d.entregador_tutts ? (dig(d.cod_profissional) || null) : null });
+      req('/locacao-publico/convite/' + encodeURIComponent(token), { method: 'POST', body: { dados: dados, documentos: DOCS.filter(function (x) { return docs[x[0]]; }).map(function (x) { return { tipo: x[0], foto: docs[x[0]] }; }), aceite_lgpd: true, termo_lgpd_versao: conv.termo_lgpd_versao } })
+        .then(function () { store(chave, null); setOk(true); window.scrollTo(0, 0); })
+        .catch(function (e) {
+          if (e.data && Array.isArray(e.data.campos) && e.data.campos.length) {
+            var m = {}; e.data.campos.forEach(function (c) { var k = typeof c === 'string' ? c : c.campo; m[k] = (typeof c === 'object' && c.mensagem) || 'Confira este campo.'; });
+            setErrSrv(m); setToq({ __todos: true }); setEtapa(1); window.scrollTo(0, 0);
+          }
+          showToast(e.message);
+        }).then(function () { setEnviando(false); });
+    };
+    var pegarDoc = function (tipo, f) { lerFoto(f, 1600, 0.82).then(function (u) { setDocs(function (x) { var n = Object.assign({}, x); n[tipo] = u; return n; }); }).catch(function (e) { showToast(e.message); }); };
+    var nDocs = Object.keys(docs).length;
+    var primeiro = (conv.nome_ref || '').split(' ')[0];
+
+    if (etapa === 2) return h('div', { className: 'wrap' }, Topo(h('span', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Etapa 2 de 2')),
+      h('main', null,
+        h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4 }, onClick: function () { setEtapa(1); } }, I('back', 16), 'Voltar aos dados'),
+        h('div', { className: 'progress', 'aria-hidden': 'true' }, h('div', { style: { width: '100%' } })),
+        h('h1', { className: 'h1' }, 'Documentos'),
+        h('p', { className: 'sub' }, 'Opcional nesta etapa, mas agiliza a análise. Foto nítida, sem reflexo. ' + nDocs + ' de 4 enviados.'),
+        DOCS.map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]], pdf: x[0] === 'comprovante', onFile: function (f) { pegarDoc(x[0], f); } }); }),
+        h('section', { className: 'card', style: { background: '#faf7fd', borderColor: '#e9d5f9' } },
+          h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', color: ROXO_ESC, fontWeight: 700 } }, I('shield', 18), 'Privacidade dos seus dados (LGPD)'),
+          h('ul', { style: { margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: 4 } },
+            h('li', null, 'Usamos seus dados e documentos para analisar o cadastro, fazer o contrato e cobrar as parcelas.'),
+            h('li', null, 'As fotos de vistoria registram o estado da moto na retirada, nas revisões e na devolução.'),
+            h('li', null, 'Guardamos tudo enquanto o contrato existir e pelo prazo que a lei exige.'),
+            h('li', null, 'Você pode pedir cópia, correção ou exclusão pelo WhatsApp da Tutts.')),
+          h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start' }, onClick: function () { setVerTermo(true); } }, 'Ler termo completo'),
+          h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, cursor: 'pointer', background: '#fff', border: '1px solid ' + (aceite ? '#e9d5f9' : '#e5e7eb'), borderRadius: 10, padding: 12 } },
+            h('input', { type: 'checkbox', checked: aceite, onChange: function (e) { setAceite(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, marginTop: 1, flex: 'none' } }),
+            h('span', null, 'Li e aceito o ', h('b', null, 'Termo de Privacidade (LGPD) ' + (conv.termo_lgpd_versao || '')), '.'))),
+        h('button', { type: 'button', className: 'btn pri', disabled: !aceite || enviando || faltam > 0, onClick: enviar }, enviando ? 'Enviando...' : 'Enviar cadastro'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, faltam > 0 ? 'Volte e complete os ' + faltam + ' campos que faltam.' : !aceite ? 'Aceite o termo para liberar o envio.' : 'Tudo certo. É só enviar.')),
+      verTermo ? h(Sheet, { titulo: 'Termo de Privacidade · ' + (conv.termo_lgpd_versao || ''), onClose: function () { setVerTermo(false); } }, h(TermoTexto, { texto: conv.termo_lgpd })) : null,
+      h(Toast, { msg: toast }));
+
+    var tot = CAMPOS.length, feitos = tot - CAMPOS.filter(function (c) { return erros[c[0]]; }).length;
+    return h('div', { className: 'wrap' }, Topo(h('span', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Etapa 1 de 2')),
+      h('main', null,
+        h('div', { className: 'progress', 'aria-hidden': 'true' }, h('div', { style: { width: Math.round(50 * feitos / tot) + '%' } })),
+        h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 10, justifyContent: 'space-between' } },
+          h('div', null, h('h1', { className: 'h1' }, primeiro ? 'Olá, ' + primeiro : 'Seus dados'), h('p', { className: 'sub' }, 'Preencha para pedir a locação da moto. Leva uns 3 minutos.')),
+          faltam ? Pill('Faltam ' + faltam + ' campo' + (faltam > 1 ? 's' : ''), 'ambar') : Pill('Tudo preenchido', 'verde')),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Pessoal'),
+          h(Campo, { label: 'Nome completo', erro: errDe('nome') }, inp('nome', { attrs: { autoComplete: 'name' } })),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'CPF', erro: errDe('cpf') }, inp('cpf', { mask: mCPF, attrs: { inputMode: 'numeric', placeholder: '000.000.000-00' } })),
+            h(Campo, { label: 'RG', erro: errDe('rg') }, inp('rg', { attrs: { inputMode: 'numeric' } }))),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Nascimento', opt: true, erro: errDe('data_nascimento') }, inp('data_nascimento', { attrs: { type: 'date' } })),
+            h(Campo, { label: 'Nacionalidade', erro: errDe('nacionalidade') }, inp('nacionalidade'))),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Estado civil', erro: errDe('estado_civil') },
+              h('select', { className: 'inp' + (errDe('estado_civil') ? ' err' : ''), value: d.estado_civil, onChange: function (e) { set('estado_civil', e.target.value); }, onBlur: function () { blur('estado_civil'); } },
+                ['', 'Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
+            h(Campo, { label: 'Profissão', erro: errDe('profissao') }, inp('profissao', { attrs: { placeholder: 'Ex.: entregador' } }))),
+          h(Campo, { label: 'WhatsApp', erro: errDe('whatsapp'), hint: 'Vamos mandar o código de acesso por aqui.' }, inp('whatsapp', { mask: mTel, attrs: { inputMode: 'tel', autoComplete: 'tel', placeholder: '(71) 98765-4321' } })),
+          h(Campo, { label: 'E-mail', erro: errDe('email') }, inp('email', { attrs: { type: 'email', inputMode: 'email', autoComplete: 'email', placeholder: 'nome@email.com' } }))),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Endereço'),
+          h('div', { className: 'g130' },
+            h(Campo, { label: 'CEP', erro: errDe('cep') }, inp('cep', { mask: mCEP, attrs: { inputMode: 'numeric', autoComplete: 'postal-code', placeholder: '00000-000' } })),
+            h(Campo, { label: 'Número', erro: errDe('numero') }, inp('numero', { attrs: { inputMode: 'numeric' } }))),
+          cepInfo ? h('div', { style: { fontSize: 12.5, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'center' } }, I('pin', 14), cepInfo) : null,
+          h(Campo, { label: 'Rua', erro: errDe('logradouro') }, inp('logradouro', { attrs: { autoComplete: 'address-line1' } })),
+          h(Campo, { label: 'Complemento', opt: true }, inp('complemento')),
+          h(Campo, { label: 'Bairro', erro: errDe('bairro') }, inp('bairro')),
+          h('div', { className: 'g130', style: { gridTemplateColumns: '1fr 80px' } },
+            h(Campo, { label: 'Cidade', erro: errDe('cidade') }, inp('cidade')),
+            h(Campo, { label: 'UF', erro: errDe('uf') }, inp('uf', { mask: function (v) { return v.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase(); } })))),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Habilitação'),
+          h(Campo, { label: 'Nº da CNH', erro: errDe('cnh_numero') }, inp('cnh_numero', { mask: function (v) { return dig(v).slice(0, 11); }, attrs: { inputMode: 'numeric' } })),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Categoria', erro: errDe('cnh_categoria') },
+              h('select', { className: 'inp' + (errDe('cnh_categoria') ? ' err' : ''), value: d.cnh_categoria, onChange: function (e) { set('cnh_categoria', e.target.value); }, onBlur: function () { blur('cnh_categoria'); } },
+                ['', 'A', 'AB', 'AC', 'AD', 'AE', 'B', 'C', 'D', 'E'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
+            h(Campo, { label: 'Validade', erro: errDe('cnh_validade') }, inp('cnh_validade', { attrs: { type: 'date' } }))),
+          d.cnh_categoria && d.cnh_categoria.indexOf('A') < 0 ? h('div', { style: { fontSize: 12.5, color: '#92400e' } }, 'A locação exige CNH com categoria A.') : null,
+          h(Campo, { label: 'Sua CNH tem EAR (exerce atividade remunerada)?', erro: errDe('cnh_ear') }, Seg([[true, 'Sim'], [false, 'Não']], d.cnh_ear, function (v) { set('cnh_ear', v); }, 'EAR')),
+          h(Campo, { label: 'Você já é entregador Tutts?', erro: errDe('entregador_tutts'), hint: 'Entregador Tutts pode ter a parcela descontada direto do repasse.' }, Seg([[true, 'Sim'], [false, 'Não']], d.entregador_tutts, function (v) { set('entregador_tutts', v); }, 'Entregador Tutts')),
+          d.entregador_tutts ? h(Campo, { label: 'Seu código na Tutts', opt: true }, inp('cod_profissional', { mask: function (v) { return dig(v).slice(0, 10); }, attrs: { inputMode: 'numeric' } })) : null),
+        h('button', { type: 'button', className: 'btn pri', onClick: continuar }, 'Continuar para documentos'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'Seus dados ficam salvos neste aparelho até você enviar.')),
+      h(Toast, { msg: toast }));
+  }
+
+  // ═════════ DOCUMENTOS (link só para upload) ═════════
+  function Documentos(p) {
+    var token = p.token;
+    var _c = useState(p.conv || null), conv = _c[0], setConv = _c[1];
+    var _ce = useState(null), convErro = _ce[0], setConvErro = _ce[1];
+    var _docs = useState({}), docs = _docs[0], setDocs = _docs[1];
+    var _s = useState(false), env = _s[0], setEnv = _s[1];
+    var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
+    var _ts = useToast(), toast = _ts[0], showToast = _ts[1];
+    useEffect(function () { if (!conv) req('/locacao-publico/convite/' + encodeURIComponent(token)).then(setConv).catch(setConvErro); }, [token]);
+    if (convErro) {
+      var mot = convErro.data && convErro.data.motivo;
+      return h(Mensagem, { tom: 'cinza', icone: 'clock', titulo: mot === 'usado' ? 'Documentos já enviados' : convErro.status === 404 ? 'Link não encontrado' : convErro.status === 410 ? 'Este link expirou' : 'Não deu para abrir', texto: mot === 'usado' ? 'Recebemos seus documentos. O time Tutts vai continuar a análise.' : convErro.status === 410 || convErro.status === 404 ? 'Peça um novo link ao time Tutts pelo WhatsApp.' : convErro.message });
+    }
+    if (!conv) return h('div', { className: 'wrap' }, Topo(), Carregando('Abrindo...'));
+    if (ok) return h(Mensagem, { titulo: 'Documentos enviados!', texto: 'Recebemos seus documentos, entraremos em contato.' });
+    var n = Object.keys(docs).length;
+    var pegar = function (tipo, f) { lerFoto(f, 1600, 0.82).then(function (u) { setDocs(function (x) { var m = Object.assign({}, x); m[tipo] = u; return m; }); }).catch(function (e) { showToast(e.message); }); };
+    var enviar = function () {
+      setEnv(true);
+      req('/locacao-publico/documentos/' + encodeURIComponent(token), { method: 'POST', body: { documentos: DOCS.filter(function (x) { return docs[x[0]]; }).map(function (x) { return { tipo: x[0], foto: docs[x[0]] }; }) } })
+        .then(function () { setOk(true); }).catch(function (e) { showToast(e.message); }).then(function () { setEnv(false); });
+    };
+    return h('div', { className: 'wrap' }, Topo(),
+      h('main', null,
+        h('h1', { className: 'h1' }, 'Envie seus documentos'),
+        h('p', { className: 'sub' }, (conv.nome_ref ? conv.nome_ref.split(' ')[0] + ', o' : 'O') + ' time Tutts precisa destes documentos para continuar a análise do seu cadastro.'),
+        conv.mensagem ? h('div', { className: 'card', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e', fontSize: 13.5 } }, h('b', null, 'O que falta: '), conv.mensagem) : null,
+        DOCS.map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]], pdf: x[0] === 'comprovante', onFile: function (f) { pegar(x[0], f); } }); }),
+        h('button', { type: 'button', className: 'btn pri', disabled: !n || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar ' + (n ? n + ' documento' + (n > 1 ? 's' : '') : 'documentos')),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'O link vale até ' + fD(conv.expira_em) + '.')),
+      h(Toast, { msg: toast }));
+  }
+
+  // ═════════ PORTAL DO LOCATÁRIO ═════════
+  var TK = 'tutts_locatario_token';
+  var memTk = null;
+  function getTk() { return store(TK) || memTk; }
+  function setTk(t) { memTk = t; store(TK, t); }
+
+  function Portal() {
+    var _t = useState(getTk()), token = _t[0], setToken = _t[1];
+    var _m = useState(token ? 'carregando' : 'login'), modo = _m[0], setModo = _m[1];
+    var _me = useState(null), me = _me[0], setMe = _me[1];
+    var _ts = useToast(), toast = _ts[0], showToast = _ts[1];
+    var sair = useCallback(function () { setTk(null); setToken(null); setMe(null); setModo('login'); }, []);
+    var carregar = useCallback(function (tk) {
+      tk = tk || token; if (!tk) { setModo('login'); return; }
+      return req('/locacao-portal/me', { token: tk }).then(function (r) { setMe(r); setModo('app'); })
+        .catch(function (e) {
+          if (e.status === 403 && e.data && e.data.motivo === 'ciencia_pendente') setModo('ciencia');
+          else if (e.status === 401) { sair(); showToast('Sua sessão expirou. Entre de novo.'); }
+          else { setModo(me ? 'app' : 'erro'); showToast(e.message); }
+        });
+    }, [token]);
+    useEffect(function () { if (token) carregar(token); }, []);
+    var entrou = function (r) { setTk(r.token); setToken(r.token); if (r.precisa_ciencia) setModo('ciencia'); else { setModo('carregando'); carregar(r.token); } };
+
+    var corpo;
+    if (modo === 'login') corpo = h(Login, { onOk: entrou, primeiro: function () { setModo('primeiro'); }, toast: showToast });
+    else if (modo === 'primeiro') corpo = h(PrimeiroAcesso, { onOk: entrou, voltar: function () { setModo('login'); }, toast: showToast });
+    else if (modo === 'ciencia') corpo = h(Ciencia, { token: token, toast: showToast, onOk: function () { setModo('carregando'); carregar(token); }, sair: sair });
+    else if (modo === 'erro') corpo = h(Mensagem, { tom: 'vermelho', icone: 'alert', titulo: 'Não deu para carregar', texto: 'Confira a internet e tente de novo.', acao: h('button', { className: 'btn sec', onClick: function () { setModo('carregando'); carregar(token); } }, 'Tentar de novo') });
+    else if (modo === 'app' && me) corpo = h(AppLocatario, { me: me, token: token, sair: sair, recarregar: function () { return carregar(token); }, toast: showToast });
+    else corpo = h('div', { className: 'wrap' }, Topo(), Carregando('Carregando sua moto...'));
+    return h(React.Fragment, null, corpo, h(Toast, { msg: toast }));
+  }
+
+  function Login(p) {
+    var _c = useState(''), cpf = _c[0], setCpf = _c[1];
+    var _s = useState(''), senha = _s[0], setSenha = _s[1];
+    var _b = useState(false), b = _b[0], setB = _b[1];
+    var _e = useState(null), err = _e[0], setErr = _e[1];
+    var ok = dig(cpf).length === 11 && senha.length >= 1;
+    var entrar = function (ev) {
+      ev && ev.preventDefault(); if (!ok) return;
+      setB(true); setErr(null);
+      req('/locacao-portal/login', { method: 'POST', body: { cpf: dig(cpf), senha: senha } }).then(p.onOk).catch(function (e) { setErr(e.status === 401 ? 'CPF ou senha não conferem.' : e.message); }).then(function () { setB(false); });
+    };
+    return h('div', { className: 'wrap' }, Topo(),
+      h('main', null,
+        h('h1', { className: 'h1' }, 'Área do locatário'),
+        h('p', { className: 'sub' }, 'Este acesso mostra apenas a sua moto e o seu contrato.'),
+        h('form', { className: 'card', onSubmit: entrar },
+          h(Campo, { label: 'CPF' }, h('input', { className: 'inp', inputMode: 'numeric', autoComplete: 'username', value: cpf, onChange: function (e) { setCpf(mCPF(e.target.value)); }, placeholder: '000.000.000-00' })),
+          h(Campo, { label: 'Senha', erro: err }, h('input', { className: 'inp' + (err ? ' err' : ''), type: 'password', autoComplete: 'current-password', value: senha, onChange: function (e) { setSenha(e.target.value); } })),
+          h('button', { type: 'submit', className: 'btn pri', disabled: !ok || b }, b ? 'Entrando...' : 'Entrar')),
+        h('div', { className: 'card', style: { flexDirection: 'row', alignItems: 'center', gap: 10 } },
+          h('div', { style: { flex: 1, fontSize: 13.5, color: '#374151' } }, h('b', null, 'Primeiro acesso?'), h('div', { style: { color: '#6b7280', fontSize: 12.5 } }, 'Receba um código no WhatsApp e crie sua senha.')),
+          h('button', { type: 'button', className: 'lnk', onClick: p.primeiro }, 'Criar senha'))));
+  }
+
+  function PrimeiroAcesso(p) {
+    var _c = useState(''), cpf = _c[0], setCpf = _c[1];
+    var _e = useState(1), etapa = _e[0], setEtapa = _e[1];
+    var _w = useState(null), wFinal = _w[0], setWFinal = _w[1];
+    var _cd = useState(''), cod = _cd[0], setCod = _cd[1];
+    var _s = useState(''), senha = _s[0], setSenha = _s[1];
+    var _ci = useState(false), ci = _ci[0], setCi = _ci[1];
+    var _b = useState(false), b = _b[0], setB = _b[1];
+    var _er = useState(null), err = _er[0], setErr = _er[1];
+    var _r = useState(0), resta = _r[0], setResta = _r[1];
+    var _tm = useState(null), termo = _tm[0], setTermo = _tm[1];
+    var _vt = useState(false), verTermo = _vt[0], setVerTermo = _vt[1];
+    var codRef = useRef(null);
+    useEffect(function () { if (resta <= 0) return; var t = setTimeout(function () { setResta(resta - 1); }, 1000); return function () { clearTimeout(t); }; }, [resta]);
+    useEffect(function () { req('/locacao-portal/termo').then(setTermo).catch(function () { setTermo(null); }); }, []);
+    var solicitar = function () {
+      setB(true); setErr(null);
+      req('/locacao-portal/primeiro-acesso/solicitar', { method: 'POST', body: { cpf: dig(cpf) } })
+        .then(function (r) { setWFinal(r.whatsapp_final || null); setEtapa(2); setResta(60); setTimeout(function () { codRef.current && codRef.current.focus(); }, 50); })
+        .catch(function (e) { setErr(e.message); }).then(function () { setB(false); });
+    };
+    var confirmar = function () {
+      setB(true); setErr(null);
+      req('/locacao-portal/primeiro-acesso/confirmar', { method: 'POST', body: { cpf: dig(cpf), codigo: cod, senha: senha } })
+        .then(function (r) {
+          if (!r.precisa_ciencia) return r;
+          // ciência dada nesta mesma tela
+          return req('/locacao-portal/termo', { token: r.token }).then(function (t) { return req('/locacao-portal/ciencia', { method: 'POST', token: r.token, body: { versao: t.versao } }); })
+            .then(function () { return Object.assign({}, r, { precisa_ciencia: false }); }, function () { return r; });
+        })
+        .then(p.onOk)
+        .catch(function (e) { setErr(e.status === 400 || e.status === 401 ? (e.message || 'Código inválido ou expirado.') : e.message); setB(false); });
+    };
+    var podeConfirmar = cod.length === 6 && senha.length >= 8 && ci && !b;
+    var caixas = [];
+    for (var i = 0; i < 6; i++) caixas.push(h('div', { key: i, style: { height: 50, borderRadius: 10, border: '1px solid ' + (i === Math.min(cod.length, 5) && etapa === 2 ? ROXO : '#e5e7eb'), boxShadow: i === Math.min(cod.length, 5) ? '0 0 0 3px #f3e8fb' : 'none', display: 'grid', placeItems: 'center', fontFamily: 'Sora, Inter, sans-serif', fontSize: 22, fontWeight: 700, background: '#fff' } }, cod[i] || ''));
+    return h('div', { className: 'wrap' }, Topo(),
+      h('main', null,
+        h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4 }, onClick: p.voltar }, I('back', 16), 'Voltar'),
+        h('h1', { className: 'h1' }, 'Área do locatário'),
+        h('p', { className: 'sub' }, 'Este acesso mostra apenas a sua moto e o seu contrato.'),
+        h('section', { className: 'card' },
+          h(Campo, { label: 'CPF', erro: etapa === 1 ? err : null }, h('input', { className: 'inp', inputMode: 'numeric', value: cpf, disabled: etapa === 2, onChange: function (e) { setCpf(mCPF(e.target.value)); }, placeholder: '000.000.000-00' })),
+          etapa === 1 ? h('button', { type: 'button', className: 'btn pri', disabled: dig(cpf).length !== 11 || !cpfOk(cpf) || b, onClick: solicitar }, b ? 'Enviando...' : 'Receber código no WhatsApp') : null,
+          etapa === 2 ? h(React.Fragment, null,
+            h('label', { className: 'fld', style: { position: 'relative' } },
+              h('span', { className: 'l' }, 'Código enviado no WhatsApp'),
+              h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 } }, caixas),
+              h('input', { ref: codRef, value: cod, inputMode: 'numeric', autoComplete: 'one-time-code', 'aria-label': 'Código de 6 dígitos', onChange: function (e) { setCod(dig(e.target.value).slice(0, 6)); }, style: { position: 'absolute', inset: '22px 0 0 0', opacity: 0, width: '100%', height: 50, fontSize: 16 } }),
+              h('span', { className: 'h' }, (wFinal ? 'Enviado para ' + wFinal + ' · ' : 'Enviado para o WhatsApp do cadastro · '),
+                resta > 0 ? 'reenviar em ' + Math.floor(resta / 60) + ':' + p2(resta % 60) : h('button', { type: 'button', className: 'lnk', style: { fontSize: 11.5 }, onClick: solicitar }, 'reenviar código'))),
+            h(Campo, { label: 'Crie uma senha', hint: 'Mínimo 8 caracteres. Nos próximos acessos: CPF + senha.' }, h('input', { className: 'inp', type: 'password', autoComplete: 'new-password', value: senha, onChange: function (e) { setSenha(e.target.value); } }))) : null),
+        etapa === 2 ? h('section', { className: 'card', style: { borderColor: '#e9d5f9' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, h('span', { style: { color: ROXO } }, I('shield', 18)), h('b', { style: { flex: 1 } }, 'Ciência sobre seus dados'), Pill('Obrigatório', 'roxo')),
+          h('div', { style: { fontSize: 13.5, color: '#374151' } }, 'Seus dados são usados para o contrato, a cobrança e as vistorias da moto:'),
+          h('ul', { style: { margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.55 } },
+            h('li', null, 'CPF, CNH e endereço: contrato e documentação da moto'), h('li', null, 'Pagamentos: controle das parcelas e do repasse'), h('li', null, 'Fotos de vistoria com data, hora e local')),
+          h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13.5, cursor: 'pointer' } },
+            h('input', { type: 'checkbox', checked: ci, onChange: function (e) { setCi(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, flex: 'none', marginTop: 1 } }),
+            h('span', null, 'Estou ciente de como a Tutts trata meus dados (Termo LGPD ' + ((termo && termo.versao) || '') + '). ', termo ? h('button', { type: 'button', className: 'lnk', onClick: function (e) { e.preventDefault(); setVerTermo(true); } }, 'Ler termo') : null))) : null,
+        etapa === 2 && err ? h('div', { role: 'alert', style: { color: '#991b1b', fontSize: 13, textAlign: 'center' } }, err) : null,
+        etapa === 2 ? h('button', { type: 'button', className: 'btn pri', disabled: !podeConfirmar, onClick: confirmar }, b ? 'Entrando...' : 'Dar ciência e entrar') : null,
+        etapa === 2 ? h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'A ciência fica registrada com data e hora.') : null),
+      verTermo && termo ? h(Sheet, { titulo: 'Termo LGPD · ' + termo.versao, onClose: function () { setVerTermo(false); } }, h(TermoTexto, { texto: termo.texto })) : null);
+  }
+
+  function Ciencia(p) {
+    var _t = useState(null), termo = _t[0], setTermo = _t[1];
+    var _c = useState(false), ci = _c[0], setCi = _c[1];
+    var _b = useState(false), b = _b[0], setB = _b[1];
+    useEffect(function () { req('/locacao-portal/termo', { token: p.token }).then(setTermo).catch(function (e) { p.toast(e.message); setTermo({ texto: '', versao: '' }); }); }, []);
+    var dar = function () {
+      setB(true);
+      req('/locacao-portal/ciencia', { method: 'POST', token: p.token, body: { versao: termo.versao } }).then(p.onOk).catch(function (e) { p.toast(e.message); setB(false); });
+    };
+    return h('div', { className: 'wrap' }, Topo(h('button', { type: 'button', className: 'lnk', onClick: p.sair }, 'Sair')),
+      h('main', null,
+        h('h1', { className: 'h1' }, 'Ciência sobre seus dados'),
+        h('p', { className: 'sub' }, 'Antes de entrar, leia como a Tutts usa seus dados. Isso é obrigatório e fica registrado com data e hora.'),
+        !termo ? Carregando('Carregando o termo...') : h('section', { className: 'card' },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, h('span', { style: { color: ROXO } }, I('shield', 18)), h('b', { style: { flex: 1 } }, 'Termo LGPD ' + (termo.versao || '')), Pill('Obrigatório', 'roxo')),
+          h('div', { style: { maxHeight: '46vh', overflowY: 'auto', background: '#f9fafb', borderRadius: 10, padding: 12 } }, h(TermoTexto, { texto: termo.texto })),
+          h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13.5, cursor: 'pointer' } },
+            h('input', { type: 'checkbox', checked: ci, onChange: function (e) { setCi(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, flex: 'none', marginTop: 1 } }),
+            h('span', null, 'Estou ciente de como a Tutts trata meus dados (Termo LGPD ' + (termo.versao || '') + ').'))),
+        h('button', { type: 'button', className: 'btn pri', disabled: !ci || !termo || b, onClick: dar }, b ? 'Registrando...' : 'Dar ciência e entrar')));
+  }
+
+  function AppLocatario(p) {
+    var me = p.me, token = p.token;
+    var _a = useState('home'), aba = _a[0], setAba = _a[1];
+    var _v = useState(null), tela = _v[0], setTela = _v[1];
+    var _menu = useState(false), menu = _menu[0], setMenu = _menu[1];
+    var cli = me.cliente || {}, mo = me.moto || {}, ct = me.contrato || {}, prox = me.proxima_parcela, parcelas = me.parcelas || [], vist = me.vistorias || [], pend = me.vistoria_pendente;
+    var nome1 = (cli.nome || '').split(' ')[0];
+    var ini = ((cli.nome || '').split(' ')[0] || '')[0] + (((cli.nome || '').split(' ').slice(-1)[0] || '')[0] || '');
+    var copiarPix = function (parc) {
+      var go = function (code) { copiar(code).then(function (ok) { p.toast(ok ? 'PIX copia-e-cola copiado. Cole no app do seu banco.' : 'Não deu para copiar. Tente de novo.'); }); };
+      if (parc.pix_copia_cola) return go(parc.pix_copia_cola);
+      req('/locacao-portal/parcelas/' + parc.id + '/pix', { method: 'POST', token: token, body: {} }).then(function (r) { go(r.pix_copia_cola); p.recarregar(); }).catch(function (e) { p.toast(e.message); });
+    };
+    if (tela && tela.t === 'vistoria') return h(NovaVistoria, { me: me, token: token, tipo: tela.tipo, voltar: function () { setTela(null); }, toast: p.toast, onOk: function () { setTela(null); setAba('vistorias'); p.recarregar(); } });
+    if (tela && tela.t === 'verVist') return h(VerVistoria, { id: tela.id, token: token, voltar: function () { setTela(null); }, toast: p.toast });
+
+    var pct = ct.semanas ? Math.min(100, 100 * num(ct.parcelas_pagas) / num(ct.semanas)) : 0;
+    var parcLinha = function (x) {
+      var desc = x.status === 'paga' ? 'paga ' + fDC(x.pago_em) + (x.forma_label ? ' · ' + x.forma_label.toLowerCase() : '') + (num(x.juros) > 0 ? ' · com juros' : '')
+        : x.status === 'atrasada' ? 'venceu ' + fDS(x.vencimento) + ' · ' + (x.dias_atraso || 0) + ' dia' + (x.dias_atraso === 1 ? '' : 's') + ' de atraso' : 'vence ' + fDS(x.vencimento);
+      return h('div', { key: x.id, className: 'row' },
+        h('div', { style: { minWidth: 0 } }, h('div', { style: { fontWeight: 600 } }, 'Parcela ' + x.numero), h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc)),
+        h('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 } },
+          h('b', { style: { fontVariantNumeric: 'tabular-nums' } }, fR(x.total != null ? x.total : x.valor)),
+          Pill(x.status_label || x.status, TOM_PARC[x.status] || 'cinza'),
+          aba === 'pag' && (x.status === 'atrasada' || x.status === 'vence_hoje' || x.status === 'a_vencer') ? h('button', { type: 'button', className: 'lnk', style: { fontSize: 12.5 }, onClick: function () { copiarPix(x); } }, 'Copiar PIX') : null));
+    };
+    var cardVist = h('section', { className: 'card' },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, h('b', null, 'Vistorias'), aba === 'home' && vist.length ? h('button', { type: 'button', className: 'lnk', onClick: function () { setAba('vistorias'); } }, 'Ver todas') : null),
+      pend ? h('div', { style: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 } },
+        h('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: '#92400e' } }, I('clock', 18), h('div', null, h('b', null, pend.label || ((pend.tipo_label || 'Vistoria') + ' pendente até ' + fDS(pend.prazo))), h('div', { style: { fontSize: 12.5, marginTop: 2 } }, '6 fotos da moto + quilometragem. Leva uns 2 minutos.'))),
+        h('button', { type: 'button', className: 'btn pri', style: { height: 44 }, onClick: function () { setTela({ t: 'vistoria', tipo: pend.tipo }); } }, I('cam', 18), 'Fazer vistoria agora')) : null,
+      (aba === 'home' ? vist.slice(0, 2) : vist).map(function (v) {
+        return h('button', { key: v.id, type: 'button', className: 'row', style: { width: '100%', textAlign: 'left' }, onClick: function () { setTela({ t: 'verVist', id: v.id }); } },
+          h('div', null, h('div', { style: { fontWeight: 600 } }, (v.tipo_label || v.tipo) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')), h('div', { style: { fontSize: 12, color: '#6b7280' } }, fDC(v.criado_em) + ' · ' + (v.qtd_fotos || 0) + ' fotos')),
+          Pill(v.status_label || ROT_VIST[v.status] || v.status, TOM_VIST[v.status] || 'cinza'));
+      }),
+      !pend && !vist.length ? h('div', { style: { fontSize: 13, color: '#6b7280' } }, 'Nenhuma vistoria ainda.') : null,
+      aba === 'vistorias' && !pend ? h('button', { type: 'button', className: 'btn sec', onClick: function () { setTela({ t: 'vistoria', tipo: 'revisao' }); } }, I('cam', 18), 'Registrar vistoria') : null);
+
+    var conteudo;
+    if (aba === 'home') conteudo = [
+      h('h1', { key: 'h', className: 'h1' }, 'Olá, ' + nome1),
+      h('section', { key: 'm', className: 'card' },
+        h('div', { style: { display: 'flex', gap: 12, alignItems: 'center' } },
+          h('div', { style: { width: 64, height: 52, borderRadius: 10, background: 'linear-gradient(135deg, #e9d5f9, #770fa8)', flex: 'none', display: 'grid', placeItems: 'center', color: '#fff' } }, I('moto', 30, { strokeWidth: 1.8 })),
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('div', { style: { fontWeight: 700, fontSize: 15 } }, mo.modelo + (mo.cor ? ' · ' + String(mo.cor).toLowerCase() : '')),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, h('span', { className: 'mono', style: { color: '#374151' } }, mo.placa), mo.ano ? ' · ' + mo.ano : '')),
+          Pill(ct.situacao_label || ct.situacao, TOM_SIT[ct.situacao] || 'cinza')),
+        h('div', null,
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12.5 } }, h('span', { style: { color: '#374151' } }, h('b', null, (ct.parcelas_pagas || 0) + ' de ' + (ct.semanas || 0)), ' parcelas pagas'), ct.ultimo_vencimento ? h('span', { style: { color: '#6b7280' } }, 'quitação ' + fD(ct.ultimo_vencimento)) : null),
+          h('div', { className: 'progress', style: { marginTop: 6 } }, h('div', { style: { width: pct + '%' } })),
+          h('div', { style: { fontSize: 11.5, color: '#6b7280', marginTop: 6 } }, 'Ao quitar, a moto é transferida para o seu nome.'))),
+      prox ? h('section', { key: 'p', className: 'card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
+          h('div', null,
+            h('div', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Próxima parcela · ' + prox.numero + '/' + (ct.semanas || '')),
+            h('div', { className: 'sora', style: { fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums' } }, fR(prox.total)),
+            h('div', { style: { fontSize: 13, color: prox.status === 'atrasada' ? '#991b1b' : '#374151', fontWeight: prox.status === 'atrasada' ? 600 : 400 } }, prox.status === 'atrasada' ? 'venceu ' + fDS(prox.vencimento) + ' · com juros' : prox.status === 'vence_hoje' ? 'vence hoje' : 'vence ' + fDS(prox.vencimento))),
+          Pill(prox.status_label || prox.status, TOM_PARC[prox.status] || 'cinza')),
+        h('button', { type: 'button', className: 'btn pri', onClick: function () { copiarPix(prox); } }, I('copy', 18), 'Copiar PIX copia-e-cola'),
+        prox.abatimento_repasse || cli.tipo === 'tutts' ? h('div', { style: { fontSize: 12.5, color: '#374151', background: '#faf7fd', borderRadius: 10, padding: '10px 12px', lineHeight: 1.45 } }, h('b', { style: { color: ROXO_ESC } }, 'Motoboy Tutts: '), 'desconto automático no repasse; o que faltar você paga via PIX.') : null) : null,
+      h(React.Fragment, { key: 'v' }, cardVist),
+      parcelas.length ? h('section', { key: 'pc', className: 'card', style: { gap: 0 } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 } }, h('b', null, 'Parcelas'), h('button', { type: 'button', className: 'lnk', onClick: function () { setAba('pag'); } }, 'Ver todas')),
+        parcelas.filter(function (x) { return x.status !== 'paga'; }).slice(0, 1).concat(parcelas.filter(function (x) { return x.status === 'paga'; }).slice(-3).reverse()).map(parcLinha)) : null
+    ];
+    else if (aba === 'pag') conteudo = [
+      h('h1', { key: 'h', className: 'h1' }, 'Pagamentos'),
+      h('section', { key: 'r', className: 'card', style: { flexDirection: 'row', justifyContent: 'space-between' } },
+        h('div', null, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Saldo do contrato'), h('div', { className: 'sora', style: { fontSize: 20, fontWeight: 700 } }, fR(ct.saldo_devedor))),
+        h('div', { style: { textAlign: 'right' } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Parcela semanal'), h('div', { className: 'sora', style: { fontSize: 20, fontWeight: 700 } }, fR(ct.valor_semanal)))),
+      h('section', { key: 'l', className: 'card', style: { gap: 0 } }, parcelas.length ? parcelas.slice().sort(function (a, b) { return b.numero - a.numero; }).map(parcLinha) : h('div', { style: { fontSize: 13, color: '#6b7280' } }, 'Sem parcelas.'))
+    ];
+    else if (aba === 'vistorias') conteudo = [h('h1', { key: 'h', className: 'h1' }, 'Vistorias'), h(React.Fragment, { key: 'c' }, cardVist)];
+    else conteudo = [
+      h('h1', { key: 'h', className: 'h1' }, 'Perfil'),
+      h('section', { key: 'c', className: 'card', style: { gap: 0 } }, [
+        ['Nome', cli.nome], ['Tipo', cli.tipo_label || (cli.tipo === 'tutts' ? 'Motoboy Tutts' : 'Externo')], ['Contrato', ct.numero], ['Moto', (mo.modelo || '') + ' · ' + (mo.placa || '')], ['Quitação prevista', fD(ct.ultimo_vencimento)]
+      ].map(function (r, i) { return h('div', { key: i, className: 'row', style: i === 0 ? { borderTop: 0 } : null }, h('span', { style: { color: '#6b7280' } }, r[0]), h('b', { style: { textAlign: 'right' } }, r[1] || '—')); })),
+      h('div', { key: 'i', style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5 } }, 'Para mudar seus dados ou pedir cópia, correção ou exclusão (LGPD), fale com o time Tutts pelo WhatsApp.'),
+      h('button', { key: 's', type: 'button', className: 'btn sec', onClick: p.sair }, I('out', 18), 'Sair')
+    ];
+
+    var navItem = function (id, t, ic) { return h('button', { key: id, type: 'button', 'aria-current': aba === id ? 'page' : null, onClick: function () { setAba(id); window.scrollTo(0, 0); } }, I(ic, 22), t); };
+    return h('div', { className: 'wrap' },
+      Topo(h('button', { type: 'button', 'aria-label': 'Menu da conta', onClick: function () { setMenu(!menu); }, style: { width: 32, height: 32, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, fontWeight: 700, fontSize: 12, display: 'grid', placeItems: 'center' } }, ini.toUpperCase())),
+      menu ? h('div', { style: { position: 'absolute', right: 16, top: 54, zIndex: 20, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px -12px rgba(17,24,39,.25)', padding: 6, minWidth: 160 } },
+        h('button', { type: 'button', onClick: p.sair, style: { display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', width: '100%', borderRadius: 8, color: '#374151' } }, I('out', 16), 'Sair')) : null,
+      h('main', { onClick: function () { if (menu) setMenu(false); } }, conteudo),
+      h('nav', { className: 'nav', 'aria-label': 'Navegação' }, navItem('home', 'Minha moto', 'home'), navItem('pag', 'Pagamentos', 'card'), navItem('vistorias', 'Vistorias', 'cam'), navItem('perfil', 'Perfil', 'user')));
+  }
+
+  function NovaVistoria(p) {
+    var me = p.me, mo = me.moto || {}, vist = me.vistorias || [], pend = me.vistoria_pendente;
+    var _t = useState(p.tipo || 'revisao'), tipo = _t[0], setTipo = _t[1];
+    var _f = useState({}), fotos = _f[0], setFotos = _f[1];
+    var _k = useState(''), km = _k[0], setKm = _k[1];
+    var _a = useState(null), avaria = _a[0], setAvaria = _a[1];
+    var _o = useState(''), obs = _o[0], setObs = _o[1];
+    var _s = useState(false), env = _s[0], setEnv = _s[1];
+    var geo = useRef(null);
+    useEffect(function () {
+      try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (pos) { geo.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }; }, function () { /* sem localização */ }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }); } catch (e) { /* ok */ }
+    }, []);
+    var n = Object.keys(fotos).length;
+    var pegar = function (pos, file) {
+      var quando = new Date().toISOString();
+      lerFoto(file, 1280, 0.8).then(function (u) { setFotos(function (x) { var m = Object.assign({}, x); m[pos] = { foto: u, capturada_em: quando }; return m; }); }).catch(function (e) { p.toast(e.message); });
+    };
+    var ultima = vist.find(function (v) { return v.km != null; });
+    var ok = n === 6 && km !== '' && avaria !== null && (!avaria || obs.trim().length > 2);
+    var enviar = function () {
+      setEnv(true);
+      var g = geo.current || {};
+      req('/locacao-portal/vistorias', { method: 'POST', token: p.token, body: { tipo: tipo, km: parseInt(km, 10), avaria: !!avaria, observacoes: obs.trim() || null, lat: g.lat != null ? g.lat : null, lng: g.lng != null ? g.lng : null,
+        fotos: POSICOES.map(function (x) { return { posicao: x[0], foto: fotos[x[0]].foto, capturada_em: fotos[x[0]].capturada_em }; }) } })
+        .then(function () { p.toast('Vistoria enviada. O time Tutts vai conferir.'); p.onOk(); })
+        .catch(function (e) { p.toast(e.message); setEnv(false); });
+    };
+    var tl = (TIPOS_VIST.find(function (x) { return x[0] === tipo; }) || [0, ''])[1];
+    return h('div', { className: 'wrap' },
+      h('header', { className: 'top', style: { justifyContent: 'flex-start', gap: 10 } },
+        h('button', { type: 'button', onClick: p.voltar, 'aria-label': 'Voltar', style: { width: 32, height: 32, display: 'grid', placeItems: 'center', color: '#374151' } }, I('back', 20)),
+        h('div', null, h('div', { className: 'sora', style: { fontWeight: 700, fontSize: 16 } }, 'Nova vistoria'), h('div', { style: { fontSize: 12, color: '#6b7280' } }, mo.modelo + ' · ' + mo.placa))),
+      h('main', null,
+        h('section', { className: 'card' },
+          h('b', null, 'Tipo de vistoria'),
+          Seg(TIPOS_VIST, tipo, setTipo, 'Tipo de vistoria', 4),
+          pend && pend.tipo === tipo ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, pend.label || (tl + ' vence ' + fDS(pend.prazo))) : null),
+        h('section', { className: 'card' },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between' } }, h('b', null, 'Fotos da moto'), h('span', { style: { fontSize: 12.5, fontWeight: 700, color: n === 6 ? '#166534' : ROXO } }, n + ' de 6')),
+          h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, POSICOES.map(function (x) {
+            var f = fotos[x[0]];
+            return h('label', { key: x[0], style: { display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer' } },
+              h('input', { type: 'file', accept: 'image/*', capture: 'environment', className: 'sr', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(x[0], fl); } }),
+              h('div', { className: 'foto', style: f ? { background: '#111827' } : { background: '#faf7fd', border: '1.5px dashed #d8b4f0', color: ROXO } },
+                f ? h('img', { src: f.foto, alt: x[1] }) : h('span', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 600 } }, I('cam', 22), 'Tirar foto'),
+                f ? h('span', { style: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 99, background: '#16a34a', color: '#fff', display: 'grid', placeItems: 'center' } }, I('ok', 14, { strokeWidth: 3 })) : null,
+                f ? h('span', { style: { position: 'absolute', left: 6, bottom: 6, fontSize: 9.5, color: '#fff', background: 'rgba(17,24,39,.55)', borderRadius: 4, padding: '1px 4px' } }, fDC(f.capturada_em) + ' ' + p2(new Date(f.capturada_em).getHours()) + ':' + p2(new Date(f.capturada_em).getMinutes())) : null),
+              h('span', { style: { fontSize: 12, textAlign: 'center', color: f ? '#374151' : ROXO, fontWeight: 600 } }, x[1]));
+          })),
+          h('div', { style: { fontSize: 12, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'flex-start' } }, I('pin', 14), 'Foto só pela câmera, com data, hora e localização registradas.')),
+        h('section', { className: 'card' },
+          h(Campo, { label: 'Quilometragem atual', hint: ultima ? 'Última vistoria: ' + num(ultima.km).toLocaleString('pt-BR') + ' km em ' + fDC(ultima.criado_em) : null },
+            h('div', { style: { position: 'relative' } }, h('input', { className: 'inp', inputMode: 'numeric', value: km, onChange: function (e) { setKm(dig(e.target.value).slice(0, 7)); }, style: { paddingRight: 40 } }), h('span', { style: { position: 'absolute', right: 12, top: 12, color: '#6b7280' } }, 'km'))),
+          h('div', { className: 'fld' }, h('span', { className: 'l' }, 'Alguma avaria ou problema?'), Seg([[false, 'Não'], [true, 'Sim']], avaria, setAvaria, 'Avaria')),
+          h(Campo, { label: 'Observações', opt: !avaria, hint: avaria ? 'Conte o que aconteceu e onde está a avaria.' : null }, h('textarea', { className: 'inp', rows: 3, value: obs, onChange: function (e) { setObs(e.target.value); } }))),
+        h('button', { type: 'button', className: 'btn pri', disabled: !ok || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar vistoria (' + n + ' de 6 fotos)'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'Depois de enviar, o time Tutts confere e aprova.')));
+  }
+
+  function VerVistoria(p) {
+    var _v = useState(null), v = _v[0], setV = _v[1];
+    useEffect(function () { req('/locacao-portal/vistorias/' + p.id, { token: p.token }).then(function (r) { setV(r.vistoria); }).catch(function (e) { p.toast(e.message); p.voltar(); }); }, [p.id]);
+    return h('div', { className: 'wrap' },
+      h('header', { className: 'top', style: { justifyContent: 'flex-start', gap: 10 } },
+        h('button', { type: 'button', onClick: p.voltar, 'aria-label': 'Voltar', style: { width: 32, height: 32, display: 'grid', placeItems: 'center' } }, I('back', 20)),
+        h('div', { className: 'sora', style: { fontWeight: 700, fontSize: 16 } }, v ? (v.tipo_label || v.tipo) : 'Vistoria')),
+      !v ? Carregando() : h('main', null,
+        h('section', { className: 'card' },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, h('span', { style: { color: '#6b7280', fontSize: 13 } }, fD(v.criado_em) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')), Pill(v.status_label || ROT_VIST[v.status], TOM_VIST[v.status] || 'cinza')),
+          v.observacoes ? h('div', { style: { fontSize: 13, color: '#374151' } }, v.observacoes) : null,
+          h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, (v.fotos || []).map(function (f) {
+            var lab = (POSICOES.find(function (x) { return x[0] === f.posicao; }) || [0, f.posicao])[1];
+            return h('div', { key: f.posicao }, h('div', { className: 'foto', style: { background: '#f3f4f6' } }, f.thumb ? h('img', { src: f.thumb, alt: lab }) : null), h('div', { style: { fontSize: 11.5, textAlign: 'center', marginTop: 4, color: '#374151' } }, lab));
+          })))));
+  }
+
+  // ───── roteamento ─────
+  function App() {
+    var path = location.pathname.replace(/\/+$/, '');
+    var m = /^\/moto\/c\/([^/]+)$/.exec(path);
+    if (m) return h(Cadastro, { token: decodeURIComponent(m[1]) });
+    m = /^\/moto\/d\/([^/]+)$/.exec(path);
+    if (m) return h(Documentos, { token: decodeURIComponent(m[1]) });
+    return h(Portal);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+</body>
+</html>
