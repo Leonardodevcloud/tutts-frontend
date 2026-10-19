@@ -331,6 +331,8 @@
         { r: 'A receber na semana', v: fR(k.a_receber_semana), s: (k.parcelas_semana || 0) + ' parcela' + (k.parcelas_semana === 1 ? '' : 's') + ' até ' + fDC(new Date(Date.now() + 6 * 864e5)) },
         { r: 'Pré-cadastros novos', v: fN(k.precadastros_novos), s: 'aguardando revisão', cor: k.precadastros_novos ? ROXO_ESC : null }
       ]),
+      h(HojeCard, { api: api, toast: props.toast, nav: nav, aoMudar: props.recarregar }), // LOCACAO_V2
+      h(InadimplenciaCard, { api: api }), // LOCACAO_V2
       h(Card, { pad: false },
         h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
           h('h2', { style: { margin: '0 8px 0 0', fontSize: 15, fontWeight: 700 } }, 'Frota'),
@@ -672,6 +674,14 @@
     var _mv = useState(null), modal = _mv[0], setModal = _mv[1];
     var _ft = useState(null), foto = _ft[0], setFoto = _ft[1];
     var _cp = useState(null), capaFoto = _cp[0], setCapaFoto = _cp[1];
+    // LOCACAO_V2: abas Vistorias · Ocorrências · Avisos, comparar e nova ocorrência
+    var _ab = useState(props.secao === 'ocorrencias' || props.secao === 'avisos' ? props.secao : 'vistorias'), aba = _ab[0], setAba = _ab[1];
+    var _cmp = useState(false), comparar = _cmp[0], setComparar = _cmp[1];
+    var _no = useState(null), novaOc = _no[0], setNovaOc = _no[1];
+    useEffect(function () {
+      if (props.secao !== 'documentos' || !d) return;
+      setTimeout(function () { var el = document.getElementById('loc-docs-moto'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+    }, [!!d]);
     useEffect(function () {
       if (novo || !d || !d.capa) { setCapaFoto(null); return; }
       api('/motos/' + props.id + '/capa').then(function (r) { setCapaFoto(r.foto || null); }).catch(function () { setCapaFoto(null); });
@@ -774,6 +784,11 @@
         h('div', { style: { flex: '1 1 320px', maxWidth: 460, minWidth: 0, position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 8 } },
           h('div', { style: { fontSize: 12, fontWeight: 600, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Prévia'), capaCard)));
 
+    var novaOcModal = novaOc ? h(NovaOcorrenciaModal, { api: api, toast: toast, moto: m, contrato: ct, preset: novaOc, onClose: function () { setNovaOc(null); }, onSalvo: function () { setNovaOc(null); setComparar(false); setAba('ocorrencias'); carregar(); props.aoMudar && props.aoMudar(); } }) : null; // LOCACAO_V2
+    if (comparar) return h(React.Fragment, null, h(CompararVistorias, { api: api, toast: toast, moto: m, vistorias: vist, voltar: function () { setComparar(false); carregar(); }, aoMudar: props.aoMudar, onApontar: function (pre) { setNovaOc(pre); } }), novaOcModal); // LOCACAO_V2
+    var ocs = d.ocorrencias || [], avs = d.avisos || [];
+    var avAbertos = avs.filter(function (a) { return a.status !== 'resolvido'; }).length;
+    var abaBtn = function (id, t, n) { var on = aba === id; return h('button', { key: id, type: 'button', role: 'tab', 'aria-selected': on, onClick: function () { setAba(id); }, style: { padding: '10px 12px', marginBottom: -1, fontSize: 13.5, cursor: 'pointer', color: on ? ROXO_ESC : '#6b7280', fontWeight: on ? 600 : 500, borderBottom: '2px solid ' + (on ? ROXO : 'transparent'), display: 'inline-flex', gap: 6, alignItems: 'center' } }, t, n ? h('span', { style: { background: id === 'avisos' ? '#fffbeb' : '#f3f4f6', color: id === 'avisos' ? '#92400e' : '#374151', fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '1px 7px' } }, n) : null); };
     return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       voltar(function () { nav({ tela: 'lista', tab: props.de || 'motos' }); }, props.de === 'painel' ? 'Frota' : 'Motos'),
       h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' } },
@@ -782,9 +797,12 @@
             h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, m.modelo + ' · ', h('span', { style: { fontFamily: MONO, fontSize: 19 } }, m.placa)),
             pillMoto(Object.assign({}, m, ct ? { situacao: ct.situacao, situacao_label: ct.situacao_label, dias_atraso: ct.dias_atraso } : {}))),
           h('div', { style: { fontSize: 13, color: '#6b7280', marginTop: 3 } }, [m.ano, m.cor ? String(m.cor).toLowerCase() : null, m.criado_em ? 'cadastrada em ' + fD(m.criado_em) : null, 'custo total ' + fR(m.custo_total != null ? m.custo_total : custo)].filter(Boolean).join(' · '))),
-        Btn({ variant: 'pri', icon: 'camera', onClick: function () { setModal({ tipo: 'nova' }); }, children: 'Registrar vistoria (equipe)' })),
+        h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } }, // LOCACAO_V2
+          Btn({ icon: 'plus', onClick: function () { setNovaOc({}); }, children: 'Nova ocorrência' }),
+          Btn({ variant: 'pri', icon: 'camera', onClick: function () { setModal({ tipo: 'nova' }); }, children: 'Registrar vistoria (equipe)' }))),
       h('div', { className: 'grid gap-4 lg:grid-cols-[420px_minmax(0,1fr)] items-start' },
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, formCard, h(ArquivosMoto, { moto: m, arquivos: d.arquivos || [], api: api, toast: toast, aoMudar: carregar })),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, formCard, h(ArquivosMoto, { moto: m, arquivos: d.arquivos || [], api: api, toast: toast, aoMudar: carregar }),
+          h('div', { id: 'loc-docs-moto', style: { scrollMarginTop: 80 } }, h(DocumentosMoto, { moto: m, documentos: d.documentos || [], api: api, toast: toast, aoMudar: carregar }))), // LOCACAO_V2
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
           capaCard,
           ct ? h(Card, null,
@@ -796,10 +814,15 @@
                 h('div', { style: Object.assign({ fontSize: 12.5, color: '#374151', marginTop: 2 }, TAB) }, [fR(ct.valor_semanal) + '/semana', ct.dia_vencimento ? 'vence ' + DIA_PLURAL[ct.dia_vencimento] : null, ct.semanas ? fN(ct.parcelas_pagas) + ' de ' + fN(ct.semanas) + ' pagas' : null, ct.proximo_vencimento ? 'próxima ' + fDS(ct.proximo_vencimento, true) : null].filter(Boolean).join(' · '))),
               Btn({ small: true, onClick: function () { nav({ tela: 'contrato', id: ct.id || ct.contrato_id }); }, children: 'Ver contrato' }))) : null,
           d.vistoria_pendente ? Aviso('ambar', d.vistoria_pendente.label || ('Vistoria pendente até ' + fDS(d.vistoria_pendente.prazo, true)), null, 'clock') : null,
-          h(Card, { pad: false },
+          h('div', { role: 'tablist', 'aria-label': 'Histórico da moto', style: { display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb' } }, abaBtn('vistorias', 'Vistorias', vist.length), abaBtn('ocorrencias', 'Ocorrências', ocs.length), abaBtn('avisos', 'Avisos', avAbertos)), // LOCACAO_V2
+          aba === 'ocorrencias' ? h(OcorrenciasPanel, { api: api, toast: toast, ocorrencias: ocs, resumo: d.ocorrencias_resumo, onNova: function () { setNovaOc({}); }, aoMudar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
+          aba === 'avisos' ? h(AvisosPanel, { api: api, toast: toast, avisos: avs, aoMudar: carregar }) : null,
+          aba !== 'vistorias' ? null : h(Card, { pad: false },
             h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
               h('h2', { style: { margin: '0 8px 0 0', fontSize: 15, fontWeight: 700 } }, 'Vistorias'),
-              Chips([{ id: 'todas', t: 'Todas', n: vist.length }].concat(TIPOS_VIST.map(function (t) { return { id: t[0], t: t[1], n: contaTipo(t[0]) }; })), fTipo, setFTipo)),
+              Chips([{ id: 'todas', t: 'Todas', n: vist.length }].concat(TIPOS_VIST.map(function (t) { return { id: t[0], t: t[1], n: contaTipo(t[0]) }; })), fTipo, setFTipo),
+              h('div', { style: { flex: 1 } }),
+              vist.length >= 2 ? Btn({ small: true, icon: 'eye', onClick: function () { setComparar(true); }, children: 'Comparar vistorias' }) : null), // LOCACAO_V2
             h('div', { style: { padding: 16 } },
               vistF.length === 0 ? Vazio('Nenhuma vistoria registrada', 'A retirada é registrada pelo locatário no portal ou pela equipe.') :
               vistF.map(function (v, i) {
@@ -826,6 +849,7 @@
       modal && modal.tipo === 'nova' ? h(NovaVistoriaModal, { api: api, toast: toast, moto: m, onClose: function () { setModal(null); }, aoSalvar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null,
       modal && modal.tipo === 'avaria' ? h(MotivoModal, { titulo: 'Apontar avaria', label: 'Descreva a avaria', hint: 'Fica registrada na vistoria e no histórico da moto.', botao: 'Registrar avaria', perigo: true, obrigatorio: true,
         onClose: function () { setModal(null); }, onConfirm: function (txt) { return acaoVist('/vistorias/' + modal.v.id + '/avaria', { descricao: txt }, 'Avaria registrada'); } }) : null,
+      novaOcModal, // LOCACAO_V2
       foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, legenda: foto.legenda, onClose: function () { setFoto(null); } }) : null);
   }
 
@@ -1201,7 +1225,7 @@
               return Linha(p.id, [
                 { td: 1, v: p.numero },
                 { td: 1, v: fDS(p.vencimento), st: { whiteSpace: 'nowrap' } },
-                { td: 1, v: fR(p.valor), right: true },
+                { td: 1, v: num(p.valor_extras) > 0 ? h('span', { title: (p.extras || []).map(function (x) { return x.descricao + ' ' + fR(x.valor); }).join(' · ') }, fR(p.valor), h('div', { style: { fontSize: 11.5, color: ROXO_ESC, fontWeight: 600 } }, '+ ' + fR(p.valor_extras) + ' extras')) : fR(p.valor), right: true }, // LOCACAO_V2: extras
                 { td: 1, v: num(p.juros) > 0 ? fR(p.juros) : '—', right: true, st: num(p.juros) > 0 ? { color: '#991b1b', fontWeight: 600 } : { color: '#9ca3af' } },
                 { td: 1, v: fR(p.total), right: true, st: { fontWeight: 600 } },
                 { td: 1, v: pillParc(p) },
@@ -1345,6 +1369,7 @@
     var _e = useState(null), erro = _e[0], setErro = _e[1];
     var _s = useState(false), salvando = _s[0], setSalvando = _s[1];
     var taRef = useRef(null);
+    var _sc = useState('juros'), secao = _sc[0], setSecao = _sc[1]; // LOCACAO_V2
     var carregar = useCallback(function () {
       setErro(null);
       api('/config').then(function (r) { setCfg(r); }).catch(function (e) { setErro(e.message); });
@@ -1358,7 +1383,8 @@
       setSalvando(true);
       var body = { juros_dia_pct: moedaParse(cfg.juros_dia_pct), dias_retomada: parseInt(cfg.dias_retomada, 10), validade_convite_dias: parseInt(cfg.validade_convite_dias, 10), vistoria_periodica_dias: parseInt(cfg.vistoria_periodica_dias, 10),
         modelo_contrato: cfg.modelo_contrato, termo_lgpd: cfg.termo_lgpd, termo_lgpd_versao: String(cfg.termo_lgpd_versao || '').trim() };
-      api('/config', { method: 'PUT', body: body }).then(function (r) { if (r && typeof r === 'object' && r.juros_dia_pct != null) setCfg(r); toast('Configurações salvas', 'success'); })
+      body.regua = Object.assign({}, REGUA_PADRAO, cfg.regua || {}); // LOCACAO_V2
+      api('/config', { method: 'PUT', body: body }).then(function (r) { if (r && typeof r === 'object' && r.juros_dia_pct != null) setCfg(function (c) { return Object.assign({}, c, r); }); toast('Configurações salvas', 'success'); })
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
     };
     var inserirVar = function (v) {
@@ -1376,17 +1402,26 @@
         h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { style: { fontSize: 13, fontWeight: 600 } }, nome, h('span', { style: { fontWeight: 500, color: integ == null ? '#9ca3af' : ok ? '#166534' : '#92400e' } }, integ == null ? ' · verificando' : ok ? ' · configurado' : ' · não configurado')),
           h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc)));
     };
-    return h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
+    // LOCACAO_V2: seções + régua de cobrança
+    var SEC = [{ id: 'juros', t: 'Juros e prazos' }, { id: 'regua', t: 'Régua de cobrança' }, { id: 'modelo', t: 'Modelo de contrato' }, { id: 'termo', t: 'Termo LGPD' }, { id: 'integ', t: 'Integrações' }];
+    var vis = function (id) { return secao === id ? null : { display: 'none' }; };
+    var barraSalvar = h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8 } },
+      Btn({ onClick: carregar, children: 'Descartar' }),
+      Btn({ variant: 'pri', icon: 'save', disabled: salvando, onClick: salvar, children: salvando ? 'Salvando...' : 'Salvar configurações' }));
+    var chipsSec = h('div', { role: 'tablist', 'aria-label': 'Seções das configurações', style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, Chips(SEC, secao, setSecao));
+    if (secao === 'regua') return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec, h(ReguaCobranca, { cfg: cfg, set: set, api: api }), barraSalvar);
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec,
+     h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-        h(Card, { pad: false }, CardHead('Cobrança e prazos'),
+        h('div', { style: vis('juros') }, h(Card, { pad: false }, CardHead('Cobrança e prazos'),
           h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
             h('div', { className: 'grid grid-cols-2 md:grid-cols-4', style: { gap: 12 } },
               h(Field, { label: 'Juros por dia de atraso (%)', req: true, hint: 'Sem teto' }, Input({ value: cfg.juros_dia_pct != null ? String(cfg.juros_dia_pct).replace('.', ',') : '', inputMode: 'decimal', onChange: function (e) { set('juros_dia_pct', e.target.value); } })),
               h(Field, { label: 'Retomada após (dias)', req: true }, Input({ value: cfg.dias_retomada != null ? String(cfg.dias_retomada) : '', inputMode: 'numeric', onChange: function (e) { set('dias_retomada', soDig(e.target.value)); } })),
               h(Field, { label: 'Validade do convite (dias)', req: true }, Input({ value: cfg.validade_convite_dias != null ? String(cfg.validade_convite_dias) : '', inputMode: 'numeric', onChange: function (e) { set('validade_convite_dias', soDig(e.target.value)); } })),
               h(Field, { label: 'Vistoria periódica (dias)', req: true }, Input({ value: cfg.vistoria_periodica_dias != null ? String(cfg.vistoria_periodica_dias) : '', inputMode: 'numeric', onChange: function (e) { set('vistoria_periodica_dias', soDig(e.target.value)); } }))),
-            Aviso('ambar', 'Mudanças valem só para contratos novos', 'Contratos já gerados mantêm o % de juros e os dias de retomada da época. Juros de 2% ao dia sem teto podem ser contestados como abusivos: valide com o jurídico.'))),
-        h(Card, { pad: false }, CardHead('Modelo de contrato · Plano Conquista'),
+            Aviso('ambar', 'Mudanças valem só para contratos novos', 'Contratos já gerados mantêm o % de juros e os dias de retomada da época. Juros de 2% ao dia sem teto podem ser contestados como abusivos: valide com o jurídico.')))),
+        h('div', { style: vis('modelo') }, h(Card, { pad: false }, CardHead('Modelo de contrato · Plano Conquista'),
           h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
             h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Clique numa variável para inserir no ponto do cursor. O sistema troca pelos dados do cliente, da moto e das parcelas ao gerar o PDF.'),
             h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, (cfg.variaveis_modelo || []).map(function (v) {
@@ -1396,14 +1431,13 @@
             })),
             h('label', { htmlFor: 'loc-modelo', className: 'sr-only' }, 'Modelo de contrato'),
             h('textarea', { id: 'loc-modelo', ref: taRef, rows: 18, value: cfg.modelo_contrato || '', onChange: function (e) { set('modelo_contrato', e.target.value); }, className: INPUT_CLS,
-              style: Object.assign({}, INPUT, { height: 'auto', padding: 12, fontFamily: MONO, fontSize: 12.5, lineHeight: 1.55, resize: 'vertical' }) }))),
-        h(Card, { pad: false }, CardHead('Termo de privacidade (LGPD)'),
+              style: Object.assign({}, INPUT, { height: 'auto', padding: 12, fontFamily: MONO, fontSize: 12.5, lineHeight: 1.55, resize: 'vertical' }) })))),
+        h('div', { style: vis('termo') }, h(Card, { pad: false }, CardHead('Termo de privacidade (LGPD)'),
           h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
             h(Field, { label: 'Versão do termo', req: true, hint: 'Mude a versão quando alterar o texto: os locatários precisam dar ciência de novo no portal.' }, Input({ value: cfg.termo_lgpd_versao || '', onChange: function (e) { set('termo_lgpd_versao', e.target.value); }, style: { maxWidth: 160 } })),
-            h(Field, { label: 'Texto do termo', req: true }, TextArea({ rows: 10, value: cfg.termo_lgpd || '', onChange: function (e) { set('termo_lgpd', e.target.value); } })))),
-        h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8 } },
-          Btn({ onClick: carregar, children: 'Descartar' }),
-          Btn({ variant: 'pri', icon: 'save', disabled: salvando, onClick: salvar, children: salvando ? 'Salvando...' : 'Salvar configurações' }))),
+            h(Field, { label: 'Texto do termo', req: true }, TextArea({ rows: 10, value: cfg.termo_lgpd || '', onChange: function (e) { set('termo_lgpd', e.target.value); } }))))),
+        secao === 'integ' ? h('div', { style: { fontSize: 13, color: '#6b7280' } }, 'As integrações são configuradas por variáveis de ambiente no servidor. O status aparece ao lado.') : null,
+        secao === 'integ' ? null : barraSalvar),
       h('div', { style: { position: 'sticky', top: 84 } },
         h(Card, { pad: false }, CardHead('Integrações'),
           h('div', { style: { padding: '4px 16px 12px' } },
@@ -1412,8 +1446,516 @@
             statusInt(it.whatsapp, 'WhatsApp', 'Convites, cobranças, recibos e código do portal.'),
             it.webhook_autentique_url ? h('div', { style: { marginTop: 8 } },
               h('div', { style: { fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 } }, 'Webhook do Autentique'),
-              h('div', { style: { display: 'flex', gap: 6 } }, Input({ readOnly: true, value: it.webhook_autentique_url, style: { fontFamily: MONO, fontSize: 11.5, height: 34 }, 'aria-label': 'URL do webhook do Autentique' }), Btn({ small: true, icon: 'copy', ariaLabel: 'Copiar URL do webhook', onClick: function () { copiar(it.webhook_autentique_url, toast); } }))) : null))));
+              h('div', { style: { display: 'flex', gap: 6 } }, Input({ readOnly: true, value: it.webhook_autentique_url, style: { fontFamily: MONO, fontSize: 11.5, height: 34 }, 'aria-label': 'URL do webhook do Autentique' }), Btn({ small: true, icon: 'copy', ariaLabel: 'Copiar URL do webhook', onClick: function () { copiar(it.webhook_autentique_url, toast); } }))) : null)))));
   }
+
+  // ═════════════════════════ LOCACAO_V2: novas funções do time ═════════════════════════
+  var URG_COR = { urgente: '#dc2626', atencao: '#d97706', rotina: '#2563eb' };
+  var GRUPO_ICO = { atrasados: 'alert', vencem_hoje: 'clock', vistorias: 'camera', assinatura: 'pencil', precadastros: 'user', documentos: 'filetext', avisos: 'message' };
+  var TIPO_OCOR = [['manutencao', 'Manutenção', 'wrench', 'roxo'], ['multa', 'Multa', 'tag', 'ambar'], ['sinistro', 'Sinistro', 'alert', 'vermelho'], ['roubo', 'Roubo ou furto', 'shield', 'vermelho'], ['outro', 'Outro', 'help', 'cinza']];
+  var TOM_OCOR_ST = { aberta: 'ambar', resolvida: 'verde', cobrada: 'azul', paga: 'verde' };
+  var TOM_AVISO = { aberto: 'ambar', em_atendimento: 'azul', resolvido: 'verde' };
+  var TIPO_DOC = [['licenciamento', 'Licenciamento'], ['ipva', 'IPVA'], ['seguro', 'Seguro'], ['outro', 'Outro']];
+  var TOM_DOC = { ok: 'verde', vence_em_breve: 'ambar', vencido: 'vermelho', pendente: 'cinza' };
+  function tipoOcor(t) { return TIPO_OCOR.find(function (x) { return x[0] === t; }) || TIPO_OCOR[4]; }
+  function useDebounce(valor, ms) {
+    var _v = useState(valor), v = _v[0], setV = _v[1];
+    useEffect(function () { var t = setTimeout(function () { setV(valor); }, ms || 300); return function () { clearTimeout(t); }; }, [JSON.stringify(valor)]);
+    return v;
+  }
+  function Toggle(on, onChange, label) {
+    return h('button', { type: 'button', role: 'switch', 'aria-checked': !!on, 'aria-label': label, onClick: function (e) { e.stopPropagation(); onChange(!on); },
+      style: { width: 38, height: 22, borderRadius: 99, background: on ? ROXO : '#d1d5db', position: 'relative', flex: 'none', cursor: 'pointer', transition: 'background .15s' } },
+      h('span', { style: { position: 'absolute', top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: 99, background: '#fff', transition: 'left .15s', boxShadow: '0 1px 2px rgba(0,0,0,.2)' } }));
+  }
+
+  // ───────── Fila "Hoje" ─────────
+  function HojeCard(props) {
+    var api = props.api, toast = props.toast, nav = props.nav;
+    var _d = useState(null), d = _d[0], setD = _d[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _b = useState(null), ocupado = _b[0], setOcupado = _b[1];
+    var _a = useState(null), aviso = _a[0], setAviso = _a[1];
+    var carregar = useCallback(function () { setErro(null); api('/hoje').then(setD).catch(function (e) { setErro(e.message); }); }, [api]);
+    useEffect(carregar, [carregar]);
+    if (erro) return Erro(erro, carregar);
+    if (!d) return h(Card, null, Spinner('Montando a fila de hoje...'));
+    var grupos = d.grupos || [], tot = d.totais || {};
+    var nItens = grupos.reduce(function (s, g) { return s + (g.itens || []).length; }, 0);
+    var post = function (url, msg, id) {
+      setOcupado(id);
+      api(url, { method: 'POST', body: {} }).then(function (r) {
+        var w = r && r.whatsapp;
+        toast(msg + (w && w.enviado === false ? ' (WhatsApp não enviado)' : ''), 'success');
+        carregar(); props.aoMudar && props.aoMudar();
+      }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcupado(null); });
+    };
+    var executar = function (it) {
+      var a = it.acao || {};
+      if (a.tipo === 'cobrar' || a.tipo === 'reenviar_cobranca') return post('/parcelas/' + a.parcela_id + '/cobrar', 'Cobrança enviada', it.id);
+      if (a.tipo === 'reenviar_assinatura') return post('/contratos/' + a.contrato_id + '/reenviar-assinatura', 'Contrato reenviado ao Autentique', it.id);
+      if (a.tipo === 'avisar_locatario') return post('/clientes/' + a.cliente_id + '/avisar-cnh', 'Aviso enviado ao locatário', it.id);
+      if (a.tipo === 'revisar_vistoria') return a.moto_id ? nav({ tela: 'moto', id: a.moto_id, secao: 'vistorias' }) : nav({ tela: 'lista', tab: 'vistorias' });
+      if (a.tipo === 'revisar_precadastro') return nav({ tela: 'lista', tab: 'precadastros', sel: a.precadastro_id });
+      if (a.tipo === 'registrar_renovacao') return nav({ tela: 'moto', id: a.moto_id, secao: 'documentos' });
+      if (a.tipo === 'ver_aviso') return setAviso(a.aviso_id);
+      if (a.contrato_id) return nav({ tela: 'contrato', id: a.contrato_id });
+      if (a.moto_id) return nav({ tela: 'moto', id: a.moto_id });
+    };
+    var icoAcao = { cobrar: 'message', reenviar_cobranca: 'message', reenviar_assinatura: 'arrowright', avisar_locatario: 'message', revisar_vistoria: 'camera', revisar_precadastro: 'user', registrar_renovacao: 'filetext', ver_aviso: 'eye' };
+    var nGr = grupos.filter(function (g) { return (g.itens || []).length; });
+    var tag = function (t, n, cor) { return n ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 99, fontSize: 11.5, fontWeight: 600, background: cor[0], color: cor[1] } }, h('span', { style: { width: 6, height: 6, borderRadius: 99, background: cor[2] } }), t + ' ' + n) : null; };
+    var hojeTxt = (function () { var x = new Date(); return DIAS_LONGO[x.getDay()] + ', ' + fDC(x); })();
+    return h(Card, { pad: false, label: 'Hoje' },
+      h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
+        h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 700 } }, 'Hoje'),
+        h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, hojeTxt + ' · ' + (nItens ? nItens + ' ' + (nItens === 1 ? 'item pede' : 'itens pedem') + ' ação' : 'nada pendente')),
+        h('div', { style: { flex: 1 } }),
+        tag('Urgente', tot.urgente, ['#fef2f2', '#991b1b', '#dc2626']), tag('Atenção', tot.atencao, ['#fffbeb', '#92400e', '#d97706']), tag('Rotina', tot.rotina, ['#eff6ff', '#1e40af', '#2563eb']),
+        Btn({ small: true, icon: 'refresh', ariaLabel: 'Atualizar a fila', onClick: carregar })),
+      nGr.length === 0 ? h('div', { style: { padding: '22px 16px', textAlign: 'center', color: '#166534', fontSize: 13.5 } }, h('b', null, 'Tudo em dia. '), 'Nenhuma cobrança, vistoria ou assinatura pendente.') :
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-2' }, nGr.map(function (g, gi) {
+        return h('div', { key: g.id, style: { padding: '12px 16px', borderTop: gi > 1 ? '1px solid #f3f4f6' : (gi === 1 ? '1px solid #f3f4f6' : 0), borderLeft: '1px solid #f3f4f6', marginLeft: -1 }, className: gi === 1 ? 'lg:!border-t-0' : '' },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } }, ico(GRUPO_ICO[g.id] || 'list', 15, { color: '#6b7280' }), h('b', { style: { fontSize: 13.5 } }, g.titulo),
+            h('span', { style: { fontSize: 11, fontWeight: 700, background: '#f3f4f6', color: '#374151', borderRadius: 99, padding: '1px 7px' } }, (g.itens || []).length)),
+          (g.itens || []).map(function (it, ii) {
+            var a = it.acao || {};
+            var pri = it.urgencia === 'urgente' && ii === 0 && (a.tipo === 'cobrar' || a.tipo === 'reenviar_cobranca');
+            return h('div', { key: it.id || ii, style: { display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0', borderTop: '1px solid #f3f4f6' } },
+              h('span', { 'aria-hidden': 'true', style: { width: 8, height: 8, borderRadius: 99, background: URG_COR[it.urgencia] || '#9ca3af', flex: 'none' } }),
+              h('div', { style: { flex: 1, minWidth: 0 } },
+                h('div', { style: { fontWeight: 600, fontSize: 13, color: '#111827' } }, it.titulo),
+                it.detalhe ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, it.detalhe) : null),
+              a.label ? Btn({ small: true, variant: pri ? 'pri' : 'sec', icon: icoAcao[a.tipo] || null, disabled: ocupado === it.id, onClick: function () { executar(it); }, children: ocupado === it.id ? 'Enviando...' : a.label }) : null);
+          }));
+      })),
+      h('div', { style: { padding: '9px 16px', borderTop: '1px solid #f3f4f6', background: '#f9fafb', fontSize: 12, color: '#6b7280' } }, 'Grupo sem pendência some da lista. A fila é atualizada a cada ação.'),
+      aviso ? h(AvisoModal, { id: aviso, api: api, toast: toast, onClose: function () { setAviso(null); }, onSalvo: function () { setAviso(null); carregar(); } }) : null);
+  }
+
+  // ───────── Inadimplência · 12 semanas ─────────
+  function InadimplenciaCard(props) {
+    var api = props.api;
+    var _d = useState(null), d = _d[0], setD = _d[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var carregar = useCallback(function () { setErro(null); api('/inadimplencia?semanas=12').then(setD).catch(function (e) { setErro(e.message); }); }, [api]);
+    useEffect(carregar, [carregar]);
+    if (erro) return Erro(erro, carregar);
+    if (!d) return h(Card, null, Spinner('Calculando inadimplência...'));
+    var sem = d.semanas || [], at = d.atual || {};
+    var W = 760, H = 210, L = 58, R = 16, T = 18, B = 30;
+    var maxV = Math.max(300, sem.reduce(function (m, s) { return Math.max(m, num(s.valor_aberto)); }, 0));
+    var passo = maxV <= 900 ? 300 : maxV <= 3000 ? 1000 : maxV <= 9000 ? 3000 : Math.ceil(maxV / 3 / 1000) * 1000;
+    var topo = Math.ceil(maxV / passo) * passo;
+    var maxP = Math.max(25, sem.reduce(function (m, s) { return Math.max(m, num(s.pct_atraso)); }, 0));
+    var n = sem.length || 1, slot = (W - L - R) / n, bw = Math.min(32, slot * 0.56);
+    var y = function (v) { return T + (H - T - B) * (1 - v / topo); };
+    var yp = function (v) { return T + (H - T - B) * (1 - v / (maxP * 1.15)); };
+    var cx = function (i) { return L + slot * i + slot / 2; };
+    var grade = []; for (var g = 0; g <= topo; g += passo) grade.push(g);
+    var linha = sem.map(function (s, i) { return (i ? 'L' : 'M') + cx(i).toFixed(1) + ' ' + yp(num(s.pct_atraso)).toFixed(1); }).join(' ');
+    var delta = d.pct_4_semanas != null ? num(at.pct_atraso) - num(d.pct_4_semanas) : null;
+    var ret = d.retomadas || [];
+    var fK = function (v) { return 'R$ ' + (v >= 1000 ? (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : num(v).toLocaleString('pt-BR')); };
+    return h(Card, { pad: false, label: 'Inadimplência' },
+      h('div', { style: { padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' } },
+        h('h2', { style: { margin: 0, fontSize: 15, fontWeight: 700 } }, 'Inadimplência · últimas ' + (sem.length || 12) + ' semanas'),
+        h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' } }, h('span', { style: { width: 10, height: 10, borderRadius: 2, background: '#d8b4f0' } }), 'Valor em aberto'),
+        h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' } }, h('span', { style: { width: 14, height: 2, background: '#f67602' } }), '% dos contratos em atraso')),
+      h('div', { className: 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px]' },
+        h('div', { style: { padding: '0 8px 12px 8px', overflowX: 'auto' } },
+          sem.length === 0 ? Vazio('Sem histórico ainda', 'O gráfico aparece quando houver contratos ativos.') :
+          h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Valor em aberto e percentual de contratos em atraso por semana', style: { display: 'block', minWidth: 520 } },
+            grade.map(function (v) { return h('g', { key: v }, h('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: '#f3f4f6' }), h('text', { x: L - 8, y: y(v) + 4, textAnchor: 'end', fontSize: 10.5, fill: '#9ca3af' }, fK(v))); }),
+            sem.map(function (s, i) {
+              var v = num(s.valor_aberto), ult = i === sem.length - 1;
+              return h('g', { key: i },
+                h('rect', { x: cx(i) - bw / 2, y: y(v), width: bw, height: Math.max(0, y(0) - y(v)), rx: 3, fill: ult ? ROXO : '#d8b4f0' }, h('title', null, fD(s.fim) + ' · ' + fR(v) + ' em aberto · ' + num(s.pct_atraso).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% em atraso (' + (s.contratos_atraso || 0) + ' de ' + (s.contratos_ativos || 0) + ')')),
+                h('text', { x: cx(i), y: H - 10, textAnchor: 'middle', fontSize: 10.5, fill: '#9ca3af' }, fDC(s.fim)));
+            }),
+            h('path', { d: linha, fill: 'none', stroke: '#f67602', strokeWidth: 2 }),
+            sem.map(function (s, i) { return h('circle', { key: 'p' + i, cx: cx(i), cy: yp(num(s.pct_atraso)), r: 3.5, fill: '#fff', stroke: '#f67602', strokeWidth: 2 }); }),
+            sem.length ? h('text', { x: cx(sem.length - 1), y: yp(num(sem[sem.length - 1].pct_atraso)) - 9, textAnchor: 'middle', fontSize: 11, fontWeight: 700, fill: '#c2410c' }, Math.round(num(sem[sem.length - 1].pct_atraso)) + '%') : null)),
+        h('div', { style: { padding: '4px 16px 16px', borderLeft: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: 12 } },
+          h('div', null, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Contratos em atraso hoje'),
+            h('div', { style: Object.assign({ fontFamily: SORA, fontSize: 26, fontWeight: 700, color: num(at.pct_atraso) > 0 ? '#991b1b' : '#166534' }, TAB) }, Math.round(num(at.pct_atraso)) + '%'),
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, (at.contratos_atraso || 0) + ' de ' + (at.contratos_ativos || 0),
+              delta != null ? h('div', null, 'há 4 semanas: ' + Math.round(num(d.pct_4_semanas)) + '% ', h('b', { style: { color: delta <= 0 ? '#166534' : '#991b1b' } }, (delta <= 0 ? '▼ ' : '▲ ') + Math.abs(Math.round(delta)) + ' p.p.')) : null)),
+          h('div', null, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Em aberto (vencido)'), h('div', { style: Object.assign({ fontFamily: SORA, fontSize: 20, fontWeight: 700 }, TAB) }, fR(at.valor_aberto)), num(at.juros) > 0 ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'com juros ' + fR(at.juros)) : null),
+          h('div', null, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Retomadas no período'), h('div', { style: Object.assign({ fontFamily: SORA, fontSize: 20, fontWeight: 700 }, TAB) }, ret.length),
+            ret.slice(0, 3).map(function (x, i) { return h('div', { key: i, style: { fontSize: 12, color: '#6b7280' } }, x.cliente_nome + ' · ' + fDC(x.data)); })))));
+  }
+
+  // ───────── Documentos da moto ─────────
+  function DocumentosMoto(props) {
+    var api = props.api, toast = props.toast, docs = props.documentos || [];
+    var _m = useState(null), modal = _m[0], setModal = _m[1];
+    var _f = useState(null), foto = _f[0], setFoto = _f[1];
+    var ver = function (dc) {
+      setFoto({ titulo: dc.tipo_label || dc.tipo, src: null });
+      api('/motos/' + props.moto.id + '/documentos/' + dc.id + '/arquivo').then(function (r) { setFoto({ titulo: r.nome || dc.tipo_label, src: r.conteudo }); }).catch(function (e) { setFoto(null); toast(e.message, 'error'); });
+    };
+    var excluir = function (dc) {
+      if (!window.confirm('Excluir ' + (dc.tipo_label || 'documento') + (dc.referencia ? ' ' + dc.referencia : '') + '?')) return;
+      api('/motos/' + props.moto.id + '/documentos/' + dc.id, { method: 'DELETE' }).then(function () { toast('Documento excluído', 'success'); props.aoMudar(); }).catch(function (e) { toast(e.message, 'error'); });
+    };
+    return h(Card, { pad: false, label: 'Documentos da moto' },
+      CardHead('Documentos da moto', Btn({ variant: 'link', icon: 'upload', onClick: function () { setModal({}); }, children: 'Enviar' })),
+      docs.length === 0 ? h('div', { style: { padding: 16, fontSize: 13, color: '#6b7280' } }, 'Nenhum documento. Registre licenciamento, IPVA e seguro para a Central avisar antes de vencer.') :
+      docs.map(function (dc) {
+        var sub = [dc.referencia, dc.pago ? (dc.vencimento ? 'pago · vence ' + fD(dc.vencimento) : 'pago') : dc.vencimento ? 'vence ' + fD(dc.vencimento) : null, dc.observacao].filter(Boolean).join(' · ');
+        return h('div', { key: dc.id, style: { display: 'flex', gap: 12, alignItems: 'center', padding: '11px 16px', borderTop: '1px solid #f3f4f6' } },
+          h('span', { style: { width: 34, height: 34, borderRadius: 9, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 16)),
+          h('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 } },
+            h('div', { style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 } }, h('span', { style: { fontWeight: 600, fontSize: 13.5 } }, dc.tipo_label || dc.tipo), Pill(dc.situacao_label || dc.situacao, TOM_DOC[dc.situacao] || 'cinza')),
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, sub || '—')),
+          h('span', { style: { display: 'inline-flex', gap: 10, alignItems: 'center', flex: 'none' } },
+            dc.tem_arquivo ? h('button', { type: 'button', className: 'hover:underline', onClick: function () { ver(dc); }, style: { color: ROXO, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } }, 'Ver') : null,
+            h('button', { type: 'button', className: 'hover:underline', onClick: function () { setModal({ doc: dc }); }, style: { color: '#374151', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } }, 'Editar'),
+            h('button', { type: 'button', 'aria-label': 'Excluir documento', onClick: function () { excluir(dc); }, style: { color: '#9ca3af', cursor: 'pointer' } }, ico('trash', 14))));
+      }),
+      h('div', { style: { padding: '10px 16px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 12, color: '#92400e' } }, 'A Central avisa 30 dias antes de vencer licenciamento, IPVA, seguro e a CNH do locatário.'),
+      modal ? h(DocMotoModal, { moto: props.moto, doc: modal.doc, api: api, toast: toast, onClose: function () { setModal(null); }, onSalvo: function () { setModal(null); props.aoMudar(); } }) : null,
+      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, onClose: function () { setFoto(null); } }) : null);
+  }
+  function DocMotoModal(props) {
+    var dc = props.doc || {};
+    var _f = useState({ tipo: dc.tipo || 'licenciamento', referencia: dc.referencia || String(new Date().getFullYear()), vencimento: dc.vencimento ? String(dc.vencimento).slice(0, 10) : '', pago: !!dc.pago, observacao: dc.observacao || '' }), f = _f[0], setF = _f[1];
+    var _a = useState(null), arq = _a[0], setArq = _a[1];
+    var _s = useState(false), salv = _s[0], setSalv = _s[1];
+    var set = function (k, v) { setF(function (x) { var n = Object.assign({}, x); n[k] = v; return n; }); };
+    var salvar = function () {
+      setSalv(true);
+      var body = Object.assign({}, f, { vencimento: f.vencimento || null });
+      if (arq) { body.arquivo = arq.conteudo; body.nome_arquivo = arq.nome; }
+      props.api(dc.id ? '/motos/' + props.moto.id + '/documentos/' + dc.id : '/motos/' + props.moto.id + '/documentos', { method: dc.id ? 'PUT' : 'POST', body: body })
+        .then(function () { props.toast('Documento salvo', 'success'); props.onSalvo(); }).catch(function (e) { props.toast(e.message, 'error'); }).then(function () { setSalv(false); });
+    };
+    return h(Modal, { titulo: dc.id ? 'Editar documento' : 'Documento da moto', onClose: props.onClose, largura: 520,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Cancelar' }), Btn({ key: 's', variant: 'pri', icon: 'save', disabled: salv, onClick: salvar, children: salv ? 'Salvando...' : 'Salvar documento' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        h(Field, { label: 'Tipo', req: true }, Segmented(TIPO_DOC, f.tipo, function (v) { set('tipo', v); }, 'Tipo de documento')),
+        h('div', { className: 'grid grid-cols-2', style: { gap: 12 } },
+          h(Field, { label: f.tipo === 'seguro' ? 'Seguradora / apólice' : 'Referência', hint: f.tipo === 'seguro' ? null : 'Ex.: 2026' }, Input({ value: f.referencia, onChange: function (e) { set('referencia', e.target.value); } })),
+          h(Field, { label: 'Vencimento', opt: true }, Input({ type: 'date', value: f.vencimento, onChange: function (e) { set('vencimento', e.target.value); } }))),
+        h('label', { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, cursor: 'pointer' } }, h('input', { type: 'checkbox', checked: f.pago, onChange: function (e) { set('pago', e.target.checked); }, style: { width: 18, height: 18, accentColor: ROXO } }), f.tipo === 'seguro' ? 'Apólice vigente / paga' : 'Já está pago'),
+        h(Field, { label: 'Observação', opt: true }, Input({ value: f.observacao, onChange: function (e) { set('observacao', e.target.value); } })),
+        h(Field, { label: 'Arquivo', opt: true, hint: dc.tem_arquivo && !arq ? 'Já existe um arquivo. Envie outro para substituir.' : 'Foto ou PDF do documento' },
+          h('input', { type: 'file', accept: 'image/*,application/pdf', onChange: function (e) { var fl = e.target.files && e.target.files[0]; if (!fl) return; lerArquivo(fl, 1600, 0.82).then(function (u) { setArq({ nome: fl.name, conteudo: u }); }).catch(function (er) { props.toast(er.message, 'error'); }); }, style: { fontSize: 13 } }))));
+  }
+
+  // ───────── Ocorrências ─────────
+  function OcorrenciasPanel(props) {
+    var api = props.api, toast = props.toast, lista = props.ocorrencias || [], rs = props.resumo || {};
+    var _f = useState('todas'), f = _f[0], setF = _f[1];
+    var _l = useState(null), foto = _l[0], setFoto = _l[1];
+    var _b = useState(null), ocup = _b[0], setOcup = _b[1];
+    var fl = lista.filter(function (o) { return f === 'todas' || o.tipo === f; });
+    var abrirAnexo = function (o, a) {
+      setFoto({ titulo: a.nome, src: null });
+      api('/ocorrencias/' + o.id + '/anexos/' + a.id).then(function (r) { setFoto({ titulo: r.nome || a.nome, src: r.conteudo }); }).catch(function (e) { setFoto(null); toast(e.message, 'error'); });
+    };
+    var resolver = function (o) {
+      setOcup(o.id);
+      api('/ocorrencias/' + o.id + '/resolver', { method: 'POST', body: {} }).then(function () { toast('Ocorrência resolvida', 'success'); props.aoMudar(); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcup(null); });
+    };
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      h('section', { className: 'grid grid-cols-1 sm:grid-cols-3', style: Object.assign({}, CARD, { overflow: 'hidden' }) }, [
+        { r: 'Manutenção no ano', v: fR(rs.custo_ano), s: 'pago pela Tutts' },
+        { r: 'Cobrado do locatário', v: fR(rs.cobrado_locatario), s: 'multas, sinistros e outros' },
+        { r: 'Em aberto', v: fR(rs.em_aberto), s: 'ainda não pago pelo locatário', cor: num(rs.em_aberto) > 0 ? '#92400e' : null }
+      ].map(function (k, i) { return h('div', { key: i, style: { padding: '12px 16px', borderRight: '1px solid #f3f4f6' } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, k.r), h('div', { style: Object.assign({ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: k.cor || '#111827' }, TAB) }, k.v), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, k.s)); })),
+      h(Card, { pad: false },
+        h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
+          h('h2', { style: { margin: '0 8px 0 0', fontSize: 15, fontWeight: 700 } }, 'Ocorrências'),
+          Chips([{ id: 'todas', t: 'Todas', n: lista.length }].concat(TIPO_OCOR.slice(0, 4).map(function (t) { return { id: t[0], t: t[1].replace(' ou furto', '/furto'), n: lista.filter(function (o) { return o.tipo === t[0]; }).length }; })), f, setF)),
+        fl.length === 0 ? Vazio('Nenhuma ocorrência', 'Manutenções, multas e sinistros desta moto aparecem aqui.', Btn({ variant: 'pri', icon: 'plus', onClick: props.onNova, children: 'Nova ocorrência' })) :
+        fl.map(function (o) {
+          var t = tipoOcor(o.tipo), T = TONS[t[3]] || TONS.cinza;
+          return h('div', { key: o.id, style: { display: 'flex', gap: 14, padding: '14px 16px', borderTop: '1px solid #f3f4f6', alignItems: 'flex-start' } },
+            h('span', { style: { width: 38, height: 38, borderRadius: 10, background: T[0], color: T[2], display: 'grid', placeItems: 'center', flex: 'none' } }, ico(t[2], 17)),
+            h('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 } },
+              h('div', { style: { fontSize: 13.5 } }, h('b', null, o.tipo_label || t[1]), o.descricao ? h('span', { style: { color: '#374151' } }, ' · ' + o.descricao) : null),
+              h('div', { style: { fontSize: 12, color: '#6b7280' } }, [fD(o.data), o.cliente_nome, o.criado_por_nome ? 'por ' + o.criado_por_nome : null].filter(Boolean).join(' · ')),
+              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' } },
+                o.quem_paga === 'locatario' ? h('span', { style: { fontSize: 11.5, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: '#f3e8fb', color: ROXO_ESC } }, 'Cobrar do locatário') : h('span', { style: { fontSize: 11.5, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: '#f3f4f6', color: '#374151' } }, 'Paga pela Tutts'),
+                (o.anexos || []).map(function (a) { return h('button', { key: a.id, type: 'button', onClick: function () { abrirAnexo(o, a); }, className: 'hover:underline', style: { color: ROXO, fontWeight: 600, fontSize: 12.5, display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' } }, ico('link', 12), a.nome); })),
+              o.cobranca_label ? h('div', { style: { fontSize: 12.5, color: '#374151', background: '#f9fafb', borderRadius: 8, padding: '7px 10px' } }, o.cobranca_label) : null),
+            h('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 'none' } },
+              h('b', { style: Object.assign({ fontSize: 15 }, TAB) }, fR(o.valor)),
+              Pill(o.status_label || o.status, TOM_OCOR_ST[o.status] || 'cinza'),
+              o.status === 'aberta' ? Btn({ small: true, icon: 'check', disabled: ocup === o.id, onClick: function () { resolver(o); }, children: ocup === o.id ? 'Salvando...' : 'Resolver' }) : null));
+        })),
+      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, onClose: function () { setFoto(null); } }) : null);
+  }
+
+  function NovaOcorrenciaModal(props) {
+    var api = props.api, toast = props.toast, m = props.moto || {}, ct = props.contrato;
+    var pre = props.preset || {};
+    var temContrato = !!(ct && (ct.situacao === 'em_dia' || ct.situacao === 'atrasada' || ct.situacao === 'em_retomada' || ct.status === 'ativo' || ct.status === 'em_retomada'));
+    var _f = useState({ tipo: pre.tipo || 'manutencao', data: hojeISO(), valor: '', descricao: pre.descricao || '', quem_paga: pre.quem_paga || (temContrato && pre.tipo && pre.tipo !== 'manutencao' ? 'locatario' : 'tutts'), forma_cobranca: 'proxima_parcela', parcelas_n: 3 }), f = _f[0], setF = _f[1];
+    var _a = useState([]), anexos = _a[0], setAnexos = _a[1];
+    var _s = useState(null), sim = _s[0], setSim = _s[1];
+    var _b = useState(false), salv = _b[0], setSalv = _b[1];
+    var set = function (k, v) { setF(function (x) { var n = Object.assign({}, x); n[k] = v; if (k === 'tipo') n.quem_paga = temContrato && v !== 'manutencao' ? 'locatario' : 'tutts'; return n; }); };
+    var valor = moedaParse(f.valor);
+    var simKey = useDebounce({ v: valor, q: f.quem_paga, fc: f.forma_cobranca, n: f.parcelas_n }, 350);
+    useEffect(function () {
+      setSim(null);
+      if (!(simKey.v > 0) || simKey.q !== 'locatario') return;
+      api('/ocorrencias/simular', { method: 'POST', body: { moto_id: m.id, valor: simKey.v, quem_paga: simKey.q, forma_cobranca: simKey.fc, parcelas_n: simKey.fc === 'dividir' ? simKey.n : null } }).then(setSim).catch(function (e) { setSim({ possivel: false, motivo: e.message }); });
+    }, [JSON.stringify(simKey)]);
+    var addAnexo = function (files) {
+      Array.prototype.slice.call(files || []).slice(0, 6).forEach(function (fl) {
+        lerArquivo(fl, 1600, 0.82).then(function (u) { setAnexos(function (x) { return x.concat([{ nome: fl.name, conteudo: u }]); }); }).catch(function (e) { toast(e.message, 'error'); });
+      });
+    };
+    var ok = f.tipo && f.data && valor > 0 && f.descricao.trim().length >= 3 && (f.quem_paga !== 'locatario' || (temContrato && (!sim || sim.possivel !== false)));
+    var salvar = function () {
+      setSalv(true);
+      api('/motos/' + m.id + '/ocorrencias', { method: 'POST', body: { tipo: f.tipo, data: f.data, descricao: f.descricao.trim(), valor: valor, quem_paga: f.quem_paga,
+        forma_cobranca: f.quem_paga === 'locatario' ? f.forma_cobranca : null, parcelas_n: f.quem_paga === 'locatario' && f.forma_cobranca === 'dividir' ? f.parcelas_n : null, anexos: anexos } })
+        .then(function (r) {
+          toast('Ocorrência registrada' + (r && r.cobranca_label ? ' · ' + r.cobranca_label : ''), 'success');
+          if (r && r.pix_copia_cola) copiar(r.pix_copia_cola, toast);
+          props.onSalvo(r);
+        }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); });
+    };
+    var proxTxt = ct && ct.proximo_vencimento ? fDS(ct.proximo_vencimento, true) : null;
+    var opcao = function (id, titulo, sub, extra) {
+      var on = f.forma_cobranca === id;
+      return h('div', { key: id, role: 'radio', 'aria-checked': on, tabIndex: 0, onClick: function () { set('forma_cobranca', id); }, onKeyDown: function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set('forma_cobranca', id); } },
+        style: { display: 'flex', gap: 12, alignItems: 'center', padding: '11px 14px', borderRadius: 12, border: on ? '1.5px solid ' + ROXO : '1px solid #e5e7eb', boxShadow: on ? '0 0 0 3px #f3e8fb' : 'none', cursor: 'pointer', background: '#fff' } },
+        h('span', { 'aria-hidden': 'true', style: { width: 18, height: 18, borderRadius: 99, border: '2px solid ' + (on ? ROXO : '#d1d5db'), display: 'grid', placeItems: 'center', flex: 'none' } }, on ? h('span', { style: { width: 8, height: 8, borderRadius: 99, background: ROXO } }) : null),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { style: { fontWeight: 600, fontSize: 13.5 } }, titulo), h('div', { style: { fontSize: 12, color: '#6b7280' } }, sub)),
+        extra || null);
+    };
+    return h(Modal, { titulo: 'Nova ocorrência', onClose: props.onClose, largura: 640,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Cancelar' }), Btn({ key: 's', variant: 'pri', icon: 'check', disabled: !ok || salv, onClick: salvar, children: salv ? 'Registrando...' : 'Registrar ocorrência' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: -8 } }, [m.modelo, m.placa, ct && ct.cliente_nome].filter(Boolean).join(' · ')),
+        h(Field, { label: 'Tipo', req: true }, h('div', { style: { overflowX: 'auto' } }, Segmented(TIPO_OCOR.map(function (t) { return [t[0], t[1]]; }), f.tipo, function (v) { set('tipo', v); }, 'Tipo de ocorrência'))),
+        h('div', { className: 'grid grid-cols-2', style: { gap: 12 } },
+          h(Field, { label: 'Data', req: true }, Input({ type: 'date', value: f.data, max: hojeISO(), onChange: function (e) { set('data', e.target.value); } })),
+          h(Field, { label: 'Valor', req: true }, Input({ value: f.valor, inputMode: 'decimal', placeholder: 'R$ 0,00', onChange: function (e) { set('valor', e.target.value); } }))),
+        h(Field, { label: 'Descrição', req: true }, Input({ value: f.descricao, placeholder: f.tipo === 'multa' ? 'Ex.: Radar · 67 km/h em via de 60 · Av. Paralela' : f.tipo === 'manutencao' ? 'Ex.: Troca do pneu traseiro + câmara' : 'O que aconteceu', onChange: function (e) { set('descricao', e.target.value); } })),
+        h(Field, { label: 'Anexos', opt: true },
+          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
+            anexos.map(function (a, i) { return h('span', { key: i, style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12.5 } }, ico('filetext', 13), a.nome,
+              h('button', { type: 'button', 'aria-label': 'Remover ' + a.nome, onClick: function () { setAnexos(function (x) { return x.filter(function (_, j) { return j !== i; }); }); }, style: { color: '#9ca3af', cursor: 'pointer' } }, ico('x', 12))); }),
+            h('label', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 10px', borderRadius: 8, border: '1px dashed #d8b4f0', color: ROXO_ESC, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } },
+              h('input', { type: 'file', multiple: true, accept: 'image/*,application/pdf', className: 'sr-only', onChange: function (e) { addAnexo(e.target.files); e.target.value = ''; } }), ico('plus', 13), 'Nota fiscal, auto de infração ou fotos'))),
+        h(Field, { label: 'Quem paga?', req: true, hint: temContrato ? null : 'Sem contrato ativo nesta moto: só dá para registrar como custo da Tutts.' },
+          h('div', null, Segmented([['tutts', 'Tutts'], ['locatario', 'Locatário']], f.quem_paga, function (v) { if (v === 'locatario' && !temContrato) return; set('quem_paga', v); }, 'Quem paga'))),
+        f.quem_paga === 'locatario' ? h('div', { role: 'radiogroup', 'aria-label': 'Como cobrar', style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+          h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, 'Como cobrar'),
+          opcao('proxima_parcela', 'Junto da próxima parcela', proxTxt ? 'vence ' + proxTxt : 'na próxima parcela em aberto'),
+          opcao('dividir', 'Dividir em parcelas', valor > 0 ? 'em ' + f.parcelas_n + '× de ' + fR(valor / f.parcelas_n) + ' a partir da próxima parcela' : 'escolha em quantas parcelas',
+            f.forma_cobranca === 'dividir' ? h('select', { value: f.parcelas_n, onClick: function (e) { e.stopPropagation(); }, onChange: function (e) { set('parcelas_n', +e.target.value); }, 'aria-label': 'Número de parcelas', className: INPUT_CLS, style: Object.assign({}, INPUT, { width: 82, height: 34 }) },
+              [2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return h('option', { key: n, value: n }, n + '×'); })) : null),
+          opcao('pix_avulso', 'PIX avulso agora', 'envia o PIX por WhatsApp hoje')) : null,
+        f.quem_paga === 'locatario' && valor > 0 ? (sim && sim.possivel === false ? Aviso('vermelho', 'Não dá para cobrar assim', sim.motivo) :
+          h('div', { style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 12, padding: '12px 14px', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 6 } },
+            !sim ? h('span', { style: { color: '#6b7280' } }, 'Calculando...') : h(React.Fragment, null,
+              h('b', { style: { color: '#111827' } }, sim.texto || 'Cobrança simulada'),
+              (sim.linhas || []).length > 1 ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } }, sim.linhas.map(function (l) { return h('div', { key: l.numero, style: Object.assign({ fontSize: 12.5, color: '#374151' }, TAB) }, 'Parcela ' + l.numero + ' · ' + fDS(l.vencimento, true) + ': ' + fR(l.valor_atual) + ' → ', h('b', { style: { color: ROXO_ESC } }, fR(l.valor_novo))); })) : null,
+              h('span', { style: { fontSize: 12, color: '#6b7280' } }, (ct && ct.cliente_tipo === 'tutts' ? 'Motoboy Tutts: entra no abatimento do repasse; o que faltar vai por PIX. ' : '') + 'A ocorrência aparece no extrato do locatário com os anexos.')))) : null));
+  }
+
+  // ───────── Avisos de problema ─────────
+  function AvisosPanel(props) {
+    var lista = props.avisos || [];
+    var _a = useState(null), aviso = _a[0], setAviso = _a[1];
+    return h(Card, { pad: false },
+      CardHead('Avisos do locatário', null, lista.length ? lista.filter(function (a) { return a.status !== 'resolvido'; }).length + ' em aberto' : null),
+      lista.length === 0 ? Vazio('Nenhum aviso', 'Quando o locatário avisar um problema pela Central, ele aparece aqui.') :
+      lista.map(function (a) {
+        return h('div', { key: a.id, style: { display: 'flex', gap: 12, padding: '12px 16px', borderTop: '1px solid #f3f4f6', alignItems: 'flex-start' } },
+          h('span', { style: { width: 36, height: 36, borderRadius: 10, background: a.urgencia === 'parada' ? '#fef2f2' : '#fffbeb', color: a.urgencia === 'parada' ? '#dc2626' : '#d97706', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('alert', 16)),
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('div', null, h('b', null, a.tipo_label || a.tipo), a.urgencia === 'parada' ? h('span', { style: { color: '#991b1b', fontWeight: 600, fontSize: 12.5 } }, ' · moto parada') : h('span', { style: { color: '#6b7280', fontSize: 12.5 } }, ' · consegue rodar')),
+            h('div', { style: { fontSize: 12.5, color: '#374151' } }, a.descricao),
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, [fDHc(a.criado_em), a.cliente_nome, a.qtd_fotos ? a.qtd_fotos + ' foto' + (a.qtd_fotos === 1 ? '' : 's') : null].filter(Boolean).join(' · ')),
+            a.resposta ? h('div', { style: { marginTop: 6, background: '#faf7fd', borderRadius: 8, padding: '7px 10px', fontSize: 12.5 } }, h('b', { style: { color: ROXO_ESC } }, 'Resposta: '), a.resposta) : null),
+          h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 } }, Pill(a.status_label || a.status, TOM_AVISO[a.status] || 'cinza'), Btn({ small: true, onClick: function () { setAviso(a.id); }, children: a.status === 'resolvido' ? 'Ver' : 'Responder' })));
+      }),
+      aviso ? h(AvisoModal, { id: aviso, api: props.api, toast: props.toast, onClose: function () { setAviso(null); }, onSalvo: function () { setAviso(null); props.aoMudar && props.aoMudar(); } }) : null);
+  }
+  function AvisoModal(props) {
+    var _d = useState(null), a = _d[0], setA = _d[1];
+    var _r = useState(''), resp = _r[0], setResp = _r[1];
+    var _s = useState('em_atendimento'), st = _s[0], setSt = _s[1];
+    var _b = useState(false), salv = _b[0], setSalv = _b[1];
+    var _f = useState(null), foto = _f[0], setFoto = _f[1];
+    useEffect(function () { props.api('/avisos/' + props.id).then(function (r) { var x = r.aviso || r; setA(x); setResp(x.resposta || ''); setSt(x.status === 'resolvido' ? 'resolvido' : 'em_atendimento'); }).catch(function (e) { props.toast(e.message, 'error'); props.onClose(); }); }, [props.id]);
+    var salvar = function () {
+      setSalv(true);
+      props.api('/avisos/' + props.id + '/responder', { method: 'POST', body: { resposta: resp.trim(), status: st } })
+        .then(function (r) { props.toast('Resposta enviada' + (r && r.whatsapp && r.whatsapp.enviado === false ? ' (WhatsApp não enviado)' : ''), 'success'); props.onSalvo(); })
+        .catch(function (e) { props.toast(e.message, 'error'); }).then(function () { setSalv(false); });
+    };
+    return h(Modal, { titulo: a ? 'Aviso · ' + (a.tipo_label || a.tipo) : 'Aviso', onClose: props.onClose, largura: 600,
+      rodape: a ? [Btn({ key: 'c', onClick: props.onClose, children: 'Fechar' }), Btn({ key: 's', variant: 'pri', icon: 'message', disabled: salv || resp.trim().length < 2, onClick: salvar, children: salv ? 'Enviando...' : 'Responder ao locatário' })] : null },
+      !a ? Spinner('Abrindo aviso...') : h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } }, Pill(a.status_label || a.status, TOM_AVISO[a.status] || 'cinza'), a.urgencia === 'parada' ? Pill('Moto parada', 'vermelho') : Pill('Consegue rodar', 'cinza'),
+          h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, [a.cliente_nome, a.placa, fDH(a.criado_em)].filter(Boolean).join(' · '))),
+        h('div', { style: { fontSize: 13.5, color: '#111827', background: '#f9fafb', borderRadius: 10, padding: '10px 12px' } }, a.descricao),
+        (a.fotos || []).length ? h('div', { className: 'grid grid-cols-4', style: { gap: 8 } }, a.fotos.map(function (fo, i) { return h('div', { key: fo.id || i }, Thumb(fo.foto, 'Foto ' + (i + 1), function () { setFoto({ titulo: 'Foto ' + (i + 1), src: fo.foto }); })); })) : null,
+        a.lat != null && a.lng != null ? h('a', { href: 'https://www.google.com/maps?q=' + a.lat + ',' + a.lng, target: '_blank', rel: 'noopener noreferrer', style: { display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, fontWeight: 600, color: ROXO } }, ico('pin', 14), 'Ver localização no mapa (' + Number(a.lat).toFixed(5) + ', ' + Number(a.lng).toFixed(5) + ')') : null,
+        a.cliente_whatsapp ? h('a', { href: 'https://wa.me/' + soDig(a.cliente_whatsapp), target: '_blank', rel: 'noopener noreferrer', style: { display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, fontWeight: 600, color: '#166534' } }, ico('message', 14), 'Chamar no WhatsApp · ' + fTel(a.cliente_whatsapp)) : null,
+        h(Field, { label: 'Resposta para o locatário', req: true, hint: 'Aparece na Central do locatário e vai por WhatsApp.' }, TextArea({ rows: 3, value: resp, onChange: function (e) { setResp(e.target.value); }, placeholder: 'Ex.: o mecânico parceiro passa aí até 15h. Mantenha o celular ligado.' })),
+        h(Field, { label: 'Situação' }, Segmented([['em_atendimento', 'Em atendimento'], ['resolvido', 'Resolvido']], st, setSt, 'Situação do aviso'))),
+      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, onClose: function () { setFoto(null); } }) : null);
+  }
+
+  // ───────── Comparar vistorias ─────────
+  function CompararVistorias(props) {
+    var api = props.api, toast = props.toast, m = props.moto || {}, vs = (props.vistorias || []).slice().sort(function (a, b) { return String(a.criado_em).localeCompare(String(b.criado_em)); });
+    var padraoA = (vs.find(function (v) { return v.tipo === 'retirada'; }) || vs[0] || {}).id;
+    var padraoB = (vs.length > 1 ? vs[vs.length - 1] : {}).id;
+    if (padraoA === padraoB && vs.length > 1) padraoA = vs[vs.length - 2].id;
+    var _a = useState(padraoA), aId = _a[0], setAId = _a[1];
+    var _b = useState(padraoB), bId = _b[0], setBId = _b[1];
+    var _va = useState(null), A = _va[0], setA = _va[1];
+    var _vb = useState(null), B = _vb[0], setB = _vb[1];
+    var _d = useState({}), dif = _d[0], setDif = _d[1];
+    var _s = useState(false), salv = _s[0], setSalv = _s[1];
+    var _f = useState(null), foto = _f[0], setFoto = _f[1];
+    useEffect(function () { setA(null); if (aId) api('/vistorias/' + aId).then(function (r) { setA(r.vistoria); }).catch(function (e) { toast(e.message, 'error'); }); }, [aId]);
+    useEffect(function () { setB(null); setDif({}); if (bId) api('/vistorias/' + bId).then(function (r) { setB(r.vistoria); }).catch(function (e) { toast(e.message, 'error'); }); }, [bId]);
+    var rot = function (v) { return (v.tipo_label || v.tipo) + ' · ' + fDC(v.criado_em); };
+    var sel = function (val, set, exc) {
+      return Select({ value: val || '', onChange: function (e) { set(+e.target.value); }, 'aria-label': 'Vistoria', style: { width: 'auto', minWidth: 0, flex: '1 1 150px' } }, vs.map(function (v) { return h('option', { key: v.id, value: v.id, disabled: v.id === exc }, rot(v)); }));
+    };
+    var fotoDe = function (v, pos) { return ((v && v.fotos) || []).find(function (x) { return x.posicao === pos; }); };
+    var marcadas = POSICOES.filter(function (p) { return dif[p[0]] != null; });
+    var km = A && B && A.km != null && B.km != null ? B.km - A.km : null;
+    var nFotos = POSICOES.filter(function (p) { return fotoDe(A, p[0]) && fotoDe(B, p[0]); }).length;
+    var descr = marcadas.map(function (p) { return p[1] + (dif[p[0]] ? ': ' + dif[p[0]] : ''); }).join('; ');
+    var apontar = function () {
+      setSalv(true);
+      api('/vistorias/' + B.id + '/avaria', { method: 'POST', body: { descricao: 'Comparação com ' + rot(A) + ' · ' + descr } })
+        .then(function () { toast('Avaria registrada na vistoria', 'success'); props.aoMudar && props.aoMudar(); props.onApontar({ tipo: 'sinistro', quem_paga: 'locatario', descricao: 'Avaria na ' + String(B.tipo_label || B.tipo).toLowerCase() + ' de ' + fDC(B.criado_em) + ': ' + descr }); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); });
+    };
+    var aprovar = function () {
+      setSalv(true);
+      api('/vistorias/' + B.id + '/aprovar', { method: 'POST', body: {} }).then(function () { toast('Vistoria aprovada sem avaria', 'success'); props.aoMudar && props.aoMudar(); props.voltar(); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); });
+    };
+    var cab = function (v) { return v ? h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13 } }, (v.tipo_label || v.tipo) + ' · ' + fD(v.criado_em)), h('div', { style: { fontSize: 12, color: '#6b7280' } }, [v.km != null ? fN(v.km) + ' km' : null, v.origem === 'portal' ? 'locatário via Central' : 'registrada pela equipe' + (v.registrado_por_nome ? ' (' + v.registrado_por_nome + ')' : '')].filter(Boolean).join(' · '))) : Spinner(''); };
+    var img = function (f, marc) {
+      return h('button', { type: 'button', onClick: f ? function () { setFoto({ titulo: 'Foto', src: f.foto }); } : null, style: { position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden', background: '#f3f4f6', border: marc ? '2px solid #dc2626' : '1px solid #e5e7eb', boxShadow: marc ? '0 0 0 3px #fecaca' : 'none', cursor: f ? 'zoom-in' : 'default', display: 'grid', placeItems: 'center', color: '#9ca3af', padding: 0 } },
+        f ? h('img', { src: f.foto || f.thumb, alt: '', loading: 'lazy', style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }) : h('span', { style: { fontSize: 12 } }, 'Sem foto'),
+        f && f.capturada_em ? h('span', { style: { position: 'absolute', left: 8, bottom: 8, background: 'rgba(17,24,39,.65)', color: '#fff', fontSize: 11, padding: '2px 7px', borderRadius: 99 } }, fDHc(f.capturada_em)) : null);
+    };
+    if (vs.length < 2) return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, voltar(props.voltar, m.modelo + ' · ' + m.placa), Vazio('É preciso ter duas vistorias', 'Registre a vistoria de retirada e a de devolução (ou revisão) para comparar foto a foto.'));
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      voltar(props.voltar, m.modelo + ' · ' + m.placa),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' } },
+        h('div', null, h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, 'Comparar vistorias'), h('p', { style: { margin: '3px 0 0', fontSize: 13, color: '#6b7280' } }, 'Foto a foto, na mesma posição. Marque onde há diferença.')),
+        h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', flex: '0 1 420px', minWidth: 0 } }, sel(aId, setAId, bId), h('button', { type: 'button', 'aria-label': 'Inverter', onClick: function () { var x = aId; setAId(bId); setBId(x); }, style: { width: 34, height: 34, borderRadius: 8, display: 'grid', placeItems: 'center', color: '#6b7280', cursor: 'pointer' } }, ico('shuffle', 16)), sel(bId, setBId, aId))),
+      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] items-start' },
+        h(Card, { pad: false },
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-[170px_1fr_1fr]', style: { gap: 12, padding: '12px 16px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280', fontWeight: 600 } }, h('div', { className: 'hidden md:block' }, 'Posição'), cab(A), cab(B)),
+          POSICOES.map(function (p) {
+            var marc = dif[p[0]] != null;
+            return h('div', { key: p[0], className: 'grid grid-cols-2 md:grid-cols-[170px_1fr_1fr]', style: { gap: 12, padding: '12px 16px', borderTop: '1px solid #f3f4f6', alignItems: 'center', background: marc ? '#fef2f2' : '#fff' } },
+              h('div', { className: 'col-span-2 md:col-span-1', style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+                h('b', { style: { fontSize: 13 } }, p[1]),
+                marc ? h('input', { value: dif[p[0]], autoFocus: true, placeholder: 'O que mudou?', onChange: function (e) { var v = e.target.value; setDif(function (x) { var n = Object.assign({}, x); n[p[0]] = v; return n; }); }, className: INPUT_CLS, style: Object.assign({}, INPUT, { height: 32, fontSize: 12.5, borderColor: '#fecaca' }) }) : h('span', { style: { fontSize: 12, color: '#166534' } }, 'Sem diferença'),
+                h('button', { type: 'button', onClick: function () { setDif(function (x) { var n = Object.assign({}, x); if (marc) delete n[p[0]]; else n[p[0]] = ''; return n; }); }, className: 'hover:underline', style: { alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, color: marc ? '#6b7280' : '#991b1b', cursor: 'pointer' } }, marc ? 'Desmarcar' : 'Marcar diferença')),
+              img(fotoDe(A, p[0]), false), img(fotoDe(B, p[0]), marc));
+          })),
+        h('div', { style: { position: 'sticky', top: 84 } },
+          h(Card, null,
+            h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+              h('b', { style: { fontSize: 15 } }, 'Resumo'),
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 13 } }, h('span', { style: { color: '#6b7280' } }, 'Fotos comparadas'), h('b', null, nFotos + ' de 6')),
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 13 } }, h('span', { style: { color: '#6b7280' } }, 'Km rodados'), h('b', { style: TAB }, km != null ? fN(km) + ' km' : '—')),
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 13 } }, h('span', { style: { color: '#6b7280' } }, 'Avarias novas'), h('b', { style: { color: marcadas.length ? '#991b1b' : '#166534' } }, marcadas.length)),
+              marcadas.length ? h('div', { style: { background: '#fef2f2', color: '#991b1b', borderRadius: 10, padding: '8px 10px', fontSize: 12.5 } }, marcadas.map(function (p) { return h('div', { key: p[0] }, h('b', null, p[1] + ' '), dif[p[0]] ? '· ' + dif[p[0]] : ''); })) : null,
+              B ? Btn({ variant: 'perigoCheio', icon: 'alert', disabled: !marcadas.length || salv, onClick: apontar, children: 'Apontar avaria e cobrar' }) : null,
+              B && B.status === 'aguardando' ? Btn({ icon: 'check', disabled: !!marcadas.length || salv, onClick: aprovar, children: 'Aprovar ' + String(B.tipo_label || 'vistoria').toLowerCase() + ' sem avaria' }) : null,
+              h('div', { style: { fontSize: 12, color: '#6b7280' } }, '"Apontar avaria e cobrar" registra a avaria na vistoria e abre a Nova ocorrência já preenchida.'))))),
+      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, onClose: function () { setFoto(null); } }) : null);
+  }
+
+  // ───────── Régua de cobrança (Configurações) ─────────
+  var REGUA_PADRAO = {
+    d_menos1: { ativo: true, hora: '07:00', mensagem: 'Lembrete: amanhã vence a parcela {{parcela}} da sua moto ({{valor}}). O PIX já está disponível:\n{{pix}}' },
+    d0: { ativo: true, hora: '07:00', mensagem: 'Sua parcela {{parcela}} vence hoje ({{vencimento}}). Valor: {{valor}}.\nPIX copia e cola:\n{{pix}}' },
+    d1: { ativo: true, hora: '07:00', mensagem: 'A parcela {{parcela}} está em atraso há {{dias_atraso}} dia(s). Juros: {{juros}}. Valor atualizado: {{valor}}.\nPIX:\n{{pix}}' },
+    retomada: { ativo: true }
+  };
+  var VARS_EXEMPLO = { nome: 'José', parcela: '14/104', valor: 'R$ 263,00', vencimento: 'seg, 26/10', pix: '00020126580014br.gov.bcb.pix0136a1f4…6304B2C1', dias_atraso: '2', juros: 'R$ 10,52', contrato: 'LM-2026-0001' };
+  function ReguaCobranca(props) {
+    var cfg = props.cfg, regua = Object.assign({}, REGUA_PADRAO, cfg.regua || {});
+    var _e = useState('d_menos1'), etapa = _e[0], setEtapa = _e[1];
+    var _p = useState(null), previa = _p[0], setPrevia = _p[1];
+    var taRef = useRef(null);
+    var setEt = function (k, campo, v) { var n = Object.assign({}, regua); n[k] = Object.assign({}, n[k] || {}); n[k][campo] = v; props.set('regua', n); };
+    var vars = cfg.variaveis_regua || ['nome', 'parcela', 'valor', 'vencimento', 'pix', 'dias_atraso', 'juros', 'contrato'];
+    var ET = [
+      ['d_menos1', 'D-1', 'Lembrete na véspera', 'Envia o PIX um dia antes. Motoboy Tutts recebe o aviso de abatimento no repasse.', true],
+      ['d0', 'D0', 'PIX + cobrança no vencimento', 'Emite o PIX no Stark e envia. Baixa automática pelo webhook.'],
+      ['d1', 'D+1', 'Atraso: juros + bloqueio + reenvio', 'Juros de ' + String(cfg.juros_dia_pct != null ? cfg.juros_dia_pct : 2).replace('.', ',') + '% ao dia sobre o saldo em aberto. Bloqueio sinalizado no rastreador.'],
+      ['retomada', 'D+' + (cfg.dias_retomada || 3), 'Retomada automática', 'Contrato e moto vão para Em retomada e uma ocorrência é aberta.']
+    ];
+    var atual = regua[etapa] || {};
+    var msg = atual.mensagem || '';
+    var dMsg = useDebounce(msg, 450);
+    useEffect(function () {
+      setPrevia(null);
+      if (etapa === 'retomada' || !dMsg) return;
+      props.api('/config/regua/previa', { method: 'POST', body: { mensagem: dMsg } }).then(function (r) { setPrevia(r && r.texto); }).catch(function () { setPrevia(null); });
+    }, [dMsg, etapa]);
+    var local = String(msg).replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function (all, k) { return VARS_EXEMPLO[k] != null ? VARS_EXEMPLO[k] : all; });
+    var inserir = function (v) {
+      var ta = taRef.current, txt = '{{' + v + '}}';
+      if (ta && typeof ta.selectionStart === 'number') { var a = ta.selectionStart, b = ta.selectionEnd; setEt(etapa, 'mensagem', msg.slice(0, a) + txt + msg.slice(b)); setTimeout(function () { try { ta.focus(); ta.selectionStart = ta.selectionEnd = a + txt.length; } catch (e) { /* ok */ } }, 0); }
+      else setEt(etapa, 'mensagem', msg + txt);
+    };
+    var horas = []; for (var hh = 6; hh <= 21; hh++) horas.push(p2(hh) + ':00');
+    var etAtual = ET.find(function (x) { return x[0] === etapa; });
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      h(Card, null,
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 } }, h('b', { style: { fontSize: 15 } }, 'Régua de cobrança'), h('span', { style: { fontSize: 13, color: '#6b7280' } }, 'O que o sistema faz sozinho em cada momento da parcela. Clique numa etapa para editar a mensagem.')),
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4', style: { gap: 14, position: 'relative' } }, ET.map(function (e, i) {
+          var on = etapa === e[0], cfgE = regua[e[0]] || {};
+          return h('div', { key: e[0], style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+            h('div', { style: { display: 'flex', alignItems: 'center' } },
+              h('span', { style: { width: 44, height: 44, borderRadius: 99, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12.5, flex: 'none', background: on ? ROXO : '#fff', color: on ? '#fff' : ROXO_ESC, border: on ? '0' : '1.5px solid #d8b4f0', boxShadow: on ? '0 0 0 4px #f3e8fb' : 'none' } }, e[1]),
+              i < ET.length - 1 ? h('span', { className: 'hidden xl:block', style: { flex: 1, height: 2, background: '#e9d5f9', marginLeft: 8 } }) : null),
+            h('div', { role: 'button', tabIndex: 0, onClick: function () { setEtapa(e[0]); }, onKeyDown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setEtapa(e[0]); } },
+              style: { border: on ? '1.5px solid ' + ROXO : '1px solid #e5e7eb', background: on ? '#faf7fd' : '#fff', borderRadius: 12, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, flex: 1, opacity: cfgE.ativo === false ? 0.6 : 1 } },
+              h('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', justifyContent: 'space-between' } }, h('b', { style: { fontSize: 13.5 } }, e[2]), Toggle(cfgE.ativo !== false, function (v) { setEt(e[0], 'ativo', v); }, 'Ativar ' + e[2])),
+              e[4] ? h('span', { style: { alignSelf: 'flex-start', fontSize: 10.5, fontWeight: 700, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '0 6px' } }, 'NOVO') : null,
+              h('span', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.4 } }, e[3]),
+              e[0] !== 'retomada' ? h('span', { style: { fontSize: 12.5, color: '#374151', display: 'inline-flex', gap: 6, alignItems: 'center' } }, ico('clock', 13), (cfgE.hora || '07:00') + ' · ', ico('message', 13), 'WhatsApp') : h('span', { style: { fontSize: 12.5, color: '#374151' } }, 'Após ' + (cfg.dias_retomada || 3) + ' dias de atraso')));
+        }))),
+      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] items-start' },
+        h(Card, null,
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } }, h('b', { style: { fontSize: 15 } }, etAtual[1] + ' · ' + etAtual[2]), Pill(atual.ativo === false ? 'Desligada' : 'Ativa', atual.ativo === false ? 'cinza' : 'verde')),
+            etapa === 'retomada' ? Aviso('ambar', 'Sem mensagem própria', 'Ao atingir ' + (cfg.dias_retomada || 3) + ' dias de atraso, o contrato e a moto entram em retomada e o locatário recebe o aviso padrão. O número de dias fica em Juros e prazos.') :
+            h(React.Fragment, null,
+              h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
+                h(Field, { label: 'Horário de envio' }, Select({ value: atual.hora || '07:00', onChange: function (ev) { setEt(etapa, 'hora', ev.target.value); } }, horas.map(function (x) { return h('option', { key: x, value: x }, x); }))),
+                h(Field, { label: 'Canal' }, Input({ readOnly: true, value: 'WhatsApp', style: { background: '#f9fafb' } })),
+                h(Field, { label: 'Enviar para' }, Input({ readOnly: true, value: 'Todos os contratos ativos', style: { background: '#f9fafb' } }))),
+              h(Field, { label: 'Mensagem' }, h('textarea', { ref: taRef, rows: 6, value: msg, onChange: function (ev) { setEt(etapa, 'mensagem', ev.target.value); }, className: INPUT_CLS, style: Object.assign({}, INPUT, { height: 'auto', padding: 12, lineHeight: 1.5, resize: 'vertical' }) })),
+              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' } }, h('span', { style: { fontSize: 12, color: '#6b7280' } }, 'Inserir variável:'),
+                vars.map(function (v) { return h('button', { key: v, type: 'button', onClick: function () { inserir(v); }, style: { fontFamily: MONO, fontSize: 11.5, padding: '3px 8px', borderRadius: 6, background: '#faf7fd', border: '1px solid #e9d5f9', color: ROXO_ESC, cursor: 'pointer' } }, '{{' + v + '}}'); }))),
+            h('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12.5, color: '#6b7280', background: '#f9fafb', borderRadius: 10, padding: '10px 12px' } }, ico('lock', 14, { marginTop: 2 }), h('span', null, 'Juros (' + String(cfg.juros_dia_pct != null ? cfg.juros_dia_pct : 2).replace('.', ',') + '% ao dia) e dias para retomada (' + (cfg.dias_retomada || 3) + ') ficam em ', h('b', null, 'Juros e prazos'), '. Mudanças valem só para contratos novos.')))),
+        etapa === 'retomada' ? null : h('div', { style: { background: '#e7ded4', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, position: 'sticky', top: 84 } },
+          h('div', { style: { display: 'flex', gap: 6, alignItems: 'center', fontSize: 12.5, fontWeight: 600, color: '#374151' } }, ico('message', 14, { color: '#16a34a' }), 'Prévia · como o locatário recebe'),
+          h('div', { style: { background: '#fff', borderRadius: '4px 12px 12px 12px', padding: '10px 12px', fontSize: 13.5, color: '#111827', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', boxShadow: '0 1px 1px rgba(0,0,0,.08)' } },
+            previa || local || h('span', { style: { color: '#9ca3af' } }, 'Escreva a mensagem ao lado.'),
+            h('div', { style: { textAlign: 'right', fontSize: 10.5, color: '#9ca3af', marginTop: 4 } }, atual.hora || '07:00')),
+          h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, previa ? 'Variáveis preenchidas com uma parcela real.' : 'Variáveis preenchidas com dados de exemplo.'))));
+  }
+
 
   // ───────────────────────── Componente principal ─────────────────────────
   var ABAS = [['painel', 'Painel / Frota', 'chart'], ['precadastros', 'Pré-cadastros', 'users'], ['motos', 'Motos', 'bike'], ['contratos', 'Contratos', 'filetext'], ['vistorias', 'Vistorias', 'camera'], ['config', 'Configurações', 'settings']];
@@ -1480,10 +2022,10 @@
     var comum = { api: api, toast: toastFn, nav: nav, aoMudar: carregarPainel, recarregarPainel: carregarPainel };
 
     var conteudo;
-    if (view.tela === 'moto') conteudo = h(MotoDetalhe, Object.assign({ key: 'm' + (view.id || 'novo'), id: view.id, de: view.de }, comum));
+    if (view.tela === 'moto') conteudo = h(MotoDetalhe, Object.assign({ key: 'm' + (view.id || 'novo') + (view.secao || ''), id: view.id, de: view.de, secao: view.secao }, comum)); // LOCACAO_V2: secao
     else if (view.tela === 'contrato') conteudo = h(ContratoDetalhe, Object.assign({ key: 'c' + view.id, id: view.id, de: view.de }, comum));
     else if (view.tela === 'novoContrato') conteudo = h(NovoContratoView, Object.assign({ key: 'nc' + (view.cliente_id || ''), cliente_id: view.cliente_id }, comum));
-    else if (view.tab === 'precadastros') conteudo = h(PrecadastrosView, Object.assign({ abrirConvite: function () { setConvite(true); } }, comum));
+    else if (view.tab === 'precadastros') conteudo = h(PrecadastrosView, Object.assign({ key: 'pc' + (view.sel || ''), selecionar: view.sel || null, abrirConvite: function () { setConvite(true); } }, comum)); // LOCACAO_V2: sel
     else if (view.tab === 'motos') conteudo = h(MotosView, comum);
     else if (view.tab === 'contratos') conteudo = h(ContratosView, comum);
     else if (view.tab === 'vistorias') conteudo = h(VistoriasView, comum);

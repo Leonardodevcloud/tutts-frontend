@@ -9349,7 +9349,8 @@ const hideLoadingScreen = () => {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        codProfissional: p.cod,
+                        // LOCACAO_V2: "Código ou CPF" — CPF (11 dígitos, com ou sem pontuação) vai só com os dígitos
+                        codProfissional: /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(String(p.cod || "").trim()) ? String(p.cod).replace(/\D/g, "") : p.cod,
                         password: p.password
                     })
                 });
@@ -10090,7 +10091,7 @@ const hideLoadingScreen = () => {
             className: "text-2xl font-bold text-gray-800"
         }, _LT && "login" === (p.view || "login") ? (new Date().getHours() < 12 ? "Bom dia, bem-vindo." : new Date().getHours() < 18 ? "Boa tarde, bem-vindo." : "Boa noite, bem-vindo.") : "Central do Entregador Tutts"), React.createElement("p", {
             className: "text-gray-500 text-sm"
-        }, _LT && "login" === (p.view || "login") ? "Entre com seu código profissional e senha." : "Solicitações e Saque Emergencial")), "register" === p.view ? React.createElement("div", {
+        }, _LT && "login" === (p.view || "login") ? "Entre com seu código profissional ou CPF e senha." : "Solicitações e Saque Emergencial")), "register" === p.view ? React.createElement("div", {
             className: "space-y-4"
         }, ue && React.createElement("div", {
             className: "bg-blue-50 border border-blue-200 rounded-lg p-3 text-center"
@@ -10190,17 +10191,23 @@ const hideLoadingScreen = () => {
                 view: "login"
             }),
             className: "w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800"
-        }, "← Voltar ao Login")) : _LT ? React.createElement(_LT.Form, {
+        }, "← Voltar ao Login")) : _LT ? React.createElement(React.Fragment, null, React.createElement(_LT.Form, {
             // LOGIN_V2: mesmo estado/handlers do login antigo (p/x/ql), so a casca muda
             cod: p.cod || "", senha: p.password || "",
             onCod: (v) => x({ ...p, cod: v }), onSenha: (v) => x({ ...p, password: v }),
             loading: c, erro: i && i.type === "error" ? i.message : null,
-            onEntrar: ql, onCriar: () => x({ view: "register" }), onEsqueci: () => x({ view: "recuperar" })
-        }) : React.createElement("div", {
+            onEntrar: ql, onCriar: () => x({ view: "register" }), onEsqueci: () => x({ view: "recuperar" }),
+            // LOCACAO_V2: primeiro acesso do locatário (CPF → código no WhatsApp → senha)
+            onPrimeiroAcesso: typeof window.LocPrimeiroAcesso !== 'undefined' ? () => x({ ...p, primeiroAcesso: true }) : null
+        }), p.primeiroAcesso && typeof window.LocPrimeiroAcesso !== 'undefined' && React.createElement(window.LocPrimeiroAcesso, {
+            API_URL: API_URL, cpf: p.cod || "",
+            onClose: () => x({ ...p, primeiroAcesso: false }),
+            onPronto: (cpf) => x({ ...p, primeiroAcesso: false, cod: cpf, password: "" })
+        })) : React.createElement("div", {
             className: "space-y-4"
         }, React.createElement("input", {
             type: "text",
-            placeholder: "Código Profissional",
+            placeholder: "Código ou CPF", // LOCACAO_V2
             value: p.cod || "",
             onChange: e => x({
                 ...p,
@@ -10235,6 +10242,20 @@ const hideLoadingScreen = () => {
             className: "text-gray-500 hover:underline"
         }, "Esqueci minha senha")))));
         }
+        // LOCACAO_V2: locatário externo (role 'locatario') só enxerga a área "Minha moto", em tela cheia
+        if ("locatario" === l.role) {
+            if (typeof window.ModuloMinhaMotoComponent !== 'undefined') {
+                return React.createElement(React.Fragment, null,
+                    i && React.createElement(Toast, i),
+                    React.createElement(window.ModuloMinhaMotoComponent, {
+                        usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja,
+                        embutido: false, onLogout: () => o(null)
+                    }));
+            }
+            return React.createElement("div", { className: "min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center bg-gray-50" },
+                React.createElement("p", { className: "text-gray-700" }, "Não foi possível carregar a área do locatário. Atualize a página."),
+                React.createElement("button", { onClick: () => o(null), className: "h-10 px-4 rounded-[10px] bg-purple-900 text-white font-semibold" }, "Sair"));
+        }
         // 🆕 2026-05: GATE DE CADASTRO — motoboy só acessa após selfie + WhatsApp.
         // Renderizado por cima de tudo. Sem botão de pular. Só some quando completa.
         if ("user" === l.role && l.cadastro_completo !== true && typeof window.GateCadastro !== 'undefined') {
@@ -10250,6 +10271,15 @@ const hideLoadingScreen = () => {
             });
         }
         if ("user" === l.role) {
+            // LOCACAO_V2: motoboy Tutts com moto alugada → "Minha moto" dentro do app
+            if ("minha-moto" === Ee && typeof window.ModuloMinhaMotoComponent !== 'undefined') {
+                return React.createElement(React.Fragment, null,
+                    i && React.createElement(Toast, i),
+                    React.createElement(window.ModuloMinhaMotoComponent, {
+                        usuario: l, API_URL: API_URL, fetchAuth: fetchAuth, showToast: ja,
+                        embutido: true, onVoltar: () => he("home"), onLogout: () => o(null)
+                    }));
+            }
             // Se está no módulo de Filas, renderizar o módulo
             if ("filas" === Ee) {
                 return React.createElement("div", {
@@ -11091,6 +11121,11 @@ const hideLoadingScreen = () => {
                     );
                 })()
             ),
+
+            // LOCACAO_V2: card "Minha moto" (só aparece se o motoboy tem moto alugada)
+            typeof window.MinhaMotoCard !== 'undefined' && React.createElement(window.MinhaMotoCard, {
+                API_URL: API_URL, fetchAuth: fetchAuth, onAbrir: () => he("minha-moto")
+            }),
 
             // ===== STATUS ROW: Saldo (dominante) + Score + OS no período =====
             React.createElement("div", {

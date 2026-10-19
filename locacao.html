@@ -788,7 +788,10 @@
     if (m) return h(Cadastro, { token: decodeURIComponent(m[1]) });
     m = /^\/moto\/d\/([^/]+)$/.exec(path);
     if (m) return h(Documentos, { token: decodeURIComponent(m[1]) });
-    return h(Portal);
+    // LOCACAO_V2: o portal separado saiu — o locatário entra pela Central (CPF + senha)
+    return h(Mensagem, { tom: 'roxo', icone: 'ok', titulo: 'A área do locatário agora fica na Central',
+      texto: 'Entre na Central Tutts com seu CPF e senha para ver sua moto, pagar parcelas e registrar vistorias. Primeiro acesso? Use "Primeiro acesso?" na tela de login.',
+      acao: h('a', { className: 'btn pri', href: '/', style: { textDecoration: 'none', marginTop: 6 } }, 'Ir para a Central') });
   }
   ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 })();

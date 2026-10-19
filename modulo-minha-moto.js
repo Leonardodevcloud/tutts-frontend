@@ -1,0 +1,796 @@
+/* LOCACAO_V2: "Minha moto" — área do locatário DENTRO da Central (mesmo login e app).
+   - window.ModuloMinhaMotoComponent: tela cheia do locatário (role 'locatario') ou módulo do
+     motoboy Tutts com moto alugada (role 'user', id 'minha-moto', embutido).
+   - window.MinhaMotoCard: card compacto para a home do motoboy (some se não houver contrato).
+   - window.LocPrimeiroAcesso: modal do 1º acesso do locatário na tela de login (CPF → código → senha).
+   API: ${API_URL}/locacao-minha (Bearer da Central) e ${API_URL}/locacao-publico/primeiro-acesso/*. */
+(function () {
+  'use strict';
+  var h = React.createElement;
+  var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef, useCallback = React.useCallback;
+  var ROXO = '#770fa8', ROXO_ESC = '#5d0b85';
+  var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  var POSICOES = [['frente', 'Frente'], ['traseira', 'Traseira'], ['lateral_esq', 'Lateral esq.'], ['lateral_dir', 'Lateral dir.'], ['painel', 'Painel/hodômetro'], ['pneus', 'Pneus']];
+  var TIPOS_VIST = [['retirada', 'Retirada'], ['revisao', 'Revisão'], ['periodica', 'Periódica'], ['devolucao', 'Devolução']];
+  var TONS = { verde: ['#f0fdf4', '#166534'], ambar: ['#fffbeb', '#92400e'], vermelho: ['#fef2f2', '#991b1b'], azul: ['#eff6ff', '#1e40af'], roxo: ['#f3e8fb', '#5d0b85'], cinza: ['#f3f4f6', '#374151'] };
+  var TOM_PARC = { a_vencer: 'azul', vence_hoje: 'azul', atrasada: 'vermelho', paga: 'verde', cancelada: 'cinza', em_aberto: 'ambar' };
+  var TOM_SIT = { em_dia: 'verde', atrasada: 'ambar', em_retomada: 'vermelho', quitado: 'roxo', aguardando_assinatura: 'azul', encerrado: 'cinza' };
+  var TOM_VIST = { aguardando: 'ambar', aprovada: 'verde', com_avaria: 'vermelho' };
+  var ROT_VIST = { aguardando: 'Em análise', aprovada: 'Aprovada', com_avaria: 'Com avaria' };
+  var TOM_AVISO = { aberto: 'ambar', em_atendimento: 'azul', resolvido: 'verde' };
+  var TIPOS_AVISO = [['pneu', 'Pneu furado', 'target'], ['pane', 'Pane / não liga', 'zap'], ['batida', 'Batida', 'alert'], ['roubo', 'Roubo ou furto', 'shield'], ['outro', 'Outro', 'help']];
+
+  // ───── estilo (prefixo mm-) ─────
+  var CSS = [
+    '.mm{font-family:Inter,system-ui,-apple-system,sans-serif;color:#111827;font-size:14px;background:#f9fafb;min-height:100vh}',
+    '.mm *{box-sizing:border-box}',
+    '.mm button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}',
+    '.mm button:disabled{cursor:not-allowed}',
+    '.mm input,.mm textarea{font:inherit;color:#111827}',
+    '.mm-wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}',
+    '.mm-top{background:linear-gradient(110deg,#26093a,#3a1556 55%,#5d0b85);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}',
+    '.mm-logo{width:34px;height:34px;border-radius:9px;background:#fff;color:#5d0b85;display:grid;place-items:center;font-family:Sora,Inter,sans-serif;font-weight:800;font-size:16px;flex:none}',
+    '.mm-av{width:32px;height:32px;border-radius:99px;background:#f3e8fb;color:#5d0b85;font-weight:700;font-size:12px;display:grid;place-items:center}',
+    '.mm-main{padding:16px 16px 96px;display:flex;flex-direction:column;gap:12px;flex:1}',
+    '.mm-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}',
+    '.mm-h1{margin:0;font-family:Sora,Inter,sans-serif;font-size:21px;font-weight:700}',
+    '.mm-sub{margin:0;color:#6b7280;font-size:13px;line-height:1.45}',
+    '.mm-sora{font-family:Sora,Inter,sans-serif}',
+    '.mm-mono{font-family:ui-monospace,Menlo,monospace}',
+    '.mm-num{font-variant-numeric:tabular-nums}',
+    '.mm-btn{height:48px;border-radius:12px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;width:100%}',
+    '.mm-btn.pri{background:#770fa8;color:#fff}',
+    '.mm-btn.pri:disabled{background:#d8b4f0}',
+    '.mm-btn.sec{background:#fff;color:#374151;border:1px solid #e5e7eb}',
+    '.mm-btn.out{background:#fff;color:#5d0b85;border:1.5px solid #770fa8}',
+    '.mm-lnk{color:#770fa8;font-weight:600;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:4px}',
+    '.mm-pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}',
+    '.mm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #f3f4f6;font-size:13.5px}',
+    '.mm-inp{height:46px;padding:0 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;width:100%;min-width:0;font-size:15px}',
+    'textarea.mm-inp{height:auto;padding:10px 12px;resize:vertical;line-height:1.45}',
+    '.mm-inp:focus{outline:none;border-color:#770fa8;box-shadow:0 0 0 3px #f3e8fb}',
+    '.mm-seg{display:grid;gap:8px}',
+    '.mm-seg button{height:44px;border-radius:10px;font-weight:600;color:#374151;font-size:13.5px;border:1px solid #e5e7eb;background:#fff}',
+    '.mm-seg button[aria-checked="true"]{border:1.5px solid #770fa8;color:#5d0b85;background:#faf7fd;font-weight:700}',
+    '.mm-seg.perigo button[aria-checked="true"]{border-color:#dc2626;color:#991b1b;background:#fef2f2}',
+    '.mm-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:20}',
+    '.mm-nav>div{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}',
+    '.mm-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#6b7280;padding:6px 0}',
+    '.mm-nav button[aria-current="page"]{color:#770fa8;font-weight:700}',
+    '.mm-foto{aspect-ratio:1/1;border-radius:12px;position:relative;overflow:hidden;display:grid;place-items:center;width:100%}',
+    '.mm-foto img{width:100%;height:100%;object-fit:cover;display:block}',
+    '.mm-ov{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:90;display:flex;align-items:flex-end;justify-content:center}',
+    '.mm-sheet{background:#fff;width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}',
+    '@media(min-width:640px){.mm-ov{align-items:center}.mm-sheet{border-radius:18px}}',
+    '.mm-spin{width:28px;height:28px;border-radius:99px;border:3px solid #e9d5f9;border-top-color:#770fa8;animation:mmsp .8s linear infinite}',
+    '@keyframes mmsp{to{transform:rotate(360deg)}}',
+    '@media (prefers-reduced-motion: reduce){.mm-spin{animation-duration:2s}}',
+    '.mm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}',
+    '.mm :focus-visible{outline:2px solid #770fa8;outline-offset:2px}',
+    '.mm-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:95;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.2)}',
+    '.mm-range{width:100%;accent-color:#770fa8}'
+  ].join('\n');
+  function injetarCss() {
+    if (typeof document === 'undefined' || document.getElementById('mm-css-v2')) return;
+    var st = document.createElement('style'); st.id = 'mm-css-v2'; st.textContent = CSS; document.head.appendChild(st);
+  }
+
+  // ───── utilitários ─────
+  function ico(nome, s, extra) { return h('svg', { className: 'ico', 'aria-hidden': 'true', style: Object.assign({ width: s || 18, height: s || 18, fontSize: s || 18, flex: 'none' }, extra || {}) }, h('use', { href: '#i-' + nome })); }
+  function pontos(s) { return h('svg', { width: s || 22, height: s || 22, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': 'true' }, h('circle', { cx: 5, cy: 12, r: 1.8 }), h('circle', { cx: 12, cy: 12, r: 1.8 }), h('circle', { cx: 19, cy: 12, r: 1.8 })); }
+  function dig(s) { return String(s || '').replace(/\D/g, ''); }
+  function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  function fR(v) { return 'R$ ' + num(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function pd(s) { if (!s) return null; if (s instanceof Date) return s; var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s)); if (m) return new Date(+m[1], +m[2] - 1, +m[3]); var d = new Date(s); return isNaN(d) ? null : d; }
+  function fD(s) { var d = pd(s); return d ? p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() : '—'; }
+  function fDC(s) { var d = pd(s); return d ? p2(d.getDate()) + '/' + p2(d.getMonth() + 1) : '—'; }
+  function fDS(s) { var d = pd(s); return d ? DIAS[d.getDay()] + ', ' + fDC(d) : '—'; }
+  function fHM(s) { var d = pd(s); return d ? p2(d.getHours()) + ':' + p2(d.getMinutes()) : ''; }
+  function mCPF(v) { var d = dig(v).slice(0, 11); return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); }
+  function cpfOk(v) {
+    var c = dig(v); if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+    for (var t = 9; t < 11; t++) { var s = 0; for (var i = 0; i < t; i++) s += +c[i] * (t + 1 - i); var r = (s * 10) % 11 % 10; if (r !== +c[t]) return false; }
+    return true;
+  }
+  function iniciais(nome) { var p = String(nome || '').trim().split(/\s+/); return (((p[0] || '')[0] || '') + ((p.length > 1 ? p[p.length - 1][0] : '') || '')).toUpperCase(); }
+  function lerFoto(file, max, q) {
+    return new Promise(function (res, rej) {
+      if (!file) return rej(new Error('Sem arquivo'));
+      var fr = new FileReader();
+      fr.onerror = function () { rej(new Error('Não deu para ler a foto. Tente de novo.')); };
+      fr.onload = function () {
+        if (!/^image\//.test(file.type)) return res(fr.result);
+        var img = new Image();
+        img.onload = function () {
+          var M = max || 1280, k = Math.min(1, M / Math.max(img.naturalWidth, img.naturalHeight));
+          var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          try { res(c.toDataURL('image/jpeg', q || 0.8)); } catch (e) { res(fr.result); }
+        };
+        img.onerror = function () { res(fr.result); };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function copiar(txt) {
+    return new Promise(function (res) {
+      try { if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(txt).then(function () { res(true); }, fb); return; } } catch (e) { /* segue */ }
+      fb();
+      function fb() { var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } document.body.removeChild(ta); res(ok); }
+    });
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function imprimirHtml(titulo, corpo) {
+    var w = window.open('', '_blank');
+    if (!w) return false;
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(titulo) + '</title><style>' +
+      'body{font-family:Inter,Arial,sans-serif;color:#111827;margin:32px;font-size:13px}h1{font-size:18px;margin:0 0 4px;color:#3a1556}' +
+      '.sub{color:#6b7280;margin:0 0 18px}table{width:100%;border-collapse:collapse}td,th{padding:8px 6px;border-bottom:1px solid #e5e7eb;text-align:left}' +
+      'th{font-size:11px;text-transform:uppercase;color:#6b7280}.r{text-align:right}.tot{font-weight:700;font-size:15px}.box{border:1px solid #e5e7eb;border-radius:10px;padding:16px;max-width:520px}' +
+      '.mono{font-family:ui-monospace,Menlo,monospace}@media print{button{display:none}}</style></head><body>' + corpo +
+      '<p style="margin-top:24px"><button onclick="window.print()" style="padding:10px 16px;border-radius:8px;border:0;background:#770fa8;color:#fff;font-weight:700;cursor:pointer">Imprimir / salvar PDF</button></p></body></html>');
+    w.document.close();
+    return true;
+  }
+
+  function criarApi(props) {
+    var base = (props.API_URL || window.API_URL || '') ;
+    var fa = props.fetchAuth || window.fetchAuth;
+    return function (path, opts) {
+      opts = opts || {};
+      var init = { method: opts.method || 'GET', headers: { 'Content-Type': 'application/json' } };
+      if (opts.body !== undefined && init.method !== 'GET') init.body = JSON.stringify(opts.body);
+      var url = (opts.publico ? base + '/locacao-publico' : base + '/locacao-minha') + path;
+      var p = (fa && !opts.publico) ? fa(url, init) : fetch(url, init);
+      return p.then(function (res) {
+        if (opts.raw) {
+          if (!res.ok) return res.json().catch(function () { return {}; }).then(function (j) { var e = new Error(j.error || 'Erro ' + res.status); e.status = res.status; throw e; });
+          return res;
+        }
+        return res.text().then(function (t) {
+          var j = {}; try { j = t ? JSON.parse(t) : {}; } catch (e) { j = {}; }
+          if (!res.ok) { var e = new Error(j.error || j.erro || 'Algo deu errado (' + res.status + '). Tente de novo.'); e.status = res.status; e.data = j; throw e; }
+          return j;
+        });
+      }, function () { var e = new Error('Sem conexão. Confira a internet e tente de novo.'); e.status = 0; throw e; });
+    };
+  }
+
+  // ───── ilustração da moto (mesma do módulo da Central) ─────
+  var MotoArte = (function () {
+    var CORES = [[/vermelh|vinho|bord/, '#c81e1e'], [/pret|black|grafit/, '#2b2f36'], [/branc|perol/, '#f3f4f6'], [/prat|cinz|chumbo/, '#a1a7b0'],
+      [/azul/, '#1d4ed8'], [/amarel|dourad/, '#eab308'], [/verde/, '#15803d'], [/laranj/, '#f67602'], [/rox|lil/, '#770fa8'], [/marrom|bege/, '#92400e']];
+    function corHex(cor) { var t = String(cor || '').toLowerCase(); for (var i = 0; i < CORES.length; i++) if (CORES[i][0].test(t)) return CORES[i][1]; return '#9ca3af'; }
+    function escuro(hex) { var x = hex.replace('#', ''); function p(i) { var v = Math.round(parseInt(x.slice(i, i + 2), 16) * 0.72).toString(16); return v.length < 2 ? '0' + v : v; } return '#' + p(0) + p(2) + p(4); }
+    function roda(cx, cy, r) {
+      var s = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#1f2937" stroke-width="' + (r * 0.34).toFixed(1) + '"/><circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.62).toFixed(1) + '" fill="none" stroke="#9ca3af" stroke-width="1.6"/>';
+      [[1, 0], [-0.5, 0.866], [-0.5, -0.866]].forEach(function (v) { s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + r * 0.6 * v[0]).toFixed(1) + '" y2="' + (cy + r * 0.6 * v[1]).toFixed(1) + '" stroke="#9ca3af" stroke-width="1.3"/>'; });
+      return s + '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#6b7280"/>';
+    }
+    var K = ' stroke="#111827" stroke-opacity=".22" stroke-width="1"';
+    var T = {
+      street: function (c, d) { return '<ellipse cx="100" cy="118" rx="78" ry="5" fill="#111827" opacity=".08"/><line x1="48" y1="92" x2="100" y2="80" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>' + roda(48, 92, 24) + roda(154, 92, 24) + '<path d="M154 92 L140 40" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M132 66 C140 60 160 62 170 72" fill="none" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/><path d="M100 84 L66 84 C58 84 56 78 62 76 L104 74 Z" fill="#6b7280"/><rect x="90" y="60" width="34" height="24" rx="5" fill="#9ca3af"/><path d="M96 62 L128 46" stroke="#4b5563" stroke-width="4" stroke-linecap="round"/><path d="M36 56 L62 50 L66 64 L42 66 Z" fill="' + c + '"' + K + '/><path d="M56 52 C72 46 94 48 102 52 L100 60 L58 61 Z" fill="#0b0d10"/><path d="M88 52 C94 38 124 36 136 46 L130 60 L92 62 Z" fill="' + c + '"' + K + '/><path d="M98 48 C106 42 120 42 128 46" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><path d="M92 62 L128 60 L124 66 L96 67 Z" fill="' + d + '"/><line x1="126" y1="30" x2="146" y2="27" stroke="#374151" stroke-width="4" stroke-linecap="round"/><line x1="138" y1="34" x2="140" y2="28" stroke="#374151" stroke-width="3"/><ellipse cx="146" cy="44" rx="5.5" ry="7" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="30" y="52" width="9" height="5" rx="2" fill="#dc2626" opacity=".85"/>'; },
+      cub: function (c, d) { return '<ellipse cx="100" cy="118" rx="74" ry="5" fill="#111827" opacity=".08"/><line x1="52" y1="96" x2="92" y2="86" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>' + roda(52, 96, 20) + roda(150, 96, 20) + '<path d="M150 96 L134 38" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M132 76 C138 70 156 72 164 80" fill="none" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/><rect x="80" y="76" width="26" height="16" rx="4" fill="#9ca3af"/><path d="M38 66 C40 48 70 46 94 52 L98 78 L52 82 C42 82 37 76 38 66 Z" fill="' + c + '"' + K + '/><path d="M44 52 C60 42 88 44 96 48 L94 55 L46 57 Z" fill="#0b0d10"/><path d="M96 80 C104 82 112 80 116 74 L128 46 C130 40 136 40 136 46 L126 84 C124 88 118 90 110 90 L96 90 Z" fill="' + d + '"/><path d="M118 40 C128 40 134 46 134 54 L126 86 L114 86 C120 66 120 54 112 46 Z" fill="' + c + '"' + K + '/><path d="M50 60 C62 54 80 54 90 58" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><rect x="120" y="26" width="24" height="9" rx="4" fill="' + c + '"' + K + '/><line x1="116" y1="29" x2="148" y2="28" stroke="#374151" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="144" cy="31" rx="4.5" ry="4" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="30" y="62" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>'; },
+      scooter: function (c, d) { return '<ellipse cx="100" cy="118" rx="76" ry="5" fill="#111827" opacity=".08"/>' + roda(54, 98, 18) + roda(150, 98, 18) + '<path d="M150 98 L138 44" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M134 80 C140 74 156 76 162 84" fill="none" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/><rect x="56" y="86" width="40" height="10" rx="4" fill="#6b7280"/><path d="M34 72 C34 52 60 46 90 50 L100 80 L46 88 C38 88 34 82 34 72 Z" fill="' + c + '"' + K + '/><path d="M44 52 C62 42 90 44 100 50 L98 57 L46 59 Z" fill="#0b0d10"/><path d="M98 82 L126 82 L126 88 L98 90 Z" fill="' + d + '"/><path d="M112 44 C128 40 140 48 142 60 L134 86 L118 86 C124 68 122 56 112 44 Z" fill="' + c + '"' + K + '/><path d="M120 32 L140 30 L144 40 C136 44 126 44 118 42 Z" fill="#cbd5e1" stroke="#9ca3af" stroke-width="1"/><path d="M44 66 C58 58 78 58 92 62" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><line x1="114" y1="40" x2="146" y2="38" stroke="#374151" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="141" cy="56" rx="4" ry="5" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="28" y="66" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>'; },
+      trail: function (c, d) { return '<ellipse cx="100" cy="118" rx="80" ry="5" fill="#111827" opacity=".08"/><line x1="46" y1="90" x2="100" y2="74" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>' + roda(46, 90, 25) + roda(158, 88, 27) + '<path d="M158 88 L140 30" stroke="#6b7280" stroke-width="5.5" stroke-linecap="round"/><path d="M138 50 C148 42 166 44 172 52 L166 56 C160 50 150 50 144 54 Z" fill="' + c + '"' + K + '/><rect x="88" y="56" width="32" height="24" rx="5" fill="#9ca3af"/><path d="M118 72 C110 80 84 78 70 70" fill="none" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M30 44 L62 42 L64 54 L40 56 Z" fill="' + c + '"' + K + '/><path d="M50 44 C70 38 100 38 112 42 L110 49 L52 50 Z" fill="#0b0d10"/><path d="M92 44 C98 30 124 28 134 38 L128 56 L96 58 Z" fill="' + c + '"' + K + '/><path d="M108 46 L130 40 L124 62 L106 60 Z" fill="' + d + '"/><path d="M100 40 C106 34 120 33 128 37" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><path d="M136 26 L150 24 L152 40 L140 42 Z" fill="' + c + '"' + K + '/><line x1="122" y1="20" x2="146" y2="18" stroke="#374151" stroke-width="4" stroke-linecap="round"/><ellipse cx="148" cy="33" rx="4" ry="5.5" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="24" y="42" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>'; }
+    };
+    function tipoPorModelo(modelo) {
+      var m = String(modelo || '').toLowerCase();
+      if (/\b(biz|pop|crypton|c100|dream|web|jet|traxx)\b/.test(m)) return 'cub';
+      if (/\b(pcx|elite|nmax|n-max|lead|burgman|neo|fluo|xmax|adv|citycom|scooter)\b/.test(m)) return 'scooter';
+      if (/\b(bros|xre|lander|crosser|xtz|tenere|nxr|tornado|falcon|dr|klx|crf|trail)\b/.test(m)) return 'trail';
+      return 'street';
+    }
+    function svg(tipo, cor) { var c = corHex(cor); return '<svg viewBox="0 0 200 124" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block">' + (T[tipo] || T.street)(c, escuro(c)) + '</svg>'; }
+    return { svg: svg, tipoPorModelo: tipoPorModelo };
+  })();
+  function MotoImg(p) {
+    var st = { width: p.w || '100%', height: p.h || 180, borderRadius: p.r != null ? p.r : 12, overflow: 'hidden', flex: 'none', display: 'block' };
+    if (p.src) return h('img', { src: p.src, alt: 'Foto da moto', style: Object.assign({ objectFit: 'cover', background: '#e5e7eb' }, st) });
+    return h('div', { role: 'img', 'aria-label': 'Ilustração da moto', style: Object.assign({ background: 'linear-gradient(180deg,#faf7fd,#f3e8fb)', padding: Math.max(3, Math.round((p.h || 180) * 0.06)), boxSizing: 'border-box' }, st),
+      dangerouslySetInnerHTML: { __html: MotoArte.svg(p.tipo || MotoArte.tipoPorModelo(p.modelo), p.cor) } });
+  }
+
+  // ───── peças ─────
+  function Pill(t, tom) { var T = TONS[tom] || TONS.cinza; return h('span', { className: 'mm-pill', style: { background: T[0], color: T[1] } }, t); }
+  function Carregando(t) { return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '60px 16px', color: '#6b7280' } }, h('div', { className: 'mm-spin' }), t || 'Carregando...'); }
+  function Campo(p) {
+    return h('label', { style: { display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 } },
+      h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, p.label, p.opt ? h('span', { style: { color: '#9ca3af', fontWeight: 500 } }, ' · ' + (typeof p.opt === 'string' ? p.opt : 'opcional')) : null),
+      p.children,
+      p.erro ? h('span', { role: 'alert', style: { fontSize: 11.5, color: '#991b1b', fontWeight: 500 } }, p.erro) : p.hint ? h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, p.hint) : null);
+  }
+  function Seg(op, val, set, nome, cols, perigo) {
+    return h('div', { className: 'mm-seg' + (perigo ? ' perigo' : ''), role: 'radiogroup', 'aria-label': nome, style: { gridTemplateColumns: 'repeat(' + (cols || op.length) + ', 1fr)' } },
+      op.map(function (o) { return h('button', { key: String(o[0]), type: 'button', role: 'radio', 'aria-checked': val === o[0], onClick: function () { set(o[0]); } }, o[1]); }));
+  }
+  function Sheet(p) {
+    useEffect(function () { var fn = function (e) { if (e.key === 'Escape') p.onClose(); }; document.addEventListener('keydown', fn); return function () { document.removeEventListener('keydown', fn); }; }, []);
+    return h('div', { className: 'mm-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': p.titulo, onClick: function (e) { if (e.target === e.currentTarget) p.onClose(); } },
+      h('div', { className: 'mm-sheet' },
+        h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 12 } }, h('h2', { className: 'mm-sora', style: { margin: 0, fontSize: 17, flex: 1 } }, p.titulo), h('button', { type: 'button', onClick: p.onClose, 'aria-label': 'Fechar', style: { width: 36, height: 36, display: 'grid', placeItems: 'center', color: '#6b7280' } }, ico('x', 18))),
+        p.children));
+  }
+  function Voltar(t, fn) { return h('button', { type: 'button', className: 'mm-lnk', onClick: fn, style: { fontSize: 13.5, alignSelf: 'flex-start' } }, ico('arrowleft', 16), t); }
+  function TermoTexto(p) { return h('div', { style: { whiteSpace: 'pre-wrap', fontSize: 13.5, lineHeight: 1.55, color: '#374151' } }, p.texto || 'Termo indisponível no momento.'); }
+
+  // Anel de contagem regressiva
+  function Anel(p) {
+    var r = 26, c = 2 * Math.PI * r, frac = Math.max(0, Math.min(1, p.frac));
+    return h('div', { style: { position: 'relative', width: p.tam || 68, height: p.tam || 68, flex: 'none' } },
+      h('svg', { viewBox: '0 0 64 64', width: '100%', height: '100%', 'aria-hidden': 'true' },
+        h('circle', { cx: 32, cy: 32, r: r, fill: 'none', stroke: '#f3e8fb', strokeWidth: 6 }),
+        h('circle', { cx: 32, cy: 32, r: r, fill: 'none', stroke: p.cor || ROXO, strokeWidth: 6, strokeLinecap: 'round', strokeDasharray: c, strokeDashoffset: c * (1 - frac), transform: 'rotate(-90 32 32)' })),
+      h('div', { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1 } },
+        h('b', { className: 'mm-sora', style: { fontSize: (p.tam || 68) > 60 ? 22 : 17, color: '#111827' } }, p.valor),
+        h('span', { style: { fontSize: 10, color: '#6b7280', marginTop: 2 } }, p.rotulo)));
+  }
+
+  // ───── ciência LGPD ─────
+  function Ciencia(p) {
+    var _t = useState(null), termo = _t[0], setTermo = _t[1];
+    var _c = useState(false), ok = _c[0], setOk = _c[1];
+    var _e = useState(false), env = _e[0], setEnv = _e[1];
+    var _v = useState(false), ver = _v[0], setVer = _v[1];
+    useEffect(function () { p.api('/termo').then(setTermo).catch(function () { setTermo({ texto: '', versao: p.versao }); }); }, []);
+    var enviar = function () {
+      setEnv(true);
+      p.api('/ciencia', { method: 'POST', body: { versao: (termo && termo.versao) || p.versao } })
+        .then(function () { p.onOk(); }).catch(function (e) { p.toast(e.message); setEnv(false); });
+    };
+    return h('div', { className: 'mm-main', style: { paddingBottom: 32 } },
+      h('h1', { className: 'mm-h1' }, 'Antes de começar'),
+      h('p', { className: 'mm-sub' }, 'Esta área mostra apenas a sua moto, o seu contrato e as suas parcelas.'),
+      h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } },
+          h('span', { style: { width: 36, height: 36, borderRadius: 10, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center' } }, ico('shield', 18)),
+          h('b', { style: { flex: 1 } }, 'Ciência sobre seus dados'), Pill('Obrigatório', 'roxo')),
+        h('p', { className: 'mm-sub', style: { color: '#374151' } }, 'Seus dados são usados para o contrato, a cobrança e as vistorias da moto:'),
+        h('ul', { style: { margin: 0, paddingLeft: 18, fontSize: 13.5, color: '#374151', lineHeight: 1.6 } },
+          h('li', null, 'CPF, CNH e endereço: contrato e documentação da moto'),
+          h('li', null, 'Pagamentos: controle das parcelas e do repasse'),
+          h('li', null, 'Fotos de vistoria com data, hora e local')),
+        h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13.5, cursor: 'pointer' } },
+          h('input', { type: 'checkbox', checked: ok, onChange: function (e) { setOk(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, marginTop: 1, flex: 'none' } }),
+          h('span', null, 'Estou ciente de como a Tutts trata meus dados (Termo LGPD ' + ((termo && termo.versao) || p.versao || '') + '). ', h('button', { type: 'button', className: 'mm-lnk', onClick: function (e) { e.preventDefault(); setVer(true); } }, 'Ler termo')))),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: !ok || env, onClick: enviar }, env ? 'Registrando...' : 'Dar ciência e entrar'),
+      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'A ciência fica registrada com data e hora.'),
+      ver ? h(Sheet, { titulo: 'Termo de privacidade', onClose: function () { setVer(false); } }, termo ? h(TermoTexto, { texto: termo.texto }) : Carregando()) : null);
+  }
+
+  // ───── Home ─────
+  function Home(p) {
+    var r = p.r, mo = r.moto || {}, ct = r.contrato || {}, prox = r.proxima_parcela, qf = r.quanto_falta || {}, pend = r.vistoria_pendente, cli = r.cliente || {};
+    var _cf = useState(null), capa = _cf[0], setCapa = _cf[1];
+    useEffect(function () { if (mo.tem_foto) p.api('/moto/capa').then(function (x) { if (x && x.foto) setCapa(x.foto); }).catch(function () {}); }, [mo.tem_foto]);
+    var pct = Math.max(0, Math.min(100, num(qf.pct_pago != null ? qf.pct_pago : (ct.semanas ? 100 * num(ct.parcelas_pagas) / num(ct.semanas) : 0))));
+    var dias = pend ? (pend.dias_restantes != null ? pend.dias_restantes : Math.round((pd(pend.prazo) - new Date(new Date().toDateString())) / 864e5)) : null;
+    var baixarContrato = function () {
+      p.api('/contrato/pdf', { raw: true }).then(function (res) { return res.blob(); }).then(function (b) {
+        var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = 'contrato-' + (ct.numero || 'moto') + '.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+      }).catch(function (e) { p.toast(e.message); });
+    };
+    return h(React.Fragment, null,
+      h('h1', { className: 'mm-h1' }, 'Olá, ' + String(cli.nome || '').split(' ')[0]),
+      h('section', { className: 'mm-card', style: { padding: 12 } },
+        h(MotoImg, { src: capa || mo.capa_thumb, tipo: mo.tipo, modelo: mo.modelo, cor: mo.cor, h: 180 }),
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', padding: '0 2px' } },
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('div', { style: { fontWeight: 700, fontSize: 15 } }, (mo.modelo || 'Sua moto') + (mo.cor ? ' · ' + String(mo.cor).toLowerCase() : '')),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, h('span', { className: 'mm-mono' }, mo.placa), ct.numero ? ' · contrato ' + ct.numero : '')),
+          Pill(ct.situacao_label || ct.situacao || '—', TOM_SIT[ct.situacao] || 'cinza'))),
+      ct.situacao !== 'quitado' ? h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 } },
+          h('div', null,
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', fontWeight: 600 } }, 'Quanto falta para a moto ser sua'),
+            h('div', { className: 'mm-sora mm-num', style: { fontSize: 26, fontWeight: 700 } }, fR(qf.valor_restante != null ? qf.valor_restante : ct.saldo_devedor)),
+            h('div', { style: { fontSize: 13, color: '#374151' } }, 'faltam ', h('b', null, (qf.parcelas_restantes != null ? qf.parcelas_restantes : num(ct.semanas) - num(ct.parcelas_pagas)) + ' parcelas'), ' · quitação prevista ', h('b', null, fD(qf.quitacao_prevista || ct.ultimo_vencimento)))),
+          Pill((ct.parcelas_pagas || 0) + ' de ' + (ct.semanas || 0), 'roxo')),
+        h('div', null,
+          h('div', { style: { position: 'relative', height: 8, background: '#f3f4f6', borderRadius: 99 } },
+            h('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: pct + '%', background: ROXO, borderRadius: 99 } }),
+            [25, 50, 75].map(function (m) { return h('span', { key: m, style: { position: 'absolute', left: m + '%', top: -2, bottom: -2, width: 2, background: '#fff' } }); }),
+            h('span', { style: { position: 'absolute', left: 'calc(' + pct + '% - 9px)', top: -5, width: 18, height: 18, borderRadius: 99, background: '#fff', border: '3px solid ' + ROXO } })),
+          h('div', { style: { position: 'relative', height: 16, marginTop: 6, fontSize: 10.5, color: '#9ca3af' } }, [25, 50, 75].map(function (m) { return h('span', { key: m, style: { position: 'absolute', left: m + '%', transform: 'translateX(-50%)' } }, m + '%'); }))),
+        qf.proximo_marco ? h('div', { style: { background: '#faf7fd', borderRadius: 10, padding: '9px 12px', fontSize: 12.5, color: ROXO_ESC } }, 'Próximo marco: ', h('b', null, qf.proximo_marco.pct + '%'), ' em ' + qf.proximo_marco.faltam_parcelas + ' parcela' + (qf.proximo_marco.faltam_parcelas === 1 ? '' : 's') + '. Paga antes e chega mais rápido.') : null,
+        h('button', { type: 'button', className: 'mm-btn out', style: { height: 44 }, onClick: function () { p.ir('antecipar'); } }, 'Antecipar parcelas', ico('arrowright', 16))) : null,
+      prox ? h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
+          h('div', null,
+            h('div', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Próxima parcela · ' + prox.numero + '/' + (ct.semanas || '')),
+            h('div', { className: 'mm-sora mm-num', style: { fontSize: 26, fontWeight: 700 } }, fR(prox.total)),
+            h('div', { style: { fontSize: 13, color: prox.status === 'atrasada' ? '#991b1b' : '#374151', fontWeight: prox.status === 'atrasada' ? 600 : 400 } },
+              prox.status === 'atrasada' ? 'venceu ' + fDS(prox.vencimento) + ' · com juros' : prox.status === 'vence_hoje' ? 'vence hoje' : 'vence ' + fDS(prox.vencimento)),
+            num(prox.valor_extras) > 0 ? h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, 'inclui ' + fR(prox.valor_extras) + ' de extras') : null),
+          Pill(prox.status_label || prox.status, TOM_PARC[prox.status] || 'cinza')),
+        h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { p.copiarPix(prox); } }, ico('copy', 18), 'Copiar PIX copia-e-cola'),
+        prox.abatimento_repasse ? h('div', { style: { fontSize: 12.5, color: '#374151', background: '#faf7fd', borderRadius: 10, padding: '10px 12px', lineHeight: 1.45 } },
+          h('b', { style: { color: ROXO_ESC } }, 'Motoboy Tutts: '), 'desconto automático no repasse' + (prox.repasse_previsto ? ' de ' + fDS(prox.repasse_previsto) : '') + '; o que faltar você paga via PIX.')
+          : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'Você recebe um lembrete no WhatsApp na véspera.')) : null,
+      pend ? h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', gap: 14, alignItems: 'center' } },
+          h(Anel, { valor: Math.max(0, dias), rotulo: dias === 1 ? 'dia' : 'dias', frac: Math.max(0.08, Math.min(1, (dias || 0) / 30)), cor: dias != null && dias <= 1 ? '#d97706' : ROXO }),
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('b', null, dias != null && dias < 0 ? (pend.tipo_label || 'Vistoria') + ' atrasada' : (pend.tipo_label || 'Vistoria') + (dias === 0 ? ' vence hoje' : ' em ' + dias + ' dia' + (dias === 1 ? '' : 's'))),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'até ' + fDS(pend.prazo) + ' · 6 fotos + km'),
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginTop: 8 } }, POSICOES.map(function (x) { return h('span', { key: x[0], title: x[1], style: { height: 22, borderRadius: 6, background: '#f3f4f6', color: '#9ca3af', display: 'grid', placeItems: 'center' } }, ico('camera', 12)); })))),
+        h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora'),
+        mo.tem_foto ? null : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'A foto de frente vira a imagem da sua moto aqui.')) : null,
+      h('button', { type: 'button', className: 'mm-card', onClick: function () { p.ir('problema'); }, style: { flexDirection: 'row', alignItems: 'center', gap: 12, textAlign: 'left' } },
+        h('span', { style: { width: 40, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('alert', 20)),
+        h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Algum problema com a moto?'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Pneu, pane, batida ou roubo: avise a Tutts por aqui.' + (r.avisos_abertos ? ' (' + r.avisos_abertos + ' em aberto)' : ''))),
+        h('span', { className: 'mm-lnk' }, 'Avisar', ico('arrowright', 14))),
+      h('section', { className: 'mm-card', style: { flexDirection: 'row', alignItems: 'center', gap: 12 } },
+        h('span', { style: { width: 40, height: 40, borderRadius: 10, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 20)),
+        h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Seu contrato'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, ct.tem_pdf_assinado ? 'PDF assinado no Autentique' + (ct.assinado_em ? ' · ' + fD(ct.assinado_em) : '') : 'PDF do contrato')),
+        h('button', { type: 'button', className: 'mm-lnk', onClick: baixarContrato }, ico('download', 16), 'Baixar')));
+  }
+
+  // ───── Antecipar ─────
+  function Antecipar(p) {
+    var r = p.r, ct = r.contrato || {}, qf = r.quanto_falta || {};
+    var max = Math.max(1, num(qf.parcelas_restantes != null ? qf.parcelas_restantes : num(ct.semanas) - num(ct.parcelas_pagas)));
+    var _q = useState(Math.min(4, max)), qtd = _q[0], setQtd = _q[1];
+    var _s = useState(null), sim = _s[0], setSim = _s[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _g = useState(null), pix = _g[0], setPix = _g[1];
+    var _b = useState(false), gerando = _b[0], setGerando = _b[1];
+    useEffect(function () {
+      setPix(null); setErro(null);
+      var t = setTimeout(function () { p.api('/antecipar/simular', { method: 'POST', body: { quantidade: qtd } }).then(setSim).catch(function (e) { setSim(null); setErro(e.message); }); }, 250);
+      return function () { clearTimeout(t); };
+    }, [qtd]);
+    var set = function (n) { setQtd(Math.max(1, Math.min(max, n))); };
+    var nums = (sim && sim.numeros) || [];
+    var faixa = nums.length ? (nums.length === 1 ? 'parcela ' + nums[0] : nums[0] + ' a ' + nums[nums.length - 1] + ' (' + nums.length + ' semanas)') : '—';
+    var gerar = function () {
+      setGerando(true);
+      p.api('/antecipar', { method: 'POST', body: { quantidade: qtd } }).then(function (x) { setPix(x); p.toast('PIX gerado. Copie o código e pague no app do seu banco.'); })
+        .catch(function (e) { p.toast(e.message); }).then(function () { setGerando(false); });
+    };
+    var linha = function (a, b, st) { return h('div', { className: 'mm-row', style: st || null }, h('span', { style: { color: '#6b7280' } }, a), h('span', { className: 'mm-num', style: { textAlign: 'right' } }, b)); };
+    return h(React.Fragment, null,
+      Voltar('Minha moto', p.voltar),
+      h('div', null, h('h1', { className: 'mm-h1' }, 'Antecipar parcelas'), h('p', { className: 'mm-sub' }, 'Pague parcelas futuras agora e quite a moto antes.')),
+      h('section', { className: 'mm-card' },
+        h('b', null, 'Quantas parcelas você quer adiantar?'),
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+          h('button', { type: 'button', 'aria-label': 'Menos uma parcela', onClick: function () { set(qtd - 1); }, disabled: qtd <= 1, style: { width: 48, height: 48, borderRadius: 12, border: '1px solid #e5e7eb', display: 'grid', placeItems: 'center', color: '#374151' } }, ico('minus', 20)),
+          h('div', { style: { flex: 1, textAlign: 'center' } }, h('div', { className: 'mm-sora mm-num', style: { fontSize: 40, fontWeight: 800, lineHeight: 1.1 } }, qtd), h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'de ' + max + ' restantes')),
+          h('button', { type: 'button', 'aria-label': 'Mais uma parcela', onClick: function () { set(qtd + 1); }, disabled: qtd >= max, style: { width: 48, height: 48, borderRadius: 12, background: ROXO, color: '#fff', display: 'grid', placeItems: 'center' } }, ico('plus', 20))),
+        h('input', { type: 'range', min: 1, max: max, value: qtd, onChange: function (e) { set(+e.target.value); }, className: 'mm-range', 'aria-label': 'Quantidade de parcelas' }),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 } }, [[Math.min(4, max), Math.min(4, max) + ' parcelas'], [Math.min(12, max), Math.min(12, max) + ' parcelas'], [max, 'Quitar tudo']].map(function (o, i) {
+          var on = qtd === o[0];
+          return h('button', { key: i, type: 'button', onClick: function () { set(o[0]); }, style: { height: 38, borderRadius: 99, border: '1px solid ' + (on ? '#e9d5f9' : '#e5e7eb'), background: on ? '#faf7fd' : '#fff', color: on ? ROXO_ESC : '#374151', fontWeight: 600, fontSize: 13 } }, o[1]);
+        }))),
+      erro ? h('div', { role: 'alert', style: { background: '#fef2f2', color: '#991b1b', borderRadius: 12, padding: 12, fontSize: 13 } }, erro) : null,
+      h('section', { className: 'mm-card', style: { gap: 0, paddingTop: 4, paddingBottom: 4 } },
+        linha('Parcelas adiantadas', faixa, { borderTop: 0 }),
+        linha('Valor por parcela', fR(ct.valor_semanal)),
+        linha('Desconto', sim && num(sim.desconto) > 0 ? '− ' + fR(sim.desconto) : '—'),
+        h('div', { className: 'mm-row' }, h('span', { style: { color: '#374151', fontWeight: 600 } }, 'Total a pagar agora'), h('b', { className: 'mm-num', style: { fontSize: 15 } }, sim ? fR(sim.valor) : '—')),
+        h('div', { className: 'mm-row' }, h('span', { style: { color: '#6b7280' } }, 'Nova quitação prevista'),
+          h('span', null, sim && sim.quitacao_atual && sim.nova_quitacao !== sim.quitacao_atual ? h('s', { style: { color: '#9ca3af', marginRight: 6, fontSize: 12.5 } }, fD(sim.quitacao_atual)) : null, h('b', { style: { color: '#166534' } }, sim ? fD(sim.nova_quitacao) : '—')))),
+      sim && nums.length ? h('div', { style: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 12, fontSize: 13, color: '#166534', display: 'flex', gap: 8 } }, ico('check', 16, { marginTop: 2 }),
+        h('span', null, nums.length === max ? 'Com esse pagamento a moto fica quitada.' : 'As parcelas ' + nums[0] + ' a ' + nums[nums.length - 1] + ' saem do seu calendário.')) : null,
+      h('p', { className: 'mm-sub', style: { fontSize: 12.5 } }, 'Sem desconto por antecipação, a menos que a Tutts ative um desconto. O valor sai só por PIX (não é abatido do repasse).'),
+      pix ? null : h('button', { type: 'button', className: 'mm-btn pri', disabled: !sim || gerando, onClick: gerar }, ico('card', 18), gerando ? 'Gerando PIX...' : 'Gerar PIX de ' + (sim ? fR(sim.valor) : '...')),
+      pix ? h('section', { className: 'mm-card', style: { border: '1.5px dashed #d8b4f0' } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, h('b', null, 'PIX gerado'), Pill(fR(pix.valor), 'ambar')),
+        h('div', { className: 'mm-mono', style: { fontSize: 11.5, background: '#f9fafb', borderRadius: 10, padding: 10, wordBreak: 'break-all', color: '#374151' } }, pix.pix_copia_cola || '—'),
+        h('button', { type: 'button', className: 'mm-btn out', style: { height: 44 }, onClick: function () { copiar(pix.pix_copia_cola || '').then(function (ok) { p.toast(ok ? 'Código copiado. Cole no app do seu banco.' : 'Não deu para copiar.'); }); } }, ico('copy', 16), 'Copiar código'),
+        h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'Assim que o pagamento cair, as parcelas aparecem como pagas.')) : null);
+  }
+
+  // ───── Pagamentos / extrato ─────
+  function Pagamentos(p) {
+    var _d = useState(null), d = _d[0], setD = _d[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _f = useState('todos'), f = _f[0], setF = _f[1];
+    var _r = useState(null), recibo = _r[0], setRecibo = _r[1];
+    var _a = useState(null), anexo = _a[0], setAnexo = _a[1];
+    var carregar = useCallback(function () { setErro(null); p.api('/extrato').then(setD).catch(function (e) { setErro(e.message); }); }, []);
+    useEffect(carregar, [carregar]);
+    if (erro) return h('div', { className: 'mm-card' }, h('b', null, 'Não foi possível carregar'), h('span', { className: 'mm-sub' }, erro), h('button', { type: 'button', className: 'mm-btn sec', onClick: carregar }, 'Tentar de novo'));
+    if (!d) return Carregando('Carregando pagamentos...');
+    var itens = d.itens || [], rs = d.resumo || {};
+    var aberto = function (x) { return x.status !== 'paga' && x.status !== 'cancelada'; };
+    var lista = itens.filter(function (x) {
+      if (f === 'pagos') return x.status === 'paga';
+      if (f === 'aberto') return aberto(x);
+      if (f === 'extras') return x.tipo === 'extra';
+      return true;
+    });
+    var nPagas = itens.filter(function (x) { return x.status === 'paga' && x.tipo === 'parcela'; }).length;
+    var nExtras = itens.filter(function (x) { return x.tipo === 'extra'; }).length;
+    var abertoExtra = itens.filter(function (x) { return x.tipo === 'extra' && aberto(x); })[0];
+    var grupos = [], porMes = {};
+    lista.forEach(function (x) {
+      var dt = pd(x.pago_em || x.vencimento) || new Date();
+      var k = dt.getFullYear() + '-' + p2(dt.getMonth() + 1);
+      if (!porMes[k]) { porMes[k] = { k: k, t: MESES[dt.getMonth()] + ' ' + dt.getFullYear(), itens: [] }; grupos.push(porMes[k]); }
+      porMes[k].itens.push(x);
+    });
+    var abrirRecibo = function (x) {
+      setRecibo({ carregando: true });
+      p.api('/recibo/' + x.id).then(function (r) { setRecibo(r.recibo || {}); }).catch(function (e) { setRecibo(null); p.toast(e.message); });
+    };
+    var abrirAnexo = function (x, a) {
+      setAnexo({ titulo: a.nome || 'Documento' });
+      p.api('/ocorrencias/' + x.ocorrencia_id + '/anexos/' + a.id).then(function (r) { setAnexo({ titulo: r.nome || a.nome, src: r.conteudo, mime: r.mime }); }).catch(function (e) { setAnexo(null); p.toast(e.message); });
+    };
+    var baixarExtrato = function () {
+      var linhas = itens.map(function (x) {
+        return '<tr><td>' + esc(x.tipo === 'parcela' ? 'Parcela ' + x.numero : x.descricao || 'Extra') + '</td><td>' + esc(x.vencimento ? fD(x.vencimento) : '—') + '</td><td>' + esc(x.pago_em ? fD(x.pago_em) : '—') + '</td><td>' + esc(x.forma_label || '—') + '</td><td>' + esc(x.status_label || x.status) + '</td><td class="r">' + esc(fR(x.total != null ? x.total : x.valor)) + '</td></tr>';
+      }).join('');
+      var ok = imprimirHtml('Extrato · ' + ((p.r.contrato || {}).numero || ''), '<h1>Extrato da locação</h1><p class="sub">' + esc((p.r.cliente || {}).nome || '') + ' · contrato ' + esc((p.r.contrato || {}).numero || '') + ' · ' + esc((p.r.moto || {}).modelo || '') + ' ' + esc((p.r.moto || {}).placa || '') + ' · gerado em ' + fD(new Date()) + '</p>' +
+        '<p>Pago até hoje: <b>' + esc(fR(rs.pago_total)) + '</b> · Em aberto: <b>' + esc(fR(rs.em_aberto)) + '</b></p><table><thead><tr><th>Item</th><th>Vencimento</th><th>Pago em</th><th>Forma</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody>' + linhas + '</tbody></table>');
+      if (!ok) p.toast('Permita pop-ups para baixar o extrato.');
+    };
+    var imprimirRecibo = function (rc) {
+      var ok = imprimirHtml('Recibo parcela ' + rc.numero, '<div class="box"><h1>Recibo de pagamento</h1><p class="sub">Tutts Entregas Rápidas · Locação de motos</p><table>' +
+        [['Locatário', rc.nome + (rc.cpf_mascarado ? ' · CPF ' + rc.cpf_mascarado : '')], ['Contrato', rc.contrato_numero], ['Moto', (rc.moto || '') + ' · ' + (rc.placa || '')], ['Parcela', rc.numero], ['Vencimento', fD(rc.vencimento)], ['Pago em', fD(rc.pago_em)], ['Forma', rc.forma_label], ['Valor', fR(rc.valor)], ['Juros', fR(rc.juros)], ['Extras', fR(rc.extras)]]
+          .map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td class="r">' + esc(l[1]) + '</td></tr>'; }).join('') +
+        '<tr><td class="tot">Total pago</td><td class="r tot">' + esc(fR(rc.total)) + '</td></tr></table><p class="sub mono" style="margin-top:14px">Código ' + esc(rc.codigo || '') + '</p></div>');
+      if (!ok) p.toast('Permita pop-ups para salvar o recibo.');
+    };
+    var chip = function (id, t, n) { var on = f === id; return h('button', { key: id, type: 'button', 'aria-pressed': on, onClick: function () { setF(id); }, style: { height: 34, padding: '0 14px', borderRadius: 99, border: '1px solid ' + (on ? '#e9d5f9' : '#e5e7eb'), background: on ? '#faf7fd' : '#fff', color: on ? ROXO_ESC : '#374151', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' } }, t, n != null ? ' ' + n : ''); };
+    return h(React.Fragment, null,
+      h('h1', { className: 'mm-h1' }, 'Pagamentos'),
+      h('section', { className: 'mm-card', style: { flexDirection: 'row', padding: 0, gap: 0 } },
+        h('div', { style: { flex: 1, padding: 14, borderRight: '1px solid #f3f4f6' } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Pago até hoje'), h('div', { className: 'mm-sora mm-num', style: { fontSize: 20, fontWeight: 700 } }, fR(rs.pago_total)), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, nPagas + ' parcela' + (nPagas === 1 ? '' : 's') + (nExtras ? ' + ' + nExtras + ' extra' + (nExtras === 1 ? '' : 's') : ''))),
+        h('div', { style: { flex: 1, padding: 14 } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Em aberto'), h('div', { className: 'mm-sora mm-num', style: { fontSize: 20, fontWeight: 700, color: num(rs.em_aberto) > 0 ? '#92400e' : '#111827' } }, fR(rs.em_aberto)), abertoExtra ? h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, (abertoExtra.descricao || 'extra').toLowerCase() + (abertoExtra.vencimento ? ' · vence ' + fDC(abertoExtra.vencimento) : '')) : null)),
+      h('div', { style: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 } }, chip('todos', 'Todos'), chip('pagos', 'Pagos'), chip('aberto', 'Em aberto'), chip('extras', 'Extras', nExtras)),
+      grupos.length === 0 ? h('div', { className: 'mm-card' }, h('span', { className: 'mm-sub' }, 'Nada neste filtro.')) :
+      grupos.map(function (g) {
+        return h('section', { key: g.k, className: 'mm-card', style: { gap: 0, padding: 0, overflow: 'hidden' } },
+          h('div', { style: { padding: '12px 14px 8px', fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.06em', textTransform: 'uppercase' } }, g.t),
+          g.itens.map(function (x) {
+            var ext = x.tipo === 'extra', pago = x.status === 'paga';
+            var desc = ext ? [x.vencimento ? 'vence ' + fDC(x.vencimento) : null, x.descricao_cobranca || null].filter(Boolean).join(' · ')
+              : pago ? [fDC(x.pago_em), x.forma_label || x.forma, num(x.juros) > 0 ? 'juros ' + fR(x.juros) : null, num(x.extras) > 0 ? 'extras ' + fR(x.extras) : null].filter(Boolean).join(' · ')
+              : [x.vencimento ? 'vence ' + fDS(x.vencimento) : null, num(x.extras) > 0 ? 'inclui extras ' + fR(x.extras) : null].filter(Boolean).join(' · ');
+            return h('div', { key: x.tipo + x.id, style: { display: 'flex', justifyContent: 'space-between', gap: 10, padding: '11px 14px', borderTop: '1px solid #f3f4f6', background: ext && !pago ? '#fffbeb' : '#fff' } },
+              h('div', { style: { minWidth: 0 } },
+                h('div', { style: { fontWeight: 600, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } }, ext ? (x.descricao || 'Extra') : x.tipo === 'antecipacao' ? (x.descricao || 'Antecipação') : 'Parcela ' + x.numero, ext ? h('span', { style: { fontSize: 11, fontWeight: 700, color: '#92400e' } }, 'Extra') : null),
+                h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc || '—'),
+                (x.anexos || []).length ? h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 } }, x.anexos.map(function (a) { return h('button', { key: a.id, type: 'button', className: 'mm-lnk', style: { fontSize: 12.5 }, onClick: function () { abrirAnexo(x, a); } }, 'Ver ' + (a.nome || 'documento')); })) : null),
+              h('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flex: 'none' } },
+                h('b', { className: 'mm-num' }, fR(x.total != null ? x.total : x.valor)),
+                pago && x.tipo === 'parcela' ? h('button', { type: 'button', className: 'mm-lnk', style: { fontSize: 12.5 }, onClick: function () { abrirRecibo(x); } }, ico('download', 14), 'Recibo')
+                  : pago ? Pill('Pago', 'verde') : h('span', { style: { fontSize: 12, fontWeight: 600, color: x.status === 'atrasada' ? '#991b1b' : '#92400e' } }, x.status_label || 'Em aberto')));
+          }));
+      }),
+      h('button', { type: 'button', className: 'mm-btn sec', onClick: baixarExtrato }, ico('download', 18), 'Baixar extrato completo (PDF)'),
+      recibo ? h(Sheet, { titulo: 'Recibo', onClose: function () { setRecibo(null); } }, recibo.carregando ? Carregando() : h('div', { style: { display: 'flex', flexDirection: 'column', gap: 0 } },
+        [['Parcela', recibo.numero], ['Contrato', recibo.contrato_numero], ['Moto', [recibo.moto, recibo.placa].filter(Boolean).join(' · ')], ['Vencimento', fD(recibo.vencimento)], ['Pago em', fD(recibo.pago_em)], ['Forma', recibo.forma_label], ['Valor', fR(recibo.valor)], ['Juros', num(recibo.juros) ? fR(recibo.juros) : '—'], ['Extras', num(recibo.extras) ? fR(recibo.extras) : '—']]
+          .map(function (l, i) { return h('div', { key: i, className: 'mm-row', style: i === 0 ? { borderTop: 0 } : null }, h('span', { style: { color: '#6b7280' } }, l[0]), h('span', { className: 'mm-num', style: { textAlign: 'right' } }, l[1] != null && l[1] !== '' ? String(l[1]) : '—')); }),
+        h('div', { className: 'mm-row' }, h('b', null, 'Total pago'), h('b', { className: 'mm-num', style: { fontSize: 16 } }, fR(recibo.total))),
+        recibo.codigo ? h('div', { className: 'mm-mono', style: { fontSize: 11, color: '#9ca3af', margin: '6px 0 12px' } }, 'Código ' + recibo.codigo) : null,
+        h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { imprimirRecibo(recibo); } }, ico('download', 18), 'Salvar / imprimir recibo'))) : null,
+      anexo ? h(Sheet, { titulo: anexo.titulo, onClose: function () { setAnexo(null); } }, !anexo.src ? Carregando() : /pdf/.test(anexo.mime || anexo.src.slice(0, 30))
+        ? h('iframe', { src: anexo.src, title: anexo.titulo, style: { width: '100%', height: '65vh', border: 0, borderRadius: 10 } })
+        : h('img', { src: anexo.src, alt: anexo.titulo, style: { width: '100%', borderRadius: 10 } })) : null);
+  }
+
+  // ───── Vistorias ─────
+  function Vistorias(p) {
+    var r = p.r, vist = r.vistorias || [], pend = r.vistoria_pendente;
+    return h(React.Fragment, null,
+      h('h1', { className: 'mm-h1' }, 'Vistorias'),
+      pend ? h('section', { className: 'mm-card', style: { background: '#fffbeb', borderColor: '#fde68a' } },
+        h('div', { style: { display: 'flex', gap: 8, color: '#92400e' } }, ico('clock', 18), h('div', null, h('b', null, pend.label || ((pend.tipo_label || 'Vistoria') + ' pendente até ' + fDS(pend.prazo))), h('div', { style: { fontSize: 12.5, marginTop: 2 } }, '6 fotos da moto + quilometragem. Leva uns 2 minutos.'))),
+        h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora')) : null,
+      h('section', { className: 'mm-card', style: { gap: 0 } },
+        vist.length === 0 ? h('span', { className: 'mm-sub' }, 'Nenhuma vistoria ainda.') :
+        vist.map(function (v, i) {
+          return h('button', { key: v.id, type: 'button', className: 'mm-row', style: Object.assign({ width: '100%', textAlign: 'left' }, i === 0 ? { borderTop: 0 } : {}), onClick: function () { p.ir('verVist', { id: v.id }); } },
+            h('div', null, h('div', { style: { fontWeight: 600 } }, (v.tipo_label || v.tipo) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')), h('div', { style: { fontSize: 12, color: '#6b7280' } }, fDC(v.criado_em) + ' · ' + (v.qtd_fotos || 0) + ' fotos')),
+            Pill(v.status_label || ROT_VIST[v.status] || v.status, TOM_VIST[v.status] || 'cinza'));
+        })),
+      pend ? null : h('button', { type: 'button', className: 'mm-btn sec', onClick: function () { p.ir('vistoria', { tipo: 'revisao' }); } }, ico('camera', 18), 'Registrar vistoria'));
+  }
+
+  function NovaVistoria(p) {
+    var r = p.r, mo = r.moto || {}, vist = r.vistorias || [], pend = r.vistoria_pendente;
+    var _t = useState(p.tipo || 'revisao'), tipo = _t[0], setTipo = _t[1];
+    var _f = useState({}), fotos = _f[0], setFotos = _f[1];
+    var _k = useState(''), km = _k[0], setKm = _k[1];
+    var _a = useState(null), avaria = _a[0], setAvaria = _a[1];
+    var _o = useState(''), obs = _o[0], setObs = _o[1];
+    var _s = useState(false), env = _s[0], setEnv = _s[1];
+    var geo = useRef(null);
+    useEffect(function () {
+      try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (pos) { geo.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }; }, function () {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }); } catch (e) { /* ok */ }
+    }, []);
+    var n = Object.keys(fotos).length;
+    var pegar = function (pos, file) {
+      var quando = new Date().toISOString();
+      lerFoto(file, 1280, 0.8).then(function (u) { setFotos(function (x) { var m = Object.assign({}, x); m[pos] = { foto: u, capturada_em: quando }; return m; }); }).catch(function (e) { p.toast(e.message); });
+    };
+    var ultima = vist.find(function (v) { return v.km != null; });
+    var ok = n === 6 && km !== '' && avaria !== null && (!avaria || obs.trim().length > 2);
+    var enviar = function () {
+      setEnv(true);
+      var g = geo.current || {};
+      p.api('/vistorias', { method: 'POST', body: { tipo: tipo, km: parseInt(km, 10), avaria: !!avaria, observacoes: obs.trim() || null, lat: g.lat != null ? g.lat : null, lng: g.lng != null ? g.lng : null,
+        fotos: POSICOES.map(function (x) { return { posicao: x[0], foto: fotos[x[0]].foto, capturada_em: fotos[x[0]].capturada_em }; }) } })
+        .then(function () { p.toast('Vistoria enviada. O time Tutts vai conferir.'); p.onOk(); })
+        .catch(function (e) { p.toast(e.message); setEnv(false); });
+    };
+    return h(React.Fragment, null,
+      Voltar('Voltar', p.voltar),
+      h('div', null, h('h1', { className: 'mm-h1' }, 'Nova vistoria'), h('p', { className: 'mm-sub' }, (mo.modelo || '') + ' · ' + (mo.placa || ''))),
+      h('section', { className: 'mm-card' }, h('b', null, 'Tipo de vistoria'), Seg(TIPOS_VIST, tipo, setTipo, 'Tipo de vistoria', 2),
+        pend && pend.tipo === tipo ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, pend.label || ('vence ' + fDS(pend.prazo))) : null),
+      h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between' } }, h('b', null, 'Fotos da moto'), h('span', { style: { fontSize: 12.5, fontWeight: 700, color: n === 6 ? '#166534' : ROXO } }, n + ' de 6')),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, POSICOES.map(function (x) {
+          var f = fotos[x[0]];
+          return h('label', { key: x[0], style: { display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer' } },
+            h('input', { type: 'file', accept: 'image/*', capture: 'environment', className: 'mm-sr', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(x[0], fl); } }),
+            h('div', { className: 'mm-foto', style: f ? { background: '#111827' } : { background: '#faf7fd', border: '1.5px dashed #d8b4f0', color: ROXO } },
+              f ? h('img', { src: f.foto, alt: x[1] }) : h('span', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 600 } }, ico('camera', 22), 'Tirar foto'),
+              f ? h('span', { style: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 99, background: '#16a34a', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('check', 14)) : null,
+              f ? h('span', { style: { position: 'absolute', left: 6, bottom: 6, fontSize: 9.5, color: '#fff', background: 'rgba(17,24,39,.55)', borderRadius: 4, padding: '1px 4px' } }, fDC(f.capturada_em) + ' ' + fHM(f.capturada_em)) : null),
+            h('span', { style: { fontSize: 12, textAlign: 'center', color: f ? '#374151' : ROXO, fontWeight: 600 } }, x[1]));
+        })),
+        h('div', { style: { fontSize: 12, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'flex-start' } }, ico('pin', 14), 'Foto só pela câmera, com data, hora e localização registradas.')),
+      h('section', { className: 'mm-card' },
+        h(Campo, { label: 'Quilometragem atual', hint: ultima ? 'Última vistoria: ' + num(ultima.km).toLocaleString('pt-BR') + ' km em ' + fDC(ultima.criado_em) : null },
+          h('div', { style: { position: 'relative' } }, h('input', { className: 'mm-inp', inputMode: 'numeric', value: km, onChange: function (e) { setKm(dig(e.target.value).slice(0, 7)); }, style: { paddingRight: 40 } }), h('span', { style: { position: 'absolute', right: 12, top: 13, color: '#6b7280' } }, 'km'))),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 5 } }, h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Alguma avaria ou problema?'), Seg([[false, 'Não'], [true, 'Sim']], avaria, setAvaria, 'Avaria')),
+        h(Campo, { label: 'Observações', opt: !avaria, hint: avaria ? 'Conte o que aconteceu e onde está a avaria.' : null }, h('textarea', { className: 'mm-inp', rows: 3, value: obs, onChange: function (e) { setObs(e.target.value); } }))),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: !ok || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar vistoria (' + n + ' de 6 fotos)'),
+      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'Depois de enviar, o time Tutts confere e aprova.'));
+  }
+
+  function VerVistoria(p) {
+    var _v = useState(null), v = _v[0], setV = _v[1];
+    useEffect(function () { p.api('/vistorias/' + p.id).then(function (r) { setV(r.vistoria); }).catch(function (e) { p.toast(e.message); p.voltar(); }); }, [p.id]);
+    return h(React.Fragment, null,
+      Voltar('Vistorias', p.voltar),
+      !v ? Carregando() : h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, h('b', null, v.tipo_label || v.tipo), Pill(v.status_label || ROT_VIST[v.status], TOM_VIST[v.status] || 'cinza')),
+        h('span', { className: 'mm-sub' }, fD(v.criado_em) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')),
+        v.observacoes ? h('div', { style: { fontSize: 13, color: '#374151' } }, v.observacoes) : null,
+        v.avaria_descricao ? h('div', { style: { fontSize: 13, color: '#991b1b', background: '#fef2f2', borderRadius: 10, padding: 10 } }, h('b', null, 'Avaria: '), v.avaria_descricao) : null,
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, (v.fotos || []).map(function (f) {
+          var lab = (POSICOES.find(function (x) { return x[0] === f.posicao; }) || [0, f.posicao])[1];
+          return h('div', { key: f.posicao }, h('div', { className: 'mm-foto', style: { background: '#f3f4f6' } }, f.thumb ? h('img', { src: f.thumb, alt: lab }) : null), h('div', { style: { fontSize: 11.5, textAlign: 'center', marginTop: 4, color: '#374151' } }, lab));
+        }))));
+  }
+
+  // ───── Avisar problema ─────
+  function Problema(p) {
+    var mo = p.r.moto || {};
+    var _t = useState(null), tipo = _t[0], setTipo = _t[1];
+    var _u = useState(null), urg = _u[0], setUrg = _u[1];
+    var _d = useState(''), desc = _d[0], setDesc = _d[1];
+    var _f = useState([]), fotos = _f[0], setFotos = _f[1];
+    var _g = useState(null), geo = _g[0], setGeo = _g[1];
+    var _gs = useState(''), geoSt = _gs[0], setGeoSt = _gs[1];
+    var _s = useState(false), env = _s[0], setEnv = _s[1];
+    var _l = useState(null), avisos = _l[0], setAvisos = _l[1];
+    var carregarAvisos = useCallback(function () { p.api('/avisos').then(function (r) { setAvisos(r.avisos || []); }).catch(function () { setAvisos([]); }); }, []);
+    useEffect(carregarAvisos, [carregarAvisos]);
+    var localizar = function () {
+      if (!navigator.geolocation) { setGeoSt('Seu celular não informou a localização.'); return; }
+      setGeoSt('Buscando sua localização...');
+      navigator.geolocation.getCurrentPosition(function (pos) { setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude, prec: Math.round(pos.coords.accuracy || 0) }); setGeoSt(''); },
+        function () { setGeoSt('Não deu para pegar a localização. Permita o acesso ou descreva onde você está.'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    };
+    useEffect(localizar, []);
+    var addFoto = function (file) {
+      var quando = new Date().toISOString();
+      lerFoto(file, 1280, 0.8).then(function (u) { setFotos(function (x) { return x.length >= 4 ? x : x.concat([{ foto: u, capturada_em: quando }]); }); }).catch(function (e) { p.toast(e.message); });
+    };
+    var ok = tipo && urg && desc.trim().length >= 5;
+    var enviar = function () {
+      setEnv(true);
+      p.api('/avisos', { method: 'POST', body: { tipo: tipo, urgencia: urg, descricao: desc.trim(), fotos: fotos, lat: geo ? geo.lat : null, lng: geo ? geo.lng : null } })
+        .then(function () { p.toast('Aviso enviado. A Tutts vai responder por aqui e no WhatsApp.'); setTipo(null); setUrg(null); setDesc(''); setFotos([]); carregarAvisos(); p.recarregar(); })
+        .catch(function (e) { p.toast(e.message); }).then(function () { setEnv(false); });
+    };
+    return h(React.Fragment, null,
+      Voltar('Minha moto', p.voltar),
+      h('div', null, h('h1', { className: 'mm-h1' }, 'Avisar problema'), h('p', { className: 'mm-sub' }, (mo.modelo || '') + ' · ' + (mo.placa || ''))),
+      h('section', { className: 'mm-card' }, h('b', null, 'O que aconteceu?'),
+        h('div', { role: 'radiogroup', 'aria-label': 'Tipo do problema', style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, TIPOS_AVISO.map(function (t) {
+          var on = tipo === t[0];
+          return h('button', { key: t[0], type: 'button', role: 'radio', 'aria-checked': on, onClick: function () { setTipo(t[0]); },
+            style: { minHeight: 80, borderRadius: 12, border: on ? '1.5px solid ' + ROXO : '1px solid #e5e7eb', background: on ? '#faf7fd' : '#fff', color: on ? ROXO_ESC : '#374151', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, padding: 8, textAlign: 'center' } },
+            ico(t[2], 20), t[1]);
+        }))),
+      h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } }, h('b', null, 'Você consegue rodar?'), Seg([['rodando', 'Consigo rodar'], ['parada', 'Moto parada']], urg, setUrg, 'Urgência', 2, urg === 'parada')),
+        h(Campo, { label: 'Descreva' }, h('textarea', { className: 'mm-inp', rows: 3, value: desc, placeholder: 'O que aconteceu e onde você está', onChange: function (e) { setDesc(e.target.value); } })),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Fotos', h('span', { style: { color: '#9ca3af', fontWeight: 500 } }, ' · até 4')),
+          h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 } },
+            fotos.map(function (f, i) { return h('div', { key: i, className: 'mm-foto', style: { background: '#111827' } }, h('img', { src: f.foto, alt: 'Foto ' + (i + 1) }),
+              h('button', { type: 'button', 'aria-label': 'Remover foto', onClick: function () { setFotos(function (x) { return x.filter(function (_, j) { return j !== i; }); }); }, style: { position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 99, background: 'rgba(17,24,39,.65)', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('x', 12))); }),
+            fotos.length < 4 ? h('label', { className: 'mm-foto', style: { background: '#faf7fd', border: '1.5px dashed #d8b4f0', color: ROXO, cursor: 'pointer' } },
+              h('input', { type: 'file', accept: 'image/*', capture: 'environment', className: 'mm-sr', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) addFoto(fl); } }), ico('camera', 20)) : null)),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Onde você está'),
+          h('div', { 'aria-hidden': 'true', style: { position: 'relative', height: 120, borderRadius: 12, overflow: 'hidden', background: '#eef0f3',
+            backgroundImage: 'linear-gradient(90deg, transparent 47%, #fff 47%, #fff 53%, transparent 53%), linear-gradient(0deg, transparent 45%, #fff 45%, #fff 52%, transparent 52%), linear-gradient(35deg, transparent 60%, #fff 60%, #fff 64%, transparent 64%)', backgroundSize: '90px 90px, 70px 70px, 100% 100%' } },
+            h('span', { style: { position: 'absolute', left: '50%', top: '42%', transform: 'translate(-50%,-50%)', color: geo ? '#dc2626' : '#9ca3af' } }, ico('pin', 30)),
+            h('span', { style: { position: 'absolute', left: 8, bottom: 8, background: '#fff', borderRadius: 8, padding: '3px 8px', fontSize: 11.5, color: '#374151', maxWidth: 'calc(100% - 16px)' } },
+              geo ? geo.lat.toFixed(5) + ', ' + geo.lng.toFixed(5) + (geo.prec ? ' · precisão ' + geo.prec + ' m' : '') : (geoSt || 'Localização não informada'))),
+          h('button', { type: 'button', className: 'mm-btn sec', style: { height: 42, fontSize: 14 }, onClick: localizar }, ico('pin', 16), 'Usar minha localização'))),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: !ok || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar aviso para a Tutts'),
+      avisos && avisos.length ? h('section', { className: 'mm-card', style: { gap: 0 } },
+        h('div', { style: { fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.06em', textTransform: 'uppercase', paddingBottom: 8 } }, 'Últimos avisos'),
+        avisos.slice(0, 5).map(function (a) {
+          return h('div', { key: a.id, style: { borderTop: '1px solid #f3f4f6', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 6 } },
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' } }, h('b', null, (a.tipo_label || a.tipo) + ' · ' + fDC(a.criado_em)), Pill(a.status_label || a.status, TOM_AVISO[a.status] || 'cinza')),
+            a.resposta ? h('div', { style: { background: '#faf7fd', borderRadius: 10, padding: '8px 10px', fontSize: 12.5, color: '#374151' } }, h('b', { style: { color: ROXO_ESC } }, 'Tutts respondeu: '), a.resposta) : h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, a.descricao));
+        })) : null);
+  }
+
+  // ───── Mais ─────
+  function Mais(p) {
+    var r = p.r, cli = r.cliente || {}, ct = r.contrato || {}, mo = r.moto || {};
+    return h(React.Fragment, null,
+      h('h1', { className: 'mm-h1' }, 'Mais'),
+      h('section', { className: 'mm-card', style: { gap: 0 } }, [
+        ['Nome', cli.nome], ['Tipo', cli.tipo_label || (cli.tipo === 'tutts' ? 'Motoboy Tutts' : 'Locatário')], ['Contrato', ct.numero], ['Moto', [mo.modelo, mo.placa].filter(Boolean).join(' · ')], ['Vencimento', ct.dia_label ? 'toda ' + ct.dia_label : '—'], ['Quitação prevista', fD(ct.ultimo_vencimento)]
+      ].map(function (x, i) { return h('div', { key: i, className: 'mm-row', style: i === 0 ? { borderTop: 0 } : null }, h('span', { style: { color: '#6b7280' } }, x[0]), h('b', { style: { textAlign: 'right' } }, x[1] || '—')); })),
+      h('button', { type: 'button', className: 'mm-btn sec', onClick: function () { p.ir('problema'); } }, ico('alert', 18), 'Avisar problema com a moto'),
+      h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5 } }, 'Para mudar seus dados ou pedir cópia, correção ou exclusão (LGPD), fale com o time Tutts pelo WhatsApp.'),
+      p.onLogout ? h('button', { type: 'button', className: 'mm-btn sec', onClick: p.onLogout }, ico('logout', 18), 'Sair') : null);
+  }
+
+  // ───── componente principal ─────
+  window.ModuloMinhaMotoComponent = function (props) {
+    injetarCss();
+    var api = useCallback(criarApi(props), [props.API_URL]);
+    var _r = useState(null), r = _r[0], setR = _r[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _a = useState('home'), aba = _a[0], setAba = _a[1];
+    var _t = useState(null), tela = _t[0], setTela = _t[1];
+    var _m = useState(false), menu = _m[0], setMenu = _m[1];
+    var _ts = useState(null), msg = _ts[0], setMsg = _ts[1];
+    var tRef = useRef(null);
+    var toast = useCallback(function (m) {
+      if (props.showToast && props.embutido) { props.showToast(m, 'info'); return; }
+      setMsg(m); clearTimeout(tRef.current); tRef.current = setTimeout(function () { setMsg(null); }, 2800);
+    }, []);
+    var carregar = useCallback(function () {
+      setErro(null);
+      api('/resumo').then(setR).catch(function (e) { setErro(e); });
+    }, [api]);
+    useEffect(carregar, [carregar]);
+    var ir = function (t, extra) { setTela(Object.assign({ t: t }, extra || {})); try { window.scrollTo(0, 0); } catch (e) { /* ok */ } };
+    var voltar = function () { setTela(null); try { window.scrollTo(0, 0); } catch (e) { /* ok */ } };
+    var copiarPix = function (parc) {
+      var go = function (code) { copiar(code).then(function (ok) { toast(ok ? 'PIX copia-e-cola copiado. Cole no app do seu banco.' : 'Não deu para copiar. Tente de novo.'); }); };
+      if (parc.pix_copia_cola) return go(parc.pix_copia_cola);
+      api('/parcelas/' + parc.id + '/pix', { method: 'POST', body: {} }).then(function (x) { go(x.pix_copia_cola); carregar(); }).catch(function (e) { toast(e.message); });
+    };
+    var nome = (props.usuario && (props.usuario.fullName || props.usuario.full_name || props.usuario.nome)) || (r && r.cliente && r.cliente.nome) || '';
+    var corpo;
+    if (erro) corpo = h('div', { className: 'mm-main' }, h('section', { className: 'mm-card' }, h('b', null, erro.status === 403 ? 'Acesso não liberado' : 'Não foi possível carregar'), h('span', { className: 'mm-sub' }, erro.message), h('button', { type: 'button', className: 'mm-btn sec', onClick: carregar }, 'Tentar de novo')));
+    else if (!r) corpo = Carregando('Carregando sua moto...');
+    else if (!r.tem_contrato) corpo = h('div', { className: 'mm-main' }, h('section', { className: 'mm-card', style: { alignItems: 'center', textAlign: 'center', padding: '28px 18px' } },
+      h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center' } }, ico('bike', 26)),
+      h('b', { className: 'mm-sora', style: { fontSize: 18 } }, 'Nenhuma moto em contrato'), h('p', { className: 'mm-sub' }, 'Quando seu contrato de locação estiver ativo, a moto, as parcelas e as vistorias aparecem aqui.')));
+    else if (r.precisa_ciencia) corpo = h(Ciencia, { api: api, toast: toast, versao: r.termo_versao, onOk: carregar });
+    else {
+      var comum = { r: r, api: api, toast: toast, ir: ir, voltar: voltar, recarregar: carregar, copiarPix: copiarPix, onLogout: props.onLogout };
+      var conteudo;
+      if (tela && tela.t === 'antecipar') conteudo = h(Antecipar, comum);
+      else if (tela && tela.t === 'problema') conteudo = h(Problema, comum);
+      else if (tela && tela.t === 'vistoria') conteudo = h(NovaVistoria, Object.assign({ tipo: tela.tipo, onOk: function () { setTela(null); setAba('vist'); carregar(); } }, comum));
+      else if (tela && tela.t === 'verVist') conteudo = h(VerVistoria, Object.assign({ id: tela.id }, comum));
+      else if (aba === 'pag') conteudo = h(Pagamentos, comum);
+      else if (aba === 'vist') conteudo = h(Vistorias, comum);
+      else if (aba === 'mais') conteudo = h(Mais, comum);
+      else conteudo = h(Home, comum);
+      var navItem = function (id, t, ic) { return h('button', { key: id, type: 'button', 'aria-current': !tela && aba === id ? 'page' : null, onClick: function () { setTela(null); setAba(id); try { window.scrollTo(0, 0); } catch (e) { /* ok */ } } }, ic, t); };
+      corpo = h(React.Fragment, null,
+        h('main', { className: 'mm-main', onClick: function () { if (menu) setMenu(false); } }, conteudo),
+        h('nav', { className: 'mm-nav', 'aria-label': 'Navegação da Minha moto' }, h('div', null,
+          navItem('home', 'Minha moto', ico('bike', 22)), navItem('pag', 'Pagamentos', ico('card', 22)), navItem('vist', 'Vistorias', ico('camera', 22)), navItem('mais', 'Mais', pontos(22)))));
+    }
+    return h('div', { className: 'mm' },
+      h('div', { className: 'mm-wrap' },
+        h('header', { className: 'mm-top' },
+          props.embutido && props.onVoltar ? h('button', { type: 'button', onClick: props.onVoltar, 'aria-label': 'Voltar ao início', style: { width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,.14)', display: 'grid', placeItems: 'center', color: '#fff', flex: 'none' } }, ico('arrowleft', 18)) : h('span', { className: 'mm-logo' }, 'T'),
+          h('div', { style: { flex: 1, minWidth: 0, lineHeight: 1.2 } }, h('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Central Tutts'), h('div', { style: { fontSize: 12, color: '#e9d5f9' } }, props.embutido ? 'Minha moto' : 'Locação de motos')),
+          h('div', { style: { position: 'relative' } },
+            h('button', { type: 'button', className: 'mm-av', 'aria-label': 'Menu da conta', 'aria-expanded': menu, onClick: function () { setMenu(!menu); } }, iniciais(nome) || 'EU'),
+            menu ? h('div', { style: { position: 'absolute', right: 0, top: 40, zIndex: 30, background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px -12px rgba(17,24,39,.25)', padding: 6, minWidth: 180 } },
+              props.embutido && props.onVoltar ? h('button', { type: 'button', onClick: function () { setMenu(false); props.onVoltar(); }, style: { display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', width: '100%', borderRadius: 8 } }, ico('home', 16), 'Voltar ao início') : null,
+              props.onLogout ? h('button', { type: 'button', onClick: props.onLogout, style: { display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', width: '100%', borderRadius: 8 } }, ico('logout', 16), 'Sair') : null) : null)),
+        corpo),
+      msg ? h('div', { className: 'mm-toast', role: 'status' }, msg) : null);
+  };
+
+  // ───── card na home do motoboy ─────
+  window.MinhaMotoCard = function (props) {
+    injetarCss();
+    var api = useCallback(criarApi(props), [props.API_URL]);
+    var _r = useState(null), r = _r[0], setR = _r[1];
+    useEffect(function () { api('/resumo').then(setR).catch(function () { setR({ tem_contrato: false }); }); }, [api]);
+    if (!r || !r.tem_contrato) return null;
+    var mo = r.moto || {}, ct = r.contrato || {}, prox = r.proxima_parcela, pend = r.vistoria_pendente, qf = r.quanto_falta || {};
+    var dias = pend ? (pend.dias_restantes != null ? pend.dias_restantes : Math.round((pd(pend.prazo) - new Date(new Date().toDateString())) / 864e5)) : null;
+    var abrir = function () { if (props.onAbrir) props.onAbrir(); };
+    return h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent', marginBottom: 16 } },
+      h('button', { type: 'button', onClick: abrir, 'aria-label': 'Abrir Minha moto', style: { width: '100%', textAlign: 'left', background: '#fff', border: '2px solid ' + ROXO, borderRadius: 16, overflow: 'hidden', display: 'block', padding: 0 } },
+        r.precisa_ciencia ? h('div', { style: { padding: 14, display: 'flex', gap: 12, alignItems: 'center' } },
+          h('span', { style: { width: 44, height: 44, borderRadius: 12, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('bike', 22)),
+          h('div', { style: { flex: 1 } }, h('div', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: ROXO } }, 'MINHA MOTO'), h('b', { style: { display: 'block' } }, 'Dê ciência ao termo de dados para ver sua moto')))
+        : h('div', null,
+          h('div', { style: { display: 'flex', gap: 12, padding: 12, alignItems: 'center' } },
+            h(MotoImg, { src: mo.capa_thumb, tipo: mo.tipo, modelo: mo.modelo, cor: mo.cor, w: 110, h: 72, r: 10 }),
+            h('div', { style: { flex: 1, minWidth: 0 } },
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 } }, h('span', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: ROXO } }, 'MINHA MOTO'), Pill(ct.situacao_label || '—', TOM_SIT[ct.situacao] || 'cinza')),
+              h('div', { style: { fontWeight: 700, fontSize: 15 } }, (mo.modelo || '') + ' · ' + (mo.placa || '')),
+              h('div', { style: { fontSize: 12, color: '#6b7280' } }, (ct.parcelas_pagas || 0) + ' de ' + (ct.semanas || 0) + ' parcelas' + (qf.valor_restante != null ? ' · faltam ' + fR(qf.valor_restante) : '')))),
+          h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid #f3f4f6' } },
+            h('div', { style: { padding: '10px 12px', borderRight: '1px solid #f3f4f6' } },
+              h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Parcela da semana'),
+              prox ? h('b', { className: 'mm-num', style: { display: 'block' } }, fR(prox.total)) : h('b', null, '—'),
+              prox ? h('div', { style: { fontSize: 11.5, color: prox.abatimento_repasse ? '#166534' : '#6b7280' } }, prox.abatimento_repasse ? 'abatida do repasse' + (prox.repasse_previsto ? ' de ' + fDS(prox.repasse_previsto) : '') : 'vence ' + fDS(prox.vencimento)) : null),
+            h('div', { style: { padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' } },
+              pend ? h(Anel, { valor: Math.max(0, dias), rotulo: 'dias', frac: Math.max(0.08, Math.min(1, (dias || 0) / 30)), tam: 44 }) : h('span', { style: { color: '#16a34a' } }, ico('check', 20)),
+              h('div', { style: { minWidth: 0 } }, h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Vistoria'), h('b', { style: { fontSize: 12.5 } }, pend ? (pend.tipo_label || 'Vistoria') + ' até ' + fDC(pend.prazo) : 'Em dia')))),
+          h('div', { style: { borderTop: '1px solid #f3f4f6', background: '#faf7fd', padding: 10, textAlign: 'center', color: ROXO_ESC, fontWeight: 700, fontSize: 13.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 } }, 'Abrir Minha moto', ico('arrowright', 14)))));
+  };
+
+  // ───── 1º acesso do locatário (tela de login) ─────
+  window.LocPrimeiroAcesso = function (props) {
+    injetarCss();
+    var api = useCallback(criarApi(props), [props.API_URL]);
+    var _p = useState(1), passo = _p[0], setPasso = _p[1];
+    var _c = useState(props.cpf && dig(props.cpf).length === 11 ? mCPF(props.cpf) : ''), cpf = _c[0], setCpf = _c[1];
+    var _k = useState(''), cod = _k[0], setCod = _k[1];
+    var _s = useState(''), senha = _s[0], setSenha = _s[1];
+    var _s2 = useState(''), senha2 = _s2[0], setSenha2 = _s2[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _w = useState(null), wa = _w[0], setWa = _w[1];
+    var _b = useState(false), env = _b[0], setEnv = _b[1];
+    var solicitar = function () {
+      setErro(null); setEnv(true);
+      api('/primeiro-acesso/solicitar', { method: 'POST', publico: true, body: { cpf: dig(cpf) } })
+        .then(function (r) { setWa(r.whatsapp_final || null); setPasso(2); }).catch(function (e) { setErro(e.message); }).then(function () { setEnv(false); });
+    };
+    var confirmar = function () {
+      setErro(null); setEnv(true);
+      api('/primeiro-acesso/confirmar', { method: 'POST', publico: true, body: { cpf: dig(cpf), codigo: dig(cod), senha: senha } })
+        .then(function () { setPasso(3); }).catch(function (e) { setErro(e.message); }).then(function () { setEnv(false); });
+    };
+    var conteudo;
+    if (passo === 1) conteudo = h(React.Fragment, null,
+      h('p', { className: 'mm-sub' }, 'Para locatário de moto Tutts. Informe seu CPF e enviaremos um código para o WhatsApp do seu cadastro.'),
+      h(Campo, { label: 'CPF', erro: cpf && dig(cpf).length === 11 && !cpfOk(cpf) ? 'CPF inválido' : null }, h('input', { className: 'mm-inp', inputMode: 'numeric', autoComplete: 'username', value: cpf, placeholder: '000.000.000-00', onChange: function (e) { setCpf(mCPF(e.target.value)); } })),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: !cpfOk(cpf) || env, onClick: solicitar }, env ? 'Enviando...' : 'Receber código no WhatsApp'));
+    else if (passo === 2) conteudo = h(React.Fragment, null,
+      h('p', { className: 'mm-sub' }, 'Enviamos um código de 6 números' + (wa ? ' para o WhatsApp ' + wa : ' para o WhatsApp do seu cadastro') + '. Ele vale por 48 horas.'),
+      h(Campo, { label: 'Código' }, h('input', { className: 'mm-inp mm-mono', inputMode: 'numeric', autoComplete: 'one-time-code', value: cod, maxLength: 6, onChange: function (e) { setCod(dig(e.target.value).slice(0, 6)); }, style: { letterSpacing: '.3em', fontSize: 20, textAlign: 'center' } })),
+      h(Campo, { label: 'Crie uma senha', hint: 'Mínimo 8 caracteres.' }, h('input', { className: 'mm-inp', type: 'password', autoComplete: 'new-password', value: senha, onChange: function (e) { setSenha(e.target.value); } })),
+      h(Campo, { label: 'Repita a senha', erro: senha2 && senha2 !== senha ? 'As senhas não são iguais' : null }, h('input', { className: 'mm-inp', type: 'password', autoComplete: 'new-password', value: senha2, onChange: function (e) { setSenha2(e.target.value); } })),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: cod.length !== 6 || senha.length < 8 || senha !== senha2 || env, onClick: confirmar }, env ? 'Salvando...' : 'Criar senha'),
+      h('button', { type: 'button', className: 'mm-lnk', style: { alignSelf: 'center' }, onClick: function () { setPasso(1); setCod(''); } }, 'Não recebi o código'));
+    else conteudo = h(React.Fragment, null,
+      h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center', padding: '6px 0' } },
+        h('span', { style: { width: 52, height: 52, borderRadius: 99, background: '#f0fdf4', color: '#166534', display: 'grid', placeItems: 'center' } }, ico('check', 24)),
+        h('b', { className: 'mm-sora', style: { fontSize: 17 } }, 'Senha criada'),
+        h('p', { className: 'mm-sub' }, 'Agora entre com seu CPF e a senha nova.')),
+      h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { if (props.onPronto) props.onPronto(dig(cpf)); } }, 'Entrar'));
+    var el = h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent' } },
+      h(Sheet, { titulo: 'Primeiro acesso do locatário', onClose: props.onClose },
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+          erro ? h('div', { role: 'alert', style: { background: '#fef2f2', color: '#991b1b', borderRadius: 10, padding: '10px 12px', fontSize: 13 } }, erro) : null,
+          conteudo)));
+    // portal: o cartão do login tem transform (inclinação), que prenderia o position:fixed
+    return window.ReactDOM && ReactDOM.createPortal && document.body ? ReactDOM.createPortal(el, document.body) : el;
+  };
+})();

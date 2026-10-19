@@ -167,7 +167,9 @@
   // ─────────────────────────────────────────────────────────────
   // FORM: campos e reações (a autenticação continua sendo a do app.js)
   // ─────────────────────────────────────────────────────────────
-  function Form({ cod, senha, onCod, onSenha, loading, erro, onEntrar, onCriar, onEsqueci }) {
+  function Form({ cod, senha, onCod, onSenha, loading, erro, onEntrar, onCriar, onEsqueci, onPrimeiroAcesso }) {
+    // LOCACAO_V2: campo aceita código profissional ou CPF (locatário de moto)
+    const pareceCpf = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(String(cod || '').trim());
     injetarCss();
     const [ver, setVer] = useState(false), [caps, setCaps] = useState(false), [lembrar, setLembrar] = useState(true), [lento, setLento] = useState(false);
     const senhaRef = useRef(null), btnRef = useRef(null), progRef = useRef(null), lentoT = useRef(null), eraLoading = useRef(false);
@@ -199,9 +201,10 @@
       lento && !erro && h('div', { className: 'tl-alerta info' }, ico(h('g', null, h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 8h.01M11 12h1v4h1' }))), h('div', null, 'A rede está lenta, mas estamos tentando…')),
       h('div', { className: 'tl-campo' },
         h('svg', { className: 'tl-ico', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 }, h('circle', { cx: 12, cy: 8, r: 4 }), h('path', { d: 'M4 21a8 8 0 0 1 16 0' })),
-        h('label', { htmlFor: 'tl-cod', style: { position: 'absolute', left: -9999 } }, 'Código profissional'),
-        h('input', { id: 'tl-cod', className: 'tl-inp', type: 'text', placeholder: 'Código profissional', autoComplete: 'username', autoCapitalize: 'none', spellCheck: false, value: cod || '', disabled: loading, onChange: (e) => onCod(e.target.value) }),
+        h('label', { htmlFor: 'tl-cod', style: { position: 'absolute', left: -9999 } }, 'Código ou CPF'),
+        h('input', { id: 'tl-cod', className: 'tl-inp', type: 'text', placeholder: 'Código ou CPF', autoComplete: 'username', autoCapitalize: 'none', spellCheck: false, value: cod || '', disabled: loading, onChange: (e) => onCod(e.target.value) }),
         h('span', { className: 'tl-ok' + ((cod || '').trim().length >= 3 ? ' show' : ''), 'aria-hidden': 'true' }, ico(h('path', { d: 'M20 6 9 17l-5-5' }), { strokeWidth: 2.5 }))),
+      pareceCpf && h('div', { style: { marginTop: -6, fontSize: 12, color: '#5d0b85', display: 'flex', alignItems: 'center', gap: 6 } }, ico(h('g', null, h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 8h.01M11 12h1v4h1' })), { width: 14, height: 14 }), 'CPF de locatário reconhecido · você verá só a sua moto'),
       h('div', null,
         h('div', { className: 'tl-campo' },
           h('svg', { className: 'tl-ico', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 }, h('rect', { x: 4, y: 10, width: 16, height: 11, rx: 2 }), h('path', { d: 'M8 10V7a4 4 0 0 1 8 0v3' })),
@@ -218,6 +221,9 @@
         h('span', { className: 'tl-prog', ref: progRef }),
         loading ? h(React.Fragment, null, ico(h('path', { d: 'M21 12a9 9 0 1 1-6.2-8.56' }), { className: 'tl-spin', strokeWidth: 2.5 }), h('span', null, 'Validando acesso…'))
                 : h(React.Fragment, null, h('span', null, 'Entrar'), ico(h('path', { d: 'M5 12h14m-6-6 6 6-6 6' }), { strokeWidth: 2.5 }))),
+      onPrimeiroAcesso && h('div', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, color: '#374151', textAlign: 'left' } },
+        ico(h('g', null, h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 8h.01M11 12h1v4h1' })), { width: 16, height: 16, style: { color: '#770fa8', flex: 'none', marginTop: 1 } }),
+        h('div', null, h('b', null, 'Alugou uma moto Tutts?'), ' Entre com seu CPF. ', h('button', { type: 'button', onClick: onPrimeiroAcesso, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#770fa8', cursor: 'pointer', textDecoration: 'underline' } }, 'Primeiro acesso?'))),
       h('p', { style: { margin: '4px 0 0', textAlign: 'center', fontSize: 13, color: '#6b7280' } }, 'Ainda não tem conta? ', h('button', { type: 'button', onClick: onCriar, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#770fa8', cursor: 'pointer' } }, 'Criar nova conta')));
   }
 
