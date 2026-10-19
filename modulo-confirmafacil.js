@@ -844,7 +844,7 @@
             } : undefined,
             className: `${bg} rounded-2xl p-3 ${filter !== null ? 'cursor-pointer hover:opacity-80' : ''} ${((filter === '__SEM_OS__' && semCorrida) || (statusCF === filter && filter !== null && filter !== '__SEM_OS__')) ? 'ring-2 ring-purple-400' : ''}`,
           },
-            h('p', { className: 'text-xs text-gray-500 mb-1' }, icon + ' ' + label),
+            h('p', { className: 'text-xs text-gray-500 mb-1 inline-flex items-center gap-1.5' }, icon, label), /* OBJ_OBJECT_FIX_V1 */
             h('p', { className: `text-xl font-semibold ${txt}` }, val)
           )
         )
@@ -1167,6 +1167,23 @@
     const [geoTeste, setGeoTeste]     = useState({ rua: '', numero: '', bairro: '', cidade: '', uf: '', cep: '' });
     const [geoRes, setGeoRes]         = useState(null);
     const [geoBusy, setGeoBusy]       = useState(false);
+    // CF_GEOCODE_MODO_V1: modo global da geocodificação (google | cache | off)
+    const [geoModo, setGeoModo]       = useState(null);
+    const [geoModoInfo, setGeoModoInfo] = useState(null);
+    const [geoModoBusy, setGeoModoBusy] = useState(false);
+    useEffect(() => {
+      fetchAuth(API_URL + '/confirmafacil/geocode-config').then(r => r.json()).then(d => { if (d && d.modo) { setGeoModo(d.modo); setGeoModoInfo(d); } }).catch(() => {});
+    }, []);
+    const salvarGeoModo = async (modo) => {
+      if (modo === geoModo) return;
+      setGeoModoBusy(true);
+      try {
+        const r = await fetchAuth(API_URL + '/confirmafacil/geocode-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modo }) });
+        const d = await r.json();
+        if (d && d.ok) { setGeoModo(d.modo); showToast(modo === 'google' ? 'Geocodificação no Google ligada' : modo === 'cache' ? 'Geocodificação só pelo cache (sem custo)' : 'Geocodificação desligada', 'success'); }
+        else showToast((d && (d.error || d.mensagem)) || 'Erro ao salvar', 'error');
+      } catch (_) { showToast('Erro ao salvar', 'error'); } finally { setGeoModoBusy(false); }
+    };
     const [loading, setLoading]       = useState(false);
     const [testando, setTestando]     = useState(false);
 
@@ -1240,12 +1257,29 @@
             h('div', { className: 'flex items-center gap-2 text-sm font-medium text-gray-700' },
               h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })),
               'Geocodificação do destino no Google',
-              h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700' }, 'sempre ativa')
+              geoModo && h('span', { className: 'px-2 py-0.5 rounded-full text-[11px] font-semibold ' + (geoModo === 'google' ? 'bg-green-100 text-green-700' : geoModo === 'cache' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700') },
+                geoModo === 'google' ? 'ligada' : geoModo === 'cache' ? 'só cache' : 'desligada')
             ),
+            /* CF_GEOCODE_MODO_V1: seletor de modo (vale para busca CF, XML e manual — todos os clientes) */
+            h('div', { className: 'mt-2 ml-6 flex flex-wrap items-center gap-2' },
+              h('div', { role: 'group', 'aria-label': 'Modo da geocodificação', className: 'inline-flex bg-white border border-gray-200 rounded-lg p-0.5' },
+                [['google', 'Ligada (Google)'], ['cache', 'Só cache (sem custo)'], ['off', 'Desligada']].map(([v, t]) =>
+                  h('button', { key: v, type: 'button', disabled: geoModoBusy || !geoModo, onClick: () => salvarGeoModo(v),
+                    'aria-pressed': geoModo === v ? 'true' : 'false',
+                    className: 'px-3 py-1.5 text-[12.5px] rounded-md transition-colors disabled:opacity-60 ' + (geoModo === v ? 'bg-purple-100 text-purple-800 font-semibold' : 'text-gray-600 hover:bg-gray-50') }, t))
+              ),
+              geoModoInfo && geoModoInfo.env_desligado && h('span', { className: 'text-[11px] text-red-700' }, 'Desligada pela variável CF_GEOCODE_GOOGLE=off no servidor (vence esta opção).')
+            ),
+            h('p', { className: 'text-[11.5px] text-gray-600 mt-2 ml-6' },
+              geoModo === 'cache' ? 'Só cache: usa os endereços que já foram geocodificados antes (memória + banco) e nunca chama o Google. Endereço novo vai como veio da NF.'
+              : geoModo === 'off' ? 'Desligada: o endereço de entrega vai exatamente como veio da NF e a legada resolve a localização.'
+              : 'Ligada: endereço novo é consultado no Google (custo por consulta); endereço repetido vem do cache.',
+              ' Vale para todos os clientes do ConfirmaFácil.'),
             h('p', { className: 'text-[11.5px] text-gray-500 mt-1 ml-6' },
-              'Em todas as corridas do CF (busca, XML e manual) o endereço de entrega passa pelo Google e é reescrito com rua, número, bairro, cidade, UF, CEP e coordenadas corrigidos. ',
-              'Só aplica quando o resultado é preciso (ROOFTOP/interpolado, mesma UF) — senão o endereço segue como veio da NF. ',
-              'Cache em 2 camadas (memória + banco central, o mesmo do HUB): cada endereço bate no Google uma única vez.'
+              'Em qualquer modo: se a legada recusar a corrida por não achar latitude/longitude, a Central completa a coordenada (cache → OpenStreetMap, gratuito → Google só se estiver ligada → centro da cidade) e reenvia uma vez, avisando o motoboy na observação quando a localização for aproximada.'),
+            h('p', { className: 'text-[11.5px] text-gray-500 mt-1 ml-6' },
+              'Quando aplica, o endereço de entrega é reescrito com rua, número, bairro, cidade, UF, CEP e coordenadas corrigidos — só se o resultado for preciso (ROOFTOP/interpolado, mesma UF). ',
+              'Cache em 2 camadas (memória + banco central, o mesmo do HUB).'
             ),
             h('div', { className: 'mt-3 ml-6' },
               h('div', { className: 'text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5' }, 'Testar um endereço'),
@@ -1960,7 +1994,7 @@
             campo('Pasta', h('input', inputProps(form.imap_pasta, v => setForm({ ...form, imap_pasta: v }), 'NF-e'))),
             campo('Data de corte', h('input', { ...inputProps(form.xml_data_corte, v => setForm({ ...form, xml_data_corte: v }), ''), type: 'date' })),
             campo('TLS', h('label', { className: 'flex items-center gap-2 text-[13px] mt-1' }, h('input', { type: 'checkbox', checked: form.imap_tls, onChange: e => setForm({ ...form, imap_tls: e.target.checked }) }), 'Conexão segura (993/TLS)')),
-            campo('Geocodificar destino', h('div', { className: 'text-[12px] text-gray-500 mt-2' }, 'Sempre ativo via Google (busca CF, XML e manual). Testador na aba ', h('b', null, 'Config'), '.')),
+            campo('Geocodificar destino', h('div', { className: 'text-[12px] text-gray-500 mt-2' }, 'Ligar, deixar só no cache (sem custo) ou desligar na aba ', h('b', null, 'Config'), ' (vale para busca CF, XML e manual).')), /* CF_GEOCODE_MODO_V1 */
             // CF_XML_AUTO_V1: parametros do modo Auto
             campo('Carência do XML (modo Auto)', h('div', null,
               h('input', { ...inputProps(String(form.xml_carencia_min), v => setForm({ ...form, xml_carencia_min: Math.max(0, parseInt(v, 10) || 0) }), '2'), type: 'number', min: 0, max: 60 }),

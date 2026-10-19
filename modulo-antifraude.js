@@ -264,7 +264,7 @@
               h('div', { className: 'flex items-start justify-between mb-2' },
                 h('div', { className: 'flex items-center gap-2 flex-wrap' },
                   h(Badge, { text: sevInfo.label, className: sevInfo.cor }),
-                  h(Badge, { text: tipoInfo.icon + ' ' + tipoInfo.label, className: tipoInfo.cor }),
+                  h(Badge, { text: h(React.Fragment, null, tipoInfo.icon, ' ', tipoInfo.label) /* OBJ_OBJECT_FIX_V1 */, className: tipoInfo.cor + ' gap-1' }),
                   h(Badge, { text: statusInfo.label, className: statusInfo.cor })
                 ),
                 h('span', { className: 'text-xs text-gray-400 flex-shrink-0' }, fmtDT(a.created_at))
