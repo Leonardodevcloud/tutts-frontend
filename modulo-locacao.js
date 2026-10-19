@@ -251,6 +251,54 @@
   }
 
   // ───────────────────────── Painel / Frota ─────────────────────────
+  /* LOCACAO_ILUSTRACAO_V1: desenho da moto por tipo, na cor cadastrada (quando não há foto de vistoria) */
+  var MotoArte = (function () {
+    var CORES = [[/vermelh|vinho|bord/, '#c81e1e'], [/pret|black|grafit/, '#2b2f36'], [/branc|perol/, '#f3f4f6'], [/prat|cinz|chumbo/, '#a1a7b0'],
+      [/azul/, '#1d4ed8'], [/amarel|dourad/, '#eab308'], [/verde/, '#15803d'], [/laranj/, '#f67602'], [/rox|lil/, '#770fa8'], [/marrom|bege/, '#92400e']];
+    function corHex(cor) { var t = String(cor || '').toLowerCase(); for (var i = 0; i < CORES.length; i++) if (CORES[i][0].test(t)) return CORES[i][1]; return '#9ca3af'; }
+    function escuro(hex, f) { f = f || 0.72; var h = hex.replace('#', ''); var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      function p(x) { var v = Math.round(x * f).toString(16); return v.length < 2 ? '0' + v : v; } return '#' + p(r) + p(g) + p(b); }
+    function roda(cx, cy, r) {
+      var s = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#1f2937" stroke-width="' + (r * 0.34).toFixed(1) + '"/>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.62).toFixed(1) + '" fill="none" stroke="#9ca3af" stroke-width="1.6"/>';
+      [[1, 0], [-0.5, 0.866], [-0.5, -0.866]].forEach(function (v) { s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + r * 0.6 * v[0]).toFixed(1) + '" y2="' + (cy + r * 0.6 * v[1]).toFixed(1) + '" stroke="#9ca3af" stroke-width="1.3"/>'; });
+      return s + '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#6b7280"/>';
+    }
+    var T = {
+    street: function (c, d) { return `<ellipse cx="100" cy="118" rx="78" ry="5" fill="#111827" opacity=".08"/><line x1="48" y1="92" x2="100" y2="80" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>${roda(48,92,24)}${roda(154,92,24)}<path d="M154 92 L140 40" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M132 66 C140 60 160 62 170 72" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><path d="M100 84 L66 84 C58 84 56 78 62 76 L104 74 Z" fill="#6b7280"/><rect x="90" y="60" width="34" height="24" rx="5" fill="#9ca3af"/><path d="M96 62 L128 46" stroke="#4b5563" stroke-width="4" stroke-linecap="round"/><path d="M36 56 L62 50 L66 64 L42 66 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M56 52 C72 46 94 48 102 52 L100 60 L58 61 Z" fill="#0b0d10"/><path d="M88 52 C94 38 124 36 136 46 L130 60 L92 62 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M98 48 C106 42 120 42 128 46" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><path d="M92 62 L128 60 L124 66 L96 67 Z" fill="${d}"/><line x1="126" y1="30" x2="146" y2="27" stroke="#374151" stroke-width="4" stroke-linecap="round"/><line x1="138" y1="34" x2="140" y2="28" stroke="#374151" stroke-width="3"/><ellipse cx="146" cy="44" rx="5.5" ry="7" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="30" y="52" width="9" height="5" rx="2" fill="#dc2626" opacity=".85"/>`; },
+    cub: function (c, d) { return `<ellipse cx="100" cy="118" rx="74" ry="5" fill="#111827" opacity=".08"/><line x1="52" y1="96" x2="92" y2="86" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>${roda(52,96,20)}${roda(150,96,20)}<path d="M150 96 L134 38" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M132 76 C138 70 156 72 164 80" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><rect x="80" y="76" width="26" height="16" rx="4" fill="#9ca3af"/><path d="M38 66 C40 48 70 46 94 52 L98 78 L52 82 C42 82 37 76 38 66 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M44 52 C60 42 88 44 96 48 L94 55 L46 57 Z" fill="#0b0d10"/><path d="M96 80 C104 82 112 80 116 74 L128 46 C130 40 136 40 136 46 L126 84 C124 88 118 90 110 90 L96 90 Z" fill="${d}"/><path d="M118 40 C128 40 134 46 134 54 L126 86 L114 86 C120 66 120 54 112 46 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M50 60 C62 54 80 54 90 58" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><rect x="120" y="26" width="24" height="9" rx="4" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><line x1="116" y1="29" x2="148" y2="28" stroke="#374151" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="144" cy="31" rx="4.5" ry="4" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="30" y="62" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>`; },
+    scooter: function (c, d) { return `<ellipse cx="100" cy="118" rx="76" ry="5" fill="#111827" opacity=".08"/>${roda(54,98,18)}${roda(150,98,18)}<path d="M150 98 L138 44" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M134 80 C140 74 156 76 162 84" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><rect x="56" y="86" width="40" height="10" rx="4" fill="#6b7280"/><path d="M34 72 C34 52 60 46 90 50 L100 80 L46 88 C38 88 34 82 34 72 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M44 52 C62 42 90 44 100 50 L98 57 L46 59 Z" fill="#0b0d10"/><path d="M98 82 L126 82 L126 88 L98 90 Z" fill="${d}"/><path d="M112 44 C128 40 140 48 142 60 L134 86 L118 86 C124 68 122 56 112 44 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M120 32 L140 30 L144 40 C136 44 126 44 118 42 Z" fill="#cbd5e1" stroke="#9ca3af" stroke-width="1"/><path d="M44 66 C58 58 78 58 92 62" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><line x1="114" y1="40" x2="146" y2="38" stroke="#374151" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="141" cy="56" rx="4" ry="5" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="28" y="66" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>`; },
+    trail: function (c, d) { return `<ellipse cx="100" cy="118" rx="80" ry="5" fill="#111827" opacity=".08"/><line x1="46" y1="90" x2="100" y2="74" stroke="#4b5563" stroke-width="6" stroke-linecap="round"/>${roda(46,90,25)}${roda(158,88,27)}<path d="M158 88 L140 30" stroke="#6b7280" stroke-width="5.5" stroke-linecap="round"/><path d="M138 50 C148 42 166 44 172 52 L166 56 C160 50 150 50 144 54 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><rect x="88" y="56" width="32" height="24" rx="5" fill="#9ca3af"/><path d="M118 72 C110 80 84 78 70 70" fill="none" stroke="#6b7280" stroke-width="5" stroke-linecap="round"/><path d="M30 44 L62 42 L64 54 L40 56 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M50 44 C70 38 100 38 112 42 L110 49 L52 50 Z" fill="#0b0d10"/><path d="M92 44 C98 30 124 28 134 38 L128 56 L96 58 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><path d="M108 46 L130 40 L124 62 L106 60 Z" fill="${d}"/><path d="M100 40 C106 34 120 33 128 37" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/><path d="M136 26 L150 24 L152 40 L140 42 Z" fill="${c}" stroke="#111827" stroke-opacity=".22" stroke-width="1"/><line x1="122" y1="20" x2="146" y2="18" stroke="#374151" stroke-width="4" stroke-linecap="round"/><ellipse cx="148" cy="33" rx="4" ry="5.5" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><rect x="24" y="42" width="8" height="5" rx="2" fill="#dc2626" opacity=".85"/>`; }
+    };
+    function tipoPorModelo(modelo) {
+      var m = String(modelo || '').toLowerCase();
+      if (/\b(biz|pop|crypton|c100|dream|web|jet|traxx)\b/.test(m)) return 'cub';
+      if (/\b(pcx|elite|nmax|n-max|lead|burgman|neo|fluo|xmax|adv|citycom|scooter)\b/.test(m)) return 'scooter';
+      if (/\b(bros|xre|lander|crosser|xtz|tenere|nxr|tornado|falcon|dr|klx|crf|trail)\b/.test(m)) return 'trail';
+      return 'street';
+    }
+    function svg(tipo, cor) {
+      var c = corHex(cor), d = escuro(c);
+      var f = T[tipo] || T.street;
+      return '<svg viewBox="0 0 200 124" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ilustração da moto" style="display:block">' + f(c, d) + '</svg>';
+    }
+    return { svg: svg, corHex: corHex, tipoPorModelo: tipoPorModelo, TIPOS: [['street', 'Street'], ['cub', 'Cub'], ['scooter', 'Scooter'], ['trail', 'Trail']] };
+  })();
+
+  /* Imagem da moto: foto (thumb/foto da vistoria) ou ilustração do tipo na cor */
+  function MotoImg(p) {
+    var w = p.w || 64, hh = p.h || Math.round(w * 0.62), r = p.r != null ? p.r : 8;
+    var base = { width: p.fluid ? '100%' : w, height: hh, borderRadius: r, flex: 'none', overflow: 'hidden', display: 'block' };
+    if (p.src) return h('img', { src: p.src, alt: 'Foto da moto', style: Object.assign({ objectFit: 'cover', background: '#e5e7eb' }, base) });
+    return h('div', { role: 'img', 'aria-label': 'Ilustração da moto', style: Object.assign({ background: 'linear-gradient(180deg,#faf7fd,#f3e8fb)', padding: Math.max(2, Math.round(hh * 0.06)), boxSizing: 'border-box' }, base),
+      dangerouslySetInnerHTML: { __html: MotoArte.svg(p.tipo || MotoArte.tipoPorModelo(p.modelo), p.cor) } });
+  }
+  function celulaMoto(m) {
+    return h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+      h(MotoImg, { src: m.capa_thumb, tipo: m.tipo, modelo: m.modelo, cor: m.cor, w: 64, h: 42 }),
+      h('div', null, h('div', { style: { fontWeight: 600 } }, m.modelo), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, [m.ano, m.cor].filter(Boolean).join(' · '))));
+  }
+
   function PainelView(props) {
     var api = props.api, nav = props.nav;
     var _f = useState('todas'), filtro = _f[0], setFiltro = _f[1];
@@ -296,7 +344,7 @@
             var pct = m.semanas ? Math.min(100, Math.round(100 * num(m.parcelas_pagas) / num(m.semanas))) : 0;
             var abrir = m.contrato_id ? function () { nav({ tela: 'contrato', id: m.contrato_id }); } : function () { nav({ tela: 'moto', id: m.moto_id }); };
             return Linha(m.moto_id, [
-              { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600 } }, m.modelo), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, [m.ano, m.cor].filter(Boolean).join(' · '))) },
+              { td: 1, v: celulaMoto(m) },
               { td: 1, v: m.placa, st: { fontFamily: MONO, fontSize: 12.5 } },
               { td: 1, v: m.cliente_nome ? h('div', null, m.cliente_nome, h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, m.cliente_tipo === 'tutts' ? 'Motoboy Tutts' : m.cliente_tipo === 'externo' ? 'Externo' : (m.cliente_tipo || ''))) : h('span', { style: { color: '#9ca3af' } }, '—') },
               { td: 1, v: m.valor_semanal ? fR(m.valor_semanal) : '—', right: true },
@@ -600,7 +648,7 @@
         fl.map(function (m) {
           var sn = function (b) { return b ? h('span', { style: { color: '#166534', fontWeight: 600 } }, 'Sim') : h('span', { style: { color: '#991b1b', fontWeight: 600 } }, 'Não'); };
           return Linha(m.id, [
-            { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600 } }, m.modelo), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, [m.ano, m.cor].filter(Boolean).join(' · '))) },
+            { td: 1, v: celulaMoto(m) },
             { td: 1, v: m.placa, st: { fontFamily: MONO, fontSize: 12.5 } },
             { td: 1, v: m.hodometro != null ? fN(m.hodometro) + ' km' : '—', right: true },
             { td: 1, v: sn(m.tem_seguro) }, { td: 1, v: sn(m.tem_rastreador) },
@@ -610,7 +658,7 @@
         })));
   }
 
-  var MOTO_VAZIA = { modelo: '', ano: '', cor: '', placa: '', chassi: '', renavam: '', valor_aquisicao: '', valor_documentacao: '', hodometro: '', tem_seguro: null, tem_rastreador: null, status_manual: 'disponivel' };
+  var MOTO_VAZIA = { modelo: '', ano: '', cor: '', placa: '', chassi: '', renavam: '', valor_aquisicao: '', valor_documentacao: '', hodometro: '', tem_seguro: null, tem_rastreador: null, status_manual: 'disponivel', tipo: '' };
   function placaTipo(p) { var s = String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (/^[A-Z]{3}\d[A-Z]\d{2}$/.test(s)) return 'Mercosul'; if (/^[A-Z]{3}\d{4}$/.test(s)) return 'Padrão antigo'; return s ? 'Formato inválido' : null; }
   function moedaParse(v) { if (v === '' || v == null) return null; var s = String(v).replace(/[^\d,.-]/g, ''); if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.'); var n = parseFloat(s); return isFinite(n) ? n : null; }
 
@@ -623,6 +671,11 @@
     var _tv = useState('todas'), fTipo = _tv[0], setFTipo = _tv[1];
     var _mv = useState(null), modal = _mv[0], setModal = _mv[1];
     var _ft = useState(null), foto = _ft[0], setFoto = _ft[1];
+    var _cp = useState(null), capaFoto = _cp[0], setCapaFoto = _cp[1];
+    useEffect(function () {
+      if (novo || !d || !d.capa) { setCapaFoto(null); return; }
+      api('/motos/' + props.id + '/capa').then(function (r) { setCapaFoto(r.foto || null); }).catch(function () { setCapaFoto(null); });
+    }, [d && d.capa && d.capa.foto_id]);
     var carregar = useCallback(function () {
       if (novo) return;
       setErro(null);
@@ -631,7 +684,7 @@
         var m = r.moto || {};
         setForm({ modelo: m.modelo || '', ano: m.ano || '', cor: m.cor || '', placa: m.placa || '', chassi: m.chassi || '', renavam: m.renavam || '',
           valor_aquisicao: m.valor_aquisicao != null ? String(m.valor_aquisicao).replace('.', ',') : '', valor_documentacao: m.valor_documentacao != null ? String(m.valor_documentacao).replace('.', ',') : '',
-          hodometro: m.hodometro != null ? String(m.hodometro) : '', tem_seguro: m.tem_seguro, tem_rastreador: m.tem_rastreador, status_manual: m.status_manual || 'disponivel' });
+          hodometro: m.hodometro != null ? String(m.hodometro) : '', tem_seguro: m.tem_seguro, tem_rastreador: m.tem_rastreador, status_manual: m.status_manual || 'disponivel', tipo: m.tipo_definido ? m.tipo : '' });
       }).catch(function (e) { setErro(e.message); });
     }, [api, props.id, novo]);
     useEffect(carregar, [carregar]);
@@ -650,7 +703,7 @@
       if (faltas.length) { toast('Preencha: ' + faltas.join(', '), 'error'); return; }
       setSalvando(true);
       var body = { modelo: form.modelo.trim(), ano: String(form.ano || '').trim() || null, cor: form.cor.trim() || null, placa: form.placa.toUpperCase().replace(/[^A-Z0-9]/g, ''), chassi: form.chassi.trim() || null, renavam: soDig(form.renavam) || null,
-        valor_aquisicao: moedaParse(form.valor_aquisicao), valor_documentacao: moedaParse(form.valor_documentacao), hodometro: form.hodometro === '' ? null : parseInt(soDig(form.hodometro), 10), tem_seguro: form.tem_seguro, tem_rastreador: form.tem_rastreador, status_manual: form.status_manual };
+        valor_aquisicao: moedaParse(form.valor_aquisicao), valor_documentacao: moedaParse(form.valor_documentacao), hodometro: form.hodometro === '' ? null : parseInt(soDig(form.hodometro), 10), tem_seguro: form.tem_seguro, tem_rastreador: form.tem_rastreador, status_manual: form.status_manual, tipo: form.tipo || MotoArte.tipoPorModelo(form.modelo) };
       api(novo ? '/motos' : '/motos/' + props.id, { method: novo ? 'POST' : 'PUT', body: body })
         .then(function (r) {
           toast(novo ? 'Moto cadastrada' : 'Alterações salvas', 'success');
@@ -661,6 +714,15 @@
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
     };
     var custo = num(moedaParse(form.valor_aquisicao)) + num(moedaParse(form.valor_documentacao));
+    var tipoEf = form.tipo || MotoArte.tipoPorModelo(form.modelo);
+    var temCapa = !novo && d.capa;
+    var capaCard = h(Card, { pad: false },
+      h('div', { style: { padding: 12 } }, h(MotoImg, temCapa ? { src: capaFoto || d.capa.thumb, fluid: true, h: 230, r: 10 } : { tipo: tipoEf, cor: form.cor, fluid: true, h: 230, r: 10 })),
+      h('div', { style: { padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 6 } },
+        h('div', { style: { fontWeight: 700, fontSize: 15 } }, (form.modelo || 'Modelo da moto') + (form.cor ? ' · ' + String(form.cor).toLowerCase() : '')),
+        h('div', null, temCapa ? Pill('Foto real · vistoria de ' + String(d.capa.vistoria_tipo === 'revisao' ? 'revisão' : d.capa.vistoria_tipo === 'periodica' ? 'periódica' : d.capa.vistoria_tipo === 'devolucao' ? 'devolução' : 'retirada') + ' ' + fDC(d.capa.data), 'verde')
+          : Pill('Ilustração · sem foto de vistoria', 'roxo')),
+        h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, temCapa ? 'Atualiza sozinha a cada nova vistoria aprovada.' : 'A foto de frente da vistoria de retirada vira a capa assim que for aprovada.')));
     var abrirFotoVist = function (v, posicao) {
       setFoto({ titulo: (v.tipo_label || v.tipo) + ' · ' + (POSICOES.find(function (x) { return x[0] === posicao; }) || [0, posicao])[1], src: null });
       api('/vistorias/' + v.id).then(function (r) {
@@ -696,16 +758,21 @@
           campo('hodometro', 'Hodômetro (km)', { mode: 'numeric' }),
           h('div', { key: 'custo', style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 } }, h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Custo total da moto'), h('span', { style: Object.assign({ fontWeight: 700, fontSize: 15 }, TAB) }, fR(custo)))),
         h('div', { className: 'grid grid-cols-2', style: { gap: 12 } }, simNao('tem_seguro', 'Tem seguro?'), simNao('tem_rastreador', 'Tem rastreador?')),
+        h(Field, { label: 'Tipo de moto', hint: form.tipo ? 'Usado no desenho enquanto não há foto de vistoria.' : 'Marcado pelo modelo digitado. Dá para trocar.' },
+          Segmented(MotoArte.TIPOS, tipoEf, function (v) { set('tipo', v); }, 'Tipo de moto')),
         travadoContrato ? h(Field, { label: 'Status', req: true }, h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, pillMoto(ct ? Object.assign({}, m, { situacao: ct.situacao, situacao_label: ct.situacao_label, dias_atraso: ct.dias_atraso }) : m), h('span', { style: { fontSize: 12, color: '#6b7280' } }, 'automático pelo contrato')))
           : h(Field, { label: 'Status', req: true, hint: 'Só dá para mudar à mão entre Disponível e Manutenção, quando não há contrato.' }, Segmented([['disponivel', 'Disponível'], ['manutencao', 'Manutenção']], form.status_manual, function (v) { set('status_manual', v); }, 'Status')),
         h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } },
           Btn({ onClick: function () { if (novo) nav({ tela: 'lista', tab: 'motos' }); else carregar(); }, children: novo ? 'Cancelar' : 'Descartar' }),
           Btn({ variant: 'pri', icon: 'save', onClick: salvar, disabled: salvando, children: salvando ? 'Salvando...' : novo ? 'Cadastrar moto' : 'Salvar alterações' }))));
 
-    if (novo) return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 640 } },
+    if (novo) return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       voltar(function () { nav({ tela: 'lista', tab: 'motos' }); }, 'Motos'),
       h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 20, fontWeight: 700 } }, 'Cadastrar moto'),
-      formCard);
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' } },
+        h('div', { style: { flex: '1 1 520px', maxWidth: 640, minWidth: 0 } }, formCard),
+        h('div', { style: { flex: '1 1 320px', maxWidth: 460, minWidth: 0, position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 8 } },
+          h('div', { style: { fontSize: 12, fontWeight: 600, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Prévia'), capaCard)));
 
     return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       voltar(function () { nav({ tela: 'lista', tab: props.de || 'motos' }); }, props.de === 'painel' ? 'Frota' : 'Motos'),
@@ -719,6 +786,7 @@
       h('div', { className: 'grid gap-4 lg:grid-cols-[420px_minmax(0,1fr)] items-start' },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, formCard, h(ArquivosMoto, { moto: m, arquivos: d.arquivos || [], api: api, toast: toast, aoMudar: carregar })),
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+          capaCard,
           ct ? h(Card, null,
             h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
               h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(ct.cliente_nome)),
@@ -989,6 +1057,9 @@
                   Select({ value: cliId, onChange: function (e) { setCliId(e.target.value); } }, [h('option', { key: '', value: '' }, clientes.length ? 'Escolha o cliente' : 'Sem clientes disponíveis')].concat(clientes.map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · ' + (c.tipo === 'tutts' ? 'Tutts' : 'Externo')); })))),
                 h(Field, { label: 'Moto disponível', req: true, hint: moto ? [moto.ano, moto.cor, moto.tem_seguro && moto.tem_rastreador ? 'seguro e rastreador ok' : 'confira seguro/rastreador'].filter(Boolean).join(' · ') : (motos.length ? null : 'Nenhuma moto disponível') },
                   Select({ value: motoId, onChange: function (e) { setMotoId(e.target.value); } }, [h('option', { key: '', value: '' }, motos.length ? 'Escolha a moto' : 'Sem motos disponíveis')].concat(motos.map(function (m) { return h('option', { key: m.id, value: String(m.id) }, m.placa + ' · ' + m.modelo); }))))),
+              moto ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 10 } },
+                h(MotoImg, { src: moto.capa_thumb, tipo: moto.tipo, modelo: moto.modelo, cor: moto.cor, w: 120, h: 76 }),
+                h('div', null, h('div', { style: { fontWeight: 600 } }, moto.modelo), h('div', { style: { fontSize: 12, color: '#6b7280' } }, [h('span', { key: 'p', style: { fontFamily: MONO } }, moto.placa), ' · ', [moto.ano, moto.cor].filter(Boolean).join(' · ')]))) : null,
               h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Só aparecem clientes aprovados sem contrato ativo e motos com status Disponível. Motos em Manutenção ficam de fora.'))),
           h(Card, { pad: false }, CardHead('Condições'),
             h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
