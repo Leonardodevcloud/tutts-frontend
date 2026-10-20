@@ -11,11 +11,11 @@
   var ROXO = '#770fa8', ROXO_ESC = '#5d0b85';
   var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-  var POSICOES = [['frente', 'Frente'], ['traseira', 'Traseira'], ['lateral_esq', 'Lateral esq.'], ['lateral_dir', 'Lateral dir.'], ['painel', 'Painel/hodômetro'], ['pneus', 'Pneus']];
+  var POSICOES = [['frente', 'Frente'], ['traseira', 'Traseira'], ['lateral_esq', 'Lateral esq.'], ['lateral_dir', 'Lateral dir.'], ['painel', 'Painel/hodômetro'], ['motor_chassi', 'Motor/chassi']]; // LOCACAO_V3: Anexo IV
   var TIPOS_VIST = [['retirada', 'Retirada'], ['revisao', 'Revisão'], ['periodica', 'Periódica'], ['devolucao', 'Devolução']];
   var TONS = { verde: ['#f0fdf4', '#166534'], ambar: ['#fffbeb', '#92400e'], vermelho: ['#fef2f2', '#991b1b'], azul: ['#eff6ff', '#1e40af'], roxo: ['#f3e8fb', '#5d0b85'], cinza: ['#f3f4f6', '#374151'] };
-  var TOM_PARC = { a_vencer: 'azul', vence_hoje: 'azul', atrasada: 'vermelho', paga: 'verde', cancelada: 'cinza', em_aberto: 'ambar' };
-  var TOM_SIT = { em_dia: 'verde', atrasada: 'ambar', em_retomada: 'vermelho', quitado: 'roxo', aguardando_assinatura: 'azul', encerrado: 'cinza' };
+  var TOM_PARC = { a_vencer: 'azul', vence_hoje: 'azul', atrasada: 'vermelho', paga: 'verde', cancelada: 'cinza', em_aberto: 'ambar', suspensa: 'cinza' };
+  var TOM_SIT = { em_dia: 'verde', atrasada: 'ambar', em_retomada: 'vermelho', quitado: 'roxo', aguardando_assinatura: 'azul', encerrado: 'cinza', suspenso: 'azul' };
   var TOM_VIST = { aguardando: 'ambar', aprovada: 'verde', com_avaria: 'vermelho' };
   var ROT_VIST = { aguardando: 'Em análise', aprovada: 'Aprovada', com_avaria: 'Com avaria' };
   var TOM_AVISO = { aberto: 'ambar', em_atendimento: 'azul', resolvido: 'verde' };
@@ -264,9 +264,10 @@
   // ───── Home ─────
   function Home(p) {
     var r = p.r, mo = r.moto || {}, ct = r.contrato || {}, prox = r.proxima_parcela, qf = r.quanto_falta || {}, pend = r.vistoria_pendente, cli = r.cliente || {};
+    var ag = r.vistoria_agendada, nParc = ct.prazo_qtd || ct.semanas || 0, aluguel = ct.plano === 'aluguel'; // LOCACAO_V3
     var _cf = useState(null), capa = _cf[0], setCapa = _cf[1];
     useEffect(function () { if (mo.tem_foto) p.api('/moto/capa').then(function (x) { if (x && x.foto) setCapa(x.foto); }).catch(function () {}); }, [mo.tem_foto]);
-    var pct = Math.max(0, Math.min(100, num(qf.pct_pago != null ? qf.pct_pago : (ct.semanas ? 100 * num(ct.parcelas_pagas) / num(ct.semanas) : 0))));
+    var pct = Math.max(0, Math.min(100, num(qf.pct_pago != null ? qf.pct_pago : (nParc ? 100 * num(ct.parcelas_pagas) / num(nParc) : 0))));
     var dias = pend ? (pend.dias_restantes != null ? pend.dias_restantes : Math.round((pd(pend.prazo) - new Date(new Date().toDateString())) / 864e5)) : null;
     var baixarContrato = function () {
       p.api('/contrato/pdf', { raw: true }).then(function (res) { return res.blob(); }).then(function (b) {
@@ -285,10 +286,10 @@
       ct.situacao !== 'quitado' ? h('section', { className: 'mm-card' },
         h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 } },
           h('div', null,
-            h('div', { style: { fontSize: 12.5, color: '#6b7280', fontWeight: 600 } }, 'Quanto falta para a moto ser sua'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', fontWeight: 600 } }, aluguel ? 'Quanto falta para o fim do contrato' : 'Quanto falta para a moto ser sua'),
             h('div', { className: 'mm-sora mm-num', style: { fontSize: 26, fontWeight: 700 } }, fR(qf.valor_restante != null ? qf.valor_restante : ct.saldo_devedor)),
-            h('div', { style: { fontSize: 13, color: '#374151' } }, 'faltam ', h('b', null, (qf.parcelas_restantes != null ? qf.parcelas_restantes : num(ct.semanas) - num(ct.parcelas_pagas)) + ' parcelas'), ' · quitação prevista ', h('b', null, fD(qf.quitacao_prevista || ct.ultimo_vencimento)))),
-          Pill((ct.parcelas_pagas || 0) + ' de ' + (ct.semanas || 0), 'roxo')),
+            h('div', { style: { fontSize: 13, color: '#374151' } }, 'faltam ', h('b', null, (qf.parcelas_restantes != null ? qf.parcelas_restantes : num(nParc) - num(ct.parcelas_pagas)) + ' parcelas'), aluguel ? ' · término ' : ' · quitação prevista ', h('b', null, fD(aluguel ? (ct.termino || qf.quitacao_prevista) : (qf.quitacao_prevista || ct.termino || ct.ultimo_vencimento))))), /* LOCACAO_V3 */
+          Pill((ct.parcelas_pagas || 0) + ' de ' + nParc, 'roxo')),
         h('div', null,
           h('div', { style: { position: 'relative', height: 8, background: '#f3f4f6', borderRadius: 99 } },
             h('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: pct + '%', background: ROXO, borderRadius: 99 } }),
@@ -300,22 +301,27 @@
       prox ? h('section', { className: 'mm-card' },
         h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
           h('div', null,
-            h('div', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Próxima parcela · ' + prox.numero + '/' + (ct.semanas || '')),
+            h('div', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Próxima parcela · ' + prox.numero + '/' + (nParc || '')),
             h('div', { className: 'mm-sora mm-num', style: { fontSize: 26, fontWeight: 700 } }, fR(prox.total)),
             h('div', { style: { fontSize: 13, color: prox.status === 'atrasada' ? '#991b1b' : '#374151', fontWeight: prox.status === 'atrasada' ? 600 : 400 } },
-              prox.status === 'atrasada' ? 'venceu ' + fDS(prox.vencimento) + ' · com juros' : prox.status === 'vence_hoje' ? 'vence hoje' : 'vence ' + fDS(prox.vencimento)),
-            num(prox.valor_extras) > 0 ? h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, 'inclui ' + fR(prox.valor_extras) + ' de extras') : null),
+              prox.status === 'atrasada' ? 'venceu ' + fDS(prox.vencimento) + ' · com multa e juros' : prox.status === 'vence_hoje' ? 'vence hoje' : 'vence ' + fDS(prox.vencimento)),
+            num(prox.valor_extras) > 0 ? h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, 'inclui ' + fR(prox.valor_extras) + ' de tarifas') : null,
+            prox.status === 'atrasada' && ct.dias_rescisao ? h('div', { style: { fontSize: 12, color: '#991b1b', marginTop: 2 } }, 'Com mais de ' + ct.dias_rescisao + ' dias de atraso a moto pode ser recolhida (Cl. 14.2).') : null),
           Pill(prox.status_label || prox.status, TOM_PARC[prox.status] || 'cinza')),
         h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { p.copiarPix(prox); } }, ico('copy', 18), 'Copiar PIX copia-e-cola'),
         prox.abatimento_repasse ? h('div', { style: { fontSize: 12.5, color: '#374151', background: '#faf7fd', borderRadius: 10, padding: '10px 12px', lineHeight: 1.45 } },
           h('b', { style: { color: ROXO_ESC } }, 'Motoboy Tutts: '), 'desconto automático no repasse' + (prox.repasse_previsto ? ' de ' + fDS(prox.repasse_previsto) : '') + '; o que faltar você paga via PIX.')
           : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'Você recebe um lembrete no WhatsApp na véspera.')) : null,
+      ag ? h('section', { className: 'mm-card', style: { flexDirection: 'row', gap: 12, alignItems: 'center', background: '#faf7fd', borderColor: '#e9d5f9' } }, // LOCACAO_V3: vistoria mensal agendada na Base
+        h('span', { style: { width: 44, height: 44, borderRadius: 12, background: '#fff', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none', border: '1px solid #e9d5f9' } }, ico('calendar', 20)),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Vistoria mensal na Base'), h('div', { style: { fontSize: 13, color: '#374151' } }, fDS(ag.data_hora) + ' às ' + fHM(ag.data_hora) + (ag.local ? ' · ' + ag.local : '')),
+          h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, 'Leve a moto. Se faltar sem justificar, a tarifa é R$ 100,00 (Cl. 9.4.1).'))) : null,
       pend ? h('section', { className: 'mm-card' },
         h('div', { style: { display: 'flex', gap: 14, alignItems: 'center' } },
           h(Anel, { valor: Math.max(0, dias), rotulo: dias === 1 ? 'dia' : 'dias', frac: Math.max(0.08, Math.min(1, (dias || 0) / 30)), cor: dias != null && dias <= 1 ? '#d97706' : ROXO }),
           h('div', { style: { flex: 1, minWidth: 0 } },
             h('b', null, dias != null && dias < 0 ? (pend.tipo_label || 'Vistoria') + ' atrasada' : (pend.tipo_label || 'Vistoria') + (dias === 0 ? ' vence hoje' : ' em ' + dias + ' dia' + (dias === 1 ? '' : 's'))),
-            h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'até ' + fDS(pend.prazo) + ' · 6 fotos + km'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'até ' + fDS(pend.prazo) + ' · 6 fotos + km + checklist'),
             h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginTop: 8 } }, POSICOES.map(function (x) { return h('span', { key: x[0], title: x[1], style: { height: 22, borderRadius: 6, background: '#f3f4f6', color: '#9ca3af', display: 'grid', placeItems: 'center' } }, ico('camera', 12)); })))),
         h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora'),
         mo.tem_foto ? null : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'A foto de frente vira a imagem da sua moto aqui.')) : null,
@@ -325,8 +331,8 @@
         h('span', { className: 'mm-lnk' }, 'Avisar', ico('arrowright', 14))),
       h('section', { className: 'mm-card', style: { flexDirection: 'row', alignItems: 'center', gap: 12 } },
         h('span', { style: { width: 40, height: 40, borderRadius: 10, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 20)),
-        h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Seu contrato'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, ct.tem_pdf_assinado ? 'PDF assinado no Autentique' + (ct.assinado_em ? ' · ' + fD(ct.assinado_em) : '') : 'PDF do contrato')),
-        h('button', { type: 'button', className: 'mm-lnk', onClick: baixarContrato }, ico('download', 16), 'Baixar')));
+        h('button', { type: 'button', onClick: function () { p.ir('contrato'); }, style: { flex: 1, minWidth: 0, textAlign: 'left' } }, h('b', { style: { display: 'block' } }, 'Meu contrato'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, [ct.plano_label, ct.tem_pdf_assinado ? 'PDF assinado' + (ct.assinado_em ? ' · ' + fD(ct.assinado_em) : '') : 'demonstrativo, tarifário e anexos'].filter(Boolean).join(' · '))), // LOCACAO_V3
+        h('button', { type: 'button', className: 'mm-lnk', onClick: baixarContrato, 'aria-label': 'Baixar contrato em PDF' }, ico('download', 16), 'PDF')));
   }
 
   // ───── Antecipar ─────
@@ -401,7 +407,7 @@
     var lista = itens.filter(function (x) {
       if (f === 'pagos') return x.status === 'paga';
       if (f === 'aberto') return aberto(x);
-      if (f === 'extras') return x.tipo === 'extra';
+      if (f === 'extras') return x.tipo === 'extra' || (x.itens && x.itens.length > 1);
       return true;
     });
     var nPagas = itens.filter(function (x) { return x.status === 'paga' && x.tipo === 'parcela'; }).length;
@@ -443,7 +449,7 @@
       h('section', { className: 'mm-card', style: { flexDirection: 'row', padding: 0, gap: 0 } },
         h('div', { style: { flex: 1, padding: 14, borderRight: '1px solid #f3f4f6' } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Pago até hoje'), h('div', { className: 'mm-sora mm-num', style: { fontSize: 20, fontWeight: 700 } }, fR(rs.pago_total)), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, nPagas + ' parcela' + (nPagas === 1 ? '' : 's') + (nExtras ? ' + ' + nExtras + ' extra' + (nExtras === 1 ? '' : 's') : ''))),
         h('div', { style: { flex: 1, padding: 14 } }, h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Em aberto'), h('div', { className: 'mm-sora mm-num', style: { fontSize: 20, fontWeight: 700, color: num(rs.em_aberto) > 0 ? '#92400e' : '#111827' } }, fR(rs.em_aberto)), abertoExtra ? h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, (abertoExtra.descricao || 'extra').toLowerCase() + (abertoExtra.vencimento ? ' · vence ' + fDC(abertoExtra.vencimento) : '')) : null)),
-      h('div', { style: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 } }, chip('todos', 'Todos'), chip('pagos', 'Pagos'), chip('aberto', 'Em aberto'), chip('extras', 'Extras', nExtras)),
+      h('div', { style: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 } }, chip('todos', 'Todos'), chip('pagos', 'Pagos'), chip('aberto', 'Em aberto'), chip('extras', 'Tarifas', nExtras)), // LOCACAO_V3
       grupos.length === 0 ? h('div', { className: 'mm-card' }, h('span', { className: 'mm-sub' }, 'Nada neste filtro.')) :
       grupos.map(function (g) {
         return h('section', { key: g.k, className: 'mm-card', style: { gap: 0, padding: 0, overflow: 'hidden' } },
@@ -454,9 +460,12 @@
               : pago ? [fDC(x.pago_em), x.forma_label || x.forma, num(x.juros) > 0 ? 'juros ' + fR(x.juros) : null, num(x.extras) > 0 ? 'extras ' + fR(x.extras) : null].filter(Boolean).join(' · ')
               : [x.vencimento ? 'vence ' + fDS(x.vencimento) : null, num(x.extras) > 0 ? 'inclui extras ' + fR(x.extras) : null].filter(Boolean).join(' · ');
             return h('div', { key: x.tipo + x.id, style: { display: 'flex', justifyContent: 'space-between', gap: 10, padding: '11px 14px', borderTop: '1px solid #f3f4f6', background: ext && !pago ? '#fffbeb' : '#fff' } },
-              h('div', { style: { minWidth: 0 } },
-                h('div', { style: { fontWeight: 600, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } }, ext ? (x.descricao || 'Extra') : x.tipo === 'antecipacao' ? (x.descricao || 'Antecipação') : 'Parcela ' + x.numero, ext ? h('span', { style: { fontSize: 11, fontWeight: 700, color: '#92400e' } }, 'Extra') : null),
-                h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc || '—'),
+              h('div', { style: { minWidth: 0, flex: 1 } },
+                h('div', { style: { fontWeight: 600, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } }, ext ? (x.descricao || 'Extra') : x.tipo === 'antecipacao' ? (x.descricao || 'Antecipação') : 'Parcela ' + x.numero, ext ? h('span', { style: { fontSize: 11, fontWeight: 700, color: '#92400e' } }, x.tarifa_codigo || x.clausula ? 'Tarifário' : 'Extra') : null, Cl(x.clausula)),
+                h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc || '—', x.detalhes && x.detalhes.ait ? ' · AIT ' + x.detalhes.ait : '', x.detalhes && x.detalhes.local ? ' · ' + x.detalhes.local : ''),
+                x.status === 'atrasada' && x.dias_atraso ? h('div', { style: { fontSize: 12, color: '#991b1b' } }, 'em atraso há ' + x.dias_atraso + ' dia' + (x.dias_atraso === 1 ? '' : 's')) : null,
+                DetalheItens(x), // LOCACAO_V3: tarifas da parcela e encargos (multa + juros + IPCA)
+                !pago && x.tipo === 'parcela' && (x.status === 'atrasada' || x.status === 'vence_hoje') ? h('button', { type: 'button', className: 'mm-lnk', style: { fontSize: 12.5, marginTop: 4 }, onClick: function () { p.copiarPix(x); } }, ico('copy', 14), 'Copiar PIX · ' + fR(x.total != null ? x.total : x.valor)) : null,
                 (x.anexos || []).length ? h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 } }, x.anexos.map(function (a) { return h('button', { key: a.id, type: 'button', className: 'mm-lnk', style: { fontSize: 12.5 }, onClick: function () { abrirAnexo(x, a); } }, 'Ver ' + (a.nome || 'documento')); })) : null),
               h('div', { style: { textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flex: 'none' } },
                 h('b', { className: 'mm-num' }, fR(x.total != null ? x.total : x.valor)),
@@ -464,6 +473,7 @@
                   : pago ? Pill('Pago', 'verde') : h('span', { style: { fontSize: 12, fontWeight: 600, color: x.status === 'atrasada' ? '#991b1b' : '#92400e' } }, x.status_label || 'Em aberto')));
           }));
       }),
+      h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5, textAlign: 'center' } }, 'Todas as tarifas seguem o Anexo I (Tarifário) do seu contrato. ', h('button', { type: 'button', className: 'mm-lnk', style: { fontSize: 12.5 }, onClick: function () { p.ir('contrato'); } }, 'Ver em Meu contrato')), // LOCACAO_V3
       h('button', { type: 'button', className: 'mm-btn sec', onClick: baixarExtrato }, ico('download', 18), 'Baixar extrato completo (PDF)'),
       recibo ? h(Sheet, { titulo: 'Recibo', onClose: function () { setRecibo(null); } }, recibo.carregando ? Carregando() : h('div', { style: { display: 'flex', flexDirection: 'column', gap: 0 } },
         [['Parcela', recibo.numero], ['Contrato', recibo.contrato_numero], ['Moto', [recibo.moto, recibo.placa].filter(Boolean).join(' · ')], ['Vencimento', fD(recibo.vencimento)], ['Pago em', fD(recibo.pago_em)], ['Forma', recibo.forma_label], ['Valor', fR(recibo.valor)], ['Juros', num(recibo.juros) ? fR(recibo.juros) : '—'], ['Extras', num(recibo.extras) ? fR(recibo.extras) : '—']]
@@ -494,58 +504,201 @@
       pend ? null : h('button', { type: 'button', className: 'mm-btn sec', onClick: function () { p.ir('vistoria', { tipo: 'revisao' }); } }, ico('camera', 18), 'Registrar vistoria'));
   }
 
+  // ═════ LOCACAO_V3: contrato real · Meu contrato, vistoria Anexo IV ═════
+  var CHECKLIST_PADRAO = ['Pintura / carenagens / tanque', 'Farol, lanterna, setas e luz de placa', 'Retrovisores (2)', 'Pneus (dianteiro / traseiro)', 'Freios (dianteiro / traseiro)', 'Kit relação (corrente, coroa, pinhão)', 'Painel, hodômetro e buzina', 'Escapamento e filtro de ar originais', 'Placa e lacre', 'Rastreador / bloqueador (lacre)', 'Bancos, rabeta e para-lamas', 'Chave principal / chave reserva', 'Antena corta-pipa / protetor de motor'];
+  var POS_V3 = [['frente', '1. Frente', true], ['traseira', '2. Traseira', true], ['lateral_esq', '3. Lateral esquerda', true], ['lateral_dir', '4. Lateral direita', true], ['painel', '5. Painel e hodômetro', true], ['motor_chassi', '6. Motor e nº do chassi', true], ['avaria1', '7. Avaria (detalhe)', false], ['avaria2', '8. Avaria (detalhe)', false]];
+  var POS_LABEL = { frente: 'Frente', traseira: 'Traseira', lateral_esq: 'Lateral esq.', lateral_dir: 'Lateral dir.', painel: 'Painel/hodômetro', motor_chassi: 'Motor/chassi', avaria1: 'Avaria 1', avaria2: 'Avaria 2', pneus: 'Pneus', extra: 'Extra' };
+  var COMBUST = [['reserva', 'Reserva'], ['1/4', '1/4'], ['1/2', '1/2'], ['3/4', '3/4'], ['cheio', 'Cheio']];
+  function itensChecklist(r) {
+    var l = r && r.checklist_itens;
+    if (!l || !l.length) return CHECKLIST_PADRAO;
+    return l.map(function (x) { return typeof x === 'string' ? x : (x.item || x.nome || ''); }).filter(Boolean);
+  }
+  function baixarPdf(api, path, nome, toast) {
+    return api(path, { raw: true }).then(function (res) { return res.blob(); }).then(function (b) {
+      var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = nome || 'documento.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    }).catch(function (e) { toast(e.message); });
+  }
+  function Cl(t) { return t ? h('span', { style: { fontSize: 10.5, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', borderRadius: 5, padding: '1px 5px', whiteSpace: 'nowrap' } }, /^cl/i.test(t) ? t : 'Cl. ' + t) : null; }
+  function Rotulo(t) { return h('div', { style: { fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.06em', textTransform: 'uppercase' } }, t); }
+
+  // ───── Meu contrato ─────
+  function MeuContrato(p) {
+    var r = p.r, mo = r.moto || {}, ct = r.contrato || {};
+    var _d = useState(null), d = _d[0], setD = _d[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _t = useState(false), todos = _t[0], setTodos = _t[1];
+    var _rg = useState(null), regra = _rg[0], setRegra = _rg[1];
+    var _b = useState(false), env = _b[0], setEnv = _b[1];
+    var _bx = useState(null), baixando = _bx[0], setBaixando = _bx[1];
+    var carregar = useCallback(function () { setErro(null); p.api('/contrato').then(setD).catch(function (e) { setErro(e.message); }); }, []);
+    useEffect(carregar, [carregar]);
+    if (erro) return h(React.Fragment, null, Voltar('Voltar', p.voltar), h('div', { className: 'mm-card' }, h('b', null, 'Não foi possível carregar'), h('span', { className: 'mm-sub' }, erro), h('button', { type: 'button', className: 'mm-btn sec', onClick: carregar }, 'Tentar de novo')));
+    if (!d) return h(React.Fragment, null, Voltar('Voltar', p.voltar), Carregando('Carregando seu contrato...'));
+    var dm = d.demonstrativo || {}, op = d.opcao, dr = d.desconto_repasse || {}, tar = d.tarifario || [], docs = d.documentos || [], regras = d.regras || [];
+    var linhas = [['Plano', dm.plano_label], ['Prazo', [dm.prazo_label, dm.inicio && dm.termino ? fD(dm.inicio) + ' → ' + fD(dm.termino) : null].filter(Boolean).join(' · ')], ['Parcela', dm.valor_parcela != null ? fR(dm.valor_parcela) + (dm.periodicidade === 'semanal' ? ' por semana' : dm.periodicidade === 'mensal' ? ' por mês' : '') : null], ['Vencimento', dm.vencimento_label], ['Caução', dm.caucao_label], ['Área de circulação', dm.area_label], ['Manutenção', dm.manutencao_label], ['Pagamento', dm.formas_pagamento_label], ['Base', dm.base_retirada]].filter(function (x) { return x[1]; });
+    var pagas = num(ct.parcelas_pagas), totalP = num(ct.prazo_qtd || ct.semanas);
+    var pctOp = totalP ? Math.max(0, Math.min(100, 100 * pagas / totalP)) : 0;
+    var baixar = function (doc) {
+      var path = doc.url || (doc.id === 'contrato' ? '/contrato/pdf' : doc.id === 'anexo_iv' && doc.vistoria_id ? '/vistorias/' + doc.vistoria_id + '/anexo-iv.pdf' : null);
+      if (!path) { p.toast('Documento indisponível no momento.'); return; }
+      setBaixando(doc.id);
+      baixarPdf(p.api, path.replace(/^\/api\/locacao-minha/, ''), (doc.arquivo || doc.id) + '-' + (ct.numero || 'moto') + '.pdf', p.toast).then(function () { setBaixando(null); });
+    };
+    var mudarDesconto = function (v) {
+      setEnv(true);
+      p.api('/desconto-repasse', { method: 'POST', body: { autorizar: v } }).then(function () { p.toast(v ? 'Desconto em repasses autorizado.' : 'Autorização revogada. As parcelas seguem por Pix.'); carregar(); p.recarregar && p.recarregar(); })
+        .catch(function (e) { p.toast(e.message); }).then(function () { setEnv(false); });
+    };
+    var tarVis = todos ? tar : tar.slice(0, 9);
+    return h(React.Fragment, null,
+      Voltar('Voltar', p.voltar),
+      h('h1', { className: 'mm-h1' }, 'Meu contrato'),
+      h('section', { className: 'mm-card', style: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 } },
+        h(MotoImg, { src: mo.capa_thumb, tipo: mo.tipo, modelo: mo.modelo, cor: mo.cor, w: 92, h: 60, r: 10 }),
+        h('div', { style: { minWidth: 0 } }, h('b', null, (mo.modelo || '') + (mo.cor ? ' · ' + String(mo.cor).toLowerCase() : '')), h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, h('span', { className: 'mm-mono' }, mo.placa), ct.numero ? ' · contrato ' + ct.numero : ''))),
+      h('section', { className: 'mm-card', style: { gap: 0 } },
+        Rotulo('Demonstrativo do contrato'),
+        h('div', { style: { height: 6 } }),
+        linhas.map(function (l, i) { return h('div', { key: l[0], className: 'mm-row', style: Object.assign({ alignItems: 'flex-start' }, i === 0 ? { borderTop: 0 } : {}) }, h('span', { style: { color: '#6b7280', flex: 'none' } }, l[0]), h('span', { className: 'mm-num', style: { textAlign: 'right', fontWeight: 600 } }, l[1])); }),
+        dm.locadora ? h('div', { style: { fontSize: 11.5, color: '#9ca3af', paddingTop: 8 } }, 'Locadora: ' + dm.locadora) : null),
+      op ? h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } }, h('b', null, 'Opção de compra'), Pill(op.status_label || (op.status === 'extinta' ? 'Extinta' : 'Em andamento') + (totalP ? ' · ' + pagas + ' de ' + totalP : ''), op.status === 'extinta' ? 'vermelho' : 'roxo')),
+        op.status === 'extinta' ? h('div', { style: { fontSize: 13, color: '#991b1b' } }, 'O contrato foi encerrado antes do prazo e a opção de compra foi extinta (Cl. 6.3).') : h(React.Fragment, null,
+          h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, 'Cumpra os ' + (dm.prazo_label || 'meses do contrato') + ' ', h('b', null, 'em dia'), ', sem débitos, e a moto pode ser sua pelo valor de exercício de ', h('b', null, op.valor_corrigido != null ? fR(op.valor_corrigido) : op.valor_label || (ct.valor_opcao_compra != null ? fR(ct.valor_opcao_compra) + ' + IPCA' : 'R$ 10,00 + IPCA')), ' (Anexo II).'),
+          h('div', null,
+            h('div', { style: { position: 'relative', height: 8, background: '#f3f4f6', borderRadius: 99 } }, h('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: pctOp + '%', background: ROXO, borderRadius: 99 } })),
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#6b7280', marginTop: 6 } }, h('span', null, pagas + ' de ' + totalP + ' parcelas'), h('span', null, 'aviso 30 dias antes do fim'))),
+          op.pix_copia_cola && !op.pago_em ? h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { copiar(op.pix_copia_cola).then(function (ok) { p.toast(ok ? 'PIX copiado. Cole no app do seu banco.' : 'Não deu para copiar.'); }); } }, ico('copy', 16), 'Copiar PIX do valor de exercício') : null,
+          h('div', { style: { fontSize: 12, color: '#92400e', background: '#fffbeb', borderRadius: 10, padding: '8px 10px', lineHeight: 1.45 } }, 'Encerrar antes do prazo, ou rescisão por descumprimento, extingue a opção de compra (Cl. 6.3).'))) : null,
+      docs.length ? h('section', { className: 'mm-card', style: { gap: 0 } },
+        Rotulo('Documentos'),
+        docs.map(function (dc, i) {
+          return h('div', { key: dc.id + i, className: 'mm-row', style: i === 0 ? { borderTop: 0, marginTop: 4 } : null },
+            h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 } }, h('span', { style: { width: 34, height: 34, borderRadius: 9, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 16)),
+              h('div', { style: { minWidth: 0 } }, h('div', { style: { fontWeight: 600 } }, dc.titulo), dc.subtitulo ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, dc.subtitulo) : null)),
+            dc.disponivel === false ? h('span', { style: { fontSize: 12, color: '#9ca3af' } }, 'em breve') : h('button', { type: 'button', className: 'mm-lnk', disabled: baixando === dc.id, onClick: function () { baixar(dc); } }, ico('download', 15), baixando === dc.id ? '...' : 'Baixar'));
+        })) : null,
+      tar.length ? h('section', { className: 'mm-card', style: { gap: 0 } },
+        Rotulo('Tarifário · Anexo I'),
+        tarVis.map(function (t, i) { return h('div', { key: i, className: 'mm-row', style: i === 0 ? { borderTop: 0, marginTop: 4 } : null }, h('span', { style: { display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 } }, t.evento, Cl(t.clausula)), h('b', { className: 'mm-num', style: { textAlign: 'right', fontSize: 13, flex: '0 0 auto', maxWidth: '45%', whiteSpace: String(t.valor_label || '').length < 16 ? 'nowrap' : 'normal' } }, t.valor_label)); }),
+        tar.length > 9 ? h('button', { type: 'button', className: 'mm-lnk', style: { paddingTop: 10, alignSelf: 'flex-start' }, onClick: function () { setTodos(!todos); } }, todos ? 'Ver menos' : 'Ver os ' + tar.length + ' itens') : null) : null,
+      dr.pode || dr.autorizado ? h('section', { className: 'mm-card' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } }, h('b', null, 'Desconto em repasses · Anexo III'), Pill(dr.autorizado ? 'Autorizado' : 'Não autorizado', dr.autorizado ? 'verde' : 'cinza')),
+        h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, dr.autorizado ? 'Suas parcelas são descontadas dos repasses do app Tutts. Se o repasse não cobrir, o resto vai por Pix no vencimento. Você pode revogar quando quiser, sem afetar a locação.' : 'Se você faz entregas pelo app Tutts, pode autorizar que a parcela seja descontada dos seus repasses. É facultativo e pode ser revogado quando quiser, sem afetar a locação.'),
+        dr.motivo && !dr.pode ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, dr.motivo) : null,
+        dr.pode !== false ? h('button', { type: 'button', className: dr.autorizado ? 'mm-btn sec' : 'mm-btn out', style: { height: 44 }, disabled: env, onClick: function () { if (dr.autorizado && !window.confirm('Revogar a autorização de desconto em repasses?')) return; mudarDesconto(!dr.autorizado); } }, env ? 'Salvando...' : dr.autorizado ? 'Revogar autorização' : 'Autorizar desconto') : null) : null,
+      regras.length ? h('section', { className: 'mm-card', style: { gap: 0 } },
+        Rotulo('Regras importantes'),
+        regras.map(function (rg, i) {
+          var ab = regra === i;
+          return h('div', { key: i, style: { borderTop: i ? '1px solid #f3f4f6' : 0, marginTop: i ? 0 : 4 } },
+            h('button', { type: 'button', 'aria-expanded': ab, onClick: function () { setRegra(ab ? null : i); }, style: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', textAlign: 'left', fontWeight: 600, fontSize: 13.5 } }, rg.titulo, ico(ab ? 'minus' : 'plus', 15, { color: '#9ca3af' })),
+            ab ? h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5, paddingBottom: 12 } }, rg.texto) : null);
+        })) : null,
+      h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5, textAlign: 'center' } }, 'Dúvidas sobre o contrato? Fale com a Tutts pelo WhatsApp.'));
+  }
+
+  // Encargos e itens (tarifas) de um lançamento do extrato
+  function DetalheItens(x) {
+    var linhas = [];
+    if (x.itens && x.itens.length) x.itens.forEach(function (it) { linhas.push([it.descricao, it.clausula, it.valor]); });
+    if (x.encargos && x.status !== 'paga') {
+      if (!linhas.length) linhas.push(['Parcela', null, x.valor]);
+      if (num(x.encargos.multa) > 0) linhas.push(['Multa ' + (x.encargos.multa_pct != null ? String(x.encargos.multa_pct).replace('.', ',') + '%' : ''), '5.10 i', x.encargos.multa]);
+      if (num(x.encargos.juros) > 0) linhas.push(['Juros 1% a.m. pro rata' + (x.dias_atraso ? ' (' + x.dias_atraso + ' dia' + (x.dias_atraso === 1 ? '' : 's') + ')' : ''), null, x.encargos.juros]);
+      if (num(x.encargos.correcao) > 0) linhas.push(['Correção IPCA', null, x.encargos.correcao]);
+    }
+    if (!linhas.length) return null;
+    return h('div', { style: { marginTop: 6, background: '#f9fafb', borderRadius: 10, padding: '6px 10px' } },
+      linhas.map(function (l, i) { return h('div', { key: i, style: { display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, padding: '3px 0', color: '#374151' } }, h('span', { style: { display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' } }, l[0], Cl(l[1])), h('span', { className: 'mm-num', style: { whiteSpace: 'nowrap', flex: 'none' } }, fR(l[2]))); }));
+  }
+
+  // ───── Vistoria · Anexo IV (locatário) ─────
   function NovaVistoria(p) {
     var r = p.r, mo = r.moto || {}, vist = r.vistorias || [], pend = r.vistoria_pendente;
+    var itens = itensChecklist(r);
     var _t = useState(p.tipo || 'revisao'), tipo = _t[0], setTipo = _t[1];
     var _f = useState({}), fotos = _f[0], setFotos = _f[1];
     var _k = useState(''), km = _k[0], setKm = _k[1];
-    var _a = useState(null), avaria = _a[0], setAvaria = _a[1];
-    var _o = useState(''), obs = _o[0], setObs = _o[1];
+    var _c = useState(null), comb = _c[0], setComb = _c[1];
+    var _ck = useState({}), ck = _ck[0], setCk = _ck[1];
+    var _dc = useState(false), decl = _dc[0], setDecl = _dc[1];
     var _s = useState(false), env = _s[0], setEnv = _s[1];
     var geo = useRef(null);
     useEffect(function () {
       try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (pos) { geo.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }; }, function () {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }); } catch (e) { /* ok */ }
     }, []);
-    var n = Object.keys(fotos).length;
+    var obrig = POS_V3.filter(function (x) { return x[2]; });
+    var nObr = obrig.filter(function (x) { return fotos[x[0]]; }).length;
     var pegar = function (pos, file) {
       var quando = new Date().toISOString();
       lerFoto(file, 1280, 0.8).then(function (u) { setFotos(function (x) { var m = Object.assign({}, x); m[pos] = { foto: u, capturada_em: quando }; return m; }); }).catch(function (e) { p.toast(e.message); });
     };
+    var setItem = function (i, k, v) { setCk(function (x) { var n = Object.assign({}, x); n[i] = Object.assign({ situacao: null, obs: '' }, n[i] || {}); n[i][k] = v; return n; }); };
+    var nAv = itens.filter(function (_, i) { return ck[i] && ck[i].situacao === 'avaria'; }).length;
+    var nMarc = itens.filter(function (_, i) { return ck[i] && ck[i].situacao; }).length;
+    var ckOk = nMarc === itens.length && itens.every(function (_, i) { return !(ck[i] && ck[i].situacao === 'avaria') || String(ck[i].obs || '').trim().length > 2; });
     var ultima = vist.find(function (v) { return v.km != null; });
-    var ok = n === 6 && km !== '' && avaria !== null && (!avaria || obs.trim().length > 2);
+    var faltas = [];
+    if (nObr < obrig.length) faltas.push(obrig.length - nObr === 1 ? '1 foto' : (obrig.length - nObr) + ' fotos');
+    if (km === '') faltas.push('km');
+    if (!comb) faltas.push('combustível');
+    if (!ckOk) faltas.push('checklist');
+    if (!decl) faltas.push('declaração');
+    var passo = nObr < obrig.length ? 1 : !ckOk || km === '' || !comb ? 2 : 3;
     var enviar = function () {
       setEnv(true);
       var g = geo.current || {};
-      p.api('/vistorias', { method: 'POST', body: { tipo: tipo, km: parseInt(km, 10), avaria: !!avaria, observacoes: obs.trim() || null, lat: g.lat != null ? g.lat : null, lng: g.lng != null ? g.lng : null,
-        fotos: POSICOES.map(function (x) { return { posicao: x[0], foto: fotos[x[0]].foto, capturada_em: fotos[x[0]].capturada_em }; }) } })
-        .then(function () { p.toast('Vistoria enviada. O time Tutts vai conferir.'); p.onOk(); })
+      var checklist = itens.map(function (it, i) { var x = ck[i] || {}; return { item: it, situacao: x.situacao, obs: String(x.obs || '').trim() || null }; });
+      var avs = checklist.filter(function (x) { return x.situacao === 'avaria'; });
+      p.api('/vistorias', { method: 'POST', body: { tipo: tipo, km: parseInt(km, 10), combustivel: comb, checklist: checklist, avarias: [], sem_avarias: avs.length === 0, declaracao_aceita: true,
+        avaria: avs.length > 0, observacoes: avs.length ? avs.map(function (x) { return x.item + ': ' + (x.obs || ''); }).join('; ') : null, lat: g.lat != null ? g.lat : null, lng: g.lng != null ? g.lng : null,
+        fotos: POS_V3.filter(function (x) { return fotos[x[0]]; }).map(function (x) { return { posicao: x[0], foto: fotos[x[0]].foto, capturada_em: fotos[x[0]].capturada_em }; }) } })
+        .then(function () { p.toast('Vistoria enviada. O time Tutts confere e o termo vai para assinatura.'); p.onOk(); })
         .catch(function (e) { p.toast(e.message); setEnv(false); });
     };
+    var titulo = { retirada: 'Vistoria de entrega', devolucao: 'Vistoria de devolução', periodica: 'Vistoria mensal', revisao: 'Vistoria de revisão' }[tipo] || 'Nova vistoria';
+    var etapa = function (n, t) { var on = passo === n, feito = passo > n; return h('div', { key: n, style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: on ? 700 : 600, color: on ? ROXO_ESC : feito ? '#166534' : '#9ca3af' } }, h('span', { style: { width: 22, height: 22, borderRadius: 99, display: 'grid', placeItems: 'center', fontSize: 11.5, background: on ? ROXO : feito ? '#16a34a' : '#f3f4f6', color: on || feito ? '#fff' : '#9ca3af' } }, feito ? ico('check', 12) : n), t); };
     return h(React.Fragment, null,
       Voltar('Voltar', p.voltar),
-      h('div', null, h('h1', { className: 'mm-h1' }, 'Nova vistoria'), h('p', { className: 'mm-sub' }, (mo.modelo || '') + ' · ' + (mo.placa || ''))),
-      h('section', { className: 'mm-card' }, h('b', null, 'Tipo de vistoria'), Seg(TIPOS_VIST, tipo, setTipo, 'Tipo de vistoria', 2),
+      h('div', null, h('h1', { className: 'mm-h1' }, titulo), h('p', { className: 'mm-sub' }, (mo.modelo || '') + ' · ' + (mo.placa || '') + ' · Anexo IV do contrato')),
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8 } }, etapa(1, 'Fotos'), etapa(2, 'Checklist'), etapa(3, 'Confirmar')),
+      p.tipo ? null : h('section', { className: 'mm-card' }, h('b', null, 'Tipo de vistoria'), Seg(TIPOS_VIST, tipo, setTipo, 'Tipo de vistoria', 2),
         pend && pend.tipo === tipo ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, pend.label || ('vence ' + fDS(pend.prazo))) : null),
       h('section', { className: 'mm-card' },
-        h('div', { style: { display: 'flex', justifyContent: 'space-between' } }, h('b', null, 'Fotos da moto'), h('span', { style: { fontSize: 12.5, fontWeight: 700, color: n === 6 ? '#166534' : ROXO } }, n + ' de 6')),
-        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, POSICOES.map(function (x) {
+        h('div', { style: { display: 'flex', justifyContent: 'space-between' } }, h('b', null, 'Fotos da moto'), h('span', { style: { fontSize: 12.5, fontWeight: 700, color: nObr === obrig.length ? '#166534' : ROXO } }, nObr + ' de ' + obrig.length + ' obrigatórias')),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 } }, POS_V3.map(function (x) {
           var f = fotos[x[0]];
           return h('label', { key: x[0], style: { display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer' } },
             h('input', { type: 'file', accept: 'image/*', capture: 'environment', className: 'mm-sr', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(x[0], fl); } }),
-            h('div', { className: 'mm-foto', style: f ? { background: '#111827' } : { background: '#faf7fd', border: '1.5px dashed #d8b4f0', color: ROXO } },
-              f ? h('img', { src: f.foto, alt: x[1] }) : h('span', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 600 } }, ico('camera', 22), 'Tirar foto'),
+            h('div', { className: 'mm-foto', style: Object.assign({ aspectRatio: '4 / 3' }, f ? { background: '#111827' } : x[2] ? { background: '#faf7fd', border: '1.5px dashed #d8b4f0', color: ROXO } : { background: '#fafafa', border: '1.5px dashed #e5e7eb', color: '#9ca3af' }) },
+              f ? h('img', { src: f.foto, alt: x[1] }) : h('span', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 600 } }, ico('camera', 22), x[2] ? 'Tirar foto' : 'Opcional'),
               f ? h('span', { style: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 99, background: '#16a34a', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('check', 14)) : null,
               f ? h('span', { style: { position: 'absolute', left: 6, bottom: 6, fontSize: 9.5, color: '#fff', background: 'rgba(17,24,39,.55)', borderRadius: 4, padding: '1px 4px' } }, fDC(f.capturada_em) + ' ' + fHM(f.capturada_em)) : null),
-            h('span', { style: { fontSize: 12, textAlign: 'center', color: f ? '#374151' : ROXO, fontWeight: 600 } }, x[1]));
+            h('span', { style: { fontSize: 12, color: f ? '#374151' : x[2] ? ROXO : '#6b7280', fontWeight: 600 } }, x[1]));
         })),
-        h('div', { style: { fontSize: 12, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'flex-start' } }, ico('pin', 14), 'Foto só pela câmera, com data, hora e localização registradas.')),
+        h('div', { style: { fontSize: 12, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'flex-start' } }, ico('pin', 14), 'Só pela câmera, com data, hora e localização. Fotos 7 e 8 são para detalhar avarias.')),
       h('section', { className: 'mm-card' },
+        h('b', null, 'Quilometragem e combustível'),
         h(Campo, { label: 'Quilometragem atual', hint: ultima ? 'Última vistoria: ' + num(ultima.km).toLocaleString('pt-BR') + ' km em ' + fDC(ultima.criado_em) : null },
           h('div', { style: { position: 'relative' } }, h('input', { className: 'mm-inp', inputMode: 'numeric', value: km, onChange: function (e) { setKm(dig(e.target.value).slice(0, 7)); }, style: { paddingRight: 40 } }), h('span', { style: { position: 'absolute', right: 12, top: 13, color: '#6b7280' } }, 'km'))),
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 5 } }, h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Alguma avaria ou problema?'), Seg([[false, 'Não'], [true, 'Sim']], avaria, setAvaria, 'Avaria')),
-        h(Campo, { label: 'Observações', opt: !avaria, hint: avaria ? 'Conte o que aconteceu e onde está a avaria.' : null }, h('textarea', { className: 'mm-inp', rows: 3, value: obs, onChange: function (e) { setObs(e.target.value); } }))),
-      h('button', { type: 'button', className: 'mm-btn pri', disabled: !ok || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar vistoria (' + n + ' de 6 fotos)'),
-      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'Depois de enviar, o time Tutts confere e aprova.'));
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 5 } }, h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Combustível'), Seg(COMBUST, comb, setComb, 'Combustível', 5))),
+      h('section', { className: 'mm-card', style: { gap: 0 } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', paddingBottom: 8 } }, h('b', null, 'Checklist'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, itens.length + ' itens' + (nAv ? ' · ' + nAv + ' avaria' + (nAv === 1 ? '' : 's') : ''))),
+        itens.map(function (it, i) {
+          var x = ck[i] || {};
+          return h('div', { key: i, style: { borderTop: '1px solid #f3f4f6', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 8 } },
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } }, h('span', { style: { fontSize: 13, fontWeight: 500, flex: 1 } }, it),
+              h('div', { style: { width: 150, flex: 'none' } }, Seg([['ok', 'OK'], ['avaria', 'Avaria']], x.situacao || null, function (v) { setItem(i, 'situacao', v); }, it, 2, x.situacao === 'avaria'))),
+            x.situacao === 'avaria' ? h('input', { className: 'mm-inp', style: { height: 40, fontSize: 14 }, value: x.obs || '', placeholder: 'O que tem? Ex.: risco no tanque (foto 7)', 'aria-label': 'Descreva a avaria · ' + it, onChange: function (e) { setItem(i, 'obs', e.target.value); } }) : null);
+        }),
+        nMarc < itens.length ? h('button', { type: 'button', className: 'mm-lnk', style: { paddingTop: 10, alignSelf: 'flex-start' }, onClick: function () { var n = {}; itens.forEach(function (_, i) { n[i] = Object.assign({ obs: '' }, ck[i] || {}, { situacao: (ck[i] && ck[i].situacao) || 'ok' }); }); setCk(n); } }, 'Marcar os demais como OK') : null),
+      h('label', { className: 'mm-card', style: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: '#faf7fd', borderColor: '#e9d5f9' } },
+        h('input', { type: 'checkbox', checked: decl, onChange: function (e) { setDecl(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, marginTop: 1, flex: 'none' } }),
+        h('span', { style: { fontSize: 13, lineHeight: 1.5, color: '#374151' } }, 'Declaro que vistoriei a moto, que as avarias estão registradas aqui e nas fotos e que a recebo no estado em que se encontra (Cl. 1.2.1).')),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: faltas.length > 0 || env, onClick: enviar }, env ? 'Enviando...' : faltas.length ? 'Enviar vistoria (falta ' + faltas.join(', ') + ')' : 'Enviar vistoria'),
+      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'Depois de enviar, o time Tutts confere e o termo vai para assinatura.'));
   }
 
   function VerVistoria(p) {
@@ -558,8 +711,12 @@
         h('span', { className: 'mm-sub' }, fD(v.criado_em) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')),
         v.observacoes ? h('div', { style: { fontSize: 13, color: '#374151' } }, v.observacoes) : null,
         v.avaria_descricao ? h('div', { style: { fontSize: 13, color: '#991b1b', background: '#fef2f2', borderRadius: 10, padding: 10 } }, h('b', null, 'Avaria: '), v.avaria_descricao) : null,
+        v.combustivel || (v.checklist && v.checklist.length) ? h('div', { style: { fontSize: 13, color: '#374151' } }, [v.combustivel ? 'Combustível ' + v.combustivel : null, v.checklist && v.checklist.length ? v.checklist.filter(function (x) { return x.situacao !== 'avaria'; }).length + ' itens OK · ' + v.checklist.filter(function (x) { return x.situacao === 'avaria'; }).length + ' com avaria' : null].filter(Boolean).join(' · ')) : null, // LOCACAO_V3
+        (v.checklist || []).filter(function (x) { return x.situacao === 'avaria'; }).map(function (x, i) { return h('div', { key: 'ck' + i, style: { fontSize: 12.5, color: '#991b1b' } }, h('b', null, x.item + ': '), x.obs || 'avaria'); }),
+        (v.avarias || []).map(function (a, i) { return h('div', { key: 'av' + i, style: { fontSize: 12.5, color: '#374151' } }, (i + 1) + '. ' + [a.local, a.descricao].filter(Boolean).join(' · ')); }),
+        v.tem_anexo_pdf !== false && (v.checklist || v.tem_anexo_pdf) ? h('button', { type: 'button', className: 'mm-btn sec', style: { height: 42, fontSize: 14 }, onClick: function () { baixarPdf(p.api, '/vistorias/' + v.id + '/anexo-iv.pdf', 'anexo-iv-vistoria-' + v.id + '.pdf', p.toast); } }, ico('download', 16), 'Baixar termo · Anexo IV (PDF)') : null,
         h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, (v.fotos || []).map(function (f) {
-          var lab = (POSICOES.find(function (x) { return x[0] === f.posicao; }) || [0, f.posicao])[1];
+          var lab = POS_LABEL[f.posicao] || f.posicao;
           return h('div', { key: f.posicao }, h('div', { className: 'mm-foto', style: { background: '#f3f4f6' } }, f.thumb ? h('img', { src: f.thumb, alt: lab }) : null), h('div', { style: { fontSize: 11.5, textAlign: 'center', marginTop: 4, color: '#374151' } }, lab));
         }))));
   }
@@ -639,8 +796,9 @@
     return h(React.Fragment, null,
       h('h1', { className: 'mm-h1' }, 'Mais'),
       h('section', { className: 'mm-card', style: { gap: 0 } }, [
-        ['Nome', cli.nome], ['Tipo', cli.tipo_label || (cli.tipo === 'tutts' ? 'Motoboy Tutts' : 'Locatário')], ['Contrato', ct.numero], ['Moto', [mo.modelo, mo.placa].filter(Boolean).join(' · ')], ['Vencimento', ct.dia_label ? 'toda ' + ct.dia_label : '—'], ['Quitação prevista', fD(ct.ultimo_vencimento)]
+        ['Nome', cli.nome], ['Tipo', cli.tipo_label || (cli.tipo === 'tutts' ? 'Motoboy Tutts' : 'Locatário')], ['Contrato', ct.numero], ['Plano', ct.plano_label], ['Moto', [mo.modelo, mo.placa].filter(Boolean).join(' · ')], ['Vencimento', ct.vencimento_label || (ct.dia_label ? 'toda ' + ct.dia_label : '—')], [ct.plano === 'aluguel' ? 'Término' : 'Quitação prevista', fD(ct.termino || ct.ultimo_vencimento)]
       ].map(function (x, i) { return h('div', { key: i, className: 'mm-row', style: i === 0 ? { borderTop: 0 } : null }, h('span', { style: { color: '#6b7280' } }, x[0]), h('b', { style: { textAlign: 'right' } }, x[1] || '—')); })),
+      h('button', { type: 'button', className: 'mm-btn out', onClick: function () { p.ir('contrato'); } }, ico('filetext', 18), 'Meu contrato'), // LOCACAO_V3
       h('button', { type: 'button', className: 'mm-btn sec', onClick: function () { p.ir('problema'); } }, ico('alert', 18), 'Avisar problema com a moto'),
       h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5 } }, 'Para mudar seus dados ou pedir cópia, correção ou exclusão (LGPD), fale com o time Tutts pelo WhatsApp.'),
       p.onLogout ? h('button', { type: 'button', className: 'mm-btn sec', onClick: p.onLogout }, ico('logout', 18), 'Sair') : null);
@@ -688,6 +846,7 @@
       else if (tela && tela.t === 'problema') conteudo = h(Problema, comum);
       else if (tela && tela.t === 'vistoria') conteudo = h(NovaVistoria, Object.assign({ tipo: tela.tipo, onOk: function () { setTela(null); setAba('vist'); carregar(); } }, comum));
       else if (tela && tela.t === 'verVist') conteudo = h(VerVistoria, Object.assign({ id: tela.id }, comum));
+      else if (tela && tela.t === 'contrato') conteudo = h(MeuContrato, comum); // LOCACAO_V3
       else if (aba === 'pag') conteudo = h(Pagamentos, comum);
       else if (aba === 'vist') conteudo = h(Vistorias, comum);
       else if (aba === 'mais') conteudo = h(Mais, comum);
@@ -733,10 +892,10 @@
             h('div', { style: { flex: 1, minWidth: 0 } },
               h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 } }, h('span', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: ROXO } }, 'MINHA MOTO'), Pill(ct.situacao_label || '—', TOM_SIT[ct.situacao] || 'cinza')),
               h('div', { style: { fontWeight: 700, fontSize: 15 } }, (mo.modelo || '') + ' · ' + (mo.placa || '')),
-              h('div', { style: { fontSize: 12, color: '#6b7280' } }, (ct.parcelas_pagas || 0) + ' de ' + (ct.semanas || 0) + ' parcelas' + (qf.valor_restante != null ? ' · faltam ' + fR(qf.valor_restante) : '')))),
+              h('div', { style: { fontSize: 12, color: '#6b7280' } }, (ct.parcelas_pagas || 0) + ' de ' + (ct.prazo_qtd || ct.semanas || 0) + ' parcelas' + (qf.valor_restante != null ? ' · faltam ' + fR(qf.valor_restante) : '')))),
           h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid #f3f4f6' } },
             h('div', { style: { padding: '10px 12px', borderRight: '1px solid #f3f4f6' } },
-              h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Parcela da semana'),
+              h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Próxima parcela'),
               prox ? h('b', { className: 'mm-num', style: { display: 'block' } }, fR(prox.total)) : h('b', null, '—'),
               prox ? h('div', { style: { fontSize: 11.5, color: prox.abatimento_repasse ? '#166534' : '#6b7280' } }, prox.abatimento_repasse ? 'abatida do repasse' + (prox.repasse_previsto ? ' de ' + fDS(prox.repasse_previsto) : '') : 'vence ' + fDS(prox.vencimento)) : null),
             h('div', { style: { padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' } },
