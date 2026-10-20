@@ -1566,12 +1566,32 @@
       assinando ? h('div', { style: { background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
         ico('clock', 18, { color: '#2563eb', marginTop: 1 }),
         h('div', { style: { flex: 1, minWidth: 240, color: '#1e40af', fontSize: 13.5 } },
-          h('div', { style: { fontWeight: 700 } }, 'Aguardando assinatura no Autentique'),
-          h('div', { style: { marginTop: 2 } }, 'As parcelas só são criadas quando o documento volta assinado. A moto fica Reservada até lá.' + (c.autentique_doc_id ? ' Documento ' + c.autentique_doc_id + '.' : ' O contrato ainda não foi enviado ao Autentique.')),
+          (function () { /* LOCACAO_ASSINATURA_V2: assinatura pelo app + linha do tempo */
+            var lnks = c.autentique_links || [];
+            var locL = lnks.find(function (l) { return l.papel === 'locatario'; });
+            var peloApp = !!(locL && !locL.email) || (!lnks.length && !!c.assinatura_linha);
+            return h(React.Fragment, null,
+              h('div', { style: { fontWeight: 700 } }, peloApp ? 'Assinatura pelo app da Central' : 'Aguardando assinatura no Autentique'),
+              h('div', { style: { marginTop: 2 } }, (peloApp ? 'O locatário assina pelo app (cartão "Seu contrato está pronto"); o Autentique não manda e-mail para ele. ' : '')
+                + 'As parcelas só são criadas quando o documento volta assinado. A moto fica Reservada até lá.' + (c.autentique_doc_id ? '' : ' O contrato ainda não foi enviado ao Autentique.')),
+              c.autentique_doc_id && (c.assinatura_linha || []).length ? h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 } },
+                c.assinatura_linha.filter(function (st) { return !st.nao_se_aplica; }).map(function (st) {
+                  var feito = !!st.em;
+                  return h('div', { key: st.id, style: { flex: '1 1 150px', minWidth: 140, padding: '8px 10px', borderRadius: 10, background: feito ? '#f0fdf4' : '#fff', border: '1px solid ' + (feito ? '#bbf7d0' : '#e5e7eb') } },
+                    h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 12.5, color: feito ? '#166534' : '#1e40af' } }, feito ? ico('check', 13) : ico('clock', 13), st.label),
+                    h('div', { style: { fontSize: 11.5, color: '#6b7280', marginTop: 2 } }, feito ? (st.id === 'tutts' && st.auto ? 'automático pela API · ' : '') + fDHc(st.em) : 'aguardando'));
+                })) : null);
+          })(),
           h(LinksAssinatura, { key: (c.autentique_doc_id || '') + (c.autentique_enviado_em || ''), c: c, api: api, toast: toast })), // LOCACAO_ASSINATURA_V1
         h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
           c.autentique_doc_id ? Btn({ small: true, icon: 'refresh', disabled: !!ocupado, onClick: function () { acao('consultar', '/contratos/' + c.id + '/consultar-assinatura', {}, 'Status consultado'); }, children: ocupado === 'consultar' ? 'Consultando...' : 'Consultar assinatura' }) : null,
-          Btn({ small: true, icon: 'upload', disabled: !!ocupado, onClick: function () { acao('reenviar', '/contratos/' + c.id + '/reenviar-assinatura', {}, 'Enviado ao Autentique'); }, children: c.autentique_doc_id ? 'Reenviar' : 'Enviar ao Autentique' }),
+          c.autentique_doc_id ? Btn({ small: true, icon: 'message', disabled: !!ocupado, onClick: function () { /* LOCACAO_ASSINATURA_V2 */
+            setOcupado('aviso');
+            api('/contratos/' + c.id + '/enviar-link-assinatura', { method: 'POST', body: {} })
+              .then(function (r) { if (r && r.enviado) toast('Aviso enviado no WhatsApp do locatário', 'success'); else toast('WhatsApp não enviado' + (r && r.motivo ? ': ' + r.motivo : '') + '. Copie o link e mande você.', 'error'); carregar(); })
+              .catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcupado(null); });
+          }, children: ocupado === 'aviso' ? 'Enviando...' : 'Reenviar aviso no WhatsApp' }) : null,
+          Btn({ small: true, icon: 'upload', disabled: !!ocupado, onClick: function () { acao('reenviar', '/contratos/' + c.id + '/reenviar-assinatura', {}, 'Enviado ao Autentique'); }, children: c.autentique_doc_id ? 'Reenviar ao Autentique' : 'Enviar ao Autentique' }),
           Btn({ small: true, icon: 'check', disabled: !!ocupado, onClick: function () { setModal('assinado'); }, children: 'Marcar como assinado' }),
           Btn({ small: true, variant: 'perigo', disabled: !!ocupado, onClick: function () { setModal('cancelar'); }, children: 'Cancelar contrato' }))) : null,
 
@@ -1778,6 +1798,7 @@
       if (cfg.dias_desbloqueio != null && cfg.dias_desbloqueio !== '') body.dias_desbloqueio = parseInt(cfg.dias_desbloqueio, 10);
       if (cfg.locadora) body.locadora = Object.assign({}, cfg.locadora, { area_raio_km: parseInt(cfg.locadora.area_raio_km, 10) || null });
       if (cfg.bases) body.bases = cfg.bases.filter(function (b) { return String(b.nome || b.endereco || '').trim(); });
+      if (cfg.assinatura) body.assinatura = { modo: cfg.assinatura.modo === 'email' ? 'email' : 'app', tutts_auto: cfg.assinatura.tutts_auto !== false }; // LOCACAO_ASSINATURA_V2
       api('/config', { method: 'PUT', body: body }).then(function (r) { if (r && typeof r === 'object' && (r.juros_dia_pct != null || r.encargos)) setCfg(function (c) { return Object.assign({}, c, r); }); toast('Configurações salvas', 'success'); })
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
     };
@@ -1797,7 +1818,7 @@
           h('div', { style: { fontSize: 12, color: '#6b7280' } }, desc)));
     };
     // LOCACAO_V2: seções + régua de cobrança
-    var SEC = [{ id: 'juros', t: 'Encargos e retomada' }, { id: 'regua', t: 'Régua de cobrança' }, { id: 'tarifario', t: 'Tarifário (Anexo I)' }, { id: 'locadora', t: 'Locadora e bases' }, { id: 'ipca', t: 'Índices IPCA' }, { id: 'modelo', t: 'Modelo de contrato' }, { id: 'termo', t: 'Termo LGPD' }, { id: 'integ', t: 'Integrações' }]; // LOCACAO_V3
+    var SEC = [{ id: 'juros', t: 'Encargos e retomada' }, { id: 'regua', t: 'Régua de cobrança' }, { id: 'tarifario', t: 'Tarifário (Anexo I)' }, { id: 'locadora', t: 'Locadora e bases' }, { id: 'ipca', t: 'Índices IPCA' }, { id: 'assinatura', t: 'Assinatura' }, { id: 'modelo', t: 'Modelo de contrato' }, { id: 'termo', t: 'Termo LGPD' }, { id: 'integ', t: 'Integrações' }]; // LOCACAO_V3
     var vis = function (id) { return secao === id ? null : { display: 'none' }; };
     var barraSalvar = h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8 } },
       Btn({ onClick: carregar, children: 'Descartar' }),
@@ -1807,6 +1828,7 @@
     if (secao === 'tarifario') return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec, h(TarifarioConfig, { api: api, toast: toast })); // LOCACAO_V3
     if (secao === 'ipca') return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec, h(IpcaConfig, { api: api, toast: toast }));
     if (secao === 'locadora') return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 900 } }, chipsSec, h(LocadoraCard, { cfg: cfg, set: set }), barraSalvar);
+    if (secao === 'assinatura') return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 900 } }, chipsSec, h(AssinaturaCard, { cfg: cfg, set: set }), barraSalvar); // LOCACAO_ASSINATURA_V2
     return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec,
      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
@@ -2431,6 +2453,28 @@
   }
 
   // ───────── Configurações · Locadora e bases ─────────
+  // LOCACAO_ASSINATURA_V2: como o locatário assina e se a Tutts assina sozinha pela API
+  function AssinaturaCard(props) {
+    var cfg = props.cfg, a = Object.assign({ modo: 'app', tutts_auto: true }, cfg.assinatura || {});
+    var setA = function (k, v) { var n = Object.assign({}, a); n[k] = v; props.set('assinatura', n); };
+    var opc = function (val, titulo, desc) {
+      var sel = a.modo === val;
+      return h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 12, cursor: 'pointer', border: '1.5px solid ' + (sel ? ROXO : '#e5e7eb'), background: sel ? '#faf7fd' : '#fff' } },
+        h('input', { type: 'radio', name: 'loc-assin-modo', checked: sel, onChange: function () { setA('modo', val); }, style: { accentColor: ROXO, marginTop: 3 } }),
+        h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, titulo), h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, desc)));
+    };
+    return h(Card, { pad: false }, CardHead('Assinatura do contrato · Autentique'),
+      h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+        h('div', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'Como o locatário assina'),
+        opc('app', 'Pelo app da Central (recomendado)', 'O Autentique não manda e-mail. O link fica no cartão "Seu contrato está pronto" do app e a Tutts avisa no WhatsApp.'),
+        opc('email', 'Autentique manda por e-mail', 'O locatário recebe o convite do Autentique no e-mail do cadastro (ou WhatsApp, se não tiver e-mail).'),
+        h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', paddingTop: 12, borderTop: '1px solid #f3f4f6', cursor: 'pointer' } },
+          h('input', { type: 'checkbox', checked: a.tutts_auto !== false, onChange: function (e) { setA('tutts_auto', e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16, marginTop: 2 } }),
+          h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Tutts assina automaticamente'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, a.dono_email ? 'Assina pela conta dona da chave da API: ' + a.dono_email + '.' : 'Autentique não configurado (AUTENTIQUE_TOKEN): a conta que assina pela Tutts aparece aqui depois de configurar.'))),
+        h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Vale para os próximos envios. Contratos já enviados seguem como foram.')));
+  }
+
   function LocadoraCard(props) {
     var cfg = props.cfg, set = props.set;
     var loc = Object.assign({ razao_social: '', nome_fantasia: '', cnpj: '', endereco: '', cidade_foro: '', area_raio_km: 100, area_municipio: '' }, cfg.locadora || {});

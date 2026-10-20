@@ -804,6 +804,123 @@
       p.onLogout ? h('button', { type: 'button', className: 'mm-btn sec', onClick: p.onLogout }, ico('logout', 18), 'Sair') : null);
   }
 
+  // ───── LOCACAO_ASSINATURA_V2: contrato pronto para assinar (o locatário assina pelo app) ─────
+  function baixarPdfContrato(api, numero, toast) {
+    api('/contrato/pdf', { raw: true }).then(function (res) { return res.blob(); }).then(function (b) {
+      var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = 'contrato-' + (numero || 'moto') + '.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    }).catch(function (e) { toast(e.message); });
+  }
+  function Passo(feito, texto) {
+    return h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 } },
+      feito ? h('span', { style: { width: 20, height: 20, borderRadius: 99, background: '#22c55e', color: '#fff', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('check', 12))
+        : h('span', { style: { width: 20, height: 20, borderRadius: 99, border: '2px solid #fff', boxSizing: 'border-box', flex: 'none' } }),
+      feito ? h('span', null, texto) : h('b', null, texto));
+  }
+  function fDH(s) { var d = s ? new Date(String(s).replace(' ', 'T')) : null; return d && !isNaN(d) ? fDC(d) + ' às ' + fHM(d) : ''; }
+
+  function AssinarHome(p) {
+    var r = p.r, mo = r.moto || {}, ct = r.contrato || {}, as = r.assinatura || {}, cli = r.cliente || {};
+    var nome1 = String(cli.nome || '').split(' ')[0];
+    var porMes = ct.periodicidade === 'mensal' ? ' / mês' : ' / semana';
+    var item = function (rot, val) { return h('div', null, h('div', { style: { color: '#e9d5f9', fontSize: 11 } }, rot), h('b', null, val)); };
+    return h(React.Fragment, null,
+      h('div', { className: 'mm-sora', style: { fontSize: 20, fontWeight: 700 } }, 'Olá' + (nome1 ? ', ' + nome1 : '')),
+      h('section', { style: { background: 'linear-gradient(160deg,#3a1556,#770fa8)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 10px 24px rgba(119,15,168,.25)' } },
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } },
+          h('span', { style: { width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('pencil', 18)),
+          h('div', null, h('div', { className: 'mm-sora', style: { fontSize: 17, fontWeight: 700 } }, 'Seu contrato está pronto'), h('div', { style: { fontSize: 12.5, color: '#e9d5f9' } }, 'Assine para liberar a moto'))),
+        h('div', { style: { background: 'rgba(255,255,255,.1)', borderRadius: 12, padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', fontSize: 12.5 } },
+          item('Plano', ct.plano_label || '—'), item('Parcela', fR(ct.valor_parcela) + porMes),
+          item('Prazo', ct.prazo_label || '—'), item('1º vencimento', fD(ct.primeiro_vencimento))),
+        as.disponivel ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          as.tutts_assina ? Passo(!!as.tutts_assinou_em, as.tutts_assinou_em ? 'Tutts já assinou · ' + fDH(as.tutts_assinou_em) : 'Tutts assina em seguida') : null,
+          Passo(false, 'Falta a sua assinatura')) : h('div', { style: { fontSize: 12.5, color: '#e9d5f9', display: 'flex', gap: 6, alignItems: 'center' } }, ico('clock', 14), 'O contrato está sendo preparado. Você recebe um aviso no WhatsApp quando estiver pronto.'),
+        h('button', { type: 'button', disabled: !as.disponivel, onClick: function () { p.ir('assinar'); }, style: { height: 48, borderRadius: 12, background: '#fff', color: ROXO_ESC, fontWeight: 800, fontSize: 15, opacity: as.disponivel ? 1 : 0.55 } }, 'Revisar e assinar')),
+      h('section', { className: 'mm-card', style: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: '12px 14px' } },
+        h(MotoImg, { src: mo.capa_thumb, tipo: mo.tipo, modelo: mo.modelo, cor: mo.cor, w: 64, h: 46, r: 10 }),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, (mo.modelo || '') + ' · ' + (mo.placa || '')), h('span', { className: 'mm-sub', style: { fontSize: 12 } }, 'Reservada para você até a assinatura')),
+        Pill('Reservada', 'ambar')),
+      h('section', { className: 'mm-card', style: { gap: 8 } },
+        h('b', null, 'Depois de assinar'),
+        ['Você faz a vistoria de retirada com fotos, aqui no app.', 'As parcelas e o PIX aparecem em Pagamentos.', 'O contrato assinado fica em Meu contrato para baixar.'].map(function (t, i) {
+          return h('div', { key: i, style: { display: 'flex', gap: 8, color: '#374151', fontSize: 12.5 } }, h('span', { style: { color: ROXO, fontWeight: 700 } }, (i + 1) + '.'), t);
+        })),
+      h('p', { style: { margin: 0, textAlign: 'center', fontSize: 11.5, color: '#9ca3af', display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' } }, ico('lock', 13), 'Assinatura eletrônica com validade jurídica pelo Autentique'));
+  }
+
+  function AssinarRevisao(p) {
+    var r = p.r, mo = r.moto || {}, ct = r.contrato || {}, as = r.assinatura || {};
+    var _ok = useState(false), li = _ok[0], setLi = _ok[1];
+    var _ab = useState(false), abrindo = _ab[0], setAbrindo = _ab[1];
+    var _ab2 = useState(false), aberto = _ab2[0], setAberto = _ab2[1];
+    var _vf = useState(false), conferindo = _vf[0], setConferindo = _vf[1];
+    var _fim = useState(false), assinado = _fim[0], setAssinado = _fim[1];
+    var _lk = useState(null), link = _lk[0], setLink = _lk[1];
+    var conferir = function (silencioso) {
+      if (conferindo) return;
+      setConferindo(true);
+      p.api('/assinatura/verificar', { method: 'POST', body: {} }).then(function (x) {
+        if (x && x.assinado) setAssinado(true);
+        else if (!silencioso) p.toast('Ainda não recebemos a sua assinatura. Termine no Autentique e confira de novo.');
+      }).catch(function (e) { if (!silencioso) p.toast(e.message); }).then(function () { setConferindo(false); });
+    };
+    useEffect(function () {
+      if (!aberto || assinado) return;
+      var fn = function () { if (document.visibilityState === 'visible') conferir(true); };
+      document.addEventListener('visibilitychange', fn); window.addEventListener('focus', fn);
+      return function () { document.removeEventListener('visibilitychange', fn); window.removeEventListener('focus', fn); };
+    }, [aberto, assinado]);
+    var abrir = function () {
+      setAbrindo(true);
+      var w = null;
+      try { w = window.open('', '_blank'); } catch (e) { w = null; }
+      p.api('/assinatura/abrir', { method: 'POST', body: {} }).then(function (x) {
+        if (x && x.assinado) { if (w) w.close(); setAssinado(true); return; }
+        setLink(x.link); setAberto(true);
+        if (w && !w.closed) { try { w.opener = null; } catch (e) { /* ok */ } w.location.href = x.link; } else window.location.href = x.link;
+      }).catch(function (e) { if (w) w.close(); p.toast(e.message); }).then(function () { setAbrindo(false); });
+    };
+    if (assinado) return h(React.Fragment, null,
+      h('section', { style: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' } },
+        h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#22c55e', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('check', 28)),
+        h('div', { className: 'mm-sora', style: { fontSize: 19, fontWeight: 700, color: '#166534' } }, 'Contrato assinado'),
+        h('div', { style: { fontSize: 13, color: '#166534' } }, 'Você e a Tutts assinaram. A moto está liberada.')),
+      h('section', { className: 'mm-card', style: { gap: 10 } },
+        h('b', null, 'Próximo passo: vistoria de retirada'),
+        h('span', { className: 'mm-sub', style: { fontSize: 12.5 } }, '6 fotos + km + combustível + checklist. Leva uns 5 minutos.'),
+        h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { p.voltar(); p.recarregar(); } }, 'Ver minha moto')));
+    var linha = function (rot, val) { return h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', borderTop: '1px solid #f3f4f6', fontSize: 12.5 } }, h('span', { style: { color: '#6b7280' } }, rot), h('b', { style: { textAlign: 'right' } }, val || '—')); };
+    var porMes = ct.periodicidade === 'mensal' ? ' por mês' : ' por semana';
+    return h(React.Fragment, null,
+      Voltar('Voltar', p.voltar),
+      h('div', null, h('div', { className: 'mm-sora', style: { fontSize: 20, fontWeight: 700 } }, 'Revise antes de assinar'),
+        h('span', { className: 'mm-sub', style: { fontSize: 12.5 } }, 'Contrato ' + (ct.numero || '') + ' · ' + (mo.modelo || '') + ' · ' + (mo.placa || ''))),
+      h('section', { className: 'mm-card', style: { gap: 0, padding: '12px 14px' } }, Rotulo('Demonstrativo'),
+        h('div', { style: { height: 4 } }),
+        linha('Plano', ct.plano_label), linha('Prazo', (ct.prazo_label || '') + (ct.data_inicio ? ' · ' + fD(ct.data_inicio) + ' a ' + fD(ct.termino) : '')),
+        linha('Parcela', fR(ct.valor_parcela) + porMes), linha('Vencimento', (ct.vencimento_label || '') + (ct.primeiro_vencimento ? ' · 1º em ' + fD(ct.primeiro_vencimento) : '')),
+        linha('Caução', ct.caucao_label), linha('Área', ct.area_label), linha('Manutenção', ct.manutencao_label), linha('Pagamento', ct.formas_pagamento_label),
+        ct.valor_opcao_compra != null ? linha('Opção de compra', fR(ct.valor_opcao_compra) + ' + IPCA no fim do prazo') : null),
+      (as.regras || []).length ? h('section', { className: 'mm-card', style: { gap: 0, padding: '12px 14px' } }, Rotulo('O mais importante'),
+        h('div', { style: { height: 4 } }),
+        as.regras.map(function (g, i) {
+          return h('div', { key: i, style: { display: 'flex', gap: 10, padding: '9px 0', borderTop: '1px solid #f3f4f6' } },
+            h('span', { style: { width: 6, height: 6, borderRadius: 99, background: ROXO, marginTop: 6, flex: 'none' } }),
+            h('div', null, h('b', { style: { fontSize: 12.5 } }, g.titulo), h('div', { style: { fontSize: 12.5, color: '#4b5563', lineHeight: 1.45 } }, g.texto)));
+        })) : null,
+      h('button', { type: 'button', className: 'mm-card', onClick: function () { baixarPdfContrato(p.api, ct.numero, p.toast); }, style: { flexDirection: 'row', alignItems: 'center', gap: 12, textAlign: 'left' } },
+        h('span', { style: { width: 38, height: 38, borderRadius: 10, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 18)),
+        h('div', { style: { flex: 1 } }, h('b', { style: { display: 'block' } }, 'Contrato completo'), h('span', { className: 'mm-sub', style: { fontSize: 12 } }, 'Demonstrativo, cláusulas e Anexos')),
+        h('span', { style: { color: ROXO, fontWeight: 700 } }, 'Ler PDF')),
+      h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, lineHeight: 1.45, background: '#fff', border: '1.5px solid ' + (li ? ROXO : '#e5e7eb'), borderRadius: 14, padding: 12, cursor: 'pointer' } },
+        h('input', { type: 'checkbox', checked: li, onChange: function (e) { setLi(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, flex: 'none', marginTop: 1 } }),
+        'Li o contrato e entendi as regras de pagamento, atraso, vistoria' + (ct.plano === 'conquista' ? ' e opção de compra.' : '.')),
+      h('button', { type: 'button', className: 'mm-btn pri', disabled: !li || abrindo || !as.disponivel, onClick: abrir, style: { height: 52 } }, ico('pencil', 18), abrindo ? 'Abrindo...' : aberto ? 'Abrir o Autentique de novo' : 'Assinar no Autentique'),
+      aberto ? h('button', { type: 'button', className: 'mm-btn out', disabled: conferindo, onClick: function () { conferir(false); } }, ico('refresh', 16), conferindo ? 'Conferindo...' : 'Já assinei, conferir') : null,
+      aberto && link ? h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12 } }, 'A página não abriu? ', h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', style: { color: ROXO, fontWeight: 600 } }, 'Toque aqui')) : null,
+      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12 } }, 'Abre a página segura do Autentique, só para você. Depois de assinar, volte para o app: a moto é liberada na hora.'));
+  }
+
   // ───── componente principal ─────
   window.ModuloMinhaMotoComponent = function (props) {
     injetarCss();
@@ -839,6 +956,11 @@
       h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center' } }, ico('bike', 26)),
       h('b', { className: 'mm-sora', style: { fontSize: 18 } }, 'Nenhuma moto em contrato'), h('p', { className: 'mm-sub' }, 'Quando seu contrato de locação estiver ativo, a moto, as parcelas e as vistorias aparecem aqui.')));
     else if (r.precisa_ciencia) corpo = h(Ciencia, { api: api, toast: toast, versao: r.termo_versao, onOk: carregar });
+    else if (r.assinatura && r.assinatura.pendente) { /* LOCACAO_ASSINATURA_V2: só o fluxo de assinatura até assinar */
+      var comumA = { r: r, api: api, toast: toast, ir: ir, voltar: voltar, recarregar: carregar };
+      corpo = h('main', { className: 'mm-main', onClick: function () { if (menu) setMenu(false); } },
+        tela && tela.t === 'assinar' ? h(AssinarRevisao, comumA) : h(AssinarHome, comumA));
+    }
     else {
       var comum = { r: r, api: api, toast: toast, ir: ir, voltar: voltar, recarregar: carregar, copiarPix: copiarPix, onLogout: props.onLogout };
       var conteudo;
@@ -881,6 +1003,17 @@
     var mo = r.moto || {}, ct = r.contrato || {}, prox = r.proxima_parcela, pend = r.vistoria_pendente, qf = r.quanto_falta || {};
     var dias = pend ? (pend.dias_restantes != null ? pend.dias_restantes : Math.round((pd(pend.prazo) - new Date(new Date().toDateString())) / 864e5)) : null;
     var abrir = function () { if (props.onAbrir) props.onAbrir(); };
+    if (!r.precisa_ciencia && r.assinatura && r.assinatura.pendente) { /* LOCACAO_ASSINATURA_V2 */
+      return h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent', marginBottom: 16 } },
+        h('button', { type: 'button', onClick: abrir, 'aria-label': 'Revisar e assinar o contrato da moto', style: { width: '100%', textAlign: 'left', background: 'linear-gradient(160deg,#3a1556,#770fa8)', color: '#fff', border: 0, borderRadius: 16, overflow: 'hidden', display: 'block', padding: 0 } },
+          h('div', { style: { display: 'flex', gap: 12, padding: 14, alignItems: 'center' } },
+            h('span', { style: { width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('pencil', 20)),
+            h('div', { style: { flex: 1, minWidth: 0 } },
+              h('div', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: '#e9d5f9' } }, 'MINHA MOTO'),
+              h('b', { style: { display: 'block', fontSize: 15 } }, 'Contrato pronto para assinar'),
+              h('div', { style: { fontSize: 12, color: '#e9d5f9' } }, (mo.modelo || '') + ' · ' + (mo.placa || '') + (ct.valor_parcela != null ? ' · ' + fR(ct.valor_parcela) + (ct.periodicidade === 'mensal' ? '/mês' : '/semana') : '')))),
+          h('div', { style: { borderTop: '1px solid rgba(255,255,255,.18)', padding: 10, textAlign: 'center', fontWeight: 700, fontSize: 13.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 } }, 'Revisar e assinar', ico('arrowright', 14))));
+    }
     return h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent', marginBottom: 16 } },
       h('button', { type: 'button', onClick: abrir, 'aria-label': 'Abrir Minha moto', style: { width: '100%', textAlign: 'left', background: '#fff', border: '2px solid ' + ROXO, borderRadius: 16, overflow: 'hidden', display: 'block', padding: 0 } },
         r.precisa_ciencia ? h('div', { style: { padding: 14, display: 'flex', gap: 12, alignItems: 'center' } },
