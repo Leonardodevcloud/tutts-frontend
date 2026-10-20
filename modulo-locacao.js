@@ -138,7 +138,7 @@
     if (m.status === 'alugada') return Pill('Alugada · em dia', 'verde');
     return Pill(m.status_label || ROT_MOTO[m.status] || m.status, TOM_MOTO[m.status] || 'cinza');
   }
-  function pillSit(c) { return Pill(c.situacao_label || c.situacao, TOM_SIT[c.situacao] || 'cinza'); }
+  function pillSit(c) { if (c.situacao === 'aguardando_assinatura' && c.etapa === 'vistoria') return Pill('Aguardando vistoria de entrega', 'ambar'); /* LOCACAO_FLUXO_V1 */ return Pill(c.situacao_label || c.situacao, TOM_SIT[c.situacao] || 'cinza'); }
   function pillParc(p) { return Pill(p.status_label || p.status, TOM_PARC[p.status] || 'cinza'); }
 
   // ───────── componentes de UI ─────────
@@ -645,8 +645,8 @@
           var ok = novos[t] || temDoc[t];
           return h('label', { key: t, style: { flex: '1 1 150px', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', justifyContent: 'center', height: 92, borderRadius: 12, cursor: 'pointer', textAlign: 'center', fontSize: 12.5, fontWeight: 600, padding: 8,
             border: ok ? '1px solid #bbf7d0' : '1.5px dashed #d8b4f0', background: ok ? '#f0fdf4' : '#faf7fd', color: ok ? '#166534' : ROXO_ESC } },
-            h('input', { type: 'file', className: 'sr-only', accept: t === 'comprovante' ? 'image/*,application/pdf' : 'image/*', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(t, fl); } }),
-            ico(ok ? 'check' : 'upload', 18), DOCS[t] + (novos[t] ? ' · nova' : temDoc[t] ? ' · enviada' : ''), t === 'selfie_cnh' ? h('span', { style: { fontWeight: 400, color: '#6b7280', fontSize: 11 } }, 'opcional') : null);
+            h('input', { type: 'file', className: 'sr-only', accept: t === 'comprovante' ? 'image/*,application/pdf' : 'image/*', capture: t === 'selfie_cnh' ? 'user' : undefined, onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(t, fl); } }),
+            ico(ok ? 'check' : 'upload', 18), DOCS[t] + (novos[t] ? ' · nova' : temDoc[t] ? ' · enviada' : ''), t === 'selfie_cnh' ? h('span', { style: { fontWeight: 400, color: '#6b7280', fontSize: 11 } }, 'CNH ao lado do rosto') : null); // LOCACAO_FLUXO_V1: obrigatória
         }))));
   }
 
@@ -1126,7 +1126,7 @@
                       Btn({ variant: 'pri', small: true, icon: 'check', onClick: function () { acaoVist('/vistorias/' + v.id + '/aprovar', {}, 'Vistoria aprovada'); }, children: 'Aprovar vistoria' }),
                       Btn({ variant: 'perigo', small: true, icon: 'alert', onClick: function () { setModal({ tipo: 'avaria', v: v }); }, children: 'Apontar avaria' })) : null));
               }))))),
-      modal && modal.tipo === 'nova' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: m, contrato: ct, tipo: d.vistoria_pendente && d.vistoria_pendente.tipo, onClose: function () { setModal(null); }, aoSalvar: function () { setModal(null); setAba('vistorias'); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_V3: Termo Anexo IV
+      modal && modal.tipo === 'nova' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: m, contrato: ct, tipo: (d.vistoria_pendente && d.vistoria_pendente.tipo) || (ct && ct.status === 'aguardando_assinatura' ? 'retirada' : undefined), onClose: function () { setModal(null); }, aoSalvar: function () { setModal(null); setAba('vistorias'); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_V3: Termo Anexo IV
       modal && modal.tipo === 'agendar' ? h(AgendarVistoriaModal, { onClose: function () { setModal(null); }, onConfirm: function (b) { return acaoVist('/vistorias/agendar', { moto_id: m.id, data_hora: b.data_hora }, 'Vistoria agendada · locatário avisado'); } }) : null,
       modal && modal.tipo === 'naoCompareceu' ? h(MotivoModal, { titulo: 'Não compareceu à vistoria mensal', label: 'Observação', botao: 'Lançar tarifa de R$ 100,00', perigo: true,
         texto: 'Lança a tarifa do Anexo I “Não comparecimento à vistoria mensal na Base” (Cl. 9.4.1) na próxima parcela' + (d.vistoria_agendada ? ', referente ao agendamento de ' + fDH(d.vistoria_agendada.data_hora) : '') + '.', onClose: function () { setModal(null); }, onConfirm: function (t) { return acaoVist('/vistorias/nao-compareceu', { moto_id: m.id, data: d.vistoria_agendada ? String(d.vistoria_agendada.data_hora).slice(0, 10) : hojeISO(), observacao: t || null }, 'Tarifa lançada'); } }) : null,
@@ -1368,6 +1368,7 @@
       var req = importar ? api('/contratos/importar', { method: 'POST', body: Object.assign(b, { pdf_assinado: pdf && pdf.conteudo, parcelas_pagas_ate: pagasAte || null }) }) : api('/contratos', { method: 'POST', body: b });
       req.then(function (r) {
         if (importar) toast('Contrato importado · ' + (r.parcelas_pagas ? r.parcelas_pagas + ' parcela' + (r.parcelas_pagas === 1 ? '' : 's') + ' marcada' + (r.parcelas_pagas === 1 ? '' : 's') + ' como paga' + (r.parcelas_pagas === 1 ? '' : 's') : 'parcelas geradas'), 'success');
+        else if (r.etapa === 'vistoria') toast('Contrato criado · próximo passo: vistoria de entrega na Base (a assinatura sai depois dela)', 'success'); // LOCACAO_FLUXO_V1
         else toast(r.autentique && r.autentique.enviado ? 'Contrato gerado e enviado ao Autentique' : 'Contrato gerado' + (r.autentique && r.autentique.motivo ? ' · Autentique: ' + r.autentique.motivo : ''), r.autentique && r.autentique.enviado === false ? 'error' : 'success');
         props.aoMudar && props.aoMudar();
         nav({ tela: 'contrato', id: r.contrato_id }, true);
@@ -1532,6 +1533,7 @@
     var primeiraCobravel = parcelas.find(function (p) { return p.status === 'atrasada' || p.status === 'vence_hoje'; });
     var sit = c.situacao;
     var assinando = sit === 'aguardando_assinatura';
+    var emVistoria = assinando && c.etapa === 'vistoria'; // LOCACAO_FLUXO_V1: assinatura só depois da vistoria de entrega
     var ativo = sit === 'em_dia' || sit === 'atrasada';
     var retV3 = c.encargos && c.encargos.modelo === 'v3'; /* LOCACAO_V3: rescisão com atraso de MAIS de N dias (14.2 a) */
     var faltamRet = c.dias_retomada != null && c.dias_atraso != null ? c.dias_retomada + (retV3 ? 1 : 0) - c.dias_atraso : null;
@@ -1563,7 +1565,8 @@
           ativo || sit === 'em_retomada' || suspenso ? Btn({ icon: 'tag', onClick: function () { setModal('cobranca'); }, children: 'Lançar cobrança' }) : null, // LOCACAO_V3
           primeiraCobravel ? Btn({ variant: 'pri', icon: 'message', disabled: ocupado === 'p' + primeiraCobravel.id, onClick: function () { cobrar(primeiraCobravel); }, children: 'Reenviar cobrança' }) : null)),
 
-      assinando ? h('div', { style: { background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
+      assinando ? h(EtapasLiberacao, { c: c, ocupado: ocupado, onVistoria: function () { setModal('vistoriaEntrega'); }, onCancelar: function () { setModal('cancelar'); } }) : null, // LOCACAO_FLUXO_V1
+      assinando && !emVistoria ? h('div', { style: { background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
         ico('clock', 18, { color: '#2563eb', marginTop: 1 }),
         h('div', { style: { flex: 1, minWidth: 240, color: '#1e40af', fontSize: 13.5 } },
           (function () { /* LOCACAO_ASSINATURA_V2: assinatura pelo app + linha do tempo */
@@ -1672,6 +1675,7 @@
         texto: 'Use quando precisar retomar antes do limite automático de ' + c.dias_retomada + ' dias.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ret', '/contratos/' + c.id + '/iniciar-retomada', { motivo: m || null }, 'Retomada iniciada'); } }) : null,
       modal === 'devolucao' ? h(MotivoModal, { titulo: 'Registrar moto devolvida', label: 'Observação', botao: 'Registrar devolução', perigo: true,
         texto: 'O contrato é encerrado e a moto volta para Disponível. A vistoria de devolução fica pendente para a equipe.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('dev', '/contratos/' + c.id + '/registrar-devolucao', { observacao: m || null }, 'Devolução registrada'); } }) : null,
+      modal === 'vistoriaEntrega' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'retirada', onClose: function () { setModal(null); }, aoSalvar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V1
       modal === 'assinado' ? h(MotivoModal, { titulo: 'Marcar como assinado', label: 'Motivo', obrigatorio: true, botao: 'Marcar como assinado', hint: 'Fica no histórico. Use só se o Autentique não devolveu o status.',
         texto: 'As ' + nParc + ' parcelas serão criadas a partir do 1º vencimento e o contrato vira Ativo.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ass', '/contratos/' + c.id + '/marcar-assinado', { motivo: m }, 'Contrato ativado'); } }) : null,
       modal === 'cancelar' ? h(MotivoModal, { titulo: 'Cancelar contrato', label: 'Motivo', obrigatorio: true, botao: 'Cancelar contrato', perigo: true,
@@ -1798,7 +1802,7 @@
       if (cfg.dias_desbloqueio != null && cfg.dias_desbloqueio !== '') body.dias_desbloqueio = parseInt(cfg.dias_desbloqueio, 10);
       if (cfg.locadora) body.locadora = Object.assign({}, cfg.locadora, { area_raio_km: parseInt(cfg.locadora.area_raio_km, 10) || null });
       if (cfg.bases) body.bases = cfg.bases.filter(function (b) { return String(b.nome || b.endereco || '').trim(); });
-      if (cfg.assinatura) body.assinatura = { modo: cfg.assinatura.modo === 'email' ? 'email' : 'app', tutts_auto: cfg.assinatura.tutts_auto !== false }; // LOCACAO_ASSINATURA_V2
+      if (cfg.assinatura) body.assinatura = { modo: cfg.assinatura.modo === 'email' ? 'email' : 'app', tutts_auto: cfg.assinatura.tutts_auto !== false, vistoria_antes: cfg.assinatura.vistoria_antes !== false }; // LOCACAO_ASSINATURA_V2 · LOCACAO_FLUXO_V1
       api('/config', { method: 'PUT', body: body }).then(function (r) { if (r && typeof r === 'object' && (r.juros_dia_pct != null || r.encargos)) setCfg(function (c) { return Object.assign({}, c, r); }); toast('Configurações salvas', 'success'); })
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
     };
@@ -1855,6 +1859,7 @@
           h('div', { style: { padding: '4px 16px 12px' } },
             statusInt(it.autentique, 'Autentique', 'Assinatura do contrato e retorno do documento assinado.'),
             statusInt(it.stark, 'Stark Bank', 'PIX da parcela no vencimento e baixa automática pelo webhook.'),
+            h(TestarPixBox, { api: api }), // LOCACAO_FLUXO_V1
             statusInt(it.whatsapp, 'WhatsApp', 'Convites, cobranças, recibos e código do portal.'),
             it.webhook_autentique_url ? h('div', { style: { marginTop: 8 } },
               h('div', { style: { fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 } }, 'Webhook do Autentique'),
@@ -2455,7 +2460,7 @@
   // ───────── Configurações · Locadora e bases ─────────
   // LOCACAO_ASSINATURA_V2: como o locatário assina e se a Tutts assina sozinha pela API
   function AssinaturaCard(props) {
-    var cfg = props.cfg, a = Object.assign({ modo: 'app', tutts_auto: true }, cfg.assinatura || {});
+    var cfg = props.cfg, a = Object.assign({ modo: 'app', tutts_auto: true, vistoria_antes: true }, cfg.assinatura || {}); // LOCACAO_FLUXO_V1: + vistoria_antes
     var setA = function (k, v) { var n = Object.assign({}, a); n[k] = v; props.set('assinatura', n); };
     var opc = function (val, titulo, desc) {
       var sel = a.modo === val;
@@ -2472,7 +2477,28 @@
           h('input', { type: 'checkbox', checked: a.tutts_auto !== false, onChange: function (e) { setA('tutts_auto', e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16, marginTop: 2 } }),
           h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Tutts assina automaticamente'),
             h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, a.dono_email ? 'Assina pela conta dona da chave da API: ' + a.dono_email + '.' : 'Autentique não configurado (AUTENTIQUE_TOKEN): a conta que assina pela Tutts aparece aqui depois de configurar.'))),
+        h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', paddingTop: 12, borderTop: '1px solid #f3f4f6', cursor: 'pointer' } }, // LOCACAO_FLUXO_V1
+          h('input', { type: 'checkbox', checked: a.vistoria_antes !== false, onChange: function (e) { setA('vistoria_antes', e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16, marginTop: 2 } }),
+          h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Exigir vistoria de entrega antes da assinatura (recomendado)'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, 'O contrato só vai para o Autentique depois da vistoria de entrega na Base, e o PDF já sai com o Anexo IV e as fotos. Desmarcado, o contrato é enviado logo ao ser criado.'))),
         h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Vale para os próximos envios. Contratos já enviados seguem como foram.')));
+  }
+
+  // LOCACAO_FLUXO_V1: teste do PIX (Stark) — cria uma cobrança de R$ 1,00 e cancela em seguida
+  function TestarPixBox(props) {
+    var _r = useState(null), r = _r[0], setR = _r[1];
+    var _o = useState(false), ocup = _o[0], setOcup = _o[1];
+    var testar = function () {
+      setOcup(true); setR(null);
+      props.api('/integracoes/testar-pix', { method: 'POST', body: {} }).then(setR).catch(function (e) { setR({ ok: false, erro: e.message }); }).then(function () { setOcup(false); });
+    };
+    return h('div', { style: { padding: '8px 0 10px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: 8 } },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+        h('div', { style: { flex: 1, fontSize: 12, color: '#6b7280', lineHeight: 1.4 } }, 'Cria uma cobrança PIX de R$ 1,00 e cancela em seguida. Mostra o erro exato do Stark se não der.'),
+        Btn({ small: true, disabled: ocup, onClick: testar, children: ocup ? 'Testando...' : 'Testar PIX' })),
+      r ? h('div', { role: 'status', style: { fontSize: 12.5, lineHeight: 1.45, borderRadius: 10, padding: '8px 10px', background: r.ok ? '#f0fdf4' : '#fef2f2', border: '1px solid ' + (r.ok ? '#bbf7d0' : '#fecaca'), color: r.ok ? '#166534' : '#991b1b', wordBreak: 'break-word' } },
+        r.ok ? (r.mensagem || 'PIX criado e cancelado com sucesso.') : /não configurado/i.test(r.erro || '') ? r.erro + ' · defina as variáveis no Railway.' : h(React.Fragment, null, 'Stark respondeu: ', h('b', null, '"' + (r.erro || 'erro desconhecido') + '"'),
+          /permission|invoice/i.test(r.erro || '') ? ' · habilite recebimentos (Invoice) no projeto da API.' : /configurado/i.test(r.erro || '') ? ' · defina as variáveis no Railway.' : '')) : null);
   }
 
   function LocadoraCard(props) {
@@ -2948,6 +2974,49 @@
   }
 
   // ───────── Vistoria · Termo Anexo IV (equipe) ─────────
+  // ───────── LOCACAO_FLUXO_V1: etapas até liberar a moto (criado → vistoria de entrega → assinatura → liberada) ─────────
+  function svgMini(d, sw) { return h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw || 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, d.map(function (x, i) { return h(x[0], Object.assign({ key: i }, x[1])); })); }
+  var MINI_OK = [['path', { d: 'm5 12 5 5 9-10' }]];
+  var MINI_LOCK = [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }]];
+  function EtapasLiberacao(props) {
+    var c = props.c || {};
+    var lista = c.etapas && c.etapas.length ? c.etapas : [
+      { id: 'criado', label: 'Contrato criado', em: c.criado_em, estado: 'ok' },
+      { id: 'vistoria', label: 'Vistoria de entrega na Base', estado: c.etapa === 'vistoria' ? 'atual' : 'ok' },
+      { id: 'assinatura', label: 'Assinatura', estado: c.etapa === 'vistoria' ? 'bloq' : 'atual' },
+      { id: 'liberada', label: 'Moto liberada', estado: 'bloq' }];
+    var DESC = {
+      criado: function (st) { return st.em ? fDHc(st.em) + (st.por ? ' · por ' + String(st.por).split(' ')[0] : '') : 'Contrato gerado na Central.'; },
+      vistoria: function (st) { return st.estado === 'atual' ? 'Anexo IV: 6 fotos, km, combustível, checklist e avarias, com o locatário presente.' : st.dispensada ? 'Não exigida para este contrato.' : (st.em ? 'Registrada em ' + fDHc(st.em) + '. O PDF leva o Anexo IV com as fotos.' : 'Registrada.'); },
+      assinatura: function (st) { return st.estado === 'bloq' ? 'Sai sozinha quando a vistoria for registrada: o PDF já leva o Anexo IV com as fotos. Tutts assina pela API; locatário pelo app.' : st.estado === 'atual' ? 'Enviada ao Autentique. Acompanhe abaixo quem já assinou.' : 'Assinado em ' + fDC(st.em) + '.'; },
+      liberada: function () { return 'Contrato ativo, parcelas geradas.'; }
+    };
+    var emVist = c.etapa === 'vistoria';
+    return h(Card, { style: { display: 'flex', flexDirection: 'column', gap: 12 }, label: 'Etapas até liberar a moto' },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, flex: 1 } }, 'Até liberar a moto'),
+        emVist ? Btn({ small: true, variant: 'perigo', disabled: !!props.ocupado, onClick: props.onCancelar, children: 'Cancelar contrato' }) : null),
+      h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4', style: { gap: 10 } },
+        lista.map(function (st, i) {
+          var ok = st.estado === 'ok', atual = st.estado === 'atual';
+          return h('div', { key: st.id, style: { borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 6, border: atual ? '2px solid ' + ROXO : '1px solid ' + (ok ? '#bbf7d0' : '#e5e7eb'), background: atual ? '#faf7fd' : ok ? '#f0fdf4' : '#fff' } },
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+              h('span', { style: { width: 26, height: 26, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12, color: '#fff', background: ok ? '#22c55e' : atual ? ROXO : '#d1d5db' } }, ok ? svgMini(MINI_OK, 2.6) : atual ? String(i + 1) : svgMini(MINI_LOCK)),
+              h('b', { style: { color: ok ? '#166534' : atual ? ROXO_ESC : '#9ca3af', fontSize: 13.5 } }, st.label)),
+            h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.45 } }, (DESC[st.id] || function () { return ''; })(st)),
+            st.id === 'vistoria' && atual ? Btn({ variant: 'pri', icon: 'camera', disabled: !!props.ocupado, onClick: props.onVistoria, style: { marginTop: 4, width: '100%' }, children: 'Registrar vistoria de entrega' }) : null);
+        })),
+      emVist ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'O locatário vê no app "Próximo passo: vistoria de entrega na Base" com o endereço. Se a vistoria apontar avaria pré-existente, ela entra no Anexo IV e fica registrada para a devolução.') : null);
+  }
+
+  // LOCACAO_FLUXO_V1: depois da vistoria de entrega o contrato sai para assinatura — avisa o resultado
+  function toastVistoriaAssinatura(toast, r) {
+    var a = r && r.assinatura;
+    if (!a) return toast('Vistoria registrada · Termo Anexo IV pronto', 'success');
+    if (a.enviado) return toast('Vistoria registrada · contrato com o Anexo IV enviado para assinatura' + (a.whatsapp && a.whatsapp.enviado ? ' · locatário avisado no WhatsApp' : ''), 'success');
+    toast('Vistoria registrada, mas a assinatura não saiu' + (a.motivo ? ': ' + a.motivo : '') + '. Use "Enviar ao Autentique" no contrato.', 'error');
+  }
+
   function VistoriaAnexoIVModal(props) {
     var api = props.api, toast = props.toast, mo = props.moto || {}, ct = props.contrato;
     var _cfg = useState(null), cfg = _cfg[0], setCfg = _cfg[1];
@@ -2987,7 +3056,7 @@
         avarias: semAv ? [] : avOk.map(function (a) { return { local: a.local || null, descricao: a.descricao.trim(), foto: a.foto || null }; }), sem_avarias: !!semAv && !avOk.length, declaracao_aceita: !!decl,
         avaria: temAvaria, observacoes: resumoObs || null,
         fotos: POS_V3.filter(function (p) { return fotos[p[0]]; }).map(function (p) { return { posicao: p[0], foto: fotos[p[0]].foto, capturada_em: fotos[p[0]].capturada_em }; }) } })
-        .then(function (r) { toast('Vistoria registrada · Termo Anexo IV pronto', 'success'); props.aoSalvar && props.aoSalvar(r); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); });
+        .then(function (r) { toastVistoriaAssinatura(toast, r); props.aoSalvar && props.aoSalvar(r); }) // LOCACAO_FLUXO_V1.catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); });
     };
     var secao = function (n, titulo, direita, corpo, sub) {
       return h('section', { style: { border: '1px solid #e5e7eb', borderRadius: 12 } },

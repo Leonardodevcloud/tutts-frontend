@@ -818,6 +818,89 @@
   }
   function fDH(s) { var d = s ? new Date(String(s).replace(' ', 'T')) : null; return d && !isNaN(d) ? fDC(d) + ' às ' + fHM(d) : ''; }
 
+  // ───── LOCACAO_FLUXO_V1: vistoria de entrega antes da assinatura + "recebemos sua assinatura · liberando" ─────
+  var FLAG_RECEBIDA = 'tutts_loc_assinatura_recebida';
+  function flagRecebida(numero, valor) {
+    try {
+      if (valor === undefined) return localStorage.getItem(FLAG_RECEBIDA) === String(numero || '');
+      if (valor) localStorage.setItem(FLAG_RECEBIDA, String(numero || '')); else localStorage.removeItem(FLAG_RECEBIDA);
+    } catch (e) { return false; }
+    return valor;
+  }
+  function PassoClaro(estado, texto) {
+    var ok = estado === 'ok', atual = estado === 'atual';
+    return h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: ok || atual ? '#111827' : '#9ca3af' } },
+      ok ? h('span', { style: { width: 20, height: 20, borderRadius: 99, background: '#22c55e', color: '#fff', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('check', 12))
+        : h('span', { style: { width: 20, height: 20, borderRadius: 99, border: '2px solid ' + (atual ? ROXO : '#d1d5db'), boxSizing: 'border-box', flex: 'none' } }),
+      atual ? h('b', null, texto) : h('span', null, texto));
+  }
+  function VistoriaNaBase(p) {
+    var r = p.r, mo = r.moto || {}, as = r.assinatura || {}, cli = r.cliente || {}, b = as.base;
+    var nome1 = String(cli.nome || '').split(' ')[0];
+    return h(React.Fragment, null,
+      h('div', { className: 'mm-sora', style: { fontSize: 20, fontWeight: 700 } }, 'Olá' + (nome1 ? ', ' + nome1 : '')),
+      h('section', { style: { background: '#fff', border: '2px solid ' + ROXO, borderRadius: 18, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } },
+          h('span', { style: { width: 38, height: 38, borderRadius: 12, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('camera', 18)),
+          h('div', null, h('div', { className: 'mm-sora', style: { fontSize: 16, fontWeight: 700 } }, 'Próximo passo: vistoria na Base'), h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Leve um documento com foto'))),
+        b ? h('div', { style: { background: '#faf7fd', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5 } }, h('b', null, b.nome || 'Base Tutts'), b.endereco ? h('div', null, b.endereco) : null) : null,
+        h('div', { style: { fontSize: 12.5, color: '#374151', lineHeight: 1.5 } }, 'A equipe tira as fotos da moto com você. Depois disso o contrato chega aqui para você assinar.'),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          PassoClaro('ok', 'Cadastro aprovado'), PassoClaro('atual', 'Vistoria de entrega'), PassoClaro('bloq', 'Assinar o contrato'), PassoClaro('bloq', 'Retirar a moto'))),
+      h('section', { className: 'mm-card', style: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: '12px 14px' } },
+        h(MotoImg, { src: mo.capa_thumb, tipo: mo.tipo, modelo: mo.modelo, cor: mo.cor, w: 64, h: 46, r: 10 }),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, (mo.modelo || '') + ' · ' + (mo.placa || '')), h('span', { className: 'mm-sub', style: { fontSize: 12 } }, 'Reservada para você')),
+        Pill('Reservada', 'ambar')));
+  }
+  function ContratoLiberado(p) {
+    return h(React.Fragment, null,
+      h('section', { style: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' } },
+        h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#22c55e', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('check', 28)),
+        h('div', { className: 'mm-sora', style: { fontSize: 19, fontWeight: 700, color: '#166534' } }, 'Contrato assinado'),
+        h('div', { style: { fontSize: 13, color: '#166534' } }, 'Você e a Tutts assinaram. A moto está liberada.')),
+      h('section', { className: 'mm-card', style: { gap: 10 } },
+        h('b', null, p.vistoriaFeita ? 'Próximo passo: retirar a moto' : 'Próximo passo: vistoria de retirada'),
+        h('span', { className: 'mm-sub', style: { fontSize: 12.5 } }, p.vistoriaFeita ? 'A vistoria de entrega já está no contrato. As parcelas e o PIX aparecem em Pagamentos.' : '6 fotos + km + combustível + checklist. Leva uns 5 minutos.'),
+        h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { p.voltar(); p.recarregar(); } }, 'Ver minha moto')));
+  }
+  function AssinaturaRecebida(p) {
+    var r = p.r, ct = r.contrato || {}, as = r.assinatura || {};
+    var _st = useState({ loc: as.locatario_assinou_em || p.locEm || null, tut: as.tutts_assinou_em || null }), st = _st[0], setSt = _st[1];
+    var _ok = useState(false), liberado = _ok[0], setLiberado = _ok[1];
+    var _n = useState(5), seg = _n[0], setSeg = _n[1];
+    var _t = useState(0), tent = _t[0], setTent = _t[1];
+    var _c = useState(false), conf = _c[0], setConf = _c[1];
+    var MAX = 36; /* 36 × 5 s ≈ 3 min */
+    var conferir = useCallback(function () {
+      setConf(true);
+      return p.api('/assinatura/verificar', { method: 'POST', body: {} }).then(function (x) {
+        if (x && x.assinado) { flagRecebida(ct.numero, null); setLiberado(true); return; }
+        if (x && x.locatario_assinou_em) setSt(function (o) { return Object.assign({}, o, { loc: o.loc || x.locatario_assinou_em }); });
+      }).catch(function () { /* tenta de novo */ }).then(function () { setConf(false); setTent(function (n) { return n + 1; }); setSeg(5); });
+    }, [p.api, ct.numero]);
+    useEffect(function () { flagRecebida(ct.numero, true); conferir(); }, []);
+    useEffect(function () {
+      if (liberado || tent >= MAX || conf) return;
+      var id = setTimeout(function () { if (seg <= 1) conferir(); else setSeg(seg - 1); }, 1000);
+      return function () { clearTimeout(id); };
+    }, [seg, liberado, tent, conf]);
+    if (liberado) return h(ContratoLiberado, { voltar: p.voltar, recarregar: p.recarregar, vistoriaFeita: as.etapa === 'assinatura' });
+    var esgotou = tent >= MAX;
+    var hm = function (v) { var d = v ? new Date(String(v).replace(' ', 'T')) : null; return d && !isNaN(d) ? ' · ' + fHM(d) : ''; };
+    return h(React.Fragment, null,
+      h('section', { className: 'mm-card', style: { alignItems: 'center', textAlign: 'center', gap: 12, padding: '22px 16px' } },
+        esgotou ? h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center' } }, ico('clock', 26)) : h('div', { className: 'mm-spin', role: 'presentation', style: { width: 56, height: 56, borderWidth: 5 } }),
+        h('div', { className: 'mm-sora', style: { fontSize: 18, fontWeight: 700 } }, 'Recebemos sua assinatura'),
+        h('div', { style: { fontSize: 13, color: '#6b7280', lineHeight: 1.5 } }, esgotou ? 'Está levando mais que o normal. A Tutts já foi avisada pelo Autentique; confira de novo em instantes.' : 'Estamos liberando seu contrato. Isso leva alguns segundos — pode deixar esta tela aberta.'),
+        h('div', { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left', marginTop: 4 } },
+          PassoClaro('ok', 'Você assinou' + hm(st.loc)),
+          as.tutts_assina ? PassoClaro(st.tut ? 'ok' : 'atual', st.tut ? 'Tutts assinou' + hm(st.tut) : 'Tutts assinando…') : null,
+          PassoClaro('atual', 'Liberando contrato e parcelas…')),
+        esgotou ? h('button', { type: 'button', className: 'mm-btn out', disabled: conf, onClick: function () { setTent(0); conferir(); } }, ico('refresh', 16), conf ? 'Conferindo...' : 'Conferir agora')
+          : h('div', { role: 'status', style: { fontSize: 11.5, color: '#9ca3af' } }, conf ? 'Conferindo...' : 'Conferindo de novo em ' + seg + ' s')),
+      h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center', lineHeight: 1.5 } }, 'Se fechar o app, tudo bem: quando abrir de novo, já aparece liberado.'));
+  }
+
   function AssinarHome(p) {
     var r = p.r, mo = r.moto || {}, ct = r.contrato || {}, as = r.assinatura || {}, cli = r.cliente || {};
     var nome1 = String(cli.nome || '').split(' ')[0];
@@ -842,7 +925,7 @@
         Pill('Reservada', 'ambar')),
       h('section', { className: 'mm-card', style: { gap: 8 } },
         h('b', null, 'Depois de assinar'),
-        ['Você faz a vistoria de retirada com fotos, aqui no app.', 'As parcelas e o PIX aparecem em Pagamentos.', 'O contrato assinado fica em Meu contrato para baixar.'].map(function (t, i) {
+        [as.etapa === 'assinatura' ? 'A moto é liberada para você retirar na Base (a vistoria de entrega já está no Anexo IV).' : 'Você faz a vistoria de retirada com fotos, aqui no app.', 'As parcelas e o PIX aparecem em Pagamentos.', 'O contrato assinado fica em Meu contrato para baixar.'].map(function (t, i) {
           return h('div', { key: i, style: { display: 'flex', gap: 8, color: '#374151', fontSize: 12.5 } }, h('span', { style: { color: ROXO, fontWeight: 700 } }, (i + 1) + '.'), t);
         })),
       h('p', { style: { margin: 0, textAlign: 'center', fontSize: 11.5, color: '#9ca3af', display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' } }, ico('lock', 13), 'Assinatura eletrônica com validade jurídica pelo Autentique'));
@@ -860,7 +943,8 @@
       if (conferindo) return;
       setConferindo(true);
       p.api('/assinatura/verificar', { method: 'POST', body: {} }).then(function (x) {
-        if (x && x.assinado) setAssinado(true);
+        if (x && x.assinado) { flagRecebida(ct.numero, null); setAssinado(true); }
+        else if (x && x.locatario_assinou) { flagRecebida(ct.numero, true); p.ir('recebida', { locEm: x.locatario_assinou_em }); } // LOCACAO_FLUXO_V1
         else if (!silencioso) p.toast('Ainda não recebemos a sua assinatura. Termine no Autentique e confira de novo.');
       }).catch(function (e) { if (!silencioso) p.toast(e.message); }).then(function () { setConferindo(false); });
     };
@@ -880,15 +964,7 @@
         if (w && !w.closed) { try { w.opener = null; } catch (e) { /* ok */ } w.location.href = x.link; } else window.location.href = x.link;
       }).catch(function (e) { if (w) w.close(); p.toast(e.message); }).then(function () { setAbrindo(false); });
     };
-    if (assinado) return h(React.Fragment, null,
-      h('section', { style: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' } },
-        h('span', { style: { width: 56, height: 56, borderRadius: 99, background: '#22c55e', color: '#fff', display: 'grid', placeItems: 'center' } }, ico('check', 28)),
-        h('div', { className: 'mm-sora', style: { fontSize: 19, fontWeight: 700, color: '#166534' } }, 'Contrato assinado'),
-        h('div', { style: { fontSize: 13, color: '#166534' } }, 'Você e a Tutts assinaram. A moto está liberada.')),
-      h('section', { className: 'mm-card', style: { gap: 10 } },
-        h('b', null, 'Próximo passo: vistoria de retirada'),
-        h('span', { className: 'mm-sub', style: { fontSize: 12.5 } }, '6 fotos + km + combustível + checklist. Leva uns 5 minutos.'),
-        h('button', { type: 'button', className: 'mm-btn pri', onClick: function () { p.voltar(); p.recarregar(); } }, 'Ver minha moto')));
+    if (assinado) return h(ContratoLiberado, { voltar: p.voltar, recarregar: p.recarregar, vistoriaFeita: as.etapa === 'assinatura' }); // LOCACAO_FLUXO_V1
     var linha = function (rot, val) { return h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', borderTop: '1px solid #f3f4f6', fontSize: 12.5 } }, h('span', { style: { color: '#6b7280' } }, rot), h('b', { style: { textAlign: 'right' } }, val || '—')); };
     var porMes = ct.periodicidade === 'mensal' ? ' por mês' : ' por semana';
     return h(React.Fragment, null,
@@ -959,7 +1035,9 @@
     else if (r.assinatura && r.assinatura.pendente) { /* LOCACAO_ASSINATURA_V2: só o fluxo de assinatura até assinar */
       var comumA = { r: r, api: api, toast: toast, ir: ir, voltar: voltar, recarregar: carregar };
       corpo = h('main', { className: 'mm-main', onClick: function () { if (menu) setMenu(false); } },
-        tela && tela.t === 'assinar' ? h(AssinarRevisao, comumA) : h(AssinarHome, comumA));
+        r.assinatura.etapa === 'vistoria' ? h(VistoriaNaBase, comumA) // LOCACAO_FLUXO_V1
+          : (tela && tela.t === 'recebida') || r.assinatura.locatario_assinou_em || flagRecebida(r.contrato && r.contrato.numero) ? h(AssinaturaRecebida, Object.assign({ locEm: tela && tela.locEm }, comumA))
+          : tela && tela.t === 'assinar' ? h(AssinarRevisao, comumA) : h(AssinarHome, comumA));
     }
     else {
       var comum = { r: r, api: api, toast: toast, ir: ir, voltar: voltar, recarregar: carregar, copiarPix: copiarPix, onLogout: props.onLogout };
@@ -1003,6 +1081,18 @@
     var mo = r.moto || {}, ct = r.contrato || {}, prox = r.proxima_parcela, pend = r.vistoria_pendente, qf = r.quanto_falta || {};
     var dias = pend ? (pend.dias_restantes != null ? pend.dias_restantes : Math.round((pd(pend.prazo) - new Date(new Date().toDateString())) / 864e5)) : null;
     var abrir = function () { if (props.onAbrir) props.onAbrir(); };
+    if (!r.precisa_ciencia && r.assinatura && r.assinatura.pendente && (r.assinatura.etapa === 'vistoria' || r.assinatura.locatario_assinou_em || flagRecebida(ct.numero))) { /* LOCACAO_FLUXO_V1 */
+      var emVist = r.assinatura.etapa === 'vistoria', bs = r.assinatura.base;
+      return h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent', marginBottom: 16 } },
+        h('button', { type: 'button', onClick: abrir, 'aria-label': emVist ? 'Ver próximo passo da moto: vistoria na Base' : 'Ver liberação do contrato da moto', style: { width: '100%', textAlign: 'left', background: '#fff', border: '2px solid ' + ROXO, borderRadius: 16, overflow: 'hidden', display: 'block', padding: 0 } },
+          h('div', { style: { display: 'flex', gap: 12, padding: 14, alignItems: 'center' } },
+            h('span', { style: { width: 44, height: 44, borderRadius: 12, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, emVist ? ico('camera', 20) : h('div', { className: 'mm-spin', style: { width: 22, height: 22, borderWidth: 3 } })),
+            h('div', { style: { flex: 1, minWidth: 0 } },
+              h('div', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: ROXO } }, 'MINHA MOTO'),
+              h('b', { style: { display: 'block', fontSize: 15 } }, emVist ? 'Próximo passo: vistoria na Base' : 'Recebemos sua assinatura'),
+              h('div', { style: { fontSize: 12, color: '#6b7280' } }, emVist ? (bs ? (bs.nome || 'Base Tutts') + (bs.endereco ? ' · ' + bs.endereco : '') : 'Leve um documento com foto') : 'Liberando seu contrato · ' + (mo.modelo || '') + ' · ' + (mo.placa || '')))),
+          h('div', { style: { borderTop: '1px solid #f3f4f6', background: '#faf7fd', padding: 10, textAlign: 'center', color: ROXO_ESC, fontWeight: 700, fontSize: 13.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 } }, emVist ? 'Ver detalhes' : 'Acompanhar', ico('arrowright', 14))));
+    }
     if (!r.precisa_ciencia && r.assinatura && r.assinatura.pendente) { /* LOCACAO_ASSINATURA_V2 */
       return h('div', { className: 'mm', style: { minHeight: 0, background: 'transparent', marginBottom: 16 } },
         h('button', { type: 'button', onClick: abrir, 'aria-label': 'Revisar e assinar o contrato da moto', style: { width: '100%', textAlign: 'left', background: 'linear-gradient(160deg,#3a1556,#770fa8)', color: '#fff', border: 0, borderRadius: 16, overflow: 'hidden', display: 'block', padding: 0 } },

@@ -203,12 +203,40 @@
   function DocTile(p) {
     var feito = !!p.valor;
     return h('label', { className: 'tile', style: feito ? { background: '#fff', border: '1px solid #bbf7d0', cursor: 'pointer' } : { background: '#fff', border: '1.5px dashed #d8b4f0', cursor: 'pointer' } },
-      h('input', { type: 'file', className: 'sr', accept: p.pdf ? 'image/*,application/pdf' : 'image/*', onChange: function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) p.onFile(f); } }),
+      h('input', { type: 'file', className: 'sr', accept: p.pdf ? 'image/*,application/pdf' : 'image/*', capture: p.capture || undefined, onChange: function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) p.onFile(f); } }),
       feito && /^data:image/.test(p.valor) ? h('img', { src: p.valor, alt: '', style: { width: 38, height: 38, borderRadius: 10, objectFit: 'cover', flex: 'none' } })
         : h('span', { className: 'ic', style: feito ? { background: '#f0fdf4', color: '#16a34a' } : { background: '#f3e8fb', color: ROXO } }, I(feito ? 'ok' : (p.pdf ? 'file' : 'cam'), 20)),
       h('span', { style: { flex: 1, minWidth: 0 } },
         h('span', { style: { display: 'block', fontWeight: 600, fontSize: 14 } }, p.titulo),
         h('span', { style: { display: 'block', fontSize: 12.5, color: feito ? '#166534' : ROXO, fontWeight: feito ? 500 : 600 } }, feito ? 'Enviado · trocar' : (p.pdf ? 'Foto ou PDF' : 'Tirar foto'))));
+  }
+
+  // LOCACAO_FLUXO_V1: selfie com a CNH ao lado do rosto (obrigatória no cadastro por link e no complemento da Central)
+  function SelfieIlustracao() {
+    return h('svg', { viewBox: '0 0 200 150', width: 240, height: 180, 'aria-hidden': 'true', style: { maxWidth: '100%', height: 'auto' } },
+      h('rect', { width: 200, height: 150, rx: 14, fill: '#faf7fd' }),
+      h('circle', { cx: 82, cy: 62, r: 26, fill: '#e9d5f9' }), h('path', { d: 'M44 140c4-30 22-44 38-44s34 14 38 44z', fill: '#e9d5f9' }),
+      h('rect', { x: 116, y: 44, width: 54, height: 36, rx: 5, fill: '#fff', stroke: ROXO, strokeWidth: 2.5 }), h('rect', { x: 122, y: 51, width: 14, height: 18, rx: 2, fill: '#f3e8fb' }),
+      h('line', { x1: 141, y1: 54, x2: 163, y2: 54, stroke: '#c4b5fd', strokeWidth: 3 }), h('line', { x1: 141, y1: 62, x2: 158, y2: 62, stroke: '#c4b5fd', strokeWidth: 3 }), h('line', { x1: 122, y1: 73, x2: 163, y2: 73, stroke: '#c4b5fd', strokeWidth: 2 }),
+      h('path', { d: 'M118 80c-6 8-10 16-12 28', stroke: '#e9d5f9', strokeWidth: 9, strokeLinecap: 'round', fill: 'none' }),
+      h('rect', { x: 20, y: 18, width: 160, height: 112, rx: 10, fill: 'none', stroke: ROXO, strokeDasharray: '6 5', strokeWidth: 2 }));
+  }
+  function SelfieCnhTile(p) {
+    var feito = !!p.valor;
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+      feito ? null : h('div', { className: 'card', style: { background: '#fff', gap: 10 } },
+        h('div', null, h('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Selfie com a CNH'),
+          h('div', { style: { fontSize: 13, color: '#6b7280', lineHeight: 1.45, marginTop: 2 } }, 'Segure a CNH aberta ao lado do rosto. Rosto e documento precisam aparecer inteiros e legíveis.')),
+        h('div', { style: { display: 'grid', placeItems: 'center' } }, h(SelfieIlustracao)),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, color: '#374151' } },
+          ['Lugar claro, sem boné e sem óculos escuros', 'CNH ao lado do rosto, sem cobrir o rosto', 'Foto nítida, dá para ler o nome na CNH'].map(function (t) {
+            return h('div', { key: t, style: { display: 'flex', gap: 6, alignItems: 'center' } }, h('span', { style: { color: '#16a34a', display: 'inline-flex' } }, I('ok', 14)), t);
+          }))),
+      h(DocTile, { titulo: 'Selfie com a CNH', valor: p.valor, capture: 'user', onFile: p.onFile }));
+  }
+  function DocItem(x, valor, onFile) {
+    if (x[0] === 'selfie_cnh') return h(SelfieCnhTile, { key: x[0], valor: valor, onFile: onFile });
+    return h(DocTile, { key: x[0], titulo: x[1], valor: valor, pdf: x[0] === 'comprovante', onFile: onFile });
   }
 
   // ═════════ CADASTRO POR LINK ═════════
@@ -319,8 +347,8 @@
         h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4 }, onClick: function () { setEtapa(1); } }, I('back', 16), 'Voltar aos dados'),
         h('div', { className: 'progress', 'aria-hidden': 'true' }, h('div', { style: { width: '100%' } })),
         h('h1', { className: 'h1' }, 'Documentos'),
-        h('p', { className: 'sub' }, 'Opcional nesta etapa, mas agiliza a análise. Foto nítida, sem reflexo. ' + nDocs + ' de 4 enviados.'),
-        DOCS.map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]], pdf: x[0] === 'comprovante', onFile: function (f) { pegarDoc(x[0], f); } }); }),
+        h('p', { className: 'sub' }, 'Os 4 documentos são obrigatórios. Foto nítida, sem reflexo. ' + nDocs + ' de 4 enviados.'), // LOCACAO_FLUXO_V1
+        DOCS.map(function (x) { return DocItem(x, docs[x[0]], function (f) { pegarDoc(x[0], f); }); }),
         h('section', { className: 'card', style: { background: '#faf7fd', borderColor: '#e9d5f9' } },
           h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', color: ROXO_ESC, fontWeight: 700 } }, I('shield', 18), 'Privacidade dos seus dados (LGPD)'),
           h('ul', { style: { margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: 4 } },
@@ -332,8 +360,8 @@
           h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, cursor: 'pointer', background: '#fff', border: '1px solid ' + (aceite ? '#e9d5f9' : '#e5e7eb'), borderRadius: 10, padding: 12 } },
             h('input', { type: 'checkbox', checked: aceite, onChange: function (e) { setAceite(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, marginTop: 1, flex: 'none' } }),
             h('span', null, 'Li e aceito o ', h('b', null, 'Termo de Privacidade (LGPD) ' + (conv.termo_lgpd_versao || '')), '.'))),
-        h('button', { type: 'button', className: 'btn pri', disabled: !aceite || enviando || faltam > 0, onClick: enviar }, enviando ? 'Enviando...' : 'Enviar cadastro'),
-        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, faltam > 0 ? 'Volte e complete os ' + faltam + ' campos que faltam.' : !aceite ? 'Aceite o termo para liberar o envio.' : 'Tudo certo. É só enviar.')),
+        h('button', { type: 'button', className: 'btn pri', disabled: !aceite || enviando || faltam > 0 || nDocs < 4, onClick: enviar }, enviando ? 'Enviando...' : 'Enviar cadastro'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, faltam > 0 ? 'Volte e complete os ' + faltam + ' campos que faltam.' : nDocs < 4 ? 'Falta' + (4 - nDocs > 1 ? 'm ' : ' ') + (4 - nDocs) + ' foto' + (4 - nDocs > 1 ? 's' : '') + ' de documento para enviar.' : !aceite ? 'Aceite o termo para liberar o envio.' : 'Tudo certo. É só enviar.')),
       verTermo ? h(Sheet, { titulo: 'Termo de Privacidade · ' + (conv.termo_lgpd_versao || ''), onClose: function () { setVerTermo(false); } }, h(TermoTexto, { texto: conv.termo_lgpd })) : null,
       h(Toast, { msg: toast }));
 
@@ -417,7 +445,7 @@
         h('h1', { className: 'h1' }, 'Envie seus documentos'),
         h('p', { className: 'sub' }, (conv.nome_ref ? conv.nome_ref.split(' ')[0] + ', o' : 'O') + ' time Tutts precisa destes documentos para continuar a análise do seu cadastro.'),
         conv.mensagem ? h('div', { className: 'card', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e', fontSize: 13.5 } }, h('b', null, 'O que falta: '), conv.mensagem) : null,
-        DOCS.map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]], pdf: x[0] === 'comprovante', onFile: function (f) { pegar(x[0], f); } }); }),
+        DOCS.map(function (x) { return DocItem(x, docs[x[0]], function (f) { pegar(x[0], f); }); }), // LOCACAO_FLUXO_V1
         h('button', { type: 'button', className: 'btn pri', disabled: !n || env, onClick: enviar }, env ? 'Enviando...' : 'Enviar ' + (n ? n + ' documento' + (n > 1 ? 's' : '') : 'documentos')),
         h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'O link vale até ' + fD(conv.expira_em) + '.')),
       h(Toast, { msg: toast }));
@@ -782,7 +810,7 @@
   }
 
   // ═════════ LOCACAO_V4: COMPLEMENTO do motoboy da Central (link curto · só o que falta) ═════════
-  var DOCS_COMP = [['cnh_frente', 'Foto da CNH · frente'], ['cnh_verso', 'Foto da CNH · verso'], ['comprovante', 'Comprovante de residência']];
+  var DOCS_COMP = [['cnh_frente', 'Foto da CNH · frente'], ['cnh_verso', 'Foto da CNH · verso'], ['comprovante', 'Comprovante de residência'], ['selfie_cnh', 'Selfie com a CNH']]; // LOCACAO_FLUXO_V1: + selfie
   var OBRIG_COMP = [['nacionalidade', 'Nacionalidade'], ['estado_civil', 'Estado civil'], ['profissao', 'Profissão'], ['rg', 'RG'], ['cnh_numero', 'Nº da CNH'], ['cnh_categoria', 'Categoria'],
     ['cnh_validade', 'Validade da CNH'], ['cnh_ear', 'EAR'], ['cep', 'CEP'], ['logradouro', 'Rua'], ['numero', 'Número'], ['bairro', 'Bairro'], ['cidade', 'Cidade'], ['uf', 'UF']];
   var VAZIO_COMP = { nacionalidade: 'Brasileira', estado_civil: '', profissao: 'Entregador', rg: '', rg_orgao: '', data_nascimento: '', email: '', cnh_numero: '', cnh_categoria: '', cnh_validade: '', cnh_ear: null,
@@ -885,7 +913,8 @@
                 ['', 'A', 'AB', 'AC', 'AD', 'AE'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
             h(Campo, { label: 'Validade', erro: errDe('cnh_validade') }, inp('cnh_validade', { attrs: { type: 'date' } }))),
           h(Campo, { label: 'Sua CNH tem EAR (exerce atividade remunerada)?', erro: errDe('cnh_ear') }, Seg([[true, 'Sim'], [false, 'Não']], d.cnh_ear, function (v) { set('cnh_ear', v); }, 'EAR')),
-          DOCS_COMP.slice(0, 2).map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]] || (enviados.indexOf(x[0]) >= 0 ? 'enviado' : null), onFile: function (f) { pegarDoc(x[0], f); } }); })),
+          DOCS_COMP.slice(0, 2).map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]] || (enviados.indexOf(x[0]) >= 0 ? 'enviado' : null), onFile: function (f) { pegarDoc(x[0], f); } }); }),
+          h(SelfieCnhTile, { valor: docs.selfie_cnh || (enviados.indexOf('selfie_cnh') >= 0 ? 'enviado' : null), onFile: function (f) { pegarDoc('selfie_cnh', f); } })), // LOCACAO_FLUXO_V1
         h('section', { className: 'card' },
           h('div', { className: 'sec' }, 'Documento e dados pessoais'),
           h('div', { className: 'g130', style: { gridTemplateColumns: '1fr 110px' } },
