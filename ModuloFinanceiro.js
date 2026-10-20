@@ -1738,6 +1738,7 @@
                         tile("comissao", () => { x({...p, finTab: "comissao"}); }, "wallet", "Comissão", "Comissão dos vendedores por cliente e competência, com faixas pela data de início.")
                     ]),
                     secao("Controle", [
+                        tile("bi-financeiro", () => { x({...p, finTab: "bi-financeiro"}); }, "chart", "BI Financeiro", "Faturamento, repasse, mínimo garantido e margem por cliente e centro de custo."), /* BI_FINANCEIRO_V1 */
                         tile("sinistros", () => { x({...p, finTab: "sinistros"}); }, "alert", "Sinistros", "Apuração de avarias e extravios: tratativa com o cliente e com o entregador."),
                         tile("restritos", () => { x({...p, finTab: "restritos"}); }, "ban", "Restritos", "Profissionais bloqueados de realizar saques emergenciais."),
                         tile("relatorios", () => { x({...p, finTab: "relatorios"}); }, "trendup", "Relatórios", "Relatórios gerenciais e exportação de dados financeiros."),
@@ -2417,6 +2418,12 @@
                 }, React.createElement("p", { className: "text-amber-800 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ModuloComissao nao carregado")),
                    React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Confira se modulo-comissao.js esta incluido no index.html antes do ModuloFinanceiro.js"))),
                 { API_URL: API_URL, fetchAuth: fetchAuth, ja: ja, usuario: l }
+            ), "bi-financeiro" === p.finTab && React.createElement( /* BI_FINANCEIRO_V1 */
+                window.ModuloBiFinanceiroComponent || (() => React.createElement("div", {
+                    className: "bg-white rounded-[14px] p-8 text-center border border-gray-200"
+                }, React.createElement("p", { className: "text-amber-800 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ModuloBiFinanceiro nao carregado")),
+                   React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Confira se modulo-bi-financeiro.js esta incluido no index.html antes do ModuloFinanceiro.js"))),
+                { API_URL: API_URL, fetchAuth: fetchAuth, ja: ja }
             ), "restritos" === p.finTab && React.createElement("div", {
                 className: "space-y-4"
             }, /* FIN_ABAS_V1: Restritos — cabeçalho, formulário em card, tabela com pílulas e "Suspender" destrutivo */
