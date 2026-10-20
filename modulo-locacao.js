@@ -59,6 +59,38 @@
     }
   }
 
+  // LOCACAO_ASSINATURA_V1: links de assinatura do Autentique (locatário e Tutts), copiar e mandar no WhatsApp
+  function LinksAssinatura(props) {
+    var c = props.c, api = props.api, toast = props.toast;
+    var st = useState(Array.isArray(c.autentique_links) ? c.autentique_links : []), links = st[0], setLinks = st[1];
+    var stC = useState(false), carregando = stC[0], setCarregando = stC[1];
+    var stE = useState(false), enviando = stE[0], setEnviando = stE[1];
+    var buscar = function () {
+      setCarregando(true);
+      api('/contratos/' + c.id + '/links-assinatura').then(function (r) { setLinks((r && r.links) || []); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setCarregando(false); });
+    };
+    useEffect(function () { if (c.autentique_doc_id && !links.length) buscar(); }, [c.id, c.autentique_doc_id]);
+    if (!c.autentique_doc_id) return null;
+    var enviar = function () {
+      setEnviando(true);
+      api('/contratos/' + c.id + '/enviar-link-assinatura', { method: 'POST', body: {} })
+        .then(function (r) { if (r && r.enviado) toast('Link enviado no WhatsApp do locatário', 'success'); else toast('WhatsApp não enviado' + (r && r.motivo ? ': ' + r.motivo : '') + '. Copie o link e mande você.', 'error'); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setEnviando(false); });
+    };
+    return h('div', { style: { marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 } },
+      links.length ? links.map(function (l, i) {
+        return h('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: '#ffffff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '6px 10px' } },
+          h('span', { style: { fontWeight: 700, color: '#1e3a8a', minWidth: 76 } }, l.papel_label || 'Assinante'),
+          h('span', { style: { color: '#374151', fontSize: 12.5 } }, l.nome || l.email || ''),
+          l.assinado ? h('span', { style: { fontSize: 11.5, fontWeight: 600, color: '#166534', background: '#f0fdf4', borderRadius: 99, padding: '1px 8px' } }, 'Assinou') : null,
+          h('a', { href: l.link, target: '_blank', rel: 'noopener', style: { color: ROXO, fontSize: 12.5, fontWeight: 600, marginLeft: 'auto', wordBreak: 'break-all' } }, l.link),
+          Btn({ small: true, icon: 'copy', onClick: function () { copiar(l.link, toast); }, children: 'Copiar' }),
+          l.papel === 'locatario' && !l.assinado ? Btn({ small: true, icon: 'message', disabled: enviando, onClick: enviar, children: enviando ? 'Enviando...' : 'Enviar no WhatsApp' }) : null);
+      }) : h('div', { style: { fontSize: 12.5, color: '#1e40af' } }, carregando ? 'Buscando os links de assinatura...' : 'Links de assinatura ainda não disponíveis. ',
+        carregando ? null : h('button', { type: 'button', onClick: buscar, style: { color: ROXO, fontWeight: 600, background: 'none', border: 0, cursor: 'pointer', padding: 0 } }, 'Buscar de novo')));
+  }
+
   // Reduz a foto para no máximo 1280px (jpeg 0.8). PDF passa direto como dataURL.
   function lerArquivo(file, max, q) {
     return new Promise(function (resolve, reject) {
@@ -1535,7 +1567,8 @@
         ico('clock', 18, { color: '#2563eb', marginTop: 1 }),
         h('div', { style: { flex: 1, minWidth: 240, color: '#1e40af', fontSize: 13.5 } },
           h('div', { style: { fontWeight: 700 } }, 'Aguardando assinatura no Autentique'),
-          h('div', { style: { marginTop: 2 } }, 'As parcelas só são criadas quando o documento volta assinado. A moto fica Reservada até lá.' + (c.autentique_doc_id ? ' Documento ' + c.autentique_doc_id + '.' : ' O contrato ainda não foi enviado ao Autentique.'))),
+          h('div', { style: { marginTop: 2 } }, 'As parcelas só são criadas quando o documento volta assinado. A moto fica Reservada até lá.' + (c.autentique_doc_id ? ' Documento ' + c.autentique_doc_id + '.' : ' O contrato ainda não foi enviado ao Autentique.')),
+          h(LinksAssinatura, { key: (c.autentique_doc_id || '') + (c.autentique_enviado_em || ''), c: c, api: api, toast: toast })), // LOCACAO_ASSINATURA_V1
         h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
           c.autentique_doc_id ? Btn({ small: true, icon: 'refresh', disabled: !!ocupado, onClick: function () { acao('consultar', '/contratos/' + c.id + '/consultar-assinatura', {}, 'Status consultado'); }, children: ocupado === 'consultar' ? 'Consultando...' : 'Consultar assinatura' }) : null,
           Btn({ small: true, icon: 'upload', disabled: !!ocupado, onClick: function () { acao('reenviar', '/contratos/' + c.id + '/reenviar-assinatura', {}, 'Enviado ao Autentique'); }, children: c.autentique_doc_id ? 'Reenviar' : 'Enviar ao Autentique' }),
