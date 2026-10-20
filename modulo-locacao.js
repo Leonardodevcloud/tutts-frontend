@@ -348,7 +348,7 @@
             return Linha(m.moto_id, [
               { td: 1, v: celulaMoto(m) },
               { td: 1, v: m.placa, st: { fontFamily: MONO, fontSize: 12.5 } },
-              { td: 1, v: m.cliente_nome ? h('div', null, m.cliente_nome, h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, m.cliente_tipo === 'tutts' ? 'Motoboy Tutts' : m.cliente_tipo === 'externo' ? 'Externo' : (m.cliente_tipo || ''))) : h('span', { style: { color: '#9ca3af' } }, '—') },
+              { td: 1, v: m.cliente_nome ? h('div', null, m.cliente_nome, h('div', { style: { marginTop: 3 } }, TagTipo(m.cliente_tipo))) : h('span', { style: { color: '#9ca3af' } }, '—') }, // LOCACAO_V4
               { td: 1, v: m.valor_semanal ? fR(m.valor_semanal) : '—', right: true },
               { td: 1, v: m.proximo_vencimento ? fDS(m.proximo_vencimento, true) : '—' },
               { td: 1, st: { minWidth: 110 }, v: m.semanas && m.situacao !== 'aguardando_assinatura' ? h('div', null, h('div', { style: { fontSize: 12, color: '#374151' } }, fN(m.parcelas_pagas) + ' de ' + fN(m.semanas)),
@@ -425,6 +425,199 @@
           }))));
   }
 
+  // ───────────────────────── LOCACAO_V4: Motoboy Tutts × Externo ─────────────────────────
+  var TAG_TIPO = { tutts: ['Motoboy Tutts', '#f3e8fb', '#5d0b85'], externo: ['Externo', '#eff6ff', '#1e40af'], tutts_confirmar: ['Externo?', '#fffbeb', '#92400e'] };
+  function tipoKey(t) { var s = String(t || '').toLowerCase(); if (s === 'tutts' || s.indexOf('motoboy') >= 0) return 'tutts'; if (s === 'tutts_confirmar' || s.indexOf('?') >= 0) return 'tutts_confirmar'; return s ? 'externo' : null; }
+  function TagTipo(tipo, label) {
+    var k = tipoKey(tipo); if (!k) return null;
+    var t = TAG_TIPO[k];
+    return h('span', { style: { display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 99, fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', background: t[1], color: t[2] } }, label || t[0]);
+  }
+  var EST_CIVIL = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'];
+
+  /* Busca o motoboy que já está na Central e cria o pré-cadastro com o cadastro dele */
+  function CentralModal(props) {
+    var api = props.api, toast = props.toast;
+    var _q = useState(''), q = _q[0], setQ = _q[1];
+    var _r = useState(null), res = _r[0], setRes = _r[1];
+    var _b = useState(false), buscando = _b[0], setBuscando = _b[1];
+    var _s = useState(null), sel = _s[0], setSel = _s[1];
+    var _d = useState(null), det = _d[0], setDet = _d[1];
+    var _de = useState(null), detErro = _de[0], setDetErro = _de[1];
+    var _c = useState(''), cpf = _c[0], setCpf = _c[1];
+    var _w = useState(''), wpp = _w[0], setWpp = _w[1];
+    var _v = useState('1'), dia = _v[0], setDia = _v[1];
+    var _sv = useState(false), salvando = _sv[0], setSalvando = _sv[1];
+    var _ok = useState(null), feito = _ok[0], setFeito = _ok[1];
+    var qd = useDebounce(q.trim(), 300);
+    useEffect(function () {
+      if (qd.length < 2) { setRes(null); return; }
+      var vivo = true; setBuscando(true);
+      api('/central/motoboys?q=' + encodeURIComponent(qd)).then(function (r) { if (!vivo) return; setRes(r.motoboys || []); if (!sel && r.motoboys && r.motoboys.length === 1) setSel(r.motoboys[0].cod_profissional); })
+        .catch(function (e) { if (vivo) { setRes([]); toast(e.message, 'error'); } }).then(function () { if (vivo) setBuscando(false); });
+      return function () { vivo = false; };
+    }, [qd]);
+    useEffect(function () {
+      if (!sel) { setDet(null); return; }
+      setDet(null); setDetErro(null); setCpf(''); setWpp(''); setFeito(null);
+      api('/central/motoboys/' + encodeURIComponent(sel)).then(setDet).catch(function (e) { setDetErro(e.message); });
+    }, [sel]);
+    var criar = function (modo) {
+      if (det && !det.tem_cpf && soDig(cpf).length !== 11) { toast('Informe o CPF do motoboy (11 dígitos)', 'error'); return; }
+      setSalvando(true);
+      api('/central/motoboys/' + encodeURIComponent(det.cod_profissional) + '/precadastro', { method: 'POST', body: { modo: modo, dia_vencimento: Number(dia) || null, cpf: det.tem_cpf ? undefined : soDig(cpf), whatsapp: soDig(wpp) || undefined } })
+        .then(function (r) {
+          if (modo === 'manual') { toast('Pré-cadastro criado. Complete os dados.', 'success'); props.onCriado(r.precadastro_id, 'manual'); return; }
+          if (r.whatsapp && r.whatsapp.enviado) { toast('Link de complemento enviado no WhatsApp', 'success'); props.onCriado(r.precadastro_id, 'link'); return; }
+          setFeito(r); toast('Pré-cadastro criado · envie o link ao motoboy', 'success');
+        })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
+    };
+    var waLink = function (url) { var d = soDig(wpp || (det && det.whatsapp)); if (d && d.length <= 11) d = '55' + d; return 'https://wa.me/' + (d || '') + '?text=' + encodeURIComponent('Olá, ' + String((det && det.nome) || '').split(' ')[0] + '! Para fazer o contrato da moto, complete só a CNH, o RG e o endereço neste link: ' + url); };
+    var item = function (m) {
+      var on = sel === m.cod_profissional;
+      var tom = m.situacao === 'disponivel' ? ['#f0fdf4', '#166534'] : m.situacao === 'em_cadastro' ? ['#fffbeb', '#92400e'] : ['#f3f4f6', '#6b7280'];
+      return h('button', { key: m.cod_profissional, type: 'button', onClick: function () { setSel(m.cod_profissional); }, 'aria-pressed': on,
+        style: { textAlign: 'left', display: 'flex', gap: 10, alignItems: 'center', padding: 10, borderRadius: 12, width: '100%', cursor: 'pointer', border: on ? '1.5px solid ' + ROXO : '1px solid #e5e7eb', background: on ? '#faf7fd' : '#ffffff' } },
+        h('span', { style: { width: 36, height: 36, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, fontWeight: 700, fontSize: 12.5, display: 'grid', placeItems: 'center', flex: 'none' } }, iniciais(m.nome)),
+        h('span', { style: { flex: 1, minWidth: 0 } },
+          h('span', { style: { display: 'block', fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, m.nome),
+          h('span', { style: { display: 'block', fontSize: 11.5, color: '#6b7280' } }, 'Cód. ' + m.cod_profissional + ' · ' + (m.cpf_mascarado ? 'CPF ' + m.cpf_mascarado : 'sem CPF no financeiro'))),
+        h('span', { style: { fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, whiteSpace: 'nowrap', background: tom[0], color: tom[1] } }, m.situacao_label || m.situacao));
+    };
+    var detalhe;
+    if (!sel) detalhe = Vazio('Busque o motoboy', 'Por nome, código ou CPF. Ele usa o mesmo login de sempre na Central.');
+    else if (detErro) detalhe = Erro(detErro);
+    else if (!det) detalhe = Spinner('Abrindo cadastro na Central...');
+    else if (feito) detalhe = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      Aviso('azul', 'Pré-cadastro criado', 'O WhatsApp não saiu automaticamente' + (feito.whatsapp && feito.whatsapp.motivo ? ' (' + feito.whatsapp.motivo + ')' : '') + '. Copie o link ou abra o WhatsApp para enviar.'),
+      h('div', { style: { display: 'flex', gap: 8 } }, Input({ readOnly: true, value: feito.url || '', onFocus: function (e) { e.target.select(); }, style: { fontFamily: MONO, fontSize: 12.5 }, 'aria-label': 'Link de complemento' }), Btn({ icon: 'copy', onClick: function () { copiar(feito.url, toast); }, children: 'Copiar' })),
+      h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+        Btn({ variant: 'verde', icon: 'message', onClick: function () { window.open(waLink(feito.url), '_blank', 'noopener'); }, children: 'Enviar no WhatsApp' }),
+        Btn({ onClick: function () { props.onCriado(feito.precadastro_id, 'link'); }, children: 'Abrir pré-cadastro' })));
+    else {
+      var bloqueado = det.situacao === 'ja_tem_moto' || det.situacao === 'em_cadastro' || det.situacao === 'aprovado';
+      detalhe = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
+          det.foto_thumb ? h('img', { src: det.foto_thumb, alt: '', style: { width: 52, height: 52, borderRadius: 99, objectFit: 'cover', flex: 'none' } })
+            : h('span', { style: { width: 52, height: 52, borderRadius: 99, background: '#e9d5f9', color: ROXO_ESC, fontWeight: 800, fontSize: 18, display: 'grid', placeItems: 'center', flex: 'none' } }, iniciais(det.nome)),
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('div', { style: { fontFamily: SORA, fontSize: 17, fontWeight: 700 } }, det.nome),
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Código ' + det.cod_profissional + ' · ' + (det.situacao_label || '') + (det.cadastrado_em ? ' · na Central desde ' + fD(det.cadastrado_em) : ''))),
+          TagTipo('tutts')),
+        det.situacao === 'ja_tem_moto' ? Aviso('cinza', 'Este motoboy já tem moto em contrato', 'Não dá para abrir outro pré-cadastro enquanto o contrato atual estiver em andamento.') : null,
+        det.situacao === 'em_cadastro' ? Aviso('ambar', 'Já existe um pré-cadastro aberto', null) : null,
+        det.situacao === 'aprovado' ? Aviso('verde', 'Já aprovado na locação', 'Falta só criar o contrato.') : null,
+        h('div', { style: { border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' } },
+          h('div', { style: { padding: '8px 12px', background: '#f0fdf4', color: '#166534', fontSize: 12, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center' } }, ico('check', 14), 'Já temos na Central'),
+          h('div', { style: { padding: '10px 12px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' } }, (det.tem || []).map(function (x) {
+            return h('div', { key: x.k, style: { flex: '1 1 45%', minWidth: 160 } }, h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, x.k), h('div', { style: { fontSize: 13, fontWeight: 500 } }, x.v));
+          }))),
+        !bloqueado ? h('div', { style: { border: '1px solid #fde68a', borderRadius: 12, overflow: 'hidden' } },
+          h('div', { style: { padding: '8px 12px', background: '#fffbeb', color: '#92400e', fontSize: 12, fontWeight: 600 } }, 'Falta para o contrato · ele completa por um link curto'),
+          h('div', { style: { padding: '10px 12px', display: 'flex', flexWrap: 'wrap', gap: 6 } }, (det.falta || []).map(function (f) {
+            return h('span', { key: f, style: { fontSize: 12, padding: '4px 10px', borderRadius: 99, background: '#ffffff', border: '1px solid #fde68a', color: '#92400e' } }, f);
+          }))) : null,
+        !bloqueado ? h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12 } },
+          !det.tem_cpf ? h(Field, { label: 'CPF', req: true, hint: 'Não há CPF nos dados financeiros', style: { flex: '1 1 180px' } }, Input({ value: cpf, inputMode: 'numeric', placeholder: '000.000.000-00', onChange: function (e) { setCpf(e.target.value); } })) : null,
+          !det.whatsapp ? h(Field, { label: 'WhatsApp', req: true, hint: 'Sem WhatsApp na Central', style: { flex: '1 1 180px' } }, Input({ value: wpp, inputMode: 'tel', placeholder: '(71) 98123-4567', onChange: function (e) { setWpp(e.target.value); } })) : null,
+          h(Field, { label: 'Dia de vencimento das parcelas semanais', hint: 'Desconto no repasse fica opcional (Anexo III), definido no contrato.', style: { flex: '1 1 240px' } },
+            Select({ value: dia, onChange: function (e) { setDia(e.target.value); } }, DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); })))) : null,
+        det.repasse_medio && det.repasse_medio.valor > 0 ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(det.repasse_medio.valor)), ' por semana') : null,
+        h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderTop: '1px solid #f3f4f6', paddingTop: 12 } },
+          det.situacao === 'em_cadastro' && det.precadastro_id ? Btn({ variant: 'pri', onClick: function () { props.onCriado(det.precadastro_id, 'abrir'); }, children: 'Abrir pré-cadastro' }) : null,
+          det.situacao === 'aprovado' && det.cliente_id ? Btn({ variant: 'pri', icon: 'filetext', onClick: function () { props.onNovoContrato(det.cliente_id); }, children: 'Criar contrato' }) : null,
+          !bloqueado ? Btn({ icon: 'pencil', disabled: salvando, onClick: function () { criar('manual'); }, children: 'Preencher eu mesmo' }) : null,
+          h('div', { style: { flex: 1 } }),
+          !bloqueado ? Btn({ variant: 'pri', icon: 'message', disabled: salvando, onClick: function () { criar('link'); }, children: salvando ? 'Salvando...' : 'Enviar link de complemento no WhatsApp' }) : null));
+    }
+    return h(Modal, { titulo: 'Motoboy da Central', onClose: props.onClose, largura: 920 },
+      h('p', { style: { margin: '0 0 14px', fontSize: 13, color: '#6b7280' } }, 'Ele usa o mesmo login de sempre. A parte da moto aparece no app dele depois do contrato.'),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' } },
+        h('div', { style: { flex: '1 1 300px', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8 } },
+          h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 10px', border: '1.5px solid ' + ROXO, borderRadius: 10, color: '#6b7280' } },
+            ico('search', 15),
+            h('input', { type: 'search', autoFocus: true, 'aria-label': 'Buscar motoboy', placeholder: 'Nome, código ou CPF', value: q, onChange: function (e) { setQ(e.target.value); }, style: { border: 0, outline: 0, flex: 1, minWidth: 0, font: 'inherit', fontSize: 13.5, background: 'transparent', color: '#111827' } })),
+          h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, q.trim().length < 2 ? 'Digite pelo menos 2 letras' : buscando ? 'Buscando...' : (res ? res.length : 0) + ' resultado' + (res && res.length === 1 ? '' : 's')),
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 440, overflowY: 'auto' } }, (res || []).map(item)),
+          res && !res.length && !buscando ? h('div', { style: { fontSize: 12.5, color: '#9ca3af', padding: '6px 2px' } }, 'Nenhum motoboy com esse nome ou código. Pessoa de fora? Use o link de convite.') : null),
+        h('div', { style: { flex: '2 1 420px', minWidth: 0 } }, detalhe)));
+  }
+
+  /* Equipe edita/completa os dados do pré-cadastro (motoboy da Central ou qualquer pré-cadastro aberto) */
+  function EditarPrecadastroModal(props) {
+    var api = props.api, toast = props.toast, p = props.p;
+    var origCentral = p.origem === 'central';
+    var ini = {};
+    ['nome', 'whatsapp', 'email', 'nacionalidade', 'estado_civil', 'profissao', 'rg', 'rg_orgao', 'cnh_numero', 'cnh_categoria', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'].forEach(function (k) { ini[k] = p[k] == null ? '' : String(p[k]); });
+    if (ini.whatsapp) ini.whatsapp = fTel(ini.whatsapp);
+    ini.cnh_validade = p.cnh_validade ? String(p.cnh_validade).slice(0, 10) : '';
+    ini.data_nascimento = p.data_nascimento ? String(p.data_nascimento).slice(0, 10) : '';
+    ini.cnh_ear = typeof p.cnh_ear === 'boolean' ? p.cnh_ear : null;
+    ini.dia_vencimento = p.dia_vencimento ? String(p.dia_vencimento) : '';
+    if (!ini.nacionalidade) ini.nacionalidade = 'Brasileira';
+    var _f = useState(ini), f = _f[0], setF = _f[1];
+    var _d = useState({}), novos = _d[0], setNovos = _d[1];
+    var _s = useState(false), salvando = _s[0], setSalvando = _s[1];
+    var set = function (k, v) { setF(function (x) { var n = Object.assign({}, x); n[k] = v; return n; }); };
+    useEffect(function () {
+      var c = soDig(f.cep); if (c.length !== 8) return;
+      var vivo = true;
+      fetch('https://viacep.com.br/ws/' + c + '/json/').then(function (r) { return r.json(); }).then(function (j) {
+        if (!vivo || !j || j.erro) return;
+        setF(function (x) { return Object.assign({}, x, { logradouro: x.logradouro || j.logradouro || '', bairro: x.bairro || j.bairro || '', cidade: x.cidade || j.localidade || '', uf: x.uf || j.uf || '' }); });
+      }).catch(function () {});
+      return function () { vivo = false; };
+    }, [f.cep]);
+    var temDoc = props.docsPorTipo || {};
+    var pegar = function (tipo, file) { lerArquivo(file, 1600, 0.82).then(function (u) { setNovos(function (x) { var n = Object.assign({}, x); n[tipo] = u; return n; }); }).catch(function (e) { toast(e.message, 'error'); }); };
+    var salvar = function () {
+      setSalvando(true);
+      var dados = Object.assign({}, f, { cep: soDig(f.cep) || null, uf: String(f.uf || '').toUpperCase(), cnh_validade: f.cnh_validade || null, data_nascimento: f.data_nascimento || null, dia_vencimento: f.dia_vencimento ? Number(f.dia_vencimento) : null, whatsapp: soDig(f.whatsapp) || null });
+      if (origCentral) delete dados.nome;
+      Object.keys(dados).forEach(function (k) { if (dados[k] === '') dados[k] = null; });
+      if (dados.cnh_ear == null) delete dados.cnh_ear;
+      var documentos = Object.keys(novos).map(function (t) { return { tipo: t, foto: novos[t] }; });
+      api('/precadastros/' + p.id, { method: 'PUT', body: { dados: dados, documentos: documentos.length ? documentos : undefined } })
+        .then(function (r) {
+          var falt = (r.faltam || []).map(function (x) { return x.label; });
+          toast(falt.length ? 'Dados salvos · ainda falta: ' + falt.join(', ') : 'Dados salvos · pronto para aprovar', 'success');
+          props.onSalvo && props.onSalvo();
+        }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
+    };
+    var cel = function (label, k, extra) { extra = extra || {}; return h(Field, { key: k, label: label, opt: extra.opt, hint: extra.hint, style: { flex: extra.flex || '1 1 200px' } }, Input(Object.assign({ value: f[k] == null ? '' : f[k], onChange: function (e) { set(k, extra.mask ? extra.mask(e.target.value) : e.target.value); } }, extra.attrs || {}))); };
+    var linha = function () { return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12 } }, Array.prototype.slice.call(arguments)); };
+    var sec = function (t) { return h('div', { style: { fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: 4 } }, t); };
+    return h(Modal, { titulo: 'Dados de ' + String(p.nome || '').split(' ')[0], onClose: props.onClose, largura: 760,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 's', variant: 'pri', icon: 'save', disabled: salvando, onClick: salvar, children: salvando ? 'Salvando...' : 'Salvar dados' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        origCentral ? Aviso('roxo', 'Veio da Central · cód. ' + (p.cod_profissional || '—'), 'Nome e CPF vêm do cadastro de entregador e não mudam aqui.') : null,
+        sec('Pessoal'),
+        linha(origCentral ? h(Field, { key: 'n', label: 'Nome', style: { flex: '2 1 260px' } }, Input({ value: p.nome || '', readOnly: true, style: { background: '#f9fafb' } })) : cel('Nome completo', 'nome', { flex: '2 1 260px' }),
+          h(Field, { key: 'cpf', label: 'CPF', style: { flex: '1 1 160px' } }, Input({ value: p.cpf || '', readOnly: true, style: { background: '#f9fafb' } }))),
+        linha(cel('WhatsApp', 'whatsapp', { attrs: { inputMode: 'tel' } }), cel('E-mail', 'email', { opt: true, attrs: { type: 'email' } }), cel('Nascimento', 'data_nascimento', { opt: true, attrs: { type: 'date' } })),
+        linha(cel('RG', 'rg'), cel('Órgão', 'rg_orgao', { opt: true, flex: '0 1 120px', attrs: { placeholder: 'SSP/BA' } }),
+          h(Field, { key: 'ec', label: 'Estado civil', style: { flex: '1 1 160px' } }, Select({ value: f.estado_civil, onChange: function (e) { set('estado_civil', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha')].concat(EST_CIVIL.map(function (o) { return h('option', { key: o, value: o }, o); }))))),
+        linha(cel('Nacionalidade', 'nacionalidade'), cel('Profissão', 'profissao'),
+          h(Field, { key: 'dv', label: 'Dia de vencimento', opt: true, style: { flex: '1 1 160px' } }, Select({ value: f.dia_vencimento, onChange: function (e) { set('dia_vencimento', e.target.value); } }, [h('option', { key: '', value: '' }, 'Definir na aprovação')].concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); }))))),
+        sec('Habilitação'),
+        linha(cel('Nº da CNH', 'cnh_numero', { attrs: { inputMode: 'numeric' }, mask: function (v) { return soDig(v).slice(0, 11); } }),
+          h(Field, { key: 'cat', label: 'Categoria', style: { flex: '0 1 120px' } }, Select({ value: f.cnh_categoria, onChange: function (e) { set('cnh_categoria', e.target.value); } }, ['', 'A', 'AB', 'AC', 'AD', 'AE'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
+          cel('Validade', 'cnh_validade', { attrs: { type: 'date' } }),
+          h(Field, { key: 'ear', label: 'EAR na CNH', style: { flex: '0 1 160px' } }, Segmented([[true, 'Sim'], [false, 'Não']], f.cnh_ear, function (v) { set('cnh_ear', v); }, 'EAR'))),
+        sec('Endereço'),
+        linha(cel('CEP', 'cep', { flex: '0 1 140px', attrs: { inputMode: 'numeric' } }), cel('Rua', 'logradouro', { flex: '2 1 260px' }), cel('Número', 'numero', { flex: '0 1 100px' })),
+        linha(cel('Complemento', 'complemento', { opt: true }), cel('Bairro', 'bairro'), cel('Cidade', 'cidade'), cel('UF', 'uf', { flex: '0 1 70px', mask: function (v) { return v.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase(); } })),
+        sec('Documentos'),
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10 } }, Object.keys(DOCS).map(function (t) {
+          var ok = novos[t] || temDoc[t];
+          return h('label', { key: t, style: { flex: '1 1 150px', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', justifyContent: 'center', height: 92, borderRadius: 12, cursor: 'pointer', textAlign: 'center', fontSize: 12.5, fontWeight: 600, padding: 8,
+            border: ok ? '1px solid #bbf7d0' : '1.5px dashed #d8b4f0', background: ok ? '#f0fdf4' : '#faf7fd', color: ok ? '#166534' : ROXO_ESC } },
+            h('input', { type: 'file', className: 'sr-only', accept: t === 'comprovante' ? 'image/*,application/pdf' : 'image/*', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (fl) pegar(t, fl); } }),
+            ico(ok ? 'check' : 'upload', 18), DOCS[t] + (novos[t] ? ' · nova' : temDoc[t] ? ' · enviada' : ''), t === 'selfie_cnh' ? h('span', { style: { fontWeight: 400, color: '#6b7280', fontSize: 11 } }, 'opcional') : null);
+        }))));
+  }
+
   // ───────────────────────── Pré-cadastros ─────────────────────────
   function PrecadastrosView(props) {
     var api = props.api, toast = props.toast, nav = props.nav;
@@ -432,6 +625,7 @@
     var _l = useState(null), dados = _l[0], setDados = _l[1];
     var _e = useState(null), erro = _e[0], setErro = _e[1];
     var _s = useState(props.selecionar || null), sel = _s[0], setSel = _s[1];
+    var _o = useState('todas'), orig = _o[0], setOrig = _o[1]; // LOCACAO_V4: origem
     var carregar = useCallback(function () {
       setErro(null);
       api('/precadastros').then(function (r) {
@@ -450,7 +644,10 @@
     var lista = dados.precadastros || [];
     var fin = { aprovado: 1, contrato_criado: 1, reprovado: 1 };
     var cnt = function (fn) { return lista.filter(fn).length; };
+    var tipoDe = function (p) { return p.tipo_sugerido || (p.entregador_tutts ? 'tutts_confirmar' : 'externo'); };
     var filtrada = lista.filter(function (p) {
+      if (orig === 'tutts' && tipoDe(p) !== 'tutts') return false;
+      if (orig === 'externo' && tipoDe(p) === 'tutts') return false;
       if (filtro === 'novo') return p.status === 'novo';
       if (filtro === 'em_analise') return p.status === 'em_analise';
       if (filtro === 'docs') return p.status === 'aguardando_documentos';
@@ -466,23 +663,31 @@
             { id: 'em_analise', t: 'Em análise', n: cnt(function (p) { return p.status === 'em_analise'; }) },
             { id: 'docs', t: 'Docs pendentes', n: cnt(function (p) { return p.status === 'aguardando_documentos'; }) },
             { id: 'fin', t: 'Finalizados', n: cnt(function (p) { return !!fin[p.status]; }) }
-          ], filtro, setFiltro)),
-        lista.length === 0 ? Vazio('Nenhum pré-cadastro ainda', 'Gere um link de convite e envie ao entregador.', Btn({ variant: 'pri', icon: 'link', onClick: props.abrirConvite, children: 'Gerar link de convite' })) :
+          ], filtro, setFiltro),
+          h('div', { style: { flex: 1 } }),
+          Chips([{ id: 'todas', t: 'Todas as origens' }, { id: 'tutts', t: 'Motoboy Tutts', n: cnt(function (p) { return tipoDe(p) === 'tutts'; }) }, { id: 'externo', t: 'Externo', n: cnt(function (p) { return tipoDe(p) !== 'tutts'; }) }], orig, setOrig)), // LOCACAO_V4
+        lista.length === 0 ? Vazio('Nenhum pré-cadastro ainda', 'Motoboy que já está na Central: busque e aproveite o cadastro. Pessoa de fora: gere o link de convite.',
+          h('div', { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } }, Btn({ icon: 'link', onClick: props.abrirConvite, children: 'Pessoa de fora · gerar link' }), props.abrirCentral ? Btn({ variant: 'pri', icon: 'users', onClick: props.abrirCentral, children: 'Motoboy da Central' }) : null)) :
         filtrada.length === 0 ? Vazio('Nada neste filtro') :
-        Tabela([{ t: 'Entregador' }, { t: 'Enviado em' }, { t: 'Alertas' }, { t: 'Status' }],
+        Tabela([{ t: 'Pessoa' }, { t: 'Origem' }, { t: 'Enviado em' }, { t: 'Falta / alertas' }, { t: 'Status' }],
           filtrada.map(function (p) {
             var bloq = (p.alertas || []).filter(function (a) { return a.nivel === 'bloqueia'; }).length;
             var av = (p.alertas || []).length - bloq;
-            var txtAl = bloq || av ? [bloq ? bloq + ' bloqueio' + (bloq > 1 ? 's' : '') : null, av ? av + ' aviso' + (av > 1 ? 's' : '') : null].filter(Boolean).join(' · ') : '—';
+            var falt = p.faltam || [];
+            var txtAl = falt.length ? (p.origem === 'central' && p.complemento_enviado_em && p.status === 'aguardando_documentos' ? 'Aguardando link de complemento' : (p.origem === 'central' ? 'Falta' : 'Pendente') + (falt.length > 1 ? (p.origem === 'central' ? 'm ' : 's: ') + falt.length + ' itens' : ': ' + falt[0]))
+              : bloq || av ? [bloq ? bloq + ' bloqueio' + (bloq > 1 ? 's' : '') : null, av ? av + ' aviso' + (av > 1 ? 's' : '') : null].filter(Boolean).join(' · ') : '—';
+            var corAl = falt.length || av ? '#92400e' : bloq ? '#991b1b' : '#9ca3af';
             var on = sel === p.id;
+            var sub = p.origem === 'central' ? 'da Central · cód. ' + (p.cod_profissional || '—') : [p.cpf_mascarado ? 'CPF ' + p.cpf_mascarado : null, p.whatsapp ? fTel(p.whatsapp) : null].filter(Boolean).join(' · ');
             return Linha(p.id, [
-              { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600 } }, p.nome), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, [p.cpf_mascarado ? 'CPF ' + p.cpf_mascarado : null, p.whatsapp ? fTel(p.whatsapp) : null].filter(Boolean).join(' · '))) },
+              { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600 } }, p.nome), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, sub)) },
+              { td: 1, v: h('div', null, TagTipo(tipoDe(p), p.tipo_label), tipoDe(p) === 'tutts_confirmar' && p.cod_profissional ? h('div', { style: { fontSize: 11, color: p.cod_confere === false ? '#991b1b' : '#6b7280', marginTop: 2 } }, 'cód. ' + p.cod_profissional + (p.cod_confere === true ? ' · confere' : p.cod_confere === false ? ' · não achado' : '')) : null) },
               { td: 1, v: fDHc(p.criado_em), st: { whiteSpace: 'nowrap', color: '#374151' } },
-              { td: 1, v: txtAl, st: { fontSize: 12, color: bloq ? '#991b1b' : av ? '#92400e' : '#9ca3af', fontWeight: bloq || av ? 600 : 400 } },
+              { td: 1, v: txtAl, st: { fontSize: 12, color: corAl, fontWeight: txtAl !== '—' ? 600 : 400, whiteSpace: 'normal', maxWidth: 220 } },
               { td: 1, v: Pill(p.status_label || ROT_PRE[p.status] || p.status, TOM_PRE[p.status] || 'cinza') }
             ], function () { setSel(p.id); }, on ? { background: '#faf7fd', boxShadow: 'inset 3px 0 0 ' + ROXO } : null);
           }))),
-      sel ? h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); } })
+      sel ? h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, item: lista.find(function (x) { return x.id === sel; }) || null, editar: props.editar && sel === props.selecionar, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); } })
         : h(Card, null, Vazio('Selecione um pré-cadastro', 'A revisão aparece aqui.')));
   }
 
@@ -497,6 +702,7 @@
     var _b = useState(false), salvando = _b[0], setSalvando = _b[1];
     var _m = useState(null), modal = _m[0], setModal = _m[1];
     var _ft = useState(null), foto = _ft[0], setFoto = _ft[1];
+    var _ed = useState(!!props.editar), editando = _ed[0], setEditando = _ed[1]; // LOCACAO_V4
     var carregar = useCallback(function () {
       setErro(null);
       api('/precadastros/' + props.id).then(function (r) {
@@ -504,12 +710,14 @@
         var p = r.precadastro || {};
         if (props.aoMudar && p.status === 'em_analise' && !PRE_AVISADOS[props.id]) { PRE_AVISADOS[props.id] = 1; props.aoMudar(); } /* abrir muda Novo -> Em análise: atualiza lista e badge */
         if (p.entregador_tutts) { setTipo(function (t) { return t || 'tutts'; }); setCod(function (c) { return c || p.cod_profissional || ''; }); }
+        if (p.origem === 'central') { setTipo('tutts'); setCod(p.cod_profissional || ''); } // LOCACAO_V4: veio da Central = sempre Motoboy Tutts
+        if (p.dia_vencimento) setDia(function (dv) { return dv || String(p.dia_vencimento); });
       }).catch(function (e) { setErro(e.message); });
     }, [api, props.id]);
     useEffect(carregar, [carregar]);
     if (erro) return Erro(erro, carregar);
     if (!d) return h(Card, null, Spinner('Abrindo cadastro...'));
-    var p = d.precadastro || {}, alertas = d.alertas || [], docs = d.documentos || [];
+    var p = d.precadastro || {}, alertas = (d.alertas || []).filter(function (a) { return !(p.origem === 'central' && /Documentos incompletos|Nenhum documento/.test(a.texto || '')); }), docs = d.documentos || []; // LOCACAO_V4: selfie com CNH é opcional para quem veio da Central
     var bloqueia = alertas.some(function (a) { return a.nivel === 'bloqueia'; });
     var emRevisao = { novo: 1, em_analise: 1, aguardando_documentos: 1 }[p.status];
     var faltaCampo = !tipo || !dia || (tipo === 'tutts' && !String(cod).trim());
@@ -538,14 +746,40 @@
       ['Endereço', end, true]
     ];
     var docsPorTipo = {}; docs.forEach(function (x) { docsPorTipo[x.tipo] = x; });
+    var central = p.origem === 'central'; // LOCACAO_V4
+    var tipoSug = p.tipo_sugerido || (central ? 'tutts' : p.entregador_tutts ? 'tutts_confirmar' : 'externo');
+    var faltamP = (p.faltam || []).map(function (x) { return typeof x === 'string' ? x : x.label; });
+    var item = props.item || {};
+    var reenviar = function () {
+      setSalvando(true);
+      api('/precadastros/' + p.id + '/reenviar-complemento', { method: 'POST', body: {} })
+        .then(function (r) {
+          if (r.whatsapp && r.whatsapp.enviado) toast('Link de complemento reenviado no WhatsApp', 'success');
+          else { toast('Link gerado · WhatsApp não saiu, copiamos o link', 'success'); if (r.url) copiar(r.url, null); }
+          carregar(); props.aoMudar && props.aoMudar();
+        }).catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
+    };
     return h(Card, { pad: false, style: { position: 'sticky', top: 84 } },
       h('div', { style: { padding: '14px 18px', borderBottom: '1px solid #f3f4f6' } },
-        h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Pré-cadastro #PC-' + String(p.id).padStart(4, '0') + ' · via link · ' + fDH(p.criado_em)),
+        h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Pré-cadastro #PC-' + String(p.id).padStart(4, '0') + (central ? ' · veio da Central · cód. ' + (p.cod_profissional || '—') : ' · via link') + ' · ' + fDH(p.criado_em)),
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' } },
           h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 19, fontWeight: 700 } }, p.nome),
+          TagTipo(tipoSug),
           Pill(p.status_label || ROT_PRE[p.status] || p.status, TOM_PRE[p.status] || 'cinza'))),
       h('div', { style: { padding: 18, display: 'flex', flexDirection: 'column', gap: 16 } },
-        alertas.length ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } }, alertas.map(function (a, i) {
+        emRevisao && faltamP.length ? h('div', { style: { border: '1px solid #fde68a', borderRadius: 12, overflow: 'hidden' } },
+          h('div', { style: { padding: '8px 12px', background: '#fffbeb', color: '#92400e', fontSize: 12.5, fontWeight: 600 } },
+            central ? (p.complemento_enviado_em ? 'Aguardando o motoboy completar · link enviado ' + fDHc(p.complemento_enviado_em) : 'Faltam dados para o contrato') : 'Pendências do cadastro'),
+          h('div', { style: { padding: '10px 12px', display: 'flex', flexWrap: 'wrap', gap: 6 } }, faltamP.map(function (x) {
+            return h('span', { key: x, style: { fontSize: 12, padding: '3px 9px', borderRadius: 99, background: '#ffffff', border: '1px solid #fde68a', color: '#92400e' } }, x);
+          })),
+          h('div', { style: { padding: '0 12px 10px', display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            Btn({ small: true, icon: 'pencil', onClick: function () { setEditando(true); }, children: 'Preencher dados' }),
+            central ? Btn({ small: true, icon: 'message', disabled: salvando, onClick: reenviar, children: p.complemento_enviado_em ? 'Reenviar link' : 'Enviar link de complemento' }) : null)) : null,
+        !central && p.entregador_tutts ? Aviso(item.cod_confere === false ? 'ambar' : 'azul', 'Disse que é entregador Tutts' + (p.cod_profissional ? ' · cód. ' + p.cod_profissional : ''),
+          item.cod_confere === true ? 'O código confere com um motoboy da Central. Aprove como Motoboy Tutts para vincular ao login dele.' : item.cod_confere === false ? 'Esse código não foi encontrado na Central. Confira antes de aprovar como Motoboy Tutts.' : 'Confira o código antes de aprovar como Motoboy Tutts.') : null,
+        p.repasse_medio && p.repasse_medio.valor > 0 ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(p.repasse_medio.valor)), ' por semana') : null,
+        alertas.length && !(central && faltamP.length) ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } }, alertas.map(function (a, i) { // LOCACAO_V4: no motoboy da Central com dados faltando, o quadro de faltas substitui os alertas
           return h('div', { key: i }, Aviso(a.nivel === 'bloqueia' ? 'vermelho' : 'ambar', a.texto, a.nivel === 'bloqueia' ? 'Bloqueia a aprovação.' : null));
         })) : null,
         p.status === 'reprovado' ? Aviso('vermelho', 'Reprovado', p.motivo_reprovacao || '—') : null,
@@ -568,17 +802,19 @@
         h('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12.5, color: '#374151', background: '#f9fafb', borderRadius: 10, padding: '10px 12px' } },
           ico('shield', 15, { color: p.aceite_lgpd_em ? '#16a34a' : '#9ca3af', marginTop: 1 }),
           p.aceite_lgpd_em ? h('span', null, h('b', null, 'Termo LGPD aceito'), ' · versão ' + (p.termo_versao || '—') + ' · ' + fD(p.aceite_lgpd_em) + ' ' + new Date(p.aceite_lgpd_em).toLocaleTimeString('pt-BR') + (p.aceite_lgpd_ip ? ' · IP ' + p.aceite_lgpd_ip : ''))
-            : h('span', null, 'Aceite LGPD não registrado')),
+            : h('span', null, central ? 'Aceite LGPD vem no link de complemento (ou na ciência dentro do app)' : 'Aceite LGPD não registrado')),
         emRevisao ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid #f3f4f6', paddingTop: 14 } },
           h('div', { className: 'grid grid-cols-1 sm:grid-cols-2', style: { gap: 12 } },
-            h(Field, { label: 'Tipo de cliente', req: true, hint: tipo === 'tutts' ? 'Parcela abatida do repasse; o que faltar vai por PIX' : tipo === 'externo' ? 'Externo paga 100% via PIX' : null },
+            central ? h(Field, { label: 'Tipo de cliente', hint: 'Veio da Central: sempre Motoboy Tutts, no mesmo login' }, h('div', { style: { height: 38, display: 'flex', alignItems: 'center' } }, TagTipo('tutts'))) // LOCACAO_V4
+              : h(Field, { label: 'Tipo de cliente', req: true, hint: tipo === 'tutts' ? 'Usa o login da Central · desconto no repasse só com Anexo III' : tipo === 'externo' ? 'Login com CPF · paga Pix, boleto ou cartão' : null },
               Segmented([['tutts', 'Motoboy Tutts'], ['externo', 'Externo']], tipo, setTipo, 'Tipo de cliente')),
             h(Field, { label: 'Dia de vencimento', req: true },
               Select({ value: dia, onChange: function (e) { setDia(e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); }))))),
-          tipo === 'tutts' ? h(Field, { label: 'Código do profissional na Central', req: true, hint: 'Usado para abater a parcela do repasse' }, Input({ value: cod, onChange: function (e) { setCod(e.target.value); }, inputMode: 'numeric', placeholder: 'Ex.: 4821', style: { maxWidth: 200 } })) : null,
+          tipo === 'tutts' ? h(Field, { label: 'Código do profissional na Central', req: true, hint: central ? 'Login dele na Central' : 'Vincula ao login dele na Central' }, Input({ value: cod, readOnly: central, onChange: function (e) { setCod(e.target.value); }, inputMode: 'numeric', placeholder: 'Ex.: 4821', style: Object.assign({ maxWidth: 200 }, central ? { background: '#f9fafb' } : {}) })) : null,
           h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' } },
             Btn({ variant: 'perigo', onClick: function () { setModal('reprovar'); }, disabled: salvando, children: 'Reprovar…' }),
-            Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
+            Btn({ onClick: function () { setEditando(true); }, disabled: salvando, icon: 'pencil', children: 'Editar dados' }), // LOCACAO_V4
+            central ? null : Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
             Btn({ variant: 'pri', icon: 'check', onClick: aprovar, disabled: !podeAprovar || salvando, title: bloqueia ? 'Resolva os alertas que bloqueiam a aprovação' : faltaCampo ? 'Defina tipo de cliente e dia de vencimento' : null, children: salvando ? 'Salvando...' : 'Aprovar cadastro' })),
           bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null)
           : p.status === 'aprovado' ? h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14 } },
@@ -587,7 +823,8 @@
       modal === 'reprovar' ? h(MotivoModal, { titulo: 'Reprovar cadastro', label: 'Motivo da reprovação', hint: 'O motivo é enviado ao entregador pelo WhatsApp.', botao: 'Reprovar cadastro', perigo: true, obrigatorio: true,
         onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('/precadastros/' + p.id + '/reprovar', { motivo: m }, 'Cadastro reprovado'); } }) : null,
       modal === 'docs' ? h(PedirDocsModal, { p: p, api: api, toast: toast, onClose: function () { setModal(null); }, aoEnviar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
-      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, legenda: foto.legenda, onClose: function () { setFoto(null); } }) : null);
+      foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, legenda: foto.legenda, onClose: function () { setFoto(null); } }) : null,
+      editando && emRevisao ? h(EditarPrecadastroModal, { p: p, api: api, toast: toast, docsPorTipo: docsPorTipo, onClose: function () { setEditando(false); }, onSalvo: function () { setEditando(false); carregar(); props.aoMudar && props.aoMudar(); } }) : null);
   }
 
   function MotivoModal(props) {
@@ -816,7 +1053,7 @@
               h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(ct.cliente_nome)),
               h('div', { style: { flex: 1, minWidth: 200 } },
                 h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Locatário atual'),
-                h('div', { style: { fontWeight: 700, fontSize: 14 } }, ct.cliente_nome, h('span', { style: { fontWeight: 400, color: '#6b7280' } }, ' · ' + (ct.cliente_tipo === 'tutts' ? 'Motoboy Tutts' : 'Externo') + (ct.cod_profissional ? ' · cód. ' + ct.cod_profissional : ''))),
+                h('div', { style: { fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, ct.cliente_nome, TagTipo(ct.cliente_tipo), ct.cod_profissional ? h('span', { style: { fontWeight: 400, color: '#6b7280' } }, 'cód. ' + ct.cod_profissional) : null), // LOCACAO_V4
                 h('div', { style: Object.assign({ fontSize: 12.5, color: '#374151', marginTop: 2 }, TAB) }, [fR(ct.valor_parcela != null ? ct.valor_parcela : ct.valor_semanal) + (ct.periodicidade === 'mensal' ? '/mês' : '/semana'), ct.vencimento_label ? 'vence ' + ct.vencimento_label : ct.dia_vencimento ? 'vence ' + DIA_PLURAL[ct.dia_vencimento] : null, (ct.prazo_qtd || ct.semanas) ? fN(ct.parcelas_pagas) + ' de ' + fN(ct.prazo_qtd || ct.semanas) + ' pagas' : null, ct.plano_label || null, ct.proximo_vencimento ? 'próxima ' + fDS(ct.proximo_vencimento, true) : null].filter(Boolean).join(' · '))),
               Btn({ small: true, onClick: function () { nav({ tela: 'contrato', id: ct.id || ct.contrato_id }); }, children: 'Ver contrato' }))) : null,
           d.vistoria_pendente ? Aviso('ambar', d.vistoria_pendente.label || ('Vistoria pendente até ' + fDS(d.vistoria_pendente.prazo, true)), null, 'clock') : null,
@@ -1006,7 +1243,7 @@
         fl.map(function (c) {
           return Linha(c.id, [
             { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600, fontFamily: MONO, fontSize: 12.5 } }, c.numero), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, fD(c.criado_em))) },
-            { td: 1, v: h('div', null, c.cliente_nome, h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, c.cliente_tipo === 'tutts' ? 'Motoboy Tutts' : 'Externo')) },
+            { td: 1, v: h('div', null, c.cliente_nome, h('div', { style: { marginTop: 3 } }, TagTipo(c.cliente_tipo))) }, // LOCACAO_V4
             { td: 1, v: h('div', null, c.moto_modelo, h('div', { style: { fontSize: 11.5, color: '#6b7280', fontFamily: MONO } }, c.placa)) },
             { td: 1, v: h('div', null, fR(c.valor_parcela != null ? c.valor_parcela : c.valor_semanal), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, (c.periodicidade === 'mensal' ? 'mensal' : 'semanal') + (c.plano_label ? ' · ' + c.plano_label : ''))), right: true }, // LOCACAO_V3
             { td: 1, v: fN(c.parcelas_pagas) + ' de ' + fN(c.prazo_qtd || c.semanas), st: { whiteSpace: 'nowrap' } },
@@ -1038,6 +1275,7 @@
     var _pdf = useState(null), pdf = _pdf[0], setPdf = _pdf[1];
     var _pa = useState(''), pagasAte = _pa[0], setPagasAte = _pa[1];
     var _sim = useState(null), sim = _sim[0], setSim = _sim[1];
+    var _rm = useState(null), repMedio = _rm[0], setRepMedio = _rm[1]; // LOCACAO_V4
     var _s = useState(false), salvando = _s[0], setSalvando = _s[1];
     var set = function (k, v) { setF(function (x) { var n = Object.assign({}, x); n[k] = v; if (k === 'plano' && v === 'conquista') n.manutencao = 'locatario'; return n; }); };
     var carregar = useCallback(function () {
@@ -1054,6 +1292,7 @@
     var moto = (motos || []).find(function (m) { return String(m.id) === motoId; });
     useEffect(function () { if (cli && !f.dia_semana && cli.dia_vencimento) set('dia_semana', String(cli.dia_vencimento)); if (cli && cli.tipo !== 'tutts' && f.desconto) set('desconto', false); }, [cliId, clientes]);
     useEffect(function () { if (moto) set('km', moto.hodometro != null ? String(moto.hodometro) : ''); }, [motoId]);
+    useEffect(function () { setRepMedio(null); if (cli && cli.tipo === 'tutts') api('/clientes/' + cli.id + '/repasse-medio').then(setRepMedio).catch(function () { setRepMedio(null); }); }, [cliId, clientes]); // LOCACAO_V4
     useEffect(function () { var d = parseData(f.inicio); if (d && !f.dia_mes) set('dia_mes', String(Math.min(28, d.getDate()))); }, [f.inicio]);
     var bases = (cfg && cfg.bases) || [];
     var baseSel = bases.find(function (b, i) { return String(b.id != null ? b.id : i) === f.base; });
@@ -1126,7 +1365,7 @@
                   Select({ value: motoId, onChange: function (e) { setMotoId(e.target.value); } }, [h('option', { key: '', value: '' }, motos.length ? 'Escolha a moto' : 'Sem motos disponíveis')].concat(motos.map(function (m) { return h('option', { key: m.id, value: String(m.id) }, m.placa + ' · ' + m.modelo); }))))),
               cli ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 } },
                 h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(cli.nome)),
-                h('div', { style: { minWidth: 0, flex: 1 } }, h('div', { style: { fontWeight: 700, fontSize: 14 } }, cli.nome, h('span', { style: { fontWeight: 400, color: '#6b7280' } }, ' · ' + (cli.tipo === 'tutts' ? 'Motoboy Tutts' + (cli.cod_profissional ? ' · cód. ' + cli.cod_profissional : '') : 'Externo'))),
+                h('div', { style: { minWidth: 0, flex: 1 } }, h('div', { style: { fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, cli.nome, TagTipo(cli.tipo), cli.tipo === 'tutts' && cli.cod_profissional ? h('span', { style: { fontWeight: 400, color: '#6b7280' } }, 'cód. ' + cli.cod_profissional) : null), // LOCACAO_V4
                   cliInfo.map(function (l, i) { return h('div', { key: i, style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, l); }),
                   cli.alertas && cli.alertas.length ? h('div', { style: { marginTop: 6 } }, cli.alertas.map(function (a, i) { return h('div', { key: i, style: { fontSize: 12, color: '#92400e' } }, typeof a === 'string' ? a : a.texto || a.mensagem); })) : null)) : null,
               moto ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 10, flexWrap: 'wrap' } },
@@ -1162,10 +1401,13 @@
             h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
               h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap' } }, Check(f.pix, function (v) { set('pix', v); }, 'Pix'), Check(f.boleto, function (v) { set('boleto', v); }, 'Boleto'), Check(f.cartao, function (v) { set('cartao', v); }, 'Cartão recorrente')),
               formas.length ? null : h('div', { style: { fontSize: 12, color: '#991b1b' } }, 'Marque ao menos uma forma de pagamento.'),
-              h('div', { style: { border: '1px solid ' + (f.desconto ? '#e9d5f9' : '#e5e7eb'), background: f.desconto ? '#faf7fd' : '#fff', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, opacity: cli && cli.tipo !== 'tutts' ? 0.6 : 1 } },
-                h('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } }, Toggle(f.desconto, function (v) { if (cli && cli.tipo === 'tutts') set('desconto', v); }, 'Autoriza desconto em repasses'), h('b', { style: { fontSize: 13.5 } }, 'Autoriza desconto em repasses'), h('span', { style: { fontSize: 11, fontWeight: 600, color: '#374151', background: '#f3f4f6', borderRadius: 6, padding: '0 6px' } }, 'Anexo III · facultativo')),
-                h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.45 } }, 'Só se o locatário quiser: parcelas e débitos são descontados do que ele recebe no app Tutts Entregas. Se o repasse não cobrir, o resto vai por Pix no vencimento. Ele pode revogar a qualquer momento, sem efeito na locação (Cl. 5.11).'),
-                h('div', { style: { fontSize: 12, color: '#374151' } }, cli && cli.tipo === 'tutts' ? 'Cód. no app Tutts Entregas: ' + (cli.cod_profissional || '— vincular no pré-cadastro') : 'Disponível só para motoboy Tutts.')))),
+              cli && cli.tipo !== 'tutts' ? h('div', { style: { border: '1px solid #e5e7eb', background: '#f9fafb', borderRadius: 12, padding: 12, fontSize: 13, color: '#6b7280', lineHeight: 1.45, display: 'flex', gap: 10, alignItems: 'flex-start' } }, // LOCACAO_V4: externo
+                h('div', { style: { flex: 1 } }, h('b', { style: { color: '#374151' } }, 'Sem desconto no repasse. '), 'Ele não faz entregas pela Tutts, então paga só por Pix, boleto ou cartão. Para liberar o desconto, primeiro ele precisa virar motoboy da Central.'), TagTipo('externo'))
+              : h('div', { style: { border: '1px solid ' + (f.desconto ? ROXO : '#e5e7eb'), background: f.desconto ? '#faf7fd' : '#fff', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, opacity: cli ? 1 : 0.6 } },
+                h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' } }, Toggle(f.desconto, function (v) { if (cli && cli.tipo === 'tutts') set('desconto', v); }, 'Descontar as parcelas do repasse'), h('b', { style: { fontSize: 13.5 } }, 'Descontar as parcelas do repasse'), h('span', { style: { fontSize: 11, fontWeight: 600, color: '#374151', background: '#f3f4f6', borderRadius: 6, padding: '0 6px' } }, 'Anexo III · facultativo'), h('div', { style: { flex: 1 } }), cli ? TagTipo('tutts', 'Motoboy Tutts' + (cli.cod_profissional ? ' · cód. ' + cli.cod_profissional : '')) : null),
+                h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.45 } }, 'As parcelas vencidas saem do repasse de quarta-feira. Se o repasse não cobrir, o resto vai por Pix no vencimento. Ele pode revogar a qualquer momento pelo app, sem efeito na locação (Cl. 5.11).'),
+                cli ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, repMedio && repMedio.valor > 0 ? h('span', null, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(repMedio.valor)), vNum > 0 ? ' · parcela ' + fR(vNum) + (mensal ? ' por mês' : '') : '') : 'Sem repasses nas últimas 4 semanas.')
+                  : h('div', { style: { fontSize: 12, color: '#374151' } }, 'Disponível só para motoboy Tutts.')))),
           importar ? h(Card, { pad: false }, CardHead('Contrato já assinado'),
             h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
               h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
@@ -1262,7 +1504,7 @@
     var retV3 = c.encargos && c.encargos.modelo === 'v3'; /* LOCACAO_V3: rescisão com atraso de MAIS de N dias (14.2 a) */
     var faltamRet = c.dias_retomada != null && c.dias_atraso != null ? c.dias_retomada + (retV3 ? 1 : 0) - c.dias_atraso : null;
     var tipoLabel = cli.tipo === 'tutts' ? 'Motoboy Tutts' : 'Externo';
-    var subPartes = ['Contrato ' + c.numero, c.plano_label, tipoLabel, mo.modelo].filter(Boolean); // LOCACAO_V3
+    var subPartes = ['Contrato ' + c.numero, c.plano_label, cli.cod_profissional && tipoKey(cli.tipo) === 'tutts' ? 'cód. ' + cli.cod_profissional : null, mo.modelo].filter(Boolean); // LOCACAO_V3 · LOCACAO_V4: tipo vira etiqueta
     var suspenso = sit === 'suspenso';
     var vencLabel = c.vencimento_label || (cli.dia_vencimento ? DIA_PLURAL[cli.dia_vencimento] : '');
     var nParc = c.prazo_qtd || c.semanas;
@@ -1276,7 +1518,7 @@
       h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' } },
         h('div', { style: { minWidth: 0, flex: '1 1 520px' } },
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-            h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, cli.nome || '—'), pillSit(c)),
+            h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, cli.nome || '—'), TagTipo(cli.tipo || tipoLabel), pillSit(c)), // LOCACAO_V4
           h('div', { style: { fontSize: 13, color: '#6b7280', marginTop: 3, lineHeight: 1.6 } },
             subPartes.join(' · ') + ' ', h('span', { style: { fontFamily: MONO, color: '#374151' } }, mo.placa),
             vencLabel ? ' · vence ' + vencLabel : '',
@@ -2779,7 +3021,7 @@
   var ABAS = [['painel', 'Painel / Frota', 'chart'], ['precadastros', 'Pré-cadastros', 'users'], ['motos', 'Motos', 'bike'], ['contratos', 'Contratos', 'filetext'], ['vistorias', 'Vistorias', 'camera'], ['config', 'Configurações', 'settings']];
   var SUBTITULO = {
     painel: 'Do convite ao entregador até a quitação · pré-cadastro, contrato no Autentique e cobrança automática',
-    precadastros: 'Entregadores que preencheram o link de convite · revise documentos, defina tipo de cliente e dia de vencimento',
+    precadastros: 'Quem vai alugar moto: motoboy que já está na Central ou pessoa de fora pelo link', // LOCACAO_V4
     motos: 'Cadastro da frota, fotos e laudos · status automático pelo contrato',
     contratos: 'Tutts Aluguel e Plano Conquista · assinatura, parcelas, encargos, encerramento e opção de compra',
     vistorias: 'Fotos da moto na retirada, nas revisões e na devolução',
@@ -2800,6 +3042,7 @@
     var _p = useState(null), painel = _p[0], setPainel = _p[1];
     var _pe = useState(null), painelErro = _pe[0], setPainelErro = _pe[1];
     var _cv = useState(false), convite = _cv[0], setConvite = _cv[1];
+    var _cm = useState(false), centralModal = _cm[0], setCentralModal = _cm[1]; // LOCACAO_V4
 
     var api = useCallback(function (path, opts) {
       opts = opts || {};
@@ -2843,7 +3086,7 @@
     if (view.tela === 'moto') conteudo = h(MotoDetalhe, Object.assign({ key: 'm' + (view.id || 'novo') + (view.secao || ''), id: view.id, de: view.de, secao: view.secao }, comum)); // LOCACAO_V2: secao
     else if (view.tela === 'contrato') conteudo = h(ContratoDetalhe, Object.assign({ key: 'c' + view.id, id: view.id, de: view.de }, comum));
     else if (view.tela === 'novoContrato') conteudo = h(NovoContratoView, Object.assign({ key: 'nc' + (view.cliente_id || '') + (view.importar ? 'i' : ''), cliente_id: view.cliente_id, importar: !!view.importar }, comum)); // LOCACAO_V3: importar
-    else if (view.tab === 'precadastros') conteudo = h(PrecadastrosView, Object.assign({ key: 'pc' + (view.sel || ''), selecionar: view.sel || null, abrirConvite: function () { setConvite(true); } }, comum)); // LOCACAO_V2: sel
+    else if (view.tab === 'precadastros') conteudo = h(PrecadastrosView, Object.assign({ key: 'pc' + (view.sel || '') + (view.editar ? 'e' : ''), selecionar: view.sel || null, editar: !!view.editar, abrirConvite: function () { setConvite(true); }, abrirCentral: function () { setCentralModal(true); } }, comum)); // LOCACAO_V2: sel · LOCACAO_V4: editar/central
     else if (view.tab === 'motos') conteudo = h(MotosView, comum);
     else if (view.tab === 'contratos') conteudo = h(ContratosView, comum);
     else if (view.tab === 'vistorias') conteudo = h(VistoriasView, comum);
@@ -2856,7 +3099,7 @@
       Btn({ key: 'cv', icon: 'link', onClick: function () { setConvite(true); }, children: 'Gerar link de convite' }),
       Btn({ key: 'mo', icon: 'plus', onClick: function () { nav({ tela: 'moto', id: null }); }, children: 'Cadastrar moto' }),
       Btn({ key: 'nc', variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'novoContrato' }); }, children: 'Novo contrato' })
-    ] : emLista && view.tab === 'precadastros' ? [Btn({ key: 'cv', icon: 'link', onClick: function () { setConvite(true); }, children: 'Gerar link de convite' })]
+    ] : emLista && view.tab === 'precadastros' ? [Btn({ key: 'cv', icon: 'link', onClick: function () { setConvite(true); }, children: 'Pessoa de fora · gerar link' }), Btn({ key: 'mc', variant: 'pri', icon: 'users', onClick: function () { setCentralModal(true); }, children: 'Motoboy da Central' })] // LOCACAO_V4
       : emLista && view.tab === 'motos' ? [Btn({ key: 'mo', variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'moto', id: null }); }, children: 'Cadastrar moto' })]
       : emLista && view.tab === 'contratos' ? [Btn({ key: 'imp', icon: 'upload', onClick: function () { nav({ tela: 'novoContrato', importar: true }); }, children: 'Importar contrato assinado' }), Btn({ key: 'nc', variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'novoContrato' }); }, children: 'Novo contrato' })] : null; // LOCACAO_V3
 
@@ -2880,6 +3123,9 @@
               b ? h('span', { style: { background: a[0] === 'vistorias' ? '#fffbeb' : '#f3e8fb', color: a[0] === 'vistorias' ? '#92400e' : ROXO_ESC, fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '1px 7px' } }, b) : null);
           })),
         conteudo),
-      convite ? h(ConviteModal, { api: api, toast: toastFn, onClose: function () { setConvite(false); carregarPainel(); } }) : null);
+      convite ? h(ConviteModal, { api: api, toast: toastFn, onClose: function () { setConvite(false); carregarPainel(); } }) : null,
+      centralModal ? h(CentralModal, { api: api, toast: toastFn, onClose: function () { setCentralModal(false); }, // LOCACAO_V4
+        onCriado: function (id, modo) { setCentralModal(false); carregarPainel(); nav({ tela: 'lista', tab: 'precadastros', sel: id, editar: modo === 'manual' }); },
+        onNovoContrato: function (cid) { setCentralModal(false); nav({ tela: 'novoContrato', cliente_id: cid }); } }) : null);
   };
 })();

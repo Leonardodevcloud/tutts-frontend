@@ -781,6 +781,151 @@
           })))));
   }
 
+  // ═════════ LOCACAO_V4: COMPLEMENTO do motoboy da Central (link curto · só o que falta) ═════════
+  var DOCS_COMP = [['cnh_frente', 'Foto da CNH · frente'], ['cnh_verso', 'Foto da CNH · verso'], ['comprovante', 'Comprovante de residência']];
+  var OBRIG_COMP = [['nacionalidade', 'Nacionalidade'], ['estado_civil', 'Estado civil'], ['profissao', 'Profissão'], ['rg', 'RG'], ['cnh_numero', 'Nº da CNH'], ['cnh_categoria', 'Categoria'],
+    ['cnh_validade', 'Validade da CNH'], ['cnh_ear', 'EAR'], ['cep', 'CEP'], ['logradouro', 'Rua'], ['numero', 'Número'], ['bairro', 'Bairro'], ['cidade', 'Cidade'], ['uf', 'UF']];
+  var VAZIO_COMP = { nacionalidade: 'Brasileira', estado_civil: '', profissao: 'Entregador', rg: '', rg_orgao: '', data_nascimento: '', email: '', cnh_numero: '', cnh_categoria: '', cnh_validade: '', cnh_ear: null,
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' };
+  function validarComp(d) {
+    var e = {};
+    OBRIG_COMP.forEach(function (c) { var v = d[c[0]]; if (v === null || v === undefined || String(v).trim() === '') e[c[0]] = c[0] === 'cnh_ear' ? 'Escolha Sim ou Não.' : (c[0] === 'estado_civil' || c[0] === 'cnh_categoria') ? 'Escolha uma opção.' : 'Campo obrigatório.'; });
+    if (d.email && !emailOk(d.email)) e.email = 'Confira o e-mail (ex.: nome@email.com).';
+    if (d.cep && dig(d.cep).length !== 8) e.cep = 'O CEP tem 8 dígitos.';
+    if (d.uf && !/^[A-Za-z]{2}$/.test(d.uf)) e.uf = 'Use a sigla, ex.: BA.';
+    if (d.cnh_validade) { var v = pd(d.cnh_validade); if (!v) e.cnh_validade = 'Data inválida.'; else if (v < new Date(new Date().toDateString())) e.cnh_validade = 'Essa CNH está vencida.'; }
+    if (d.data_nascimento) { var nd = pd(d.data_nascimento); if (!nd || nd > new Date()) e.data_nascimento = 'Data inválida.'; }
+    return e;
+  }
+  function Complemento(p) {
+    var token = p.token, chave = 'tutts_loc_comp_' + token;
+    var _c = useState(null), conv = _c[0], setConv = _c[1];
+    var _ce = useState(null), convErro = _ce[0], setConvErro = _ce[1];
+    var _d = useState(null), d = _d[0], setD = _d[1];
+    var _t = useState({}), toq = _t[0], setToq = _t[1];
+    var _docs = useState({}), docs = _docs[0], setDocs = _docs[1];
+    var _a = useState(false), aceite = _a[0], setAceite = _a[1];
+    var _s = useState(false), enviando = _s[0], setEnviando = _s[1];
+    var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
+    var _tm = useState(false), verTermo = _tm[0], setVerTermo = _tm[1];
+    var _srv = useState({}), errSrv = _srv[0], setErrSrv = _srv[1];
+    var _ts = useToast(), toast = _ts[0], showToast = _ts[1];
+    var _cep = useState(''), cepInfo = _cep[0], setCepInfo = _cep[1];
+    useEffect(function () {
+      req('/locacao-publico/complemento/' + encodeURIComponent(token)).then(function (r) {
+        setConv(r);
+        var salvo = null; try { var s = store(chave); salvo = s ? JSON.parse(s) : null; } catch (e) { salvo = null; }
+        var base = Object.assign({}, VAZIO_COMP);
+        Object.keys(r.dados || {}).forEach(function (k) { if (r.dados[k] != null && r.dados[k] !== '') base[k] = k === 'cep' ? mCEP(r.dados[k]) : r.dados[k]; });
+        setD(Object.assign(base, salvo || {}));
+      }).catch(function (e) { setConvErro(e); });
+    }, [token]);
+    useEffect(function () { if (d) store(chave, JSON.stringify(d)); }, [d]);
+    useEffect(function () {
+      if (!d) return;
+      var c = dig(d.cep); if (c.length !== 8) { setCepInfo(''); return; }
+      var cancel = false;
+      fetch('https://viacep.com.br/ws/' + c + '/json/').then(function (r) { return r.json(); }).then(function (j) {
+        if (cancel) return;
+        if (j && !j.erro) { setD(function (x) { return Object.assign({}, x, { logradouro: x.logradouro || j.logradouro || '', bairro: x.bairro || j.bairro || '', cidade: x.cidade || j.localidade || '', uf: x.uf || j.uf || '' }); }); setCepInfo([j.logradouro, j.bairro, j.localidade && j.uf ? j.localidade + '/' + j.uf : ''].filter(Boolean).join(' · ')); }
+        else setCepInfo('CEP não encontrado. Preencha o endereço à mão.');
+      }).catch(function () { if (!cancel) setCepInfo(''); });
+      return function () { cancel = true; };
+    }, [d && d.cep]);
+    if (convErro) {
+      var mot = convErro.data && convErro.data.motivo;
+      return h(Mensagem, { tom: 'cinza', icone: 'clock', titulo: mot === 'usado' ? 'Dados já enviados' : convErro.status === 404 ? 'Link não encontrado' : convErro.status === 410 ? 'Este link expirou' : 'Não deu para abrir',
+        texto: mot === 'usado' ? 'Recebemos seus dados. O time Tutts vai seguir com o contrato da moto.' : convErro.status === 410 || convErro.status === 404 ? 'Peça um novo link ao time Tutts pelo WhatsApp.' : convErro.message });
+    }
+    if (!conv || !d) return h('div', { className: 'wrap' }, Topo(), Carregando('Abrindo...'));
+    if (ok) return h(Mensagem, { titulo: 'Dados enviados!', texto: 'Recebemos tudo. Depois do contrato, a parte da moto aparece no seu app da Central, no mesmo login de sempre.' });
+    var enviados = conv.documentos_enviados || [];
+    var set = function (k, v) { setD(function (x) { var n = Object.assign({}, x); n[k] = v; return n; }); setErrSrv(function (x) { if (!x[k]) return x; var n = Object.assign({}, x); delete n[k]; return n; }); };
+    var blur = function (k) { setToq(function (x) { if (x[k]) return x; var n = Object.assign({}, x); n[k] = true; return n; }); };
+    var erros = Object.assign(validarComp(d), errSrv);
+    var errDe = function (k) { return toq[k] || toq.__todos ? erros[k] : null; };
+    var faltaDoc = DOCS_COMP.filter(function (x) { return !docs[x[0]] && enviados.indexOf(x[0]) < 0; });
+    var faltam = Object.keys(validarComp(d)).length + faltaDoc.length;
+    var inp = function (k, extra) {
+      extra = extra || {};
+      return h('input', Object.assign({ className: 'inp' + (errDe(k) ? ' err' : ''), 'aria-invalid': errDe(k) ? 'true' : null, value: d[k] == null ? '' : d[k],
+        onChange: function (e) { set(k, extra.mask ? extra.mask(e.target.value) : e.target.value); }, onBlur: function () { blur(k); } }, extra.attrs || {}));
+    };
+    var pegarDoc = function (tipo, f) { lerFoto(f, 1600, 0.82).then(function (u) { setDocs(function (x) { var n = Object.assign({}, x); n[tipo] = u; return n; }); }).catch(function (e) { showToast(e.message); }); };
+    var enviar = function () {
+      setToq({ __todos: true });
+      if (Object.keys(validarComp(d)).length) { showToast('Confira os campos destacados.'); setTimeout(function () { var el = document.querySelector('.inp.err'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 30); return; }
+      if (faltaDoc.length) { showToast('Falta: ' + faltaDoc.map(function (x) { return x[1]; }).join(', ')); return; }
+      setEnviando(true);
+      var dados = Object.assign({}, d, { cep: dig(d.cep), uf: String(d.uf || '').toUpperCase() });
+      req('/locacao-publico/complemento/' + encodeURIComponent(token), { method: 'POST', body: { dados: dados, documentos: DOCS_COMP.filter(function (x) { return docs[x[0]]; }).map(function (x) { return { tipo: x[0], foto: docs[x[0]] }; }), aceite_lgpd: true, termo_lgpd_versao: conv.termo_lgpd_versao } })
+        .then(function () { store(chave, null); setOk(true); window.scrollTo(0, 0); })
+        .catch(function (e) {
+          if (e.data && Array.isArray(e.data.campos)) { var m = {}; e.data.campos.forEach(function (c) { var k = typeof c === 'string' ? c : c.campo; m[k] = 'Confira este campo.'; }); setErrSrv(m); setToq({ __todos: true }); }
+          showToast(e.message);
+        }).then(function () { setEnviando(false); });
+    };
+    return h('div', { className: 'wrap' }, Topo(h('span', { style: { fontSize: 12, color: '#6b7280', fontWeight: 600 } }, 'Só o que falta')),
+      h('main', null,
+        h('div', null,
+          h('h1', { className: 'h1' }, 'Falta pouco, ' + (conv.primeiro_nome || '')),
+          h('p', { className: 'sub', style: { marginTop: 4 } }, 'Você já é da Central, então a gente aproveitou o seu cadastro. Complete só a habilitação, o RG e o endereço para fazer o contrato da moto.')),
+        h('section', { className: 'card', style: { gap: 8 } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: '#166534' } }, I('ok', 15), 'Já veio da Central'),
+          [['Nome', conv.nome], ['CPF', conv.cpf_mascarado], ['WhatsApp', conv.whatsapp]].filter(function (x) { return x[1]; }).map(function (x) {
+            return h('div', { key: x[0], style: { display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13.5 } }, h('span', { style: { color: '#6b7280' } }, x[0]), h('span', { style: { fontWeight: 600, textAlign: 'right' } }, x[1]));
+          }),
+          h('div', { style: { fontSize: 11.5, color: '#9ca3af' } }, 'Algo errado? Fale com a Tutts. Esses dados vêm do seu cadastro de entregador.')),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Habilitação'),
+          h(Campo, { label: 'Nº da CNH', erro: errDe('cnh_numero') }, inp('cnh_numero', { mask: function (v) { return dig(v).slice(0, 11); }, attrs: { inputMode: 'numeric' } })),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Categoria', erro: errDe('cnh_categoria') },
+              h('select', { className: 'inp' + (errDe('cnh_categoria') ? ' err' : ''), value: d.cnh_categoria || '', onChange: function (e) { set('cnh_categoria', e.target.value); }, onBlur: function () { blur('cnh_categoria'); } },
+                ['', 'A', 'AB', 'AC', 'AD', 'AE'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
+            h(Campo, { label: 'Validade', erro: errDe('cnh_validade') }, inp('cnh_validade', { attrs: { type: 'date' } }))),
+          h(Campo, { label: 'Sua CNH tem EAR (exerce atividade remunerada)?', erro: errDe('cnh_ear') }, Seg([[true, 'Sim'], [false, 'Não']], d.cnh_ear, function (v) { set('cnh_ear', v); }, 'EAR')),
+          DOCS_COMP.slice(0, 2).map(function (x) { return h(DocTile, { key: x[0], titulo: x[1], valor: docs[x[0]] || (enviados.indexOf(x[0]) >= 0 ? 'enviado' : null), onFile: function (f) { pegarDoc(x[0], f); } }); })),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Documento e dados pessoais'),
+          h('div', { className: 'g130', style: { gridTemplateColumns: '1fr 110px' } },
+            h(Campo, { label: 'RG', erro: errDe('rg') }, inp('rg', { attrs: { inputMode: 'numeric' } })),
+            h(Campo, { label: 'Órgão', opt: true }, inp('rg_orgao', { mask: function (v) { return v.toUpperCase().slice(0, 12); }, attrs: { placeholder: 'SSP/BA' } }))),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Estado civil', erro: errDe('estado_civil') },
+              h('select', { className: 'inp' + (errDe('estado_civil') ? ' err' : ''), value: d.estado_civil || '', onChange: function (e) { set('estado_civil', e.target.value); }, onBlur: function () { blur('estado_civil'); } },
+                ['', 'Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
+            h(Campo, { label: 'Nacionalidade', erro: errDe('nacionalidade') }, inp('nacionalidade'))),
+          h('div', { className: 'g2' },
+            h(Campo, { label: 'Profissão', erro: errDe('profissao') }, inp('profissao')),
+            h(Campo, { label: 'Nascimento', opt: true, erro: errDe('data_nascimento') }, inp('data_nascimento', { attrs: { type: 'date' } }))),
+          h(Campo, { label: 'E-mail', opt: true, erro: errDe('email'), hint: 'Usado para assinar o contrato. Sem e-mail, a assinatura vai pelo WhatsApp.' }, inp('email', { attrs: { type: 'email', inputMode: 'email', autoComplete: 'email', placeholder: 'nome@email.com' } }))),
+        h('section', { className: 'card' },
+          h('div', { className: 'sec' }, 'Endereço'),
+          h('div', { className: 'g130' },
+            h(Campo, { label: 'CEP', erro: errDe('cep') }, inp('cep', { mask: mCEP, attrs: { inputMode: 'numeric', autoComplete: 'postal-code', placeholder: '00000-000' } })),
+            h(Campo, { label: 'Número', erro: errDe('numero') }, inp('numero', { attrs: { inputMode: 'numeric' } }))),
+          cepInfo ? h('div', { style: { fontSize: 12.5, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'center' } }, I('pin', 14), cepInfo) : null,
+          h(Campo, { label: 'Rua', erro: errDe('logradouro') }, inp('logradouro', { attrs: { autoComplete: 'address-line1' } })),
+          h(Campo, { label: 'Complemento', opt: true }, inp('complemento')),
+          h(Campo, { label: 'Bairro', erro: errDe('bairro') }, inp('bairro')),
+          h('div', { className: 'g130', style: { gridTemplateColumns: '1fr 80px' } },
+            h(Campo, { label: 'Cidade', erro: errDe('cidade') }, inp('cidade')),
+            h(Campo, { label: 'UF', erro: errDe('uf') }, inp('uf', { mask: function (v) { return v.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase(); } }))),
+          h(DocTile, { titulo: DOCS_COMP[2][1], pdf: true, valor: docs.comprovante || (enviados.indexOf('comprovante') >= 0 ? 'enviado' : null), onFile: function (f) { pegarDoc('comprovante', f); } })),
+        h('section', { className: 'card', style: { background: '#faf7fd', borderColor: '#e9d5f9' } },
+          h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', color: ROXO_ESC, fontWeight: 700 } }, I('shield', 18), 'Privacidade dos seus dados (LGPD)'),
+          h('p', { className: 'sub', style: { fontSize: 13 } }, 'Usamos estes dados e documentos para fazer o contrato da moto, cobrar as parcelas e registrar as vistorias.'),
+          h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start' }, onClick: function () { setVerTermo(true); } }, 'Ler termo completo'),
+          h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, cursor: 'pointer', background: '#fff', border: '1px solid ' + (aceite ? '#e9d5f9' : '#e5e7eb'), borderRadius: 10, padding: 12 } },
+            h('input', { type: 'checkbox', checked: aceite, onChange: function (e) { setAceite(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, marginTop: 1, flex: 'none' } }),
+            h('span', null, 'Li e aceito o ', h('b', null, 'Termo de Privacidade (LGPD) ' + (conv.termo_lgpd_versao || '')), '.'))),
+        h('button', { type: 'button', className: 'btn pri', disabled: !aceite || enviando, onClick: enviar }, enviando ? 'Enviando...' : 'Enviar para a Tutts'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, faltam > 0 ? 'Falta' + (faltam > 1 ? 'm ' : ' ') + faltam + ' item' + (faltam > 1 ? 's' : '') + ' para enviar.' : !aceite ? 'Aceite o termo para liberar o envio.' : 'Depois do contrato, a parte da moto aparece no seu app da Central.')),
+      verTermo ? h(Sheet, { titulo: 'Termo de Privacidade · ' + (conv.termo_lgpd_versao || ''), onClose: function () { setVerTermo(false); } }, h(TermoTexto, { texto: conv.termo_lgpd })) : null,
+      h(Toast, { msg: toast }));
+  }
+
   // ───── roteamento ─────
   function App() {
     var path = location.pathname.replace(/\/+$/, '');
@@ -788,6 +933,8 @@
     if (m) return h(Cadastro, { token: decodeURIComponent(m[1]) });
     m = /^\/moto\/d\/([^/]+)$/.exec(path);
     if (m) return h(Documentos, { token: decodeURIComponent(m[1]) });
+    m = /^\/moto\/k\/([^/]+)$/.exec(path); /* LOCACAO_V4: complemento do motoboy da Central */
+    if (m) return h(Complemento, { token: decodeURIComponent(m[1]) });
     // LOCACAO_V2: o portal separado saiu — o locatário entra pela Central (CPF + senha)
     return h(Mensagem, { tom: 'roxo', icone: 'ok', titulo: 'A área do locatário agora fica na Central',
       texto: 'Entre na Central Tutts com seu CPF e senha para ver sua moto, pagar parcelas e registrar vistorias. Primeiro acesso? Use "Primeiro acesso?" na tela de login.',
