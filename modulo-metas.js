@@ -1,4 +1,5 @@
 /* METAS_BONUS_V1 */
+/* METAS_BONUS_V2: base por todos os clientes / clientes escolhidos; origem de cada métrica */
 // ============================================================
 // METAS E BONIFICAÇÃO DO TIME INTERNO — FRONTEND v1
 // Aba "Metas" do Meu Painel (master configura, fecha e paga) e
@@ -438,13 +439,60 @@
   }
 
   // ─── Configurar funcionário ───
+  /* METAS_BONUS_V2: escolher clientes da base (mesma regra do Gerencial: consolidado = CCs juntos; os demais inteiros ou por CC) */
+  function PickerClientes(p) {
+    var sel = p.selecionados; var b = (p.busca || '').trim().toLowerCase();
+    var tem = function (k) { return sel.indexOf(k) >= 0; };
+    var alternar = function (k, filhos) {
+      if (tem(k)) { p.onChange(sel.filter(function (x) { return x !== k; })); return; }
+      var n = sel.concat([k]);
+      if (filhos) n = n.filter(function (x) { return filhos.indexOf(x) < 0; }); // cliente inteiro já inclui os CCs
+      p.onChange(n);
+    };
+    var lista = p.clientes.filter(function (c) { if (!b) return true; return c.nome.toLowerCase().indexOf(b) >= 0 || String(c.cod_cliente).indexOf(b) >= 0 || (c.ccs || []).some(function (x) { return x.nome.toLowerCase().indexOf(b) >= 0; }); });
+    var linha = function (chave, rotulo, cod, ent, opts) {
+      var o = opts || {};
+      var on = tem(chave) || !!o.incluido;
+      return h('div', { key: chave, style: { display: 'flex', alignItems: 'center', gap: 8, padding: o.filho ? '6px 10px 6px 42px' : '8px 10px', borderTop: '1px solid ' + C.bordaLeve, background: o.filho ? C.lilasFundo : '#fff', opacity: o.incluido ? 0.55 : 1 } },
+        o.expandir ? h('button', { type: 'button', onClick: o.expandir, 'aria-expanded': !!o.aberto, 'aria-label': (o.aberto ? 'Fechar' : 'Abrir') + ' centros de custo de ' + rotulo, style: { width: 24, height: 24, border: 0, borderRadius: 6, background: 'none', color: C.roxoEsc, cursor: 'pointer', display: 'grid', placeItems: 'center', flex: 'none', padding: 0 } }, ico('arrowright', 14, { transform: o.aberto ? 'rotate(90deg)' : 'none', transition: 'transform .15s' })) : (!o.filho && h('span', { style: { width: 24, flex: 'none' } })),
+        h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, cursor: o.incluido ? 'default' : 'pointer' } },
+          h('input', { type: 'checkbox', checked: on, disabled: !!o.incluido, onChange: function () { alternar(chave, o.filhos); }, style: { accentColor: C.roxo, width: 16, height: 16, flex: 'none', margin: 0 } }),
+          cod != null && h('span', { style: { fontSize: 11, fontWeight: 700, color: C.roxoEsc, background: C.lilas, borderRadius: 6, padding: '1px 6px', flex: 'none' } }, cod),
+          h('span', { style: { fontWeight: o.filho ? 500 : 600, color: '#111827', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, title: rotulo }, rotulo),
+          o.tag && h('span', { style: { fontSize: 10, fontWeight: 600, color: C.cinza, background: '#f3f4f6', borderRadius: 99, padding: '1px 8px', flex: 'none', whiteSpace: 'nowrap' } }, o.tag)),
+        h('span', { style: { fontSize: 12, color: C.cinza, whiteSpace: 'nowrap', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, inteiro(ent || 0)));
+    };
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      sel.length > 0 && h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, sel.map(function (k) {
+        var c = p.mapa[k]; var nome = c ? c.nome : k;
+        return h('span', { key: k, style: { display: 'inline-flex', alignItems: 'center', gap: 4, height: 28, padding: '0 3px 0 10px', borderRadius: 99, background: C.roxoEsc, color: '#fff', fontSize: 12, fontWeight: 600, maxWidth: '100%' } }, h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, nome),
+          h('button', { type: 'button', 'aria-label': 'Tirar ' + nome, onClick: function () { p.onChange(sel.filter(function (x) { return x !== k; })); }, style: { width: 22, height: 22, border: 0, borderRadius: 99, background: 'rgba(255,255,255,.18)', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0, flex: 'none' } }, ico('x', 12)));
+      })),
+      h('input', { type: 'search', value: p.busca, placeholder: 'Buscar por nome ou código', 'aria-label': 'Buscar cliente', onChange: function (e) { p.setBusca(e.target.value); }, style: Object.assign({}, S.inp, { height: 36 }) }),
+      h('div', { role: 'group', 'aria-label': 'Clientes', style: { border: '1px solid ' + C.borda, borderRadius: 10, maxHeight: 300, overflowY: 'auto' } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: 11, fontWeight: 700, color: C.roxoEsc, textTransform: 'uppercase', background: C.lilasFundo, position: 'sticky', top: 0, zIndex: 1 } }, h('span', null, 'Cliente'), h('span', null, 'Entregas no mês')),
+        lista.length === 0 && h('div', { style: { padding: 12, color: C.cinza, fontSize: 12 } }, 'Nenhum cliente encontrado.'),
+        lista.map(function (c) {
+          var ccs = c.ccs || []; var aberto = !!p.abertos[c.chave] || (!!b && ccs.some(function (x) { return x.nome.toLowerCase().indexOf(b) >= 0; }));
+          var inteiroOn = tem(c.chave);
+          var filhos = ccs.map(function (x) { return x.chave; });
+          var nSelFilhos = filhos.filter(tem).length;
+          return h(React.Fragment, { key: c.chave },
+            linha(c.chave, c.nome, c.cod_cliente, c.entregas_mes, { tag: c.consolidado ? 'CCs juntos' : (ccs.length ? (nSelFilhos ? nSelFilhos + ' de ' + ccs.length + ' CCs' : ccs.length + ' CCs') : null), filhos: filhos, expandir: ccs.length ? function () { var n = {}; n[c.chave] = !aberto; p.setAbertos(Object.assign({}, p.abertos, n)); } : null, aberto: aberto }),
+            aberto && ccs.map(function (x) { return linha(x.chave, x.centro_custo, null, x.entregas_mes, { filho: true, incluido: inteiroOn }); }));
+        })),
+      h('span', { style: { fontSize: 12, color: C.cinza } }, 'Mesma regra do Gerencial: cliente consolidado (ex.: Comando) entra com os CCs juntos; os outros entram inteiros ou só com os CCs marcados.'));
+  }
+
   function DrawerConfig(p) {
     var novo = !p.f;
     var cfg0 = p.f ? p.f.config : null;
     var [op, setOp] = useState(null), [erroOp, setErroOp] = useState(null);
     var [form, setForm] = useState({ user_id: '', cargo: cfg0 ? (cfg0.cargo || '') : '', metricas: cfg0 ? cfg0.metricas.slice() : [], lojas: cfg0 ? cfg0.lojas.slice() : [], filiais: cfg0 ? cfg0.filiais.slice() : [],
-      recebe_bonus: cfg0 ? cfg0.recebe_bonus : true, tipo_base: cfg0 ? cfg0.tipo_base : 'fixo', valor_fixo: cfg0 && cfg0.valor_fixo != null ? num2(cfg0.valor_fixo) : '', regiao_id: cfg0 ? cfg0.regiao_id : null, aliquota: cfg0 && cfg0.aliquota != null ? String(cfg0.aliquota).replace('.', ',') : '0,02' });
+      recebe_bonus: cfg0 ? cfg0.recebe_bonus : true, tipo_base: cfg0 ? cfg0.tipo_base : 'fixo', valor_fixo: cfg0 && cfg0.valor_fixo != null ? num2(cfg0.valor_fixo) : '', regiao_id: cfg0 ? cfg0.regiao_id : null, aliquota: cfg0 && cfg0.aliquota != null ? String(cfg0.aliquota).replace('.', ',') : '0,02',
+      /* METAS_BONUS_V2 */ base_escopo: cfg0 && cfg0.base_escopo ? cfg0.base_escopo : 'regiao', base_clientes: cfg0 && cfg0.base_clientes ? cfg0.base_clientes.slice() : [] });
     var [busca, setBusca] = useState('');
+    var [buscaCli, setBuscaCli] = useState(''), [abertosCli, setAbertosCli] = useState({});
     var [salvando, setSalvando] = useState(false), [erro, setErro] = useState(null);
     var [confRemover, setConfRemover] = useState(null);
     useEffect(function () { p.call('/painel/metas/opcoes?competencia=' + p.comp).then(setOp).catch(function (e) { setErroOp(e.message); }); }, [p.comp]);
@@ -453,17 +501,31 @@
     var userAlvo = op ? op.usuarios.find(function (u) { return String(u.id) === String(novo ? form.user_id : p.f.user_id); }) : null;
     var reg = op && form.regiao_id ? op.regioes.find(function (r) { return r.id === form.regiao_id; }) : null;
     var aliq = numBR(form.aliquota);
-    var previa = form.recebe_bonus ? (form.tipo_base === 'regiao' ? (reg && aliq != null ? Math.round(reg.entregas_mes * aliq * 100) / 100 : null) : numBR(form.valor_fixo)) : null;
+    /* METAS_BONUS_V2: entregas da base conforme o escopo (região, todos os clientes, clientes escolhidos) */
+    var mapaCli = {};
+    if (op && op.clientes) op.clientes.forEach(function (c) { mapaCli[c.chave] = c; (c.ccs || []).forEach(function (x) { mapaCli[x.chave] = Object.assign({ pai: c.chave }, x); }); });
+    var inteirosSel = {}; form.base_clientes.forEach(function (k) { if (/\|$/.test(k)) inteirosSel[k] = true; });
+    var entregasBase = null; var escopoTxt = '';
+    if (op) {
+      if (form.base_escopo === 'todos') { entregasBase = op.entregas_total_mes || 0; escopoTxt = 'todos os clientes'; }
+      else if (form.base_escopo === 'clientes') {
+        entregasBase = form.base_clientes.length ? form.base_clientes.reduce(function (s2, k) { var c = mapaCli[k]; if (!c) return s2; if (c.pai && inteirosSel[c.pai]) return s2; return s2 + (c.entregas_mes || 0); }, 0) : null;
+        escopoTxt = form.base_clientes.length === 1 ? (mapaCli[form.base_clientes[0]] ? mapaCli[form.base_clientes[0]].nome : '1 cliente') : form.base_clientes.length + ' clientes';
+      } else if (reg) { entregasBase = reg.entregas_mes; escopoTxt = reg.nome; }
+    }
+    var previa = form.recebe_bonus ? (form.tipo_base === 'regiao' ? (entregasBase != null && aliq != null ? Math.round(entregasBase * aliq * 100) / 100 : null) : numBR(form.valor_fixo)) : null;
     var copiarDe = function (fid) {
       var o = p.funcionarios.find(function (x) { return String(x.funcionario_id) === String(fid); }); if (!o) return;
       var c = o.config;
-      setForm(Object.assign({}, form, { metricas: c.metricas.slice(), lojas: c.lojas.slice(), filiais: c.filiais.slice(), recebe_bonus: c.recebe_bonus, tipo_base: c.tipo_base, valor_fixo: c.valor_fixo != null ? num2(c.valor_fixo) : '', regiao_id: c.regiao_id, aliquota: c.aliquota != null ? String(c.aliquota).replace('.', ',') : form.aliquota, cargo: form.cargo || c.cargo || '' }));
+      setForm(Object.assign({}, form, { metricas: c.metricas.slice(), lojas: c.lojas.slice(), filiais: c.filiais.slice(), recebe_bonus: c.recebe_bonus, tipo_base: c.tipo_base, valor_fixo: c.valor_fixo != null ? num2(c.valor_fixo) : '', regiao_id: c.regiao_id, aliquota: c.aliquota != null ? String(c.aliquota).replace('.', ',') : form.aliquota, cargo: form.cargo || c.cargo || '',
+        base_escopo: c.base_escopo || 'regiao', base_clientes: (c.base_clientes || []).slice() }));
     };
     var salvar = async function () {
       setErro(null);
       if (novo && !form.user_id) { setErro('Escolha o usuário da Central'); return; }
       var body = { cargo: form.cargo, metricas: form.metricas, lojas: form.metricas.indexOf('clientes_prof') >= 0 ? form.lojas : [], filiais: form.metricas.indexOf('comolatti') >= 0 ? form.filiais : [], recebe_bonus: form.recebe_bonus, tipo_base: form.tipo_base,
-        valor_fixo: form.tipo_base === 'fixo' ? numBR(form.valor_fixo) : undefined, regiao_id: form.tipo_base === 'regiao' ? form.regiao_id : undefined, aliquota: form.tipo_base === 'regiao' ? aliq : undefined };
+        valor_fixo: form.tipo_base === 'fixo' ? numBR(form.valor_fixo) : undefined, regiao_id: form.tipo_base === 'regiao' && form.base_escopo === 'regiao' ? form.regiao_id : undefined, aliquota: form.tipo_base === 'regiao' ? aliq : undefined,
+        base_escopo: form.tipo_base === 'regiao' ? form.base_escopo : undefined, base_clientes: form.tipo_base === 'regiao' ? (form.base_escopo === 'clientes' ? form.base_clientes : []) : undefined };
       setSalvando(true);
       try {
         if (novo) await p.call('/painel/metas/funcionarios', { method: 'POST', body: Object.assign({ user_id: Number(form.user_id) }, body) });
@@ -514,15 +576,19 @@
             h('span', { 'aria-hidden': 'true', style: { width: 40, height: 24, borderRadius: 99, background: form.recebe_bonus ? C.roxo : '#d1d5db', position: 'relative', flex: 'none', transition: 'background .15s' } }, h('span', { style: { position: 'absolute', top: 3, left: form.recebe_bonus ? 19 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .15s' } })),
             h('span', null, h('b', null, 'Recebe bonificação'), h('span', { style: { display: 'block', fontSize: 12, color: C.cinza } }, 'Desligado: as metas são só acompanhadas, sem valor a receber'))),
           form.recebe_bonus && h('div', { role: 'radiogroup', 'aria-label': 'Base da bonificação', style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 } },
-            [['fixo', 'Valor fixo', 'Informar o valor'], ['regiao', 'Por entregas da região', 'Entregas da região × alíquota']].map(function (o) { var on = form.tipo_base === o[0]; return h('button', { key: o[0], type: 'button', role: 'radio', 'aria-checked': on, onClick: function () { set('tipo_base', o[0]); }, style: { textAlign: 'left', border: on ? '2px solid ' + C.roxo : '1px solid ' + C.borda, borderRadius: 10, padding: on ? '9px 11px' : '10px 12px', background: on ? C.lilasFundo : '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 } }, h('b', null, o[1]), h('span', { style: { display: 'block', fontSize: 12, color: C.cinza } }, o[2])); })),
+            [['fixo', 'Valor fixo', 'Informar o valor'], ['regiao', 'Por entregas', 'Entregas × alíquota']].map(function (o) { var on = form.tipo_base === o[0]; return h('button', { key: o[0], type: 'button', role: 'radio', 'aria-checked': on, onClick: function () { set('tipo_base', o[0]); }, style: { textAlign: 'left', border: on ? '2px solid ' + C.roxo : '1px solid ' + C.borda, borderRadius: 10, padding: on ? '9px 11px' : '10px 12px', background: on ? C.lilasFundo : '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 } }, h('b', null, o[1]), h('span', { style: { display: 'block', fontSize: 12, color: C.cinza } }, o[2])); })),
           form.recebe_bonus && form.tipo_base === 'fixo' && h('label', { style: Object.assign({}, S.lbl, { maxWidth: 200 }) }, 'Valor da bonificação (R$)', h('input', { type: 'text', inputMode: 'decimal', value: form.valor_fixo, placeholder: '200,00', onChange: function (e) { set('valor_fixo', e.target.value); }, style: S.inp })),
           form.recebe_bonus && form.tipo_base === 'regiao' && [
-            h('div', { key: 'r', style: { display: 'flex', flexDirection: 'column', gap: 6 } }, h('span', { style: { fontSize: 12, fontWeight: 600, color: C.cinzaEsc } }, 'Região (regiões do BI)'),
+            h('div', { key: 'esc', role: 'radiogroup', 'aria-label': 'De quais entregas', style: { display: 'flex', background: '#f3f4f6', borderRadius: 10, padding: 3, gap: 2 } },
+              [['regiao', 'Uma região'], ['todos', 'Todos os clientes'], ['clientes', 'Clientes escolhidos']].map(function (o) { var on = form.base_escopo === o[0]; return h('button', { key: o[0], type: 'button', role: 'radio', 'aria-checked': on, onClick: function () { set('base_escopo', o[0]); }, style: { flex: 1, minHeight: 32, padding: '6px 8px', lineHeight: 1.2, border: 0, borderRadius: 8, background: on ? '#fff' : 'transparent', color: on ? C.roxoEsc : C.cinza, fontWeight: 600, cursor: 'pointer', boxShadow: on ? '0 1px 2px rgba(0,0,0,.08)' : 'none', fontFamily: 'inherit', fontSize: 12 } }, o[1]); })),
+            form.base_escopo === 'regiao' && h('div', { key: 'r', style: { display: 'flex', flexDirection: 'column', gap: 6 } }, h('span', { style: { fontSize: 12, fontWeight: 600, color: C.cinzaEsc } }, 'Região (regiões do BI)'),
               h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, op.regioes.map(function (r) { var on = form.regiao_id === r.id; return h('button', { key: r.id, type: 'button', 'aria-pressed': on, onClick: function () { set('regiao_id', r.id); }, style: S.chip(on) }, r.nome, h('span', { style: { opacity: 0.75, marginLeft: 6, fontWeight: 400 } }, inteiro(r.entregas_mes))); }), !op.regioes.length && h('span', { style: { color: C.cinza } }, 'Nenhuma região cadastrada no BI.'))),
+            form.base_escopo === 'todos' && h('span', { key: 't', style: { fontSize: 12, color: C.cinzaEsc } }, 'Todas as entregas do mês, de todos os clientes: ', h('b', null, inteiro(op.entregas_total_mes || 0)), ' em ' + compNome(p.comp).toLowerCase() + '.'),
+            form.base_escopo === 'clientes' && h(PickerClientes, { key: 'cl', clientes: op.clientes || [], selecionados: form.base_clientes, busca: buscaCli, setBusca: setBuscaCli, abertos: abertosCli, setAbertos: setAbertosCli, mapa: mapaCli, onChange: function (v) { set('base_clientes', v); } }),
             h('label', { key: 'a', style: Object.assign({}, S.lbl, { maxWidth: 200 }) }, 'Alíquota por entrega (R$)', h('input', { type: 'text', inputMode: 'decimal', value: form.aliquota, onChange: function (e) { set('aliquota', e.target.value); }, style: S.inp }))],
           form.recebe_bonus && h('div', { style: { background: C.lilasFundo, borderRadius: 10, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } },
-            h('span', { style: { color: C.cinzaEsc } }, form.tipo_base === 'regiao' ? (reg ? inteiro(reg.entregas_mes) + ' entregas em ' + compNome(p.comp).toLowerCase() + ' (' + reg.nome + ') × ' + (form.aliquota || '—') : 'Escolha a região') : 'Valor fixo por mês'),
-            h('b', { style: { fontFamily: SORA, fontSize: 16, color: C.roxoEsc } }, previa != null ? brl(previa) : '—'))),
+            h('span', { style: { color: C.cinzaEsc } }, form.tipo_base === 'regiao' ? (entregasBase != null ? inteiro(entregasBase) + ' entregas em ' + compNome(p.comp).toLowerCase() + ' (' + escopoTxt + ') × ' + (form.aliquota || '—') : form.base_escopo === 'clientes' ? 'Escolha os clientes' : 'Escolha a região') : 'Valor fixo por mês'),
+            h('b', { style: { fontFamily: SORA, fontSize: 16, color: C.roxoEsc, whiteSpace: 'nowrap', flex: 'none' } }, previa != null ? brl(previa) : '—'))),
         erro && h('div', { key: 'e', role: 'alert', style: { color: C.verm, background: C.vermFundo, borderRadius: 9, padding: '8px 10px', fontSize: 12 } }, erro),
       ];
     }
@@ -537,6 +603,54 @@
   // ─── Métricas e faixas ───
   function AbaFaixas(p) {
     var [d, setD] = useState(null), [erro, setErro] = useState(null), [edit, setEdit] = useState(null), [linhas, setLinhas] = useState([]), [erroEd, setErroEd] = useState(null), [salvando, setSalvando] = useState(false);
+    /* METAS_BONUS_V2: de onde vem cada métrica (cliente do Comando / Comolatti editável) */
+    var [orig, setOrig] = useState(null), [clis, setClis] = useState(null), [buscaO, setBuscaO] = useState(''), [erroO, setErroO] = useState(null), [salvandoO, setSalvandoO] = useState(false);
+    var abrirOrigem = function (m) {
+      setOrig({ id: m.id, cod: m.origem && m.origem.cod_cliente, limite: m.origem && m.origem.limite_min != null ? String(m.origem.limite_min) : '' }); setErroO(null); setBuscaO('');
+      if (!clis) p.call('/painel/metas/opcoes?competencia=' + p.comp).then(function (o) { setClis(o.clientes || []); }).catch(function (e) { setErroO(e.message); });
+    };
+    var salvarOrigem = async function () {
+      setSalvandoO(true); setErroO(null);
+      try {
+        var params = { cod_cliente: orig.cod };
+        if (orig.id === 'comolatti') params.limite_min = numBR(orig.limite);
+        await p.call('/painel/metas/metricas/' + orig.id, { method: 'PUT', body: { params: params } });
+        setOrig(null); p.toast('Origem da meta salva', 'success'); carregar(); p.onSalvou && p.onSalvou();
+      } catch (e) { setErroO(e.message); } finally { setSalvandoO(false); }
+    };
+    var linhaOrigem = function (m) {
+      var o = m.origem; if (!o) return null;
+      var box = { background: '#fff', border: '1px dashed ' + C.lilasBorda, borderRadius: 9, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: C.cinzaEsc };
+      var tit = h('span', { style: { fontSize: 11, fontWeight: 700, color: C.roxoEsc, textTransform: 'uppercase', letterSpacing: '.03em' } }, 'De onde vem');
+      if (o.tipo === 'cliente') {
+        if (orig && orig.id === m.id) {
+          var bb = buscaO.trim().toLowerCase();
+          var opts = (clis || []).filter(function (c) { return !bb || c.nome.toLowerCase().indexOf(bb) >= 0 || String(c.cod_cliente).indexOf(bb) >= 0; }).slice(0, 60);
+          return h('div', { style: Object.assign({}, box, { border: '1px solid ' + C.lilasMed }) }, tit,
+            h('input', { type: 'search', autoFocus: true, value: buscaO, placeholder: 'Buscar por nome ou código', 'aria-label': 'Buscar cliente', onChange: function (e) { setBuscaO(e.target.value); }, style: Object.assign({}, S.inp, { height: 34 }) }),
+            !clis && !erroO && h('span', { style: { color: C.cinza } }, 'Carregando clientes…'),
+            clis && h('div', { role: 'listbox', 'aria-label': 'Clientes', style: { maxHeight: 180, overflowY: 'auto', border: '1px solid ' + C.borda, borderRadius: 8 } }, opts.map(function (c) {
+              var on = Number(orig.cod) === Number(c.cod_cliente);
+              return h('button', { key: c.chave, type: 'button', role: 'option', 'aria-selected': on, onClick: function () { setOrig(Object.assign({}, orig, { cod: c.cod_cliente })); }, style: { display: 'flex', width: '100%', alignItems: 'center', gap: 8, padding: '7px 10px', border: 0, borderTop: '1px solid ' + C.bordaLeve, background: on ? C.lilas : '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'left', color: '#111827' } },
+                h('span', { style: { fontSize: 11, fontWeight: 700, color: C.roxoEsc, background: on ? '#fff' : C.lilas, borderRadius: 6, padding: '1px 6px' } }, c.cod_cliente), h('span', { style: { flex: 1, fontWeight: on ? 700 : 500 } }, c.nome), on ? ico('check', 14, { color: C.roxo }) : h('span', { style: { color: C.cinza } }, inteiro(c.entregas_mes)));
+            }), opts.length === 0 && h('div', { style: { padding: 10, color: C.cinza } }, 'Nenhum cliente encontrado.')),
+            m.id === 'comolatti' && h('label', { style: Object.assign({}, S.lbl, { maxWidth: 200 }) }, 'Limite (minutos)', h('input', { type: 'text', inputMode: 'numeric', value: orig.limite, onChange: function (e) { setOrig(Object.assign({}, orig, { limite: e.target.value })); }, style: Object.assign({}, S.inp, { height: 34 }) })),
+            erroO && h('div', { role: 'alert', style: { color: C.verm } }, erroO),
+            h('span', { style: { color: C.cinza } }, 'Vale para a competência aberta; meses fechados não mudam.'),
+            h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 6 } }, h(Btn, { pequeno: true, onClick: function () { setOrig(null); } }, 'Cancelar'), h(Btn, { pequeno: true, primario: true, disabled: salvandoO || !orig.cod, onClick: salvarOrigem }, salvandoO ? 'Salvando…' : 'Salvar origem')));
+        }
+        return h('div', { style: box }, tit,
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+            h('span', null, 'Cliente ', h('b', { style: { color: '#111827' } }, o.nome), ' (' + o.cod_cliente + ')' + (m.id === 'comolatti' ? ' · cada CC é uma filial · até ' + (o.limite_min || 120) + ' min' : ' · todos os CCs juntos')),
+            p.editavel && h('button', { type: 'button', onClick: function () { abrirOrigem(m); }, style: { border: 0, background: 'none', padding: '2px 0', color: C.roxo, fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' } }, 'Trocar')));
+      }
+      if (o.tipo === 'grupo_gerencial') return h('div', { style: box }, tit, h('span', null, 'Clientes do grupo Porto Seco no Gerencial:'),
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 4 } }, (o.clientes || []).length ? o.clientes.map(function (c, i) { return h('span', { key: i, style: { fontSize: 11, background: C.lilas, color: C.roxoEsc, borderRadius: 99, padding: '2px 8px', fontWeight: 600 } }, c); }) : h('span', { style: { color: C.ambar } }, 'Nenhum cliente no grupo')),
+        h('span', { style: { color: C.cinza } }, 'Muda em Gerencial › Configuração.'));
+      if (o.tipo === 'disponibilidade') return h('div', { style: box }, tit, h('span', null, 'Lojas com mínimo de entregadores cadastrado na Disponibilidade do BI (cliente inteiro ou por CC). As lojas de cada pessoa são escolhidas no Configurar.'));
+      if (o.tipo === 'painel') return h('div', { style: box }, tit, h('span', null, 'Importações do Digisac no Meu Painel, pelo vínculo de cada pessoa (aba Vínculos).'));
+      return null;
+    };
     var carregar = function () { p.call('/painel/metas/metricas?competencia=' + p.comp).then(setD).catch(function (e) { setErro(e.message); }); };
     useEffect(carregar, [p.comp]);
     if (erro) return h('div', { role: 'alert', style: { color: C.verm } }, erro);
@@ -560,7 +674,8 @@
       h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 14 } }, d.metricas.map(function (m) {
         var em = edit === m.id;
         return h('section', { key: m.id, 'aria-label': m.nome, style: Object.assign({}, S.card, { padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10, border: em ? '2px solid ' + C.roxo : S.card.border }) },
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' } }, h('div', null, h('b', { style: { fontSize: 14 } }, m.nome), h('div', { style: { fontSize: 12, color: C.cinza } }, m.descricao + (m.id === 'comando' && m.params && m.params.cod_cliente ? ' (' + m.params.cod_cliente + ')' : '') + (m.porto_seco_clientes != null ? ' · ' + m.porto_seco_clientes + ' itens no grupo' : ''))), h('span', { style: S.origem(m.fonte === 'painel' ? 'painel' : 'bi') }, m.fonte === 'painel' ? 'Meu Painel' : 'BI')),
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' } }, h('div', null, h('b', { style: { fontSize: 14 } }, m.nome), h('div', { style: { fontSize: 12, color: C.cinza } }, m.descricao + (!m.origem && m.id === 'comando' && m.params && m.params.cod_cliente ? ' (' + m.params.cod_cliente + ')' : '') + (!m.origem && m.porto_seco_clientes != null ? ' · ' + m.porto_seco_clientes + ' itens no grupo' : ''))), h('span', { style: S.origem(m.fonte === 'painel' ? 'painel' : 'bi') }, m.fonte === 'painel' ? 'Meu Painel' : 'BI')),
+          linhaOrigem(m),
           h('div', { style: { background: C.fundo, borderRadius: 9, padding: '8px 10px', display: 'flex', justifyContent: 'space-between', gap: 8 } }, h('span', { style: { color: C.cinza } }, 'Resultado de ' + compNome(d.competencia).toLowerCase()), h('b', null, m.resultado ? pct(m.resultado.valor) + ' → ' + pct(m.resultado.multiplo) : m.tipo === 'lojas' ? 'por loja' : m.tipo === 'filiais' ? 'por filial' : m.fonte === 'painel' ? 'por funcionário' : '—')),
           em
             ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
