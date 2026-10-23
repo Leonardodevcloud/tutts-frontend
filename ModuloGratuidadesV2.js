@@ -1665,6 +1665,335 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // TAXA_FIXA_V1 — sub-aba "Taxa fixa": motoboy cadastrado paga um valor fixo
+  // por saque (padrão ou próprio) em vez de 4,5% (+ R$ 0,40). Mesma dinâmica
+  // da isenção. Ordem no saque: gratuidade › isenção › taxa fixa › taxa normal.
+  // ═══════════════════════════════════════════════════════════════════════
+  function tfNum(v) { const n = Number(String(v == null ? '' : v).replace(/\./g, '').replace(',', '.')); return isFinite(n) ? n : NaN; }
+  function tfTaxaNormal(v) { let f = v * 0.045; if (v >= 15 && v <= 100) f += 0.40; return Math.round(f * 100) / 100; }
+  function tfCalc(v, fixa, menor) {
+    const normal = tfTaxaNormal(v);
+    if (!(fixa >= 0) || fixa >= v) return { fee: normal, normal, aplicou: false };
+    if (menor && normal < fixa) return { fee: normal, normal, aplicou: false };
+    return { fee: fixa, normal, aplicou: true };
+  }
+
+  function TelaTaxaFixa({ apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn }) {
+    const api = useApi({ apiUrl, token, fetchAuth: fetchAuth || fetchApi });
+    const showToastRef = useRef(showToast);
+    const confirmFnRef = useRef(confirmFn);
+    useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+    useEffect(() => { confirmFnRef.current = confirmFn; }, [confirmFn]);
+    const _toast = useCallback((msg, tipo) => {
+      const fn = showToastRef.current;
+      if (typeof fn === 'function') return fn(msg, tipo === 'erro' ? 'error' : (tipo || 'info'));
+      return toast(msg, tipo);
+    }, []);
+    const _confirmar = useCallback(async (msg) => {
+      const fn = confirmFnRef.current;
+      if (typeof fn === 'function') return fn(msg);
+      return confirmar(msg);
+    }, []);
+
+    const [aba, setAba] = useState('ativa');
+    const [busca, setBusca] = useState('');
+    const [buscaEfetiva, setBuscaEfetiva] = useState('');
+    const [page, setPage] = useState(1);
+    const pageSize = 20;
+    const [dados, setDados] = useState([]);
+    const [paginacao, setPaginacao] = useState({ total: 0, totalPaginas: 1 });
+    const [kpis, setKpis] = useState({ ativas: 0, saques_mes: 0, taxa_mes: 0, desconto_mes: 0 });
+    const [motivos, setMotivos] = useState([]);
+    const [carregando, setCarregando] = useState(false);
+    const [config, setConfig] = useState(null);
+    const [valorTxt, setValorTxt] = useState('');
+    const [menor, setMenor] = useState(true);
+    const [salvandoCfg, setSalvandoCfg] = useState(false);
+    const [modalCadastro, setModalCadastro] = useState(false);
+    const [editando, setEditando] = useState(null);
+    const [modalMotivos, setModalMotivos] = useState(false);
+
+    const buscaDebounce = useRef(null);
+    useEffect(() => {
+      if (buscaDebounce.current) clearTimeout(buscaDebounce.current);
+      buscaDebounce.current = setTimeout(() => setBuscaEfetiva(busca), 300);
+      return () => buscaDebounce.current && clearTimeout(buscaDebounce.current);
+    }, [busca]);
+
+    const carregarConfig = useCallback(async () => {
+      try {
+        const c = await api('/taxa-fixa/config');
+        setConfig(c); setValorTxt(Number(c.valor).toFixed(2).replace('.', ',')); setMenor(c.cobrar_menor !== false);
+      } catch (e) { _toast(e.message, 'erro'); }
+    }, [api]);
+    const carregarKpis = useCallback(async () => {
+      try { setKpis(await api('/taxa-fixa/kpis')); } catch (e) { console.error(e); }
+    }, [api]);
+    const carregarMotivos = useCallback(async () => {
+      try { setMotivos(await api('/exemptions/motivos')); } catch (e) { console.error(e); }
+    }, [api]);
+    const carregarLista = useCallback(async () => {
+      setCarregando(true);
+      try {
+        const qs = new URLSearchParams();
+        qs.set('status', aba);
+        if (buscaEfetiva) qs.set('busca', buscaEfetiva);
+        qs.set('page', String(page)); qs.set('pageSize', String(pageSize));
+        const r = await api(`/taxa-fixa/listar?${qs.toString()}`);
+        setDados(r.dados || []);
+        setPaginacao(r.paginacao || { total: 0, totalPaginas: 1 });
+      } catch (e) { _toast(e.message, 'erro'); setDados([]); }
+      finally { setCarregando(false); }
+    }, [api, aba, buscaEfetiva, page]);
+
+    useEffect(() => { setPage(1); }, [aba, buscaEfetiva]);
+    useEffect(() => { carregarLista(); }, [carregarLista]);
+    useEffect(() => { carregarKpis(); carregarMotivos(); carregarConfig(); }, [carregarKpis, carregarMotivos, carregarConfig]);
+
+    const valorNovo = tfNum(valorTxt);
+    const cfgSuja = !!config && (Math.abs(valorNovo - Number(config.valor)) > 0.0001 || menor !== (config.cobrar_menor !== false));
+    const salvarConfig = async () => {
+      if (!(valorNovo >= 0) || valorNovo > 100) { _toast('Informe um valor entre R$ 0,00 e R$ 100,00', 'erro'); return; }
+      setSalvandoCfg(true);
+      try {
+        const c = await api('/taxa-fixa/config', { method: 'PUT', body: JSON.stringify({ valor: valorNovo, cobrar_menor: menor }) });
+        setConfig(c); setValorTxt(Number(c.valor).toFixed(2).replace('.', ','));
+        _toast('Regra da taxa fixa salva. Vale a partir do próximo saque.', 'success');
+        carregarLista();
+      } catch (e) { _toast(e.message, 'erro'); }
+      finally { setSalvandoCfg(false); }
+    };
+
+    const desativar = async (e) => {
+      const ok = await _confirmar(`Desativar a taxa fixa de ${e.user_name || e.user_cod}? Os próximos saques voltam para a taxa normal.`);
+      if (!ok) return;
+      try {
+        await api(`/taxa-fixa/${e.id}/desativar`, { method: 'PATCH' });
+        _toast('Taxa fixa desativada', 'success');
+        carregarLista(); carregarKpis();
+      } catch (err) { _toast(err.message, 'erro'); }
+    };
+
+    const fixaSim = valorNovo >= 0 ? valorNovo : (config ? Number(config.valor) : 0);
+    const simul = [30, 60, 100, 250, 500].map((v) => Object.assign({ v }, tfCalc(v, fixaSim, menor)));
+    const thSim = { padding: '8px 10px', fontSize: 11, fontWeight: 700, color: cores.textMuted, background: '#f9fafb', textAlign: 'left' };
+    const tdSim = { padding: '8px 10px', borderTop: `1px solid ${cores.graySoft}`, fontSize: 13 };
+
+    const blocoRegra = React.createElement('section', {
+      style: { flex: '1 1 320px', maxWidth: 420, minWidth: 0, background: '#fff', border: `1px solid ${cores.border}`, borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14, alignSelf: 'flex-start' },
+    },
+      React.createElement('div', null,
+        React.createElement('h2', { className: 'fin-sec-t', style: { margin: 0 } }, 'Regra da taxa fixa'),
+        React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '2px 0 0' } }, 'Vale para todos os cadastrados, menos quem tem valor próprio')),
+      React.createElement('label', { style: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600, color: cores.textMuted } },
+        'Valor descontado por saque',
+        React.createElement('span', { style: { display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${cores.border}`, borderRadius: 10, height: 44, padding: '0 12px', background: '#fff' } },
+          React.createElement('span', { style: { color: cores.textMuted, fontSize: 14, fontWeight: 500 } }, 'R$'),
+          React.createElement('input', {
+            type: 'text', inputMode: 'decimal', value: valorTxt, disabled: !config,
+            onChange: (e) => setValorTxt(e.target.value.replace(/[^0-9,\.]/g, '')),
+            'aria-label': 'Valor da taxa fixa em reais',
+            style: { border: 'none', outline: 'none', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, Inter, sans-serif', width: '100%', color: cores.text, background: 'transparent' },
+          }))),
+      React.createElement('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' } },
+        React.createElement('input', { type: 'checkbox', checked: menor, onChange: (e) => setMenor(e.target.checked), style: { accentColor: cores.primary, width: 18, height: 18, margin: '2px 0 0' } }),
+        React.createElement('span', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+          React.createElement('b', { style: { fontSize: 13 } }, 'Cobrar a menor taxa'),
+          React.createElement('span', { style: { fontSize: 12, color: cores.textMuted } }, 'Se num saque pequeno a taxa normal sair mais barata que a fixa, o motoboy paga a normal.'))),
+      React.createElement('div', { style: { border: `1px solid ${cores.graySoft}`, borderRadius: 12, overflow: 'hidden' } },
+        React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse' } },
+          React.createElement('thead', null, React.createElement('tr', null,
+            React.createElement('th', { style: thSim }, 'Saque'), React.createElement('th', { style: thSim }, 'Taxa normal'), React.createElement('th', { style: thSim }, 'Com taxa fixa'))),
+          React.createElement('tbody', null, simul.map((s) => React.createElement('tr', { key: s.v },
+            React.createElement('td', { style: Object.assign({}, tdSim, { fontWeight: 600 }) }, fmt.moeda(s.v)),
+            React.createElement('td', { style: Object.assign({}, tdSim, { color: cores.textMuted }) }, fmt.moeda(s.normal)),
+            React.createElement('td', { style: Object.assign({}, tdSim, { fontWeight: 700, color: s.aplicou ? '#5d0b85' : '#374151' }) },
+              fmt.moeda(s.fee), !s.aplicou ? React.createElement('span', { style: { fontWeight: 500, color: cores.textMuted, fontSize: 11 } }, ' (normal)') : null)))))),
+      React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, 'Ordem aplicada no saque: gratuidade › isenção › taxa fixa › taxa normal. A taxa fixa não conta como saque gratuito do mês.'),
+      config && config.atualizado_por ? React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, `Última alteração: ${config.atualizado_por} em ${fmt.data(config.atualizado_em)}`) : null,
+      React.createElement('button', { onClick: salvarConfig, disabled: !cfgSuja || salvandoCfg, style: Object.assign(btnPrimary(), { height: 42, opacity: (!cfgSuja || salvandoCfg) ? 0.55 : 1, cursor: (!cfgSuja || salvandoCfg) ? 'not-allowed' : 'pointer' }) },
+        salvandoCfg ? 'Salvando…' : cfgSuja ? 'Salvar regra' : 'Regra salva')
+    );
+
+    const thL = (i) => ({ textAlign: i === 5 ? 'center' : i === 6 ? 'right' : 'left', padding: '10px 14px', fontWeight: 600, color: cores.textMuted, fontSize: 12, background: '#f9fafb', borderBottom: `1px solid ${cores.border}`, whiteSpace: 'nowrap' });
+    const blocoLista = React.createElement('section', {
+      style: { flex: '999 1 560px', minWidth: 0, background: '#fff', border: `1px solid ${cores.border}`, borderRadius: 14, overflow: 'hidden' },
+    },
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderBottom: `1px solid ${cores.graySoft}` } },
+        React.createElement('div', null,
+          React.createElement('h2', { className: 'fin-sec-t', style: { margin: 0 } }, 'Motoboys com taxa fixa'),
+          React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '2px 0 0' } }, 'Permanente até desativar, igual à isenção')),
+        React.createElement('button', { onClick: () => setModalCadastro(true), style: btnPrimary() }, '+ Cadastrar taxa fixa')),
+      React.createElement('div', { style: { display: 'flex', padding: '4px 12px 0', borderBottom: `1px solid ${cores.border}`, overflowX: 'auto' } },
+        [{ id: 'ativa', label: 'Ativas', count: kpis.ativas || 0 }, { id: 'desativada', label: 'Desativadas' }, { id: 'todas', label: 'Todas' }].map((t) =>
+          React.createElement('button', {
+            key: t.id, onClick: () => setAba(t.id),
+            style: { padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: `2px solid ${aba === t.id ? cores.primary : 'transparent'}`, color: aba === t.id ? '#5d0b85' : cores.textMuted, fontWeight: aba === t.id ? 600 : 400, fontSize: 13, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6 },
+          }, t.label, t.count != null && React.createElement('span', { style: { background: aba === t.id ? '#f3e8fb' : '#fff', color: aba === t.id ? '#5d0b85' : cores.textMuted, border: aba === t.id ? 'none' : `1px solid ${cores.border}`, fontSize: 11, padding: '1px 7px', borderRadius: 10, fontWeight: 600 } }, t.count)))),
+      React.createElement('div', { style: { padding: '12px 14px', borderBottom: `1px solid ${cores.border}` } },
+        React.createElement('div', { style: { position: 'relative' } },
+          React.createElement('span', { style: { position: 'absolute', left: 10, top: 9, color: cores.textMuted } }, React.createElement('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, React.createElement('use', { href: '#i-search' }))),
+          React.createElement('input', { type: 'search', value: busca, onChange: (e) => setBusca(e.target.value), placeholder: 'Buscar por código, nome ou motivo…', 'aria-label': 'Buscar', style: Object.assign(inputStyle(), { paddingLeft: 32 }) }))),
+      React.createElement('div', { style: { overflowX: 'auto' } },
+        React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 } },
+          React.createElement('thead', null, React.createElement('tr', null,
+            ['Código', 'Nome', 'Taxa', 'Motivo', 'Cadastrado por', 'Usos', 'Ação'].map((h, i) => React.createElement('th', { key: h, style: thL(i) }, h)))),
+          React.createElement('tbody', null,
+            carregando
+              ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, style: { padding: 30, textAlign: 'center', color: cores.textMuted } }, 'Carregando…'))
+              : dados.length === 0
+                ? React.createElement('tr', null, React.createElement('td', { colSpan: 7, style: { padding: 30, textAlign: 'center', color: cores.textMuted } },
+                  aba === 'ativa' && !buscaEfetiva ? 'Nenhum motoboy com taxa fixa. Use "Cadastrar taxa fixa" para começar.' : 'Nada encontrado com esse filtro.'))
+                : dados.map((e) => React.createElement('tr', { key: e.id, style: { background: '#fff', opacity: e.ativa ? 1 : 0.6 } },
+                  td(e.user_cod, { fontFamily: 'monospace', color: cores.textMuted, fontSize: 12 }),
+                  td(e.user_name || '—', { fontWeight: 500 }),
+                  React.createElement('td', { style: tdBase() },
+                    React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+                      React.createElement('b', null, fmt.moeda(e.valor)),
+                      React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, e.valor_proprio ? 'valor próprio' : 'padrão'))),
+                  td(e.motivo, { fontWeight: 500 }),
+                  React.createElement('td', { style: tdBase() },
+                    React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+                      React.createElement('span', null, e.criado_por || '—'),
+                      React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, fmt.data(e.criado_em)))),
+                  React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'center' }), title: e.desconto > 0 ? `Desconto dado: ${fmt.moeda(e.desconto)}` : null },
+                    React.createElement('b', null, e.usos || 0)),
+                  React.createElement('td', { style: Object.assign(tdBase(), { textAlign: 'right', whiteSpace: 'nowrap' }) },
+                    e.ativa
+                      ? React.createElement('span', { style: { display: 'inline-flex', gap: 6 } },
+                        React.createElement('button', { onClick: () => setEditando(e), style: { height: 30, padding: '0 10px', background: '#fff', color: '#374151', border: `1px solid ${cores.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } }, 'Editar'),
+                        React.createElement('button', { onClick: () => desativar(e), style: { height: 30, padding: '0 10px', background: '#fff', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } }, 'Desativar'))
+                      : React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, e.desativada_em ? `Desativada em ${fmt.data(e.desativada_em)}` : '—'))))))),
+      paginacao.total > pageSize && React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderTop: `1px solid ${cores.border}`, fontSize: 12, color: cores.textMuted } },
+        React.createElement('span', null, `Mostrando ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, paginacao.total)} de ${paginacao.total}`),
+        React.createElement('div', { style: { display: 'flex', gap: 4 } },
+          React.createElement('button', { onClick: () => setPage(Math.max(1, page - 1)), disabled: page <= 1, style: pagerBtn(false), 'aria-label': 'Página anterior' }, '‹'),
+          pagerNumeros(page, paginacao.totalPaginas).map((n, i) => n === '…'
+            ? React.createElement('span', { key: `e${i}`, style: { padding: '0 8px', alignSelf: 'center' } }, '…')
+            : React.createElement('button', { key: n, onClick: () => setPage(n), style: pagerBtn(n === page) }, n)),
+          React.createElement('button', { onClick: () => setPage(Math.min(paginacao.totalPaginas, page + 1)), disabled: page >= paginacao.totalPaginas, style: pagerBtn(false), 'aria-label': 'Próxima página' }, '›')))
+    );
+
+    return React.createElement('div', { style: { paddingTop: 16, color: cores.text } },
+      React.createElement('div', { className: 'fin-kpis', style: { marginBottom: 16 } },
+        React.createElement(KpiCard, { label: 'Motoboys com taxa fixa', valor: kpis.ativas || 0, sub: 'ativos', cor: '#5d0b85' }),
+        React.createElement(KpiCard, { label: 'Saques no mês com taxa fixa', valor: kpis.saques_mes || 0 }),
+        React.createElement(KpiCard, { label: 'Taxa cobrada no mês', valor: fmt.moeda(kpis.taxa_mes), sub: 'com a taxa fixa' }),
+        React.createElement(KpiCard, { label: 'Desconto dado aos motoboys', valor: fmt.moeda(kpis.desconto_mes), sub: 'vs. taxa normal', cor: '#c2410c' })),
+      React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' } }, blocoRegra, blocoLista),
+      React.createElement(ModalTaxaFixa, {
+        aberto: modalCadastro || !!editando, editando, config,
+        onClose: () => { setModalCadastro(false); setEditando(null); },
+        api, motivos, toast: _toast,
+        onAbrirGerenciar: () => setModalMotivos(true),
+        onSalvo: () => { carregarLista(); carregarKpis(); },
+      }),
+      React.createElement(ModalGerenciarMotivosIsencao, {
+        aberto: modalMotivos, onClose: () => setModalMotivos(false),
+        api, toast: _toast, confirmar: _confirmar, onSalvo: () => carregarMotivos(),
+      })
+    );
+  }
+
+  function ModalTaxaFixa({ aberto, editando, config, onClose, api, motivos, onSalvo, onAbrirGerenciar, toast: toastProp }) {
+    const _toast = toastProp || toast;
+    const [codigo, setCodigo] = useState('');
+    const [nome, setNome] = useState('');
+    const [motivo, setMotivo] = useState('');
+    const [proprio, setProprio] = useState(false);
+    const [valorTxt, setValorTxt] = useState('');
+    const [observacao, setObservacao] = useState('');
+    const [isento, setIsento] = useState(false);
+    const [salvando, setSalvando] = useState(false);
+    const padrao = config ? Number(config.valor) : null;
+
+    useEffect(() => {
+      if (!aberto) return;
+      if (editando) {
+        setCodigo(editando.user_cod); setNome(editando.user_name || ''); setMotivo(editando.motivo);
+        setProprio(!!editando.valor_proprio); setValorTxt(editando.valor_proprio ? Number(editando.valor).toFixed(2).replace('.', ',') : '');
+      } else {
+        setCodigo(''); setNome(''); setMotivo(''); setProprio(false); setValorTxt(''); setObservacao('');
+      }
+      setIsento(false);
+    }, [aberto, editando]);
+
+    // aviso: motoboy com isenção ativa continua sacando grátis
+    useEffect(() => {
+      if (!aberto || editando) return undefined;
+      const cod = codigo.trim();
+      if (!cod) { setIsento(false); return undefined; }
+      const t = setTimeout(() => {
+        api(`/exemptions/user/${encodeURIComponent(cod)}`).then((r) => setIsento(!!(r && r.ativa))).catch(() => setIsento(false));
+      }, 400);
+      return () => clearTimeout(t);
+    }, [codigo, aberto, editando, api]);
+
+    const submeter = async () => {
+      if (!editando && !codigo.trim()) { _toast('Informe o código do motoboy', 'erro'); return; }
+      if (!motivo) { _toast('Escolha o motivo', 'erro'); return; }
+      let valor = null;
+      if (proprio) {
+        valor = tfNum(valorTxt);
+        if (!(valor >= 0) || valor > 100) { _toast('Informe um valor próprio entre R$ 0,00 e R$ 100,00', 'erro'); return; }
+      }
+      setSalvando(true);
+      try {
+        if (editando) {
+          await api(`/taxa-fixa/${editando.id}`, { method: 'PATCH', body: JSON.stringify({ motivo, valor }) });
+          _toast('Taxa fixa atualizada', 'success');
+        } else {
+          const r = await api('/taxa-fixa', { method: 'POST', body: JSON.stringify({ userCod: codigo.trim(), userName: nome.trim() || null, motivo, valor, observacao: observacao.trim() || null }) });
+          _toast(r && r.tem_isencao ? 'Taxa fixa cadastrada. Enquanto a isenção estiver ativa, os saques dele continuam grátis.' : 'Taxa fixa cadastrada', 'success');
+        }
+        if (onSalvo) onSalvo();
+        onClose();
+      } catch (e) { _toast(e.message, 'erro'); }
+      finally { setSalvando(false); }
+    };
+
+    const opc = (on, titulo, sub, onClick) => React.createElement('button', {
+      type: 'button', role: 'radio', 'aria-checked': on, onClick,
+      style: { textAlign: 'left', padding: on ? '9px 11px' : '10px 12px', borderRadius: 10, border: on ? `2px solid ${cores.primary}` : `1px solid ${cores.border}`, background: on ? '#faf5ff' : '#fff', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer', fontFamily: 'inherit' },
+    }, React.createElement('b', { style: { color: on ? '#5d0b85' : cores.text, fontSize: 13 } }, titulo), React.createElement('span', { style: { fontSize: 12, color: cores.textMuted } }, sub));
+
+    return React.createElement(Modal, {
+      aberto, onClose, titulo: editando ? 'Editar taxa fixa' : 'Cadastrar taxa fixa',
+      icone: React.createElement('svg', { className: 'ico', style: { width: 16, height: 16 }, 'aria-hidden': 'true' }, React.createElement('use', { href: '#i-tag' })), largura: 480,
+    },
+      React.createElement('p', { style: { fontSize: 13, color: cores.textMuted, margin: '0 0 14px' } },
+        'Permanente até desativar. Em todo saque o motoboy paga só o valor fixo, não importa o valor do saque.'),
+      React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 } },
+        editando
+          ? React.createElement('div', { style: { gridColumn: '1 / -1', background: '#f9fafb', borderRadius: 10, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 8 } },
+            React.createElement('b', null, editando.user_name || '—'), React.createElement('span', { style: { color: cores.textMuted, fontFamily: 'monospace', fontSize: 12 } }, editando.user_cod))
+          : React.createElement(CodigoNomeFields, { api, codigo, setCodigo, nome, setNome, codigoLabel: 'Código *', nomePlaceholder: 'Nome (opcional)' }),
+        isento && React.createElement('div', { role: 'status', style: { gridColumn: '1 / -1', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#1e3a8a' } },
+          'Ele tem isenção ativa. Enquanto a isenção estiver ligada, os saques continuam grátis e a taxa fixa só entra se a isenção for desativada.'),
+        React.createElement('div', { style: { gridColumn: '1 / -1' } },
+          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 } },
+            React.createElement('label', { htmlFor: 'tf-motivo', style: { fontSize: 12, fontWeight: 600, color: cores.textMuted } }, 'Motivo *'),
+            React.createElement('button', { type: 'button', onClick: onAbrirGerenciar, style: { background: 'transparent', border: 'none', color: cores.primary, fontSize: 12, cursor: 'pointer', fontWeight: 500 } }, 'Gerenciar motivos')),
+          React.createElement('select', { id: 'tf-motivo', value: motivo, onChange: (e) => setMotivo(e.target.value), style: Object.assign(inputStyle(), { paddingRight: 32 }) },
+            React.createElement('option', { value: '' }, '— Selecione —'),
+            motivos.map((m) => React.createElement('option', { key: m.id, value: m.motivo }, m.motivo)),
+            motivo && !motivos.some((m) => m.motivo === motivo) ? React.createElement('option', { value: motivo }, motivo) : null)),
+        React.createElement('div', { role: 'radiogroup', 'aria-label': 'Valor da taxa', style: { gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+          opc(!proprio, 'Valor padrão', padrao != null ? `${fmt.moeda(padrao)} por saque` : 'definido na regra', () => setProprio(false)),
+          opc(proprio, 'Valor próprio', 'só para ele', () => setProprio(true))),
+        proprio && React.createElement('div', { style: { gridColumn: '1 / -1' } },
+          campo('Valor próprio por saque (R$) *',
+            React.createElement('input', { type: 'text', inputMode: 'decimal', value: valorTxt, placeholder: '0,00', onChange: (e) => setValorTxt(e.target.value.replace(/[^0-9,\.]/g, '')), style: inputStyle() }))),
+        !editando && React.createElement('div', { style: { gridColumn: '1 / -1' } },
+          campo('Observação (opcional)',
+            React.createElement('textarea', { value: observacao, onChange: (e) => setObservacao(e.target.value), rows: 2, placeholder: 'Contexto interno…', style: Object.assign(inputStyle(), { height: 'auto', padding: 10, resize: 'vertical' }) })))),
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 14, borderTop: `1px solid ${cores.border}` } },
+        React.createElement('button', { onClick: onClose, style: btnSecondary(), disabled: salvando }, 'Cancelar'),
+        React.createElement('button', { onClick: submeter, style: btnPrimary(), disabled: salvando }, salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar taxa fixa'))
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // Wrapper que aceita as 2 convenções de naming usadas no Tutts:
   // - { apiUrl, fetchAuth, showToast }    (estilo módulos novos)
   // - { API_URL, fetchAuth, ja }          (estilo ModuloFinanceiro)
@@ -1683,11 +2012,13 @@
 
     const tela = subAba === 'isencoes'
       ? React.createElement(TelaIsencoes, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn })
-      : React.createElement(TelaGratuidades, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn });
+      : subAba === 'taxafixa' // TAXA_FIXA_V1
+        ? React.createElement(TelaTaxaFixa, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn })
+        : React.createElement(TelaGratuidades, { apiUrl, token, fetchAuth, fetchApi, showToast, confirm: confirmFn });
 
     return React.createElement('div', { style: { color: cores.text, fontSize: 13 } },
       // FIN_ABAS_V1: cabeçalho de página
-      global.FinUI ? global.FinUI.cabecalho('Gratuidades e isenções', 'Saques sem taxa concedidos aos profissionais — premiações, bonificações e isenções permanentes') : null,
+      global.FinUI ? global.FinUI.cabecalho('Gratuidades e isenções', 'Saques sem taxa, isenções permanentes e taxa fixa por motoboy') : null,
       // Sub-abas top-level (Gratuidades | Isenções)
       React.createElement('div', {
         style: {
@@ -1699,6 +2030,7 @@
         [
           { id: 'gratuidades', label: React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-gift" })), "Gratuidades") },
           { id: 'isencoes', label: React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-shield" })), "Isenções") },
+          { id: 'taxafixa', label: React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" })), "Taxa fixa") }, // TAXA_FIXA_V1
         ].map((s) =>
           React.createElement('button', {
             key: s.id,

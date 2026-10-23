@@ -2980,7 +2980,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null); 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [taxaFixaUsuario, setTaxaFixaUsuario] = useState(null) /* TAXA_FIXA_V1 */, [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null); 
     const parseSaldoBR = (valor) => {
             if (typeof valor === "number") return valor;
             if (!valor) return 0;
@@ -7629,6 +7629,14 @@ const hideLoadingScreen = () => {
             } catch (e) {
                 console.error('isencao:', e);
                 setIsencaoUsuario(null);
+            }
+            // TAXA_FIXA_V1: taxa fixa por saque (vale depois de gratuidade e isenção)
+            try {
+                const rt = await fetchAuth(`${API_URL}/taxa-fixa/user/${l.cod_profissional}`);
+                if (rt.ok) setTaxaFixaUsuario(await rt.json()); // null ou { valor, cobrar_menor, ... }
+            } catch (e) {
+                console.error('taxa fixa:', e);
+                setTaxaFixaUsuario(null);
             }
         }, Ua = async () => {
             try {
@@ -12415,6 +12423,18 @@ const hideLoadingScreen = () => {
                     className: "text-blue-600 text-xs mt-1"
                 }, "Seus saques não pagam taxa enquanto a isenção estiver ativa.")
             ),
+            // TAXA_FIXA_V1: motoboy com taxa fixa (sem gratuidade e sem isenção)
+            !t && !isento && taxaFixaUsuario && taxaFixaUsuario.ativa && React.createElement("div", {
+                style: { background: "linear-gradient(120deg,#3a1556,#5d0b85)", color: "#fff", borderRadius: 14, padding: 14, display: "flex", gap: 12, alignItems: "flex-start" }
+            },
+                React.createElement("span", { style: { width: 38, height: 38, borderRadius: 11, background: "rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" } },
+                    React.createElement("svg", { className: "ico", style: { width: 20, height: 20 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-tag" }))),
+                React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 3 } },
+                    React.createElement("b", { style: { fontSize: 15 } }, "Você tem taxa fixa de " + er(taxaFixaUsuario.valor)),
+                    React.createElement("span", { style: { fontSize: 13, color: "#f5edfb", lineHeight: 1.45 } },
+                        "Em todo saque é descontado só " + er(taxaFixaUsuario.valor) + ", não importa o valor." + (taxaFixaUsuario.cobrar_menor ? " Se a taxa normal sair menor, vale a menor." : ""))
+                )
+            ),
             limitesSaque && limitesSaque.solicitacao_pendente && React.createElement("div", {
                 className: "bg-purple-50 border-2 border-purple-400 rounded-lg p-4 animate-pulse"
             }, React.createElement("div", { className: "flex items-center gap-2" },
@@ -12502,7 +12522,20 @@ const hideLoadingScreen = () => {
                             temTaxaFixa = true;
                         }
                     }
+                    // TAXA_FIXA_V1: mesma regra do backend (taxaFixa.service.taxaComFixa)
+                    const normalRef = Math.round(l * 100) / 100;
+                    let taxaFixaAplicada = false, taxaFixaMenorNormal = false;
+                    if (!isFree && taxaFixaUsuario && taxaFixaUsuario.ativa && e > 0) {
+                        const vf = Number(taxaFixaUsuario.valor);
+                        if (vf >= 0 && vf < e) {
+                            if (taxaFixaUsuario.cobrar_menor && normalRef < vf) taxaFixaMenorNormal = true;
+                            else { l = vf; taxaFixaAplicada = true; }
+                        }
+                    }
                     return {
+                        taxaFixaAplicada: taxaFixaAplicada,
+                        taxaFixaMenorNormal: taxaFixaMenorNormal,
+                        taxaNormal: normalRef,
                         fee: l,
                         final: e - l,
                         hasGrat: isFree,           // mantém o nome pra reusar o JSX abaixo
@@ -12525,7 +12558,16 @@ const hideLoadingScreen = () => {
                     className: "flex justify-between"
                 }, React.createElement("span", null, "Taxa:"), React.createElement("span", {
                     className: "text-green-600 font-bold"
-                }, e.isento ? "ISENTO" : "ISENTA")) : React.createElement(React.Fragment, null,
+                }, e.isento ? "ISENTO" : "ISENTA")) : e.taxaFixaAplicada ? React.createElement(React.Fragment, null,
+                    // TAXA_FIXA_V1: taxa fixa no lugar de 4,5% (+ R$ 0,40)
+                    React.createElement("div", { className: "flex justify-between items-baseline" },
+                        React.createElement("span", null, "Taxa fixa:"),
+                        React.createElement("span", { style: { display: "inline-flex", gap: 8, alignItems: "baseline" } },
+                            React.createElement("span", { className: "text-xs text-gray-500 line-through" }, er(e.taxaNormal)),
+                            React.createElement("span", { className: "font-bold", style: { color: "#5d0b85" } }, `-${er(e.fee)}`))),
+                    e.taxaNormal > e.fee && React.createElement("div", { className: "text-xs font-semibold rounded-md px-2 py-1.5", style: { background: "#f3e8fb", color: "#5d0b85" } },
+                        "Você economiza " + er(e.taxaNormal - e.fee) + " neste saque com a taxa fixa")
+                ) : React.createElement(React.Fragment, null,
                     React.createElement("div", {
                         className: "flex justify-between text-sm"
                     },
@@ -12535,7 +12577,7 @@ const hideLoadingScreen = () => {
                     e.temTaxaFixa && React.createElement("div", {
                         className: "flex justify-between text-sm"
                     },
-                        React.createElement("span", { className: "text-gray-600" }, "Taxa fixa:"),
+                        React.createElement("span", { className: "text-gray-600" }, "Tarifa por saque:"),
                         React.createElement("span", { className: "text-red-600" }, "-R$ 0,40")
                     ),
                     React.createElement("div", {
@@ -12543,7 +12585,9 @@ const hideLoadingScreen = () => {
                     },
                         React.createElement("span", null, "Total de taxas:"),
                         React.createElement("span", { className: "text-red-600" }, `-${er(e.fee)}`)
-                    )
+                    ),
+                    e.taxaFixaMenorNormal && React.createElement("p", { className: "text-xs", style: { color: "#5d0b85" } },
+                        "Neste valor a taxa normal sai menor que a sua taxa fixa, então vale a normal.")
                 ),
                 React.createElement("hr", null), React.createElement("div", {
                     className: "flex justify-between text-lg"
@@ -12599,7 +12643,9 @@ const hideLoadingScreen = () => {
                 className: "font-bold"
             }, er(e.requested_amount)), React.createElement("p", {
                 className: "text-sm text-gray-600"
-            }, "Receber: ", er(e.final_amount))), React.createElement("span", {
+            }, "Receber: ", er(e.final_amount)),
+            // TAXA_FIXA_V1
+            e.taxa_fixa_id && React.createElement("span", { style: { display: "inline-block", marginTop: 4, fontSize: 11, fontWeight: 700, color: "#5d0b85", background: "#f3e8fb", borderRadius: 99, padding: "2px 9px" } }, "Taxa fixa · " + er(e.fee_amount))), React.createElement("span", {
                 className: "px-3 py-1 rounded-full text-xs font-bold h-fit " + ("pago_stark" === e.status ? "bg-green-600 text-white" : "aguardando_pagamento_stark" === e.status ? "bg-blue-500 text-white" : e.status?.includes("aprovado") ? "bg-green-500 text-white" : "rejeitado" === e.status ? "bg-red-500 text-white" : "inativo" === e.status ? "bg-orange-500 text-white" : "bg-yellow-500 text-white")
             }, t ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "ATRASADO") : "pago_stark" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Saque Concluído") : "aguardando_pagamento_stark" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Em Processamento") : "aprovado" === e.status || "aprovado_gratuidade" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Aprovado") : "rejeitado" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Rejeitado") : "inativo" === e.status ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" })), "Inativo") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clock" })), "Aguardando"))), a && React.createElement("p", {
                 className: "text-sm mt-2 font-semibold " + ("pago_stark" === e.status ? "text-green-700" : "aguardando_pagamento_stark" === e.status ? "text-blue-700" : e.status?.includes("aprovado") ? "text-green-700" : "rejeitado" === e.status ? "text-red-600" : "text-purple-600")
