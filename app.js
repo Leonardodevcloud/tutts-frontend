@@ -546,6 +546,8 @@ function hasModuleAccess(user, moduleId) {
     if ((user.role === "admin" || user.role === "admin_financeiro") && user.permissions && user.permissions.tipo && user.permissions.modulos) {
         return user.permissions.modulos[moduleId] === true;
     }
+    // RH_NPS_V1: módulo optIn (RH) só com permissão explícita — sem permissões efetivas carregadas, fica fechado
+    if (moduleId === "rh" || ((SISTEMA_MODULOS_CONFIG || []).find(m => m.id === moduleId) || {}).optIn) return false;
     
     // PERM_V5: Admin financeiro — se o master configurou permissões, elas valem;
     // sem configuração, mantém o padrão histórico (financeiro + solicitações + disponibilidade + CRM).
@@ -641,7 +643,7 @@ function getFirstAllowedTab(user, moduleId, defaultTab) {
 
 // CONFIGURAÇÃO GLOBAL DE MÓDULOS E ABAS - Edite aqui para adicionar novos módulos/abas
 // ==== Icones do menu (sprite Lucide). Converte no render; NAO altera o config nem a home. ====
-var NAV_EMOJI_ICON = {"🤖":"bot","📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"shield","🎉":"party","🎊":"party","💵":"wallet","🛍":"package","🪪":"idcard","📱":"smartphone","📧":"mail","🔑":"key","⚪":"circle","💎":"gem","🥇":"medal","🥈":"medal","🥉":"medal","🏆":"trophy","⏰":"clock","🛵":"bike","🏍":"bike","🧠":"bulb","✨":"sparkles","📍":"pin","🚩":"flag","🔔":"bell","⭐":"star","🎯":"target","🔥":"zap","💡":"bulb","📁":"folder","🚀":"rocket","🛠":"wrench","📦":"package","🏁":"flag","📷":"camera","📸":"camera","🔒":"lock","⏳":"clock","❓":"help","⚠":"alert","❌":"x","🗑":"trash","✏":"pencil","📞":"phone","🔎":"search","💲":"wallet","🏪":"building","🧾":"filetext","📃":"filetext","📄":"filetext","☀":"sun","🎙":"mic","🎵":"music","🎬":"video"};
+var NAV_EMOJI_ICON = {"🫂":"heart" /* RH_NPS_V1 */,"🤖":"bot","📋":"clipboard","💰":"wallet","⚙":"settings","📅":"calendar","📊":"chart","📝":"filetext","👥":"users","🗺":"map","🔧":"wrench","💬":"message","📈":"trendup","🚚":"truck","🔗":"link","⚡":"zap","🏠":"home","🔓":"lock","🏦":"building","💼":"wallet","📑":"filetext","🎁":"package","🚫":"ban","🎯":"target","🛒":"package","📢":"bell","💾":"save","💳":"card","🏢":"building","👤":"user","📤":"upload","🔍":"search","👑":"crown","🔌":"link","🔄":"refresh","✅":"check","📥":"download","🤝":"handshake","🏥":"plus","🗂":"list","🗓":"calendar","💜":"heart","📡":"satellite","🛡":"shield","🎉":"party","🎊":"party","💵":"wallet","🛍":"package","🪪":"idcard","📱":"smartphone","📧":"mail","🔑":"key","⚪":"circle","💎":"gem","🥇":"medal","🥈":"medal","🥉":"medal","🏆":"trophy","⏰":"clock","🛵":"bike","🏍":"bike","🧠":"bulb","✨":"sparkles","📍":"pin","🚩":"flag","🔔":"bell","⭐":"star","🎯":"target","🔥":"zap","💡":"bulb","📁":"folder","🚀":"rocket","🛠":"wrench","📦":"package","🏁":"flag","📷":"camera","📸":"camera","🔒":"lock","⏳":"clock","❓":"help","⚠":"alert","❌":"x","🗑":"trash","✏":"pencil","📞":"phone","🔎":"search","💲":"wallet","🏪":"building","🧾":"filetext","📃":"filetext","📄":"filetext","☀":"sun","🎙":"mic","🎵":"music","🎬":"video"};
 function navIconEl(raw, cls) {
   if (!raw) return null;
   var key = String(raw).replace(/\uFE0F/g, "");
@@ -811,6 +813,7 @@ let SISTEMA_MODULOS_CONFIG = [
     { id: "locacao", label: "Locação de Motos", icon: "🏍️", abas: [] }, // LOCACAO_MOTOS_V1
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"cancelamentos",label:"Cancelamentos"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "controle-maquinas", label: "Controle de Máquinas", icon: "🔒", admin: true, abas: [] }, // PERM_V6
+    { id: "rh", label: "RH", icon: "🫂", optIn: true, abas: [{id: "nps", label: "Painel NPS"}, {id: "pessoas", label: "Líderes e equipe"}, {id: "sensivel", label: "Espaço sensível"}, {id: "config", label: "Configuração"}] }, // RH_NPS_V1
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, sempreLiberado: true, abas: [] },
     { id: "painel", label: "Meu Painel", icon: "📈", admin: true, sempreLiberado: true, abas: [] }, // PAINEL_V1
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, sempreLiberado: true, abas: [] }
@@ -16937,6 +16940,24 @@ const hideLoadingScreen = () => {
                 );
             }
         }
+        // ========== RH_NPS_V1: MÓDULO RH (NPS interno) ==========
+        if (hasModuleAccess(l, "rh") && "rh" === Ee) {
+            if (typeof window.ModuloRhComponent !== 'undefined') {
+                return React.createElement(window.ModuloRhComponent, {
+                    usuario: l, estado: p, setEstado: x, API_URL: API_URL, getToken: getToken, fetchAuth: fetchAuth,
+                    HeaderCompacto: HeaderCompacto, Toast: Toast, LoadingOverlay: LoadingOverlay, Ee: Ee,
+                    socialProfile: socialProfile, ul: ul, o: o, he: he, navegarSidebar: navegarSidebar,
+                    showToast: ja, n: n, i: i, f: f, E: E,
+                });
+            } else {
+                return React.createElement("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
+                    React.createElement("div", { className: "text-center" },
+                        React.createElement("div", { className: "animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" }),
+                        React.createElement("p", { className: "text-gray-600" }, "Carregando módulo RH...")
+                    )
+                );
+            }
+        }
         // ========== MÓDULO CONFIGURAÇÕES (CARREGAMENTO EXTERNO) ==========
         // ========== MODULO UBER DIRECT (CARREGAMENTO EXTERNO) ==========
         const canAccessUber = hasModuleAccess(l, "uber");
@@ -21140,6 +21161,22 @@ const hideLoadingScreen = () => {
                             ),
                             React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "Locação de Motos"),
                             React.createElement("p", {className: "text-xs text-gray-500"}, "Frota, contratos e cobranças")
+                        )
+                    ),
+
+                    // RH_NPS_V1: RH (NPS interno) — só para quem recebeu o módulo
+                    hasModuleAccess(l, "rh") &&
+                    React.createElement("div", {
+                        onClick: () => he("rh"),
+                        className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-purple-300"
+                    },
+                        React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-purple-500 to-violet-600"}),
+                        React.createElement("div", {className: "p-5"},
+                            React.createElement("div", {className: "w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"},
+                                React.createElement("svg", { className: "ico", style: { width: 26, height: 26 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-heart" }))
+                            ),
+                            React.createElement("h3", {className: "text-[15px] font-bold text-gray-800 mb-1"}, "RH"),
+                            React.createElement("p", {className: "text-xs text-gray-500"}, "NPS interno e clima da equipe")
                         )
                     )
                 )

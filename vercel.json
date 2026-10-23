@@ -11,6 +11,8 @@
     { "source": "/relatorios/(.*)", "destination": "/relatorios.html" },
     { "source": "/moto", "destination": "/locacao.html" },
     { "source": "/moto/(.*)", "destination": "/locacao.html" },
+    { "source": "/nps", "destination": "/nps.html" },
+    { "source": "/nps/(.*)", "destination": "/nps.html" },
     { "source": "/((?!.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.json|.*\\.ico|sw\\.js|manifest\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [

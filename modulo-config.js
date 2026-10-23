@@ -1,5 +1,6 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
+/* RH_NPS_V1: módulo RH (optIn) na tela de Permissões — liberado à parte do tipo de acesso */
 /* PERM_V6: aba Permissões refeita (tipo de acesso explícito, salva 1 usuário, confere com o servidor) */
 // ==================== MÓDULO CONFIG ====================
 // Arquivo: modulo-config.js
@@ -588,11 +589,18 @@
             Object.keys(t).forEach(function (k) { if (t[k] === false) abas[k] = false; });
             return { tipo: row.acesso_tipo || "total", modulos: mods, abas: abas };
         }
+        function optInId(id) { var m = MODULOS.find(function (x) { return x.id === id; }); return !!(m && m.optIn); }
+        function abaConta(m, r) { return r.tipo === "personalizado" || !!m.optIn; } // RH_NPS_V1: restrição de aba vale p/ optIn em qualquer tipo
         function assinatura(r) {
             if (!r) return "";
             var mods = Object.keys(r.modulos).filter(function (k) { return r.modulos[k]; }).sort();
             var abas = Object.keys(r.abas).filter(function (k) { return r.abas[k] === false; }).sort();
-            return r.tipo + "|" + (r.tipo === "personalizado" ? mods.join(",") + "|" + abas.join(",") : "");
+            // RH_NPS_V1: módulos optIn (RH) contam em qualquer tipo de acesso
+            if (r.tipo !== "personalizado") {
+                mods = mods.filter(function (k) { return optInId(k); });
+                abas = abas.filter(function (k) { return MODULOS.some(function (m) { return m.optIn && r.modulos[m.id] && (m.abas || []).some(function (a) { return chaveAba(m.id, a.id) === k; }); }); });
+            }
+            return r.tipo + "|" + mods.join(",") + "|" + abas.join(",");
         }
 
         function carregar(manterSel) {
@@ -630,6 +638,7 @@
                 var ok;
                 if (m.sempreLiberado) ok = true;
                 else if (bloqueadoPapel(m, role)) ok = false;
+                else if (m.optIn) ok = r.modulos[m.id] === true; // RH_NPS_V1: só com permissão explícita
                 else if (r.tipo === "total") ok = true;
                 else if (r.tipo === "nenhum") ok = false;
                 else ok = r.modulos[m.id] === true;
@@ -649,13 +658,14 @@
             mudar(function (n) {
                 var nada = Object.keys(n.modulos).filter(function (k) { return n.modulos[k]; }).length === 0;
                 if (t === "personalizado" && n.tipo === "total" && nada) {
-                    MODULOS.forEach(function (m) { if (!m.sempreLiberado && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
+                    MODULOS.forEach(function (m) { if (!m.sempreLiberado && !m.optIn && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
                 }
                 n.tipo = t;
             });
         }
         function toggleModulo(m) {
             mudar(function (n) {
+                if (m.optIn) { n.modulos[m.id] = !n.modulos[m.id]; return; } // RH_NPS_V1: não muda o tipo de acesso
                 if (n.tipo !== "personalizado") {
                     var base = efetivoDe(n, sel.role);
                     n.modulos = {};
@@ -671,8 +681,15 @@
         }
         function marcarTodos(v) {
             mudar(function (n) {
-                n.tipo = "personalizado"; n.modulos = {}; n.abas = {};
-                if (v) MODULOS.forEach(function (m) { if (!m.sempreLiberado && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
+                // RH_NPS_V1: módulos optIn (RH) ficam como estão — liberar o RH é sempre uma escolha separada
+                var mantidos = {}, abasMantidas = {};
+                MODULOS.forEach(function (m) {
+                    if (!m.optIn || !n.modulos[m.id]) return;
+                    mantidos[m.id] = true;
+                    (m.abas || []).forEach(function (a) { var k = chaveAba(m.id, a.id); if (n.abas[k] === false) abasMantidas[k] = false; });
+                });
+                n.tipo = "personalizado"; n.modulos = mantidos; n.abas = abasMantidas;
+                if (v) MODULOS.forEach(function (m) { if (!m.sempreLiberado && !m.optIn && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
             });
         }
         function descartar() { if (sel) { setRascunho(rascunhoDe(sel)); setResultado(null); } }
@@ -686,12 +703,12 @@
 
         function salvar() {
             if (!sel || !rascunho || salvando) return;
-            var mods = rascunho.tipo === "personalizado" ? Object.keys(rascunho.modulos).filter(function (k) { return rascunho.modulos[k]; }) : [];
+            var mods = Object.keys(rascunho.modulos).filter(function (k) { return rascunho.modulos[k] && (rascunho.tipo === "personalizado" || optInId(k)); });
             var abas = {};
-            if (rascunho.tipo === "personalizado") Object.keys(rascunho.abas).forEach(function (k) {
+            Object.keys(rascunho.abas).forEach(function (k) {
                 if (rascunho.abas[k] !== false) return;
                 var m = MODULOS.find(function (x) { return (x.abas || []).some(function (a) { return chaveAba(x.id, a.id) === k; }); });
-                if (m && rascunho.modulos[m.id]) abas[k] = false;
+                if (m && rascunho.modulos[m.id] && abaConta(m, rascunho)) abas[k] = false;
             });
             var cod = sel.cod_profissional;
             var enviado = { tipo: rascunho.tipo, mods: mods.slice().sort().join(","), abas: Object.keys(abas).sort().join(",") };
@@ -803,7 +820,7 @@
         var configuraveis = MODULOS.filter(function (m) { return !m.sempreLiberado && !bloqueadoPapel(m, sel.role); });
         var nLiberados = configuraveis.filter(function (m) { return ef[m.id]; }).length;
         var nAbas = 0;
-        configuraveis.forEach(function (m) { if (ef[m.id]) (m.abas || []).forEach(function (a) { if (rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(m.id, a.id)] !== false) nAbas++; }); });
+        configuraveis.forEach(function (m) { if (ef[m.id]) (m.abas || []).forEach(function (a) { if (!abaConta(m, rascunho) || rascunho.abas[chaveAba(m.id, a.id)] !== false) nAbas++; }); });
 
         // diferença em relação ao salvo (barra de alterações)
         var salvoEf = efetivoDe(rascunhoDe(sel), sel.role);
@@ -815,8 +832,8 @@
             if (!ef[m.id]) return;
             (m.abas || []).forEach(function (a) {
                 var k = chaveAba(m.id, a.id);
-                var agora = rascunho.tipo === "personalizado" && rascunho.abas[k] === false;
-                var antes = sel.acesso_tipo === "personalizado" && abasSalvas[k] === false;
+                var agora = abaConta(m, rascunho) && rascunho.abas[k] === false;
+                var antes = abaConta(m, { tipo: sel.acesso_tipo }) && abasSalvas[k] === false;
                 if (agora !== antes && salvoEf[m.id]) mudancas.push((agora ? "− " : "+ ") + limpa(a.label));
             });
         });
@@ -859,10 +876,10 @@
             var travado = m.sempreLiberado || bloqueadoPapel(m, sel.role);
             var on = ef[m.id];
             var abas = m.abas || [];
-            var nOn = abas.filter(function (a) { return rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(m.id, a.id)] !== false; }).length;
+            var nOn = abas.filter(function (a) { return !abaConta(m, rascunho) || rascunho.abas[chaveAba(m.id, a.id)] !== false; }).length;
             var aberto = expandido === m.id && on && !travado && abas.length > 0;
             var det = travado ? (m.sempreLiberado ? "sempre liberado" : "não disponível para " + papelTxt(sel.role).toLowerCase())
-                : !on ? "desligado" : abas.length ? (nOn + " de " + abas.length + " abas") : "sem abas";
+                                : !on && m.optIn ? "só com permissão explícita" : !on ? "desligado" : abas.length ? (nOn + " de " + abas.length + " abas") : "sem abas";
             var topo = h("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", minHeight: 56, boxSizing: "border-box", background: aberto ? C.lilasFundo : (travado ? C.fundo : "#fff") } },
                 h("button", { type: "button", role: "switch", "aria-checked": on, "aria-label": limpa(m.label), disabled: travado, onClick: function () { toggleModulo(m); },
                     style: { border: "none", background: "transparent", padding: 0, cursor: travado ? "not-allowed" : "pointer", display: "flex", alignItems: "center", minHeight: 44 } }, sw(on, travado)),
@@ -878,11 +895,11 @@
                 aberto && h("div", { style: { padding: "12px 14px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 } },
                     abas.map(function (a) {
                         var k = chaveAba(m.id, a.id);
-                        var liberada = rascunho.tipo !== "personalizado" || rascunho.abas[k] !== false;
+                        var liberada = !abaConta(m, rascunho) || rascunho.abas[k] !== false;
                         return h("label", { key: k, style: { display: "flex", gap: 8, alignItems: "center", minHeight: 38, padding: "0 10px", borderRadius: 9, fontSize: 12, cursor: "pointer",
                                 border: "1px solid " + (liberada ? C.lilasBorda : C.bordaLeve), background: liberada ? "#fff" : C.fundo, color: liberada ? C.texto : C.cinza } },
                             h("input", { type: "checkbox", checked: liberada, onChange: function () {
-                                if (rascunho.tipo !== "personalizado") { toggleModuloParaPersonalizado(); }
+                                if (rascunho.tipo !== "personalizado" && !m.optIn) { toggleModuloParaPersonalizado(); }
                                 toggleAba(m, a);
                             }, style: { accentColor: C.roxo, width: 16, height: 16, margin: 0 } }),
                             limpa(a.label));
@@ -907,7 +924,7 @@
                     h("button", { type: "button", onClick: function () { marcarTodos(true); }, style: Object.assign({}, btnSec, { height: 34, fontSize: 12 }) }, "Marcar todos"),
                     h("button", { type: "button", onClick: function () { marcarTodos(false); }, style: Object.assign({}, btnSec, { height: 34, fontSize: 12 }) }, "Desmarcar todos"))),
             rascunho.tipo === "total" && h("div", { style: { fontSize: 12, color: C.cinza2, background: C.fundo, borderRadius: 10, padding: "10px 12px" } },
-                "Com acesso total, tudo fica liberado e módulos novos entram sozinhos. Mexer em qualquer chave muda para Personalizado."),
+                "Com acesso total, tudo fica liberado e módulos novos entram sozinhos. Mexer em qualquer chave muda para Personalizado. O RH é a exceção: só entra se você ligar, em qualquer tipo de acesso."),
             rascunho.tipo === "nenhum" && h("div", { style: { fontSize: 12, color: "#991b1b", background: "#fef2f2", borderRadius: 10, padding: "10px 12px" } },
                 "Sem acesso: entra só nos módulos sempre liberados. Ligar qualquer módulo muda para Personalizado."),
             h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8, gridAutoFlow: "row dense" } }, ordenados.map(linhaModulo)));
@@ -954,7 +971,7 @@
             var focoId = expandido && ef[expandido] ? expandido : ((menu.find(function (m) { return !m.sempreLiberado && (m.abas || []).length; }) || {}).id);
             var foco = MODULOS.find(function (m) { return m.id === focoId; });
             var abasFoco = foco ? (foco.abas || []) : [];
-            var vis = abasFoco.filter(function (a) { return rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(foco.id, a.id)] !== false; });
+            var vis = abasFoco.filter(function (a) { return !abaConta(foco, rascunho) || rascunho.abas[chaveAba(foco.id, a.id)] !== false; });
             var esc = abasFoco.filter(function (a) { return vis.indexOf(a) < 0; });
             blocoPrevia = h("div", { style: Object.assign({}, card, { overflow: "hidden", display: "flex", flexDirection: "column" }) },
                 h("div", { style: { padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid " + C.bordaLeve, gap: 12 } },

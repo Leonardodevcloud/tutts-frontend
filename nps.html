@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3a1556">
+<meta name="robots" content="noindex">
+<title>Tutts · NPS</title>
+<link rel="icon" href="/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+<style>
+  /* RH_NPS_V1: formulário público e anônimo do NPS interno (/nps/<token>) */
+  :root{--roxo:#770fa8;--roxo-esc:#5d0b85;--roxo-fundo:#3a1556;--roxo-50:#faf5ff;--roxo-100:#f3e8fb;--roxo-200:#e9d5f9;--tinta:#111827;--muted:#6b7280;--muted2:#4b5563;--linha:#e5e7eb;--linha2:#f3f4f6;--bg:#f9fafb;--erro:#b91c1c}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--tinta);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  input,textarea{font:inherit;color:var(--tinta)}
+  .wrap{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+  .top{background:linear-gradient(120deg,#3a1556,#5d0b85);color:#fff;padding:22px 20px 30px;display:flex;flex-direction:column;gap:10px}
+  .marca{font-family:Sora,Inter,sans-serif;font-weight:800;font-size:24px;letter-spacing:-.02em}
+  .titulo{font-family:Sora,Inter,sans-serif;font-weight:700;font-size:20px;margin:0}
+  .promessa{color:#e9d5f9;font-size:13.5px;line-height:1.5;margin:0}
+  .prog{display:flex;gap:10px;align-items:center;font-size:12.5px;color:#e9d5f9}
+  .prog .barra{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden}
+  .prog .barra>span{display:block;height:100%;background:#fff;border-radius:99px;transition:width .2s}
+  main{padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:-14px;flex:1}
+  .secao{font-family:Sora,Inter,sans-serif;font-size:16px;font-weight:700;color:#fff;margin:4px 0 0}
+  .card{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card.falta{border:1.5px solid var(--erro);box-shadow:0 0 0 3px #fee2e2}
+  fieldset.card{margin:0}
+  legend.q,.q{font-weight:600;font-size:15px;line-height:1.4;padding:0;float:left;width:100%}
+  legend.q+*{clear:both}
+  .obr{color:var(--erro);margin-left:3px}
+  .ajuda{font-size:12.5px;color:var(--muted);line-height:1.45;margin:0}
+  .msgfalta{font-size:13px;color:var(--erro);font-weight:600;margin:0}
+  .notas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+  .notas button{height:46px;border-radius:10px;border:1px solid var(--linha);background:#fff;font-weight:700;font-size:15px;color:#374151}
+  .notas button[aria-checked="true"]{background:var(--roxo);border-color:var(--roxo);color:#fff}
+  .extremos{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{min-height:44px;padding:8px 14px;border-radius:99px;border:1px solid var(--linha);background:#fff;color:#374151;text-align:left;line-height:1.3;max-width:100%}
+  .chip[aria-pressed="true"]{border-color:var(--roxo);background:var(--roxo-100);color:var(--roxo-esc);font-weight:600}
+  .chip.desc{border-radius:14px}
+  .chip small{display:block;font-weight:400;font-size:12px;color:var(--muted2);margin-top:2px}
+  .opcao{display:flex;gap:12px;align-items:flex-start;min-height:48px;padding:12px;border:1px solid var(--linha);border-radius:12px;cursor:pointer;line-height:1.4}
+  .opcao.on{border:2px solid var(--roxo);background:var(--roxo-50);padding:11px}
+  .opcao input{accent-color:var(--roxo);width:18px;height:18px;margin:1px 0 0;flex:none}
+  .opcao small{display:block;color:var(--muted2);font-size:12.5px;margin-top:2px}
+  textarea.inp{width:100%;min-height:104px;padding:10px 12px;border:1px solid var(--linha);border-radius:12px;resize:vertical;line-height:1.45;font-size:15px;background:#fff}
+  textarea.inp:focus{outline:none;border-color:var(--roxo);box-shadow:0 0 0 3px var(--roxo-100)}
+  .cont{font-size:11.5px;color:var(--muted);text-align:right;margin-top:-6px}
+  .cont.perto{color:#92400e;font-weight:600}
+  .pessoa{border:1px solid var(--linha2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .pessoa b{font-size:14.5px}
+  .pessoa .cargo{font-size:12px;color:var(--muted)}
+  .rodape{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--linha);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:5}
+  .btn{height:48px;border-radius:12px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px}
+  .btn.pri{background:var(--roxo);color:#fff;flex:1}
+  .btn.pri:disabled{background:#c4a5e0;cursor:wait}
+  .btn.sec{background:#fff;color:#374151;border:1px solid var(--linha)}
+  .lnk{color:var(--roxo);font-weight:600;font-size:13.5px;text-decoration:underline;padding:8px 0;min-height:44px}
+  .aviso{border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45}
+  .aviso.erro{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+  .centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:40px 24px}
+  .centro h2{font-family:Sora,Inter,sans-serif;margin:0;font-size:21px}
+  .centro p{margin:0;color:var(--muted2);line-height:1.55;max-width:420px}
+  .ok{width:56px;height:56px;border-radius:50%;background:var(--roxo-100);color:var(--roxo);display:grid;place-items:center}
+  .spin{width:28px;height:28px;border-radius:99px;border:3px solid var(--roxo-200);border-top-color:var(--roxo);animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.spin{animation-duration:2s}.prog .barra>span{transition:none}}
+  :focus-visible{outline:2px solid var(--roxo);outline-offset:2px}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<noscript>Ative o JavaScript para responder o NPS.</noscript>
+<script>
+(function () {
+  'use strict';
+  var API = (window.NPS_API || 'https://tutts-backend-production.up.railway.app/api');
+  var h = React.createElement, useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
+  var partes = location.pathname.split('/').filter(Boolean);
+  var TOKEN = partes.length ? decodeURIComponent(partes[partes.length - 1]) : '';
+  var K_RASCUNHO = 'nps_rascunho_' + TOKEN, K_ENVIADO = 'nps_enviado_' + TOKEN;
+  var LIMITES = { texto: 4000, sensivel: 6000, pessoa: 3000 };
+
+  function ler(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function gravar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* aba anônima */ } }
+  function apagar(k) { try { localStorage.removeItem(k); } catch (e) { /* ok */ } }
+  function fmtData(iso) { return iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : ''; }
+
+  function visivel(p, resp) { return !p.mostrarSe || resp[p.mostrarSe.pergunta] === p.mostrarSe.valor; }
+  function vazio(v) { return v == null || v === '' || (Array.isArray(v) && v.length === 0) || (typeof v === 'string' && !v.trim()); }
+
+  function Contador(props) {
+    var n = (props.valor || '').length, lim = props.limite;
+    if (n < lim * 0.8) return null;
+    return h('div', { className: 'cont perto', 'aria-live': 'polite' }, n + ' de ' + lim + ' caracteres');
+  }
+
+  function Pergunta(props) {
+    var p = props.p, d = props.d, resp = props.resp, set = props.set, falta = props.falta;
+    var id = 'q_' + p.id;
+    var titulo = [p.texto, p.obrigatoria ? h('span', { key: 'o', className: 'obr', 'aria-hidden': 'true' }, '*') : null,
+      p.obrigatoria ? h('span', { key: 's', className: 'sr' }, ' (obrigatória)') : null];
+    var ajuda = p.ajuda ? h('p', { className: 'ajuda', id: id + '_aj' }, p.ajuda) : null;
+    var msg = falta ? h('p', { className: 'msgfalta', role: 'alert' }, falta) : null;
+    var v = resp[p.id];
+    var corpo;
+
+    if (p.tipo === 'grupo' || p.tipo === 'unica') {
+      var opcoes = p.tipo === 'grupo'
+        ? d.grupos.map(function (g) { return { id: g.id, label: g.nome }; }).concat([{ id: 'nd', label: 'Prefiro não dizer' }])
+        : p.opcoes || [];
+      corpo = opcoes.map(function (o) {
+        var on = v === o.id;
+        return h('label', { key: String(o.id), className: 'opcao' + (on ? ' on' : '') },
+          h('input', { type: 'radio', name: id, checked: on, onChange: function () { set(p.id, o.id); } }),
+          h('span', null, o.label, o.desc ? h('small', null, o.desc) : null));
+      });
+    } else if (p.tipo === 'nota10') {
+      corpo = [
+        h('div', { key: 'g', className: 'notas', role: 'radiogroup', 'aria-labelledby': id + '_lg' },
+          [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) {
+            return h('button', { key: n, type: 'button', role: 'radio', 'aria-checked': v === n, 'aria-label': 'Nota ' + n, onClick: function () { set(p.id, n); } }, n);
+          })),
+        h('div', { key: 'e', className: 'extremos', 'aria-hidden': 'true' }, h('span', null, '0 · nada provável'), h('span', null, '10 · com certeza'))];
+    } else if (p.tipo === 'multipla') {
+      var sel = Array.isArray(v) ? v : [];
+      corpo = h('div', { className: 'chips' }, (p.opcoes || []).map(function (o) {
+        var on = sel.indexOf(o.id) >= 0;
+        return h('button', { key: o.id, type: 'button', className: 'chip' + (o.desc ? ' desc' : ''), 'aria-pressed': on,
+          onClick: function () { set(p.id, on ? sel.filter(function (x) { return x !== o.id; }) : sel.concat([o.id])); } },
+          o.label, o.desc ? h('small', null, o.desc) : null);
+      }));
+    } else if (p.tipo === 'texto' || p.tipo === 'sensivel') {
+      var lim = p.tipo === 'sensivel' ? LIMITES.sensivel : LIMITES.texto;
+      var chave = p.tipo === 'sensivel' ? '__sensivel' : p.id;
+      corpo = [
+        h('textarea', { key: 't', id: id + '_t', className: 'inp', maxLength: lim, rows: p.tipo === 'sensivel' ? 5 : 4,
+          'aria-labelledby': id + '_lg', 'aria-describedby': p.ajuda ? id + '_aj' : undefined,
+          value: resp[chave] || '', onChange: function (e) { set(chave, e.target.value); } }),
+        h(Contador, { key: 'c', valor: resp[chave], limite: lim })];
+    } else if (p.tipo === 'pessoas') {
+      var escolhidos = resp.__pessoas || {};
+      var ids = Object.keys(escolhidos);
+      var prompts = p.prompts || {};
+      corpo = [
+        h('div', { key: 'c', className: 'chips' }, d.pessoas.map(function (pe) {
+          var on = escolhidos[pe.id] != null;
+          return h('button', { key: pe.id, type: 'button', className: 'chip', 'aria-pressed': on,
+            onClick: function () {
+              var n = Object.assign({}, escolhidos);
+              if (on) delete n[pe.id]; else n[pe.id] = '';
+              set('__pessoas', n);
+            } }, pe.nome, pe.cargo ? h('small', null, pe.cargo) : null);
+        })),
+        ids.length ? null : h('p', { key: 'v', className: 'ajuda' }, 'Toque nos nomes de quem você quer avaliar. Pode pular se preferir.')
+      ].concat(d.pessoas.filter(function (pe) { return escolhidos[pe.id] != null; }).map(function (pe, i) {
+        var tid = id + '_p' + pe.id;
+        return h('div', { key: 'p' + pe.id, className: 'pessoa' },
+          h('div', null, h('b', null, pe.nome), pe.cargo ? h('span', { className: 'cargo' }, ' · ' + pe.cargo) : null),
+          h('label', { htmlFor: tid, className: 'ajuda', style: { color: '#374151', fontSize: 13.5 } }, prompts[pe.avaliacao] || prompts.equipe || 'Seu feedback'),
+          h('textarea', { id: tid, className: 'inp', maxLength: LIMITES.pessoa, rows: 4, value: escolhidos[pe.id] || '',
+            onChange: function (e) { var n = Object.assign({}, escolhidos); n[pe.id] = e.target.value; set('__pessoas', n); } }),
+          h(Contador, { valor: escolhidos[pe.id], limite: LIMITES.pessoa }));
+      })).concat(ids.length ? [h('p', { key: 'a', className: 'ajuda' }, 'O texto é resumido pela IA antes de chegar a qualquer pessoa. Ninguém lê seu texto original sozinho.')] : []);
+    }
+
+    var usaFieldset = p.tipo === 'grupo' || p.tipo === 'unica' || p.tipo === 'multipla' || p.tipo === 'nota10' || p.tipo === 'pessoas';
+    if (usaFieldset) {
+      return h('fieldset', { id: id, className: 'card' + (falta ? ' falta' : ''), 'aria-describedby': p.ajuda ? id + '_aj' : undefined },
+        h('legend', { className: 'q', id: id + '_lg' }, titulo), ajuda, msg, corpo);
+    }
+    return h('div', { id: id, className: 'card' + (falta ? ' falta' : '') },
+      h('label', { className: 'q', id: id + '_lg', htmlFor: id + '_t' }, titulo), ajuda, msg, corpo);
+  }
+
+  function valorPara(p, resp) {
+    if (p.tipo === 'sensivel') return resp.__sensivel;
+    if (p.tipo === 'pessoas') { var e = resp.__pessoas || {}; return Object.keys(e).filter(function (k) { return (e[k] || '').trim(); }); }
+    return resp[p.id];
+  }
+
+  function App() {
+    var _e = useState({ fase: 'carregando' }), est = _e[0], setEst = _e[1];
+    var _r = useState(function () { var r = ler(K_RASCUNHO); return (r && r.resp) || {}; }), resp = _r[0], setResp = _r[1];
+    var _p = useState(function () { var r = ler(K_RASCUNHO); return (r && r.passo) || 0; }), passo = _p[0], setPasso = _p[1];
+    var _f = useState(null), faltas = _f[0], setFaltas = _f[1];
+    var _s = useState(false), enviando = _s[0], setEnviando = _s[1];
+    var _x = useState(null), erroEnvio = _x[0], setErroEnvio = _x[1];
+    var _j = useState(function () { return !!ler(K_ENVIADO); }), jaEnviou = _j[0], setJaEnviou = _j[1];
+    var topoRef = useRef(null);
+
+    function carregar() {
+      setEst({ fase: 'carregando' });
+      if (!TOKEN || !/^[A-Za-z0-9_-]{6,40}$/.test(TOKEN)) { setEst({ fase: 'erro', titulo: 'Link inválido', msg: 'Confira o link ou peça um novo para o RH.' }); return; }
+      fetch(API + '/rh-publico/nps/' + encodeURIComponent(TOKEN), { cache: 'no-store' }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          if (res.status === 404) setEst({ fase: 'erro', titulo: 'Link inválido', msg: j.error || 'Confira o link ou peça um novo para o RH.' });
+          else if (res.status === 410) setEst({ fase: 'erro', titulo: j.nome ? 'NPS de ' + j.nome : 'NPS fechado', msg: j.error || 'Este NPS não está recebendo respostas.' });
+          else if (!res.ok) setEst({ fase: 'erro', titulo: 'Não deu para abrir', msg: j.error || 'Tente de novo em instantes.', retry: true });
+          else setEst({ fase: 'form', d: j });
+        });
+      }, function () { setEst({ fase: 'erro', titulo: 'Sem conexão', msg: 'Confira a internet e tente de novo.', retry: true }); });
+    }
+    useEffect(carregar, []);
+    useEffect(function () { if (est.fase === 'form') gravar(K_RASCUNHO, { resp: resp, passo: passo }); }, [resp, passo, est.fase]);
+
+    function set(k, v) {
+      setResp(function (r) { var n = Object.assign({}, r); n[k] = v; return n; });
+      if (faltas) setFaltas(function (f) { if (!f) return f; var n = Object.assign({}, f); delete n[k]; delete n[k.replace(/^__/, '')]; return Object.keys(n).length ? n : null; });
+    }
+
+    if (est.fase === 'carregando') return h('div', { className: 'wrap' }, h('div', { className: 'centro', role: 'status' }, h('div', { className: 'spin', 'aria-hidden': 'true' }), h('p', null, 'Abrindo o formulário…')));
+    if (est.fase === 'erro') return h('div', { className: 'wrap' }, Topo(null, null),
+      h('div', { className: 'centro' }, h('h2', null, est.titulo), h('p', null, est.msg), est.retry ? h('button', { type: 'button', className: 'btn pri', style: { flex: 'none' }, onClick: carregar }, 'Tentar de novo') : null));
+    if (est.fase === 'fim') return h('div', { className: 'wrap' }, Topo(est.nome, null),
+      h('div', { className: 'centro' },
+        h('div', { className: 'ok', 'aria-hidden': 'true' }, h('svg', { width: 28, height: 28, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' }, h('path', { d: 'M20 6L9 17l-5-5' }))),
+        h('h2', null, 'Respostas enviadas'),
+        h('p', null, 'Obrigado(a) por chegar até aqui. Suas respostas serão lidas com atenção e cuidado. A cada ciclo, a gente compartilha com o time o que aprendeu e o que vai mudar.')));
+
+    var d = est.d;
+    var temSecoes = d.secoes && d.secoes.length;
+    var secoes = temSecoes ? d.secoes.filter(function (s) { return d.perguntas.some(function (p) { return p.secao === s.id; }); }) : [{ id: '_', titulo: '' }];
+    if (!secoes.length) secoes = [{ id: '_', titulo: '' }];
+    if (jaEnviou) return h('div', { className: 'wrap' }, Topo(d.nome, null),
+      h('div', { className: 'centro' },
+        h('h2', null, 'Você já respondeu este ciclo neste aparelho'),
+        h('p', null, 'Obrigado! Suas respostas já chegaram.'),
+        h('button', { type: 'button', className: 'lnk', onClick: function () { apagar(K_ENVIADO); setJaEnviou(false); setResp({}); setPasso(0); } }, 'Outra pessoa vai responder neste aparelho')));
+
+    var idx = Math.min(passo, secoes.length - 1);
+    var secao = secoes[idx];
+    var perguntas = d.perguntas.filter(function (p) { return (secao.id === '_' || p.secao === secao.id) && visivel(p, resp); });
+    var ultimo = idx === secoes.length - 1;
+
+    function validar() {
+      var f = {};
+      perguntas.forEach(function (p) {
+        if (!p.obrigatoria) return;
+        if (vazio(valorPara(p, resp))) f[p.tipo === 'sensivel' ? 'sensivel' : p.id] = p.tipo === 'pessoas' ? 'Avalie pelo menos uma pessoa.' : 'Responda esta pergunta para continuar.';
+      });
+      return f;
+    }
+    function irPara(n) { setPasso(n); setFaltas(null); setErroEnvio(null); try { window.scrollTo({ top: 0 }); } catch (e) { window.scrollTo(0, 0); } }
+    function avancar() {
+      var f = validar();
+      if (Object.keys(f).length) {
+        setFaltas(f);
+        var primeira = perguntas.find(function (p) { return f[p.tipo === 'sensivel' ? 'sensivel' : p.id]; });
+        setTimeout(function () {
+          var el = primeira && document.getElementById('q_' + primeira.id);
+          if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { el.scrollIntoView(); } var foco = el.querySelector('button, input, textarea'); if (foco) foco.focus({ preventScroll: true }); }
+        }, 30);
+        return;
+      }
+      if (!ultimo) { irPara(idx + 1); return; }
+      enviar();
+    }
+    function enviar() {
+      var respostas = {};
+      var avaliacoes = [];
+      var sensivel = '';
+      d.perguntas.forEach(function (p) {
+        if (!visivel(p, resp)) return;
+        if (p.tipo === 'pessoas') {
+          var e = resp.__pessoas || {};
+          Object.keys(e).forEach(function (k) { var t = (e[k] || '').trim(); if (t) avaliacoes.push({ colaborador_id: Number(k), texto: t }); });
+        } else if (p.tipo === 'sensivel') sensivel = (resp.__sensivel || '').trim();
+        else if (!vazio(resp[p.id])) respostas[p.id] = typeof resp[p.id] === 'string' ? resp[p.id].trim() : resp[p.id];
+      });
+      setEnviando(true); setErroEnvio(null);
+      fetch(API + '/rh-publico/nps/' + encodeURIComponent(TOKEN), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ respostas: respostas, avaliacoes: avaliacoes, sensivel: sensivel })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          if (res.ok && j.success) {
+            apagar(K_RASCUNHO); gravar(K_ENVIADO, true);
+            setEst({ fase: 'fim', nome: d.nome });
+            try { window.scrollTo(0, 0); } catch (e) { /* ok */ }
+          } else if (res.status === 410) {
+            setEst({ fase: 'erro', titulo: 'NPS encerrado', msg: j.error || 'Este NPS não está mais recebendo respostas.' });
+          } else {
+            setErroEnvio(j.error || 'Não deu para enviar agora. Suas respostas continuam aqui — tente de novo.');
+          }
+        });
+      }, function () {
+        setErroEnvio('Sem conexão. Suas respostas continuam aqui — confira a internet e tente de novo.');
+      }).then(function () { setEnviando(false); });
+    }
+
+    return h('div', { className: 'wrap' },
+      Topo(d.nome, { atual: idx + 1, total: secoes.length, titulo: secao.titulo }, d.fecha_em),
+      h('main', { ref: topoRef },
+        perguntas.map(function (p) {
+          return h(Pergunta, { key: p.id, p: p, d: d, resp: resp, set: set, falta: faltas && faltas[p.tipo === 'sensivel' ? 'sensivel' : p.id] });
+        }),
+        faltas ? h('div', { className: 'aviso erro', role: 'alert' }, 'Faltam respostas obrigatórias nesta etapa (marcadas em vermelho).') : null,
+        erroEnvio ? h('div', { className: 'aviso erro', role: 'alert' }, erroEnvio) : null),
+      h('div', { className: 'rodape' },
+        idx > 0 ? h('button', { type: 'button', className: 'btn sec', onClick: function () { irPara(idx - 1); }, disabled: enviando }, 'Voltar') : null,
+        h('button', { type: 'button', className: 'btn pri', onClick: avancar, disabled: enviando },
+          enviando ? 'Enviando…' : ultimo ? (erroEnvio ? 'Tentar enviar de novo' : 'Enviar respostas') : 'Continuar')));
+  }
+
+  function Topo(nome, prog, fecha) {
+    return h('header', { className: 'top' },
+      h('span', { className: 'marca', 'aria-label': 'Tutts' }, 'tutts'),
+      nome ? h('h1', { className: 'titulo' }, 'NPS de ' + nome) : null,
+      h('p', { className: 'promessa' }, 'É anônimo. Não pedimos login, nome nem e-mail, e não guardamos seu IP.' + (fecha ? ' Aberto até ' + fmtData(fecha) + '.' : '')),
+      prog ? h('div', { className: 'prog' },
+        h('div', { className: 'barra', role: 'progressbar', 'aria-valuemin': 1, 'aria-valuemax': prog.total, 'aria-valuenow': prog.atual, 'aria-label': 'Progresso' },
+          h('span', { style: { width: Math.round((prog.atual / prog.total) * 100) + '%' } })),
+        'etapa ' + prog.atual + ' de ' + prog.total) : null,
+      prog && prog.titulo ? h('h2', { className: 'secao' }, prog.titulo) : null);
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+</body>
+</html>
