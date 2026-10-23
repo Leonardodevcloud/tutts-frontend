@@ -551,7 +551,8 @@
   // ════════════════════════════════════════════════════════════
   // RAIZ
   // ════════════════════════════════════════════════════════════
-  const ABAS_MASTER = [['meu', 'Meu painel', 'chart'], ['equipe', 'Equipe', 'users'], ['importar', 'Importar métricas', 'upload'], ['vinculos', 'Vínculos', 'link'], ['historico', 'Histórico', 'calendar']];
+  const ABAS_MASTER = [['meu', 'Meu painel', 'chart'], ['equipe', 'Equipe', 'users'], ['metas', 'Metas', 'target'], ['minhameta', 'Minha meta', 'trophy'], ['importar', 'Importar métricas', 'upload'], ['vinculos', 'Vínculos', 'link'], ['historico', 'Histórico', 'calendar']]; // METAS_BONUS_V1: + metas, minhameta
+  const ABAS_OPERADOR = [['meu', 'Meus números', 'chart'], ['minhameta', 'Minha meta', 'trophy']]; // METAS_BONUS_V1
 
   const ModuloPainel = ({ usuario, apiUrl, showToast, fetchAuth: fetchAuthExterno }) => {
     const api = apiUrl || window.API_URL || '';
@@ -571,6 +572,8 @@
     else if (aba === 'importar') corpo = h(PainelImportar, { ...props, onImportou: () => setTick((t) => t + 1) });
     else if (aba === 'vinculos') corpo = h(PainelVinculos, props);
     else if (aba === 'historico') corpo = h(PainelHistorico, { ...props, tick });
+    else if (aba === 'metas' && window.PainelMetasMaster) corpo = h(window.PainelMetasMaster, props); // METAS_BONUS_V1
+    else if (aba === 'minhameta' && window.PainelMinhaMeta) corpo = h(window.PainelMinhaMeta, props); // METAS_BONUS_V1
     else corpo = h(PainelOperador, props);
 
     return h('div', { className: 'max-w-[1320px] mx-auto px-4 sm:px-6 py-5 flex flex-col gap-4', style: { fontFamily: 'inherit' } },
@@ -578,7 +581,7 @@
         h('span', { className: 'w-9 h-9 rounded-xl bg-violet-100 text-violet-700 inline-flex items-center justify-center' }, ico('trendup', '', { width: 18, height: 18 })),
         h('h1', { className: 'text-xl font-bold text-gray-900 m-0' }, 'Meu Painel'),
         isMaster && h(Tag, { cor: 'amarelo' }, 'master')),
-      isMaster && h('div', { className: 'flex border-b border-gray-200 gap-1 overflow-x-auto' }, ABAS_MASTER.map(([id, label, icone]) => h('button', { key: id, type: 'button', onClick: () => irPara(id), className: `inline-flex items-center gap-1.5 px-3.5 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px ${aba === id && !verUser ? 'border-violet-600 text-violet-700 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-900'}` }, ico(icone, '', { width: 14, height: 14 }), label))),
+      h('div', { className: 'flex border-b border-gray-200 gap-1 overflow-x-auto', role: 'tablist' }, (isMaster ? ABAS_MASTER : ABAS_OPERADOR).filter(([id]) => (id !== 'metas' || window.PainelMetasMaster) && (id !== 'minhameta' || window.PainelMinhaMeta)).map( /* METAS_BONUS_V1: operador também tem abas */([id, label, icone]) => h('button', { key: id, type: 'button', onClick: () => irPara(id), className: `inline-flex items-center gap-1.5 px-3.5 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px ${aba === id && !verUser ? 'border-violet-600 text-violet-700 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-900'}` }, ico(icone, '', { width: 14, height: 14 }), label))),
       corpo);
   };
 
